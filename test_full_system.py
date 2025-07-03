@@ -358,7 +358,7 @@ def setup_test_data():
         
         # Ensure all derived fields are up to date
         for statement in tax_statements:
-            statement.calculate_interest_income_fields(session)
+            statement.calculate_interest_income_fields(session=session)
             statement.calculate_tax_payable()
         session.commit()
         
@@ -413,29 +413,29 @@ def recalculate_everything(show_irr_cashflows=False):
             print(f"\nRecalculating for {fund.name}:")
             
             # Update current equity balance (should calculate from events)
-            fund.update_current_equity_balance(session)
+            fund.update_current_equity_balance(session=session)
             print(f"  Current equity: ${fund.current_equity_balance:,.2f}")
             
             # Update average equity balance (should calculate from events)
-            fund.update_average_equity_balance(session)
+            fund.update_average_equity_balance(session=session)
             print(f"  Average equity: ${fund.average_equity_balance:,.2f}")
             
             # Create tax payment events from tax statements
-            tax_events = fund.create_tax_payment_events(session)
+            tax_events = fund.create_tax_payment_events(session=session)
             print(f"  Created {len(tax_events)} tax payment events")
             
             # Create daily risk-free interest charges
-            fund.create_daily_risk_free_interest_charges(session)
+            fund.create_daily_risk_free_interest_charges(session=session)
             print(f"  Created daily interest charges")
             
             # Create FY debt cost events
-            fund.create_fy_debt_cost_events(session)
+            fund.create_fy_debt_cost_events(session=session)
             print(f"  Created FY debt cost events")
             
             # Calculate IRRs
-            irr = fund.calculate_irr(session)
-            after_tax_irr = fund.calculate_after_tax_irr(session)
-            real_irr = fund.calculate_real_irr(session)
+            irr = fund.calculate_irr(session=session)
+            after_tax_irr = fund.calculate_after_tax_irr(session=session)
+            real_irr = fund.calculate_real_irr(session=session)
             
             print(f"  IRR: {irr:.2%}" if irr else "  IRR: N/A")
             print(f"  After-tax IRR: {after_tax_irr:.2%}" if after_tax_irr else "  After-tax IRR: N/A")
