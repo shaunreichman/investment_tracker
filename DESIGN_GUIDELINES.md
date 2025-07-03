@@ -489,3 +489,48 @@ tax_event = FundEvent(
 
 **Note:**
 - `interest_taxable_rate` and `interest_deduction_rate` must always be set manually for each tax statement. The system will not auto-calculate these rates, except to use a default fallback (e.g., 32.5%) only if not provided. Always confirm the correct rate for each fund/entity/financial year based on the actual tax statement or jurisdictional rules. 
+
+---
+
+## Separation of Concerns: Models vs. Calculations
+
+### Models (`models.py`)
+- Only handle ORM logic, database queries, and orchestration.
+- Should not contain business or calculation logic except for data access and aggregation.
+- Model methods that fetch or aggregate data should use `get_` or `update_` prefixes.
+
+### Calculations (`calculations.py`)
+- All pure business logic and financial/statistical calculations live here.
+- Functions should be stateless and accept plain data (numbers, lists, dicts, etc.).
+- Easy to test and reuse.
+- Use `calculate_`, `get_`, or `orchestrate_` prefixes for pure functions as appropriate.
+
+### How to Add New Business Logic
+- If it's a calculation or business rule that doesn't require ORM/session, add it to `calculations.py`.
+- If it's a data fetch, aggregation, or ORM operation, keep it in the model.
+
+### Testing
+- All functions in `calculations.py` should have unit tests.
+- Model methods should be tested via integration or system tests.
+
+### Example Pattern
+```python
+# In models.py
+def calculate_irr(self, session=None):
+    """Calculate IRR for this fund."""
+    # ORM logic to fetch events
+    events = session.query(FundEvent)...
+    # Delegate to calculations.py
+    return calculate_irr(events, ...)
+```
+```python
+# In calculations.py
+def calculate_irr(events, ...):
+    """Pure function: calculate IRR from event data."""
+    ...
+```
+
+### Reporting/Formatting Logic
+- If you have complex reporting or formatting, consider a `reporting.py` or `formatting.py` utility.
+
+--- 

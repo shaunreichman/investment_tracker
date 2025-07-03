@@ -12,7 +12,16 @@ from .calculations import (
     calculate_irr,
     calculate_average_equity_balance_nav,
     calculate_average_equity_balance_cost,
-    calculate_debt_cost
+    calculate_debt_cost,
+    get_equity_change_for_event,
+    calculate_nav_based_capital_gains,
+    calculate_cost_based_capital_gains,
+    orchestrate_nav_based_average_equity,
+    orchestrate_cost_based_average_equity,
+    orchestrate_irr_base,
+    net_income,
+    tax_payable,
+    interest_tax_benefit
 )
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.elements import ColumnElement
@@ -136,6 +145,11 @@ class Fund(Base):
     - entity: The investing entity (person or company).
     - fund_events: All events (capital calls, returns, distributions, etc.) for this fund.
     - tax_statements: Tax statements for this fund/entity/financial year.
+    
+    Business rules:
+    - Only one tracking type (NAV or cost) is active per fund.
+    - Calculated fields are updated via explicit update methods, not direct assignment.
+    - Session handling is required for all DB queries and updates.
     """
     __tablename__ = 'funds'
     
@@ -178,12 +192,16 @@ class Fund(Base):
     
     @property
     def should_be_active(self):
-        """Determine if fund should be considered active based on equity balance."""
+        """Return True if the fund should be considered active (i.e., has a positive equity balance).
+        This is used to determine if the fund is still ongoing or has exited.
+        """
         return not isinstance(self.current_equity_balance, (Column, ColumnElement)) and self.current_equity_balance is not None and self.current_equity_balance > 0
     
     @property
     def should_have_final_tax_statement(self):
-        """Determine if fund should have received its final tax statement."""
+        """Return True if the fund should have received its final tax statement.
+        This checks if the fund is no longer active and if a tax statement exists for the final financial year.
+        """
         from sqlalchemy.orm import object_session
         from datetime import date
         
@@ -216,7 +234,9 @@ class Fund(Base):
         return final_tax_statement is not None
     
     def update_final_tax_statement_status(self, session=None):
-        """Update the final_tax_statement_received flag based on current tax statements."""
+        """Update the final_tax_statement_received flag based on whether the final tax statement is present.
+        Commits the change to the database if the status changes.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -231,7 +251,9 @@ class Fund(Base):
             print(f"Fund '{self.name}' final tax statement status updated: {'Complete' if new_status else 'Pending'}")
     
     def update_active_status(self, session=None):
-        """Update the is_active flag based on current equity balance."""
+        """Update the is_active flag based on the current equity balance.
+        Commits the change to the database if the status changes.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -247,7 +269,9 @@ class Fund(Base):
     
     @property
     def start_date(self):
-        """Calculate start date from the first capital call event."""
+        """Return the date of the first capital call event, or None if not available.
+        Used as the fund's effective start date for calculations.
+        """
         from sqlalchemy.orm import object_session
         session = object_session(self)
         if session is None:
@@ -262,7 +286,9 @@ class Fund(Base):
     
     @property
     def end_date(self):
-        """Calculate end date when current_equity_balance goes to 0 (fund exit)."""
+        """Return the date of the last event if the fund is exited (equity balance is zero), else None.
+        Used as the fund's effective end date for calculations.
+        """
         from sqlalchemy.orm import object_session
         # If fund still has equity balance > 0, no end date yet
         if not isinstance(self.current_equity_balance, (Column, ColumnElement)) and self.current_equity_balance is not None and self.current_equity_balance > 0:
@@ -279,7 +305,9 @@ class Fund(Base):
     
     @property
     def total_investment_duration_months(self):
-        """Calculate total investment duration in months."""
+        """Return the total investment duration in months, from start_date to end_date (or today if still active).
+        Returns 0 if dates are not available.
+        """
         from dateutil.relativedelta import relativedelta
         start = self.start_date
         if not start or isinstance(start, (Column, ColumnElement)):
@@ -295,7 +323,10 @@ class Fund(Base):
     
     @property
     def current_value(self):
-        """Calculate current value based on fund type."""
+        """Return the current value of the fund.
+        - For NAV-based funds: units * unit price (if available), else current equity balance.
+        - For cost-based funds: total cost basis (if available), else current equity balance.
+        """
         if self.tracking_type == FundType.NAV_BASED:
             # For NAV-based funds, calculate from units and unit price
             if not isinstance(self._current_units, (Column, ColumnElement)) and not isinstance(self._current_unit_price, (Column, ColumnElement)) and self._current_units is not None and self._current_unit_price is not None and self._current_units != 0 and self._current_unit_price != 0:
@@ -307,11 +338,13 @@ class Fund(Base):
     
     @property
     def calculated_average_equity_balance(self):
-        """Calculate and return the average equity balance."""
+        """Return the calculated average equity balance for the fund, using the appropriate method for the fund type."""
         return self.calculate_average_equity_balance()
     
     def update_current_equity_balance(self, session=None):
-        """Update current equity balance from capital movements and update active status."""
+        """Update the current equity balance from capital movements (calls - returns).
+        Also updates the fund's active status. Commits changes to the database.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -332,7 +365,9 @@ class Fund(Base):
         session.commit()
     
     def update_average_equity_balance(self, session=None):
-        """Update the stored average equity balance with the calculated value."""
+        """Update the stored average equity balance with the calculated value for the fund type.
+        Commits the change to the database.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -345,7 +380,10 @@ class Fund(Base):
         session.commit()
     
     def update_current_units_and_price(self, session=None):
-        """Update current units and unit price from NAV update events (NAV-based funds only)."""
+        """Update current units and unit price for NAV-based funds.
+        Uses the most recent NAV update event, or reconstructs from unit purchase/sale events if no NAV update exists.
+        Commits changes to the database.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -390,7 +428,9 @@ class Fund(Base):
         session.commit()
     
     def update_total_cost_basis(self, session=None):
-        """Update total cost basis from capital call and return events (cost-based funds only)."""
+        """Update the total cost basis for cost-based funds (calls - returns).
+        Commits the change to the database.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -408,7 +448,9 @@ class Fund(Base):
         session.commit()
     
     def update_all_calculated_fields(self, session=None):
-        """Update all calculated fields for the fund."""
+        """Update all calculated fields for the fund, including equity balances, units/price or cost basis, and final tax statement status.
+        Commits all changes to the database.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -432,7 +474,9 @@ class Fund(Base):
         session.commit()
     
     def calculate_debt_cost(self, session=None, risk_free_rate_currency=None):
-        """Calculate debt cost (opportunity cost) using daily/period-by-period accuracy."""
+        """Calculate the debt cost (opportunity cost) for the fund using daily or period-by-period accuracy.
+        Uses risk-free rates for the fund's currency. Returns None if required data is missing.
+        """
         from sqlalchemy.orm import object_session
         if session is None:
             session = object_session(self)
@@ -454,7 +498,9 @@ class Fund(Base):
         return calculate_debt_cost(events, risk_free_rates, start_date, end_date, self.currency)
     
     def get_distributions_by_type(self, session=None):
-        """Get distributions grouped by type for tax analysis."""
+        """Return a dictionary of total distributions grouped by type (for tax analysis).
+        Keys are DistributionType enums, values are summed amounts.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -479,7 +525,9 @@ class Fund(Base):
         return distributions_by_type
     
     def get_total_distributions(self, session=None):
-        """Get total distributions regardless of type for fund comparison."""
+        """Return the total amount of all distributions for the fund (regardless of type).
+        Used for fund comparison and reporting.
+        """
         from sqlalchemy.orm import object_session
         from sqlalchemy import func
         
@@ -497,7 +545,9 @@ class Fund(Base):
         return total
     
     def get_taxable_distributions(self, session=None):
-        """Get total taxable distributions (excluding tax withheld)."""
+        """Return the total taxable distributions (gross minus tax withheld).
+        Used for tax reporting. Returns 0 if no distributions exist.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -520,7 +570,9 @@ class Fund(Base):
         return total_taxable
     
     def get_gross_distributions(self, session=None):
-        """Get total gross distributions (including tax withheld)."""
+        """Return the total gross distributions (including tax withheld).
+        Sums the amount field of all distribution events.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -540,13 +592,17 @@ class Fund(Base):
         return total_gross
     
     def get_net_distributions(self, session=None):
-        """Get total net distributions (gross minus tax withheld)."""
+        """Return the total net distributions (gross minus tax withheld).
+        Uses get_gross_distributions and get_total_tax_withheld.
+        """
         gross = self.get_gross_distributions(session)
         tax_withheld = self.get_total_tax_withheld(session)
         return gross - tax_withheld
     
     def get_total_tax_withheld(self, session=None):
-        """Get total tax withheld across all tax payment events."""
+        """Return the total tax withheld across all tax payment events for this fund.
+        Sums the amount field of all TAX_PAYMENT events.
+        """
         from sqlalchemy.orm import object_session
         from sqlalchemy import func
         
@@ -564,7 +620,9 @@ class Fund(Base):
         return total_tax_withheld
     
     def get_distributions_with_tax_details(self, session=None):
-        """Get distributions with tax withholding details."""
+        """Return a dictionary of distributions by type, including gross, tax withheld, net, and event details.
+        Useful for detailed tax analysis and reporting.
+        """
         from sqlalchemy.orm import object_session
         from sqlalchemy import func
         
@@ -625,92 +683,53 @@ class Fund(Base):
         return distributions_by_type
     
     def get_capital_gains(self, session=None):
-        """Get capital gains based on fund type."""
+        """Return the total capital gains for the fund, using the appropriate method for the fund type.
+        NAV-based funds use FIFO on unit sales; cost-based funds use explicit events.
+        """
         if self.tracking_type == FundType.NAV_BASED:
             return self._calculate_nav_based_capital_gains(session)
         else:
             return self._get_cost_based_capital_gains(session)
     
     def _calculate_nav_based_capital_gains(self, session=None):
-        """Calculate capital gains for NAV-based funds using FIFO methodology."""
+        """Calculate capital gains for NAV-based funds using FIFO on unit sales.
+        Delegates to calculate_nav_based_capital_gains in calculations.py.
+        """
+        from .calculations import calculate_nav_based_capital_gains
         from sqlalchemy.orm import object_session
-        
         if session is None:
             session = object_session(self)
         if session is None:
             return 0
-        
         # Get all unit purchase and sale events in chronological order
-        purchase_events = session.query(FundEvent).filter(
+        events = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.UNIT_PURCHASE  # Only unit purchases for NAV-based
+            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
         ).order_by(FundEvent.event_date).all()
-        
-        sale_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.UNIT_SALE
-        ).order_by(FundEvent.event_date).all()
-        
-        # FIFO calculation
-        total_capital_gains = 0
-        available_units = []  # List of (units, cost_basis_per_unit, date)
-        
-        # Process all events chronologically
-        all_events = sorted(purchase_events + sale_events, key=lambda x: x.event_date)
-        
-        for event in all_events:
-            if event.event_type == EventType.UNIT_PURCHASE:
-                # Purchase event - add units to available pool
-                units = event.units_purchased or 0
-                cost_per_unit = event.unit_price or 0
-                if units > 0 and cost_per_unit > 0:
-                    available_units.append((units, cost_per_unit, event.event_date))
-            
-            elif event.event_type == EventType.UNIT_SALE:
-                # Sale event - calculate capital gains using FIFO
-                units_to_sell = event.units_sold or 0
-                sale_price_per_unit = event.unit_price or 0
-                
-                while units_to_sell > 0 and available_units:
-                    available_units_count, cost_per_unit, purchase_date = available_units[0]
-                    
-                    units_from_this_purchase = min(units_to_sell, available_units_count)
-                    
-                    # Calculate capital gain for these units
-                    capital_gain = (sale_price_per_unit - cost_per_unit) * units_from_this_purchase
-                    total_capital_gains += capital_gain
-                    
-                    # Update available units
-                    units_to_sell -= units_from_this_purchase
-                    remaining_units = available_units_count - units_from_this_purchase
-                    
-                    if remaining_units > 0:
-                        available_units[0] = (remaining_units, cost_per_unit, purchase_date)
-                    else:
-                        available_units.pop(0)
-        
-        return total_capital_gains
+        return calculate_nav_based_capital_gains(events)
     
     def _get_cost_based_capital_gains(self, session=None):
-        """Get capital gains for cost-based funds from explicit events."""
+        """Get capital gains for cost-based funds from explicit capital gain events.
+        Delegates to calculate_cost_based_capital_gains in calculations.py.
+        """
+        from .calculations import calculate_cost_based_capital_gains
         from sqlalchemy.orm import object_session
-        from sqlalchemy import func
-        
         if session is None:
             session = object_session(self)
         if session is None:
             return 0
-        
-        # Sum all capital gain income events
-        total = session.query(func.sum(FundEvent.amount)).filter(
+        # Get all relevant events (could be filtered further if needed)
+        events = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
             FundEvent.event_type == EventType.DISTRIBUTION
-        ).scalar() or 0
-        
-        return total
+        ).all()
+        return calculate_cost_based_capital_gains(events)
     
     def get_capital_movements(self, session=None):
-        """Get total capital movements (calls and returns)."""
+        """Return a dictionary with total capital calls and returns for the fund.
+        Used for calculating net capital invested and cost basis.
+        Keys: 'calls', 'returns'.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -730,7 +749,11 @@ class Fund(Base):
         return {"calls": total_calls, "returns": total_returns}
     
     def get_capital_calls(self, session=None):
-        """Get total capital calls regardless of fund type."""
+        """Return the total capital calls for the fund, depending on fund type.
+        - NAV-based: sum of UNIT_PURCHASE events.
+        - Cost-based: sum of CAPITAL_CALL events.
+        Returns 0 if no events exist.
+        """
         from sqlalchemy.orm import object_session
         from sqlalchemy import func
         
@@ -755,15 +778,20 @@ class Fund(Base):
         return total
     
     def calculate_average_equity_balance(self, session=None):
-        """Calculate average equity balance based on fund type."""
+        """Calculate and return the average equity balance for the fund.
+        Uses NAV or cost-based method depending on fund type.
+        """
         if self.tracking_type == FundType.NAV_BASED:
             return self._calculate_nav_based_average_equity(session)
         else:
             return self._calculate_cost_based_average_equity(session)
     
     def _calculate_nav_based_average_equity(self, session=None):
+        """Calculate average equity balance for NAV-based funds using unit events.
+        Delegates to orchestrate_nav_based_average_equity in calculations.py.
+        """
+        from .calculations import orchestrate_nav_based_average_equity
         from sqlalchemy.orm import object_session
-        from datetime import date
         if session is None:
             session = object_session(self)
         if session is None:
@@ -774,13 +802,14 @@ class Fund(Base):
         ).order_by(FundEvent.event_date).all()
         if not unit_events:
             return 0
-        start_date = min(event.event_date for event in unit_events)
-        end_date = max(event.event_date for event in unit_events)
-        if self.should_be_active:
-            end_date = date.today()
-        return calculate_average_equity_balance_nav(unit_events, start_date, end_date)
+        # If fund is still active, use today's date as end_date (handled by caller if needed)
+        return orchestrate_nav_based_average_equity(unit_events)
     
     def _calculate_cost_based_average_equity(self, session=None):
+        """Calculate average equity balance for cost-based funds using capital events.
+        Delegates to orchestrate_cost_based_average_equity in calculations.py.
+        """
+        from .calculations import orchestrate_cost_based_average_equity
         from sqlalchemy.orm import object_session
         if session is None:
             session = object_session(self)
@@ -794,137 +823,70 @@ class Fund(Base):
         ).order_by(FundEvent.event_date).all()
         if not capital_events:
             return 0
-        return calculate_average_equity_balance_cost(capital_events)
+        return orchestrate_cost_based_average_equity(capital_events)
     
     def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, session=None, return_cashflows=False):
-        """Base IRR calculation method that can include or exclude tax payments, risk-free charges, and FY debt cost. Optionally return cash flows and labels for display."""
+        """Base IRR calculation method for the fund.
+        Delegates to orchestrate_irr_base in calculations.py.
+        """
+        from .calculations import orchestrate_irr_base
         from sqlalchemy.orm import object_session
-        from datetime import date, timedelta
-        import numpy_financial as npf
-        
+        from datetime import date
         if session is None:
             session = object_session(self)
         if session is None:
             return None
-        
         # Only calculate IRR for completed funds
         if self.should_be_active:
             if return_cashflows:
                 return {'cash_flows': [], 'days_from_start': [], 'labels': [], 'irr': None}
             return None
-        
         # Get start and end dates
         start_date = self.start_date
         end_date = self.end_date
-        
         if not start_date or not end_date:
             if return_cashflows:
                 return {'cash_flows': [], 'days_from_start': [], 'labels': [], 'irr': None}
             return None
-        
-        # Define event types to include
-        event_types = [
-            EventType.CAPITAL_CALL,
-            EventType.UNIT_PURCHASE,
-            EventType.RETURN_OF_CAPITAL,
-            EventType.DISTRIBUTION,
-            EventType.MANAGEMENT_FEE,
-            EventType.CARRIED_INTEREST
-        ]
-        if include_fy_debt_cost:
-            event_types.append(EventType.FY_DEBT_COST)
-        # Add tax payments if requested
-        if include_tax_payments:
-            event_types.append(EventType.TAX_PAYMENT)
-        # Add risk-free charges if requested
-        if include_risk_free_charges:
-            event_types.append(EventType.DAILY_RISK_FREE_INTEREST_CHARGE)
-        
-        # Get all cash flow events with dates
+        # Define event types to include (handled by orchestrate_irr_base)
         cash_flow_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_(event_types)
+            FundEvent.fund_id == self.id
         ).order_by(FundEvent.event_date).all()
-        
-        if not cash_flow_events:
-            if return_cashflows:
-                return {'cash_flows': cash_flows, 'days_from_start': days_from_start, 'labels': labels, 'irr': None}
-            return None
-        
-        # Prepare cash flows with daily precision
-        cash_flows = []
-        days_from_start = []
-        labels = []
-        
-        for event in cash_flow_events:
-            # Calculate days from start
-            days = (event.event_date - start_date).days
-            days_from_start.append(days)
-            # Human-readable label
-            label = f"{event.event_type.value} | {event.event_date} | {event.amount:,.2f}"
-            if event.description:
-                label += f" | {event.description}"
-            labels.append(label)
-            # Handle each event type appropriately
-            if event.event_type == EventType.CAPITAL_CALL:
-                cash_flows.append(-event.amount)
-            elif event.event_type == EventType.RETURN_OF_CAPITAL:
-                cash_flows.append(event.amount)
-            elif event.event_type == EventType.DISTRIBUTION:
-                cash_flows.append(event.amount)
-            elif event.event_type == EventType.TAX_PAYMENT:
-                cash_flows.append(-event.amount)
-            elif event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
-                cash_flows.append(-event.amount)
-            elif event.event_type == EventType.MANAGEMENT_FEE:
-                cash_flows.append(-event.amount)
-            elif event.event_type == EventType.CARRIED_INTEREST:
-                cash_flows.append(-event.amount)
-            elif event.event_type == EventType.FY_DEBT_COST:
-                cash_flows.append(event.amount)
-            else:
-                equity_change = self._get_equity_change_for_event(event)
-                cash_flows.append(-equity_change)
-        
         # Add final value as last cash flow (only for completed funds)
-        if not self.should_be_active and cash_flows:
-            final_value = self.current_value or 0
-            if final_value > 0:
-                cash_flows[-1] += final_value
-                if days_from_start:
-                    days_from_start[-1] = days_from_start[-1]
-                labels[-1] += f" | FINAL VALUE ADDED: {final_value:,.2f}"
-        
-        try:
-            monthly_irr = self._calculate_daily_irr(cash_flows, days_from_start)
-            if monthly_irr is None:
-                if return_cashflows:
-                    return {'cash_flows': cash_flows, 'days_from_start': days_from_start, 'labels': labels, 'irr': None}
-                return None
-            annual_irr = (1 + monthly_irr) ** 12 - 1
-            if return_cashflows:
-                return {'cash_flows': cash_flows, 'days_from_start': days_from_start, 'labels': labels, 'irr': annual_irr}
-            return annual_irr
-        except Exception:
-            if return_cashflows:
-                return {'cash_flows': cash_flows, 'days_from_start': days_from_start, 'labels': labels, 'irr': None}
-            return None
-
+        # This logic is still handled here for now
+        result = orchestrate_irr_base(
+            cash_flow_events,
+            start_date,
+            include_tax_payments=include_tax_payments,
+            include_risk_free_charges=include_risk_free_charges,
+            include_fy_debt_cost=include_fy_debt_cost,
+            return_cashflows=return_cashflows
+        )
+        return result
+    
     def calculate_irr(self, session=None):
-        """Calculate gross IRR (excluding tax payments and FY debt cost)."""
+        """Calculate the pre-tax IRR for the fund using all relevant cash flows.
+        Returns a float (IRR) or None if not computable.
+        """
         return self._calculate_irr_base(include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, session=session)
     
     def calculate_after_tax_irr(self, session=None):
-        """Calculate after-tax IRR (including tax payments, excluding FY debt cost)."""
+        """Calculate the after-tax IRR for the fund, including tax payment events.
+        Returns a float (IRR) or None if not computable.
+        """
         return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=False, include_fy_debt_cost=False, session=session)
     
     def calculate_real_irr(self, session=None, risk_free_rate_currency=None):
-        """Calculate real IRR including debt cost (opportunity cost of capital and tax benefit)."""
+        """Calculate the real IRR for the fund, including debt cost and tax effects.
+        Returns a float (IRR) or None if not computable.
+        """
         self.create_daily_risk_free_interest_charges(session, risk_free_rate_currency)
         return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, session=session)
     
     def _get_risk_free_rate_for_date(self, target_date, risk_free_rates):
-        """Get the risk-free rate for a specific date, using the most recent available rate."""
+        """Get the risk-free rate for a specific date from a list of rates.
+        Returns the most recent rate available on or before the target date, or None if not found.
+        """
         if not risk_free_rates:
             return None
         
@@ -939,15 +901,20 @@ class Fund(Base):
         return applicable_rate.rate if applicable_rate else None
     
     def _calculate_daily_irr(self, cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
+        """Calculate IRR using daily cash flows and a root-finding algorithm.
+        Delegates to the calculate_irr utility function.
+        """
         return calculate_irr(cash_flows, days_from_start, tolerance, max_iterations)
     
     def get_irr_percentage(self, session=None):
-        """Get IRR as a percentage string."""
+        """Return the IRR as a formatted percentage string, or 'N/A' if not computable."""
         irr = self.calculate_irr(session)
         return f"{irr * 100:.2f}%" if irr is not None else "N/A"
     
     def get_tax_statements_by_financial_year(self, session=None):
-        """Get all tax statements for this fund, grouped by financial year."""
+        """Return all tax statements for this fund, grouped by financial year.
+        Returns a dict: {financial_year: [TaxStatement, ...]}
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -969,7 +936,7 @@ class Fund(Base):
         return grouped
     
     def get_tax_statement_for_entity_financial_year(self, entity_id, financial_year, session=None):
-        """Get a specific tax statement for an entity and financial year."""
+        """Return the tax statement for a specific entity and financial year, or None if not found."""
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -984,7 +951,11 @@ class Fund(Base):
         ).first()
     
     def create_or_update_tax_statement(self, entity_id, financial_year, **kwargs):
-        """Create or update a tax statement for a specific entity and financial year."""
+        """Create or update a tax statement for a specific entity and financial year.
+        If a statement exists, updates its fields; otherwise, creates a new one.
+        Commits the change to the database.
+        Returns the TaxStatement instance.
+        """
         from sqlalchemy.orm import object_session
         
         session = object_session(self)
@@ -1016,20 +987,24 @@ class Fund(Base):
         return statement
     
     def __repr__(self):
+        """Return a string representation of the Fund instance for debugging/logging."""
         return f"<Fund(id={self.id}, name='{self.name}', company='{self.investment_company.name if self.investment_company else 'Unknown'}')>"
-
+    
     def get_after_tax_irr_percentage(self, session=None):
-        """Get after-tax IRR as a percentage string."""
+        """Return the after-tax IRR as a formatted percentage string, or 'N/A' if not computable."""
         irr = self.calculate_after_tax_irr(session)
         return f"{irr * 100:.2f}%" if irr is not None else "N/A"
     
     def get_real_irr_percentage(self, session=None, risk_free_rate_currency=None):
-        """Get real IRR (including debt cost) as a percentage string."""
+        """Return the real IRR (including debt cost) as a formatted percentage string, or 'N/A' if not computable."""
         irr = self.calculate_real_irr(session, risk_free_rate_currency)
         return f"{irr * 100:.2f}%" if irr is not None else "N/A"
     
     def create_tax_payment_events(self, session=None):
-        """Create tax payment events based on tax statements for after-tax IRR calculations."""
+        """Create tax payment events for this fund based on tax statements.
+        Used for after-tax IRR calculations. Commits new events to the database.
+        Returns a list of created events.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -1079,7 +1054,10 @@ class Fund(Base):
         return created_events
 
     def add_distribution_with_tax(self, event_date, gross_amount, tax_withheld=0.0, tax_rate=None, distribution_type=None, description=None, reference_number=None, session=None):
-        """Add a distribution with automatic tax payment event."""
+        """Add a distribution event with an associated tax payment event.
+        Uses a static helper to create both events and updates the fund's equity balance.
+        Returns a tuple: (distribution_event, tax_event).
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -1107,7 +1085,9 @@ class Fund(Base):
         return distribution_event, tax_event
     
     def add_distribution_with_tax_rate(self, event_date, gross_amount, tax_rate, distribution_type=None, description=None, reference_number=None, session=None):
-        """Add a distribution with tax calculated from rate."""
+        """Add a distribution event with tax withheld calculated from a given rate.
+        Returns a tuple: (distribution_event, tax_event).
+        """
         tax_withheld = (gross_amount * tax_rate) / 100
         return self.add_distribution_with_tax(
             event_date=event_date,
@@ -1121,7 +1101,10 @@ class Fund(Base):
         )
 
     def create_daily_risk_free_interest_charges(self, session=None, risk_free_rate_currency=None):
-        """Create daily risk-free interest charge events for real IRR calculations."""
+        """Create daily risk-free interest charge events for the fund for real IRR calculations.
+        Commits new events to the database.
+        Returns a list of created events.
+        """
         from sqlalchemy.orm import object_session
         from datetime import date, timedelta
         
@@ -1230,7 +1213,9 @@ class Fund(Base):
         return created_events
 
     def calculate_financial_year_interest_expense(self, financial_year, session=None):
-        """Calculate total interest expense for a specific financial year."""
+        """Calculate the total interest expense for a given financial year for the fund.
+        Used for tax deduction calculations. Returns the total expense as a float.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -1281,7 +1266,10 @@ class Fund(Base):
         return abs(total_interest) if total_interest else 0.0
     
     def create_fy_debt_cost_events(self, session=None):
-        """Create FY debt cost events for all financial years with interest expenses, but ONLY if a TaxStatement exists for that FY."""
+        """Create financial year debt cost events for the fund for real IRR calculations.
+        Commits new events to the database.
+        Returns a list of created events.
+        """
         from sqlalchemy.orm import object_session
         if session is None:
             session = object_session(self)
@@ -1330,9 +1318,9 @@ class Fund(Base):
         return created_events
 
     def recalculate_debt_costs(self, session=None, risk_free_rate_currency=None):
-        """
-        Recalculate all daily risk-free interest charges and FY debt cost events for this fund.
+        """Recalculate all daily risk-free interest charges and FY debt cost events for this fund.
         Deletes existing events of these types and recreates them.
+        Commits all changes to the database.
         """
         from sqlalchemy.orm import object_session
         if session is None:
@@ -1358,9 +1346,16 @@ class Fund(Base):
 
     @property
     def current_units(self):
+        """Return the current number of units owned (NAV-based funds only).
+        For cost-based funds, this should be None.
+        """
         return self._current_units
     @current_units.setter
     def current_units(self, value):
+        """Restrict direct assignment of current_units.
+        For cost-based funds, raises ValueError if set.
+        For NAV-based funds, raises ValueError if set directly (should be updated via update_current_units_and_price).
+        """
         if self.tracking_type == FundType.COST_BASED and value is not None:
             raise ValueError("Cannot set current_units on a cost-based fund.")
         if value is not None:
@@ -1369,9 +1364,16 @@ class Fund(Base):
 
     @property
     def current_unit_price(self):
+        """Return the current unit price (NAV-based funds only).
+        For cost-based funds, this should be None.
+        """
         return self._current_unit_price
     @current_unit_price.setter
     def current_unit_price(self, value):
+        """Restrict direct assignment of current_unit_price.
+        For cost-based funds, raises ValueError if set.
+        For NAV-based funds, raises ValueError if set directly (should be updated via update_current_units_and_price).
+        """
         if self.tracking_type == FundType.COST_BASED and value is not None:
             raise ValueError("Cannot set current_unit_price on a cost-based fund.")
         if value is not None:
@@ -1380,9 +1382,16 @@ class Fund(Base):
 
     @property
     def total_cost_basis(self):
+        """Return the total cost basis (cost-based funds only).
+        For NAV-based funds, this should be None.
+        """
         return self._total_cost_basis
     @total_cost_basis.setter
     def total_cost_basis(self, value):
+        """Restrict direct assignment of total_cost_basis.
+        For NAV-based funds, raises ValueError if set.
+        For cost-based funds, raises ValueError if set directly (should be updated via update_total_cost_basis).
+        """
         if self.tracking_type == FundType.NAV_BASED and value is not None:
             raise ValueError("Cannot set total_cost_basis on a NAV-based fund.")
         if value is not None:
@@ -1390,32 +1399,11 @@ class Fund(Base):
         self._total_cost_basis = value
 
     def _get_equity_change_for_event(self, event):
-        """Calculate how much an event changes the fund's equity balance."""
-        if event.event_type == EventType.CAPITAL_CALL:
-            return event.amount or 0
-        elif event.event_type == EventType.RETURN_OF_CAPITAL:
-            return -(event.amount or 0)
-        elif event.event_type == EventType.UNIT_PURCHASE:
-            return event.amount or 0
-        elif event.event_type == EventType.UNIT_SALE:
-            return -(event.amount or 0)
-        elif event.event_type == EventType.DISTRIBUTION:
-            return -(event.amount or 0)
-        elif event.event_type == EventType.TAX_PAYMENT:
-            return -(event.amount or 0)
-        elif event.event_type == EventType.MANAGEMENT_FEE:
-            return -(event.amount or 0)
-        elif event.event_type == EventType.CARRIED_INTEREST:
-            return -(event.amount or 0)
-        elif event.event_type == EventType.FY_DEBT_COST:
-            return event.amount or 0
-        elif event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
-            return -(event.amount or 0)
-        elif event.event_type == EventType.NAV_UPDATE:
-            # NAV updates don't change equity balance, they just update the NAV
-            return 0
-        else:
-            return 0
+        """Calculate how much an event changes the fund's equity balance.
+        Delegates to get_equity_change_for_event in calculations.py.
+        """
+        from .calculations import get_equity_change_for_event
+        return get_equity_change_for_event(event, self.tracking_type)
 
 
 class TaxPaymentType(enum.Enum):
@@ -1432,6 +1420,14 @@ class FundEvent(Base):
     - NAV-based funds: NAV updates, unit purchases/sales, distributions, etc.
     - Cost-based funds: capital calls, returns, distributions, etc.
     - No capital call/return percentages: only use the amount field for all events.
+    
+    Relationships:
+    - fund: The Fund this event belongs to.
+    
+    Business rules:
+    - Each event is associated with a specific fund and date.
+    - Event type and related fields determine how the event is processed in calculations.
+    - Distribution and tax payment types affect tax treatment and reporting.
     """
     __tablename__ = 'fund_events'
     
@@ -1464,17 +1460,22 @@ class FundEvent(Base):
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
     
     def __repr__(self):
-        return f"<FundEvent(id={self.id}, fund_id={self.fund_id}, type='{self.event_type}', date='{self.event_date}', amount={self.amount})>"
+        """Return a string representation of the FundEvent instance for debugging/logging."""
+        return f"<FundEvent(id={self.id}, fund_id={self.fund_id}, type={self.event_type}, date={self.event_date}, amount={self.amount})>"
     
     def infer_distribution_type(self):
-        """Automatically infer distribution type from event type."""
+        """Infer the distribution type for this event based on its fields and description.
+        Returns a DistributionType enum or None if not inferrable.
+        """
         # For the consolidated DISTRIBUTION event type, we need to specify the distribution type
         # This method is now mainly for backward compatibility
         # The distribution_type should be set explicitly when creating DISTRIBUTION events
         return self.distribution_type
     
     def set_event_type_and_infer_distribution(self, event_type):
-        """Set event type and automatically infer distribution type if applicable."""
+        """Set the event type and attempt to infer the distribution type if applicable.
+        Used when creating or updating events programmatically.
+        """
         self.event_type = event_type
         if event_type == EventType.DISTRIBUTION and not self.distribution_type:
             # Default to INTEREST for distributions if not specified
@@ -1482,7 +1483,11 @@ class FundEvent(Base):
     
     @staticmethod
     def create_distribution_with_tax_static(fund_id, event_date, gross_amount, tax_withheld=0.0, tax_rate=None, distribution_type=None, description=None, reference_number=None, session=None):
-        """Create a distribution event and corresponding tax payment event."""
+        """Create a distribution event and an associated tax payment event for a fund.
+        Used by Fund methods to ensure both events are created together.
+        Returns a tuple: (distribution_event, tax_event).
+        Commits both events to the database.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:
@@ -1519,7 +1524,19 @@ class FundEvent(Base):
 
 
 class RiskFreeRate(Base):
-    """Model representing risk-free rates for different currencies over time."""
+    """Model representing risk-free rates for different currencies over time.
+    
+    Field usage:
+    - currency: The currency code (e.g., 'AUD', 'USD').
+    - rate_date: The date the rate applies to.
+    - rate: The risk-free rate as a percentage.
+    - rate_type: The type of rate (e.g., government bond, LIBOR).
+    - source: The data source for the rate.
+    
+    Business rules:
+    - Each (currency, rate_date) pair should be unique.
+    - Used for opportunity cost and real IRR calculations in funds.
+    """
     __tablename__ = 'risk_free_rates'
     
     id = Column(Integer, primary_key=True)
@@ -1536,11 +1553,26 @@ class RiskFreeRate(Base):
     )
     
     def __repr__(self):
+        """Return a string representation of the RiskFreeRate instance for debugging/logging."""
         return f"<RiskFreeRate(id={self.id}, currency='{self.currency}', date={self.rate_date}, rate={self.rate}%)>"
 
 
 class TaxStatement(Base):
-    """Model representing tax statements from funds for specific financial years."""
+    """Model representing tax statements from funds for specific financial years.
+    
+    Field usage:
+    - fund_id, entity_id, financial_year: Uniquely identify the statement.
+    - Various income and tax fields: Populated from fund-provided tax statements.
+    - Calculated fields: Used for reconciliation and after-tax IRR calculations.
+    
+    Relationships:
+    - fund: The Fund this statement belongs to.
+    - entity: The Entity this statement is for.
+    
+    Business rules:
+    - Only one statement per (fund, entity, financial year).
+    - Used for tax reconciliation, reporting, and IRR calculations.
+    """
     __tablename__ = 'tax_statements'
     
     id = Column(Integer, primary_key=True)
@@ -1557,7 +1589,52 @@ class TaxStatement(Base):
     @property
     def net_interest_income(self):
         """Net interest income is always calculated as total_interest_income - non_resident_withholding_tax_from_statement."""
-        return (self.total_interest_income or 0.0) - (self.non_resident_withholding_tax_from_statement or 0.0)
+        from .calculations import net_income
+        return net_income(self.total_interest_income, self.non_resident_withholding_tax_from_statement)
+
+    def get_net_income(self):
+        """Calculate net income after non-resident withholding tax from statement.
+        Returns the net income as a float.
+        """
+        from .calculations import net_income
+        return net_income(self.total_income, self.non_resident_withholding_tax_from_statement)
+
+    def calculate_tax_payable(self):
+        """Calculate tax payable as (total_interest_income * interest_taxable_rate / 100) - non_resident_withholding_tax_from_statement.
+        Updates the tax_payable and tax_already_paid fields.
+        Returns the tax payable as a float.
+        """
+        from .calculations import tax_payable
+        from sqlalchemy.sql.schema import Column
+        from sqlalchemy.sql.elements import ColumnElement
+        self.tax_payable = tax_payable(self.total_interest_income, self.interest_taxable_rate, self.non_resident_withholding_tax_from_statement)
+        if (self.interest_taxable_rate is not None and not isinstance(self.interest_taxable_rate, (Column, ColumnElement)) and self.interest_taxable_rate != 0) and (self.total_interest_income is not None and not isinstance(self.total_interest_income, (Column, ColumnElement)) and self.total_interest_income > 0):
+            self.tax_already_paid = (self.non_resident_withholding_tax_from_statement or 0.0)
+        else:
+            self.tax_already_paid = 0.0
+        return self.tax_payable
+
+    def calculate_interest_tax_benefit(self):
+        """Calculate the tax benefit from interest expense deduction.
+        Updates the interest_tax_benefit field and returns the value.
+        """
+        from .calculations import interest_tax_benefit
+        self.interest_tax_benefit = interest_tax_benefit(self.total_interest_expense, self.interest_deduction_rate)
+        return self.interest_tax_benefit
+
+    def get_financial_year_dates(self):
+        """Get the start and end dates for this financial year based on entity jurisdiction.
+        Returns a tuple: (start_date, end_date).
+        """
+        from .calculations import get_financial_year_dates
+        from sqlalchemy.orm import object_session
+        session = object_session(self)
+        if session is None:
+            return None, None
+        entity = session.query(Entity).filter(Entity.id == self.entity_id).first()
+        if not entity:
+            return None, None
+        return get_financial_year_dates(self.financial_year, entity.tax_jurisdiction)
     
     # Tax withheld/credits
     foreign_tax_credits = Column(Float, default=0.0)
@@ -1592,10 +1669,13 @@ class TaxStatement(Base):
     )
     
     def __repr__(self):
+        """Return a string representation of the TaxStatement instance for debugging/logging."""
         return f"<TaxStatement(id={self.id}, fund_id={self.fund_id}, entity_id={self.entity_id}, fy={self.financial_year})>"
     
     def calculate_total_income(self):
-        """Calculate total income from all components, treating None as 0.0."""
+        """Calculate total income from all components, treating None as 0.0.
+        Updates the total_income field and returns the value.
+        """
         self.total_income = (
             (self.total_interest_income or 0.0) +
             (self.foreign_income or 0.0) +
@@ -1605,74 +1685,24 @@ class TaxStatement(Base):
         return self.total_income
     
     def get_net_income(self):
-        """Calculate net income after non-resident withholding tax from statement."""
+        """Calculate net income after non-resident withholding tax from statement.
+        Returns the net income as a float.
+        """
         return self.total_income - (self.non_resident_withholding_tax_from_statement or 0.0)
     
-    def calculate_tax_payable(self):
-        """Calculate tax payable as (total_interest_income * interest_taxable_rate / 100) - non_resident_withholding_tax_from_statement. (interest_taxable_rate is a percentage, e.g., 10 for 10%)"""
-        from sqlalchemy.sql.schema import Column
-        from sqlalchemy.sql.elements import ColumnElement
-        if (self.interest_taxable_rate is not None and not isinstance(self.interest_taxable_rate, (Column, ColumnElement)) and self.interest_taxable_rate != 0) and (self.total_interest_income is not None and not isinstance(self.total_interest_income, (Column, ColumnElement)) and self.total_interest_income > 0):
-            total_tax_liability = self.total_interest_income * (self.interest_taxable_rate / 100)
-            self.tax_payable = max(0, total_tax_liability - (self.non_resident_withholding_tax_from_statement or 0.0))
-            self.tax_already_paid = (self.non_resident_withholding_tax_from_statement or 0.0)
-        else:
-            self.tax_payable = 0.0
-        return self.tax_payable
-    
     def get_tax_payment_date(self):
-        """Get the tax payment date, defaulting to financial year end if not specified."""
+        """Get the tax payment date, defaulting to financial year end if not specified.
+        Returns a date object.
+        """
         if not isinstance(self.tax_payment_date, (Column, ColumnElement)) and self.tax_payment_date is not None:
             return self.tax_payment_date
         # Default to financial year end
         fy_start, fy_end = self.get_financial_year_dates()
         return fy_end
     
-    def get_financial_year_dates(self):
-        """Get the start and end dates for this financial year based on entity jurisdiction."""
-        # Get the entity to determine jurisdiction
-        from sqlalchemy.orm import object_session
-        session = object_session(self)
-        if session is None:
-            return None, None
-        
-        entity = session.query(Entity).filter(Entity.id == self.entity_id).first()
-        if not entity:
-            return None, None
-        
-        # Parse financial year (e.g., "2023-24" or "2023-2024")
-        if '-' in self.financial_year:
-            start_year, end_year = self.financial_year.split('-')
-            start_year = int(start_year)
-            if len(end_year) == 2:
-                end_year = int(f"20{end_year}")
-            else:
-                end_year = int(end_year)
-            
-            if entity.tax_jurisdiction == "AU":
-                # Australian FY: July 1 to June 30
-                fy_start = date(start_year, 7, 1)
-                fy_end = date(end_year, 6, 30)
-            else:
-                # Default to calendar year
-                fy_start = date(start_year, 1, 1)
-                fy_end = date(start_year, 12, 31)
-        else:
-            # Single year format (e.g., "2023")
-            year = int(self.financial_year)
-            if entity.tax_jurisdiction == "AU":
-                fy_start = date(year, 7, 1)
-                fy_end = date(year + 1, 6, 30)
-            else:
-                fy_start = date(year, 1, 1)
-                fy_end = date(year, 12, 31)
-        
-        return fy_start, fy_end
-    
     def reconcile_with_actual_distributions(self, session=None):
-        """
-        Compare the tax statement to actual distributions received for this fund/entity/financial year.
-        Returns a dict with statement values, actuals, and differences.
+        """Compare the tax statement to actual distributions received for this fund/entity/financial year.
+        Returns a dict with statement values, actuals, and differences, including an explanation.
         """
         from sqlalchemy.orm import object_session
         
@@ -1738,7 +1768,9 @@ class TaxStatement(Base):
         }
     
     def _get_reconciliation_explanation(self, gross_diff, tax_diff, net_diff):
-        """Generate an explanation for the reconciliation differences."""
+        """Generate a human-readable explanation for the reconciliation differences.
+        Returns a string.
+        """
         explanations = []
         
         if abs(gross_diff) > 0.01:  # Allow for small rounding differences
@@ -1764,16 +1796,10 @@ class TaxStatement(Base):
         
         return "; ".join(explanations)
     
-    def calculate_interest_tax_benefit(self):
-        """Calculate the tax benefit from interest expense deduction."""
-        if self.total_interest_expense and self.interest_deduction_rate:
-            self.interest_tax_benefit = (self.total_interest_expense * self.interest_deduction_rate) / 100
-        else:
-            self.interest_tax_benefit = 0.0
-        return self.interest_tax_benefit
-    
     def create_fy_debt_cost_event(self, session=None):
-        """Create a FY debt cost event for real IRR calculations."""
+        """Create a FY debt cost event for real IRR calculations if a tax benefit exists.
+        Commits the event to the database and returns it, or returns None if not applicable.
+        """
         from sqlalchemy.orm import object_session
         
         if session is None:

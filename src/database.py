@@ -119,6 +119,7 @@ def get_global_session():
     """
     global _engine, _session_factory, _scoped_session
     
+    # Lazily initialize the global session on first use
     if _scoped_session is None:
         _engine, _session_factory, _scoped_session = get_database_session()
     
@@ -126,7 +127,7 @@ def get_global_session():
 
 
 def close_global_session():
-    """Close the global database session."""
+    """Close the global database session and clean up resources."""
     global _scoped_session
     
     if _scoped_session is not None:
