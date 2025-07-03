@@ -112,8 +112,6 @@ def add_sample_data_to_database():
             name="Blackstone Real Estate Partners X",
             fund_type="Real Estate",
             tracking_type=FundType.NAV_BASED,  # NAV-based fund
-            vintage_year=2020,
-            commitment_amount=1000000.0,
             current_equity_balance=750000.0,
             average_equity_balance=800000.0,
             current_units=869565.22,  # NAV-based tracking
@@ -130,8 +128,6 @@ def add_sample_data_to_database():
             name="Blackstone Private Equity Fund VIII",
             fund_type="Private Equity",
             tracking_type=FundType.COST_BASED,  # Cost-based fund
-            vintage_year=2019,
-            commitment_amount=2000000.0,
             current_equity_balance=1800000.0,
             average_equity_balance=1900000.0,
             total_cost_basis=1800000.0,  # Cost-based tracking
@@ -147,8 +143,6 @@ def add_sample_data_to_database():
             name="KKR Americas XII Fund",
             fund_type="Private Equity",
             tracking_type=FundType.NAV_BASED,  # NAV-based fund
-            vintage_year=2021,
-            commitment_amount=1500000.0,
             current_equity_balance=1200000.0,
             average_equity_balance=1300000.0,
             current_units=277777.78,  # NAV-based tracking
@@ -165,8 +159,6 @@ def add_sample_data_to_database():
             name="Apollo Investment Fund IX",
             fund_type="Private Equity",
             tracking_type=FundType.COST_BASED,  # Cost-based fund
-            vintage_year=2018,
-            commitment_amount=3000000.0,
             current_equity_balance=0.0,
             average_equity_balance=2900000.0,
             total_cost_basis=3000000.0,  # Cost-based tracking
@@ -254,7 +246,6 @@ def add_sample_data_to_database():
                 event_type=EventType.CAPITAL_CALL,  # Cost-based funds use capital calls
                 event_date=today - timedelta(days=120),
                 amount=400000.0,
-                call_percentage=20.0,
                 description="Capital call for new investment"
             ),
             FundEvent(
@@ -262,7 +253,6 @@ def add_sample_data_to_database():
                 event_type=EventType.RETURN_OF_CAPITAL,
                 event_date=today - timedelta(days=45),
                 amount=150000.0,
-                return_percentage=7.5,
                 description="Partial exit from portfolio company"
             ),
             FundEvent(
@@ -357,7 +347,6 @@ def add_sample_data_to_database():
                 event_type=EventType.RETURN_OF_CAPITAL,
                 event_date=today - timedelta(days=30),
                 amount=2760000.0,  # Final capital return
-                return_percentage=92.0,
                 description="Final exit - remaining capital returned"
             )
         ]
