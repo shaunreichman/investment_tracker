@@ -1,5 +1,61 @@
 # Investment Tracker Design Guidelines
 
+> See [README.md](./README.md) for a high-level project overview, quickstart, and usage examples.
+
+---
+
+**Note:**
+- Streamlit dashboarding is a planned roadmap feature and is **not yet implemented**. All logic and testing should be completed first.
+- **Always run `test_full_system.py` before merging major changes** to ensure the system remains correct and stable.
+- If you make significant changes to the codebase or API, **please update this DESIGN_GUIDELINES.md to keep it in sync**.
+
+---
+
+## Session Handling Convention
+
+- All model methods that require a SQLAlchemy session are decorated with `@with_session` (see `src/utils.py`).
+- This decorator ensures a session is always available, removing the need for manual session resolution in each method.
+- **Only methods that directly perform database queries or ORM operations should be decorated.**
+- Orchestration/helper methods that only call other decorated methods do **not** need the decorator.
+- Always call decorated methods with `session=session` as a keyword argument if passing a session explicitly.
+
+**Example:**
+```python
+@with_session
+def update_current_equity_balance(self, session=None):
+    # ... use session ...
+```
+
+---
+
+## Where to Put New Logic
+
+| Type of Logic                | Where to Put It                |
+|------------------------------|-------------------------------|
+| Database queries/ORM ops     | Decorated model methods       |
+| Pure calculations/stateless  | `calculations.py`             |
+| Session helpers/decorators   | `utils.py`                    |
+| Orchestration (no queries)   | Undecorated model methods     |
+
+---
+
+## Common Pitfalls
+
+- **Do not pass `session` as a positional argument to decorated methods.**  
+  Always use `session=session` as a keyword argument.
+- **Do not decorate pure calculation or property methods.**
+- **If you see 'got multiple values for argument session',** check for positional session arguments or double-injection.
+
+---
+
+## Changelog / Major Refactors
+
+- **2024-05:** Centralized session handling using the `@with_session` decorator.  
+  - Removed repetitive session resolution code from model methods.
+  - Improved maintainability and reduced boilerplate.
+
+---
+
 ## Field Classification: Manual vs Automatic
 
 This document clarifies which fields should be manually set by users and which should be automatically calculated by the system.
