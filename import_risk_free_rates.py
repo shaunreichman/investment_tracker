@@ -8,7 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import RiskFreeRate
+from src.models import RiskFreeRate
 
 def import_risk_free_rates(csv_file='rfr.csv'):
     """Import risk-free rates from CSV file into database."""
