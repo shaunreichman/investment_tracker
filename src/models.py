@@ -8,8 +8,8 @@ from sqlalchemy import func
 import numpy as np
 import numpy_financial as npf
 from sqlalchemy import event
-from .utils import with_session
-from .calculations import (
+from utils import with_session
+from calculations import (
     calculate_irr,
     calculate_average_equity_balance_nav,
     calculate_average_equity_balance_cost,
@@ -22,7 +22,8 @@ from .calculations import (
     orchestrate_irr_base,
     net_income,
     tax_payable,
-    interest_tax_benefit
+    interest_tax_benefit,
+    calculate_nav_event_amounts
 )
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.elements import ColumnElement
@@ -164,11 +165,11 @@ class Fund(Base):
     tracking_type = Column(Enum(FundType), nullable=False, default=FundType.NAV_BASED)
     
     # Investment tracking fields (common)
-    commitment_amount = Column(Float, nullable=False)  # Total amount committed to the fund (MANUAL)
+    commitment_amount = Column(Float, nullable=True)  # Total amount committed to the fund (MANUAL) - not applicable for NAV-based funds
     current_equity_balance = Column(Float, default=0.0)  # Current equity balance (CALCULATED)
     average_equity_balance = Column(Float, default=0.0)  # Average equity balance over time (CALCULATED)
-    expected_irr = Column(Float)  # Expected Internal Rate of Return (as percentage) (MANUAL)
-    expected_duration_months = Column(Integer)  # Expected fund duration in months (MANUAL)
+    expected_irr = Column(Float)  # Expected Internal Rate of Return (as percentage) (MANUAL) - not applicable for NAV-based funds
+    expected_duration_months = Column(Integer)  # Expected fund duration in months (MANUAL) - not applicable for NAV-based funds
     
     # NAV-based fund specific fields (CALCULATED)
     _current_units = Column('current_units', Float)  # (NAV-based only) Current number of units owned
@@ -360,10 +361,14 @@ class Fund(Base):
     def update_current_units_and_price(self, session=None):
         """Update current units and unit price for NAV-based funds.
         Uses the most recent NAV update event, or reconstructs from unit purchase/sale events if no NAV update exists.
+        Also calculates amounts for unit purchases/sales and shares_owned for NAV updates.
         Commits changes to the database.
         """
         if self.tracking_type != FundType.NAV_BASED:
             return
+        
+        # First, calculate amounts for unit purchases/sales and shares_owned for NAV updates
+        self._calculate_nav_event_amounts(session=session)
         
         # Get the most recent NAV update event
         latest_nav_event = session.query(FundEvent).filter(
@@ -399,6 +404,15 @@ class Fund(Base):
         session.commit()
     
     @with_session
+    def _calculate_nav_event_amounts(self, session=None):
+        """Calculate amounts for unit purchases/sales and shares_owned for NAV updates.
+        This method ensures that:
+        - Unit purchase/sale amounts = units * unit_price + brokerage_fee
+        - NAV update shares_owned = cumulative units from all unit events up to that date
+        """
+        calculate_nav_event_amounts(self.id, session)
+    
+    @with_session
     def update_total_cost_basis(self, session=None):
         """Update the total cost basis for cost-based funds (calls - returns).
         Commits the change to the database.
@@ -411,6 +425,24 @@ class Fund(Base):
         self._total_cost_basis = capital_movements['calls'] - capital_movements['returns']
         
         session.commit()
+    
+    @with_session
+    def get_nav_based_cost_basis(self, as_of_date=None, session=None):
+        """Get the cost basis for NAV-based funds up to a given date.
+        This is used for IRR calculations where we need to know the total amount invested.
+        
+        Args:
+            as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
+            session: Database session
+            
+        Returns:
+            float: Total cost basis (sum of all unit purchases minus unit sales)
+        """
+        if self.tracking_type != FundType.NAV_BASED:
+            return 0.0
+            
+        from calculations import calculate_nav_based_cost_basis_for_irr
+        return calculate_nav_based_cost_basis_for_irr(self.id, session, as_of_date)
     
     @with_session
     def update_all_calculated_fields(self, session=None):
@@ -1292,6 +1324,7 @@ class FundEvent(Base):
     units_purchased = Column(Float)  # Units purchased in this event
     units_sold = Column(Float)  # Units sold in this event
     unit_price = Column(Float)  # Unit price for this event
+    brokerage_fee = Column(Float, default=0.0)  # Brokerage fee for unit purchases/sales (optional)
     
     # Metadata
     description = Column(Text)
@@ -1431,14 +1464,14 @@ class TaxStatement(Base):
     @property
     def net_interest_income(self):
         """Net interest income is always calculated as total_interest_income - non_resident_withholding_tax_from_statement."""
-        from .calculations import net_income
+        from calculations import net_income
         return net_income(self.total_interest_income, self.non_resident_withholding_tax_from_statement)
 
     def get_net_income(self):
         """Calculate net income after non-resident withholding tax from statement.
         Returns the net income as a float.
         """
-        from .calculations import net_income
+        from calculations import net_income
         return net_income(self.total_income, self.non_resident_withholding_tax_from_statement)
 
     def calculate_tax_payable(self):
@@ -1446,7 +1479,7 @@ class TaxStatement(Base):
         Updates the tax_payable and tax_already_paid fields.
         Returns the tax payable as a float.
         """
-        from .calculations import tax_payable
+        from calculations import tax_payable
         from sqlalchemy.sql.schema import Column
         from sqlalchemy.sql.elements import ColumnElement
         self.tax_payable = tax_payable(self.total_interest_income, self.interest_taxable_rate, self.non_resident_withholding_tax_from_statement)
@@ -1460,7 +1493,7 @@ class TaxStatement(Base):
         """Calculate the tax benefit from interest expense deduction.
         Updates the interest_tax_benefit field and returns the value.
         """
-        from .calculations import interest_tax_benefit
+        from calculations import interest_tax_benefit
         self.interest_tax_benefit = interest_tax_benefit(self.total_interest_expense, self.interest_deduction_rate)
         return self.interest_tax_benefit
 
@@ -1468,7 +1501,7 @@ class TaxStatement(Base):
         """Get the start and end dates for this financial year based on entity jurisdiction.
         Returns a tuple: (start_date, end_date).
         """
-        from .calculations import get_financial_year_dates
+        from calculations import get_financial_year_dates
         from sqlalchemy.orm import object_session
         session = object_session(self)
         if session is None:

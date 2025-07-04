@@ -55,6 +55,14 @@ def setup_test_data():
         )
         session.add(company)
         session.commit()
+
+        # Create investment company
+        company_shares = InvestmentCompany(
+            name="Shares",
+            description="Share trading platform"
+        )
+        session.add(company_shares)
+        session.commit()
         
         # Create entity
         entity = Entity(
@@ -95,6 +103,21 @@ def setup_test_data():
             description="3PG Finance debt fund"
         )
         session.add(finance_fund)
+        session.commit()
+        
+        # Create NAV-based test fund
+        abc_fund = Fund(
+            investment_company_id=company_shares.id,
+            entity_id=entity.id,
+            name="ABC Ltd",
+            fund_type="Equity - Consumer Discretionary",
+            tracking_type=FundType.NAV_BASED,
+            # commitment_amount, expected_irr, and expected_duration_months don't apply to NAV-based funds
+            # current_equity_balance, average_equity_balance, current_units, and current_unit_price will be calculated
+            currency="AUD",
+            description="ABC Ltd on the ASX"
+        )
+        session.add(abc_fund)
         session.commit()
         
         # Add events for Senior Debt Fund No.24
@@ -291,6 +314,175 @@ def setup_test_data():
             description="Interest distribution"
         )
         
+        # Add NAV-based fund events
+        print("Adding NAV-based fund events...")
+        abc_events = [
+            # Initial unit purchase
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.UNIT_PURCHASE,
+                event_date=date(2013, 3, 28),
+                units_purchased=85.0,
+                unit_price=58.00,
+                brokerage_fee=19.95,
+                description="Initial unit purchase"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 3, 31),
+                nav_per_share=57.20,
+                description="March 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 4, 30),
+                nav_per_share=55.80,
+                description="April 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 5, 31),
+                nav_per_share=55.18,
+                description="May 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 6, 30),
+                nav_per_share=52.37,
+                description="June 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 7, 31),
+                nav_per_share=57.51,
+                description="July 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 8, 31),
+                nav_per_share=58.30,
+                description="August 2013 NAV update"
+            ),
+            # Partial unit sale
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.UNIT_SALE,
+                event_date=date(2013, 9, 4),
+                units_sold=40.0,
+                unit_price=61.20,
+                brokerage_fee=24.95,
+                description="Partial unit sale"
+            ),
+            # Distribution
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.DISTRIBUTION,
+                event_date=date(2013, 9, 12),
+                amount=79.05,
+                distribution_type=DistributionType.DIVIDEND,
+                description="Fully Franked Dividend"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 9, 30),
+                nav_per_share=59.30,
+                description="September 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 10, 31),
+                nav_per_share=53.30,
+                description="October 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 11, 30),
+                nav_per_share=54.30,
+                description="November 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2013, 12, 31),
+                nav_per_share=48.30,
+                description="December 2013 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2014, 1, 31),
+                nav_per_share=59.30,
+                description="January 2014 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2014, 2, 28),
+                nav_per_share=54.30,
+                description="February 2014 NAV update"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2014, 3, 31),
+                nav_per_share=56.30,
+                description="March 2014 NAV update"
+            ),
+            # Additional unit purchase
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.UNIT_PURCHASE,
+                event_date=date(2014, 4, 30),
+                units_purchased=120.0,
+                unit_price=61.4,
+                brokerage_fee=19.95,
+                description="Additional unit purchase"
+            ),
+            # NAV update
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.NAV_UPDATE,
+                event_date=date(2014, 4, 30),
+                nav_per_share=61.25,
+                description="April 2014 NAV update"
+            ),
+            # Final unit sale
+            FundEvent(
+                fund_id=abc_fund.id,
+                event_type=EventType.UNIT_SALE,
+                event_date=date(2014, 5, 13),
+                units_sold=165.0,
+                unit_price=62.62,
+                brokerage_fee=19.95,
+                description="Full unit sale"
+            ),
+        ]
+        
+        session.add_all(abc_events)
+        session.commit()
+        
         # Add tax statements with proper tax rates
         tax_statements = [
             # Senior Debt Fund No.24 Tax Statements
@@ -350,6 +542,35 @@ def setup_test_data():
                 statement_date=date(2024, 7, 1),
                 interest_taxable_rate=10.0,
                 interest_deduction_rate=32.5
+            ),
+            # NAV-based Fund Tax Statements
+            TaxStatement(
+                fund_id=abc_fund.id,
+                entity_id=entity.id,
+                financial_year="2012-13",
+                notes="FY13 tax statement from fund manager",
+                distribution_receivable_this_fy=0.0,
+                distribution_received_prev_fy=0.0,
+                interest_received_in_cash=0.0,
+                non_resident_withholding_tax_from_statement=0.0,
+                accountant='NA',
+                statement_date=date(2024, 8, 24),
+                #interest_taxable_rate=10.0,
+                interest_deduction_rate=0.0
+            ),
+            TaxStatement(
+                fund_id=abc_fund.id,
+                entity_id=entity.id,
+                financial_year="2013-14",
+                notes="FY14 tax statement from fund manager",
+                distribution_receivable_this_fy=0.0,
+                distribution_received_prev_fy=0.0,
+                #interest_received_in_cash=8000.0,  # 5,000 + 3,000 distributions
+                #non_resident_withholding_tax_from_statement=800.0,  # 10% withholding
+                accountant='Findex',
+                statement_date=date(2024, 7, 1),
+                #interest_taxable_rate=10.0,
+                interest_deduction_rate=32.5
             )
         ]
         
@@ -372,7 +593,7 @@ def setup_test_data():
         for fund in session.query(Fund).all():
             print(f"  {fund.name}: equity=${fund.current_equity_balance:,.2f}, avg=${fund.average_equity_balance:,.2f}")
         
-        return senior_debt_fund.id, finance_fund.id
+        return senior_debt_fund.id, finance_fund.id, abc_fund.id
         
     except Exception as e:
         print(f"Error creating test data: {e}")
@@ -419,6 +640,17 @@ def recalculate_everything(show_irr_cashflows=False):
             # Update average equity balance (should calculate from events)
             fund.update_average_equity_balance(session=session)
             print(f"  Average equity: ${fund.average_equity_balance:,.2f}")
+            
+            # Update NAV-specific fields for NAV-based funds
+            if fund.tracking_type == FundType.NAV_BASED:
+                fund.update_current_units_and_price(session=session)
+                print(f"  Current units: {fund.current_units:,.2f}")
+                print(f"  Current unit price: ${fund.current_unit_price:,.4f}")
+                print(f"  Current value: ${fund.current_value:,.2f}")
+            else:
+                # Update cost basis for cost-based funds
+                fund.update_total_cost_basis(session=session)
+                print(f"  Total cost basis: ${fund.total_cost_basis:,.2f}")
             
             # Create tax payment events from tax statements
             tax_events = fund.create_tax_payment_events(session=session)
@@ -514,6 +746,24 @@ def verify_results():
             # Verify daily interest charges were created
             daily_charges = [e for e in fund.fund_events if e.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE]
             print(f"  Daily interest charges: {len(daily_charges)}")
+            
+            # NAV-specific verification
+            if fund.tracking_type == FundType.NAV_BASED:
+                print(f"  Current units: {fund.current_units:,.2f}")
+                print(f"  Current unit price: ${fund.current_unit_price:,.4f}")
+                print(f"  Current value: ${fund.current_value:,.2f}")
+                
+                # Verify NAV update events
+                nav_events = [e for e in fund.fund_events if e.event_type == EventType.NAV_UPDATE]
+                print(f"  NAV update events: {len(nav_events)}")
+                
+                # Verify unit purchase/sale events
+                unit_purchases = [e for e in fund.fund_events if e.event_type == EventType.UNIT_PURCHASE]
+                unit_sales = [e for e in fund.fund_events if e.event_type == EventType.UNIT_SALE]
+                print(f"  Unit purchases: {len(unit_purchases)}, Unit sales: {len(unit_sales)}")
+            else:
+                # Cost-based specific verification
+                print(f"  Total cost basis: ${fund.total_cost_basis:,.2f}")
         
         # Check risk-free rates are preserved
         rate_count = session.query(RiskFreeRate).count()
@@ -550,7 +800,7 @@ def main():
         
         # Step 2: Set up test data
         print("\n2. Setting up test data...")
-        senior_debt_id, finance_id = setup_test_data()
+        senior_debt_id, finance_id, abc_fund_id = setup_test_data()
         
         # Step 3: Recalculate everything
         print("\n3. Recalculating all derived values...")
