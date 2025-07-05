@@ -516,18 +516,19 @@ def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
             fy_end = date(year, 12, 31)
     return fy_start, fy_end
 
-def calculate_nav_event_amounts(fund_id, session):
+def calculate_nav_event_amounts(unit_events):
     """Calculate amounts for unit purchases/sales and update units_owned and cost_of_units for NAV-based funds.
     This function ensures that:
     - Unit purchase/sale amounts = units * unit_price + brokerage_fee
     - units_owned is updated only after purchase/sale events (not NAV updates)
     - cost_of_units is calculated using FIFO for remaining units after each event
-    Note: This function does NOT commit the session - the calling method should handle commits.
-    """
-    from src.models import FundEvent, EventType
     
-    # Get all unit events for this fund
-    unit_events = get_unit_events_for_fund(fund_id, session, include_nav_updates=True)
+    Args:
+        unit_events (list): List of FundEvent objects with UNIT_PURCHASE, UNIT_SALE, and NAV_UPDATE events
+        
+    Note: This function updates the event objects in place. No database operations are performed.
+    """
+    from src.models import EventType
     
     # Calculate amounts for unit purchases/sales and update units_owned and cost_of_units
     cumulative_units = 0.0
@@ -579,29 +580,7 @@ def calculate_nav_event_amounts(fund_id, session):
             
         # Do not update units_owned or cost_of_units for NAV_UPDATE events
 
-def get_unit_events_for_fund(fund_id, session, include_nav_updates=False):
-    """
-    Get all unit purchase/sale events for a fund, optionally including NAV updates.
-    Shared utility for NAV-based calculations.
-    
-    Args:
-        fund_id (int): The fund ID
-        session: Database session
-        include_nav_updates (bool): Whether to include NAV_UPDATE events in the query
-    
-    Returns:
-        list: List of FundEvent objects ordered by event_date
-    """
-    from src.models import FundEvent, EventType
-    
-    event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
-    if include_nav_updates:
-        event_types.append(EventType.NAV_UPDATE)
-    
-    return session.query(FundEvent).filter(
-        FundEvent.fund_id == fund_id,
-        FundEvent.event_type.in_(event_types)
-    ).order_by(FundEvent.event_date).all()
+
 
 def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
     """
@@ -654,19 +633,17 @@ def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
         'unit_sales': unit_sales
     }
 
-def calculate_nav_based_cost_basis_for_irr(fund_id, session, as_of_date=None):
+def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
     """
     Calculate the cost basis for NAV-based funds up to a given date.
     This is used for IRR calculations where we need to know the total amount invested.
     
     Args:
-        fund_id (int): The fund ID
-        session: Database session
+        unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
         as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
     
     Returns:
         float: Total cost basis (sum of all unit purchases minus unit sales)
     """
-    unit_events = get_unit_events_for_fund(fund_id, session, include_nav_updates=False)
     result = calculate_cumulative_units_and_cost_basis(unit_events, as_of_date)
     return result['total_cost_basis'] 

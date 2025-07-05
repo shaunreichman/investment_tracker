@@ -116,6 +116,36 @@ fund = Fund(
 
 ---
 
+## Business Logic vs Database Operations
+
+All model methods are now designed to **separate business logic from database operations** for clarity, testability, and maintainability:
+
+- **Pure business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in `calculations.py`. These methods do not perform any database operations and do not require a session.
+- **Database operations** (adding, deleting, committing, querying) are handled only in public model methods decorated with `@with_session`. These methods are responsible for session management and call the pure business logic methods as needed.
+
+**Pattern Example:**
+```python
+class Fund(Base):
+    # ...
+    def _create_tax_payment_event_object(self, tax_statement):
+        # Pure business logic: create event object, no DB ops
+        ...
+        return event
+
+    @with_session
+    def create_tax_payment_events(self, session=None):
+        # DB operations: add event to session, commit
+        event = self._create_tax_payment_event_object(...)
+        session.add(event)
+        session.commit()
+```
+
+- **No business logic should be mixed with session.add, session.commit, or session.delete.**
+- This pattern is followed throughout all models (Fund, TaxStatement, etc.).
+- See `src/models.py` for examples and `DESIGN_GUIDELINES.md` for more details.
+
+---
+
 ## Session Handling
 
 All model methods that require a database session use the `@with_session` decorator (see `src/utils.py`).  
