@@ -516,6 +516,8 @@ def calculate_nav_event_amounts(fund_id, session):
     This function ensures that:
     - Unit purchase/sale amounts = units * unit_price + brokerage_fee
     - NAV update shares_owned = cumulative units from all unit events up to that date
+    
+    Note: This function does NOT commit the session - the calling method should handle commits.
     """
     from models import FundEvent, EventType
     
@@ -545,8 +547,6 @@ def calculate_nav_event_amounts(fund_id, session):
             cumulative_units -= event.units_sold or 0
         elif event.event_type == EventType.NAV_UPDATE:
             event.shares_owned = cumulative_units
-    
-    session.commit()
 
 def get_unit_events_for_fund(fund_id, session, include_nav_updates=False):
     """
