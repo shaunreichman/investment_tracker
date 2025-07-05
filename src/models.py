@@ -23,7 +23,9 @@ from src.calculations import (
     net_income,
     tax_payable,
     interest_tax_benefit,
-    calculate_nav_event_amounts
+    get_risk_free_rate_for_date,
+    get_reconciliation_explanation,
+    get_financial_years_for_fund_period
 )
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.elements import ColumnElement
@@ -426,7 +428,18 @@ class Fund(Base):
         - units_owned is updated for purchase/sale events
         - cost_of_units is calculated using FIFO for remaining units
         """
-        calculate_nav_event_amounts(self.id, session)
+        from src.calculations import calculate_nav_event_amounts
+        from src.models import FundEvent, EventType
+        
+        # Get all unit events for this fund
+        event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.NAV_UPDATE]
+        unit_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_(event_types)
+        ).order_by(FundEvent.event_date).all()
+        
+        # Calculate amounts using pure function
+        calculate_nav_event_amounts(unit_events)
     
     @with_session
     def update_current_units_after_event(self, event, session=None):
@@ -479,7 +492,16 @@ class Fund(Base):
             return 0.0
             
         from src.calculations import calculate_nav_based_cost_basis_for_irr
-        return calculate_nav_based_cost_basis_for_irr(self.id, session, as_of_date)
+        from src.models import FundEvent, EventType
+        
+        # Get all unit events for this fund
+        unit_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
+        ).order_by(FundEvent.event_date).all()
+        
+        # Calculate cost basis using pure function
+        return calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date)
     
     @with_session
     def update_all_calculated_fields(self, session=None):
@@ -842,28 +864,7 @@ class Fund(Base):
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
         return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, session=session)
     
-    def _get_risk_free_rate_for_date(self, target_date, risk_free_rates):
-        """Get the risk-free rate for a specific date from a list of rates.
-        Returns the most recent rate available on or before the target date, or None if not found.
-        """
-        if not risk_free_rates:
-            return None
-        
-        # Find the most recent rate that's <= target_date
-        applicable_rate = None
-        for rate in risk_free_rates:
-            if rate.rate_date <= target_date:
-                applicable_rate = rate
-            else:
-                break
-        
-        return applicable_rate.rate if applicable_rate else None
-    
-    def _calculate_daily_irr(self, cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
-        """Calculate IRR using daily cash flows and a root-finding algorithm.
-        Delegates to the calculate_irr utility function.
-        """
-        return calculate_irr(cash_flows, days_from_start, tolerance, max_iterations)
+
     
     def get_irr_percentage(self, session=None):
         """Return the IRR as a formatted percentage string, or 'N/A' if not computable."""
@@ -897,15 +898,12 @@ class Fund(Base):
             TaxStatement.financial_year == financial_year
         ).first()
     
-    @with_session
-    def create_or_update_tax_statement(self, entity_id, financial_year, session=None, **kwargs):
-        """Create or update a tax statement for a specific entity and financial year.
-        If a statement exists, updates its fields; otherwise, creates a new one.
-        Commits the change to the database.
-        Returns the TaxStatement instance.
+    def _create_or_update_tax_statement_object(self, entity_id, financial_year, **kwargs):
+        """Create or update a tax statement object.
+        Returns the TaxStatement object. No database operations.
         """
         # Try to find existing statement
-        statement = self.get_tax_statement_for_entity_financial_year(entity_id, financial_year, session=session)
+        statement = self.get_tax_statement_for_entity_financial_year(entity_id, financial_year)
         
         if statement is None:
             # Create new statement
@@ -915,7 +913,6 @@ class Fund(Base):
                 financial_year=financial_year,
                 **kwargs
             )
-            session.add(statement)
         else:
             # Update existing statement
             for key, value in kwargs.items():
@@ -923,10 +920,26 @@ class Fund(Base):
                     setattr(statement, key, value)
         
         # Calculate interest income fields (including total_interest_income)
-        statement.calculate_interest_income_fields(session=session)
+        statement.calculate_interest_income_fields()
         
         # Calculate total income
         statement.calculate_total_income()
+        
+        return statement
+
+    @with_session
+    def create_or_update_tax_statement(self, entity_id, financial_year, session=None, **kwargs):
+        """Create or update a tax statement for a specific entity and financial year.
+        If a statement exists, updates its fields; otherwise, creates a new one.
+        Commits the change to the database.
+        Returns the TaxStatement instance.
+        """
+        # Create or update statement object using business logic method
+        statement = self._create_or_update_tax_statement_object(entity_id, financial_year, **kwargs)
+        
+        # Add to session if it's a new statement
+        if statement.id is None:
+            session.add(statement)
         
         session.commit()
         return statement
@@ -945,6 +958,29 @@ class Fund(Base):
         irr = self.calculate_real_irr(session, risk_free_rate_currency)
         return f"{irr * 100:.2f}%" if irr is not None else "N/A"
     
+    def _create_tax_payment_event_object(self, tax_statement):
+        """Create a tax payment event object for a tax statement.
+        Returns the event object or None if not applicable. No database operations.
+        """
+        # Calculate tax payable if not already calculated
+        tax_statement.calculate_tax_payable()
+        
+        # Only create tax payment event if there's additional tax payable
+        if tax_statement.tax_payable > 0.01:  # Allow for small rounding differences
+            # Create tax payment event
+            tax_event = FundEvent(
+                fund_id=self.id,
+                event_type=EventType.TAX_PAYMENT,
+                event_date=tax_statement.get_tax_payment_date(),
+                amount=tax_statement.tax_payable,
+                description=f"Tax payment for FY {tax_statement.financial_year}",
+                reference_number=f"TAX-{tax_statement.financial_year}",
+                tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
+            )
+            return tax_event
+        
+        return None
+    
     @with_session
     def create_tax_payment_events(self, session=None):
         """Create tax payment events for this fund based on tax statements.
@@ -959,35 +995,21 @@ class Fund(Base):
         created_events = []
         
         for tax_statement in tax_statements:
-            # Calculate tax payable if not already calculated
-            tax_statement.calculate_tax_payable()
+            # Check if tax payment event already exists
+            existing_event = session.query(FundEvent).filter(
+                FundEvent.fund_id == self.id,
+                FundEvent.event_type == EventType.TAX_PAYMENT,
+                FundEvent.event_date == tax_statement.get_tax_payment_date(),
+                FundEvent.amount == tax_statement.tax_payable,
+                FundEvent.tax_payment_type == TaxPaymentType.EOFY_INTEREST_TAX
+            ).first()
             
-            # Create EOFY interest tax payment event if there's additional tax payable
-            if tax_statement.tax_payable > 0.01:  # Allow for small rounding differences
-                # Check if tax payment event already exists
-                existing_event = session.query(FundEvent).filter(
-                    FundEvent.fund_id == self.id,
-                    FundEvent.event_type == EventType.TAX_PAYMENT,
-                    FundEvent.event_date == tax_statement.get_tax_payment_date(),
-                    FundEvent.amount == tax_statement.tax_payable,
-                    FundEvent.tax_payment_type == TaxPaymentType.EOFY_INTEREST_TAX
-                ).first()
-                
-                if not existing_event:
-                    # Create tax payment event
-                    tax_event = FundEvent(
-                        fund_id=self.id,
-                        event_type=EventType.TAX_PAYMENT,
-                        event_date=tax_statement.get_tax_payment_date(),
-                        amount=tax_statement.tax_payable,
-                        description=f"Tax payment for FY {tax_statement.financial_year}",
-                        reference_number=f"TAX-{tax_statement.financial_year}",
-                        tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
-                    )
+            if not existing_event:
+                # Create tax payment event using business logic method
+                tax_event = self._create_tax_payment_event_object(tax_statement)
+                if tax_event:
                     session.add(tax_event)
                     created_events.append(tax_event)
-            
-
         
         if created_events:
             session.commit()
@@ -1037,14 +1059,71 @@ class Fund(Base):
             session=session
         )
 
+    def _calculate_daily_interest_charge_objects(self, start_date, end_date, risk_free_rates, existing_dates, cash_flow_events):
+        """Calculate daily interest charge events for the fund period.
+        Returns a list of FundEvent objects. No database operations.
+        """
+        from datetime import timedelta
+        
+        created_events = []
+        current_equity = 0
+        current_date = start_date
+        
+        # Process each event and calculate daily interest charges
+        for event in cash_flow_events:
+            # Add interest charges for each day from current_date to event_date
+            while current_date < event.event_date:
+                if current_date not in existing_dates:
+                    # Find risk-free rate for this date
+                    rate = get_risk_free_rate_for_date(current_date, risk_free_rates)
+                    if rate is not None and current_equity > 0:
+                        # Calculate daily interest charge
+                        daily_interest = current_equity * (rate / 100) / 365.25
+                        
+                        # Create interest charge event object
+                        interest_event = FundEvent(
+                            fund_id=self.id,
+                            event_type=EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
+                            event_date=current_date,
+                            amount=daily_interest,
+                            description=f"Daily risk-free interest charge ({rate:.2f}% p.a.)",
+                            reference_number=f"RFR-{current_date.strftime('%Y%m%d')}"
+                        )
+                        created_events.append(interest_event)
+                
+                current_date += timedelta(days=1)
+            
+            # Update equity balance for the actual event
+            current_equity += get_equity_change_for_event(event, self.tracking_type)
+            current_date = event.event_date
+        
+        # Add interest charges for remaining days until end_date
+        while current_date <= end_date:
+            if current_date not in existing_dates:
+                rate = get_risk_free_rate_for_date(current_date, risk_free_rates)
+                if rate is not None and current_equity > 0:
+                    daily_interest = current_equity * (rate / 100) / 365.25
+                    
+                    interest_event = FundEvent(
+                        fund_id=self.id,
+                        event_type=EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
+                        event_date=current_date,
+                        amount=daily_interest,
+                        description=f"Daily risk-free interest charge ({rate:.2f}% p.a.)",
+                        reference_number=f"RFR-{current_date.strftime('%Y%m%d')}"
+                    )
+                    created_events.append(interest_event)
+            
+            current_date += timedelta(days=1)
+        
+        return created_events
+
     @with_session
     def create_daily_risk_free_interest_charges(self, session=None, risk_free_rate_currency=None):
         """Create daily risk-free interest charge events for the fund for real IRR calculations.
         Commits new events to the database.
         Returns a list of created events.
         """
-        from datetime import date, timedelta
-
         # Use fund currency if not specified
         if risk_free_rate_currency is None:
             risk_free_rate_currency = self.currency
@@ -1057,7 +1136,7 @@ class Fund(Base):
             return []
         
         # Get risk-free rates for the period - get all rates <= end_date
-        # The _get_risk_free_rate_for_date method will find the most recent rate <= target_date
+        # The get_risk_free_rate_for_date function will find the most recent rate <= target_date
         risk_free_rates = session.query(RiskFreeRate).filter(
             RiskFreeRate.currency == risk_free_rate_currency,
             RiskFreeRate.rate_date <= end_date
@@ -1085,58 +1164,14 @@ class Fund(Base):
             ])
         ).order_by(FundEvent.event_date).all()
         
-        created_events = []
-        current_equity = 0
-        current_date = start_date
+        # Calculate daily interest charge events using business logic method
+        created_events = self._calculate_daily_interest_charge_objects(
+            start_date, end_date, risk_free_rates, existing_dates, cash_flow_events
+        )
         
-        # Process each event and calculate daily interest charges
-        for event in cash_flow_events:
-            # Add interest charges for each day from current_date to event_date
-            while current_date < event.event_date:
-                if current_date not in existing_dates:
-                    # Find risk-free rate for this date
-                    rate = self._get_risk_free_rate_for_date(current_date, risk_free_rates)
-                    if rate is not None and current_equity > 0:
-                        # Calculate daily interest charge
-                        daily_interest = current_equity * (rate / 100) / 365.25
-                        
-                        # Create interest charge event
-                        interest_event = FundEvent(
-                            fund_id=self.id,
-                            event_type=EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
-                            event_date=current_date,
-                            amount=daily_interest,
-                            description=f"Daily risk-free interest charge ({rate:.2f}% p.a.)",
-                            reference_number=f"RFR-{current_date.strftime('%Y%m%d')}"
-                        )
-                        session.add(interest_event)
-                        created_events.append(interest_event)
-                
-                current_date += timedelta(days=1)
-            
-            # Update equity balance for the actual event
-            current_equity += self._get_equity_change_for_event(event)
-            current_date = event.event_date
-        
-        # Add interest charges for remaining days until end_date
-        while current_date <= end_date:
-            if current_date not in existing_dates:
-                rate = self._get_risk_free_rate_for_date(current_date, risk_free_rates)
-                if rate is not None and current_equity > 0:
-                    daily_interest = current_equity * (rate / 100) / 365.25
-                    
-                    interest_event = FundEvent(
-                        fund_id=self.id,
-                        event_type=EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
-                        event_date=current_date,
-                        amount=daily_interest,
-                        description=f"Daily risk-free interest charge ({rate:.2f}% p.a.)",
-                        reference_number=f"RFR-{current_date.strftime('%Y%m%d')}"
-                    )
-                    session.add(interest_event)
-                    created_events.append(interest_event)
-            
-            current_date += timedelta(days=1)
+        # Add events to session
+        for event in created_events:
+            session.add(event)
         
         if created_events:
             session.commit()
@@ -1191,6 +1226,32 @@ class Fund(Base):
         
         return abs(total_interest) if total_interest else 0.0
     
+
+
+    def _process_financial_year_for_debt_cost(self, fy, session=None):
+        """Process a single financial year for debt cost events.
+        Returns a list of created events. No database operations.
+        """
+        created_events = []
+        
+        # Only proceed if a TaxStatement exists for this FY
+        tax_statement = self.get_tax_statement_for_entity_financial_year(self.entity_id, fy, session=session)
+        if not tax_statement:
+            return created_events  # Skip years with no TaxStatement
+        
+        # Calculate interest expense for this FY
+        interest_expense = self.calculate_financial_year_interest_expense(fy, session=session)
+        tax_statement.total_interest_expense = interest_expense
+        
+        # Calculate tax benefit and create event
+        tax_benefit = tax_statement.calculate_interest_tax_benefit()
+        if tax_benefit > 0:
+            event = tax_statement.create_fy_debt_cost_event(session=session)
+            if event:
+                created_events.append(event)
+        
+        return created_events
+
     @with_session
     def create_fy_debt_cost_events(self, session=None):
         """Create financial year debt cost events for the fund for real IRR calculations.
@@ -1198,52 +1259,36 @@ class Fund(Base):
         Returns a list of created events.
         """
         created_events = []
+        
         # Get all financial years where the fund had activity
         start_date = self.start_date
         end_date = self.end_date or date.today()
         if not start_date:
             return created_events
+        
         # Get entity to determine jurisdiction
         entity = session.query(Entity).filter(Entity.id == self.entity_id).first()
         if not entity:
             return created_events
+        
         # Generate financial years from start to end
-        current_date = start_date
-        financial_years = set()
-        while current_date <= end_date:
-            fy = entity.get_financial_year(current_date)
-            financial_years.add(fy)
-            # Move to next month
-            if current_date.month == 12:
-                current_date = date(current_date.year + 1, 1, 1)
-            else:
-                current_date = date(current_date.year, current_date.month + 1, 1)
+        financial_years = get_financial_years_for_fund_period(start_date, end_date, entity)
+        
         # Process each financial year
         for fy in sorted(financial_years):
-            # Only proceed if a TaxStatement exists for this FY
-            tax_statement = self.get_tax_statement_for_entity_financial_year(self.entity_id, fy, session=session)
-            if not tax_statement:
-                continue  # Skip years with no TaxStatement
-            # Calculate interest expense for this FY
-            interest_expense = self.calculate_financial_year_interest_expense(fy, session=session)
-            tax_statement.total_interest_expense = interest_expense
-            session.commit()  # Commit the interest expense update
-            # Calculate tax benefit and create event
-            tax_benefit = tax_statement.calculate_interest_tax_benefit()
-            if tax_benefit > 0:
-                event = tax_statement.create_fy_debt_cost_event(session=session)
-                if event:
-                    created_events.append(event)
+            events = self._process_financial_year_for_debt_cost(fy, session=session)
+            created_events.extend(events)
+        
         if created_events:
             session.commit()
             print(f"Created {len(created_events)} FY debt cost events for {self.name}")
+        
         return created_events
 
-    @with_session
-    def recalculate_debt_costs(self, session=None, risk_free_rate_currency=None):
-        """Recalculate all daily risk-free interest charges and FY debt cost events for this fund.
-        Deletes existing events of these types and recreates them.
-        Commits all changes to the database.
+    def _delete_debt_cost_events(self, session=None):
+        """Delete all daily risk-free interest charges and FY debt cost events for this fund.
+        Returns a tuple of (deleted_daily_count, deleted_fy_count).
+        No database operations.
         """
         # Delete all DAILY_RISK_FREE_INTEREST_CHARGE and FY_DEBT_COST events for this fund
         deleted_daily = session.query(FundEvent).filter(
@@ -1254,7 +1299,18 @@ class Fund(Base):
             FundEvent.fund_id == self.id,
             FundEvent.event_type == EventType.FY_DEBT_COST
         ).delete()
+        return deleted_daily, deleted_fy
+
+    @with_session
+    def recalculate_debt_costs(self, session=None, risk_free_rate_currency=None):
+        """Recalculate all daily risk-free interest charges and FY debt cost events for this fund.
+        Deletes existing events of these types and recreates them.
+        Commits all changes to the database.
+        """
+        # Delete existing debt cost events
+        deleted_daily, deleted_fy = self._delete_debt_cost_events(session=session)
         session.commit()
+        
         # Recreate daily risk-free interest charges
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
         # Recreate FY debt cost events
@@ -1477,6 +1533,36 @@ class Fund(Base):
         
         return event
     
+    def _create_distribution_with_tax_objects(self, gross_amount, date, tax_withheld=0.0, distribution_type=DistributionType.INTEREST, description=None, reference_number=None):
+        """Create distribution and tax payment event objects.
+        Returns a tuple of (distribution_event, tax_event) objects. No database operations.
+        """
+        # Create distribution event object
+        distribution_event = FundEvent(
+            fund_id=self.id,
+            event_type=EventType.DISTRIBUTION,
+            event_date=date,
+            amount=gross_amount,
+            distribution_type=distribution_type,
+            description=description or f"Distribution: ${gross_amount:,.2f}",
+            reference_number=reference_number
+        )
+        
+        # Create tax payment event object if there's tax withheld
+        tax_event = None
+        if tax_withheld > 0:
+            tax_event = FundEvent(
+                fund_id=self.id,
+                event_type=EventType.TAX_PAYMENT,
+                event_date=date,
+                amount=tax_withheld,
+                description=f"Tax withheld on distribution: ${tax_withheld:,.2f}",
+                reference_number=f"{reference_number}_TAX" if reference_number else None,
+                tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
+            )
+        
+        return distribution_event, tax_event
+
     @with_session
     def add_distribution_with_tax_direct(self, gross_amount, date, tax_withheld=0.0, distribution_type=DistributionType.INTEREST, description=None, reference_number=None, session=None):
         """Add a distribution event with associated tax payment using direct model methods.
@@ -1492,28 +1578,14 @@ class Fund(Base):
         Returns:
             tuple: (distribution_event, tax_event)
         """
-        # Add distribution
-        distribution_event = self.add_distribution(
-            amount=gross_amount,
-            date=date,
-            distribution_type=distribution_type,
-            description=description,
-            reference_number=reference_number,
-            session=session
+        # Create event objects using business logic method
+        distribution_event, tax_event = self._create_distribution_with_tax_objects(
+            gross_amount, date, tax_withheld, distribution_type, description, reference_number
         )
         
-        # Add tax payment if there's tax withheld
-        tax_event = None
-        if tax_withheld > 0:
-            tax_event = FundEvent(
-                fund_id=self.id,
-                event_type=EventType.TAX_PAYMENT,
-                event_date=date,
-                amount=tax_withheld,
-                description=f"Tax withheld on distribution: ${tax_withheld:,.2f}",
-                reference_number=f"{reference_number}_TAX" if reference_number else None,
-                tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
-            )
+        # Add events to session
+        session.add(distribution_event)
+        if tax_event:
             session.add(tax_event)
         
         return distribution_event, tax_event
@@ -1575,12 +1647,7 @@ class Fund(Base):
             raise ValueError("total_cost_basis is calculated automatically from capital movements. Use update_total_cost_basis() instead.")
         self._total_cost_basis = value
 
-    def _get_equity_change_for_event(self, event):
-        """Calculate how much an event changes the fund's equity balance.
-        Delegates to get_equity_change_for_event in calculations.py.
-        """
-        from src.calculations import get_equity_change_for_event
-        return get_equity_change_for_event(event, self.tracking_type)
+
 
     @with_session
     def get_events(self, event_types=None, start_date=None, end_date=None, session=None):
@@ -1608,6 +1675,19 @@ class Fund(Base):
         
         return query.order_by(FundEvent.event_date).all()
     
+    def _get_recalculation_methods_for_event_type(self, event_type):
+        """Get the list of recalculation methods needed for a given event type.
+        Returns a list of method names to call.
+        """
+        if event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
+            return ['update_current_units_and_price', 'update_current_equity_balance']
+        elif event_type == EventType.NAV_UPDATE:
+            return ['update_current_units_and_price']
+        elif event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]:
+            return ['update_current_equity_balance', 'update_total_cost_basis']
+        else:
+            return []
+
     @with_session
     def delete_event(self, event_id, session=None):
         """Delete a specific event and recalculate affected fields.
@@ -1634,14 +1714,10 @@ class Fund(Base):
         session.delete(event)
         
         # Recalculate affected fields based on event type
-        if event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
-            self.update_current_units_and_price(session=session)
-            self.update_current_equity_balance(session=session)
-        elif event_type == EventType.NAV_UPDATE:
-            self.update_current_units_and_price(session=session)
-        elif event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]:
-            self.update_current_equity_balance(session=session)
-            self.update_total_cost_basis(session=session)
+        recalculation_methods = self._get_recalculation_methods_for_event_type(event_type)
+        for method_name in recalculation_methods:
+            method = getattr(self, method_name)
+            method(session=session)
         
         return True
     
@@ -1664,6 +1740,21 @@ class Fund(Base):
         
         print(f"Recalculated all fields for fund '{self.name}'")
     
+    def _create_bulk_event_objects(self, events_data):
+        """Create FundEvent objects from event data.
+        Returns a list of FundEvent objects. No database operations.
+        """
+        created_events = []
+        
+        for event_data in events_data:
+            event = FundEvent(
+                fund_id=self.id,
+                **event_data
+            )
+            created_events.append(event)
+        
+        return created_events
+
     @with_session
     def bulk_add_events(self, events_data, session=None):
         """Add multiple events in a single operation.
@@ -1675,15 +1766,12 @@ class Fund(Base):
         Returns:
             list: List of created FundEvent objects
         """
-        created_events = []
+        # Create event objects using business logic method
+        created_events = self._create_bulk_event_objects(events_data)
         
-        for event_data in events_data:
-            event = FundEvent(
-                fund_id=self.id,
-                **event_data
-            )
+        # Add events to session
+        for event in created_events:
             session.add(event)
-            created_events.append(event)
         
         # Recalculate all fields after bulk operation
         self.recalculate_all_fields(session=session)
@@ -2046,48 +2134,42 @@ class TaxStatement(Base):
                 'tax_withheld': tax_diff,
                 'net': net_diff
             },
-            'explanation': self._get_reconciliation_explanation(gross_diff, tax_diff, net_diff)
+            'explanation': get_reconciliation_explanation(gross_diff, tax_diff, net_diff)
         }
     
-    def _get_reconciliation_explanation(self, gross_diff, tax_diff, net_diff):
-        """Generate a human-readable explanation for the reconciliation differences.
-        Returns a string.
-        """
-        explanations = []
-        
-        if abs(gross_diff) > 0.01:  # Allow for small rounding differences
-            if gross_diff > 0:
-                explanations.append(f"${gross_diff:,.2f} of interest was accrued but not yet distributed")
-            else:
-                explanations.append(f"${abs(gross_diff):,.2f} more was distributed than reported in tax statement")
-        
-        if abs(tax_diff) > 0.01:
-            if tax_diff > 0:
-                explanations.append(f"${tax_diff:,.2f} more tax was withheld than actually deducted")
-            else:
-                explanations.append(f"${abs(tax_diff):,.2f} less tax was withheld than actually deducted")
-        
-        if abs(net_diff) > 0.01:
-            if net_diff > 0:
-                explanations.append(f"${net_diff:,.2f} more net income reported than actually received")
-            else:
-                explanations.append(f"${abs(net_diff):,.2f} more net income received than reported")
-        
-        if not explanations:
-            explanations.append("Tax statement matches actual distributions perfectly")
-        
-        return "; ".join(explanations)
+
     
-    @with_session
-    def create_fy_debt_cost_event(self, session=None):
-        """Create a FY debt cost event for real IRR calculations if a tax benefit exists.
-        Commits the event to the database and returns it, or returns None if not applicable.
+    def _create_fy_debt_cost_event_object(self):
+        """Create a FY debt cost event object for real IRR calculations if a tax benefit exists.
+        Returns the event object or None if not applicable. No database operations.
         """
         # Calculate the tax benefit
         tax_benefit = self.calculate_interest_tax_benefit()
         if tax_benefit <= 0:
             return None
         
+        # Get the financial year end date
+        fy_start, fy_end = self.get_financial_year_dates()
+        if not fy_end:
+            return None
+        
+        # Create event object
+        event = FundEvent(
+            fund_id=self.fund_id,
+            event_type=EventType.FY_DEBT_COST,
+            event_date=fy_end,
+            amount=tax_benefit,  # Positive cash flow (tax benefit)
+            description=f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
+            reference_number=f"FY_DEBT_COST_{self.financial_year}"
+        )
+        
+        return event
+    
+    @with_session
+    def create_fy_debt_cost_event(self, session=None):
+        """Create a FY debt cost event for real IRR calculations if a tax benefit exists.
+        Commits the event to the database and returns it, or returns None if not applicable.
+        """
         # Get the financial year end date
         fy_start, fy_end = self.get_financial_year_dates()
         if not fy_end:
@@ -2103,23 +2185,18 @@ class TaxStatement(Base):
         
         if existing_event:
             # Update existing event
+            tax_benefit = self.calculate_interest_tax_benefit()
             existing_event.amount = tax_benefit
             existing_event.description = f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})"
             session.commit()
             return existing_event
         
-        # Create new event
-        event = FundEvent(
-            fund_id=self.fund_id,
-            event_type=EventType.FY_DEBT_COST,
-            event_date=fy_end,
-            amount=tax_benefit,  # Positive cash flow (tax benefit)
-            description=f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
-            reference_number=f"FY_DEBT_COST_{self.financial_year}"
-        )
+        # Create new event using business logic method
+        event = self._create_fy_debt_cost_event_object()
+        if event:
+            session.add(event)
+            session.commit()
         
-        session.add(event)
-        session.commit()
         return event
 
     # Manual fields for interest income reconciliation
@@ -2146,7 +2223,12 @@ class TaxStatement(Base):
             + (self.distribution_receivable_this_fy or 0.0)
             - (self.distribution_received_prev_fy or 0.0)
         )
-        self.non_resident_withholding_tax_already_withheld = self.sum_tax_payments_for_fy(session=session)
+        # Only calculate tax payments if we have a session
+        if session is not None:
+            self.non_resident_withholding_tax_already_withheld = self.sum_tax_payments_for_fy(session=session)
+        else:
+            # Set to 0 if no session available
+            self.non_resident_withholding_tax_already_withheld = 0.0
 
     @with_session
     def sum_tax_payments_for_fy(self, session=None):

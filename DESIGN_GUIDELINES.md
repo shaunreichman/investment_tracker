@@ -26,6 +26,39 @@ def update_current_equity_balance(self, session=None):
     # ... use session ...
 ```
 
+## Separation of Business Logic and Database Operations
+
+To maximize maintainability, testability, and clarity, **all model code is organized to strictly separate business logic from database operations**:
+
+- **Business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in `calculations.py`. These methods do not perform any database operations and do not require a session.
+- **Database operations** (adding, deleting, committing, querying) are handled only in public model methods decorated with `@with_session`. These methods are responsible for session management and call the pure business logic methods as needed.
+
+### Why?
+- **Testability:** Pure logic can be tested without a database or session.
+- **Maintainability:** Database code is isolated and easy to update if the ORM or DB changes.
+- **Clarity:** It's always clear which methods perform DB operations and which do not.
+
+### Pattern Example
+```python
+class Fund(Base):
+    # ...
+    def _create_tax_payment_event_object(self, tax_statement):
+        # Pure business logic: create event object, no DB ops
+        ...
+        return event
+
+    @with_session
+    def create_tax_payment_events(self, session=None):
+        # DB operations: add event to session, commit
+        event = self._create_tax_payment_event_object(...)
+        session.add(event)
+        session.commit()
+```
+
+- **Never mix session.add, session.commit, or session.delete with calculations or object creation.**
+- This pattern is followed throughout all models (Fund, TaxStatement, etc.).
+- See `src/models.py` for more examples.
+
 ---
 
 ## Where to Put New Logic
@@ -835,20 +868,20 @@ def calculate_irr(events, ...):
 ### Shared Utilities
 The system includes several shared utility functions to eliminate code duplication between NAV-based calculations:
 
-#### `get_unit_events_for_fund(fund_id, session, include_nav_updates=False)`
-- **Purpose**: Consistent filtering of UNIT_PURCHASE and UNIT_SALE events
-- **Used by**: `calculate_nav_event_amounts()`, IRR calculations, capital gains calculations
-- **Benefits**: Eliminates duplicate database queries and filtering logic
+#### `calculate_nav_event_amounts(unit_events)`
+- **Purpose**: Updates amounts, units_owned, and cost_of_units for all unit purchase/sale events
+- **Used by**: NAV-based fund calculations, unit tracking
+- **Benefits**: Pure function - no database operations, works with any list of FundEvent objects
 
 #### `calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None)`
 - **Purpose**: Track cumulative units owned and total cost basis up to a given date
 - **Used by**: `calculate_nav_event_amounts()`, `calculate_nav_based_capital_gains()`, IRR calculations
 - **Benefits**: Single source of truth for unit and cost basis accumulation logic
 
-#### `calculate_nav_based_cost_basis_for_irr(fund_id, session, as_of_date=None)`
+#### `calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None)`
 - **Purpose**: Calculate cost basis for NAV-based funds (used in IRR calculations)
 - **Used by**: IRR calculations, fund model methods
-- **Benefits**: Provides cost basis calculation without duplicating unit tracking logic
+- **Benefits**: Pure function - no database operations, works with any list of FundEvent objects
 
 ### Code Reuse Benefits
 - **Consistency**: All NAV-based calculations use the same unit tracking logic
@@ -856,21 +889,19 @@ The system includes several shared utility functions to eliminate code duplicati
 - **Performance**: Shared utilities can be optimized once and benefit all consumers
 - **Testing**: Shared utilities can be thoroughly tested independently
 
-### When to Use Shared Utilities
-- **DO** use `get_unit_events_for_fund()` when you need to filter unit events
+### When to Use Pure Functions
+- **DO** use `calculate_nav_event_amounts()` when you need to update unit event amounts and tracking
 - **DO** use `calculate_cumulative_units_and_cost_basis()` when you need unit/cost tracking
 - **DO** use `calculate_nav_based_cost_basis_for_irr()` when you need cost basis for IRR
-- **DON'T** duplicate the filtering or accumulation logic in new functions
+- **DON'T** duplicate the calculation logic in new functions
+- **DO** fetch data in model methods and pass to pure functions for calculations
 
 ### Example Usage
 ```python
-# In calculations.py - using shared utilities
-def calculate_nav_event_amounts(fund_id, session):
+# In calculations.py - pure functions
+def calculate_nav_event_amounts(unit_events):
     """Calculate amounts for unit purchases/sales and shares_owned for NAV updates."""
-    # Use shared utility for consistent event filtering
-    unit_events = get_unit_events_for_fund(fund_id, session, include_nav_updates=True)
-    
-    # Calculate amounts using the filtered events
+    # Pure function - works with any list of FundEvent objects
     for event in unit_events:
         if event.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
             # ... calculate amounts ...
@@ -882,15 +913,21 @@ def calculate_nav_event_amounts(fund_id, session):
 ```
 
 ```python
-# In models.py - using shared utilities
+# In models.py - using pure functions
 def get_nav_based_cost_basis(self, as_of_date=None, session=None):
     """Get the cost basis for NAV-based funds up to a given date."""
     if self.tracking_type != FundType.NAV_BASED:
         return 0.0
         
-    # Use shared utility for cost basis calculation
+    # Get events from database
+    unit_events = session.query(FundEvent).filter(
+        FundEvent.fund_id == self.id,
+        FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
+    ).order_by(FundEvent.event_date).all()
+    
+    # Use pure function for cost basis calculation
     from calculations import calculate_nav_based_cost_basis_for_irr
-    return calculate_nav_based_cost_basis_for_irr(self.id, session, as_of_date)
+    return calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date)
 ```
 
 ---

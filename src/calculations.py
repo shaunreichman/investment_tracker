@@ -134,14 +134,14 @@ def calculate_average_equity_balance_cost(capital_events):
         if i == 0:
             current_date = event.event_date
             if hasattr(event, 'fund'):
-                current_equity += event.fund._get_equity_change_for_event(event)
+                current_equity += get_equity_change_for_event(event, event.fund.tracking_type)
             continue
         duration_days = (event.event_date - current_date).days
         weighted_equity = current_equity * duration_days
         total_weighted_equity += weighted_equity
         total_days += duration_days
         if hasattr(event, 'fund'):
-            current_equity += event.fund._get_equity_change_for_event(event)
+            current_equity += get_equity_change_for_event(event, event.fund.tracking_type)
         current_date = event.event_date
     return total_weighted_equity / total_days if total_days > 0 else 0
 
@@ -190,7 +190,7 @@ def calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
         if event.event_date > last_date:
             equity_periods.append((last_date, event.event_date, current_equity))
         if hasattr(event, 'fund'):
-            equity_change = event.fund._get_equity_change_for_event(event)
+            equity_change = get_equity_change_for_event(event, event.fund.tracking_type)
         else:
             equity_change = 0
         current_equity += equity_change
@@ -235,41 +235,7 @@ def calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
         'total_days': total_days
     }
 
-def get_equity_change_for_event(event, fund_type):
-    """
-    Calculate how much an event changes a fund's equity balance.
-    Args:
-        event: An object with event_type and amount attributes (and units for unit events).
-        fund_type: The type of fund (e.g., FundType.NAV_BASED or FundType.COST_BASED).
-    Returns:
-        float: Signed change in equity (positive for inflows, negative for outflows).
-    """
-    from .models import EventType
-    if event.event_type == EventType.CAPITAL_CALL:
-        return event.amount or 0
-    elif event.event_type == EventType.RETURN_OF_CAPITAL:
-        return -(event.amount or 0)
-    elif event.event_type == EventType.UNIT_PURCHASE:
-        return event.amount or 0
-    elif event.event_type == EventType.UNIT_SALE:
-        return -(event.amount or 0)
-    elif event.event_type == EventType.DISTRIBUTION:
-        return -(event.amount or 0)
-    elif event.event_type == EventType.TAX_PAYMENT:
-        return -(event.amount or 0)
-    elif event.event_type == EventType.MANAGEMENT_FEE:
-        return -(event.amount or 0)
-    elif event.event_type == EventType.CARRIED_INTEREST:
-        return -(event.amount or 0)
-    elif event.event_type == EventType.FY_DEBT_COST:
-        return event.amount or 0
-    elif event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
-        return -(event.amount or 0)
-    elif event.event_type == EventType.NAV_UPDATE:
-        # NAV updates don't change equity balance, they just update the NAV
-        return 0
-    else:
-        return 0
+
 
 def calculate_nav_based_capital_gains(events):
     """
@@ -516,18 +482,19 @@ def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
             fy_end = date(year, 12, 31)
     return fy_start, fy_end
 
-def calculate_nav_event_amounts(fund_id, session):
+def calculate_nav_event_amounts(unit_events):
     """Calculate amounts for unit purchases/sales and update units_owned and cost_of_units for NAV-based funds.
     This function ensures that:
     - Unit purchase/sale amounts = units * unit_price + brokerage_fee
     - units_owned is updated only after purchase/sale events (not NAV updates)
     - cost_of_units is calculated using FIFO for remaining units after each event
-    Note: This function does NOT commit the session - the calling method should handle commits.
-    """
-    from src.models import FundEvent, EventType
     
-    # Get all unit events for this fund
-    unit_events = get_unit_events_for_fund(fund_id, session, include_nav_updates=True)
+    Args:
+        unit_events (list): List of FundEvent objects with UNIT_PURCHASE, UNIT_SALE, and NAV_UPDATE events
+        
+    Note: This function updates the event objects in place. No database operations are performed.
+    """
+    from src.models import EventType
     
     # Calculate amounts for unit purchases/sales and update units_owned and cost_of_units
     cumulative_units = 0.0
@@ -579,29 +546,7 @@ def calculate_nav_event_amounts(fund_id, session):
             
         # Do not update units_owned or cost_of_units for NAV_UPDATE events
 
-def get_unit_events_for_fund(fund_id, session, include_nav_updates=False):
-    """
-    Get all unit purchase/sale events for a fund, optionally including NAV updates.
-    Shared utility for NAV-based calculations.
-    
-    Args:
-        fund_id (int): The fund ID
-        session: Database session
-        include_nav_updates (bool): Whether to include NAV_UPDATE events in the query
-    
-    Returns:
-        list: List of FundEvent objects ordered by event_date
-    """
-    from src.models import FundEvent, EventType
-    
-    event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
-    if include_nav_updates:
-        event_types.append(EventType.NAV_UPDATE)
-    
-    return session.query(FundEvent).filter(
-        FundEvent.fund_id == fund_id,
-        FundEvent.event_type.in_(event_types)
-    ).order_by(FundEvent.event_date).all()
+
 
 def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
     """
@@ -654,19 +599,132 @@ def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
         'unit_sales': unit_sales
     }
 
-def calculate_nav_based_cost_basis_for_irr(fund_id, session, as_of_date=None):
+def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
     """
     Calculate the cost basis for NAV-based funds up to a given date.
     This is used for IRR calculations where we need to know the total amount invested.
     
     Args:
-        fund_id (int): The fund ID
-        session: Database session
+        unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
         as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
     
     Returns:
         float: Total cost basis (sum of all unit purchases minus unit sales)
     """
-    unit_events = get_unit_events_for_fund(fund_id, session, include_nav_updates=False)
     result = calculate_cumulative_units_and_cost_basis(unit_events, as_of_date)
-    return result['total_cost_basis'] 
+    return result['total_cost_basis']
+
+
+def get_risk_free_rate_for_date(target_date, risk_free_rates):
+    """
+    Get the risk-free rate for a specific date from a list of rates.
+    Returns the most recent rate available on or before the target date, or None if not found.
+    
+    Args:
+        target_date (date): The date to find a rate for
+        risk_free_rates (list): List of RiskFreeRate objects, sorted by date
+    
+    Returns:
+        float or None: The risk-free rate as a percentage, or None if not found
+    """
+    if not risk_free_rates:
+        return None
+    
+    # Find the most recent rate that's <= target_date
+    applicable_rate = None
+    for rate in risk_free_rates:
+        if rate.rate_date <= target_date:
+            applicable_rate = rate
+        else:
+            break
+    
+    return applicable_rate.rate if applicable_rate else None
+
+
+def get_reconciliation_explanation(gross_diff, tax_diff, net_diff):
+    """
+    Generate a human-readable explanation for the reconciliation differences.
+    
+    Args:
+        gross_diff (float): Difference in gross amounts
+        tax_diff (float): Difference in tax amounts  
+        net_diff (float): Difference in net amounts
+    
+    Returns:
+        str: Human-readable explanation of the differences
+    """
+    explanations = []
+    
+    if abs(gross_diff) > 0.01:  # Allow for small rounding differences
+        if gross_diff > 0:
+            explanations.append(f"${gross_diff:,.2f} of interest was accrued but not yet distributed")
+        else:
+            explanations.append(f"${abs(gross_diff):,.2f} more was distributed than reported in tax statement")
+    
+    if abs(tax_diff) > 0.01:
+        if tax_diff > 0:
+            explanations.append(f"${tax_diff:,.2f} more tax was withheld than actually deducted")
+        else:
+            explanations.append(f"${abs(tax_diff):,.2f} less tax was withheld than actually deducted")
+    
+    if abs(net_diff) > 0.01:
+        if net_diff > 0:
+            explanations.append(f"${net_diff:,.2f} more net income reported than actually received")
+        else:
+            explanations.append(f"${abs(net_diff):,.2f} more net income received than reported")
+    
+    if not explanations:
+        explanations.append("Tax statement matches actual distributions perfectly")
+    
+    return "; ".join(explanations)
+
+
+def get_financial_years_for_fund_period(start_date, end_date, entity):
+    """
+    Get all financial years between start and end dates.
+    
+    Args:
+        start_date (date): Start date for the period
+        end_date (date): End date for the period
+        entity: Entity object with get_financial_year method
+    
+    Returns:
+        set: Set of financial year strings
+    """
+    from datetime import date
+    
+    financial_years = set()
+    current_date = start_date
+    while current_date <= end_date:
+        fy = entity.get_financial_year(current_date)
+        financial_years.add(fy)
+        # Move to next month
+        if current_date.month == 12:
+            current_date = date(current_date.year + 1, 1, 1)
+        else:
+            current_date = date(current_date.year, current_date.month + 1, 1)
+    return financial_years
+
+
+def get_equity_change_for_event(event, fund_type):
+    """
+    Calculate the equity change for a given event based on fund type.
+    Args:
+        event: FundEvent object
+        fund_type (FundType): Type of fund (NAV_BASED or COST_BASED)
+    Returns:
+        float: Equity change amount
+    """
+    from src.models import EventType, FundType
+
+    if fund_type == FundType.NAV_BASED:
+        if event.event_type == EventType.UNIT_PURCHASE:
+            return event.amount or 0.0
+        elif event.event_type == EventType.UNIT_SALE:
+            return -(event.amount or 0.0)
+    elif fund_type == FundType.COST_BASED:
+        if event.event_type == EventType.CAPITAL_CALL:
+            return event.amount or 0.0
+        elif event.event_type == EventType.RETURN_OF_CAPITAL:
+            return -(event.amount or 0.0)
+    return 0.0 
