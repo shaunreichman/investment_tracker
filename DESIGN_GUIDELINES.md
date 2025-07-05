@@ -50,6 +50,13 @@ def update_current_equity_balance(self, session=None):
 
 ## Changelog / Major Refactors
 
+- **2024-12:** Standardized date conventions and enhanced NAV-based fund support.
+  - All calculations now use inclusive start dates and exclusive end dates for consistency.
+  - Added FIFO cost basis tracking for NAV-based funds.
+  - Implemented automatic event listeners for unit purchase/sale events.
+  - Enhanced IRR calculations to include unit sales for NAV-based funds.
+  - Improved equity balance calculations using FIFO cost basis.
+
 - **2024-05:** Centralized session handling using the `@with_session` decorator.  
   - Removed repetitive session resolution code from model methods.
   - Improved maintainability and reduced boilerplate.
@@ -140,9 +147,9 @@ currency = Column(String(10), default="AUD")
 # These are automatically calculated
 current_units = Column(Float)  # Total units owned (from UNIT_PURCHASE - UNIT_SALE events)
 current_unit_price = Column(Float)  # Latest unit price (from most recent NAV_UPDATE)
-current_equity_balance = Column(Float)  # Total value (units * unit_price)
-average_equity_balance = Column(Float)  # Time-weighted average equity
-is_active = Column(Boolean)  # True if current_equity_balance > 0
+current_equity_balance = Column(Float)  # FIFO cost basis of remaining units
+average_equity_balance = Column(Float)  # Time-weighted average equity (exclusive end date)
+is_active = Column(Boolean)  # True if current_units > 0
 ```
 
 ### Cost-Based Funds (tracking_type=COST_BASED)
@@ -179,6 +186,39 @@ current_equity_balance = Column(Float)  # Same as total_cost_basis for cost-base
 average_equity_balance = Column(Float)  # Time-weighted average equity
 is_active = Column(Boolean)  # True if current_equity_balance > 0
 ```
+
+## Date Conventions and Calculations
+
+### Time Period Calculations
+All calculations in the system use **inclusive start dates and exclusive end dates** for consistency:
+
+- **Average Equity Balance**: Inclusive start, exclusive end
+- **Risk-Free Rate Charges**: Inclusive start, exclusive end  
+- **IRR Calculations**: Inclusive start, exclusive end
+
+**Example**: For a period from 2023-01-01 to 2023-01-10:
+- **Start date**: 2023-01-01 (inclusive)
+- **End date**: 2023-01-10 (exclusive)
+- **Days counted**: 9 days (Jan 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+This convention ensures consistency across all calculations and matches industry standards for IRR and opportunity cost calculations.
+
+### NAV-Based Fund FIFO Cost Basis
+NAV-based funds use FIFO (First In, First Out) cost basis tracking:
+
+- **Unit purchases**: Added to FIFO queue with purchase date and cost
+- **Unit sales**: Units sold from front of queue (oldest first)
+- **cost_of_units**: FIFO cost basis of remaining units after each event
+- **current_equity_balance**: Set to cost_of_units from latest unit event
+
+This provides accurate equity balance tracking that reflects the true cost basis of remaining units.
+
+### Automatic Event Listeners
+The system includes SQLAlchemy event listeners that automatically update fund calculations:
+
+- **After UNIT_PURCHASE/UNIT_SALE events**: Automatically calls `update_current_units_and_price()`
+- **Ensures consistency**: No manual updates required after unit events
+- **Safe for transactions**: Event listeners don't commit sessions (caller handles commits)
 
 ## FundEvent Model Fields for NAV-Based Funds
 
@@ -298,6 +338,12 @@ fund.update_current_units_and_price(session=session)
 # - Calculate amounts for all unit purchase/sale events
 # - Calculate shares_owned for all NAV update events
 # - Update current_units and current_unit_price
+# - Update cost_of_units using FIFO cost basis
+
+# 6. Calculate IRR (includes unit sales)
+irr = fund.calculate_irr(session=session)
+after_tax_irr = fund.calculate_after_tax_irr(session=session)
+real_irr = fund.calculate_real_irr(session=session)
 ```
 
 ## FundEvent Model Fields

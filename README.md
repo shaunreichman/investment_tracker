@@ -21,6 +21,12 @@ This app tracks investments, cash flows, and fund performance. It supports:
 **Data is stored in SQLite via SQLAlchemy.**  
 **All business logic is tested with a comprehensive system test.**
 
+### Recent Improvements
+- **Standardized date conventions**: All calculations now use inclusive start dates and exclusive end dates for consistency
+- **Automatic event listeners**: NAV-based funds automatically update current units after unit purchase/sale events
+- **Enhanced FIFO tracking**: NAV-based funds use FIFO cost basis for accurate equity balance calculations
+- **Improved IRR calculations**: Complete support for NAV-based fund IRR with unit sales included
+
 ---
 
 ## Fund Types Explained
@@ -49,9 +55,12 @@ fund = Fund(
 **Automatic Calculations**:
 - `current_units`: Total units owned (from purchase/sale events)
 - `current_unit_price`: Latest unit price (from NAV updates)
-- `current_equity_balance`: Total value (units × unit price)
+- `current_equity_balance`: FIFO cost basis of remaining units
 - `amount` in unit events: (units × unit price) ± brokerage fees
+- `cost_of_units`: FIFO cost basis after each unit event
 - `shares_owned` in NAV events: Cumulative units at that date
+
+**Note**: NAV-based funds use FIFO (First In, First Out) cost basis tracking for accurate equity balance calculations.
 
 ### Cost-Based Funds
 **Use for**: Private equity, venture capital, real estate, infrastructure funds

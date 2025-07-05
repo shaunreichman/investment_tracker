@@ -644,9 +644,9 @@ def recalculate_everything(show_irr_cashflows=False):
             # Update NAV-specific fields for NAV-based funds
             if fund.tracking_type == FundType.NAV_BASED:
                 fund.update_current_units_and_price(session=session)
-                print(f"  Current units: {fund.current_units:,.2f}")
-                print(f"  Current unit price: ${fund.current_unit_price:,.4f}")
-                print(f"  Current value: ${fund.current_value:,.2f}")
+                print(f"  Current units: {fund.current_units:,.2f}" if fund.current_units is not None else "  Current units: N/A")
+                print(f"  Current unit price: ${fund.current_unit_price:,.4f}" if fund.current_unit_price is not None else "  Current unit price: N/A")
+                print(f"  Current value: ${fund.current_value:,.2f}" if fund.current_value is not None else "  Current value: N/A")
             else:
                 # Update cost basis for cost-based funds
                 fund.update_total_cost_basis(session=session)
@@ -749,9 +749,9 @@ def verify_results():
             
             # NAV-specific verification
             if fund.tracking_type == FundType.NAV_BASED:
-                print(f"  Current units: {fund.current_units:,.2f}")
-                print(f"  Current unit price: ${fund.current_unit_price:,.4f}")
-                print(f"  Current value: ${fund.current_value:,.2f}")
+                print(f"  Current units: {fund.current_units:,.2f}" if fund.current_units is not None else "  Current units: N/A")
+                print(f"  Current unit price: ${fund.current_unit_price:,.4f}" if fund.current_unit_price is not None else "  Current unit price: N/A")
+                print(f"  Current value: ${fund.current_value:,.2f}" if fund.current_value is not None else "  Current value: N/A")
                 
                 # Verify NAV update events
                 nav_events = [e for e in fund.fund_events if e.event_type == EventType.NAV_UPDATE]
