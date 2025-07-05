@@ -1,63 +1,69 @@
 #!/usr/bin/env python3
 """
-Database migration script to make commitment_amount nullable for NAV-based funds.
+Migration script to add units_owned and cost_of_units columns to fund_events table.
+This migration supports the new NAV-based fund tracking with FIFO cost basis.
 """
 
-import sys
+import sqlite3
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from datetime import datetime
 
 def migrate_database():
-    """Make commitment_amount nullable for NAV-based funds."""
+    """Migrate the database to add new columns for NAV-based fund tracking."""
     
-    # Create database connection
-    engine = create_engine('sqlite:///data/investment_tracker.db')
+    db_path = 'data/investment_tracker.db'
     
-    print("MIGRATING DATABASE - Making commitment_amount nullable for NAV-based funds")
-    print("=" * 70)
+    if not os.path.exists(db_path):
+        print(f"Database file {db_path} not found. Please run init_database.py first.")
+        return False
+    
+    print("Starting database migration...")
+    
+    # Connect to the database
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
     
     try:
-        with engine.connect() as conn:
-            # Check current table structure
-            result = conn.execute(text("PRAGMA table_info(funds)"))
-            columns = [(row[1], row[2], row[3], row[4], row[5]) for row in result.fetchall()]
-            
-            print("Current funds table structure:")
-            for col_name, col_type, not_null, default_val, pk in columns:
-                print(f"  {col_name}: {col_type} {'NOT NULL' if not_null else 'NULL'} DEFAULT {default_val}")
-            
-            # SQLite doesn't support ALTER COLUMN to change nullability
-            # We need to recreate the table with the new schema
-            print("\nSQLite doesn't support ALTER COLUMN for nullability changes.")
-            print("This migration requires manual intervention.")
-            print("\nTo complete this migration:")
-            print("1. Backup your database: cp data/investment_tracker.db data/investment_tracker.db.backup")
-            print("2. Delete the database: rm data/investment_tracker.db")
-            print("3. Run init_database.py to recreate with new schema")
-            print("4. Restore your data from backup if needed")
-            
-            # Check if there are any NAV-based funds with commitment_amount
-            result = conn.execute(text("""
-                SELECT id, name, commitment_amount, tracking_type 
-                FROM funds 
-                WHERE tracking_type = 'nav_based' AND commitment_amount IS NOT NULL
-            """))
-            nav_funds = result.fetchall()
-            
-            if nav_funds:
-                print(f"\nFound {len(nav_funds)} NAV-based funds with commitment_amount:")
-                for fund_id, name, commitment, tracking_type in nav_funds:
-                    print(f"  Fund ID {fund_id}: {name} - commitment_amount: ${commitment:,.2f}")
-                print("\nThese funds will need their commitment_amount set to NULL after migration.")
-            else:
-                print("\nNo NAV-based funds with commitment_amount found.")
+        # Check if columns already exist
+        cursor.execute("PRAGMA table_info(fund_events)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        migrations_applied = []
+        
+        # Add units_owned column if it doesn't exist
+        if 'units_owned' not in columns:
+            print("Adding units_owned column...")
+            cursor.execute("ALTER TABLE fund_events ADD COLUMN units_owned REAL")
+            migrations_applied.append("units_owned")
+        
+        # Add cost_of_units column if it doesn't exist
+        if 'cost_of_units' not in columns:
+            print("Adding cost_of_units column...")
+            cursor.execute("ALTER TABLE fund_events ADD COLUMN cost_of_units REAL")
+            migrations_applied.append("cost_of_units")
+        
+        # Commit the changes
+        conn.commit()
+        
+        if migrations_applied:
+            print(f"Migration completed successfully. Added columns: {', '.join(migrations_applied)}")
+        else:
+            print("No migration needed - all columns already exist.")
+        
+        return True
         
     except Exception as e:
-        print(f"Migration check failed: {e}")
-        raise
+        print(f"Migration failed: {e}")
+        conn.rollback()
+        return False
+    
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
-    migrate_database() 
+    success = migrate_database()
+    if success:
+        print("Database migration completed successfully!")
+    else:
+        print("Database migration failed!")
+        exit(1) 
