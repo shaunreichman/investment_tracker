@@ -10,12 +10,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 
 from .models import Fund, FundEvent, EventType, FundType, DistributionType
+from src.utils import with_session
 
 
 class FundQueryMixin:
     """Mixin class for fund query methods."""
     
-    def get_events(self, session, event_types=None, start_date=None, end_date=None):
+    @with_session
+    def get_events(self, event_types=None, start_date=None, end_date=None, session=None):
         """Get events for this fund with optional filtering."""
         query = session.query(FundEvent).filter(FundEvent.fund_id == self.id)
         

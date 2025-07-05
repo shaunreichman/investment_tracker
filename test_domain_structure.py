@@ -30,8 +30,10 @@ def test_domain_imports():
         print("✅ Fund domain __init__ imports successful")
         
         # Test entity domain
-        from src.entity.models import Entity, InvestmentCompany, RiskFreeRate, EntityType
-        from src.entity import Entity, InvestmentCompany, RiskFreeRate
+        from src.investment_company.models import InvestmentCompany
+        from src.entity.models import Entity, EntityType
+        from src.entity import Entity
+        from src.rates.models import RiskFreeRate
         print("✅ Entity domain imports successful")
         
         # Test tax domain

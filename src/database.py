@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import StaticPool
 import os
-from .models import Base
+from .shared.base import Base
 
 
 def create_database_engine(database_url=None):
