@@ -22,7 +22,10 @@ from src.calculations import (
     orchestrate_irr_base,
     net_income,
     tax_payable,
-    interest_tax_benefit
+    interest_tax_benefit,
+    get_risk_free_rate_for_date,
+    get_reconciliation_explanation,
+    get_financial_years_for_fund_period
 )
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.elements import ColumnElement
@@ -861,28 +864,7 @@ class Fund(Base):
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
         return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, session=session)
     
-    def _get_risk_free_rate_for_date(self, target_date, risk_free_rates):
-        """Get the risk-free rate for a specific date from a list of rates.
-        Returns the most recent rate available on or before the target date, or None if not found.
-        """
-        if not risk_free_rates:
-            return None
-        
-        # Find the most recent rate that's <= target_date
-        applicable_rate = None
-        for rate in risk_free_rates:
-            if rate.rate_date <= target_date:
-                applicable_rate = rate
-            else:
-                break
-        
-        return applicable_rate.rate if applicable_rate else None
-    
-    def _calculate_daily_irr(self, cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
-        """Calculate IRR using daily cash flows and a root-finding algorithm.
-        Delegates to the calculate_irr utility function.
-        """
-        return calculate_irr(cash_flows, days_from_start, tolerance, max_iterations)
+
     
     def get_irr_percentage(self, session=None):
         """Return the IRR as a formatted percentage string, or 'N/A' if not computable."""
@@ -1093,7 +1075,7 @@ class Fund(Base):
             while current_date < event.event_date:
                 if current_date not in existing_dates:
                     # Find risk-free rate for this date
-                    rate = self._get_risk_free_rate_for_date(current_date, risk_free_rates)
+                    rate = get_risk_free_rate_for_date(current_date, risk_free_rates)
                     if rate is not None and current_equity > 0:
                         # Calculate daily interest charge
                         daily_interest = current_equity * (rate / 100) / 365.25
@@ -1112,13 +1094,13 @@ class Fund(Base):
                 current_date += timedelta(days=1)
             
             # Update equity balance for the actual event
-            current_equity += self._get_equity_change_for_event(event)
+            current_equity += get_equity_change_for_event(event, self.tracking_type)
             current_date = event.event_date
         
         # Add interest charges for remaining days until end_date
         while current_date <= end_date:
             if current_date not in existing_dates:
-                rate = self._get_risk_free_rate_for_date(current_date, risk_free_rates)
+                rate = get_risk_free_rate_for_date(current_date, risk_free_rates)
                 if rate is not None and current_equity > 0:
                     daily_interest = current_equity * (rate / 100) / 365.25
                     
@@ -1154,7 +1136,7 @@ class Fund(Base):
             return []
         
         # Get risk-free rates for the period - get all rates <= end_date
-        # The _get_risk_free_rate_for_date method will find the most recent rate <= target_date
+        # The get_risk_free_rate_for_date function will find the most recent rate <= target_date
         risk_free_rates = session.query(RiskFreeRate).filter(
             RiskFreeRate.currency == risk_free_rate_currency,
             RiskFreeRate.rate_date <= end_date
@@ -1244,21 +1226,7 @@ class Fund(Base):
         
         return abs(total_interest) if total_interest else 0.0
     
-    def _get_financial_years_for_fund_period(self, start_date, end_date, entity):
-        """Get all financial years between start and end dates.
-        Returns a set of financial year strings. No database operations.
-        """
-        financial_years = set()
-        current_date = start_date
-        while current_date <= end_date:
-            fy = entity.get_financial_year(current_date)
-            financial_years.add(fy)
-            # Move to next month
-            if current_date.month == 12:
-                current_date = date(current_date.year + 1, 1, 1)
-            else:
-                current_date = date(current_date.year, current_date.month + 1, 1)
-        return financial_years
+
 
     def _process_financial_year_for_debt_cost(self, fy, session=None):
         """Process a single financial year for debt cost events.
@@ -1304,7 +1272,7 @@ class Fund(Base):
             return created_events
         
         # Generate financial years from start to end
-        financial_years = self._get_financial_years_for_fund_period(start_date, end_date, entity)
+        financial_years = get_financial_years_for_fund_period(start_date, end_date, entity)
         
         # Process each financial year
         for fy in sorted(financial_years):
@@ -1679,12 +1647,7 @@ class Fund(Base):
             raise ValueError("total_cost_basis is calculated automatically from capital movements. Use update_total_cost_basis() instead.")
         self._total_cost_basis = value
 
-    def _get_equity_change_for_event(self, event):
-        """Calculate how much an event changes the fund's equity balance.
-        Delegates to get_equity_change_for_event in calculations.py.
-        """
-        from src.calculations import get_equity_change_for_event
-        return get_equity_change_for_event(event, self.tracking_type)
+
 
     @with_session
     def get_events(self, event_types=None, start_date=None, end_date=None, session=None):
@@ -2171,37 +2134,10 @@ class TaxStatement(Base):
                 'tax_withheld': tax_diff,
                 'net': net_diff
             },
-            'explanation': self._get_reconciliation_explanation(gross_diff, tax_diff, net_diff)
+            'explanation': get_reconciliation_explanation(gross_diff, tax_diff, net_diff)
         }
     
-    def _get_reconciliation_explanation(self, gross_diff, tax_diff, net_diff):
-        """Generate a human-readable explanation for the reconciliation differences.
-        Returns a string.
-        """
-        explanations = []
-        
-        if abs(gross_diff) > 0.01:  # Allow for small rounding differences
-            if gross_diff > 0:
-                explanations.append(f"${gross_diff:,.2f} of interest was accrued but not yet distributed")
-            else:
-                explanations.append(f"${abs(gross_diff):,.2f} more was distributed than reported in tax statement")
-        
-        if abs(tax_diff) > 0.01:
-            if tax_diff > 0:
-                explanations.append(f"${tax_diff:,.2f} more tax was withheld than actually deducted")
-            else:
-                explanations.append(f"${abs(tax_diff):,.2f} less tax was withheld than actually deducted")
-        
-        if abs(net_diff) > 0.01:
-            if net_diff > 0:
-                explanations.append(f"${net_diff:,.2f} more net income reported than actually received")
-            else:
-                explanations.append(f"${abs(net_diff):,.2f} more net income received than reported")
-        
-        if not explanations:
-            explanations.append("Tax statement matches actual distributions perfectly")
-        
-        return "; ".join(explanations)
+
     
     def _create_fy_debt_cost_event_object(self):
         """Create a FY debt cost event object for real IRR calculations if a tax benefit exists.
