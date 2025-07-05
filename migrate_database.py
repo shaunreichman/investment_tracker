@@ -1,64 +1,69 @@
 #!/usr/bin/env python3
 """
-Database migration script to add after-tax IRR fields to TaxStatement table.
+Migration script to add units_owned and cost_of_units columns to fund_events table.
+This migration supports the new NAV-based fund tracking with FIFO cost basis.
 """
 
-import sys
+import sqlite3
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from datetime import datetime
 
 def migrate_database():
-    """Add after-tax IRR fields to TaxStatement table."""
+    """Migrate the database to add new columns for NAV-based fund tracking."""
     
-    # Create database connection
-    engine = create_engine('sqlite:///data/investment_tracker.db')
+    db_path = 'data/investment_tracker.db'
     
-    print("MIGRATING DATABASE - Adding After-Tax IRR Fields")
-    print("=" * 60)
+    if not os.path.exists(db_path):
+        print(f"Database file {db_path} not found. Please run init_database.py first.")
+        return False
+    
+    print("Starting database migration...")
+    
+    # Connect to the database
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
     
     try:
         # Check if columns already exist
-        with engine.connect() as conn:
-            # Get table info
-            result = conn.execute(text("PRAGMA table_info(tax_statements)"))
-            columns = [row[1] for row in result.fetchall()]
-            
-            print(f"Existing columns: {columns}")
-            
-            # Add new columns if they don't exist
-            new_columns = [
-                ('tax_already_paid', 'REAL DEFAULT 0.0'),
-                ('tax_payable', 'REAL DEFAULT 0.0'),
-                ('tax_payable_rate', 'REAL DEFAULT 0.0'),
-                ('tax_payment_date', 'DATE')
-            ]
-            
-            for column_name, column_def in new_columns:
-                if column_name not in columns:
-                    print(f"Adding column: {column_name}")
-                    conn.execute(text(f"ALTER TABLE tax_statements ADD COLUMN {column_name} {column_def}"))
-                    conn.commit()
-                else:
-                    print(f"Column {column_name} already exists")
+        cursor.execute("PRAGMA table_info(fund_events)")
+        columns = [column[1] for column in cursor.fetchall()]
         
-        print("\nMigration completed successfully!")
+        migrations_applied = []
         
-        # Show final table structure
-        with engine.connect() as conn:
-            result = conn.execute(text("PRAGMA table_info(tax_statements)"))
-            columns = [(row[1], row[2]) for row in result.fetchall()]
-            
-            print("\nFinal table structure:")
-            print("-" * 40)
-            for col_name, col_type in columns:
-                print(f"{col_name}: {col_type}")
+        # Add units_owned column if it doesn't exist
+        if 'units_owned' not in columns:
+            print("Adding units_owned column...")
+            cursor.execute("ALTER TABLE fund_events ADD COLUMN units_owned REAL")
+            migrations_applied.append("units_owned")
+        
+        # Add cost_of_units column if it doesn't exist
+        if 'cost_of_units' not in columns:
+            print("Adding cost_of_units column...")
+            cursor.execute("ALTER TABLE fund_events ADD COLUMN cost_of_units REAL")
+            migrations_applied.append("cost_of_units")
+        
+        # Commit the changes
+        conn.commit()
+        
+        if migrations_applied:
+            print(f"Migration completed successfully. Added columns: {', '.join(migrations_applied)}")
+        else:
+            print("No migration needed - all columns already exist.")
+        
+        return True
         
     except Exception as e:
         print(f"Migration failed: {e}")
-        raise
+        conn.rollback()
+        return False
+    
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
-    migrate_database() 
+    success = migrate_database()
+    if success:
+        print("Database migration completed successfully!")
+    else:
+        print("Database migration failed!")
+        exit(1) 

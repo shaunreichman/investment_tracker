@@ -50,6 +50,13 @@ def update_current_equity_balance(self, session=None):
 
 ## Changelog / Major Refactors
 
+- **2024-12:** Standardized date conventions and enhanced NAV-based fund support.
+  - All calculations now use inclusive start dates and exclusive end dates for consistency.
+  - Added FIFO cost basis tracking for NAV-based funds.
+  - Implemented automatic event listeners for unit purchase/sale events.
+  - Enhanced IRR calculations to include unit sales for NAV-based funds.
+  - Improved equity balance calculations using FIFO cost basis.
+
 - **2024-05:** Centralized session handling using the `@with_session` decorator.  
   - Removed repetitive session resolution code from model methods.
   - Improved maintainability and reduced boilerplate.
@@ -70,11 +77,13 @@ These fields represent the fundamental characteristics of a fund and should be s
 name = Column(String(255), nullable=False)
 fund_type = Column(String(100))  # e.g., 'Private Equity', 'Venture Capital'
 tracking_type = Column(Enum(FundType), nullable=False)  # NAV_BASED or COST_BASED
-commitment_amount = Column(Float, nullable=False)  # Total amount committed
-expected_irr = Column(Float)  # Expected IRR as percentage
-expected_duration_months = Column(Integer)  # Expected fund duration
 description = Column(Text)
 currency = Column(String(10), default="AUD")
+
+# Cost-based fund specific fields (NOT applicable for NAV-based funds)
+commitment_amount = Column(Float, nullable=True)  # Total amount committed (cost-based only)
+expected_irr = Column(Float)  # Expected IRR as percentage (cost-based only)
+expected_duration_months = Column(Integer)  # Expected fund duration (cost-based only)
 ```
 
 ### AUTOMATIC FIELDS (Calculated by System)
@@ -105,6 +114,236 @@ def end_date(self):  # Calculated when equity balance goes to 0
 def current_value(self):  # Calculated based on fund type
 @property
 def total_investment_duration_months(self):  # Calculated from start/end dates
+```
+
+## NAV-Based Funds vs Cost-Based Funds
+
+### NAV-Based Funds (tracking_type=NAV_BASED)
+**Purpose**: Track investments that have regular NAV (Net Asset Value) updates, such as:
+- Listed shares/stocks
+- ETFs (Exchange Traded Funds)
+- Unit trusts
+- Managed funds with regular NAV reporting
+
+**Key Characteristics**:
+- No fixed commitment amount (buy units as needed)
+- No expected IRR (performance determined by market)
+- No fixed duration (hold as long as desired)
+- Track units owned and unit prices
+- NAV updates provide current market value
+
+**Manual Fields for NAV-Based Funds**:
+```python
+# Only these fields should be set manually
+name = Column(String(255), nullable=False)
+fund_type = Column(String(100))  # e.g., 'Equity - Consumer Discretionary'
+tracking_type = FundType.NAV_BASED
+description = Column(Text)  # e.g., "ABC Ltd on the ASX"
+currency = Column(String(10), default="AUD")
+```
+
+**Calculated Fields for NAV-Based Funds**:
+```python
+# These are automatically calculated
+current_units = Column(Float)  # Total units owned (from UNIT_PURCHASE - UNIT_SALE events)
+current_unit_price = Column(Float)  # Latest unit price (from most recent NAV_UPDATE)
+current_equity_balance = Column(Float)  # FIFO cost basis of remaining units
+average_equity_balance = Column(Float)  # Time-weighted average equity (exclusive end date)
+is_active = Column(Boolean)  # True if current_units > 0
+```
+
+### Cost-Based Funds (tracking_type=COST_BASED)
+**Purpose**: Track investments held at cost, such as:
+- Private equity funds
+- Venture capital funds
+- Real estate funds
+- Infrastructure funds
+
+**Key Characteristics**:
+- Fixed commitment amount
+- Expected IRR and duration
+- Track capital calls and returns
+- Value based on cost basis
+
+**Manual Fields for Cost-Based Funds**:
+```python
+# These fields should be set manually
+name = Column(String(255), nullable=False)
+fund_type = Column(String(100))  # e.g., 'Private Equity'
+tracking_type = FundType.COST_BASED
+commitment_amount = Column(Float, nullable=False)  # Total amount committed
+expected_irr = Column(Float)  # Expected IRR as percentage
+expected_duration_months = Column(Integer)  # Expected fund duration
+description = Column(Text)
+currency = Column(String(10), default="AUD")
+```
+
+**Calculated Fields for Cost-Based Funds**:
+```python
+# These are automatically calculated
+total_cost_basis = Column(Float)  # Capital calls - capital returns
+current_equity_balance = Column(Float)  # Same as total_cost_basis for cost-based funds
+average_equity_balance = Column(Float)  # Time-weighted average equity
+is_active = Column(Boolean)  # True if current_equity_balance > 0
+```
+
+## Date Conventions and Calculations
+
+### Time Period Calculations
+All calculations in the system use **inclusive start dates and exclusive end dates** for consistency:
+
+- **Average Equity Balance**: Inclusive start, exclusive end
+- **Risk-Free Rate Charges**: Inclusive start, exclusive end  
+- **IRR Calculations**: Inclusive start, exclusive end
+
+**Example**: For a period from 2023-01-01 to 2023-01-10:
+- **Start date**: 2023-01-01 (inclusive)
+- **End date**: 2023-01-10 (exclusive)
+- **Days counted**: 9 days (Jan 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+This convention ensures consistency across all calculations and matches industry standards for IRR and opportunity cost calculations.
+
+### NAV-Based Fund FIFO Cost Basis
+NAV-based funds use FIFO (First In, First Out) cost basis tracking:
+
+- **Unit purchases**: Added to FIFO queue with purchase date and cost
+- **Unit sales**: Units sold from front of queue (oldest first)
+- **cost_of_units**: FIFO cost basis of remaining units after each event
+- **current_equity_balance**: Set to cost_of_units from latest unit event
+
+This provides accurate equity balance tracking that reflects the true cost basis of remaining units.
+
+### Automatic Event Listeners
+The system includes SQLAlchemy event listeners that automatically update fund calculations:
+
+- **After UNIT_PURCHASE/UNIT_SALE events**: Automatically calls `update_current_units_and_price()`
+- **Ensures consistency**: No manual updates required after unit events
+- **Safe for transactions**: Event listeners don't commit sessions (caller handles commits)
+
+## FundEvent Model Fields for NAV-Based Funds
+
+### MANUAL FIELDS (Set by User)
+```python
+# Event identification
+fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False)
+event_type = Column(Enum(EventType), nullable=False)
+event_date = Column(Date, nullable=False)
+
+# NAV-based event specific fields
+units_purchased = Column(Float)  # For UNIT_PURCHASE events
+units_sold = Column(Float)  # For UNIT_SALE events
+unit_price = Column(Float)  # For UNIT_PURCHASE/SALE events
+nav_per_share = Column(Float)  # For NAV_UPDATE events
+brokerage_fee = Column(Float, default=0.0)  # For UNIT_PURCHASE/SALE events (optional)
+
+# Distribution fields
+amount = Column(Float)  # For DISTRIBUTION events
+distribution_type = Column(Enum(DistributionType))  # For DISTRIBUTION events
+
+# Metadata
+description = Column(Text)
+reference_number = Column(String(100))
+```
+
+### AUTOMATIC FIELDS (Calculated by System)
+```python
+# These are automatically calculated by the system
+amount = Column(Float)  # For UNIT_PURCHASE/SALE: (units * unit_price) ± brokerage_fee
+shares_owned = Column(Float)  # For NAV_UPDATE: cumulative units from all unit events up to that date
+```
+
+### NAV-Based Event Types
+
+#### UNIT_PURCHASE Events
+**Manual Fields**:
+- `units_purchased`: Number of units bought
+- `unit_price`: Price per unit
+- `brokerage_fee`: Transaction cost (optional)
+
+**Calculated Fields**:
+- `amount`: `(units_purchased * unit_price) + brokerage_fee`
+
+#### UNIT_SALE Events
+**Manual Fields**:
+- `units_sold`: Number of units sold
+- `unit_price`: Price per unit
+- `brokerage_fee`: Transaction cost (optional)
+
+**Calculated Fields**:
+- `amount`: `(units_sold * unit_price) - brokerage_fee` (negative for sales)
+
+#### NAV_UPDATE Events
+**Manual Fields**:
+- `nav_per_share`: Current NAV per unit
+
+**Calculated Fields**:
+- `shares_owned`: Total units owned at this date (calculated from cumulative unit events)
+
+#### DISTRIBUTION Events
+**Manual Fields**:
+- `amount`: Distribution amount received
+- `distribution_type`: Type of distribution (DIVIDEND, INTEREST, etc.)
+
+**No Calculated Fields**: All fields are manual for distributions.
+
+### Example NAV-Based Fund Setup
+
+```python
+# 1. Create NAV-based fund (minimal manual fields)
+fund = Fund(
+    investment_company_id=company.id,
+    entity_id=entity.id,
+    name="ABC Ltd",
+    fund_type="Equity - Consumer Discretionary",
+    tracking_type=FundType.NAV_BASED,
+    currency="AUD",
+    description="ABC Ltd on the ASX"
+)
+
+# 2. Add unit purchase event
+purchase_event = FundEvent(
+    fund_id=fund.id,
+    event_type=EventType.UNIT_PURCHASE,
+    event_date=date(2023, 3, 28),
+    units_purchased=85.0,
+    unit_price=58.00,
+    brokerage_fee=19.95,
+    description="Initial unit purchase"
+)
+# amount will be calculated as: (85.0 * 58.00) + 19.95 = 4,949.95
+
+# 3. Add NAV update event
+nav_event = FundEvent(
+    fund_id=fund.id,
+    event_type=EventType.NAV_UPDATE,
+    event_date=date(2023, 3, 31),
+    nav_per_share=57.20,
+    description="March 2023 NAV update"
+)
+# shares_owned will be calculated as: 85.0 (from the purchase event)
+
+# 4. Add distribution event
+dist_event = FundEvent(
+    fund_id=fund.id,
+    event_type=EventType.DISTRIBUTION,
+    event_date=date(2023, 9, 12),
+    amount=79.05,
+    distribution_type=DistributionType.DIVIDEND,
+    description="Fully Franked Dividend"
+)
+
+# 5. Update calculated fields
+fund.update_current_units_and_price(session=session)
+# This will:
+# - Calculate amounts for all unit purchase/sale events
+# - Calculate shares_owned for all NAV update events
+# - Update current_units and current_unit_price
+# - Update cost_of_units using FIFO cost basis
+
+# 6. Calculate IRR (includes unit sales)
+irr = fund.calculate_irr(session=session)
+after_tax_irr = fund.calculate_after_tax_irr(session=session)
+real_irr = fund.calculate_real_irr(session=session)
 ```
 
 ## FundEvent Model Fields
@@ -589,4 +828,69 @@ def calculate_irr(events, ...):
 ### Reporting/Formatting Logic
 - If you have complex reporting or formatting, consider a `reporting.py` or `formatting.py` utility.
 
---- 
+---
+
+## Code Sharing Patterns for NAV-Based Calculations
+
+### Shared Utilities
+The system includes several shared utility functions to eliminate code duplication between NAV-based calculations:
+
+#### `get_unit_events_for_fund(fund_id, session, include_nav_updates=False)`
+- **Purpose**: Consistent filtering of UNIT_PURCHASE and UNIT_SALE events
+- **Used by**: `calculate_nav_event_amounts()`, IRR calculations, capital gains calculations
+- **Benefits**: Eliminates duplicate database queries and filtering logic
+
+#### `calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None)`
+- **Purpose**: Track cumulative units owned and total cost basis up to a given date
+- **Used by**: `calculate_nav_event_amounts()`, `calculate_nav_based_capital_gains()`, IRR calculations
+- **Benefits**: Single source of truth for unit and cost basis accumulation logic
+
+#### `calculate_nav_based_cost_basis_for_irr(fund_id, session, as_of_date=None)`
+- **Purpose**: Calculate cost basis for NAV-based funds (used in IRR calculations)
+- **Used by**: IRR calculations, fund model methods
+- **Benefits**: Provides cost basis calculation without duplicating unit tracking logic
+
+### Code Reuse Benefits
+- **Consistency**: All NAV-based calculations use the same unit tracking logic
+- **Maintainability**: Changes to unit tracking logic only need to be made in one place
+- **Performance**: Shared utilities can be optimized once and benefit all consumers
+- **Testing**: Shared utilities can be thoroughly tested independently
+
+### When to Use Shared Utilities
+- **DO** use `get_unit_events_for_fund()` when you need to filter unit events
+- **DO** use `calculate_cumulative_units_and_cost_basis()` when you need unit/cost tracking
+- **DO** use `calculate_nav_based_cost_basis_for_irr()` when you need cost basis for IRR
+- **DON'T** duplicate the filtering or accumulation logic in new functions
+
+### Example Usage
+```python
+# In calculations.py - using shared utilities
+def calculate_nav_event_amounts(fund_id, session):
+    """Calculate amounts for unit purchases/sales and shares_owned for NAV updates."""
+    # Use shared utility for consistent event filtering
+    unit_events = get_unit_events_for_fund(fund_id, session, include_nav_updates=True)
+    
+    # Calculate amounts using the filtered events
+    for event in unit_events:
+        if event.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
+            # ... calculate amounts ...
+    
+    # Calculate shares_owned using shared accumulation logic
+    cumulative_units = 0.0
+    for event in unit_events:
+        # ... update cumulative units ...
+```
+
+```python
+# In models.py - using shared utilities
+def get_nav_based_cost_basis(self, as_of_date=None, session=None):
+    """Get the cost basis for NAV-based funds up to a given date."""
+    if self.tracking_type != FundType.NAV_BASED:
+        return 0.0
+        
+    # Use shared utility for cost basis calculation
+    from calculations import calculate_nav_based_cost_basis_for_irr
+    return calculate_nav_based_cost_basis_for_irr(self.id, session, as_of_date)
+```
+
+---

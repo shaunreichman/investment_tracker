@@ -64,7 +64,7 @@ def calculate_average_equity_balance_nav(unit_events, start_date, end_date):
     Args:
         unit_events (list): List of FundEvent objects (unit purchases/sales).
         start_date (date): Start date for the calculation period.
-        end_date (date): End date for the calculation period.
+        end_date (date): End date for the calculation period (exclusive).
     
     Returns:
         float: The average equity balance over the period.
@@ -78,8 +78,8 @@ def calculate_average_equity_balance_nav(unit_events, start_date, end_date):
     daily_cost_basis = {}
     available_units = deque()
     current_date = start_date
-    # Initialize daily cost basis for each day in the period
-    while current_date <= end_date:
+    # Initialize daily cost basis for each day in the period (exclusive of end_date)
+    while current_date < end_date:
         daily_cost_basis[current_date] = 0
         current_date += timedelta(days=1)
     for event in unit_events:
@@ -103,7 +103,7 @@ def calculate_average_equity_balance_nav(unit_events, start_date, end_date):
         # Calculate current cost basis after each event
         current_cost_basis = sum(units * cost_per_unit for units, cost_per_unit, _ in available_units)
         current_date = event.event_date
-        while current_date <= end_date:
+        while current_date < end_date:
             daily_cost_basis[current_date] = current_cost_basis
             current_date += timedelta(days=1)
     total_cost_basis = sum(daily_cost_basis.values())
@@ -280,13 +280,19 @@ def calculate_nav_based_capital_gains(events):
         float: Total capital gains.
     """
     from .models import EventType
-    # Separate purchase and sale events
-    purchase_events = [e for e in events if e.event_type == EventType.UNIT_PURCHASE]
-    sale_events = [e for e in events if e.event_type == EventType.UNIT_SALE]
+    
+    # Use shared utility to get purchase and sale data
+    result = calculate_cumulative_units_and_cost_basis(events)
+    unit_purchases = result['unit_purchases']
+    unit_sales = result['unit_sales']
+    
     # FIFO calculation
     total_capital_gains = 0
     available_units = []  # List of (units, cost_basis_per_unit, date)
-    all_events = sorted(purchase_events + sale_events, key=lambda x: x.event_date)
+    
+    # Sort all events by date for FIFO processing
+    all_events = sorted(events, key=lambda x: x.event_date)
+    
     for event in all_events:
         if event.event_type == EventType.UNIT_PURCHASE:
             units = event.units_purchased or 0
@@ -369,6 +375,7 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
     event_types = [
         EventType.CAPITAL_CALL,
         EventType.UNIT_PURCHASE,
+        EventType.UNIT_SALE,
         EventType.RETURN_OF_CAPITAL,
         EventType.DISTRIBUTION,
         EventType.MANAGEMENT_FEE,
@@ -414,6 +421,10 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
             cash_flows.append(-event.amount)
         elif event.event_type == EventType.FY_DEBT_COST:
             cash_flows.append(event.amount)
+        elif event.event_type == EventType.UNIT_PURCHASE:
+            cash_flows.append(-event.amount)  # Negative cash flow for purchases
+        elif event.event_type == EventType.UNIT_SALE:
+            cash_flows.append(event.amount)   # Positive cash flow for sales
         else:
             from .calculations import get_equity_change_for_event
             cash_flows.append(-get_equity_change_for_event(event, None))
@@ -472,7 +483,7 @@ def interest_tax_benefit(total_interest_expense, interest_deduction_rate):
         return (total_interest_expense * interest_deduction_rate) / 100
     return 0.0
 
-def get_financial_year_dates(financial_year, tax_jurisdiction):
+def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
     """
     Get the start and end dates for a financial year based on jurisdiction.
     Args:
@@ -503,4 +514,159 @@ def get_financial_year_dates(financial_year, tax_jurisdiction):
         else:
             fy_start = date(year, 1, 1)
             fy_end = date(year, 12, 31)
-    return fy_start, fy_end 
+    return fy_start, fy_end
+
+def calculate_nav_event_amounts(fund_id, session):
+    """Calculate amounts for unit purchases/sales and update units_owned and cost_of_units for NAV-based funds.
+    This function ensures that:
+    - Unit purchase/sale amounts = units * unit_price + brokerage_fee
+    - units_owned is updated only after purchase/sale events (not NAV updates)
+    - cost_of_units is calculated using FIFO for remaining units after each event
+    Note: This function does NOT commit the session - the calling method should handle commits.
+    """
+    from src.models import FundEvent, EventType
+    
+    # Get all unit events for this fund
+    unit_events = get_unit_events_for_fund(fund_id, session, include_nav_updates=True)
+    
+    # Calculate amounts for unit purchases/sales and update units_owned and cost_of_units
+    cumulative_units = 0.0
+    available_units = []  # FIFO queue: [(units, cost_per_unit, date), ...]
+    
+    for event in unit_events:
+        if event.event_type == EventType.UNIT_PURCHASE:
+            units = event.units_purchased or 0
+            unit_price = event.unit_price or 0
+            brokerage_fee = event.brokerage_fee or 0
+            event.amount = (units * unit_price) + brokerage_fee
+            
+            # Add to FIFO queue
+            if units > 0 and unit_price > 0:
+                available_units.append((units, unit_price, event.event_date))
+            
+            cumulative_units += units
+            event.units_owned = cumulative_units
+            
+            # Calculate cost of remaining units using FIFO
+            total_cost = sum(units * cost for units, cost, _ in available_units)
+            event.cost_of_units = total_cost
+            
+        elif event.event_type == EventType.UNIT_SALE:
+            units = event.units_sold or 0
+            unit_price = event.unit_price or 0
+            brokerage_fee = event.brokerage_fee or 0
+            event.amount = (units * unit_price) - brokerage_fee  # Negative for sales
+            
+            # Remove units from FIFO queue (FIFO order)
+            remaining_units_to_sell = units
+            while remaining_units_to_sell > 0 and available_units:
+                oldest_units, oldest_cost, _ = available_units[0]
+                if oldest_units <= remaining_units_to_sell:
+                    # Sell all oldest units
+                    available_units.pop(0)
+                    remaining_units_to_sell -= oldest_units
+                else:
+                    # Sell partial oldest units
+                    available_units[0] = (oldest_units - remaining_units_to_sell, oldest_cost, available_units[0][2])
+                    remaining_units_to_sell = 0
+            
+            cumulative_units -= units
+            event.units_owned = cumulative_units
+            
+            # Calculate cost of remaining units using FIFO
+            total_cost = sum(units * cost for units, cost, _ in available_units)
+            event.cost_of_units = total_cost
+            
+        # Do not update units_owned or cost_of_units for NAV_UPDATE events
+
+def get_unit_events_for_fund(fund_id, session, include_nav_updates=False):
+    """
+    Get all unit purchase/sale events for a fund, optionally including NAV updates.
+    Shared utility for NAV-based calculations.
+    
+    Args:
+        fund_id (int): The fund ID
+        session: Database session
+        include_nav_updates (bool): Whether to include NAV_UPDATE events in the query
+    
+    Returns:
+        list: List of FundEvent objects ordered by event_date
+    """
+    from src.models import FundEvent, EventType
+    
+    event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
+    if include_nav_updates:
+        event_types.append(EventType.NAV_UPDATE)
+    
+    return session.query(FundEvent).filter(
+        FundEvent.fund_id == fund_id,
+        FundEvent.event_type.in_(event_types)
+    ).order_by(FundEvent.event_date).all()
+
+def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
+    """
+    Calculate cumulative units owned and total cost basis up to a given date.
+    Shared utility for NAV-based calculations.
+    
+    Args:
+        unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
+        as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
+    
+    Returns:
+        dict: {
+            'cumulative_units': float,
+            'total_cost_basis': float,
+            'unit_purchases': list of (units, cost_per_unit, date),
+            'unit_sales': list of (units, sale_price_per_unit, date)
+        }
+    """
+    from src.models import EventType
+    
+    cumulative_units = 0.0
+    total_cost_basis = 0.0
+    unit_purchases = []
+    unit_sales = []
+    
+    for event in unit_events:
+        # Stop if we've reached the as_of_date
+        if as_of_date and event.event_date > as_of_date:
+            break
+            
+        if event.event_type == EventType.UNIT_PURCHASE:
+            units = event.units_purchased or 0
+            unit_price = event.unit_price or 0
+            if units > 0 and unit_price > 0:
+                cumulative_units += units
+                total_cost_basis += units * unit_price
+                unit_purchases.append((units, unit_price, event.event_date))
+                
+        elif event.event_type == EventType.UNIT_SALE:
+            units = event.units_sold or 0
+            unit_price = event.unit_price or 0
+            if units > 0:
+                cumulative_units -= units
+                unit_sales.append((units, unit_price, event.event_date))
+    
+    return {
+        'cumulative_units': cumulative_units,
+        'total_cost_basis': total_cost_basis,
+        'unit_purchases': unit_purchases,
+        'unit_sales': unit_sales
+    }
+
+def calculate_nav_based_cost_basis_for_irr(fund_id, session, as_of_date=None):
+    """
+    Calculate the cost basis for NAV-based funds up to a given date.
+    This is used for IRR calculations where we need to know the total amount invested.
+    
+    Args:
+        fund_id (int): The fund ID
+        session: Database session
+        as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
+    
+    Returns:
+        float: Total cost basis (sum of all unit purchases minus unit sales)
+    """
+    unit_events = get_unit_events_for_fund(fund_id, session, include_nav_updates=False)
+    result = calculate_cumulative_units_and_cost_basis(unit_events, as_of_date)
+    return result['total_cost_basis'] 

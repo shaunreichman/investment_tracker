@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Comprehensive system test script.
+Comprehensive system test script using direct model methods.
 Clears database (except Risk Free Rates), re-enters the two main funds,
 and recalculates everything to verify the system works end-to-end.
+This version uses only direct model methods - no direct FundEvent creation.
 """
 
 import sys
@@ -42,7 +43,7 @@ def clear_database_except_rates():
     print("Database cleared (Risk Free Rates preserved)")
 
 def setup_test_data():
-    """Set up test data with minimal information, let system calculate the rest."""
+    """Set up test data using only direct model methods."""
     engine = create_engine('sqlite:///data/investment_tracker.db')
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -55,6 +56,14 @@ def setup_test_data():
         )
         session.add(company)
         session.commit()
+
+        # Create investment company
+        company_shares = InvestmentCompany(
+            name="Shares",
+            description="Share trading platform"
+        )
+        session.add(company_shares)
+        session.commit()
         
         # Create entity
         entity = Entity(
@@ -64,7 +73,7 @@ def setup_test_data():
         session.add(entity)
         session.commit()
         
-        # Create Senior Debt Fund No.24 (Cost-based) - NO EQUITY BALANCES SET
+        # Create Senior Debt Fund No.24 (Cost-based)
         senior_debt_fund = Fund(
             investment_company_id=company.id,
             entity_id=entity.id,
@@ -72,7 +81,6 @@ def setup_test_data():
             fund_type="Private Debt",
             tracking_type=FundType.COST_BASED,
             commitment_amount=100000.0,
-            # current_equity_balance, average_equity_balance, and total_cost_basis will be calculated
             expected_irr=12.0,
             expected_duration_months=60,
             currency="AUD",
@@ -80,7 +88,7 @@ def setup_test_data():
         )
         session.add(senior_debt_fund)
         
-        # Create 3PG Finance (Cost-based) - NO EQUITY BALANCES SET
+        # Create 3PG Finance (Cost-based)
         finance_fund = Fund(
             investment_company_id=company.id,
             entity_id=entity.id,
@@ -88,7 +96,6 @@ def setup_test_data():
             fund_type="Private Debt",
             tracking_type=FundType.COST_BASED,
             commitment_amount=100000.0,
-            # current_equity_balance, average_equity_balance, and total_cost_basis will be calculated
             expected_irr=10.0,
             expected_duration_months=48,
             currency="AUD",
@@ -97,44 +104,47 @@ def setup_test_data():
         session.add(finance_fund)
         session.commit()
         
-        # Add events for Senior Debt Fund No.24
-        senior_debt_events = [
-            # Capital events (no tax withholding)
-            FundEvent(
-                fund_id=senior_debt_fund.id,
-                event_type=EventType.CAPITAL_CALL,
-                event_date=date(2023, 6, 23),
-                amount=100000.0,
-                description="Initial capital call"
-            ),
-            FundEvent(
-                fund_id=senior_debt_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2023, 12, 8),
-                amount=7000.0,
-                description="Return of capital"
-            ),
-            FundEvent(
-                fund_id=senior_debt_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2024, 3, 26),
-                amount=45000.0,
-                description="Partial exit distribution"
-            ),
-            FundEvent(
-                fund_id=senior_debt_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2024, 8, 2),
-                amount=48000.0,
-                description="Return of capital"
-            ),
-        ]
-        
-        # Add capital events first
-        session.add_all(senior_debt_events)
+        # Create NAV-based test fund
+        abc_fund = Fund(
+            investment_company_id=company_shares.id,
+            entity_id=entity.id,
+            name="ABC Ltd",
+            fund_type="Equity - Consumer Discretionary",
+            tracking_type=FundType.NAV_BASED,
+            currency="AUD",
+            description="ABC Ltd on the ASX"
+        )
+        session.add(abc_fund)
         session.commit()
         
-        # Add distribution events with tax using the new method
+        # Add events for Senior Debt Fund No.24 using direct methods
+        print("Adding Senior Debt Fund events using direct methods...")
+        
+        # Add capital call
+        senior_debt_fund.add_capital_call(
+            amount=100000.0,
+            date=date(2023, 6, 23),
+            description="Initial capital call"
+        )
+        
+        # Add returns of capital
+        senior_debt_fund.add_return_of_capital(
+            amount=7000.0,
+            date=date(2023, 12, 8),
+            description="Return of capital"
+        )
+        senior_debt_fund.add_return_of_capital(
+            amount=45000.0,
+            date=date(2024, 3, 26),
+            description="Partial exit distribution"
+        )
+        senior_debt_fund.add_return_of_capital(
+            amount=48000.0,
+            date=date(2024, 8, 2),
+            description="Return of capital"
+        )
+        
+        # Add distribution events with tax using direct methods
         print("Adding Senior Debt Fund distributions with tax...")
         senior_debt_fund.add_distribution_with_tax_rate(
             event_date=date(2023, 10, 20),
@@ -172,72 +182,54 @@ def setup_test_data():
             description="Interest distribution"
         )
         
-        # Add events for 3PG Finance
-        finance_events = [
-            # Capital events (no tax withholding)
-            FundEvent(
-                fund_id=finance_fund.id,
-                event_type=EventType.CAPITAL_CALL,
-                event_date=date(2022, 11, 24),
-                amount=100000.0,
-                description="Initial capital call"
-            ),
-            FundEvent(
-                fund_id=finance_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2023, 3, 24),
-                amount=7324.42,
-                description="Return of capital"
-            ),
-            FundEvent(
-                fund_id=finance_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2023, 7, 7),
-                amount=26326.88,
-                description="Partial exit distribution"
-            ),
-            FundEvent(
-                fund_id=finance_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2023, 8, 4),
-                amount=8527.53,
-                description="Return of capital"
-            ),
-            FundEvent(
-                fund_id=finance_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2023, 9, 22),
-                amount=8805.21,
-                description="Return of capital"
-            ),
-            FundEvent(
-                fund_id=finance_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2023, 10, 13),
-                amount=9814.74,
-                description="Return of capital"
-            ),
-            FundEvent(
-                fund_id=finance_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2023, 11, 21),
-                amount=6967.81,
-                description="Return of capital"
-            ),
-            FundEvent(
-                fund_id=finance_fund.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=date(2024, 4, 19),
-                amount=32233.41,
-                description="Final return of capital"
-            ),
-        ]
+        # Add events for 3PG Finance using direct methods
+        print("Adding 3PG Finance events using direct methods...")
         
-        # Add capital events first
-        session.add_all(finance_events)
-        session.commit()
+        # Add capital call
+        finance_fund.add_capital_call(
+            amount=100000.0,
+            date=date(2022, 11, 24),
+            description="Initial capital call"
+        )
         
-        # Add distribution events with tax using the new method
+        # Add returns of capital
+        finance_fund.add_return_of_capital(
+            amount=7324.42,
+            date=date(2023, 3, 24),
+            description="Return of capital"
+        )
+        finance_fund.add_return_of_capital(
+            amount=26326.88,
+            date=date(2023, 7, 7),
+            description="Partial exit distribution"
+        )
+        finance_fund.add_return_of_capital(
+            amount=8527.53,
+            date=date(2023, 8, 4),
+            description="Return of capital"
+        )
+        finance_fund.add_return_of_capital(
+            amount=8805.21,
+            date=date(2023, 9, 22),
+            description="Return of capital"
+        )
+        finance_fund.add_return_of_capital(
+            amount=9814.74,
+            date=date(2023, 10, 13),
+            description="Return of capital"
+        )
+        finance_fund.add_return_of_capital(
+            amount=6967.81,
+            date=date(2023, 11, 21),
+            description="Return of capital"
+        )
+        finance_fund.add_return_of_capital(
+            amount=32233.41,
+            date=date(2024, 4, 19),
+            description="Final return of capital"
+        )
+        
+        # Add distribution events with tax using direct methods
         print("Adding 3PG Finance distributions with tax...")
         # First distribution (no tax)
         finance_fund.add_distribution_with_tax(
@@ -291,91 +283,238 @@ def setup_test_data():
             description="Interest distribution"
         )
         
-        # Add tax statements with proper tax rates
-        tax_statements = [
-            # Senior Debt Fund No.24 Tax Statements
-            TaxStatement(
-                fund_id=senior_debt_fund.id,
-                entity_id=entity.id,
-                financial_year="2022-23",
-                notes="FY23 tax statement from fund manager",
-                distribution_receivable_this_fy=0.0,
-                distribution_received_prev_fy=0.0,
-                interest_received_in_cash=0.0,
-                non_resident_withholding_tax_from_statement=0.0,
-                accountant='Findex',
-                statement_date=date(2024, 8, 24),
-                interest_taxable_rate=10.0,
-                interest_deduction_rate=32.5
-            ),
-            TaxStatement(
-                fund_id=senior_debt_fund.id,
-                entity_id=entity.id,
-                financial_year="2023-24",
-                notes="FY24 tax statement from fund manager",
-                distribution_receivable_this_fy=0.0,
-                distribution_received_prev_fy=0.0,
-                interest_received_in_cash=8499.98,
-                non_resident_withholding_tax_from_statement=852.0,
-                accountant='Findex',
-                statement_date=date(2024, 8, 12),
-                interest_taxable_rate=10.0,
-                interest_deduction_rate=32.5
-            ),
-            # 3PG Finance Tax Statements
-            TaxStatement(
-                fund_id=finance_fund.id,
-                entity_id=entity.id,
-                financial_year="2022-23",
-                notes="FY23 tax statement from fund manager",
-                distribution_receivable_this_fy=0.0,
-                distribution_received_prev_fy=0.0,
-                interest_received_in_cash=3075.57,
-                non_resident_withholding_tax_from_statement=0.0,
-                accountant='Findex',
-                statement_date=date(2023, 7, 26),
-                interest_taxable_rate=10.0,
-                interest_deduction_rate=32.5
-            ),
-            TaxStatement(
-                fund_id=finance_fund.id,
-                entity_id=entity.id,
-                financial_year="2023-24",
-                notes="FY24 tax statement from fund manager",
-                distribution_receivable_this_fy=0.0,
-                distribution_received_prev_fy=0.0,
-                interest_received_in_cash=11757.14,
-                non_resident_withholding_tax_from_statement=1179.0,
-                accountant='Findex',
-                statement_date=date(2024, 7, 1),
-                interest_taxable_rate=10.0,
-                interest_deduction_rate=32.5
-            )
-        ]
+        # Add NAV-based fund events using direct methods
+        print("Adding NAV-based fund events using direct methods...")
         
-        session.add_all(tax_statements)
-        session.commit()
+        # Initial unit purchase
+        abc_fund.add_unit_purchase(
+            units=85.0,
+            price=58.00,
+            date=date(2013, 3, 28),
+            brokerage_fee=19.95,
+            description="Initial unit purchase"
+        )
         
-        # Ensure all derived fields are up to date
-        for statement in tax_statements:
-            statement.calculate_interest_income_fields(session=session)
-            statement.calculate_tax_payable()
-        session.commit()
+        # NAV updates
+        abc_fund.add_nav_update(
+            nav_per_share=57.20,
+            date=date(2013, 3, 31),
+            description="March 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=55.80,
+            date=date(2013, 4, 30),
+            description="April 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=55.18,
+            date=date(2013, 5, 31),
+            description="May 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=52.37,
+            date=date(2013, 6, 30),
+            description="June 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=57.51,
+            date=date(2013, 7, 31),
+            description="July 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=58.30,
+            date=date(2013, 8, 31),
+            description="August 2013 NAV update"
+        )
+        
+        # Partial unit sale
+        abc_fund.add_unit_sale(
+            units=40.0,
+            price=61.20,
+            date=date(2013, 9, 4),
+            brokerage_fee=24.95,
+            description="Partial unit sale"
+        )
+        
+        # Distribution
+        abc_fund.add_distribution(
+            amount=79.05,
+            date=date(2013, 9, 12),
+            distribution_type=DistributionType.DIVIDEND,
+            description="Fully Franked Dividend"
+        )
+        
+        # More NAV updates
+        abc_fund.add_nav_update(
+            nav_per_share=59.30,
+            date=date(2013, 9, 30),
+            description="September 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=53.30,
+            date=date(2013, 10, 31),
+            description="October 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=54.30,
+            date=date(2013, 11, 30),
+            description="November 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=48.30,
+            date=date(2013, 12, 31),
+            description="December 2013 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=59.30,
+            date=date(2014, 1, 31),
+            description="January 2014 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=54.30,
+            date=date(2014, 2, 28),
+            description="February 2014 NAV update"
+        )
+        abc_fund.add_nav_update(
+            nav_per_share=56.30,
+            date=date(2014, 3, 31),
+            description="March 2014 NAV update"
+        )
+        
+        # Additional unit purchase
+        abc_fund.add_unit_purchase(
+            units=120.0,
+            price=61.4,
+            date=date(2014, 4, 30),
+            brokerage_fee=19.95,
+            description="Additional unit purchase"
+        )
+        
+        # NAV update on same date as purchase
+        abc_fund.add_nav_update(
+            nav_per_share=61.25,
+            date=date(2014, 4, 30),
+            description="April 2014 NAV update"
+        )
+        
+        # Final unit sale
+        abc_fund.add_unit_sale(
+            units=165.0,
+            price=62.62,
+            date=date(2014, 5, 13),
+            brokerage_fee=19.95,
+            description="Full unit sale"
+        )
+        
+        # Add tax statements using direct model methods
+        tax_statements = []
+        
+        # Senior Debt Fund No.24 Tax Statements
+        tax_statements.append(senior_debt_fund.create_or_update_tax_statement(
+            entity_id=entity.id,
+            financial_year="2022-23",
+            notes="FY23 tax statement from fund manager",
+            distribution_receivable_this_fy=0.0,
+            distribution_received_prev_fy=0.0,
+            interest_received_in_cash=0.0,
+            non_resident_withholding_tax_from_statement=0.0,
+            accountant='Findex',
+            statement_date=date(2024, 8, 24),
+            interest_taxable_rate=10.0,
+            interest_deduction_rate=32.5
+        ))
+        
+        tax_statements.append(senior_debt_fund.create_or_update_tax_statement(
+            entity_id=entity.id,
+            financial_year="2023-24",
+            notes="FY24 tax statement from fund manager",
+            distribution_receivable_this_fy=0.0,
+            distribution_received_prev_fy=0.0,
+            interest_received_in_cash=8499.98,
+            non_resident_withholding_tax_from_statement=852.0,
+            accountant='Findex',
+            statement_date=date(2024, 8, 12),
+            interest_taxable_rate=10.0,
+            interest_deduction_rate=32.5
+        ))
+        
+        # 3PG Finance Tax Statements
+        tax_statements.append(finance_fund.create_or_update_tax_statement(
+            entity_id=entity.id,
+            financial_year="2022-23",
+            notes="FY23 tax statement from fund manager",
+            distribution_receivable_this_fy=0.0,
+            distribution_received_prev_fy=0.0,
+            interest_received_in_cash=3075.58,
+            non_resident_withholding_tax_from_statement=0.0,
+            accountant='Findex',
+            statement_date=date(2024, 8, 24),
+            interest_taxable_rate=10.0,
+            interest_deduction_rate=32.5
+        ))
+        
+        tax_statements.append(finance_fund.create_or_update_tax_statement(
+            entity_id=entity.id,
+            financial_year="2023-24",
+            notes="FY24 tax statement from fund manager",
+            distribution_receivable_this_fy=0.0,
+            distribution_received_prev_fy=0.0,
+            interest_received_in_cash=10763.96,
+            non_resident_withholding_tax_from_statement=1076.4,
+            accountant='Findex',
+            statement_date=date(2024, 8, 12),
+            interest_taxable_rate=10.0,
+            interest_deduction_rate=32.5
+        ))
+        
+        # ABC Ltd Tax Statements (NAV-based fund)
+        tax_statements.append(abc_fund.create_or_update_tax_statement(
+            entity_id=entity.id,
+            financial_year="2012-13",
+            notes="FY13 tax statement from fund manager",
+            distribution_receivable_this_fy=0.0,
+            distribution_received_prev_fy=0.0,
+            interest_received_in_cash=0.0,
+            non_resident_withholding_tax_from_statement=0.0,
+            accountant='Findex',
+            statement_date=date(2024, 8, 24),
+            interest_taxable_rate=0.0,
+            interest_deduction_rate=32.5
+        ))
+        
+        tax_statements.append(abc_fund.create_or_update_tax_statement(
+            entity_id=entity.id,
+            financial_year="2013-14",
+            notes="FY14 tax statement from fund manager",
+            distribution_receivable_this_fy=0.0,
+            distribution_received_prev_fy=0.0,
+            interest_received_in_cash=79.05,
+            non_resident_withholding_tax_from_statement=0.0,
+            accountant='Findex',
+            statement_date=date(2024, 8, 12),
+            interest_taxable_rate=0.0,
+            interest_deduction_rate=32.5
+        ))
         
         print("Test data created successfully!")
-        print(f"- Created {session.query(Fund).count()} funds")
-        print(f"- Created {session.query(FundEvent).count()} events")
-        print(f"- Created {session.query(TaxStatement).count()} tax statements")
+        print(f"- Created {len([senior_debt_fund, finance_fund, abc_fund])} funds")
         
-        # Verify initial state
+        # Count events using direct methods
+        total_events = (
+            len(senior_debt_fund.get_events()) +
+            len(finance_fund.get_events()) +
+            len(abc_fund.get_events())
+        )
+        print(f"- Created {total_events} events")
+        print(f"- Created {len(tax_statements)} tax statements")
+        
+        # Show initial fund state
         print("\nInitial fund state:")
-        for fund in session.query(Fund).all():
+        for fund in [senior_debt_fund, finance_fund, abc_fund]:
             print(f"  {fund.name}: equity=${fund.current_equity_balance:,.2f}, avg=${fund.average_equity_balance:,.2f}")
         
-        return senior_debt_fund.id, finance_fund.id
-        
     except Exception as e:
-        print(f"Error creating test data: {e}")
+        print(f"Error setting up test data: {e}")
         session.rollback()
         raise
     finally:
@@ -391,6 +530,7 @@ def get_irr_cashflows(fund, session, irr_type):
         base = fund._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, session=session, return_cashflows=True)
     else:
         return [], []
+    
     # Debug print to help diagnose if cash flows are not being returned
     if base is None:
         print(f"[DEBUG] IRR base is None for fund {fund.name} ({irr_type})")
@@ -401,7 +541,7 @@ def get_irr_cashflows(fund, session, irr_type):
     return [], []
 
 def recalculate_everything(show_irr_cashflows=False):
-    """Recalculate all derived values and create debt cost events. Optionally show IRR cash flows."""
+    """Recalculate all derived values using direct model methods."""
     engine = create_engine('sqlite:///data/investment_tracker.db')
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -420,16 +560,27 @@ def recalculate_everything(show_irr_cashflows=False):
             fund.update_average_equity_balance(session=session)
             print(f"  Average equity: ${fund.average_equity_balance:,.2f}")
             
-            # Create tax payment events from tax statements
+            # Update NAV-specific fields for NAV-based funds
+            if fund.tracking_type == FundType.NAV_BASED:
+                fund.update_current_units_and_price(session=session)
+                print(f"  Current units: {fund.current_units:,.2f}" if fund.current_units is not None else "  Current units: N/A")
+                print(f"  Current unit price: ${fund.current_unit_price:,.4f}" if fund.current_unit_price is not None else "  Current unit price: N/A")
+                print(f"  Current value: ${fund.current_value:,.2f}" if fund.current_value is not None else "  Current value: N/A")
+            else:
+                # Update cost basis for cost-based funds
+                fund.update_total_cost_basis(session=session)
+                print(f"  Total cost basis: ${fund.total_cost_basis:,.2f}")
+            
+            # Create tax payment events
             tax_events = fund.create_tax_payment_events(session=session)
             print(f"  Created {len(tax_events)} tax payment events")
             
             # Create daily risk-free interest charges
-            fund.create_daily_risk_free_interest_charges(session=session)
+            daily_events = fund.create_daily_risk_free_interest_charges(session=session)
             print(f"  Created daily interest charges")
             
             # Create FY debt cost events
-            fund.create_fy_debt_cost_events(session=session)
+            fy_events = fund.create_fy_debt_cost_events(session=session)
             print(f"  Created FY debt cost events")
             
             # Calculate IRRs
@@ -440,7 +591,7 @@ def recalculate_everything(show_irr_cashflows=False):
             print(f"  IRR: {irr:.2%}" if irr else "  IRR: N/A")
             print(f"  After-tax IRR: {after_tax_irr:.2%}" if after_tax_irr else "  After-tax IRR: N/A")
             print(f"  Real IRR: {real_irr:.2%}" if real_irr else "  Real IRR: N/A")
-
+            
             if show_irr_cashflows:
                 for irr_type in ['IRR', 'After-tax IRR', 'Real IRR']:
                     cash_flows, labels = get_irr_cashflows(fund, session, irr_type)
@@ -456,7 +607,7 @@ def recalculate_everything(show_irr_cashflows=False):
         print("\nAll recalculations completed!")
         
     except Exception as e:
-        print(f"Error during recalculation: {e}")
+        print(f"Error recalculating: {e}")
         session.rollback()
         raise
     finally:
@@ -514,6 +665,24 @@ def verify_results():
             # Verify daily interest charges were created
             daily_charges = [e for e in fund.fund_events if e.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE]
             print(f"  Daily interest charges: {len(daily_charges)}")
+            
+            # NAV-specific verification
+            if fund.tracking_type == FundType.NAV_BASED:
+                print(f"  Current units: {fund.current_units:,.2f}" if fund.current_units is not None else "  Current units: N/A")
+                print(f"  Current unit price: ${fund.current_unit_price:,.4f}" if fund.current_unit_price is not None else "  Current unit price: N/A")
+                print(f"  Current value: ${fund.current_value:,.2f}" if fund.current_value is not None else "  Current value: N/A")
+                
+                # Verify NAV update events
+                nav_events = [e for e in fund.fund_events if e.event_type == EventType.NAV_UPDATE]
+                print(f"  NAV update events: {len(nav_events)}")
+                
+                # Verify unit purchase/sale events
+                unit_purchases = [e for e in fund.fund_events if e.event_type == EventType.UNIT_PURCHASE]
+                unit_sales = [e for e in fund.fund_events if e.event_type == EventType.UNIT_SALE]
+                print(f"  Unit purchases: {len(unit_purchases)}, Unit sales: {len(unit_sales)}")
+            else:
+                # Cost-based specific verification
+                print(f"  Total cost basis: ${fund.total_cost_basis:,.2f}")
         
         # Check risk-free rates are preserved
         rate_count = session.query(RiskFreeRate).count()
@@ -550,7 +719,7 @@ def main():
         
         # Step 2: Set up test data
         print("\n2. Setting up test data...")
-        senior_debt_id, finance_id = setup_test_data()
+        setup_test_data()
         
         # Step 3: Recalculate everything
         print("\n3. Recalculating all derived values...")
