@@ -88,6 +88,12 @@ class TaxStatement(Base):
     # New manual field for interest taxable rate
     interest_taxable_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
 
+    # Manual fields for dividend income
+    total_dividends_franked = Column(Float, default=0.0)  # Manual or calculated franked dividends
+    total_dividends_unfranked = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
+    dividends_franked_taxable_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
+    dividends_unfranked_taxable_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
+
     # Calculated fields
     total_interest_income = Column(Float, default=0.0)  # Renamed from gross_total_interest_income
     non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)
@@ -189,6 +195,94 @@ class TaxStatement(Base):
         # It will be calculated automatically when accessed
         
         return self.total_interest_income, self.net_interest_income 
+
+    def calculate_dividend_totals(self, session=None):
+        """Calculate dividend totals from fund events if not manually set.
+        Returns a tuple: (total_dividends_franked, total_dividends_unfranked).
+        """
+        from sqlalchemy.orm import object_session
+        from src.fund.models import FundEvent, EventType, DistributionType
+        
+        if session is None:
+            session = object_session(self)
+        
+        if session is None:
+            return 0.0, 0.0
+        
+        # Get financial year dates
+        fy_start, fy_end = self.get_financial_year_dates()
+        if not fy_start or not fy_end:
+            return 0.0, 0.0
+        
+        # Query fund events for this financial year
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.fund_id,
+            FundEvent.event_type == EventType.DISTRIBUTION,
+            FundEvent.event_date >= fy_start,
+            FundEvent.event_date <= fy_end
+        ).all()
+        
+        # Calculate totals
+        franked_total = 0.0
+        unfranked_total = 0.0
+        
+        for event in events:
+            if event.distribution_type == DistributionType.DIVIDEND_FRANKED:
+                franked_total += event.amount or 0.0
+            elif event.distribution_type == DistributionType.DIVIDEND_UNFRANKED:
+                unfranked_total += event.amount or 0.0
+        
+        # Update fields if not manually set
+        if self.total_dividends_franked is None or self.total_dividends_franked == 0.0:
+            self.total_dividends_franked = franked_total
+        
+        if self.total_dividends_unfranked is None or self.total_dividends_unfranked == 0.0:
+            self.total_dividends_unfranked = unfranked_total
+        
+        return self.total_dividends_franked, self.total_dividends_unfranked
+
+    def _create_dividend_tax_payment_event_objects(self):
+        """Create dividend tax payment event objects if applicable.
+        Returns a list of event objects. No database operations.
+        """
+        from src.fund.models import FundEvent, EventType, TaxPaymentType
+        
+        events = []
+        
+        # Calculate dividend totals if needed
+        franked_total, unfranked_total = self.calculate_dividend_totals()
+        
+        # Create franked dividend tax payment
+        if franked_total > 0 and self.dividends_franked_taxable_rate and self.dividends_franked_taxable_rate > 0:
+            tax_amount = franked_total * (self.dividends_franked_taxable_rate / 100.0)
+            if tax_amount > 0:
+                event = FundEvent(
+                    fund_id=self.fund_id,
+                    event_type=EventType.TAX_PAYMENT,
+                    event_date=self.get_tax_payment_date(),
+                    amount=tax_amount,
+                    description=f"Franked dividend tax (rate: {self.dividends_franked_taxable_rate}%)",
+                    reference_number=f"DIV_FRANKED_TAX_{self.financial_year}",
+                    tax_payment_type=TaxPaymentType.DIVIDENDS_FRANKED_TAX
+                )
+                events.append(event)
+        
+        # Create unfranked dividend tax payment
+        if unfranked_total > 0 and self.dividends_unfranked_taxable_rate and self.dividends_unfranked_taxable_rate > 0:
+            tax_amount = unfranked_total * (self.dividends_unfranked_taxable_rate / 100.0)
+            if tax_amount > 0:
+                event = FundEvent(
+                    fund_id=self.fund_id,
+                    event_type=EventType.TAX_PAYMENT,
+                    event_date=self.get_tax_payment_date(),
+                    amount=tax_amount,
+                    description=f"Unfranked dividend tax (rate: {self.dividends_unfranked_taxable_rate}%)",
+                    reference_number=f"DIV_UNFRANKED_TAX_{self.financial_year}",
+                    tax_payment_type=TaxPaymentType.DIVIDENDS_UNFRANKED_TAX
+                )
+                events.append(event)
+        
+        return events
 
     def _create_fy_debt_cost_event_object(self):
         """Create a FY debt cost event object for real IRR calculations if a tax benefit exists.

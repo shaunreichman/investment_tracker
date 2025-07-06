@@ -84,12 +84,21 @@ class FundType(enum.Enum):
 
 
 class DistributionType(enum.Enum):
-    """Enumeration for income distribution types (affects tax treatment)."""
+    """Enumeration for income distribution types (affects tax treatment).
+    
+    Australian tax considerations:
+    - DIVIDEND_FRANKED: Dividend with franking credits (reduces tax liability)
+    - DIVIDEND_UNFRANKED: Dividend without franking credits (fully taxable)
+    - INTEREST: Interest income (fully taxable)
+    - CAPITAL_GAIN: Capital gains (may have CGT discount)
+    """
     INCOME = "income"  # Ordinary income
-    DIVIDEND = "dividend"  # Dividend income
+    DIVIDEND = "dividend"  # Generic dividend income (legacy)
+    DIVIDEND_FRANKED = "dividend_franked"  # Dividend with franking credits
+    DIVIDEND_UNFRANKED = "dividend_unfranked"  # Dividend without franking credits
     INTEREST = "interest"  # Interest income
     RENT = "rent"  # Rental income
-    CAPITAL_GAIN = "capital_gain"  # Capital gains income (cost-based funds only)
+    CAPITAL_GAIN = "capital_gain"  # Capital gains income
     OTHER = "other"  # Other income types
 
 
@@ -99,6 +108,8 @@ class TaxPaymentType(enum.Enum):
     NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE = "non_resident_interest_withholding_difference"
     CAPITAL_GAINS_TAX = "capital_gains_tax"
     EOFY_INTEREST_TAX = "eofy_interest_tax"
+    DIVIDENDS_FRANKED_TAX = "dividends_franked_tax"
+    DIVIDENDS_UNFRANKED_TAX = "dividends_unfranked_tax"
     OTHER = "other"
 
 
@@ -1270,8 +1281,9 @@ class Fund(Base):
             TaxStatement.fund_id == self.id
         ).all()
         created_events = []
+        
         for tax_statement in tax_statements:
-            # Check if tax payment event already exists
+            # Create interest tax payment event (existing logic)
             existing_event = session.query(FundEvent).filter(
                 FundEvent.fund_id == self.id,
                 FundEvent.event_type == EventType.TAX_PAYMENT,
@@ -1286,376 +1298,27 @@ class Fund(Base):
                 if tax_event:
                     session.add(tax_event)
                     created_events.append(tax_event)
-        if created_events:
-            session.commit()
-        return created_events
-    
-    def recalculate_debt_costs(self, session=None, risk_free_rate_currency=None):
-        """Recalculate all daily risk-free interest charges and FY debt cost events for this fund.
-        Deletes existing events of these types and recreates them.
-        Commits all changes to the database.
-        """
-        # Delete existing debt cost events
-        deleted_daily, deleted_fy = self._delete_debt_cost_events(session=session)
-        session.commit()
-        
-        # Recreate daily risk-free interest charges
-        self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
-        # Recreate FY debt cost events
-        self.create_fy_debt_cost_events(session)
-        session.commit()
-        print(f"Recalculated debt costs for fund '{self.name}': deleted {deleted_daily} daily interest charges, {deleted_fy} FY debt cost events, and recreated them.")
-    
-    @with_session
-    def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, session=None, return_cashflows=False):
-        """Base IRR calculation method for the fund.
-        Delegates to orchestrate_irr_base in calculations.py.
-        """
-        from src.shared.calculations import orchestrate_irr_base
-        from datetime import date
-        # Only calculate IRR for completed funds
-        if self.should_be_active:
-            if return_cashflows:
-                return {'cash_flows': [], 'days_from_start': [], 'labels': [], 'irr': None}
-            return None
-        # Get start and end dates
-        start_date = self.start_date
-        end_date = self.end_date
-        if not start_date or not end_date:
-            if return_cashflows:
-                return {'cash_flows': [], 'days_from_start': [], 'labels': [], 'irr': None}
-            return None
-        # Define event types to include (handled by orchestrate_irr_base)
-        cash_flow_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id
-        ).order_by(FundEvent.event_date).all()
-        # Add final value as last cash flow (only for completed funds)
-        # This logic is still handled here for now
-        result = orchestrate_irr_base(
-            cash_flow_events,
-            start_date,
-            include_tax_payments=include_tax_payments,
-            include_risk_free_charges=include_risk_free_charges,
-            include_fy_debt_cost=include_fy_debt_cost,
-            return_cashflows=return_cashflows
-        )
-        return result
-
-    def calculate_irr(self, session=None):
-        """Calculate the pre-tax IRR for the fund using all relevant cash flows.
-        Returns a float (IRR) or None if not computable.
-        """
-        return self._calculate_irr_base(include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, session=session)
-
-    def calculate_after_tax_irr(self, session=None):
-        """Calculate the after-tax IRR for the fund, including tax payment events.
-        Returns a float (IRR) or None if not computable.
-        """
-        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=False, include_fy_debt_cost=False, session=session)
-
-    def calculate_real_irr(self, session=None, risk_free_rate_currency=None):
-        """Calculate the real IRR for the fund, including debt cost and tax effects.
-        Returns a float (IRR) or None if not computable.
-        """
-        self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
-        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, session=session)
-
-    def get_irr_percentage(self, session=None):
-        """Return the IRR as a formatted percentage string, or 'N/A' if not computable."""
-        irr = self.calculate_irr(session)
-        return f"{irr * 100:.2f}%" if irr is not None else "N/A"
-
-    def get_after_tax_irr_percentage(self, session=None):
-        """Return the after-tax IRR as a formatted percentage string, or 'N/A' if not computable."""
-        irr = self.calculate_after_tax_irr(session)
-        return f"{irr * 100:.2f}%" if irr is not None else "N/A"
-
-    def get_real_irr_percentage(self, session=None, risk_free_rate_currency=None):
-        """Return the real IRR (including debt cost) as a formatted percentage string, or 'N/A' if not computable."""
-        irr = self.calculate_real_irr(session, risk_free_rate_currency)
-        return f"{irr * 100:.2f}%" if irr is not None else "N/A"
-
-    @property
-    def calculated_average_equity_balance(self):
-        """Return the calculated average equity balance for the fund, using the appropriate method for the fund type."""
-        return self.calculate_average_equity_balance()
-
-    @property
-    def start_date(self):
-        """Return the date of the first capital call event (cost-based) or unit purchase event (NAV-based), or None if not available.
-        Used as the fund's effective start date for calculations.
-        """
-        from sqlalchemy.orm import object_session
-        session = object_session(self)
-        if session is None:
-            return None
-        
-        if self.tracking_type == FundType.NAV_BASED:
-            # For NAV-based funds, use the first unit purchase event
-            first_event = session.query(FundEvent).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.UNIT_PURCHASE
-            ).order_by(FundEvent.event_date).first()
-        else:
-            # For cost-based funds, use the first capital call event
-            first_event = session.query(FundEvent).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.CAPITAL_CALL
-            ).order_by(FundEvent.event_date).first()
-        
-        if first_event and not isinstance(first_event.event_date, (Column, ColumnElement)):
-            return first_event.event_date
-        return None
-    
-    @property
-    def end_date(self):
-        """Return the date of the last event if the fund is exited (equity balance is zero), else None.
-        Used as the fund's effective end date for calculations.
-        """
-        from sqlalchemy.orm import object_session
-        # If fund still has equity balance > 0, no end date yet
-        if not isinstance(self.current_equity_balance, (Column, ColumnElement)) and self.current_equity_balance is not None and self.current_equity_balance > 0:
-            return None
-        session = object_session(self)
-        if session is None:
-            return None
-        last_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id
-        ).order_by(FundEvent.event_date.desc()).first()
-        if last_event and not isinstance(last_event.event_date, (Column, ColumnElement)):
-            return last_event.event_date
-        return None
-    
-    @property
-    def total_investment_duration_months(self):
-        """Return the total investment duration in months, from start_date to end_date (or today if still active).
-        Returns 0 if dates are not available.
-        """
-        from dateutil.relativedelta import relativedelta
-        start = self.start_date
-        if not start or isinstance(start, (Column, ColumnElement)):
-            return 0
-        if not isinstance(self.current_equity_balance, (Column, ColumnElement)) and self.current_equity_balance is not None and self.current_equity_balance > 0:
-            end = datetime.now().date()
-        else:
-            end = self.end_date
-            if not end or isinstance(end, (Column, ColumnElement)):
-                return 0
-        delta = relativedelta(end, start)
-        return delta.years * 12 + delta.months
-
-    @property
-    def should_be_active(self):
-        """Return True if the fund should be active, False if exited."""
-        # A fund is active if it has units (NAV-based) or equity balance (cost-based)
-        if self.tracking_type == FundType.NAV_BASED:
-            return self._current_units is not None and self._current_units > 0
-        else:
-            return self.current_equity_balance is not None and self.current_equity_balance > 0
-    
-    @property
-    def should_have_final_tax_statement(self):
-        """Return True if the fund should have received its final tax statement.
-        This checks if the fund is no longer active and if a tax statement exists for the final financial year.
-        """
-        from sqlalchemy.orm import object_session
-        from datetime import date
-        
-        # If fund is still active, we don't have final tax statement yet
-        if not isinstance(self.should_be_active, (Column, ColumnElement)) and self.should_be_active is not None and self.should_be_active:
-            return False
-        
-        session = object_session(self)
-        if session is None:
-            return False
-        
-        # Get the fund's end date
-        end_date = self.end_date
-        if isinstance(end_date, (Column, ColumnElement)) or end_date is None:
-            return False
-        
-        # Get the financial year of the fund's end date
-        entity = self.entity
-        if isinstance(entity, (Column, ColumnElement)) or entity is None:
-            return False
-        
-        end_financial_year = entity.get_financial_year(end_date)
-        
-        # Check if we have a tax statement for the final financial year
-        from ..tax.models import TaxStatement
-        final_tax_statement = session.query(TaxStatement).filter(
-            TaxStatement.fund_id == self.id,
-            TaxStatement.financial_year == end_financial_year
-        ).first()
-        
-        return final_tax_statement is not None
-
-    def update_active_status(self, session=None):
-        """Update the fund's active status based on current equity balance or units.
-        Commits the change to the database if the status changes.
-        """
-        from sqlalchemy.orm import object_session
-        if session is None:
-            session = object_session(self)
-        
-        new_active_status = self.should_be_active
-        if self.is_active is not None and self.is_active != new_active_status:
-            self.is_active = new_active_status
-            session.commit()
-            print(f"Fund '{self.name}' status updated: {'Active' if new_active_status else 'Exited'}")
-    
-    def update_final_tax_statement_status(self, session=None):
-        """Update the final_tax_statement_received flag based on whether the final tax statement is present.
-        Commits the change to the database if the status changes.
-        """
-        from sqlalchemy.orm import object_session
-        if session is None:
-            session = object_session(self)
-        
-        new_status = self.should_have_final_tax_statement
-        if not isinstance(self.final_tax_statement_received, (Column, ColumnElement)) and self.final_tax_statement_received is not None and self.final_tax_statement_received != new_status:
-            self.final_tax_statement_received = new_status
-            session.commit()
-            print(f"Fund '{self.name}' final tax statement status updated: {'Complete' if new_status else 'Pending'}")
-
-    def calculate_average_equity_balance(self, session=None):
-        """Calculate and return the average equity balance for the fund.
-        Uses NAV or cost-based method depending on fund type.
-        """
-        if self.tracking_type == FundType.NAV_BASED:
-            return self._calculate_nav_based_average_equity(session=session)
-        else:
-            return self._calculate_cost_based_average_equity(session=session)
-
-    @with_session
-    def _calculate_nav_based_average_equity(self, session=None):
-        """Calculate average equity balance for NAV-based funds using unit events.
-        Delegates to orchestrate_nav_based_average_equity in calculations.py.
-        """
-        from src.fund.calculations import orchestrate_nav_based_average_equity
-        unit_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-        ).order_by(FundEvent.event_date).all()
-        if not unit_events:
-            return 0
-        # If fund is still active, use today's date as end_date (handled by caller if needed)
-        return orchestrate_nav_based_average_equity(unit_events)
-
-    @with_session
-    def _calculate_cost_based_average_equity(self, session=None):
-        """Calculate average equity balance for cost-based funds using capital events.
-        Delegates to orchestrate_cost_based_average_equity in calculations.py.
-        """
-        from src.fund.calculations import orchestrate_cost_based_average_equity
-        capital_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([
-                EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE
-            ])
-        ).order_by(FundEvent.event_date).all()
-        if not capital_events:
-            return 0
-        return orchestrate_cost_based_average_equity(capital_events)
-
-    @with_session
-    def get_tax_statements_by_financial_year(self, session=None):
-        """Return all tax statements for this fund, grouped by financial year.
-        Returns a dict: {financial_year: [TaxStatement, ...]}
-        """
-        statements = session.query(TaxStatement).filter(
-            TaxStatement.fund_id == self.id
-        ).order_by(TaxStatement.financial_year).all()
-        # Group by financial year
-        grouped = {}
-        for statement in statements:
-            if statement.financial_year not in grouped:
-                grouped[statement.financial_year] = []
-            grouped[statement.financial_year].append(statement)
-        return grouped
-
-    @with_session
-    def get_tax_statement_for_entity_financial_year(self, entity_id, financial_year, session=None):
-        """Return the tax statement for a specific entity and financial year, or None if not found."""
-        return session.query(TaxStatement).filter(
-            TaxStatement.fund_id == self.id,
-            TaxStatement.entity_id == entity_id,
-            TaxStatement.financial_year == financial_year
-        ).first()
-
-    def _create_or_update_tax_statement_object(self, entity_id, financial_year, **kwargs):
-        """Create or update a tax statement object.
-        Returns the TaxStatement object. No database operations.
-        """
-        # Try to find existing statement
-        statement = self.get_tax_statement_for_entity_financial_year(entity_id, financial_year)
-        if statement is None:
-            # Create new statement
-            statement = TaxStatement(
-                fund_id=self.id,
-                entity_id=entity_id,
-                financial_year=financial_year,
-                **kwargs
-            )
-        else:
-            # Update existing statement
-            for key, value in kwargs.items():
-                if hasattr(statement, key):
-                    setattr(statement, key, value)
-        # Calculate interest income fields (including total_interest_income)
-        statement.calculate_interest_income_fields()
-        # Calculate total income
-        statement.calculate_total_income()
-        return statement
-
-    @with_session
-    def create_or_update_tax_statement(self, entity_id, financial_year, session=None, **kwargs):
-        """Create or update a tax statement for a specific entity and financial year.
-        If a statement exists, updates its fields; otherwise, creates a new one.
-        Commits the change to the database.
-        Returns the TaxStatement instance.
-        """
-        # Create or update statement object using business logic method
-        statement = self._create_or_update_tax_statement_object(entity_id, financial_year, **kwargs)
-        # Add to session if it's a new statement
-        if statement.id is None:
-            session.add(statement)
-        session.commit()
-        return statement
-
-
-
-    @with_session
-    def create_tax_payment_events(self, session=None):
-        """Create tax payment events for this fund based on tax statements.
-        Used for after-tax IRR calculations. Commits new events to the database.
-        Returns a list of created events.
-        """
-        # Get all tax statements for this fund
-        tax_statements = session.query(TaxStatement).filter(
-            TaxStatement.fund_id == self.id
-        ).all()
-        created_events = []
-        for tax_statement in tax_statements:
-            # Check if tax payment event already exists
-            existing_event = session.query(FundEvent).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.TAX_PAYMENT,
-                FundEvent.event_date == tax_statement.get_tax_payment_date(),
-                FundEvent.amount == tax_statement.tax_payable,
-                FundEvent.tax_payment_type == TaxPaymentType.EOFY_INTEREST_TAX
-            ).first()
             
-            if not existing_event:
-                # Create tax payment event using business logic method
-                tax_event = self._create_tax_payment_event_object(tax_statement)
-                if tax_event:
-                    session.add(tax_event)
-                    created_events.append(tax_event)
+            # Create dividend tax payment events (new logic)
+            dividend_events = tax_statement._create_dividend_tax_payment_event_objects()
+            for dividend_event in dividend_events:
+                # Check if dividend tax payment event already exists
+                existing_dividend_event = session.query(FundEvent).filter(
+                    FundEvent.fund_id == self.id,
+                    FundEvent.event_type == EventType.TAX_PAYMENT,
+                    FundEvent.event_date == dividend_event.event_date,
+                    FundEvent.amount == dividend_event.amount,
+                    FundEvent.tax_payment_type == dividend_event.tax_payment_type
+                ).first()
+                
+                if not existing_dividend_event:
+                    session.add(dividend_event)
+                    created_events.append(dividend_event)
+        
         if created_events:
             session.commit()
         return created_events
-
+    
     @with_session
     def add_unit_purchase(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
         """Add a unit purchase event and update calculated fields.
@@ -1958,15 +1621,29 @@ class FundEvent(Base):
     def infer_distribution_type(self):
         """Infer the distribution type based on the event description or other fields.
         Returns a DistributionType enum value.
+        
+        Australian tax considerations:
+        - Looks for 'franked' or 'unfranked' in description for dividend classification
+        - Falls back to generic dividend if no franking information is available
         """
         if not self.description:
             return DistributionType.OTHER
         
         desc_lower = self.description.lower()
+        
+        # Check for dividend types first (most specific)
+        if 'dividend' in desc_lower:
+            if 'franked' in desc_lower or 'fully franked' in desc_lower:
+                return DistributionType.DIVIDEND_FRANKED
+            elif 'unfranked' in desc_lower:
+                return DistributionType.DIVIDEND_UNFRANKED
+            else:
+                # Generic dividend (legacy) - could be either franked or unfranked
+                return DistributionType.DIVIDEND
+        
+        # Check for other distribution types
         if 'interest' in desc_lower:
             return DistributionType.INTEREST
-        elif 'dividend' in desc_lower:
-            return DistributionType.DIVIDEND
         elif 'rent' in desc_lower:
             return DistributionType.RENT
         elif 'capital gain' in desc_lower or 'capital_gain' in desc_lower:

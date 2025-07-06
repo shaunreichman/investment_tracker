@@ -340,7 +340,7 @@ def setup_test_data(session):
     abc_fund.add_distribution(
         amount=79.05,
         date=date(2013, 9, 12),
-        distribution_type=DistributionType.DIVIDEND,
+        distribution_type=DistributionType.DIVIDEND_FRANKED,
         description="Fully Franked Dividend",
         session=session
     )
