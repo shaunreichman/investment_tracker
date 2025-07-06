@@ -133,8 +133,38 @@ def with_database_session(func):
     return wrapper
 
 
+def reset_database_for_testing(session):
+    """
+    Domain-level utility to reset the database for testing.
+    Drops all tables and recreates them with the current schema.
+    
+    This function follows the principle that all database operations
+    are handled by the core system, not by clients.
+    
+    Args:
+        session (Session): Database session (required - managed by outermost backend layer)
+    
+    Returns:
+        bool: True if reset was successful
+    """
+    from ..shared.base import Base
+    from sqlalchemy import text
+    
+    # Get the engine from the session
+    engine = session.bind
+    
+    # Drop all tables
+    Base.metadata.drop_all(engine)
+    
+    # Recreate all tables
+    Base.metadata.create_all(engine)
+    
+    return True
+
+
 __all__ = [
     'with_session',
     'with_class_session',
     'with_database_session',
+    'reset_database_for_testing',
 ] 

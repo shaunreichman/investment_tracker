@@ -205,7 +205,6 @@ class TaxStatement(Base):
         return create_fy_debt_cost_event(self, session)
 
     @classmethod
-    @with_class_session
     def create(cls, fund_id, entity_id, financial_year, gross_income=0.0, 
                deductions=0.0, tax_payable=0.0, session=None):
         """
@@ -218,7 +217,7 @@ class TaxStatement(Base):
             gross_income (float): Gross income amount
             deductions (float): Deductions amount
             tax_payable (float): Tax payable amount
-            session (Session): Database session (managed by @with_session decorator)
+            session (Session): Database session (required - managed by outermost backend layer)
         
         Returns:
             TaxStatement: The created tax statement

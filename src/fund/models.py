@@ -165,7 +165,6 @@ class Fund(Base):
     tax_statements = relationship("TaxStatement", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     
     @classmethod
-    @with_class_session
     def create(cls, investment_company_id, entity_id, name, fund_type, tracking_type, 
                currency="AUD", description=None, commitment_amount=None, 
                expected_irr=None, expected_duration_months=None, session=None):
@@ -183,7 +182,7 @@ class Fund(Base):
             commitment_amount (float, optional): Commitment amount for cost-based funds
             expected_irr (float, optional): Expected IRR percentage
             expected_duration_months (int, optional): Expected duration in months
-            session (Session): Database session (managed by @with_session decorator)
+            session (Session): Database session (required - managed by outermost backend layer)
         
         Returns:
             Fund: The created fund

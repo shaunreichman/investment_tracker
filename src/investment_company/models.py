@@ -29,7 +29,6 @@ class InvestmentCompany(Base):
     funds = relationship("Fund", back_populates="investment_company", cascade="all, delete-orphan")
     
     @classmethod
-    @with_class_session
     def create(cls, name, description=None, website=None, contact_email=None, contact_phone=None, session=None):
         """
         Create a new investment company with validation and business logic.
@@ -40,7 +39,7 @@ class InvestmentCompany(Base):
             website (str, optional): Company website URL
             contact_email (str, optional): Contact email address
             contact_phone (str, optional): Contact phone number
-            session (Session): Database session (managed by @with_session decorator)
+            session (Session): Database session (required - managed by outermost backend layer)
         
         Returns:
             InvestmentCompany: The created investment company
@@ -98,4 +97,57 @@ class InvestmentCompany(Base):
             float: Total commitments across all funds
         """
         from .calculations import calculate_total_commitments
-        return calculate_total_commitments(self, session) 
+        return calculate_total_commitments(self, session)
+    
+    @with_session
+    def create_fund(self, entity, name, fund_type, tracking_type, 
+                   currency="AUD", description=None, commitment_amount=None, 
+                   expected_irr=None, expected_duration_months=None, session=None):
+        """
+        Create a new fund for this investment company.
+        
+        This method follows the direct object method pattern, consistent with how
+        fund events work (e.g., fund.add_capital_call()). It encapsulates the fund
+        creation logic and handles the relationship between the investment company
+        and the fund.
+        
+        Args:
+            entity (Entity): The entity that will invest in the fund
+            name (str): Fund name
+            fund_type (str): Type of fund (e.g., "Private Debt", "Equity")
+            tracking_type (FundType): Tracking type (COST_BASED or NAV_BASED)
+            currency (str): Currency code (default: "AUD")
+            description (str, optional): Fund description
+            commitment_amount (float, optional): Commitment amount for cost-based funds
+            expected_irr (float, optional): Expected IRR percentage
+            expected_duration_months (int, optional): Expected duration in months
+            session (Session): Database session (managed by @with_session decorator)
+        
+        Returns:
+            Fund: The created fund
+            
+        Raises:
+            ValueError: If required fields are missing or invalid
+        """
+        from ..fund.models import Fund
+        
+        # Validate entity
+        if entity is None:
+            raise ValueError("Entity is required")
+        
+        # Create the fund using the domain method
+        fund = Fund.create(
+            investment_company_id=self.id,  # Use self.id
+            entity_id=entity.id,           # Use entity.id
+            name=name,
+            fund_type=fund_type,
+            tracking_type=tracking_type,
+            currency=currency,
+            description=description,
+            commitment_amount=commitment_amount,
+            expected_irr=expected_irr,
+            expected_duration_months=expected_duration_months,
+            session=session
+        )
+        
+        return fund 

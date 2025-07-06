@@ -960,60 +960,75 @@ def get_nav_based_cost_basis(self, as_of_date=None, session=None):
 ## Core Architectural Principles
 
 ### 1. **Database Operations Encapsulation**
-- **All database operations must be handled by the core system, not clients**
-- Clients should never directly create SQLAlchemy sessions or perform database operations
+- **All database operations must be handled by the core system, not external clients**
+- External API consumers should never directly create SQLAlchemy sessions or perform database operations
 - All persistence logic should be encapsulated within domain models and services
-- **Backend owns sessions - clients are stateless**
+- **Backend owns sessions - external clients are stateless**
 
 ### 2. **Object Creation Pattern**
-- **Use class methods for object creation**: `Model.create(...)` instead of direct constructors
+- **Use class methods for root object creation**: `InvestmentCompany.create()`, `Entity.create()` for root entities
+- **Use direct object methods for related object creation**: `company.create_fund()` for related objects
 - **Class methods handle validation, business logic, and persistence**
 - **Consistent parameter naming and validation across all create methods**
-- **Each create() operation is its own transaction**
-- **Use @with_session decorator for session management**
+- **Each create() operation accepts a session parameter from the outermost backend layer**
+- **No automatic session management in create() methods**
 
 ### 3. **Session Management Strategy**
-- **Backend owns sessions**: All domain methods manage their own sessions internally
-- **Use @with_session decorator**: Consistent session management across all methods
-- **Short-lived sessions**: Each operation creates its own session, performs work, commits, and closes
-- **No session parameters**: Clients never pass sessions to domain methods
-- **Stateless clients**: Clients have no knowledge of database sessions
+- **Outermost backend layer owns sessions**: Test scripts, API endpoints, and dashboard code manage sessions
+- **Domain methods accept session parameters**: All domain methods take explicit session parameters
+- **Instance methods can use @with_session decorator**: For convenience when objects are already attached
+- **No session parameters for external clients**: External API consumers never see sessions
+- **Stateless external clients**: External clients have no knowledge of database sessions
 
 ### 4. **Domain Operations Pattern**
-- **Use domain methods for business operations**: `fund.add_capital_call()`, `fund.add_distribution()`
+- **Use direct object methods for business operations**: `fund.add_capital_call()`, `fund.add_distribution()`
 - **Domain methods handle validation, business rules, and database operations**
-- **Each operation is its own transaction**
-- **Use @with_session decorator for session management**
-- **Avoid direct database operations from clients**
+- **Each operation accepts a session parameter from the outermost backend layer**
+- **Instance methods can use @with_session decorator for convenience**
+- **Avoid direct database operations from external clients**
+- **Consistent pattern**: Both object creation and domain operations use direct object methods
 
 ### 5. **Workflow Pattern**
 - **Multiple separate calls**: Use individual domain method calls for complex workflows
 - **No higher-level methods**: Avoid creating methods that combine multiple operations
-- **Each call is atomic**: Each domain method call is its own transaction
+- **Each call is atomic**: Each domain method call is its own transaction within the session
+- **Outermost layer manages transaction boundaries**: The calling code decides when to commit
 
 ## Implementation Standards
 
 ### Object Creation Examples
 
 ```python
-# ✅ CORRECT: Use class methods - backend manages sessions with @with_session
-fund = Fund.create(
-    investment_company_id=company.id,
-    entity_id=entity.id,
-    name="My Fund",
-    fund_type="Private Debt",
-    tracking_type=FundType.COST_BASED,
-    currency="AUD",
-    description="Fund description"
-)
-# Session managed by @with_session decorator - client doesn't know about it
+# ✅ CORRECT: Outermost backend layer manages session
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
 
-# ✅ CORRECT: Multiple separate calls for complex workflows
-fund = Fund.create(investment_company_id=1, entity_id=1, name="Fund", ...)
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call")
-fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, ...)
-fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit")
-# Each call is its own transaction
+try:
+    # Domain methods accept session parameter
+    company = InvestmentCompany.create(name="Test Company", session=session)
+    entity = Entity.create(name="Test Entity", session=session)
+    
+    # Direct object methods for related object creation
+    fund = company.create_fund(
+        entity=entity,  # Pass entity object, not ID
+        name="My Fund",
+        fund_type="Private Debt",
+        tracking_type=FundType.COST_BASED,
+        currency="AUD",
+        description="Fund description",
+        session=session
+    )
+    # Session managed by @with_session decorator - consistent with domain operations
+    
+    # ✅ CORRECT: Multiple separate calls for complex workflows
+    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call", session=session)
+    fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+    fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit", session=session)
+    # Each call is atomic within the session
+    
+    session.commit()  # Outermost layer decides when to commit
+finally:
+    session.close()
 
 # ❌ INCORRECT: Direct constructor
 fund = Fund(investment_company_id=company.id, ...)
@@ -1024,28 +1039,39 @@ session.commit()
 ### Domain Operations Examples
 
 ```python
-# ✅ CORRECT: Use domain methods - backend manages sessions with @with_session
-fund.add_capital_call(
-    amount=100000.0,
-    date=date(2023, 1, 1),
-    description="Initial capital call"
-)
-# Session managed by @with_session decorator
+# ✅ CORRECT: Outermost backend layer manages session
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
 
-fund.add_distribution_with_tax_rate(
-    event_date=date(2023, 6, 30),
-    gross_amount=5000.0,
-    tax_rate=10.0,
-    distribution_type=DistributionType.INTEREST,
-    description="Interest distribution"
-)
-# Session managed by @with_session decorator
-
-# ✅ CORRECT: Multiple separate calls for complex workflows
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call")
-fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, ...)
-fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit")
-# Each call is its own transaction
+try:
+    # Direct object methods for domain operations
+    fund.add_capital_call(
+        amount=100000.0,
+        date=date(2023, 1, 1),
+        description="Initial capital call",
+        session=session
+    )
+    # Session managed by @with_session decorator
+    
+    fund.add_distribution_with_tax_rate(
+        event_date=date(2023, 6, 30),
+        gross_amount=5000.0,
+        tax_rate=10.0,
+        distribution_type=DistributionType.INTEREST,
+        description="Interest distribution",
+        session=session
+    )
+    # Session managed by @with_session decorator
+    
+    # ✅ CORRECT: Multiple separate calls for complex workflows
+    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call", session=session)
+    fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+    fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit", session=session)
+    # Each call is atomic within the session
+    
+    session.commit()  # Outermost layer decides when to commit
+finally:
+    session.close()
 
 # ❌ INCORRECT: Direct database operations
 event = FundEvent(
@@ -1061,19 +1087,38 @@ session.commit()
 ### Session Management Examples
 
 ```python
-# ✅ CORRECT: Backend manages sessions with @with_session - clients are stateless
-fund = Fund.create(investment_company_id=1, entity_id=1, name="Fund")
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call")
-fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, ...)
-# Each operation manages its own session via @with_session decorator
+# ✅ CORRECT: Outermost backend layer manages sessions
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
 
-# ✅ CORRECT: Multiple separate calls for complex workflows
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call")
-fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, ...)
-fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit")
-# Each call is its own transaction
+try:
+    # Domain methods accept session parameters
+    company = InvestmentCompany.create(name="Test Company", session=session)
+    entity = Entity.create(name="Test Entity", session=session)
+    
+    # Direct object methods for related object creation
+    fund = company.create_fund(entity, "Test Fund", session=session)
+    
+    # Direct object methods for domain operations
+    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call", session=session)
+    fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+    # Each operation accepts session parameter from outermost layer
+    
+    # ✅ CORRECT: Multiple separate calls for complex workflows
+    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call", session=session)
+    fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+    fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit", session=session)
+    # Each call is atomic within the session
+    
+    # Natural relationships work easily
+    fund_count = len(company.funds)  # Easy counting!
+    
+    session.commit()  # Outermost layer decides when to commit
+finally:
+    session.close()
 
-# ❌ INCORRECT: Client manages sessions
+# ❌ INCORRECT: External client manages sessions
+# This would be an external API consumer trying to create sessions
 engine = create_engine('sqlite:///data/investment_tracker.db')
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -1309,27 +1354,4 @@ def main():
 - [ ] Implement `create()` class method with proper validation
 - [ ] Implement `_validate_create_params()` method
 - [ ] Implement `_check_existing_records()` method (if applicable)
-- [ ] Implement `_apply_create_business_logic()` method
-- [ ] Update all client code to use `create()` methods
-- [ ] Remove direct constructor usage from clients
-
-### For Domain Operations
-- [ ] Implement domain methods for all business operations
-- [ ] Ensure domain methods handle session management
-- [ ] Update all client code to use domain methods
-- [ ] Remove direct database operations from clients
-
-### For Test Scripts
-- [ ] Use shared session for all operations
-- [ ] Use `create()` methods for object creation
-- [ ] Use domain methods for business operations
-- [ ] Remove direct database operations
-
-## Benefits of This Approach
-
-1. **Encapsulation**: Database operations hidden from clients
-2. **Consistency**: Uniform patterns across all models
-3. **Maintainability**: Business logic centralized in domain models
-4. **Testability**: Easy to mock and test business logic
-5. **Flexibility**: Supports both simple and complex operations
-6. **Transaction Safety**: Proper session management and error handling
+- [ ] Implement `

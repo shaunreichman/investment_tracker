@@ -28,7 +28,6 @@ class Entity(Base):
     tax_statements = relationship("TaxStatement", back_populates="entity", cascade="all, delete-orphan")
     
     @classmethod
-    @with_class_session
     def create(cls, name, description=None, tax_jurisdiction="AU", session=None):
         """
         Create a new entity with validation and business logic.
@@ -37,7 +36,7 @@ class Entity(Base):
             name (str): Entity name (must be unique)
             description (str, optional): Entity description
             tax_jurisdiction (str): Tax jurisdiction code (default: "AU")
-            session (Session): Database session (managed by @with_session decorator)
+            session (Session): Database session (required - managed by outermost backend layer)
         
         Returns:
             Entity: The created entity
