@@ -4,22 +4,12 @@ Entity domain models.
 This module contains the core entity models including Entity.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime, date
-import enum
+from datetime import datetime
 
 # Import the Base from shared
 from ..shared.base import Base
-
-
-class EntityType(enum.Enum):
-    """Enumeration for entity types."""
-    INDIVIDUAL = "individual"
-    COMPANY = "company"
-    TRUST = "trust"
-    PARTNERSHIP = "partnership"
-
 
 class Entity(Base):
     """Model representing an investing entity (person or company)."""

@@ -36,7 +36,7 @@ class RiskFreeRate(Base):
     
     # Composite unique constraint
     __table_args__ = (
-        UniqueConstraint('currency', 'rate_date', name='unique_currency_date'),
+        UniqueConstraint('currency', 'rate_date', 'rate_type', name='uq_risk_free_rate'),
     )
     
     def __repr__(self):

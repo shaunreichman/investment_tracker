@@ -8,6 +8,7 @@ These functions do not depend on database sessions and are purely mathematical.
 from datetime import date, timedelta
 from typing import List, Dict, Any, Optional
 import math
+from src.calculations import orchestrate_irr_base
 
 
 def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):

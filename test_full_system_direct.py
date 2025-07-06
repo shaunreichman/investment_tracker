@@ -510,6 +510,11 @@ def setup_test_data():
         print(f"- Created {total_events} events")
         print(f"- Created {len(tax_statements)} tax statements")
         
+        # Update equity balance and active status for all funds
+        for fund in [senior_debt_fund, finance_fund, abc_fund]:
+            fund.update_current_equity_balance(session=session)
+            fund.update_active_status(session=session)
+        
         # Show initial fund state
         print("\nInitial fund state:")
         for fund in [senior_debt_fund, finance_fund, abc_fund]:
