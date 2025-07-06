@@ -72,7 +72,34 @@ class Entity(Base):
         return entity
     
     def __repr__(self):
-        return f"<Entity(id={self.id}, name='{self.name}', jurisdiction='{self.tax_jurisdiction}')>"
+        return f"<Entity(id={self.id}, name='{self.name}')>"
+    
+    @classmethod
+    def get_by_name(cls, name, session=None):
+        """
+        Get an entity by name.
+        
+        Args:
+            name (str): Entity name
+            session (Session): Database session
+        
+        Returns:
+            Entity or None: The entity if found, None otherwise
+        """
+        return session.query(cls).filter(cls.name == name).first()
+    
+    @classmethod
+    def get_all(cls, session=None):
+        """
+        Get all entities.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            list: List of all entities
+        """
+        return session.query(cls).all()
     
     def get_financial_year(self, date):
         """Get the financial year for a given date based on the entity's tax jurisdiction."""

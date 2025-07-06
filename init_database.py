@@ -15,7 +15,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from sqlalchemy import create_engine
 from src.investment_company.models import InvestmentCompany
 from src.rates.models import RiskFreeRate
-from models import Base, Entity, Fund, FundEvent, TaxStatement
+from src.entity.models import Entity
+from src.fund.models import Fund, FundEvent, FundType, EventType
+from src.tax.models import TaxStatement
+from src.shared.base import Base
 
 
 def init_database():

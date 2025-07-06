@@ -1,12 +1,13 @@
 """
 Entity domain module.
 
-This module contains all entity-related models and business logic.
-Entities represent investors (individuals or companies) who invest in funds.
+This module contains entity models and related functionality.
 """
 
 from .models import Entity
+from .calculations import get_financial_years_for_fund_period
 
 __all__ = [
     'Entity',
+    'get_financial_years_for_fund_period',
 ] 
