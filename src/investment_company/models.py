@@ -75,6 +75,33 @@ class InvestmentCompany(Base):
     def __repr__(self):
         return f"<InvestmentCompany(id={self.id}, name='{self.name}')>"
     
+    @classmethod
+    def get_by_name(cls, name, session=None):
+        """
+        Get an investment company by name.
+        
+        Args:
+            name (str): Company name
+            session (Session): Database session
+        
+        Returns:
+            InvestmentCompany or None: The investment company if found, None otherwise
+        """
+        return session.query(cls).filter(cls.name == name).first()
+    
+    @classmethod
+    def get_all(cls, session=None):
+        """
+        Get all investment companies.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            list: List of all investment companies
+        """
+        return session.query(cls).all()
+    
     def get_total_funds_under_management(self, session):
         """Get the total number of funds managed by this investment company.
         

@@ -1,12 +1,13 @@
 """
 Rates domain module.
 
-This module contains all rates-related models and business logic.
-Rates include risk-free rates and other financial rates used in calculations.
+This module contains rates models and related functionality.
 """
 
 from .models import RiskFreeRate
+from .calculations import get_risk_free_rate_for_date
 
 __all__ = [
     'RiskFreeRate',
+    'get_risk_free_rate_for_date',
 ] 

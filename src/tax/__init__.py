@@ -1,12 +1,15 @@
 """
 Tax domain module.
 
-This module contains all tax-related models and business logic.
-Tax statements, calculations, and reconciliation logic are handled here.
+This module contains tax models and related functionality.
 """
 
 from .models import TaxStatement
+from .calculations import net_income, tax_payable, interest_tax_benefit
 
 __all__ = [
-    'TaxStatement'
+    'TaxStatement',
+    'net_income',
+    'tax_payable',
+    'interest_tax_benefit',
 ] 

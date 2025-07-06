@@ -194,15 +194,111 @@ class TaxStatement(Base):
         """Create a FY debt cost event object for real IRR calculations if a tax benefit exists.
         Returns the event object or None if not applicable. No database operations.
         """
-        from .creation import create_fy_debt_cost_event_object
-        return create_fy_debt_cost_event_object(self)
+        from src.fund.models import FundEvent, EventType
+        
+        # Calculate the tax benefit
+        tax_benefit = self.calculate_interest_tax_benefit()
+        if tax_benefit <= 0:
+            return None
+        
+        # Get the financial year end date
+        fy_start, fy_end = self.get_financial_year_dates()
+        if not fy_end:
+            return None
+        
+        # Create event object
+        event = FundEvent(
+            fund_id=self.fund_id,
+            event_type=EventType.FY_DEBT_COST,
+            event_date=fy_end,
+            amount=tax_benefit,  # Positive cash flow (tax benefit)
+            description=f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
+            reference_number=f"FY_DEBT_COST_{self.financial_year}"
+        )
+        
+        return event
 
     def create_fy_debt_cost_event(self, session=None):
         """Create a FY debt cost event for real IRR calculations if a tax benefit exists.
         Commits the event to the database and returns it, or returns None if not applicable.
         """
-        from .creation import create_fy_debt_cost_event
-        return create_fy_debt_cost_event(self, session)
+        from src.fund.models import FundEvent, EventType
+        
+        # Get the financial year end date
+        fy_start, fy_end = self.get_financial_year_dates()
+        if not fy_end:
+            return None
+        
+        # Check if FY debt cost event already exists for this fund/entity/financial year
+        existing_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.fund_id,
+            FundEvent.event_type == EventType.FY_DEBT_COST,
+            FundEvent.event_date == fy_end,
+            FundEvent.description.like(f"%FY {self.financial_year}%")
+        ).first()
+        
+        if existing_event:
+            # Update existing event
+            tax_benefit = self.calculate_interest_tax_benefit()
+            existing_event.amount = tax_benefit
+            existing_event.description = f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})"
+            session.commit()
+            return existing_event
+        
+        # Create new event using business logic method
+        event = self._create_fy_debt_cost_event_object()
+        if event:
+            session.add(event)
+            session.commit()
+        
+        return event
+    
+    def _create_tax_payment_event_object(self):
+        """Create a tax payment event object for this tax statement.
+        Returns the event object or None if not applicable. No database operations.
+        """
+        from src.fund.models import FundEvent, EventType, TaxPaymentType
+        
+        self.calculate_tax_payable()
+        if self.tax_payable > 0.01:
+            tax_event = FundEvent(
+                fund_id=self.fund_id,
+                event_type=EventType.TAX_PAYMENT,
+                event_date=self.get_tax_payment_date(),
+                amount=self.tax_payable,
+                description=f"Tax payment for FY {self.financial_year}",
+                reference_number=f"TAX-{self.financial_year}",
+                tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
+            )
+            return tax_event
+        return None
+    
+    def create_tax_payment_event(self, session=None):
+        """Create a tax payment event for this tax statement.
+        Commits the event to the database and returns it, or returns None if not applicable.
+        """
+        from src.fund.models import FundEvent, EventType, TaxPaymentType
+        
+        # Check if tax payment event already exists
+        existing_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.fund_id,
+            FundEvent.event_type == EventType.TAX_PAYMENT,
+            FundEvent.event_date == self.get_tax_payment_date(),
+            FundEvent.amount == self.tax_payable,
+            FundEvent.tax_payment_type == TaxPaymentType.EOFY_INTEREST_TAX
+        ).first()
+        
+        if existing_event:
+            return existing_event
+        
+        # Create new event
+        tax_event = self._create_tax_payment_event_object()
+        if tax_event:
+            session.add(tax_event)
+            session.commit()
+            return tax_event
+        
+        return None
 
     @classmethod
     def create(cls, fund_id, entity_id, financial_year, gross_income=0.0, 
@@ -262,4 +358,67 @@ class TaxStatement(Base):
         session.add(statement)
         session.flush()  # Get the ID without committing
         
-        return statement 
+        return statement
+    
+    def _create_or_update_tax_statement_object(self, entity_id, financial_year, **kwargs):
+        """Create or update a tax statement object.
+        Returns the TaxStatement object. No database operations.
+        """
+        from sqlalchemy.orm import object_session
+        session = object_session(self)
+        
+        statement = self.get_tax_statement_for_entity_financial_year(entity_id, financial_year)
+        if statement is None:
+            statement = TaxStatement(
+                fund_id=self.id,
+                entity_id=entity_id,
+                financial_year=financial_year,
+                **kwargs
+            )
+        else:
+            for key, value in kwargs.items():
+                if hasattr(statement, key):
+                    setattr(statement, key, value)
+        statement.calculate_interest_income_fields()
+        statement.calculate_total_income()
+        return statement
+    
+    def create_or_update_tax_statement(self, entity_id, financial_year, session=None, **kwargs):
+        """Create or update a tax statement for a specific entity and financial year.
+        If a statement exists, updates its fields; otherwise, creates a new one.
+        Commits the change to the database.
+        Returns the TaxStatement instance.
+        """
+        statement = self._create_or_update_tax_statement_object(entity_id, financial_year, **kwargs)
+        if statement.id is None:
+            session.add(statement)
+        session.commit()
+        return statement
+    
+    def create_tax_payment_events(self, session=None):
+        """Create tax payment events for this fund based on tax statements.
+        Used for after-tax IRR calculations. Commits new events to the database.
+        Returns a list of created events.
+        """
+        from src.fund.models import FundEvent, EventType, TaxPaymentType
+        
+        tax_statements = session.query(TaxStatement).filter(
+            TaxStatement.fund_id == self.id
+        ).all()
+        created_events = []
+        for tax_statement in tax_statements:
+            existing_event = session.query(FundEvent).filter(
+                FundEvent.fund_id == self.id,
+                FundEvent.event_type == EventType.TAX_PAYMENT,
+                FundEvent.event_date == tax_statement.get_tax_payment_date(),
+                FundEvent.amount == tax_statement.tax_payable,
+                FundEvent.tax_payment_type == TaxPaymentType.EOFY_INTEREST_TAX
+            ).first()
+            if not existing_event:
+                tax_event = tax_statement._create_tax_payment_event_object()
+                if tax_event:
+                    session.add(tax_event)
+                    created_events.append(tax_event)
+        if created_events:
+            session.commit()
+        return created_events 
