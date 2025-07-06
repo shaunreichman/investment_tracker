@@ -13,10 +13,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from src.models import (
-    Base, InvestmentCompany, Entity, Fund, FundEvent, 
-    TaxStatement, RiskFreeRate, FundType, EventType, DistributionType, TaxPaymentType
-)
+from src.shared.base import Base
+from src.investment_company.models import InvestmentCompany
+from src.entity.models import Entity
+from src.rates.models import RiskFreeRate
+from src.fund.models import Fund, FundEvent, FundType, EventType, DistributionType, TaxPaymentType
+from src.tax.models import TaxStatement
 from datetime import date, datetime
 import sqlite3
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -507,6 +509,11 @@ def setup_test_data():
         )
         print(f"- Created {total_events} events")
         print(f"- Created {len(tax_statements)} tax statements")
+        
+        # Update equity balance and active status for all funds
+        for fund in [senior_debt_fund, finance_fund, abc_fund]:
+            fund.update_current_equity_balance(session=session)
+            fund.update_active_status(session=session)
         
         # Show initial fund state
         print("\nInitial fund state:")

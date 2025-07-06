@@ -1,6 +1,27 @@
 # Investment Tracker Design Guidelines
 
+> **2024 Migration Note:**
+> 
+> This project has been migrated to a domain-driven architecture. All models, calculations, and creation logic are now organized by domain (fund, tax, entity, rates, investment company, shared). The old `src/models.py`, `src/calculations.py`, and `src/utils.py` files are now **deprecated** and kept for reference only. All imports should use the new domain modules (see below).
+
 > See [README.md](./README.md) for a high-level project overview, quickstart, and usage examples.
+
+---
+
+## Domain-Driven Architecture (2024)
+
+- **Each domain (fund, tax, entity, rates, investment company) has its own models, calculations, and creation logic.**
+- **Shared logic** (utilities, base classes, pure calculations) lives in `src/shared/`.
+- **All imports** should use the new domain modules, e.g.:
+  ```python
+  from src.fund.models import Fund, FundEvent, FundType
+  from src.tax.models import TaxStatement
+  from src.entity.models import Entity
+  from src.rates.models import RiskFreeRate
+  from src.investment_company.models import InvestmentCompany
+  from src.shared.utils import with_session
+  ```
+- **Old files** (`src/models.py`, `src/calculations.py`, `src/utils.py`) are kept for reference only and are fully commented out.
 
 ---
 
@@ -13,7 +34,7 @@
 
 ## Session Handling Convention
 
-- All model methods that require a SQLAlchemy session are decorated with `@with_session` (see `src/utils.py`).
+- All model methods that require a SQLAlchemy session are decorated with `@with_session` (see `src/shared/utils.py`).
 - This decorator ensures a session is always available, removing the need for manual session resolution in each method.
 - **Only methods that directly perform database queries or ORM operations should be decorated.**
 - Orchestration/helper methods that only call other decorated methods do **not** need the decorator.
@@ -30,7 +51,7 @@ def update_current_equity_balance(self, session=None):
 
 To maximize maintainability, testability, and clarity, **all model code is organized to strictly separate business logic from database operations**:
 
-- **Business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in `calculations.py`. These methods do not perform any database operations and do not require a session.
+- **Business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in domain `calculations.py` files. These methods do not perform any database operations and do not require a session.
 - **Database operations** (adding, deleting, committing, querying) are handled only in public model methods decorated with `@with_session`. These methods are responsible for session management and call the pure business logic methods as needed.
 
 ### Why?
@@ -40,8 +61,12 @@ To maximize maintainability, testability, and clarity, **all model code is organ
 
 ### Pattern Example
 ```python
-class Fund(Base):
-    # ...
+from src.fund.models import Fund
+from src.tax.models import TaxStatement
+from src.shared.utils import with_session
+
+class Fund(...):
+    ...
     def _create_tax_payment_event_object(self, tax_statement):
         # Pure business logic: create event object, no DB ops
         ...
@@ -57,7 +82,7 @@ class Fund(Base):
 
 - **Never mix session.add, session.commit, or session.delete with calculations or object creation.**
 - This pattern is followed throughout all models (Fund, TaxStatement, etc.).
-- See `src/models.py` for more examples.
+- See `src/fund/models.py` and other domain modules for more examples.
 
 ---
 
@@ -66,8 +91,8 @@ class Fund(Base):
 | Type of Logic                | Where to Put It                |
 |------------------------------|-------------------------------|
 | Database queries/ORM ops     | Decorated model methods       |
-| Pure calculations/stateless  | `calculations.py`             |
-| Session helpers/decorators   | `utils.py`                    |
+| Pure calculations/stateless  | `calculations.py` in domain   |
+| Session helpers/decorators   | `shared/utils.py`             |
 | Orchestration (no queries)   | Undecorated model methods     |
 
 ---
@@ -931,3 +956,402 @@ def get_nav_based_cost_basis(self, as_of_date=None, session=None):
 ```
 
 ---
+
+## Core Architectural Principles
+
+### 1. **Database Operations Encapsulation**
+- **All database operations must be handled by the core system, not external clients**
+- External API consumers should never directly create SQLAlchemy sessions or perform database operations
+- All persistence logic should be encapsulated within domain models and services
+- **Backend owns sessions - external clients are stateless**
+
+### 2. **Object Creation Pattern**
+- **Use class methods for root object creation**: `InvestmentCompany.create()`, `Entity.create()` for root entities
+- **Use direct object methods for related object creation**: `company.create_fund()` for related objects
+- **Class methods handle validation, business logic, and persistence**
+- **Consistent parameter naming and validation across all create methods**
+- **Each create() operation accepts a session parameter from the outermost backend layer**
+- **No automatic session management in create() methods**
+
+### 3. **Session Management Strategy**
+- **Outermost backend layer owns sessions**: Test scripts, API endpoints, and dashboard code manage sessions
+- **Domain methods accept session parameters**: All domain methods take explicit session parameters
+- **Instance methods can use @with_session decorator**: For convenience when objects are already attached
+- **No session parameters for external clients**: External API consumers never see sessions
+- **Stateless external clients**: External clients have no knowledge of database sessions
+
+### 4. **Domain Operations Pattern**
+- **Use direct object methods for business operations**: `fund.add_capital_call()`, `fund.add_distribution()`
+- **Domain methods handle validation, business rules, and database operations**
+- **Each operation accepts a session parameter from the outermost backend layer**
+- **Instance methods can use @with_session decorator for convenience**
+- **Avoid direct database operations from external clients**
+- **Consistent pattern**: Both object creation and domain operations use direct object methods
+
+### 5. **Workflow Pattern**
+- **Multiple separate calls**: Use individual domain method calls for complex workflows
+- **No higher-level methods**: Avoid creating methods that combine multiple operations
+- **Each call is atomic**: Each domain method call is its own transaction within the session
+- **Outermost layer manages transaction boundaries**: The calling code decides when to commit
+
+## Implementation Standards
+
+### Object Creation Examples
+
+```python
+# ✅ CORRECT: Outermost backend layer manages session
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
+
+try:
+    # Domain methods accept session parameter
+    company = InvestmentCompany.create(name="Test Company", session=session)
+    entity = Entity.create(name="Test Entity", session=session)
+    
+    # Direct object methods for related object creation
+    fund = company.create_fund(
+        entity=entity,  # Pass entity object, not ID
+        name="My Fund",
+        fund_type="Private Debt",
+        tracking_type=FundType.COST_BASED,
+        currency="AUD",
+        description="Fund description",
+        session=session
+    )
+    # Session managed by @with_session decorator - consistent with domain operations
+    
+    # ✅ CORRECT: Multiple separate calls for complex workflows
+    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call", session=session)
+    fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+    fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit", session=session)
+    # Each call is atomic within the session
+    
+    session.commit()  # Outermost layer decides when to commit
+finally:
+    session.close()
+
+# ❌ INCORRECT: Direct constructor
+fund = Fund(investment_company_id=company.id, ...)
+session.add(fund)
+session.commit()
+```
+
+### Domain Operations Examples
+
+```python
+# ✅ CORRECT: Outermost backend layer manages session
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
+
+try:
+    # Direct object methods for domain operations
+    fund.add_capital_call(
+        amount=100000.0,
+        date=date(2023, 1, 1),
+        description="Initial capital call",
+        session=session
+    )
+    # Session managed by @with_session decorator
+    
+    fund.add_distribution_with_tax_rate(
+        event_date=date(2023, 6, 30),
+        gross_amount=5000.0,
+        tax_rate=10.0,
+        distribution_type=DistributionType.INTEREST,
+        description="Interest distribution",
+        session=session
+    )
+    # Session managed by @with_session decorator
+    
+    # ✅ CORRECT: Multiple separate calls for complex workflows
+    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call", session=session)
+    fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+    fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit", session=session)
+    # Each call is atomic within the session
+    
+    session.commit()  # Outermost layer decides when to commit
+finally:
+    session.close()
+
+# ❌ INCORRECT: Direct database operations
+event = FundEvent(
+    fund_id=fund.id,
+    event_type=EventType.CAPITAL_CALL,
+    amount=100000.0,
+    date=date(2023, 1, 1)
+)
+session.add(event)
+session.commit()
+```
+
+### Session Management Examples
+
+```python
+# ✅ CORRECT: Outermost backend layer manages sessions
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
+
+try:
+    # Domain methods accept session parameters
+    company = InvestmentCompany.create(name="Test Company", session=session)
+    entity = Entity.create(name="Test Entity", session=session)
+    
+    # Direct object methods for related object creation
+    fund = company.create_fund(entity, "Test Fund", session=session)
+    
+    # Direct object methods for domain operations
+    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call", session=session)
+    fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+    # Each operation accepts session parameter from outermost layer
+    
+    # ✅ CORRECT: Multiple separate calls for complex workflows
+    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), description="Initial call", session=session)
+    fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+    fund.add_return_of_capital(amount=50000, date=date(2023, 6, 30), description="Partial exit", session=session)
+    # Each call is atomic within the session
+    
+    # Natural relationships work easily
+    fund_count = len(company.funds)  # Easy counting!
+    
+    session.commit()  # Outermost layer decides when to commit
+finally:
+    session.close()
+
+# ❌ INCORRECT: External client manages sessions
+# This would be an external API consumer trying to create sessions
+engine = create_engine('sqlite:///data/investment_tracker.db')
+Session = sessionmaker(bind=engine)
+session = Session()
+# ... direct database operations
+```
+
+## Class Method Standards
+
+### Required Pattern for All Create Methods
+
+```python
+@classmethod
+def create(cls, **kwargs):
+    """
+    Create a new instance with validation and business logic.
+    
+    Args:
+        **kwargs: Model-specific parameters
+    
+    Returns:
+        Model: The created instance
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    from ..database import get_database_session
+    
+    # Create session internally
+    engine, session_factory, scoped_session = get_database_session()
+    session = scoped_session()
+    
+    try:
+        # Validation
+        cls._validate_create_params(**kwargs)
+        
+        # Check for existing records (if applicable)
+        cls._check_existing_records(**kwargs, session=session)
+        
+        # Create instance
+        instance = cls(**kwargs)
+        
+        # Apply business logic
+        instance._apply_create_business_logic()
+        
+        # Persist to database
+        session.add(instance)
+        session.commit()
+        
+        return instance
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+```
+
+### Required Pattern for Domain Methods
+
+```python
+def add_capital_call(self, amount, date, description):
+    """
+    Add a capital call event.
+    
+    Args:
+        amount (float): Capital call amount
+        date (date): Capital call date
+        description (str): Description of the capital call
+    
+    Returns:
+        FundEvent: The created capital call event
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    from ..database import get_database_session
+    
+    # Create session internally
+    engine, session_factory, scoped_session = get_database_session()
+    session = scoped_session()
+    
+    try:
+        # Validation
+        if amount <= 0:
+            raise ValueError("Amount must be positive")
+        
+        # Create event
+        event = FundEvent(
+            fund_id=self.id,
+            event_type=EventType.CAPITAL_CALL,
+            amount=amount,
+            date=date,
+            description=description
+        )
+        
+        # Apply business logic
+        self._apply_capital_call_business_logic(event)
+        
+        # Persist to database
+        session.add(event)
+        session.commit()
+        
+        return event
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+```
+
+### Required Pattern for Higher-Level Workflow Methods
+
+```python
+@classmethod
+def create_with_initial_events(cls, **kwargs):
+    """
+    Create a fund with initial events in a single transaction.
+    
+    Args:
+        **kwargs: Fund parameters plus initial event parameters
+    
+    Returns:
+        Fund: The created fund with initial events
+    """
+    from ..database import get_database_session
+    
+    # Create session internally
+    engine, session_factory, scoped_session = get_database_session()
+    session = scoped_session()
+    
+    try:
+        # Extract fund parameters
+        fund_params = {k: v for k, v in kwargs.items() 
+                      if k not in ['initial_capital', 'initial_distribution', 'initial_return']}
+        
+        # Create fund
+        fund = cls(**fund_params)
+        session.add(fund)
+        session.flush()  # Get fund ID
+        
+        # Create initial events
+        if 'initial_capital' in kwargs:
+            fund.add_capital_call_internal(
+                amount=kwargs['initial_capital'],
+                date=kwargs.get('initial_capital_date', date.today()),
+                description="Initial capital call",
+                session=session
+            )
+        
+        if 'initial_distribution' in kwargs:
+            fund.add_distribution_internal(
+                amount=kwargs['initial_distribution'],
+                date=kwargs.get('initial_distribution_date', date.today()),
+                description="Initial distribution",
+                session=session
+            )
+        
+        # Commit entire transaction
+        session.commit()
+        return fund
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+```
+
+## Testing Standards
+
+### Test Script Session Management
+
+```python
+# ✅ CORRECT: Use domain methods with shared session
+def setup_test_data(session):
+    """Set up test data using domain methods."""
+    # Create entities using class methods
+    company = InvestmentCompany.create(name="Test Company", session=session)
+    entity = Entity.create(name="Test Entity", session=session)
+    
+    # Create funds using class methods
+    fund = Fund.create(
+        investment_company_id=company.id,
+        entity_id=entity.id,
+        name="Test Fund",
+        fund_type="Private Debt",
+        tracking_type=FundType.COST_BASED,
+        session=session
+    )
+    
+    # Add events using domain methods
+    fund.add_capital_call(
+        amount=100000.0,
+        date=date(2023, 1, 1),
+        description="Initial capital call",
+        session=session
+    )
+    
+    # Create tax statements using class methods
+    TaxStatement.create(
+        fund_id=fund.id,
+        entity_id=entity.id,
+        financial_year="2023-24",
+        gross_income=5000.0,
+        deductions=0.0,
+        tax_payable=0.0,
+        session=session
+    )
+
+def main():
+    """Main test function."""
+    # Get database session
+    engine, session_factory, scoped_session = get_database_session()
+    session = scoped_session()
+    
+    try:
+        # Set up test data with shared session
+        setup_test_data(session)
+        
+        # Run tests with shared session
+        recalculate_everything(session)
+        verify_results(session)
+        
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+```
+
+## Migration Checklist
+
+### For Each Model
+- [ ] Implement `create()` class method with proper validation
+- [ ] Implement `_validate_create_params()` method
+- [ ] Implement `_check_existing_records()` method (if applicable)
+- [ ] Implement `
