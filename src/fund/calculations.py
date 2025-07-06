@@ -7,11 +7,12 @@ This module contains fund-specific calculation functions that use the shared cal
 from datetime import date, timedelta
 import numpy as np
 import numpy_financial as npf
+from src.shared.calculations import get_equity_change_for_event
 
 # IRR calculation utility
 def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
     """
-    Calculate monthly IRR using daily precision with the Newton-Raphson method.
+    Calculate annual IRR using daily precision with the Newton-Raphson method.
     
     Args:
         cash_flows (list[float]): List of cash flow amounts (negative for outflows, positive for inflows).
@@ -20,7 +21,7 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
         max_iterations (int): Maximum number of iterations to attempt.
     
     Returns:
-        float or None: The monthly IRR as a decimal (e.g., 0.01 for 1%), or None if not computable.
+        float or None: The annual IRR as a decimal (e.g., 0.12 for 12%), or None if not computable.
     
     Business context:
         Used for IRR calculations in Fund models, supporting daily-precision cash flows and non-uniform timing.
@@ -33,6 +34,7 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
     simple_return = (total_return - total_investment) / total_investment
     monthly_guess = (1 + simple_return) ** (1/12) - 1
     monthly_guess = max(-0.99, min(monthly_guess, 2.0))
+    
     for iteration in range(max_iterations):
         npv = 0
         derivative = 0
@@ -43,7 +45,9 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
             if months > 0:
                 derivative -= cf * months / (discount_factor * (1 + monthly_guess))
         if abs(npv) < tolerance:
-            return monthly_guess
+            # Convert monthly IRR to annual IRR
+            annual_irr = (1 + monthly_guess) ** 12 - 1
+            return annual_irr
         if abs(derivative) < 1e-12:
             break
         monthly_guess = monthly_guess - npv / derivative
@@ -413,7 +417,7 @@ def calculate_nav_event_amounts(unit_events):
         
     Note: This function updates the event objects in place. No database operations are performed.
     """
-    from src.models import EventType
+    from src.fund.models import EventType
     
     # Calculate amounts for unit purchases/sales and update units_owned and cost_of_units
     cumulative_units = 0.0
@@ -482,7 +486,7 @@ def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
             'unit_sales': list of (units, sale_price_per_unit, date)
         }
     """
-    from src.models import EventType
+    from src.fund.models import EventType
     
     cumulative_units = 0.0
     total_cost_basis = 0.0

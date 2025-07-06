@@ -7,7 +7,7 @@ A SQLAlchemy-based investment tracking system for managing investment companies,
 # Entity domain
 from .entity.models import Entity
 from .entity.calculations import get_financial_years_for_fund_period
-from .entity.creation import create_entity, get_entity_by_name, get_all_entities
+from .entity.creation import get_entity_by_name, get_all_entities
 
 # Fund domain
 from .fund.models import Fund, FundEvent, FundType, EventType, DistributionType, TaxPaymentType
@@ -43,7 +43,7 @@ __author__ = "Investment Tracker"
 
 __all__ = [
     # Entity
-    'Entity', 'get_financial_years_for_fund_period', 'create_entity', 'get_entity_by_name', 'get_all_entities',
+    'Entity', 'get_financial_years_for_fund_period', 'get_entity_by_name', 'get_all_entities',
     
     # Fund
     'Fund', 'FundEvent', 'FundType', 'EventType', 'DistributionType', 'TaxPaymentType',
@@ -64,7 +64,7 @@ __all__ = [
     # Investment Company
     'InvestmentCompany',
     'calculate_total_funds_under_management', 'calculate_total_commitments',
-    'create_investment_company', 'get_investment_company_by_name', 'get_all_investment_companies',
+    'get_investment_company_by_name', 'get_all_investment_companies',
     
     # Shared
     'with_session',

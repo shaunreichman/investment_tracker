@@ -8,7 +8,6 @@ These functions do not depend on database sessions and are purely mathematical.
 from datetime import date, timedelta
 from typing import List, Dict, Any, Optional
 import math
-from src.calculations import orchestrate_irr_base
 
 
 def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
@@ -56,7 +55,7 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
                     npv_derivative -= (cf * days) / (365.25 * discount_factor * (1 + rate))
         
         if abs(npv) < tolerance:
-            return rate * 100  # Convert to percentage
+            return rate  # Return as decimal, not percentage
         
         if abs(npv_derivative) < 1e-15:
             break
@@ -70,7 +69,7 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
             rate_new = 10
             
         if abs(rate_new - rate) < tolerance:
-            return rate_new * 100  # Convert to percentage
+            return rate_new  # Return as decimal, not percentage
             
         rate = rate_new
     
@@ -86,7 +85,7 @@ def get_equity_change_for_event(event, fund_type):
     Returns:
         float: Equity change amount
     """
-    from src.models import EventType, FundType
+    from src.fund.models import EventType, FundType
 
     if fund_type == FundType.NAV_BASED:
         if event.event_type == EventType.UNIT_PURCHASE:
@@ -264,7 +263,7 @@ def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
             'unit_sales': list of (units, sale_price_per_unit, date)
         }
     """
-    from src.models import EventType
+    from src.fund.models import EventType
     
     cumulative_units = 0.0
     total_cost_basis = 0.0
@@ -327,20 +326,6 @@ def tax_payable(total_interest_income, interest_taxable_rate, non_resident_withh
     return 0.0
 
 
-def interest_tax_benefit(total_interest_expense, interest_deduction_rate):
-    """
-    Calculate the tax benefit from interest expense deduction.
-    Args:
-        total_interest_expense (float): Total interest expense.
-        interest_deduction_rate (float): Deduction rate as a percentage.
-    Returns:
-        float: Tax benefit.
-    """
-    if total_interest_expense and interest_deduction_rate:
-        return (total_interest_expense * interest_deduction_rate) / 100
-    return 0.0
-
-
 def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
     """
     Get the start and end dates for a financial year based on jurisdiction.
@@ -375,6 +360,102 @@ def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
     return fy_start, fy_end
 
 
+def interest_tax_benefit(interest_income, tax_rate=0.45):
+    """Calculate the tax benefit from interest income.
+    
+    Args:
+        interest_income (float): Interest income amount
+        tax_rate (float): Tax rate as decimal (default 0.45 for 45%)
+        
+    Returns:
+        float: Tax benefit amount
+    """
+    return interest_income * tax_rate
+
+
+def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, return_cashflows=False):
+    """Orchestrate IRR calculation with configurable cash flow inclusion.
+    This is a shared calculation function that can be used by any domain.
+    
+    Args:
+        cash_flow_events (list): List of FundEvent objects
+        start_date (date): Start date for IRR calculation
+        include_tax_payments (bool): Whether to include tax payment events
+        include_risk_free_charges (bool): Whether to include risk-free interest charges
+        include_fy_debt_cost (bool): Whether to include FY debt cost events
+        return_cashflows (bool): Whether to return cash flow details
+        
+    Returns:
+        float or dict: IRR value or dict with cash flow details
+    """
+    from src.fund.models import EventType
+    
+    # Filter events based on options
+    filtered_events = []
+    for event in cash_flow_events:
+        include_event = False
+        if event.event_type.name in ['UNIT_PURCHASE', 'UNIT_SALE', 'CAPITAL_CALL', 'RETURN_OF_CAPITAL', 'DISTRIBUTION']:
+            include_event = True
+        elif include_tax_payments and event.event_type.name == 'TAX_PAYMENT':
+            include_event = True
+        elif include_risk_free_charges and event.event_type.name == 'DAILY_RISK_FREE_INTEREST_CHARGE':
+            include_event = True
+        elif include_fy_debt_cost and event.event_type.name == 'FY_DEBT_COST':
+            include_event = True
+        if include_event:
+            filtered_events.append(event)
+    
+    # Sort events by date
+    filtered_events.sort(key=lambda e: e.event_date)
+    
+    # Prepare cash flows for IRR calculation
+    cash_flows = []
+    days_from_start = []
+    
+    for event in filtered_events:
+        amount = event.amount or 0
+        # Adjust sign based on event type
+        if event.event_type.name in ['UNIT_PURCHASE', 'CAPITAL_CALL']:
+            amount = -abs(amount)  # Outflow
+        elif event.event_type.name in ['UNIT_SALE', 'RETURN_OF_CAPITAL', 'DISTRIBUTION', 'FY_DEBT_COST']:
+            amount = abs(amount)  # Inflow
+        elif event.event_type.name == 'TAX_PAYMENT':
+            amount = -abs(amount)  # Outflow
+        elif event.event_type.name == 'DAILY_RISK_FREE_INTEREST_CHARGE':
+            amount = -abs(amount)  # Outflow
+        
+        cash_flows.append(amount)
+        days = (event.event_date - start_date).days
+        days_from_start.append(days)
+    
+    # Calculate IRR
+    if len(cash_flows) < 2:
+        return None
+    
+    # Import the IRR calculation function from fund calculations
+    from src.fund.calculations import calculate_irr
+    irr_result = calculate_irr(cash_flows, days_from_start)
+    
+    if return_cashflows:
+        # Generate labels from event descriptions
+        labels = []
+        for event in filtered_events:
+            if event.description:
+                labels.append(f"{event.event_type.value} | {event.event_date} | {event.amount:,.2f} | {event.description}")
+            else:
+                labels.append(f"{event.event_type.value} | {event.event_date} | {event.amount:,.2f}")
+        
+        return {
+            'irr': irr_result,
+            'cash_flows': cash_flows,
+            'days_from_start': days_from_start,
+            'events': filtered_events,
+            'labels': labels
+        }
+    else:
+        return irr_result
+
+
 __all__ = [
     'calculate_irr',
     'get_equity_change_for_event',
@@ -389,4 +470,5 @@ __all__ = [
     'tax_payable',
     'interest_tax_benefit',
     'get_financial_year_dates',
+    'orchestrate_irr_base',
 ] 

@@ -15,5 +15,7 @@ __all__ = [
     'FundEvent', 
     'FundType',
     'EventType',
-    'DistributionType'
+    'DistributionType',
+    'FundCreationMixin',
+    'FundUpdateMixin'
 ] 

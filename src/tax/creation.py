@@ -6,7 +6,7 @@ This module contains methods for creating and managing tax statements and relate
 
 from src.tax.models import TaxStatement
 from src.fund.models import FundEvent, EventType, TaxPaymentType
-from src.shared.utils import with_session
+from src.shared.utils import with_session, with_database_session
 
 def _create_or_update_tax_statement_object(fund, entity_id, financial_year, **kwargs):
     """Create or update a tax statement object.
@@ -86,8 +86,69 @@ def create_tax_payment_events(fund, session=None):
         session.commit()
     return created_events
 
+def create_fy_debt_cost_event_object(tax_statement):
+    """Create a FY debt cost event object for real IRR calculations if a tax benefit exists.
+    Returns the event object or None if not applicable. No database operations.
+    """
+    # Calculate the tax benefit
+    tax_benefit = tax_statement.calculate_interest_tax_benefit()
+    if tax_benefit <= 0:
+        return None
+    
+    # Get the financial year end date
+    fy_start, fy_end = tax_statement.get_financial_year_dates()
+    if not fy_end:
+        return None
+    
+    # Create event object
+    event = FundEvent(
+        fund_id=tax_statement.fund_id,
+        event_type=EventType.FY_DEBT_COST,
+        event_date=fy_end,
+        amount=tax_benefit,  # Positive cash flow (tax benefit)
+        description=f"FY {tax_statement.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
+        reference_number=f"FY_DEBT_COST_{tax_statement.financial_year}"
+    )
+    
+    return event
+
+def create_fy_debt_cost_event(tax_statement, session=None):
+    """Create a FY debt cost event for real IRR calculations if a tax benefit exists.
+    Commits the event to the database and returns it, or returns None if not applicable.
+    """
+    # Get the financial year end date
+    fy_start, fy_end = tax_statement.get_financial_year_dates()
+    if not fy_end:
+        return None
+    
+    # Check if FY debt cost event already exists for this fund/entity/financial year
+    existing_event = session.query(FundEvent).filter(
+        FundEvent.fund_id == tax_statement.fund_id,
+        FundEvent.event_type == EventType.FY_DEBT_COST,
+        FundEvent.event_date == fy_end,
+        FundEvent.description.like(f"%FY {tax_statement.financial_year}%")
+    ).first()
+    
+    if existing_event:
+        # Update existing event
+        tax_benefit = tax_statement.calculate_interest_tax_benefit()
+        existing_event.amount = tax_benefit
+        existing_event.description = f"FY {tax_statement.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})"
+        session.commit()
+        return existing_event
+    
+    # Create new event using business logic method
+    event = create_fy_debt_cost_event_object(tax_statement)
+    if event:
+        session.add(event)
+        session.commit()
+    
+    return event
+
 
 __all__ = [
     'create_or_update_tax_statement',
     'create_tax_payment_events',
+    'create_fy_debt_cost_event_object',
+    'create_fy_debt_cost_event',
 ] 
