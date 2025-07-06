@@ -12,6 +12,7 @@ import enum
 
 # Import the Base from shared
 from ..shared.base import Base
+from ..shared.utils import with_session, with_class_session
 
 
 class TaxStatement(Base):
@@ -201,4 +202,65 @@ class TaxStatement(Base):
         Commits the event to the database and returns it, or returns None if not applicable.
         """
         from .creation import create_fy_debt_cost_event
-        return create_fy_debt_cost_event(self, session) 
+        return create_fy_debt_cost_event(self, session)
+
+    @classmethod
+    @with_class_session
+    def create(cls, fund_id, entity_id, financial_year, gross_income=0.0, 
+               deductions=0.0, tax_payable=0.0, session=None):
+        """
+        Create a new tax statement with validation and business logic.
+        
+        Args:
+            fund_id (int): ID of the fund
+            entity_id (int): ID of the entity
+            financial_year (str): Financial year (e.g., "2023-24")
+            gross_income (float): Gross income amount
+            deductions (float): Deductions amount
+            tax_payable (float): Tax payable amount
+            session (Session): Database session (managed by @with_session decorator)
+        
+        Returns:
+            TaxStatement: The created tax statement
+            
+        Raises:
+            ValueError: If required fields are missing or invalid
+        """
+        # Validation
+        if not fund_id:
+            raise ValueError("Fund ID is required")
+        
+        if not entity_id:
+            raise ValueError("Entity ID is required")
+        
+        if not financial_year:
+            raise ValueError("Financial year is required")
+        
+        # Check for existing tax statement for same fund/entity/financial year
+        existing = session.query(cls).filter(
+            cls.fund_id == fund_id,
+            cls.entity_id == entity_id,
+            cls.financial_year == financial_year
+        ).first()
+        if existing:
+            raise ValueError(f"Tax statement already exists for fund {fund_id}, entity {entity_id}, FY {financial_year}")
+        
+        # Create the tax statement
+        statement = cls(
+            fund_id=fund_id,
+            entity_id=entity_id,
+            financial_year=financial_year,
+            total_interest_income=gross_income,  # Map gross_income to total_interest_income
+            other_income=0.0,  # Default other income fields
+            foreign_income=0.0,
+            capital_gains=0.0,
+            tax_payable=tax_payable
+        )
+        
+        # Calculate total income
+        statement.calculate_total_income()
+        
+        session.add(statement)
+        session.flush()  # Get the ID without committing
+        
+        return statement 

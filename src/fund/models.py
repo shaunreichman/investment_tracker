@@ -21,7 +21,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from ..shared.base import Base
 
 # Import utilities and calculations
-from ..shared.utils import with_session
+from ..shared.utils import with_session, with_class_session
 from .calculations import (
     calculate_irr,
     calculate_average_equity_balance_nav,
@@ -40,6 +40,11 @@ from .calculations import (
 # Import models from other domains
 from ..rates.models import RiskFreeRate
 from ..entity.models import Entity
+from ..tax.models import TaxStatement
+
+# Import shared calculations
+from ..shared.calculations import get_equity_change_for_event, get_financial_years_for_fund_period
+from ..rates.calculations import get_risk_free_rate_for_date
 
 
 class EventType(enum.Enum):
@@ -158,6 +163,71 @@ class Fund(Base):
     entity = relationship("Entity", back_populates="funds", lazy='selectin')
     fund_events = relationship("FundEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     tax_statements = relationship("TaxStatement", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
+    
+    @classmethod
+    @with_class_session
+    def create(cls, investment_company_id, entity_id, name, fund_type, tracking_type, 
+               currency="AUD", description=None, commitment_amount=None, 
+               expected_irr=None, expected_duration_months=None, session=None):
+        """
+        Create a new fund with validation and business logic.
+        
+        Args:
+            investment_company_id (int): ID of the investment company
+            entity_id (int): ID of the entity
+            name (str): Fund name
+            fund_type (str): Type of fund (e.g., "Private Debt", "Equity")
+            tracking_type (FundType): Tracking type (COST_BASED or NAV_BASED)
+            currency (str): Currency code (default: "AUD")
+            description (str, optional): Fund description
+            commitment_amount (float, optional): Commitment amount for cost-based funds
+            expected_irr (float, optional): Expected IRR percentage
+            expected_duration_months (int, optional): Expected duration in months
+            session (Session): Database session (managed by @with_session decorator)
+        
+        Returns:
+            Fund: The created fund
+            
+        Raises:
+            ValueError: If required fields are missing or invalid
+        """
+        # Validate required fields
+        if not investment_company_id:
+            raise ValueError("investment_company_id is required")
+        if not entity_id:
+            raise ValueError("entity_id is required")
+        if not name:
+            raise ValueError("name is required")
+        if not fund_type:
+            raise ValueError("fund_type is required")
+        if not tracking_type:
+            raise ValueError("tracking_type is required")
+        
+        # Validate tracking_type is a valid FundType enum
+        if isinstance(tracking_type, str):
+            try:
+                tracking_type = FundType(tracking_type)
+            except ValueError:
+                raise ValueError(f"Invalid tracking_type: {tracking_type}. Must be one of: {[t.value for t in FundType]}")
+        
+        # Create the fund
+        fund = cls(
+            investment_company_id=investment_company_id,
+            entity_id=entity_id,
+            name=name,
+            fund_type=fund_type,
+            tracking_type=tracking_type,
+            currency=currency,
+            description=description,
+            commitment_amount=commitment_amount,
+            expected_irr=expected_irr,
+            expected_duration_months=expected_duration_months
+        )
+        
+        session.add(fund)
+        session.flush()  # Get the ID without committing
+        
+        return fund
     
     def __repr__(self):
         """Return a string representation of the Fund instance for debugging/logging."""
@@ -964,7 +1034,6 @@ class Fund(Base):
         """Calculate capital gains for NAV-based funds using FIFO on unit sales.
         Delegates to calculate_nav_based_capital_gains in calculations.py.
         """
-        from src.calculations import calculate_nav_based_capital_gains
         # Get all unit purchase and sale events in chronological order
         events = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
@@ -977,7 +1046,6 @@ class Fund(Base):
         """Get capital gains for cost-based funds from explicit capital gain events.
         Delegates to calculate_cost_based_capital_gains in calculations.py.
         """
-        from src.calculations import calculate_cost_based_capital_gains
         # Get all relevant events (could be filtered further if needed)
         events = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
@@ -1198,18 +1266,11 @@ class Fund(Base):
         Used for after-tax IRR calculations. Commits new events to the database.
         Returns a list of created events.
         """
-        from sqlalchemy.orm import object_session
-        from ..tax.models import TaxStatement
-        if session is None:
-            session = object_session(self)
-        
         # Get all tax statements for this fund
         tax_statements = session.query(TaxStatement).filter(
             TaxStatement.fund_id == self.id
         ).all()
-        
         created_events = []
-        
         for tax_statement in tax_statements:
             # Check if tax payment event already exists
             existing_event = session.query(FundEvent).filter(
@@ -1226,10 +1287,8 @@ class Fund(Base):
                 if tax_event:
                     session.add(tax_event)
                     created_events.append(tax_event)
-        
         if created_events:
             session.commit()
-        
         return created_events
     
     def recalculate_debt_costs(self, session=None, risk_free_rate_currency=None):
@@ -1253,7 +1312,7 @@ class Fund(Base):
         """Base IRR calculation method for the fund.
         Delegates to orchestrate_irr_base in calculations.py.
         """
-        from src.calculations import orchestrate_irr_base
+        from src.shared.calculations import orchestrate_irr_base
         from datetime import date
         # Only calculate IRR for completed funds
         if self.should_be_active:
@@ -1474,7 +1533,7 @@ class Fund(Base):
         """Calculate average equity balance for NAV-based funds using unit events.
         Delegates to orchestrate_nav_based_average_equity in calculations.py.
         """
-        from src.calculations import orchestrate_nav_based_average_equity
+        from src.fund.calculations import orchestrate_nav_based_average_equity
         unit_events = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
             FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
@@ -1489,7 +1548,7 @@ class Fund(Base):
         """Calculate average equity balance for cost-based funds using capital events.
         Delegates to orchestrate_cost_based_average_equity in calculations.py.
         """
-        from src.calculations import orchestrate_cost_based_average_equity
+        from src.fund.calculations import orchestrate_cost_based_average_equity
         capital_events = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
             FundEvent.event_type.in_([
@@ -1565,27 +1624,7 @@ class Fund(Base):
         session.commit()
         return statement
 
-    @with_session
-    def _create_tax_payment_event_object(self, tax_statement):
-        """Create a tax payment event object for a tax statement.
-        Returns the event object or None if not applicable. No database operations.
-        """
-        # Calculate tax payable if not already calculated
-        tax_statement.calculate_tax_payable()
-        # Only create tax payment event if there's additional tax payable
-        if tax_statement.tax_payable > 0.01:  # Allow for small rounding differences
-            # Create tax payment event
-            tax_event = FundEvent(
-                fund_id=self.id,
-                event_type=EventType.TAX_PAYMENT,
-                event_date=tax_statement.get_tax_payment_date(),
-                amount=tax_statement.tax_payable,
-                description=f"Tax payment for FY {tax_statement.financial_year}",
-                reference_number=f"TAX-{tax_statement.financial_year}",
-                tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
-            )
-            return tax_event
-        return None
+
 
     @with_session
     def create_tax_payment_events(self, session=None):
@@ -1939,9 +1978,50 @@ class FundEvent(Base):
             return DistributionType.OTHER
     
     def set_event_type_and_infer_distribution(self, event_type):
-        """Set the event type and infer the distribution type if it's a distribution event.
-        This is a convenience method for creating distribution events.
-        """
+        """Set the event type and infer the distribution type if applicable."""
         self.event_type = event_type
+        
+        # Infer distribution type for distribution events
         if event_type == EventType.DISTRIBUTION:
-            self.distribution_type = self.infer_distribution_type() 
+            self.distribution_type = self.infer_distribution_type()
+    
+    @staticmethod
+    def create_distribution_with_tax_static(fund_id, event_date, gross_amount, tax_withheld=0.0, tax_rate=None, distribution_type=None, description=None, reference_number=None, session=None):
+        """Create a distribution event and an associated tax payment event for a fund.
+        Used by Fund methods to ensure both events are created together.
+        Returns a tuple: (distribution_event, tax_event).
+        Commits both events to the database.
+        """
+        from sqlalchemy.orm import object_session
+        
+        if session is None:
+            session = object_session(fund_id) if hasattr(fund_id, 'id') else None
+        
+        # Create the distribution event
+        distribution_event = FundEvent(
+            fund_id=fund_id,
+            event_type=EventType.DISTRIBUTION,
+            event_date=event_date,
+            amount=gross_amount,
+            distribution_type=distribution_type or DistributionType.INTEREST,
+            description=description or "Distribution",
+            reference_number=reference_number
+        )
+        session.add(distribution_event)
+        
+        # Create the tax payment event if there's tax withheld
+        tax_event = None
+        if tax_withheld > 0:
+            tax_event = FundEvent(
+                fund_id=fund_id,
+                event_type=EventType.TAX_PAYMENT,
+                event_date=event_date,
+                amount=tax_withheld,
+                description=f"Tax withheld on distribution (rate: {tax_rate}%)" if tax_rate else "Tax withheld on distribution",
+                reference_number=f"{reference_number}_TAX" if reference_number else None,
+                tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
+            )
+            session.add(tax_event)
+        
+        session.commit()
+        return distribution_event, tax_event

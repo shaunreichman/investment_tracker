@@ -1,26 +1,12 @@
 """
-DEPRECATED - This file has been migrated to domain-driven architecture.
+Calculation utilities for investment tracker.
 
-All calculation functions have been moved to their respective domain modules:
-- Fund-specific calculations → src/fund/calculations.py
-- Tax-specific calculations → src/tax/calculations.py
-- Entity-specific calculations → src/entity/calculations.py
-- Rates-specific calculations → src/rates/calculations.py
-- Investment company calculations → src/investment_company/calculations.py
-- Shared calculations → src/shared/calculations.py
+This module provides core financial calculation utilities used throughout the investment tracker system, including:
+- Internal Rate of Return (IRR) calculations with daily/monthly precision
+- Average equity balance calculations for both NAV-based and cost-based funds
+- Debt cost (opportunity cost) calculations using risk-free rates
 
-This file is kept for reference only and should not be used in new code.
-All imports should use the new domain modules instead.
-
-Migration completed: [Date]
-"""
-
-# DEPRECATED - All content below has been migrated to domain modules
-# This file is kept for reference only
-
-"""
-# All calculation functions have been migrated to their respective domain modules
-# See deprecation header above for details
+These utilities are used by Fund and related models to support performance measurement, tax calculations, and reporting.
 """
 
 from datetime import date, timedelta

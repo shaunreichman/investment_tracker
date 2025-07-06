@@ -10,6 +10,7 @@ from datetime import datetime
 
 # Import the Base from shared
 from ..shared.base import Base
+from ..shared.utils import with_session, with_class_session
 
 class Entity(Base):
     """Model representing an investing entity (person or company)."""
@@ -25,6 +26,51 @@ class Entity(Base):
     # Relationships
     funds = relationship("Fund", back_populates="entity", cascade="all, delete-orphan")
     tax_statements = relationship("TaxStatement", back_populates="entity", cascade="all, delete-orphan")
+    
+    @classmethod
+    @with_class_session
+    def create(cls, name, description=None, tax_jurisdiction="AU", session=None):
+        """
+        Create a new entity with validation and business logic.
+        
+        Args:
+            name (str): Entity name (must be unique)
+            description (str, optional): Entity description
+            tax_jurisdiction (str): Tax jurisdiction code (default: "AU")
+            session (Session): Database session (managed by @with_session decorator)
+        
+        Returns:
+            Entity: The created entity
+            
+        Raises:
+            ValueError: If name is empty or entity already exists
+        """
+        # Validation
+        if not name or not name.strip():
+            raise ValueError("Entity name is required and cannot be empty")
+        
+        name = name.strip()
+        
+        # Validate tax jurisdiction
+        if tax_jurisdiction not in ["AU", "US", "UK", "CA"]:  # Add more as needed
+            raise ValueError(f"Unsupported tax jurisdiction: {tax_jurisdiction}")
+        
+        # Check for existing entity with same name
+        existing = session.query(cls).filter(cls.name == name).first()
+        if existing:
+            raise ValueError(f"Entity with name '{name}' already exists")
+        
+        # Create the entity
+        entity = cls(
+            name=name,
+            description=description,
+            tax_jurisdiction=tax_jurisdiction
+        )
+        
+        session.add(entity)
+        session.flush()  # Get the ID without committing
+        
+        return entity
     
     def __repr__(self):
         return f"<Entity(id={self.id}, name='{self.name}', jurisdiction='{self.tax_jurisdiction}')>"

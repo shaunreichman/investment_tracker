@@ -6,6 +6,7 @@ This module contains shared utility functions and decorators used across domains
 
 from functools import wraps
 from sqlalchemy.orm import object_session
+from ..database import get_database_session
 
 def with_session(method):
     """
@@ -36,6 +37,104 @@ def with_session(method):
     return wrapper
 
 
+def with_class_session(method):
+    """
+    Decorator for class methods that require a SQLAlchemy session.
+    Creates a new database session if one is not provided.
+    
+    Usage:
+        - Apply to class methods that accept a 'session' keyword argument.
+        - If 'session' is not provided, creates a new session from the database.
+        - Automatically commits changes and closes the session.
+    
+    Args:
+        method (callable): The class method to wrap.
+    
+    Returns:
+        callable: The wrapped method with session management.
+    """
+    @wraps(method)
+    def wrapper(cls, *args, session=None, **kwargs):
+        # If no session provided, create one
+        if session is None:
+            engine, session_factory, scoped_session = get_database_session()
+            session = scoped_session()
+            auto_commit = True
+        else:
+            auto_commit = False
+        
+        try:
+            # Call the original method
+            result = method(cls, *args, session=session, **kwargs)
+            
+            # Auto-commit if we created the session
+            if auto_commit:
+                session.commit()
+            
+            return result
+        except Exception:
+            # Rollback on error if we created the session
+            if auto_commit:
+                session.rollback()
+            raise
+        finally:
+            # Close the session if we created it
+            if auto_commit:
+                session.close()
+    
+    return wrapper
+
+
+def with_database_session(func):
+    """
+    Decorator for standalone functions that require a database session.
+    Creates a new database session if one is not provided.
+    
+    Usage:
+        - Apply to standalone functions that accept a 'session' keyword argument.
+        - If 'session' is not provided, creates a new session from the database.
+        - Automatically commits changes and closes the session.
+    
+    Args:
+        func (callable): The standalone function to wrap.
+    
+    Returns:
+        callable: The wrapped function with session management.
+    """
+    @wraps(func)
+    def wrapper(*args, session=None, **kwargs):
+        # If no session provided, create one
+        if session is None:
+            engine, session_factory, scoped_session = get_database_session()
+            session = scoped_session()
+            auto_commit = True
+        else:
+            auto_commit = False
+        
+        try:
+            # Call the original function
+            result = func(*args, session=session, **kwargs)
+            
+            # Auto-commit if we created the session
+            if auto_commit:
+                session.commit()
+            
+            return result
+        except Exception:
+            # Rollback on error if we created the session
+            if auto_commit:
+                session.rollback()
+            raise
+        finally:
+            # Close the session if we created it
+            if auto_commit:
+                session.close()
+    
+    return wrapper
+
+
 __all__ = [
     'with_session',
+    'with_class_session',
+    'with_database_session',
 ] 

@@ -8,8 +8,6 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 from src.shared.base import Base
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
@@ -22,50 +20,39 @@ def test_new_structure():
     """Test that the new module structure works correctly."""
     print("Testing new module structure...")
     
-    # Create engine and tables
-    engine = create_engine('sqlite:///data/investment_tracker_new.db')
-    Base.metadata.create_all(engine)
-    
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    
     try:
-        # Test creating entities
-        company = InvestmentCompany(
+        # Test creating entities using domain methods - each call is its own transaction
+        company = InvestmentCompany.create(
             name="Test Company",
             description="Test investment company"
         )
-        session.add(company)
-        session.flush()  # Get the ID
+        # Session managed by @with_class_session decorator - client doesn't know about it
+        company_id = company.id  # Store ID before object becomes detached
         
-        entity = Entity(
+        entity = Entity.create(
             name="Test Entity",
             description="Test entity"
         )
-        session.add(entity)
-        session.flush()  # Get the ID
+        # Session managed by @with_class_session decorator - client doesn't know about it
+        entity_id = entity.id  # Store ID before object becomes detached
         
-        # Test creating a fund
-        fund = Fund(
-            investment_company_id=company.id,
-            entity_id=entity.id,
+        # Test creating a fund using domain method
+        fund = Fund.create(
+            investment_company_id=company_id,  # Use stored ID
+            entity_id=entity_id,  # Use stored ID
             name="Test Fund",
             fund_type="Test",
             tracking_type=FundType.COST_BASED,
             currency="AUD"
         )
-        session.add(fund)
-        
-        session.commit()
+        # Session managed by @with_class_session decorator - client doesn't know about it
         
         print("✅ New module structure test passed!")
-        print(f"Created: {company.name}, {entity.name}, {fund.name}")
+        print(f"Created: Company ID {company_id}, Entity ID {entity_id}, Fund ID {fund.id}")
         
     except Exception as e:
         print(f"❌ New module structure test failed: {e}")
-        session.rollback()
-    finally:
-        session.close()
+        raise
 
 if __name__ == "__main__":
     test_new_structure() 
