@@ -5,59 +5,37 @@ This module contains shared utility functions and decorators used across domains
 """
 
 from functools import wraps
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import object_session
 
-
-def with_session(func):
+def with_session(method):
     """
-    Decorator to automatically handle database session for functions that need one.
-    
-    This decorator can be used in two ways:
-    1. If the function already has a session parameter, it will use that session.
-    2. If the function doesn't have a session parameter, it will create a new session.
+    Decorator for model methods that require a SQLAlchemy session.
+    Ensures the session argument is set, using object_session(self) if not provided.
     
     Usage:
-        @with_session
-        def my_function(session, arg1, arg2):
-            # Use session here
-            pass
-        
-        @with_session
-        def my_function(arg1, arg2):
-            # Session will be automatically created and passed
-            pass
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        # Check if session is already provided
-        session = None
-        if args and isinstance(args[0], Session):
-            session = args[0]
-            # Remove session from args
-            args = args[1:]
-        elif 'session' in kwargs:
-            session = kwargs.pop('session')
-        
-        if session is None:
-            # Create new session
-            from sqlalchemy import create_engine
-            from sqlalchemy.orm import sessionmaker
-            
-            engine = create_engine('sqlite:///data/investment_tracker.db')
-            SessionLocal = sessionmaker(bind=engine)
-            session = SessionLocal()
-            
-            try:
-                result = func(session, *args, **kwargs)
-                session.commit()
-                return result
-            except Exception:
-                session.rollback()
-                raise
-            finally:
-                session.close()
-        else:
-            # Use provided session
-            return func(session, *args, **kwargs)
+        - Apply to instance methods that accept a 'session' keyword argument.
+        - If 'session' is not provided, attempts to resolve it from the SQLAlchemy object session.
+        - Raises RuntimeError if no session is available.
     
-    return wrapper 
+    Best practices:
+        - Use for methods that may be called both inside and outside explicit session contexts.
+        - Avoid using for static or class methods.
+    
+    Args:
+        method (callable): The instance method to wrap.
+    
+    Returns:
+        callable: The wrapped method with session resolution logic.
+    """
+    @wraps(method)
+    def wrapper(self, *args, session=None, **kwargs):
+        resolved_session = session or object_session(self)
+        if resolved_session is None:
+            raise RuntimeError(f"No SQLAlchemy session found for {self.__class__.__name__}.{method.__name__}")
+        return method(self, *args, session=resolved_session, **kwargs)
+    return wrapper
+
+
+__all__ = [
+    'with_session',
+] 

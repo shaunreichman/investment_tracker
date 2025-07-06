@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 
 from .models import Fund, FundEvent, EventType, FundType, DistributionType
-from src.utils import with_session
+from ..shared.utils import with_session
 
 
 class FundQueryMixin:
@@ -318,4 +318,9 @@ class FundQueryMixin:
 
 
 # Add mixin to Fund class
-Fund.__bases__ = (FundQueryMixin,) + Fund.__bases__ 
+Fund.__bases__ = (FundQueryMixin,) + Fund.__bases__
+
+
+__all__ = [
+    'FundQueryMixin',
+] 

@@ -1,3 +1,23 @@
+"""
+DEPRECATED - This file has been migrated to domain-driven architecture.
+
+All utility functions have been moved to the shared module:
+- with_session decorator → src/shared/utils.py
+
+This file is kept for reference only and should not be used in new code.
+All imports should use the new domain modules instead.
+
+Migration completed: [Date]
+"""
+
+# DEPRECATED - All content below has been migrated to domain modules
+# This file is kept for reference only
+
+"""
+# All utility functions have been migrated to src/shared/utils.py
+# See deprecation header above for details
+"""
+
 from functools import wraps
 from sqlalchemy.orm import object_session
 

@@ -86,7 +86,7 @@ def get_equity_change_for_event(event, fund_type):
     Returns:
         float: Equity change amount
     """
-    from src.fund.models import EventType, FundType
+    from src.models import EventType, FundType
 
     if fund_type == FundType.NAV_BASED:
         if event.event_type == EventType.UNIT_PURCHASE:
@@ -98,7 +98,6 @@ def get_equity_change_for_event(event, fund_type):
             return event.amount or 0.0
         elif event.event_type == EventType.RETURN_OF_CAPITAL:
             return -(event.amount or 0.0)
-    
     return 0.0
 
 
@@ -138,8 +137,16 @@ def get_financial_years_for_fund_period(start_date, end_date, entity):
 
 
 def get_reconciliation_explanation(gross_diff, tax_diff, net_diff):
-    """Generate a human-readable explanation for the reconciliation differences.
-    Returns a string.
+    """
+    Generate a human-readable explanation for the reconciliation differences.
+    
+    Args:
+        gross_diff (float): Difference in gross amounts
+        tax_diff (float): Difference in tax amounts  
+        net_diff (float): Difference in net amounts
+    
+    Returns:
+        str: Human-readable explanation of the differences
     """
     explanations = []
     
@@ -157,12 +164,12 @@ def get_reconciliation_explanation(gross_diff, tax_diff, net_diff):
     
     if abs(net_diff) > 0.01:
         if net_diff > 0:
-            explanations.append(f"${net_diff:,.2f} more was received than expected")
+            explanations.append(f"${net_diff:,.2f} more net income reported than actually received")
         else:
-            explanations.append(f"${abs(net_diff):,.2f} less was received than expected")
+            explanations.append(f"${abs(net_diff):,.2f} more net income received than reported")
     
     if not explanations:
-        return "Reconciliation matches exactly"
+        explanations.append("Tax statement matches actual distributions perfectly")
     
     return "; ".join(explanations)
 
@@ -198,41 +205,30 @@ def calculate_nav_event_amounts(nav_events, as_of_date=None):
         }
     
     # Get the most recent NAV event
-    latest_nav = max(nav_events, key=lambda e: e.event_date)
-    
-    current_units = latest_nav.units_owned or 0.0
-    current_unit_price = latest_nav.nav_per_share or 0.0
-    current_value = current_units * current_unit_price
+    latest_nav_event = max(nav_events, key=lambda e: e.event_date)
     
     return {
-        'current_units': current_units,
-        'current_unit_price': current_unit_price,
-        'current_value': current_value
+        'current_units': latest_nav_event.units_owned or 0.0,
+        'current_unit_price': latest_nav_event.unit_price or 0.0,
+        'current_value': (latest_nav_event.units_owned or 0.0) * (latest_nav_event.unit_price or 0.0)
     }
 
 
 def get_unit_events_for_fund(unit_events, as_of_date=None):
     """
-    Get unit events (purchases and sales) for NAV-based funds up to a given date.
-    This is a pure function that filters a list of events.
+    Filter unit events up to a given date.
     
     Args:
-        unit_events: List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE event_types
-        as_of_date: Get events up to this date. If None, gets all events.
+        unit_events: List of FundEvent objects
+        as_of_date: Filter events up to this date. If None, includes all events.
     
     Returns:
         list: Filtered list of unit events
     """
-    from src.fund.models import EventType
+    if as_of_date is None:
+        return unit_events
     
-    # Filter by event type
-    unit_events = [e for e in unit_events if e.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]]
-    
-    # Filter by date if specified
-    if as_of_date:
-        unit_events = [e for e in unit_events if e.event_date <= as_of_date]
-    
-    return unit_events
+    return [e for e in unit_events if e.event_date <= as_of_date]
 
 
 def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
@@ -253,55 +249,144 @@ def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
 
 def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
     """
-    Calculate cumulative units and cost basis for NAV-based funds using FIFO method.
-    This is a pure function for cost basis calculations.
+    Calculate cumulative units owned and total cost basis up to a given date.
+    Shared utility for NAV-based calculations.
     
     Args:
         unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
         as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
     
     Returns:
-        dict: Dictionary with 'total_units', 'total_cost_basis', 'average_cost_per_unit'
+        dict: {
+            'cumulative_units': float,
+            'total_cost_basis': float,
+            'unit_purchases': list of (units, cost_per_unit, date),
+            'unit_sales': list of (units, sale_price_per_unit, date)
+        }
     """
-    from src.fund.models import EventType
+    from src.models import EventType
     
-    # Filter events by date if specified
-    if as_of_date:
-        unit_events = [e for e in unit_events if e.event_date <= as_of_date]
-    
-    # Filter to only unit events
-    unit_events = [e for e in unit_events if e.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]]
-    
-    # Sort by date
-    unit_events.sort(key=lambda e: e.event_date)
-    
-    total_units = 0.0
+    cumulative_units = 0.0
     total_cost_basis = 0.0
+    unit_purchases = []
+    unit_sales = []
     
     for event in unit_events:
+        # Stop if we've reached the as_of_date
+        if as_of_date and event.event_date > as_of_date:
+            break
+            
         if event.event_type == EventType.UNIT_PURCHASE:
-            units = event.units_purchased or 0.0
-            cost = event.amount or 0.0
-            total_units += units
-            total_cost_basis += cost
+            units = event.units_purchased or 0
+            unit_price = event.unit_price or 0
+            if units > 0 and unit_price > 0:
+                cumulative_units += units
+                total_cost_basis += units * unit_price
+                unit_purchases.append((units, unit_price, event.event_date))
+                
         elif event.event_type == EventType.UNIT_SALE:
-            units_sold = event.units_sold or 0.0
-            if units_sold > total_units:
-                # Can't sell more than we own
-                units_sold = total_units
-            
-            if total_units > 0:
-                # Calculate cost of units sold using FIFO
-                cost_per_unit = total_cost_basis / total_units
-                cost_of_units_sold = units_sold * cost_per_unit
-                total_cost_basis -= cost_of_units_sold
-            
-            total_units -= units_sold
-    
-    average_cost_per_unit = total_cost_basis / total_units if total_units > 0 else 0.0
+            units = event.units_sold or 0
+            unit_price = event.unit_price or 0
+            if units > 0:
+                cumulative_units -= units
+                unit_sales.append((units, unit_price, event.event_date))
     
     return {
-        'total_units': total_units,
+        'cumulative_units': cumulative_units,
         'total_cost_basis': total_cost_basis,
-        'average_cost_per_unit': average_cost_per_unit
-    } 
+        'unit_purchases': unit_purchases,
+        'unit_sales': unit_sales
+    }
+
+
+def net_income(total_income, non_resident_withholding_tax_from_statement):
+    """
+    Calculate net income after non-resident withholding tax from statement.
+    Args:
+        total_income (float): Total income.
+        non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
+    Returns:
+        float: Net income.
+    """
+    return (total_income or 0.0) - (non_resident_withholding_tax_from_statement or 0.0)
+
+
+def tax_payable(total_interest_income, interest_taxable_rate, non_resident_withholding_tax_from_statement):
+    """
+    Calculate tax payable as (total_interest_income * interest_taxable_rate / 100) - non_resident_withholding_tax_from_statement.
+    Args:
+        total_interest_income (float): Total interest income.
+        interest_taxable_rate (float): Taxable rate as a percentage.
+        non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
+    Returns:
+        float: Tax payable (never negative).
+    """
+    if interest_taxable_rate and total_interest_income and interest_taxable_rate != 0 and total_interest_income > 0:
+        total_tax_liability = total_interest_income * (interest_taxable_rate / 100)
+        return max(0, total_tax_liability - (non_resident_withholding_tax_from_statement or 0.0))
+    return 0.0
+
+
+def interest_tax_benefit(total_interest_expense, interest_deduction_rate):
+    """
+    Calculate the tax benefit from interest expense deduction.
+    Args:
+        total_interest_expense (float): Total interest expense.
+        interest_deduction_rate (float): Deduction rate as a percentage.
+    Returns:
+        float: Tax benefit.
+    """
+    if total_interest_expense and interest_deduction_rate:
+        return (total_interest_expense * interest_deduction_rate) / 100
+    return 0.0
+
+
+def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
+    """
+    Get the start and end dates for a financial year based on jurisdiction.
+    Args:
+        financial_year (str): Financial year string (e.g., '2023-24' or '2023').
+        tax_jurisdiction (str): Jurisdiction code (e.g., 'AU').
+    Returns:
+        tuple: (start_date, end_date) as datetime.date objects.
+    """
+    from datetime import date
+    if '-' in financial_year:
+        start_year, end_year = financial_year.split('-')
+        start_year = int(start_year)
+        if len(end_year) == 2:
+            end_year = int(f"20{end_year}")
+        else:
+            end_year = int(end_year)
+        if tax_jurisdiction == "AU":
+            fy_start = date(start_year, 7, 1)
+            fy_end = date(end_year, 6, 30)
+        else:
+            fy_start = date(start_year, 1, 1)
+            fy_end = date(start_year, 12, 31)
+    else:
+        year = int(financial_year)
+        if tax_jurisdiction == "AU":
+            fy_start = date(year, 7, 1)
+            fy_end = date(year + 1, 6, 30)
+        else:
+            fy_start = date(year, 1, 1)
+            fy_end = date(year, 12, 31)
+    return fy_start, fy_end
+
+
+__all__ = [
+    'calculate_irr',
+    'get_equity_change_for_event',
+    'get_risk_free_rate_for_date',
+    'get_financial_years_for_fund_period',
+    'get_reconciliation_explanation',
+    'calculate_nav_event_amounts',
+    'get_unit_events_for_fund',
+    'calculate_nav_based_cost_basis_for_irr',
+    'calculate_cumulative_units_and_cost_basis',
+    'net_income',
+    'tax_payable',
+    'interest_tax_benefit',
+    'get_financial_year_dates',
+] 

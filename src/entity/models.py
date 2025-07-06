@@ -41,4 +41,17 @@ class Entity(Base):
                 return f"{date.year - 1}-{str(date.year)[-2:]}"
         else:
             # Default to calendar year for other jurisdictions
-            return str(date.year) 
+            return str(date.year)
+    
+    def get_financial_years_for_period(self, start_date, end_date):
+        """Get all financial years between start and end dates for this entity.
+        
+        Args:
+            start_date (date): Start date for the period
+            end_date (date): End date for the period
+        
+        Returns:
+            set: Set of financial year strings
+        """
+        from .calculations import get_financial_years_for_fund_period
+        return get_financial_years_for_fund_period(start_date, end_date, self) 

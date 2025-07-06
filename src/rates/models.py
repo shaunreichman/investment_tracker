@@ -40,4 +40,18 @@ class RiskFreeRate(Base):
     )
     
     def __repr__(self):
-        return f"<RiskFreeRate(id={self.id}, currency='{self.currency}', date={self.rate_date}, rate={self.rate}%)>" 
+        return f"<RiskFreeRate(id={self.id}, currency='{self.currency}', date={self.rate_date}, rate={self.rate}%)>"
+    
+    @staticmethod
+    def get_rate_for_date(target_date, risk_free_rates):
+        """Get the risk-free rate for a specific date from a list of rates.
+        
+        Args:
+            target_date (date): The date to find a rate for
+            risk_free_rates (list): List of RiskFreeRate objects, sorted by date
+        
+        Returns:
+            float or None: The risk-free rate as a percentage, or None if not found
+        """
+        from .calculations import get_risk_free_rate_for_date
+        return get_risk_free_rate_for_date(target_date, risk_free_rates) 

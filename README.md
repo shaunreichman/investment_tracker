@@ -4,6 +4,15 @@ A Python-based system for tracking multiple investments across companies and fun
 
 ---
 
+## ⚡️ Domain-Driven Architecture (2024 Migration)
+
+**This project has been migrated to a domain-driven architecture.**
+- All models, calculations, and creation logic are now organized by domain (fund, tax, entity, rates, investment company, shared).
+- The old `src/models.py`, `src/calculations.py`, and `src/utils.py` files are now **deprecated** and kept for reference only.
+- All imports should use the new domain modules (see below).
+
+---
+
 ## Project Overview
 
 This app tracks investments, cash flows, and fund performance. It supports:
@@ -26,93 +35,51 @@ This app tracks investments, cash flows, and fund performance. It supports:
 - **Automatic event listeners**: NAV-based funds automatically update current units after unit purchase/sale events
 - **Enhanced FIFO tracking**: NAV-based funds use FIFO cost basis for accurate equity balance calculations
 - **Improved IRR calculations**: Complete support for NAV-based fund IRR with unit sales included
+- **2024: Domain-driven architecture migration**
 
 ---
 
-## Fund Types Explained
-
-### NAV-Based Funds
-**Use for**: Listed shares, ETFs, unit trusts, managed funds with regular NAV reporting
-
-**Key Characteristics**:
-- No fixed commitment amount (buy units as needed)
-- No expected IRR (performance determined by market)
-- No fixed duration (hold as long as desired)
-- Track units owned and unit prices
-- NAV updates provide current market value
-
-**Manual Fields Only**:
-```python
-fund = Fund(
-    name="ABC Ltd",
-    fund_type="Equity - Consumer Discretionary",
-    tracking_type=FundType.NAV_BASED,
-    currency="AUD",
-    description="ABC Ltd on the ASX"
-)
-```
-
-**Automatic Calculations**:
-- `current_units`: Total units owned (from purchase/sale events)
-- `current_unit_price`: Latest unit price (from NAV updates)
-- `current_equity_balance`: FIFO cost basis of remaining units
-- `amount` in unit events: (units × unit price) ± brokerage fees
-- `cost_of_units`: FIFO cost basis after each unit event
-- `shares_owned` in NAV events: Cumulative units at that date
-
-**Note**: NAV-based funds use FIFO (First In, First Out) cost basis tracking for accurate equity balance calculations.
-
-### Cost-Based Funds
-**Use for**: Private equity, venture capital, real estate, infrastructure funds
-
-**Key Characteristics**:
-- Fixed commitment amount
-- Expected IRR and duration
-- Track capital calls and returns
-- Value based on cost basis
-
-**Manual Fields**:
-```python
-fund = Fund(
-    name="Blackstone Real Estate Partners X",
-    fund_type="Real Estate",
-    tracking_type=FundType.COST_BASED,
-    commitment_amount=1000000.0,
-    expected_irr=15.0,
-    expected_duration_months=120,
-    currency="USD",
-    description="Real estate private equity fund"
-)
-```
-
-**Automatic Calculations**:
-- `total_cost_basis`: Capital calls - capital returns
-- `current_equity_balance`: Same as total_cost_basis
-- `is_active`: True if equity balance > 0
-
----
-
-## Tech Stack
-
-- Python 3.x
-- SQLAlchemy (ORM)
-- SQLite
-- pandas, numpy
-- (Optional: Streamlit for future dashboards)
-- pytest
-
----
-
-## Directory Structure
+## Directory Structure (Domain-Driven)
 
 - `src/` — Main application code
-  - `models.py` — ORM models and business logic
-  - `calculations.py` — Pure calculation utilities (IRR, equity, tax, etc.)
-  - `utils.py` — Session handling and helpers
+  - `__init__.py` — Package exports (imports from all domain modules)
   - `database.py` — DB setup and connection
+  - `shared/` — Shared utilities and base classes
+    - `base.py`, `calculations.py`, `utils.py`
+  - `fund/` — Fund models, calculations, creation, queries
+    - `models.py`, `calculations.py`, `creation.py`, `queries.py`
+  - `tax/` — Tax statement models, calculations, creation
+    - `models.py`, `calculations.py`, `creation.py`
+  - `entity/` — Entity models, calculations, creation
+    - `models.py`, `calculations.py`, `creation.py`
+  - `rates/` — Risk-free rate models, calculations, creation
+    - `models.py`, `calculations.py`, `creation.py`
+  - `investment_company/` — Investment company models, calculations, creation
+    - `models.py`, `calculations.py`, `creation.py`
+  - `dashboard/` — (Optional) Dashboard code
+  - `models.py` — **DEPRECATED** (see above)
+  - `calculations.py` — **DEPRECATED** (see above)
+  - `utils.py` — **DEPRECATED** (see above)
 - `test_full_system.py` — Comprehensive system test
 - `data/` — Data files (e.g., risk-free rates)
 - `DESIGN_GUIDELINES.md` — In-depth design, conventions, and rationale
+
+---
+
+## Domain-Driven Architecture
+
+- **Each domain (fund, tax, entity, rates, investment company) has its own models, calculations, and creation logic.**
+- **Shared logic** (utilities, base classes, pure calculations) lives in `src/shared/`.
+- **All imports** should use the new domain modules, e.g.:
+  ```python
+  from src.fund.models import Fund, FundEvent, FundType
+  from src.tax.models import TaxStatement
+  from src.entity.models import Entity
+  from src.rates.models import RiskFreeRate
+  from src.investment_company.models import InvestmentCompany
+  from src.shared.utils import with_session
+  ```
+- **Old files** (`src/models.py`, `src/calculations.py`, `src/utils.py`) are kept for reference only and are fully commented out.
 
 ---
 
@@ -120,13 +87,17 @@ fund = Fund(
 
 All model methods are now designed to **separate business logic from database operations** for clarity, testability, and maintainability:
 
-- **Pure business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in `calculations.py`. These methods do not perform any database operations and do not require a session.
+- **Pure business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in domain `calculations.py` files. These methods do not perform any database operations and do not require a session.
 - **Database operations** (adding, deleting, committing, querying) are handled only in public model methods decorated with `@with_session`. These methods are responsible for session management and call the pure business logic methods as needed.
 
 **Pattern Example:**
 ```python
-class Fund(Base):
-    # ...
+from src.fund.models import Fund
+from src.tax.models import TaxStatement
+from src.shared.utils import with_session
+
+class Fund(...):
+    ...
     def _create_tax_payment_event_object(self, tax_statement):
         # Pure business logic: create event object, no DB ops
         ...
@@ -142,13 +113,13 @@ class Fund(Base):
 
 - **No business logic should be mixed with session.add, session.commit, or session.delete.**
 - This pattern is followed throughout all models (Fund, TaxStatement, etc.).
-- See `src/models.py` for examples and `DESIGN_GUIDELINES.md` for more details.
+- See `src/fund/models.py` and other domain modules for examples and `DESIGN_GUIDELINES.md` for more details.
 
 ---
 
 ## Session Handling
 
-All model methods that require a database session use the `@with_session` decorator (see `src/utils.py`).  
+All model methods that require a database session use the `@with_session` decorator (see `src/shared/utils.py`).  
 - **You do not need to manually resolve or pass a session** when calling these methods—just use the method as normal.
 - Only methods that perform database queries are decorated; orchestration/helper methods are not.
 
@@ -167,7 +138,7 @@ python3 test_full_system.py
 
 ### NAV-Based Fund Example
 ```python
-from src.models import Fund, FundEvent, EventType, DistributionType
+from src.fund.models import Fund, FundEvent, EventType, DistributionType
 from datetime import date
 
 # 1. Create NAV-based fund (minimal manual fields)
@@ -198,14 +169,6 @@ nav_event = FundEvent(
     nav_per_share=57.20,
     description="March 2023 NAV update"
 )
-# shares_owned will be calculated as: 85.0
-
-# 4. Update calculated fields
-fund.update_current_units_and_price()
-fund.update_current_equity_balance()
-
-# 5. Calculate IRR
-irr = fund.calculate_irr()
 ```
 
 ### Cost-Based Fund Example

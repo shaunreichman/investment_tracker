@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from .models import Fund, FundEvent, EventType, FundType, DistributionType, TaxPaymentType
-from src.utils import with_session
+from ..shared.utils import with_session
 from .calculations import (
     calculate_average_equity_balance_nav,
     calculate_average_equity_balance_cost,
@@ -453,4 +453,10 @@ class FundUpdateMixin:
 
 
 # Add mixins to Fund class
-Fund.__bases__ = (FundCreationMixin, FundUpdateMixin) + Fund.__bases__ 
+Fund.__bases__ = (FundCreationMixin, FundUpdateMixin) + Fund.__bases__
+
+
+__all__ = [
+    'FundCreationMixin',
+    'FundUpdateMixin',
+] 

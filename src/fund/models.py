@@ -21,24 +21,20 @@ from sqlalchemy.sql.elements import ColumnElement
 from ..shared.base import Base
 
 # Import utilities and calculations
-from src.utils import with_session
-from src.calculations import (
+from ..shared.utils import with_session
+from .calculations import (
     calculate_irr,
     calculate_average_equity_balance_nav,
     calculate_average_equity_balance_cost,
     calculate_debt_cost,
-    get_equity_change_for_event,
     calculate_nav_based_capital_gains,
     calculate_cost_based_capital_gains,
     orchestrate_nav_based_average_equity,
     orchestrate_cost_based_average_equity,
     orchestrate_irr_base,
-    net_income,
-    tax_payable,
-    interest_tax_benefit,
-    get_risk_free_rate_for_date,
-    get_reconciliation_explanation,
-    get_financial_years_for_fund_period
+    calculate_nav_event_amounts,
+    calculate_cumulative_units_and_cost_basis,
+    calculate_nav_based_cost_basis_for_irr
 )
 
 # Import models from other domains
@@ -308,8 +304,6 @@ class Fund(Base):
         - units_owned is updated for purchase/sale events
         - cost_of_units is calculated using FIFO for remaining units
         """
-        from src.calculations import calculate_nav_event_amounts
-        
         # Get all unit events for this fund
         event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.NAV_UPDATE]
         unit_events = session.query(FundEvent).filter(
@@ -370,8 +364,6 @@ class Fund(Base):
         if self.tracking_type != FundType.NAV_BASED:
             return 0.0
             
-        from src.calculations import calculate_nav_based_cost_basis_for_irr
-        
         # Get all unit events for this fund
         unit_events = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,

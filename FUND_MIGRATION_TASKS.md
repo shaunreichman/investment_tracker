@@ -1,5 +1,14 @@
 # Fund Model Migration Tasks
 
+> **2024 Migration Note:**
+> 
+> The Fund model migration is now complete. All fund-related models, methods, and logic have been moved to the new domain-driven structure in `src/fund/`. The old `src/models.py` file is now deprecated and kept for reference only. All imports should use the new domain modules.
+> 
+> **New structure:**
+> - Fund models, calculations, creation, and queries: `src/fund/`
+> - Shared logic: `src/shared/`
+> - See `README.md` for details on the new architecture.
+
 ## Overview
 Migrate the Fund model and all its methods from `src/models.py` to `src/fund/models.py` while preserving all business logic and ensuring identical output.
 

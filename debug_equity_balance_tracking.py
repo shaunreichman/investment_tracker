@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.models import Fund, EventType, FundType, RiskFreeRate
-from src.calculations import get_equity_change_for_event, get_risk_free_rate_for_date
+from src.shared.calculations import get_equity_change_for_event, get_risk_free_rate_for_date
 from datetime import date, timedelta
 
 def debug_equity_balance_tracking():

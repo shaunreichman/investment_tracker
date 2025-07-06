@@ -94,14 +94,14 @@ class TaxStatement(Base):
     @property
     def net_interest_income(self):
         """Net interest income is always calculated as total_interest_income - non_resident_withholding_tax_from_statement."""
-        from src.calculations import net_income
+        from .calculations import net_income
         return net_income(self.total_interest_income, self.non_resident_withholding_tax_from_statement)
 
     def get_net_income(self):
         """Calculate net income after non-resident withholding tax from statement.
         Returns the net income as a float.
         """
-        from src.calculations import net_income
+        from .calculations import net_income
         return net_income(self.total_income, self.non_resident_withholding_tax_from_statement)
 
     def calculate_tax_payable(self):
@@ -109,7 +109,7 @@ class TaxStatement(Base):
         Updates the tax_payable and tax_already_paid fields.
         Returns the tax payable as a float.
         """
-        from src.calculations import tax_payable
+        from .calculations import tax_payable
         from sqlalchemy.sql.schema import Column
         from sqlalchemy.sql.elements import ColumnElement
         self.tax_payable = tax_payable(self.total_interest_income, self.interest_taxable_rate, self.non_resident_withholding_tax_from_statement)
@@ -123,7 +123,7 @@ class TaxStatement(Base):
         """Calculate the tax benefit from interest expense deduction.
         Updates the interest_tax_benefit field and returns the value.
         """
-        from src.calculations import interest_tax_benefit
+        from .calculations import interest_tax_benefit
         self.interest_tax_benefit = interest_tax_benefit(self.total_interest_expense, self.interest_deduction_rate)
         return self.interest_tax_benefit
 
@@ -131,7 +131,7 @@ class TaxStatement(Base):
         """Get the start and end dates for this financial year based on entity jurisdiction.
         Returns a tuple: (start_date, end_date).
         """
-        from src.calculations import get_financial_year_dates
+        from ..shared.calculations import get_financial_year_dates
         from sqlalchemy.orm import object_session
         from src.entity.models import Entity
         session = object_session(self)
@@ -193,63 +193,12 @@ class TaxStatement(Base):
         """Create a FY debt cost event object for real IRR calculations if a tax benefit exists.
         Returns the event object or None if not applicable. No database operations.
         """
-        # Calculate the tax benefit
-        tax_benefit = self.calculate_interest_tax_benefit()
-        if tax_benefit <= 0:
-            return None
-        
-        # Get the financial year end date
-        fy_start, fy_end = self.get_financial_year_dates()
-        if not fy_end:
-            return None
-        
-        # Create event object
-        from src.fund.models import FundEvent, EventType
-        event = FundEvent(
-            fund_id=self.fund_id,
-            event_type=EventType.FY_DEBT_COST,
-            event_date=fy_end,
-            amount=tax_benefit,  # Positive cash flow (tax benefit)
-            description=f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
-            reference_number=f"FY_DEBT_COST_{self.financial_year}"
-        )
-        
-        return event
+        from .creation import create_fy_debt_cost_event_object
+        return create_fy_debt_cost_event_object(self)
 
     def create_fy_debt_cost_event(self, session=None):
         """Create a FY debt cost event for real IRR calculations if a tax benefit exists.
         Commits the event to the database and returns it, or returns None if not applicable.
         """
-        from sqlalchemy.orm import object_session
-        from src.fund.models import FundEvent, EventType
-        if session is None:
-            session = object_session(self)
-        
-        # Get the financial year end date
-        fy_start, fy_end = self.get_financial_year_dates()
-        if not fy_end:
-            return None
-        
-        # Check if FY debt cost event already exists for this fund/entity/financial year
-        existing_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.fund_id,
-            FundEvent.event_type == EventType.FY_DEBT_COST,
-            FundEvent.event_date == fy_end,
-            FundEvent.description.like(f"%FY {self.financial_year}%")
-        ).first()
-        
-        if existing_event:
-            # Update existing event
-            tax_benefit = self.calculate_interest_tax_benefit()
-            existing_event.amount = tax_benefit
-            existing_event.description = f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})"
-            session.commit()
-            return existing_event
-        
-        # Create new event using business logic method
-        event = self._create_fy_debt_cost_event_object()
-        if event:
-            session.add(event)
-            session.commit()
-        
-        return event 
+        from .creation import create_fy_debt_cost_event
+        return create_fy_debt_cost_event(self, session) 

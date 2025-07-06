@@ -1,6 +1,27 @@
 # Investment Tracker Design Guidelines
 
+> **2024 Migration Note:**
+> 
+> This project has been migrated to a domain-driven architecture. All models, calculations, and creation logic are now organized by domain (fund, tax, entity, rates, investment company, shared). The old `src/models.py`, `src/calculations.py`, and `src/utils.py` files are now **deprecated** and kept for reference only. All imports should use the new domain modules (see below).
+
 > See [README.md](./README.md) for a high-level project overview, quickstart, and usage examples.
+
+---
+
+## Domain-Driven Architecture (2024)
+
+- **Each domain (fund, tax, entity, rates, investment company) has its own models, calculations, and creation logic.**
+- **Shared logic** (utilities, base classes, pure calculations) lives in `src/shared/`.
+- **All imports** should use the new domain modules, e.g.:
+  ```python
+  from src.fund.models import Fund, FundEvent, FundType
+  from src.tax.models import TaxStatement
+  from src.entity.models import Entity
+  from src.rates.models import RiskFreeRate
+  from src.investment_company.models import InvestmentCompany
+  from src.shared.utils import with_session
+  ```
+- **Old files** (`src/models.py`, `src/calculations.py`, `src/utils.py`) are kept for reference only and are fully commented out.
 
 ---
 
@@ -13,7 +34,7 @@
 
 ## Session Handling Convention
 
-- All model methods that require a SQLAlchemy session are decorated with `@with_session` (see `src/utils.py`).
+- All model methods that require a SQLAlchemy session are decorated with `@with_session` (see `src/shared/utils.py`).
 - This decorator ensures a session is always available, removing the need for manual session resolution in each method.
 - **Only methods that directly perform database queries or ORM operations should be decorated.**
 - Orchestration/helper methods that only call other decorated methods do **not** need the decorator.
@@ -30,7 +51,7 @@ def update_current_equity_balance(self, session=None):
 
 To maximize maintainability, testability, and clarity, **all model code is organized to strictly separate business logic from database operations**:
 
-- **Business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in `calculations.py`. These methods do not perform any database operations and do not require a session.
+- **Business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in domain `calculations.py` files. These methods do not perform any database operations and do not require a session.
 - **Database operations** (adding, deleting, committing, querying) are handled only in public model methods decorated with `@with_session`. These methods are responsible for session management and call the pure business logic methods as needed.
 
 ### Why?
@@ -40,8 +61,12 @@ To maximize maintainability, testability, and clarity, **all model code is organ
 
 ### Pattern Example
 ```python
-class Fund(Base):
-    # ...
+from src.fund.models import Fund
+from src.tax.models import TaxStatement
+from src.shared.utils import with_session
+
+class Fund(...):
+    ...
     def _create_tax_payment_event_object(self, tax_statement):
         # Pure business logic: create event object, no DB ops
         ...
@@ -57,7 +82,7 @@ class Fund(Base):
 
 - **Never mix session.add, session.commit, or session.delete with calculations or object creation.**
 - This pattern is followed throughout all models (Fund, TaxStatement, etc.).
-- See `src/models.py` for more examples.
+- See `src/fund/models.py` and other domain modules for more examples.
 
 ---
 
@@ -66,8 +91,8 @@ class Fund(Base):
 | Type of Logic                | Where to Put It                |
 |------------------------------|-------------------------------|
 | Database queries/ORM ops     | Decorated model methods       |
-| Pure calculations/stateless  | `calculations.py`             |
-| Session helpers/decorators   | `utils.py`                    |
+| Pure calculations/stateless  | `calculations.py` in domain   |
+| Session helpers/decorators   | `shared/utils.py`             |
 | Orchestration (no queries)   | Undecorated model methods     |
 
 ---

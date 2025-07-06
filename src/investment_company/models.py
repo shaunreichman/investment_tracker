@@ -1,5 +1,5 @@
 """
-InvestmentCompany domain models.
+Investment company domain models.
 
 This module contains the core investment company models including InvestmentCompany.
 """
@@ -28,4 +28,28 @@ class InvestmentCompany(Base):
     funds = relationship("Fund", back_populates="investment_company", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<InvestmentCompany(id={self.id}, name='{self.name}')>" 
+        return f"<InvestmentCompany(id={self.id}, name='{self.name}')>"
+    
+    def get_total_funds_under_management(self, session):
+        """Get the total number of funds managed by this investment company.
+        
+        Args:
+            session: Database session
+        
+        Returns:
+            int: Total number of funds
+        """
+        from .calculations import calculate_total_funds_under_management
+        return calculate_total_funds_under_management(self, session)
+    
+    def get_total_commitments(self, session):
+        """Get the total commitments across all funds managed by this investment company.
+        
+        Args:
+            session: Database session
+        
+        Returns:
+            float: Total commitments across all funds
+        """
+        from .calculations import calculate_total_commitments
+        return calculate_total_commitments(self, session) 
