@@ -23,36 +23,8 @@ from src.investment_company.models import InvestmentCompany
 from src.tax.models import TaxStatement
 from src.rates.models import RiskFreeRate
 from src.database import get_database_session
-from src.shared.utils import reset_database_for_testing
-
-def clear_database_except_rates(session):
-    """
-    Clear all data from the database except Risk Free Rates.
-    Uses the provided session (managed by outermost layer).
-    
-    Args:
-        session: Database session (managed by outermost backend layer)
-    """
-    from sqlalchemy import text
-    
-    # Get the engine from the session
-    engine = session.bind
-    
-    with engine.connect() as conn:
-        # Disable foreign key constraints temporarily
-        conn.execute(text("PRAGMA foreign_keys=OFF;"))
-        
-        # Clear all tables except risk_free_rates
-        tables = ['tax_statements', 'fund_events', 'funds', 'entities', 'investment_companies']
-        for table in tables:
-            conn.execute(text(f"DELETE FROM {table};"))
-            print(f"Cleared {table}")
-        
-        # Re-enable foreign key constraints
-        conn.execute(text("PRAGMA foreign_keys=ON;"))
-        conn.commit()
-    
-    print("Database cleared (Risk Free Rates preserved)")
+from test_utils import clear_database_except_rates
+from src.shared.utils import reset_database_for_testing, with_session
 
 def setup_test_data(session):
     """Set up test data using domain methods with proper session management."""
