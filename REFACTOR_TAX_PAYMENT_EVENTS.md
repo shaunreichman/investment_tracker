@@ -127,10 +127,11 @@ class TaxEventCriteria:
 ## Implementation Tasks
 
 ### Task 1: Create TaxEventFactory Class
-- [ ] Create `src/tax/events.py` module
-- [ ] Implement `TaxEventFactory` with static methods for each event type
-- [ ] Add comprehensive validation and error handling
-- [ ] Add unit tests for factory methods
+- [x] Create `src/tax/events.py` module
+- [x] Implement `TaxEventFactory` with static methods for each event type
+- [x] Add comprehensive validation and error handling for `create_interest_tax_payment`
+- [x] Implement `create_dividend_tax_payment` for both franked and unfranked dividends
+- [x] Add unit tests for factory methods
 
 ### Task 2: Create TaxEventManager Class  
 - [ ] Implement `TaxEventManager` with event management methods
