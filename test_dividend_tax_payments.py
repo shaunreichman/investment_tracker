@@ -7,6 +7,10 @@ import os
 from datetime import date
 from sqlalchemy.orm import sessionmaker
 import pytest
+from sqlalchemy import create_engine
+from src.shared.base import Base
+from src.tax.events import TaxEventManager, TaxEventCriteria
+from src.fund.models import FundEvent, EventType, TaxPaymentType
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -180,6 +184,91 @@ def test_create_all_tax_events():
     assert TaxPaymentType.DIVIDENDS_FRANKED_TAX in types
     assert TaxPaymentType.DIVIDENDS_UNFRANKED_TAX in types
     assert EventType.FY_DEBT_COST in types
+
+# --- TaxEventManager Unit Tests ---
+@pytest.fixture(scope="function")
+def in_memory_session():
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    yield session
+    session.close()
+
+
+def test_find_existing_event(in_memory_session):
+    session = in_memory_session
+    # Add a FundEvent
+    event = FundEvent(
+        fund_id=1,
+        event_type=EventType.TAX_PAYMENT,
+        event_date=date(2024, 6, 30),
+        amount=100.0,
+        tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
+    )
+    session.add(event)
+    session.commit()
+    criteria = TaxEventCriteria(
+        fund_id=1,
+        event_type=EventType.TAX_PAYMENT,
+        event_date=date(2024, 6, 30),
+        amount=100.0,
+        tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
+    )
+    found = TaxEventManager.find_existing_event(criteria, session)
+    assert found is not None
+    assert found.amount == 100.0
+    # Negative case
+    criteria2 = TaxEventCriteria(
+        fund_id=1,
+        event_type=EventType.TAX_PAYMENT,
+        event_date=date(2024, 6, 30),
+        amount=200.0,
+        tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
+    )
+    not_found = TaxEventManager.find_existing_event(criteria2, session)
+    assert not_found is None
+
+
+def test_create_or_update_tax_events(in_memory_session):
+    session = in_memory_session
+    ts = DummyTaxStatement(
+        tax_payable=100.0,
+        total_dividends_franked=200.0,
+        dividends_franked_taxable_rate=30.0,
+        total_dividends_unfranked=150.0,
+        dividends_unfranked_taxable_rate=20.0,
+        interest_tax_benefit=50.0
+    )
+    created = TaxEventManager.create_or_update_tax_events(ts, session)
+    assert len(created) == 4
+    # Running again should not create duplicates
+    created2 = TaxEventManager.create_or_update_tax_events(ts, session)
+    assert len(created2) == 0
+    # Check that events exist in DB
+    all_events = session.query(FundEvent).all()
+    assert len(all_events) == 4
+
+
+def test_validate_event_creation():
+    ts = DummyTaxStatement(
+        tax_payable=100.0,
+        total_dividends_franked=200.0,
+        dividends_franked_taxable_rate=30.0,
+        total_dividends_unfranked=150.0,
+        dividends_unfranked_taxable_rate=20.0,
+        interest_tax_benefit=50.0
+    )
+    assert TaxEventManager.validate_event_creation(ts, EventType.TAX_PAYMENT, None)
+    assert TaxEventManager.validate_event_creation(ts, TaxPaymentType.DIVIDENDS_FRANKED_TAX, None)
+    assert TaxEventManager.validate_event_creation(ts, TaxPaymentType.DIVIDENDS_UNFRANKED_TAX, None)
+    assert TaxEventManager.validate_event_creation(ts, EventType.FY_DEBT_COST, None)
+    # Negative cases
+    ts2 = DummyTaxStatement(tax_payable=0.0, total_dividends_franked=0.0, dividends_franked_taxable_rate=0.0, total_dividends_unfranked=0.0, dividends_unfranked_taxable_rate=0.0, interest_tax_benefit=0.0)
+    assert not TaxEventManager.validate_event_creation(ts2, EventType.TAX_PAYMENT, None)
+    assert not TaxEventManager.validate_event_creation(ts2, TaxPaymentType.DIVIDENDS_FRANKED_TAX, None)
+    assert not TaxEventManager.validate_event_creation(ts2, TaxPaymentType.DIVIDENDS_UNFRANKED_TAX, None)
+    assert not TaxEventManager.validate_event_creation(ts2, EventType.FY_DEBT_COST, None)
 
 if __name__ == "__main__":
     test_dividend_tax_payments() 

@@ -7,6 +7,31 @@ from src.fund.models import FundEvent, EventType, TaxPaymentType, DistributionTy
 from src.tax.models import TaxStatement
 from sqlalchemy.orm import Session
 
+class TaxEventCriteria:
+    """
+    Standardized criteria for identifying tax events.
+    Used for deduplication and event lookup.
+    """
+    def __init__(self, fund_id, event_type, event_date, amount, tax_payment_type=None):
+        self.fund_id = fund_id
+        self.event_type = event_type
+        self.event_date = event_date
+        self.amount = amount
+        self.tax_payment_type = tax_payment_type
+
+    def __repr__(self):
+        return (f"<TaxEventCriteria fund_id={self.fund_id} event_type={self.event_type} "
+                f"event_date={self.event_date} amount={self.amount} tax_payment_type={self.tax_payment_type}>")
+
+    def to_dict(self):
+        return {
+            'fund_id': self.fund_id,
+            'event_type': self.event_type,
+            'event_date': self.event_date,
+            'amount': self.amount,
+            'tax_payment_type': self.tax_payment_type
+        }
+
 class TaxEventFactory:
     """
     Factory for creating standardized tax payment events for funds.
@@ -128,4 +153,77 @@ class TaxEventFactory:
         fy_debt_cost_event = TaxEventFactory.create_fy_debt_cost_event(tax_statement, session=session)
         if fy_debt_cost_event:
             events.append(fy_debt_cost_event)
-        return events 
+        return events
+
+class TaxEventManager:
+    """
+    Manages tax event creation, validation, and database operations.
+    Provides static methods for event management and deduplication.
+    """
+
+    @staticmethod
+    def create_or_update_tax_events(tax_statement: TaxStatement, session: Session) -> list:
+        """
+        Create or update all tax events for a tax statement in the database.
+        Returns a list of created FundEvent objects (newly added to the session).
+        """
+        created_events = []
+        events = TaxEventFactory.create_all_tax_events(tax_statement, session=session)
+        for event in events:
+            criteria = TaxEventCriteria(
+                fund_id=event.fund_id,
+                event_type=event.event_type,
+                event_date=event.event_date,
+                amount=event.amount,
+                tax_payment_type=getattr(event, 'tax_payment_type', None)
+            )
+            existing = TaxEventManager.find_existing_event(criteria, session)
+            if not existing:
+                session.add(event)
+                created_events.append(event)
+        if created_events:
+            session.commit()
+        return created_events
+
+    @staticmethod
+    def find_existing_event(event_criteria: TaxEventCriteria, session: Session) -> FundEvent:
+        """
+        Find existing event based on standardized criteria.
+        Returns the FundEvent if found, else None.
+        """
+        from src.fund.models import FundEvent
+        query = session.query(FundEvent).filter(
+            FundEvent.fund_id == event_criteria.fund_id,
+            FundEvent.event_type == event_criteria.event_type,
+            FundEvent.event_date == event_criteria.event_date,
+            FundEvent.amount == event_criteria.amount
+        )
+        if event_criteria.tax_payment_type is not None:
+            query = query.filter(FundEvent.tax_payment_type == event_criteria.tax_payment_type)
+        else:
+            query = query.filter(FundEvent.tax_payment_type.is_(None))
+        return query.first()
+
+    @staticmethod
+    def validate_event_creation(tax_statement: TaxStatement, event_type, session: Session) -> bool:
+        """
+        Validate that event creation is appropriate for the given tax statement and event type.
+        Returns True if valid, False otherwise.
+        """
+        # Simple validation logic for now
+        if event_type == EventType.TAX_PAYMENT:
+            return (tax_statement.tax_payable is not None and tax_statement.tax_payable > 0.01)
+        elif event_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX:
+            return (
+                (tax_statement.total_dividends_franked or 0.0) > 0 and
+                (tax_statement.dividends_franked_taxable_rate or 0.0) > 0
+            )
+        elif event_type == TaxPaymentType.DIVIDENDS_UNFRANKED_TAX:
+            return (
+                (tax_statement.total_dividends_unfranked or 0.0) > 0 and
+                (tax_statement.dividends_unfranked_taxable_rate or 0.0) > 0
+            )
+        elif event_type == EventType.FY_DEBT_COST:
+            benefit = tax_statement.calculate_interest_tax_benefit() if hasattr(tax_statement, 'calculate_interest_tax_benefit') else (tax_statement.interest_tax_benefit or 0.0)
+            return benefit > 0
+        return False 
