@@ -146,10 +146,10 @@ class TaxEventCriteria:
 - [x] Update unit tests for refactored methods
 
 ### Task 4: Refactor Fund Methods
-- [ ] Remove duplicate event creation logic from Fund class
-- [ ] Update Fund's `create_tax_payment_events()` to delegate to TaxStatement
-- [ ] Ensure proper separation of concerns
-- [ ] Update unit tests for refactored methods
+- [x] Remove duplicate event creation logic from Fund class
+- [x] Update Fund's `create_tax_payment_events()` to delegate to TaxStatement/TaxEventManager
+- [x] Ensure proper separation of concerns
+- [x] Update unit tests for refactored methods
 
 ### Task 5: Add Comprehensive Testing
 - [ ] Create integration tests for new event creation framework
