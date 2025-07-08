@@ -140,10 +140,10 @@ class TaxEventCriteria:
 - [x] Add unit tests for manager methods
 
 ### Task 3: Refactor TaxStatement Methods
-- [ ] Replace existing event creation methods with factory calls
-- [ ] Update `create_tax_payment_events()` to use manager
-- [ ] Ensure backward compatibility during transition
-- [ ] Update unit tests for refactored methods
+- [x] Replace existing event creation methods with factory calls
+- [x] Update `create_tax_payment_events()` to use manager
+- [x] Ensure backward compatibility during transition
+- [x] Update unit tests for refactored methods
 
 ### Task 4: Refactor Fund Methods
 - [ ] Remove duplicate event creation logic from Fund class

@@ -72,6 +72,9 @@ class TaxEventFactory:
         if dividend_type not in (DistributionType.DIVIDEND_FRANKED, DistributionType.DIVIDEND_UNFRANKED):
             raise ValueError("dividend_type must be DIVIDEND_FRANKED or DIVIDEND_UNFRANKED")
 
+        # Ensure dividend totals are calculated from fund events if not set
+        tax_statement.calculate_dividend_totals(session)
+
         if dividend_type == DistributionType.DIVIDEND_FRANKED:
             total = tax_statement.total_dividends_franked or 0.0
             rate = tax_statement.dividends_franked_taxable_rate or 0.0

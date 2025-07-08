@@ -1247,76 +1247,23 @@ class Fund(Base):
             # For cost-based funds, use the cost basis
             return self._total_cost_basis or self.current_equity_balance
     
-    def _create_tax_payment_event_object(self, tax_statement):
-        """Create a tax payment event object for a tax statement.
-        Returns the event object or None if not applicable. No database operations.
-        """
-        # Calculate tax payable if not already calculated
-        tax_statement.calculate_tax_payable()
-        
-        # Only create tax payment event if there's additional tax payable
-        if tax_statement.tax_payable > 0.01:  # Allow for small rounding differences
-            # Create tax payment event
-            tax_event = FundEvent(
-                fund_id=self.id,
-                event_type=EventType.TAX_PAYMENT,
-                event_date=tax_statement.get_tax_payment_date(),
-                amount=tax_statement.tax_payable,
-                description=f"Tax payment for FY {tax_statement.financial_year}",
-                reference_number=f"TAX-{tax_statement.financial_year}",
-                tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
-            )
-            return tax_event
-        
-        return None
-    
+    # Remove the now-redundant _create_tax_payment_event_object method
+    # All event creation is now handled by TaxEventManager and TaxEventFactory.
+
     @with_session
     def create_tax_payment_events(self, session=None):
-        """Create tax payment events for this fund based on tax statements.
-        Used for after-tax IRR calculations. Commits new events to the database.
-        Returns a list of created events.
+        """Create tax payment events for this fund based on tax statements using the new event management framework.
+        Commits new events to the database. Returns a list of created events.
         """
+        from src.tax.events import TaxEventManager
         # Get all tax statements for this fund
         tax_statements = session.query(TaxStatement).filter(
             TaxStatement.fund_id == self.id
         ).all()
         created_events = []
-        
         for tax_statement in tax_statements:
-            # Create interest tax payment event (existing logic)
-            existing_event = session.query(FundEvent).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.TAX_PAYMENT,
-                FundEvent.event_date == tax_statement.get_tax_payment_date(),
-                FundEvent.amount == tax_statement.tax_payable,
-                FundEvent.tax_payment_type == TaxPaymentType.EOFY_INTEREST_TAX
-            ).first()
-            
-            if not existing_event:
-                # Create tax payment event using business logic method
-                tax_event = self._create_tax_payment_event_object(tax_statement)
-                if tax_event:
-                    session.add(tax_event)
-                    created_events.append(tax_event)
-            
-            # Create dividend tax payment events (new logic)
-            dividend_events = tax_statement._create_dividend_tax_payment_event_objects()
-            for dividend_event in dividend_events:
-                # Check if dividend tax payment event already exists
-                existing_dividend_event = session.query(FundEvent).filter(
-                    FundEvent.fund_id == self.id,
-                    FundEvent.event_type == EventType.TAX_PAYMENT,
-                    FundEvent.event_date == dividend_event.event_date,
-                    FundEvent.amount == dividend_event.amount,
-                    FundEvent.tax_payment_type == dividend_event.tax_payment_type
-                ).first()
-                
-                if not existing_dividend_event:
-                    session.add(dividend_event)
-                    created_events.append(dividend_event)
-        
-        if created_events:
-            session.commit()
+            events = TaxEventManager.create_or_update_tax_events(tax_statement, session)
+            created_events.extend(events)
         return created_events
     
     @with_session

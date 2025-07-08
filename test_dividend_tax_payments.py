@@ -119,6 +119,9 @@ class DummyTaxStatement:
         return self._fy_dates
     def calculate_interest_tax_benefit(self):
         return self.interest_tax_benefit
+    def calculate_dividend_totals(self, session=None):
+        # No-op for tests: just return the current values
+        return self.total_dividends_franked, self.total_dividends_unfranked
 
 def test_create_interest_tax_payment():
     ts = DummyTaxStatement(tax_payable=100.0)
