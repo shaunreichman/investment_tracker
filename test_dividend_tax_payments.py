@@ -273,5 +273,228 @@ def test_validate_event_creation():
     assert not TaxEventManager.validate_event_creation(ts2, TaxPaymentType.DIVIDENDS_UNFRANKED_TAX, None)
     assert not TaxEventManager.validate_event_creation(ts2, EventType.FY_DEBT_COST, None)
 
+# --- Edge Case Tests for Tax Event Framework ---
+def test_manual_vs_calculated_dividend_totals(in_memory_session):
+    session = in_memory_session
+    # Add fund, entity, and events
+    company = InvestmentCompany.create("ManualCalcCo", session=session)
+    entity = Entity.create("ManualCalcEntity", "individual", session=session)
+    fund = Fund.create(
+        investment_company_id=company.id,
+        entity_id=entity.id,
+        name="ManualCalcFund",
+        fund_type="Equity",
+        tracking_type="nav_based",
+        session=session
+    )
+    # Add franked dividend event
+    fund.add_distribution(
+        amount=1000.0,
+        date=date(2024, 1, 30),
+        distribution_type=DistributionType.DIVIDEND_FRANKED,
+        session=session
+    )
+    # Tax statement with manual total_dividends_franked
+    tax_statement = TaxStatement(
+        fund_id=fund.id,
+        entity_id=entity.id,
+        financial_year="2023-24",
+        total_dividends_franked=500.0,  # Manual value (should override event)
+        dividends_franked_taxable_rate=20.0
+    )
+    session.add(tax_statement)
+    session.commit()
+    fund.create_tax_payment_events(session=session)
+    event = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.tax_payment_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX
+    ).first()
+    assert event is not None
+    assert event.amount == 100.0  # 500 * 20%
+
+def test_only_one_rate_set(in_memory_session):
+    session = in_memory_session
+    company = InvestmentCompany.create("OneRateCo", session=session)
+    entity = Entity.create("OneRateEntity", "individual", session=session)
+    fund = Fund.create(
+        investment_company_id=company.id,
+        entity_id=entity.id,
+        name="OneRateFund",
+        fund_type="Equity",
+        tracking_type="nav_based",
+        session=session
+    )
+    fund.add_distribution(
+        amount=1000.0,
+        date=date(2024, 1, 30),
+        distribution_type=DistributionType.DIVIDEND_FRANKED,
+        session=session
+    )
+    fund.add_distribution(
+        amount=500.0,
+        date=date(2024, 2, 28),
+        distribution_type=DistributionType.DIVIDEND_UNFRANKED,
+        session=session
+    )
+    tax_statement = TaxStatement(
+        fund_id=fund.id,
+        entity_id=entity.id,
+        financial_year="2023-24",
+        dividends_franked_taxable_rate=25.0  # Only franked rate set
+    )
+    session.add(tax_statement)
+    session.commit()
+    fund.create_tax_payment_events(session=session)
+    franked = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.tax_payment_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX
+    ).first()
+    unfranked = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.tax_payment_type == TaxPaymentType.DIVIDENDS_UNFRANKED_TAX
+    ).first()
+    assert franked is not None
+    assert unfranked is None
+
+def test_duplicate_tax_statement_unique_constraint(in_memory_session):
+    session = in_memory_session
+    company = InvestmentCompany.create("DupCo", session=session)
+    entity = Entity.create("DupEntity", "individual", session=session)
+    fund = Fund.create(
+        investment_company_id=company.id,
+        entity_id=entity.id,
+        name="DupFund",
+        fund_type="Equity",
+        tracking_type="nav_based",
+        session=session
+    )
+    tax_statement1 = TaxStatement(
+        fund_id=fund.id,
+        entity_id=entity.id,
+        financial_year="2023-24"
+    )
+    session.add(tax_statement1)
+    session.commit()
+    # Attempt to add duplicate
+    tax_statement2 = TaxStatement(
+        fund_id=fund.id,
+        entity_id=entity.id,
+        financial_year="2023-24"
+    )
+    session.add(tax_statement2)
+    import pytest
+    with pytest.raises(Exception):
+        session.commit()
+    session.rollback()
+
+def test_event_update_scenario(in_memory_session):
+    session = in_memory_session
+    company = InvestmentCompany.create("UpdateCo", session=session)
+    entity = Entity.create("UpdateEntity", "individual", session=session)
+    fund = Fund.create(
+        investment_company_id=company.id,
+        entity_id=entity.id,
+        name="UpdateFund",
+        fund_type="Equity",
+        tracking_type="nav_based",
+        session=session
+    )
+    fund.add_distribution(
+        amount=1000.0,
+        date=date(2024, 1, 30),
+        distribution_type=DistributionType.DIVIDEND_FRANKED,
+        session=session
+    )
+    tax_statement = TaxStatement(
+        fund_id=fund.id,
+        entity_id=entity.id,
+        financial_year="2023-24",
+        dividends_franked_taxable_rate=10.0
+    )
+    session.add(tax_statement)
+    session.commit()
+    fund.create_tax_payment_events(session=session)
+    event = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.tax_payment_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX
+    ).first()
+    assert event.amount == 100.0
+    # Update rate and re-create events
+    tax_statement.dividends_franked_taxable_rate = 20.0
+    session.commit()
+    fund.create_tax_payment_events(session=session)
+    # Should not create duplicate, but amount should reflect new rate
+    event2 = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.tax_payment_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX
+    ).first()
+    assert event2.amount == 200.0
+
+def test_tax_payment_event_with_zero_rate(in_memory_session):
+    session = in_memory_session
+    company = InvestmentCompany.create("ZeroRateCo", session=session)
+    entity = Entity.create("ZeroRateEntity", "individual", session=session)
+    fund = Fund.create(
+        investment_company_id=company.id,
+        entity_id=entity.id,
+        name="ZeroRateFund",
+        fund_type="Equity",
+        tracking_type="nav_based",
+        session=session
+    )
+    fund.add_distribution(
+        amount=1000.0,
+        date=date(2024, 1, 30),
+        distribution_type=DistributionType.DIVIDEND_FRANKED,
+        session=session
+    )
+    tax_statement = TaxStatement(
+        fund_id=fund.id,
+        entity_id=entity.id,
+        financial_year="2023-24",
+        dividends_franked_taxable_rate=0.0
+    )
+    session.add(tax_statement)
+    session.commit()
+    fund.create_tax_payment_events(session=session)
+    event = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.tax_payment_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX
+    ).first()
+    assert event is None
+
+def test_negative_dividend_amount(in_memory_session):
+    session = in_memory_session
+    company = InvestmentCompany.create("NegDivCo", session=session)
+    entity = Entity.create("NegDivEntity", "individual", session=session)
+    fund = Fund.create(
+        investment_company_id=company.id,
+        entity_id=entity.id,
+        name="NegDivFund",
+        fund_type="Equity",
+        tracking_type="nav_based",
+        session=session
+    )
+    fund.add_distribution(
+        amount=-1000.0,
+        date=date(2024, 1, 30),
+        distribution_type=DistributionType.DIVIDEND_FRANKED,
+        session=session
+    )
+    tax_statement = TaxStatement(
+        fund_id=fund.id,
+        entity_id=entity.id,
+        financial_year="2023-24",
+        dividends_franked_taxable_rate=20.0
+    )
+    session.add(tax_statement)
+    session.commit()
+    fund.create_tax_payment_events(session=session)
+    event = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.tax_payment_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX
+    ).first()
+    assert event is None
+
 if __name__ == "__main__":
     test_dividend_tax_payments() 

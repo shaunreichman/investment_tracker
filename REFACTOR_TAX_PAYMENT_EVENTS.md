@@ -152,10 +152,10 @@ class TaxEventCriteria:
 - [x] Update unit tests for refactored methods
 
 ### Task 5: Add Comprehensive Testing
-- [ ] Create integration tests for new event creation framework
-- [ ] Test event deduplication and update scenarios
-- [ ] Test error handling and edge cases
-- [ ] Ensure all existing functionality is preserved
+- [x] Create integration tests for new event creation framework
+- [x] Test event deduplication and update scenarios
+- [x] Test error handling and edge cases
+- [x] Ensure all existing functionality is preserved
 
 ### Task 6: Documentation and Cleanup
 - [ ] Update docstrings and comments

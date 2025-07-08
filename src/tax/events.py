@@ -168,25 +168,44 @@ class TaxEventManager:
     def create_or_update_tax_events(tax_statement: TaxStatement, session: Session) -> list:
         """
         Create or update all tax events for a tax statement in the database.
-        Returns a list of created FundEvent objects (newly added to the session).
+        Returns a list of created or updated FundEvent objects.
         """
-        created_events = []
+        created_or_updated_events = []
         events = TaxEventFactory.create_all_tax_events(tax_statement, session=session)
         for event in events:
             criteria = TaxEventCriteria(
                 fund_id=event.fund_id,
                 event_type=event.event_type,
                 event_date=event.event_date,
-                amount=event.amount,
+                amount=event.amount,  # Used for deduplication, but see below
                 tax_payment_type=getattr(event, 'tax_payment_type', None)
             )
-            existing = TaxEventManager.find_existing_event(criteria, session)
+            # Find existing event by all criteria except amount
+            from src.fund.models import FundEvent
+            query = session.query(FundEvent).filter(
+                FundEvent.fund_id == event.fund_id,
+                FundEvent.event_type == event.event_type,
+                FundEvent.event_date == event.event_date,
+                FundEvent.tax_payment_type == getattr(event, 'tax_payment_type', None)
+            )
+            existing = query.first()
             if not existing:
                 session.add(event)
-                created_events.append(event)
-        if created_events:
+                created_or_updated_events.append(event)
+            else:
+                # If amount or description has changed, update
+                updated = False
+                if existing.amount != event.amount:
+                    existing.amount = event.amount
+                    updated = True
+                if hasattr(existing, 'description') and existing.description != event.description:
+                    existing.description = event.description
+                    updated = True
+                if updated:
+                    created_or_updated_events.append(existing)
+        if created_or_updated_events:
             session.commit()
-        return created_events
+        return created_or_updated_events
 
     @staticmethod
     def find_existing_event(event_criteria: TaxEventCriteria, session: Session) -> FundEvent:
