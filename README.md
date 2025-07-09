@@ -238,3 +238,31 @@ Shaun Reichman
 ---
 
 *For deeper technical rationale, see [DESIGN_GUIDELINES.md](./DESIGN_GUIDELINES.md).*
+
+## Tax Event Creation Framework
+
+This project uses a standardized, robust framework for creating tax payment events (interest, franked/unfranked dividends, FY debt cost, etc.) for investment funds.
+
+### Why?
+- Eliminates code duplication and inconsistencies
+- Ensures all tax events are deduplicated and updatable
+- Makes it easy to add new tax event types and maintain business logic
+
+### How to Use
+To create all applicable tax payment events for a fund's tax statement:
+
+```python
+from src.tax.events import TaxEventManager
+
+# Given a TaxStatement instance and a SQLAlchemy session:
+created_or_updated_events = TaxEventManager.create_or_update_tax_events(tax_statement, session)
+```
+
+Or, for all tax statements of a fund:
+
+```python
+created_events = fund.create_tax_payment_events(session=session)
+```
+
+- The framework will create, update, or deduplicate events as needed.
+- See DESIGN_GUIDELINES.md for advanced usage, edge cases, and technical rationale.

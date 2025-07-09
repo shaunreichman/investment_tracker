@@ -340,7 +340,7 @@ def setup_test_data(session):
     abc_fund.add_distribution(
         amount=79.05,
         date=date(2013, 9, 12),
-        distribution_type=DistributionType.DIVIDEND,
+        distribution_type=DistributionType.DIVIDEND_FRANKED,
         description="Fully Franked Dividend",
         session=session
     )
@@ -523,8 +523,12 @@ def recalculate_everything(session, show_irr_cashflows=True):
     
     # Get all funds using domain methods
     funds = session.query(Fund).all()
+    print(f"Funds to recalculate: {[f'{fund.id}: {fund.name}' for fund in funds]}")
+    print(f"Number of funds to recalculate: {len(funds)}")
     
+    iteration_count = 0
     for fund in funds:
+        iteration_count += 1
         print(f"\nRecalculating for {fund.name}:")
         
         # Recalculate using domain methods
@@ -603,7 +607,7 @@ def recalculate_everything(session, show_irr_cashflows=True):
                     print("     No real IRR cash flows available")
             except Exception as e:
                 print(f"     Error calculating IRR cash flows: {e}")
-    
+    print(f"Completed recalculation loop. Iterations: {iteration_count}")
     print("\nAll recalculations completed!")
 
 def verify_results(session):
@@ -612,6 +616,7 @@ def verify_results(session):
     
     # Get all funds using domain methods
     funds = session.query(Fund).all()
+    print(f"Funds at verification: {[f'{fund.id}: {fund.name}' for fund in funds]}")
     
     print(f"\n=== VERIFICATION RESULTS ===")
     print(f"\nFunds found: {len(funds)}")
@@ -710,6 +715,7 @@ def main():
         
         # Show initial fund state
         funds = session.query(Fund).all()
+        print(f"Funds after setup: {[f'{fund.id}: {fund.name}' for fund in funds]}")
         print("\nInitial fund state:")
         for fund in funds:
             current_equity = fund.current_equity_balance

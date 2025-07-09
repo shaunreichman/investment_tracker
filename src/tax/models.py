@@ -88,6 +88,12 @@ class TaxStatement(Base):
     # New manual field for interest taxable rate
     interest_taxable_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
 
+    # Manual fields for dividend income
+    total_dividends_franked = Column(Float, default=0.0)  # Manual or calculated franked dividends
+    total_dividends_unfranked = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
+    dividends_franked_taxable_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
+    dividends_unfranked_taxable_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
+
     # Calculated fields
     total_interest_income = Column(Float, default=0.0)  # Renamed from gross_total_interest_income
     non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)
@@ -190,115 +196,60 @@ class TaxStatement(Base):
         
         return self.total_interest_income, self.net_interest_income 
 
-    def _create_fy_debt_cost_event_object(self):
-        """Create a FY debt cost event object for real IRR calculations if a tax benefit exists.
-        Returns the event object or None if not applicable. No database operations.
+    def calculate_dividend_totals(self, session=None):
+        """Calculate dividend totals from fund events if not manually set.
+        Returns a tuple: (total_dividends_franked, total_dividends_unfranked).
         """
-        from src.fund.models import FundEvent, EventType
+        from sqlalchemy.orm import object_session
+        from src.fund.models import FundEvent, EventType, DistributionType
         
-        # Calculate the tax benefit
-        tax_benefit = self.calculate_interest_tax_benefit()
-        if tax_benefit <= 0:
-            return None
+        if session is None:
+            session = object_session(self)
         
-        # Get the financial year end date
+        if session is None:
+            return 0.0, 0.0
+        
+        # Get financial year dates
         fy_start, fy_end = self.get_financial_year_dates()
-        if not fy_end:
-            return None
+        if not fy_start or not fy_end:
+            return 0.0, 0.0
         
-        # Create event object
-        event = FundEvent(
-            fund_id=self.fund_id,
-            event_type=EventType.FY_DEBT_COST,
-            event_date=fy_end,
-            amount=tax_benefit,  # Positive cash flow (tax benefit)
-            description=f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
-            reference_number=f"FY_DEBT_COST_{self.financial_year}"
-        )
+        # Query fund events for this financial year
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.fund_id,
+            FundEvent.event_type == EventType.DISTRIBUTION,
+            FundEvent.event_date >= fy_start,
+            FundEvent.event_date <= fy_end
+        ).all()
         
-        return event
+        # Calculate totals
+        franked_total = 0.0
+        unfranked_total = 0.0
+        
+        for event in events:
+            if event.distribution_type == DistributionType.DIVIDEND_FRANKED:
+                franked_total += event.amount or 0.0
+            elif event.distribution_type == DistributionType.DIVIDEND_UNFRANKED:
+                unfranked_total += event.amount or 0.0
+        
+        # Update fields if not manually set
+        if self.total_dividends_franked is None or self.total_dividends_franked == 0.0:
+            self.total_dividends_franked = franked_total
+        
+        if self.total_dividends_unfranked is None or self.total_dividends_unfranked == 0.0:
+            self.total_dividends_unfranked = unfranked_total
+        
+        return self.total_dividends_franked, self.total_dividends_unfranked
 
-    def create_fy_debt_cost_event(self, session=None):
-        """Create a FY debt cost event for real IRR calculations if a tax benefit exists.
-        Commits the event to the database and returns it, or returns None if not applicable.
-        """
-        from src.fund.models import FundEvent, EventType
-        
-        # Get the financial year end date
-        fy_start, fy_end = self.get_financial_year_dates()
-        if not fy_end:
-            return None
-        
-        # Check if FY debt cost event already exists for this fund/entity/financial year
-        existing_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.fund_id,
-            FundEvent.event_type == EventType.FY_DEBT_COST,
-            FundEvent.event_date == fy_end,
-            FundEvent.description.like(f"%FY {self.financial_year}%")
-        ).first()
-        
-        if existing_event:
-            # Update existing event
-            tax_benefit = self.calculate_interest_tax_benefit()
-            existing_event.amount = tax_benefit
-            existing_event.description = f"FY {self.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})"
-            session.commit()
-            return existing_event
-        
-        # Create new event using business logic method
-        event = self._create_fy_debt_cost_event_object()
-        if event:
-            session.add(event)
-            session.commit()
-        
-        return event
-    
-    def _create_tax_payment_event_object(self):
-        """Create a tax payment event object for this tax statement.
-        Returns the event object or None if not applicable. No database operations.
-        """
-        from src.fund.models import FundEvent, EventType, TaxPaymentType
-        
-        self.calculate_tax_payable()
-        if self.tax_payable > 0.01:
-            tax_event = FundEvent(
-                fund_id=self.fund_id,
-                event_type=EventType.TAX_PAYMENT,
-                event_date=self.get_tax_payment_date(),
-                amount=self.tax_payable,
-                description=f"Tax payment for FY {self.financial_year}",
-                reference_number=f"TAX-{self.financial_year}",
-                tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
-            )
-            return tax_event
-        return None
-    
-    def create_tax_payment_event(self, session=None):
-        """Create a tax payment event for this tax statement.
-        Commits the event to the database and returns it, or returns None if not applicable.
-        """
-        from src.fund.models import FundEvent, EventType, TaxPaymentType
-        
-        # Check if tax payment event already exists
-        existing_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.fund_id,
-            FundEvent.event_type == EventType.TAX_PAYMENT,
-            FundEvent.event_date == self.get_tax_payment_date(),
-            FundEvent.amount == self.tax_payable,
-            FundEvent.tax_payment_type == TaxPaymentType.EOFY_INTEREST_TAX
-        ).first()
-        
-        if existing_event:
-            return existing_event
-        
-        # Create new event
-        tax_event = self._create_tax_payment_event_object()
-        if tax_event:
-            session.add(tax_event)
-            session.commit()
-            return tax_event
-        
-        return None
+    # Removed methods:
+    # - _create_tax_payment_event_object
+    # - _create_dividend_tax_payment_event_objects
+    # - _create_fy_debt_cost_event_object
+    # - create_tax_payment_event
+    # - create_fy_debt_cost_event
+    # All event creation is now handled by TaxEventManager and TaxEventFactory.
+    # If any usages remain, update them to use create_tax_payment_events or the new manager/factory methods.
+    # (No code to insert here, just removing the old methods.)
 
     @classmethod
     def create(cls, fund_id, entity_id, financial_year, gross_income=0.0, 
@@ -396,29 +347,15 @@ class TaxStatement(Base):
         return statement
     
     def create_tax_payment_events(self, session=None):
-        """Create tax payment events for this fund based on tax statements.
-        Used for after-tax IRR calculations. Commits new events to the database.
-        Returns a list of created events.
+        """Create tax payment events for this tax statement using the new event management framework.
+        Commits new events to the database. Returns a list of created events.
         """
-        from src.fund.models import FundEvent, EventType, TaxPaymentType
-        
-        tax_statements = session.query(TaxStatement).filter(
-            TaxStatement.fund_id == self.id
-        ).all()
-        created_events = []
-        for tax_statement in tax_statements:
-            existing_event = session.query(FundEvent).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.TAX_PAYMENT,
-                FundEvent.event_date == tax_statement.get_tax_payment_date(),
-                FundEvent.amount == tax_statement.tax_payable,
-                FundEvent.tax_payment_type == TaxPaymentType.EOFY_INTEREST_TAX
-            ).first()
-            if not existing_event:
-                tax_event = tax_statement._create_tax_payment_event_object()
-                if tax_event:
-                    session.add(tax_event)
-                    created_events.append(tax_event)
-        if created_events:
-            session.commit()
+        from src.tax.events import TaxEventManager
+        if session is None:
+            from sqlalchemy.orm import object_session
+            session = object_session(self)
+        if session is None:
+            raise ValueError("A valid session is required to create tax payment events.")
+        # Use the new TaxEventManager to create or update all tax events for this statement
+        created_events = TaxEventManager.create_or_update_tax_events(self, session)
         return created_events 
