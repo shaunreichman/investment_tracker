@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+rootdir: /Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker
+configfile: pyproject.toml
+collected 18 items
+
+test_dividend_tax_payments.py ..................                         [100%]
+
+=============================== warnings summary ===============================
+src/shared/base.py:10
+  /Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/shared/base.py:10: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+test_dividend_tax_payments.py: 84 warnings
+  /Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/venv/lib/python3.13/site-packages/sqlalchemy/sql/schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 18 passed, 85 warnings in 1.69s ========================
