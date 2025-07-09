@@ -45,6 +45,7 @@ class TaxEventFactory:
         Returns the event object or None if not applicable.
         Does not add to the database.
         """
+        tax_statement.calculate_tax_payable()
         if not tax_statement:
             raise ValueError("tax_statement is required")
         if tax_statement.tax_payable is None or tax_statement.tax_payable <= 0.01:
@@ -205,6 +206,8 @@ class TaxEventManager:
                     created_or_updated_events.append(existing)
         if created_or_updated_events:
             session.commit()
+        else:
+            pass # No new or updated tax events to commit.
         return created_or_updated_events
 
     @staticmethod
