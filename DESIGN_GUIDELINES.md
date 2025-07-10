@@ -1348,63 +1348,26 @@ def main():
         session.close()
 ```
 
+## Testing Guidelines
+
+- All test scripts must reside in the `tests/` directory.
+- When writing tests, **never set calculated fields directly** (e.g., `tax_payable`, `interest_tax_benefit`, `total_interest_expense`). Always set the input fields and call the appropriate calculation method to set these fields.
+- This mirrors production code, where calculated fields are always derived from business logic, not set manually.
+
+## File Hygiene
+
+- Remove or archive debug output and reference files after they are no longer needed.
+- Do not commit temporary or debug files (e.g., `CashFlowDebug.txt`, `DividendTaxDebug.txt`).
+- Remove historical reference files (e.g., `models2.py`) once the migration or refactor is complete.
+
+## Project Structure
+
+- All tests: `tests/`
+- Source code: `src/`
+- Migrations: `alembic/`
+
 ## Migration Checklist
 
 ### For Each Model
 - [ ] Implement `create()` class method with proper validation
-- [ ] Implement `_validate_create_params()` method
-- [ ] Implement `_check_existing_records()` method (if applicable)
 - [ ] Implement `
-
-## Tax Event Creation Framework (2024 Refactor)
-
-### Overview
-This system uses a standardized, domain-driven approach for all tax payment event creation (interest, franked/unfranked dividends, FY debt cost, etc.) for investment funds. The framework is designed for maintainability, extensibility, and correctness.
-
-### Rationale
-- **Eliminates code duplication**: All event creation logic is centralized in factory and manager classes.
-- **Ensures deduplication and updatability**: No duplicate events; events are updated if the underlying tax statement changes.
-- **Easier to extend**: New tax event types can be added in one place.
-- **Robust edge case handling**: Comprehensive tests for all real-world and edge scenarios.
-
-### Architecture
-- **TaxEventFactory**: Contains static methods to create event objects for each tax event type (interest, franked/unfranked dividends, FY debt cost, etc.). Handles business logic, but does not persist to the database.
-- **TaxEventManager**: Handles event deduplication, update, and persistence. Uses the factory to generate events, checks for existing events, and updates or creates as needed.
-- **TaxEventCriteria**: Encapsulates the criteria for identifying unique tax events (fund, type, date, tax_payment_type).
-
-### Usage Pattern
-- To create or update all tax events for a tax statement:
-  ```python
-  from src.tax.events import TaxEventManager
-  TaxEventManager.create_or_update_tax_events(tax_statement, session)
-  ```
-- To do this for all tax statements of a fund:
-  ```python
-  fund.create_tax_payment_events(session=session)
-  ```
-- See the README for a quickstart example.
-
-### Deduplication and Update Logic
-- If an event exists with the same fund, type, date, and tax_payment_type, but the amount or description has changed (e.g., due to a tax rate update), the event is updated in place.
-- If no such event exists, a new event is created.
-- No duplicate events are ever created for the same fund/type/date/type.
-
-### Edge Cases and Best Practices
-- **Manual vs. calculated dividend totals**: If a tax statement field (e.g., total_dividends_franked) is set manually, it is used; otherwise, it is calculated from fund events.
-- **Partial data**: If only one of franked/unfranked rates is set, only the relevant event is created.
-- **Zero or negative values**: No events are created for zero or negative dividends or tax rates.
-- **Duplicate tax statements**: Enforced by a unique constraint; will raise an error if violated.
-- **Event update scenario**: If a tax statement changes (e.g., rate is updated), the corresponding event is updated to reflect the new value.
-- **Session handling**: All methods accept an explicit session, but will fallback to object_session if not provided.
-
-### Advanced Usage
-- You can use the factory directly for custom event creation flows, or the manager for full deduplication and persistence.
-- The framework is fully tested for all major and edge case scenarios (see test_dividend_tax_payments.py).
-
-### Migration Notes
-- All legacy event creation helpers have been removed from Fund and TaxStatement.
-- All event creation is now routed through the new framework.
-
-### For More
-- See the README for a quickstart example.
-- See test_dividend_tax_payments.py for comprehensive test cases and usage patterns.

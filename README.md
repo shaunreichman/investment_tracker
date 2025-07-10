@@ -223,6 +223,28 @@ This will clear the database, set up test data, recalculate all derived values, 
 
 ---
 
+## Project Structure
+
+- All test scripts are located in the `tests/` directory for better organization.
+- Source code is under `src/`.
+- Database and Alembic migration files are under `alembic/`.
+
+## Testing
+
+- To run all tests, use:
+  ```
+  pytest tests/
+  ```
+- All new test scripts should be placed in the `tests/` directory.
+- **Calculated fields** (e.g., `tax_payable`, `interest_tax_benefit`, `total_interest_expense`) must never be set directly in tests or production code. Always use the appropriate calculation method to set these fields.
+
+## Cleanup Policy
+
+- Debug and temporary output files (e.g., `CashFlowDebug.txt`, `DividendTaxDebug.txt`) should not be committed to the repository.
+- Reference files (e.g., historical versions of modules) should be removed after they are no longer needed.
+
+---
+
 ## Roadmap
 
 - Streamlit dashboard for interactive performance and allocation visualization
