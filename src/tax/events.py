@@ -77,18 +77,16 @@ class TaxEventFactory:
         tax_statement.calculate_dividend_totals(session)
 
         if dividend_type == DistributionType.DIVIDEND_FRANKED:
-            total = tax_statement.dividend_franked_income_amount or 0.0
-            rate = tax_statement.dividend_franked_income_tax_rate or 0.0
-            tax_amount = total * (rate / 100.0)
+            tax_statement.calculate_dividend_franked_tax_amount()
+            tax_amount = tax_statement.dividend_franked_tax_amount
             payment_type = TaxPaymentType.DIVIDENDS_FRANKED_TAX
-            desc = f"Franked dividend tax (rate: {rate}%)"
+            desc = f"Franked dividend tax (rate: {tax_statement.dividend_franked_income_tax_rate}%)"
             ref = f"DIV_FRANKED_TAX_{tax_statement.financial_year}"
         elif dividend_type == DistributionType.DIVIDEND_UNFRANKED:
-            total = tax_statement.dividend_unfranked_income_amount or 0.0
-            rate = tax_statement.dividend_unfranked_income_tax_rate or 0.0
-            tax_amount = total * (rate / 100.0)
+            tax_statement.calculate_dividend_unfranked_tax_amount()
+            tax_amount = tax_statement.dividend_unfranked_tax_amount
             payment_type = TaxPaymentType.DIVIDENDS_UNFRANKED_TAX
-            desc = f"Unfranked dividend tax (rate: {rate}%)"
+            desc = f"Unfranked dividend tax (rate: {tax_statement.dividend_unfranked_income_tax_rate}%)"
             ref = f"DIV_UNFRANKED_TAX_{tax_statement.financial_year}"
 
         if tax_amount <= 0:

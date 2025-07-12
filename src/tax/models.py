@@ -93,9 +93,11 @@ class TaxStatement(Base):
     dividend_unfranked_income_amount = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
     dividend_franked_income_tax_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
     dividend_unfranked_income_tax_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
+    dividend_franked_tax_amount = Column(Float, default=0.0)  # Calculated franked dividend tax amount
+    dividend_unfranked_tax_amount = Column(Float, default=0.0)  # Calculated unfranked dividend tax amount
     dividend_franked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
     dividend_unfranked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
-
+    
     # Calculated fields
     total_interest_income = Column(Float, default=0.0)  # Renamed from gross_total_interest_income
     non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)
@@ -251,6 +253,28 @@ class TaxStatement(Base):
             self.dividend_unfranked_income_amount_from_tax_statement_flag = True
         
         return self.dividend_franked_income_amount, self.dividend_unfranked_income_amount
+
+    def calculate_dividend_franked_tax_amount(self):
+        """
+        Calculate the franked dividend tax amount based on income amount and tax rate.
+        Updates the dividend_franked_tax_amount field and returns the value.
+        """
+        if self.dividend_franked_income_amount and self.dividend_franked_income_tax_rate:
+            self.dividend_franked_tax_amount = (self.dividend_franked_income_amount * self.dividend_franked_income_tax_rate) / 100.0
+        else:
+            self.dividend_franked_tax_amount = 0.0
+        return self.dividend_franked_tax_amount
+
+    def calculate_dividend_unfranked_tax_amount(self):
+        """
+        Calculate the unfranked dividend tax amount based on income amount and tax rate.
+        Updates the dividend_unfranked_tax_amount field and returns the value.
+        """
+        if self.dividend_unfranked_income_amount and self.dividend_unfranked_income_tax_rate:
+            self.dividend_unfranked_tax_amount = (self.dividend_unfranked_income_amount * self.dividend_unfranked_income_tax_rate) / 100.0
+        else:
+            self.dividend_unfranked_tax_amount = 0.0
+        return self.dividend_unfranked_tax_amount
 
     # Removed methods:
     # - _create_tax_payment_event_object

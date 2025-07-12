@@ -122,6 +122,8 @@ class DummyTaxStatement:
         self.dividend_unfranked_income_tax_rate = dividend_unfranked_income_tax_rate
         self.dividend_franked_income_amount_from_tax_statement_flag = dividend_franked_income_amount > 0
         self.dividend_unfranked_income_amount_from_tax_statement_flag = dividend_unfranked_income_amount > 0
+        self.dividend_franked_tax_amount = 0.0
+        self.dividend_unfranked_tax_amount = 0.0
         self.total_interest_income = total_interest_income
         self.interest_taxable_rate = interest_taxable_rate
         self.fy_debt_interest_deduction_sum_of_daily_interest = fy_debt_interest_deduction_sum_of_daily_interest
@@ -157,6 +159,22 @@ class DummyTaxStatement:
         return self.tax_payment_date
     def get_financial_year_dates(self):
         return self._fy_dates
+
+    def calculate_dividend_franked_tax_amount(self):
+        """Calculate franked dividend tax amount for testing."""
+        if self.dividend_franked_income_amount and self.dividend_franked_income_tax_rate:
+            self.dividend_franked_tax_amount = (self.dividend_franked_income_amount * self.dividend_franked_income_tax_rate) / 100.0
+        else:
+            self.dividend_franked_tax_amount = 0.0
+        return self.dividend_franked_tax_amount
+
+    def calculate_dividend_unfranked_tax_amount(self):
+        """Calculate unfranked dividend tax amount for testing."""
+        if self.dividend_unfranked_income_amount and self.dividend_unfranked_income_tax_rate:
+            self.dividend_unfranked_tax_amount = (self.dividend_unfranked_income_amount * self.dividend_unfranked_income_tax_rate) / 100.0
+        else:
+            self.dividend_unfranked_tax_amount = 0.0
+        return self.dividend_unfranked_tax_amount
 
 def test_create_interest_tax_payment():
     ts = DummyTaxStatement(
