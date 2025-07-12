@@ -67,17 +67,8 @@ from src.shared.utils import with_session
 
 class Fund(...):
     ...
-    def _create_tax_payment_event_object(self, tax_statement):
-        # Pure business logic: create event object, no DB ops
-        ...
-        return event
-
-    @with_session
-    def create_tax_payment_events(self, session=None):
-        # DB operations: add event to session, commit
-        event = self._create_tax_payment_event_object(...)
-        session.add(event)
-        session.commit()
+    # Tax payment events are now created via TaxEventManager
+    # Use TaxEventManager.create_or_update_tax_events(tax_statement, session)
 ```
 
 - **Never mix session.add, session.commit, or session.delete with calculations or object creation.**
@@ -453,10 +444,9 @@ non_resident_withholding_tax_from_statement = Column(Float, default=0.0)  # With
 foreign_income = Column(Float, default=0.0)
 capital_gains = Column(Float, default=0.0)
 other_income = Column(Float, default=0.0)
-tax_withheld = Column(Float, default=0.0)
 foreign_tax_credits = Column(Float, default=0.0)
-interest_taxable_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
-interest_deduction_rate = Column(Float, default=0.0)  # Manually defined interest deduction rate (%) for interest expense tax benefit
+interest_income_tax_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
+fy_debt_interest_deduction_rate = Column(Float, default=0.0)  # Manually defined interest deduction rate (%) for interest expense tax benefit
 non_resident = Column(Boolean, default=False)
 accountant = Column(String(255))
 notes = Column(Text)
@@ -476,14 +466,13 @@ interest_tax_benefit = Column(Float, default=0.0)
 tax_already_paid = Column(Float, default=0.0)
 total_interest_expense = Column(Float, default=0.0)
 
-# New tax payment calculation
-tax_payable = Column(Float, default=0.0)
+# Tax payment calculation
 tax_payable = Column(Float, default=0.0)
 ```
 
 ### Calculation Workflow
 1. Set all manual fields when creating or updating a TaxStatement.
-2. Call `calculate_interest_income_fields(session)` to update the calculated fields.
+2. Call `calculate_interest_income_amount()` to update the calculated fields.
 3. Use the calculated fields for reporting, reconciliation, and IRR calculations.
 
 ### Calculation Formulas
@@ -496,7 +485,7 @@ The following event types are created automatically by the system and should NEV
 
 ### Tax Payment Events
 - **Event Type**: `TAX_PAYMENT`
-- **Created by**: `fund.create_tax_payment_events()`
+- **Created by**: `TaxEventManager.create_or_update_tax_events()`
 - **Trigger**: When `tax_payable > 0` in tax statements
 - **Amount**: `tax_payable` from tax statement
 
@@ -552,274 +541,43 @@ fund.final_tax_statement_received  # False (regardless of existing statements)
 ### Best Practice
 Always check `final_tax_statement_received` before reporting final IRR figures for completed funds.
 
-## Removed Fields
+## Event Creation and Tax Payment Workflow (2024 Update)
 
-### vintage_year
-- **Status**: REMOVED
-- **Reason**: Not essential, can be derived from `start_date` if needed
-- **Impact**: Simplifies fund creation, reduces manual data entry
+- **Tax payment events** are now created via the event manager/factory, not directly via model methods.
+- Use `TaxEventManager.create_or_update_tax_events(tax_statement, session)` to create or update all tax payment events for a tax statement.
+- Do **not** use or reference deprecated methods like `_create_tax_payment_event_object` or `create_tax_payment_events` on models.
+- All event creation for tax payments is now centralized in the event manager for consistency and maintainability.
 
-### gross_interest_income
-- **Status**: REMOVED
-- **Reason**: Not essential, can be derived from interest income breakdown fields
-- **Impact**: Simplifies tax statement creation, reduces manual data entry
-
-### tax_withheld
-- **Status**: REMOVED
-- **Reason**: Not essential, can be derived from interest income breakdown fields and event-based withholding
-- **Impact**: Simplifies tax statement creation, reduces manual data entry
-
-## Best Practices
-
-### Creating a New Fund
-1. **Set manual fields only**:
-   ```python
-   fund = Fund(
-       name="My Fund",
-       tracking_type=FundType.COST_BASED,
-       commitment_amount=100000.0,
-       # DO NOT set current_equity_balance, average_equity_balance, is_active, etc.
-   )
-   ```
-
-2. **Add events to establish equity**:
-   ```python
-   # Add capital call event
-   event = FundEvent(
-       fund_id=fund.id,
-       event_type=EventType.CAPITAL_CALL,
-       event_date=date(2023, 1, 1),
-       amount=50000.0
-   )
-   ```
-
-3. **Let system calculate derived values**:
-   ```python
-   fund.update_current_equity_balance()  # Calculates from events
-   fund.update_average_equity_balance()  # Calculates time-weighted average
-   fund.update_active_status()  # Updates is_active based on equity
-   ```
-
-### Creating Distributions with Tax Withholding
-
-**IMPORTANT**: Each cash flow should be a separate event. Distribution events should NEVER contain tax withholding information.
-
-#### ✅ CORRECT WAY - Use the provided methods:
-
-1. **Add distribution with tax rate** (recommended):
-   ```python
-   # This automatically creates both distribution and tax payment events
-   dist_event, tax_event = fund.add_distribution_with_tax_rate(
-       event_date=date(2024, 12, 15),
-       gross_amount=10000.0,
-       tax_rate=10.0,  # 10% tax rate
-       distribution_type=DistributionType.INTEREST,
-       description="Interest distribution"
-   )
-   # Creates:
-   # - DISTRIBUTION event: $10,000 (gross amount)
-   # - TAX_PAYMENT event: $1,000 (automatically calculated)
-   ```
-
-2. **Add distribution with specific tax amount**:
-   ```python
-   dist_event, tax_event = fund.add_distribution_with_tax(
-       event_date=date(2024, 12, 15),
-       gross_amount=10000.0,
-       tax_withheld=1000.0,  # Specific tax amount
-       distribution_type=DistributionType.INTEREST,
-       description="Interest distribution"
-   )
-   ```
-
-#### ✅ CORRECT WAY - Manual event creation (if needed):
-
+**Example:**
 ```python
-# Create distribution event (gross amount only)
-dist_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.DISTRIBUTION,
-    event_date=date(2024, 12, 15),
-    amount=10000.0,  # Gross amount only
-    distribution_type=DistributionType.INTEREST,
-    description="Interest distribution"
-)
-
-# Create separate tax payment event
-tax_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.TAX_PAYMENT,
-    event_date=date(2024, 12, 15),
-    amount=1000.0,  # Tax amount as separate cash flow
-    description="Tax withheld on interest distribution"
-)
+from src.tax.events import TaxEventManager
+# ... after creating or updating a TaxStatement ...
+TaxEventManager.create_or_update_tax_events(statement, session)
 ```
 
-#### Benefits of Separate Events:
+---
 
-1. **Clear cash flow tracking**: Each event represents a distinct cash movement
-2. **Accurate IRR calculations**: Tax payments are properly included in after-tax IRR
-3. **Flexible tax handling**: Tax rates can vary by distribution type or date
-4. **Audit trail**: Clear separation of gross distributions and tax withholdings
-5. **Consistent design**: All cash flows follow the same pattern
+## Deprecated Fields and Methods (REMOVED)
+- The following fields and methods are no longer present in the codebase and should not be referenced:
+  - `vintage_year`
+  - `gross_interest_income`
+  - `tax_withheld`
+  - `_create_tax_payment_event_object`
+  - Any direct event creation on TaxStatement or Fund for tax payments
 
-### Creating Tax Statements
-1. **Set income components and rates**:
-   ```python
-   statement = TaxStatement(
-       fund_id=fund.id,
-       entity_id=entity.id,
-       financial_year="2023-2024",
-       distribution_receivable_this_fy=1000.0,
-       distribution_received_prev_fy=500.0,
-       interest_received_in_cash=8000.0,
-       non_resident_withholding_tax_from_statement=1200.0,
-       # ... other manual fields ...
-   )
-   ```
+---
 
-2. **Calculate derived values**:
-   ```python
-   statement.calculate_tax_payable()  # Calculates from rate
-   # total_interest_expense will be calculated from daily interest charges
-   ```
+## Bulk Event Creation (Optional)
+- The `Fund.bulk_add_events(events_data, session=session)` method allows batch creation of multiple events for a fund.
+- This is useful for test setup or importing large datasets.
+- After bulk creation, all calculated fields are automatically updated.
 
-3. **Create tax payment events**:
-   ```python
-   fund.create_tax_payment_events()  # Creates TAX_PAYMENT events
-   ```
-
-### Testing Guidelines
-When writing tests:
-- **DO** set manual fields (fund details, event amounts, tax rates)
-- **DON'T** set automatic fields (equity balances, calculated totals, is_active)
-- **DO** call calculation methods to verify they work
-- **DO** verify that system-generated events are created correctly
-
-## Common Mistakes to Avoid
-
-1. **Setting equity balances manually** - These should always be calculated from events
-2. **Setting is_active manually** - Should be calculated from equity balance
-3. **Setting current_units/current_unit_price manually** - Should be calculated from NAV events
-4. **Setting total_cost_basis manually** - Should be calculated from capital movements
-5. **Setting shares_owned manually** - Should be calculated from NAV events
-6. **Setting total_interest_expense manually** - Should be calculated from daily interest charges
-7. **Creating system-generated events manually** - Let the system create TAX_PAYMENT, DAILY_RISK_FREE_INTEREST_CHARGE, and FY_DEBT_COST events
-8. **Setting calculated totals manually** - Let the system calculate total_income, tax_payable, etc.
-9. **Not calling calculation methods** - Always call update methods after adding events
-
-## Validation Rules
-
-The system should enforce these rules:
-- `current_equity_balance`, `average_equity_balance`, `is_active` should be read-only (calculated only)
-- `current_units`, `current_unit_price`, `total_cost_basis` should be read-only (calculated only)
-- `shares_owned` should be read-only (calculated only)
-- `total_interest_expense` should be read-only (calculated only)
-- System-generated event types should not be manually created
-- Tax statements should have `interest_taxable_rate` set before calculating `tax_payable`
-- Tax payment is calculated as: `total_interest_income * interest_taxable_rate - non_resident_withholding_tax_from_statement`.
-- Fund type should determine which fields are valid (NAV vs cost-based)
-
-## Tax Payment Type
-
-### Purpose
-The `tax_payment_type` field is used to categorize tax payment events for future-proofing and filtering.
-
-### Recommended Values
-- **INTEREST**: For interest-related tax payments
-- **CAPITAL_GAINS**: For capital gains tax payments
-- **FOREIGN_INCOME**: For tax payments related to foreign income
-- **OTHER**: For tax payments related to other types of income
-
-### Usage
-- **Filtering**: Use `tax_payment_type` to filter tax payment events based on their type.
-- **Reconciliation**: Use `tax_payment_type` to reconcile tax payment events with tax statements.
-
-### Example
+**Example:**
 ```python
-# Create a tax payment event with a specific tax_payment_type
-tax_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.TAX_PAYMENT,
-    event_date=date(2024, 12, 15),
-    amount=1000.0,
-    tax_payment_type=TaxPaymentType.INTEREST,
-    description="Tax withheld on interest distribution"
-)
-```
-
-### How to Use
-1. **Filtering**: Use `tax_payment_type` in queries to filter events based on their type.
-2. **Reconciliation**: Use `tax_payment_type` to verify that tax payments are correctly recorded in tax statements.
-
-## Add a Section on Tax Payment Type
-
-### Purpose
-The `tax_payment_type` field is used to categorize tax payment events for future-proofing and filtering.
-
-### Recommended Values
-- **INTEREST**: For interest-related tax payments
-- **CAPITAL_GAINS**: For capital gains tax payments
-- **FOREIGN_INCOME**: For tax payments related to foreign income
-- **OTHER**: For tax payments related to other types of income
-
-### Usage
-- **Filtering**: Use `tax_payment_type` to filter tax payment events based on their type.
-- **Reconciliation**: Use `tax_payment_type` to reconcile tax payment events with tax statements.
-
-### Example
-```python
-# Create a tax payment event with a specific tax_payment_type
-tax_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.TAX_PAYMENT,
-    event_date=date(2024, 12, 15),
-    amount=1000.0,
-    tax_payment_type=TaxPaymentType.INTEREST,
-    description="Tax withheld on interest distribution"
-)
-```
-
-### How to Use
-1. **Filtering**: Use `tax_payment_type` in queries to filter events based on their type.
-2. **Reconciliation**: Use `tax_payment_type` to verify that tax payments are correctly recorded in tax statements.
-
-## FundEvent Model Fields
-
-### TAX_PAYMENT Event Type
-- Add `tax_payment_type` (Enum) to distinguish the purpose of each tax payment.
-- **Enum values:**
-  - `NON_RESIDENT_INTEREST_WITHHOLDING`
-  - `CAPITAL_GAINS_TAX`
-  - `OTHER`
-- **Usage:**
-  - When creating a TAX_PAYMENT event for non-resident interest withholding, set `tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING`.
-  - Use this field to filter and sum only the relevant tax payments for reconciliation and reporting.
-
-### Example Usage
-```python
-# Creating a TaxStatement with new fields
-statement = TaxStatement(
-    fund_id=fund.id,
-    entity_id=entity.id,
-    financial_year="2023-2024",
-    distribution_receivable_this_fy=1000.0,
-    distribution_received_prev_fy=500.0,
-    interest_received_in_cash=8000.0,
-    non_resident_withholding_tax_from_statement=1200.0,
-    # ... other manual fields ...
-)
-statement.calculate_interest_income_fields(session)
-
-# Creating a FundEvent TAX_PAYMENT for non-resident interest withholding
-tax_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.TAX_PAYMENT,
-    event_date=date(2024, 6, 30),
-    amount=1200.0,
-    tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING,
-    description="Non-resident interest withholding tax"
-)
+fund.bulk_add_events([
+    {"event_type": EventType.CAPITAL_CALL, "event_date": date(2023, 1, 1), "amount": 100000.0},
+    {"event_type": EventType.DISTRIBUTION, "event_date": date(2023, 6, 30), "amount": 5000.0, "distribution_type": DistributionType.INTEREST},
+], session=session)
 ```
 
 ---
@@ -841,7 +599,7 @@ tax_event = FundEvent(
 - **Rationale:** This matches industry standard practice, where opportunity cost is calculated on invested capital, not after distributions or other outflows. Distributions and other outflows are considered returns, not reductions in capital at risk. 
 
 **Note:**
-- `interest_taxable_rate` and `interest_deduction_rate` must always be set manually for each tax statement. The system will not auto-calculate these rates, except to use a default fallback (e.g., 32.5%) only if not provided. Always confirm the correct rate for each fund/entity/financial year based on the actual tax statement or jurisdictional rules. 
+- `interest_income_tax_rate` and `fy_debt_interest_deduction_rate` must always be set manually for each tax statement. The system will not auto-calculate these rates, except to use a default fallback (e.g., 32.5%) only if not provided. Always confirm the correct rate for each fund/entity/financial year based on the actual tax statement or jurisdictional rules. 
 
 ---
 
@@ -1144,41 +902,32 @@ def create(cls, **kwargs):
     Raises:
         ValueError: If validation fails
     """
-    from ..database import get_database_session
+    # Session should be passed from outermost layer
+    # Domain methods should not create sessions internally
     
-    # Create session internally
-    engine, session_factory, scoped_session = get_database_session()
-    session = scoped_session()
+    # Validation
+    cls._validate_create_params(**kwargs)
     
-    try:
-        # Validation
-        cls._validate_create_params(**kwargs)
-        
-        # Check for existing records (if applicable)
-        cls._check_existing_records(**kwargs, session=session)
-        
-        # Create instance
-        instance = cls(**kwargs)
-        
-        # Apply business logic
-        instance._apply_create_business_logic()
-        
-        # Persist to database
-        session.add(instance)
-        session.commit()
-        
-        return instance
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
+    # Check for existing records (if applicable)
+    cls._check_existing_records(**kwargs, session=session)
+    
+    # Create instance
+    instance = cls(**kwargs)
+    
+    # Apply business logic
+    instance._apply_create_business_logic()
+    
+    # Persist to database
+    session.add(instance)
+    session.flush()  # Get ID without committing
+    
+    return instance
 ```
 
 ### Required Pattern for Domain Methods
 
 ```python
-def add_capital_call(self, amount, date, description):
+def add_capital_call(self, amount, date, description, session=None):
     """
     Add a capital call event.
     
@@ -1186,6 +935,7 @@ def add_capital_call(self, amount, date, description):
         amount (float): Capital call amount
         date (date): Capital call date
         description (str): Description of the capital call
+        session (Session): Database session from outermost layer
     
     Returns:
         FundEvent: The created capital call event
@@ -1193,39 +943,30 @@ def add_capital_call(self, amount, date, description):
     Raises:
         ValueError: If validation fails
     """
-    from ..database import get_database_session
+    # Session should be passed from outermost layer
+    # Domain methods should not create sessions internally
     
-    # Create session internally
-    engine, session_factory, scoped_session = get_database_session()
-    session = scoped_session()
+    # Validation
+    if amount <= 0:
+        raise ValueError("Amount must be positive")
     
-    try:
-        # Validation
-        if amount <= 0:
-            raise ValueError("Amount must be positive")
-        
-        # Create event
-        event = FundEvent(
-            fund_id=self.id,
-            event_type=EventType.CAPITAL_CALL,
-            amount=amount,
-            date=date,
-            description=description
-        )
-        
-        # Apply business logic
-        self._apply_capital_call_business_logic(event)
-        
-        # Persist to database
-        session.add(event)
-        session.commit()
-        
-        return event
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
+    # Create event
+    event = FundEvent(
+        fund_id=self.id,
+        event_type=EventType.CAPITAL_CALL,
+        amount=amount,
+        event_date=date,
+        description=description
+    )
+    
+    # Apply business logic
+    self._apply_capital_call_business_logic(event)
+    
+    # Persist to database
+    session.add(event)
+    # No commit here - caller manages transaction
+    
+    return event
 ```
 
 ### Required Pattern for Higher-Level Workflow Methods
@@ -1242,47 +983,37 @@ def create_with_initial_events(cls, **kwargs):
     Returns:
         Fund: The created fund with initial events
     """
-    from ..database import get_database_session
+    # Session should be passed from outermost layer
+    # Domain methods should not create sessions internally
     
-    # Create session internally
-    engine, session_factory, scoped_session = get_database_session()
-    session = scoped_session()
+    # Extract fund parameters
+    fund_params = {k: v for k, v in kwargs.items() 
+                  if k not in ['initial_capital', 'initial_distribution', 'initial_return']}
     
-    try:
-        # Extract fund parameters
-        fund_params = {k: v for k, v in kwargs.items() 
-                      if k not in ['initial_capital', 'initial_distribution', 'initial_return']}
-        
-        # Create fund
-        fund = cls(**fund_params)
-        session.add(fund)
-        session.flush()  # Get fund ID
-        
-        # Create initial events
-        if 'initial_capital' in kwargs:
-            fund.add_capital_call_internal(
-                amount=kwargs['initial_capital'],
-                date=kwargs.get('initial_capital_date', date.today()),
-                description="Initial capital call",
-                session=session
-            )
-        
-        if 'initial_distribution' in kwargs:
-            fund.add_distribution_internal(
-                amount=kwargs['initial_distribution'],
-                date=kwargs.get('initial_distribution_date', date.today()),
-                description="Initial distribution",
-                session=session
-            )
-        
-        # Commit entire transaction
-        session.commit()
-        return fund
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
+    # Create fund
+    fund = cls(**fund_params)
+    session.add(fund)
+    session.flush()  # Get fund ID
+    
+    # Create initial events
+    if 'initial_capital' in kwargs:
+        fund.add_capital_call_internal(
+            amount=kwargs['initial_capital'],
+            date=kwargs.get('initial_capital_date', date.today()),
+            description="Initial capital call",
+            session=session
+        )
+    
+    if 'initial_distribution' in kwargs:
+        fund.add_distribution_internal(
+            amount=kwargs['initial_distribution'],
+            date=kwargs.get('initial_distribution_date', date.today()),
+            description="Initial distribution",
+            session=session
+        )
+    
+    # No commit here - caller manages transaction
+    return fund
 ```
 
 ## Testing Standards
@@ -1303,7 +1034,6 @@ def setup_test_data(session):
         entity_id=entity.id,
         name="Test Fund",
         fund_type="Private Debt",
-        tracking_type=FundType.COST_BASED,
         session=session
     )
     

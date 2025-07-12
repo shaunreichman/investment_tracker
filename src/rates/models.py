@@ -26,13 +26,13 @@ class RiskFreeRate(Base):
     """
     __tablename__ = 'risk_free_rates'
     
-    id = Column(Integer, primary_key=True)
-    currency = Column(String(10), nullable=False)  # Currency code (e.g., 'AUD', 'USD', 'EUR')
-    rate_date = Column(Date, nullable=False)  # Date of the rate
-    rate = Column(Float, nullable=False)  # Risk-free rate as percentage (e.g., 4.5 for 4.5%)
-    rate_type = Column(String(50), default='government_bond')  # Type of rate (e.g., 'government_bond', 'libor', 'sofr')
-    source = Column(String(100))  # Source of the rate data
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
+    currency = Column(String(10), nullable=False)  # (MANUAL) currency code (e.g., 'AUD', 'USD', 'EUR')
+    rate_date = Column(Date, nullable=False)  # (MANUAL) date of the rate
+    rate = Column(Float, nullable=False)  # (MANUAL) risk-free rate as percentage (e.g., 4.5 for 4.5%)
+    rate_type = Column(String(50), default='government_bond')  # (MANUAL) type of rate (e.g., 'government_bond', 'libor', 'sofr')
+    source = Column(String(100))  # (MANUAL) source of the rate data
+    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
     
     # Composite unique constraint
     __table_args__ = (
