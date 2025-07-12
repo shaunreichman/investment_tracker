@@ -426,7 +426,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 24),
         interest_taxable_rate=10.0,
-        interest_deduction_rate=32.5,
+        fy_debt_interest_deduction_rate=32.5,
         session=session
     )
     senior_debt_fund.create_or_update_tax_statement(
@@ -440,7 +440,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 12),
         interest_taxable_rate=10.0,
-        interest_deduction_rate=32.5,
+        fy_debt_interest_deduction_rate=32.5,
         session=session
     )
     # 3PG Finance Tax Statements
@@ -455,7 +455,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 24),
         interest_taxable_rate=10.0,
-        interest_deduction_rate=32.5,
+        fy_debt_interest_deduction_rate=32.5,
         session=session
     )
     finance_fund.create_or_update_tax_statement(
@@ -469,7 +469,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 12),
         interest_taxable_rate=10.0,
-        interest_deduction_rate=32.5,
+        fy_debt_interest_deduction_rate=32.5,
         session=session
     )
     # ABC Ltd Tax Statements (NAV-based fund)
@@ -484,7 +484,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 24),
         interest_taxable_rate=0.0,
-        interest_deduction_rate=32.5,
+        fy_debt_interest_deduction_rate=32.5,
         session=session
     )
     abc_fund.create_or_update_tax_statement(
@@ -498,7 +498,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 12),
         interest_taxable_rate=0.0,
-        interest_deduction_rate=32.5,
+        fy_debt_interest_deduction_rate=32.5,
         session=session
     )
     

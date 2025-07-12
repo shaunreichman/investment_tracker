@@ -32,22 +32,24 @@ def tax_payable(total_interest_income, interest_taxable_rate, non_resident_withh
     return 0.0
 
 
-def interest_tax_benefit(total_interest_expense, interest_deduction_rate):
+def calculate_fy_debt_interest_deduction_total_deduction(fy_debt_interest_deduction_sum_of_daily_interest, fy_debt_interest_deduction_rate):
     """
     Calculate the tax benefit from interest expense deduction.
+    
     Args:
-        total_interest_expense (float): Total interest expense.
-        interest_deduction_rate (float): Deduction rate as a percentage.
+        fy_debt_interest_deduction_sum_of_daily_interest (float): Total interest expense.
+        fy_debt_interest_deduction_rate (float): Deduction rate as a percentage.
+    
     Returns:
-        float: Tax benefit.
+        float: The calculated tax benefit.
     """
-    if total_interest_expense and interest_deduction_rate:
-        return (total_interest_expense * interest_deduction_rate) / 100
+    if fy_debt_interest_deduction_sum_of_daily_interest and fy_debt_interest_deduction_rate:
+        return (fy_debt_interest_deduction_sum_of_daily_interest * fy_debt_interest_deduction_rate) / 100
     return 0.0
 
 
 __all__ = [
     'net_income',
     'tax_payable',
-    'interest_tax_benefit',
+    'calculate_fy_debt_interest_deduction_total_deduction',
 ] 

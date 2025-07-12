@@ -116,7 +116,7 @@ class TaxEventFactory:
         """
         if not tax_statement:
             raise ValueError("tax_statement is required")
-        tax_benefit = tax_statement.calculate_interest_tax_benefit() if hasattr(tax_statement, 'calculate_interest_tax_benefit') else (tax_statement.interest_tax_benefit or 0.0)
+        tax_benefit = tax_statement.calculate_fy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_fy_debt_interest_deduction_total_deduction') else (tax_statement.fy_debt_interest_deduction_total_deduction or 0.0)
         if tax_benefit is None or tax_benefit <= 0:
             return None
         fy_start, fy_end = tax_statement.get_financial_year_dates() if hasattr(tax_statement, 'get_financial_year_dates') else (None, None)
@@ -249,6 +249,6 @@ class TaxEventManager:
                 (tax_statement.dividends_unfranked_taxable_rate or 0.0) > 0
             )
         elif event_type == EventType.FY_DEBT_COST:
-            benefit = tax_statement.calculate_interest_tax_benefit() if hasattr(tax_statement, 'calculate_interest_tax_benefit') else (tax_statement.interest_tax_benefit or 0.0)
+            benefit = tax_statement.calculate_fy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_fy_debt_interest_deduction_total_deduction') else (tax_statement.fy_debt_interest_deduction_total_deduction or 0.0)
             return benefit > 0
         return False 

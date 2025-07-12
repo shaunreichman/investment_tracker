@@ -53,9 +53,9 @@ class TaxStatement(Base):
     tax_payment_date = Column(Date)  # Date when additional tax is due (defaults to FY end)
     
     # Debt cost tracking for real IRR calculations
-    total_interest_expense = Column(Float, default=0.0)  # Total interest expense for the financial year
-    interest_deduction_rate = Column(Float, default=0.0)  # Tax deduction rate for interest (e.g., 30.0 for 30%)
-    interest_tax_benefit = Column(Float, default=0.0)  # Calculated tax benefit from interest deduction
+    fy_debt_interest_deduction_sum_of_daily_interest = Column(Float, default=0.0)  # Total interest expense for the financial year
+    fy_debt_interest_deduction_rate = Column(Float, default=0.0)  # Tax deduction rate for interest (e.g., 30.0 for 30%)
+    fy_debt_interest_deduction_total_deduction = Column(Float, default=0.0)  # Calculated tax benefit from interest deduction
     
     # Tax status
     non_resident = Column(Boolean, default=False)  # Whether entity was non-resident for tax purposes in this FY
@@ -126,13 +126,14 @@ class TaxStatement(Base):
             self.tax_already_paid = 0.0
         return self.tax_payable
 
-    def calculate_interest_tax_benefit(self):
-        """Calculate the tax benefit from interest expense deduction.
-        Updates the interest_tax_benefit field and returns the value.
+    def calculate_fy_debt_interest_deduction_total_deduction(self):
         """
-        from .calculations import interest_tax_benefit
-        self.interest_tax_benefit = interest_tax_benefit(self.total_interest_expense, self.interest_deduction_rate)
-        return self.interest_tax_benefit
+        Calculate the interest tax benefit based on total interest expense and deduction rate.
+        Updates the fy_debt_interest_deduction_total_deduction field and returns the value.
+        """
+        from .calculations import calculate_fy_debt_interest_deduction_total_deduction
+        self.fy_debt_interest_deduction_total_deduction = calculate_fy_debt_interest_deduction_total_deduction(self.fy_debt_interest_deduction_sum_of_daily_interest, self.fy_debt_interest_deduction_rate)
+        return self.fy_debt_interest_deduction_total_deduction
 
     def get_financial_year_dates(self):
         """Get the start and end dates for this financial year based on entity jurisdiction.

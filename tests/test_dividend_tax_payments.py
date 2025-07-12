@@ -107,23 +107,25 @@ def test_dividend_tax_payments():
 
 # --- TaxEventFactory Unit Tests ---
 class DummyTaxStatement:
-    def __init__(self, fund_id=1, financial_year='2023-24',
-                 total_interest_income=0.0, interest_taxable_rate=0.0,
-                 non_resident_withholding_tax_from_statement=0.0,
+    def __init__(self, fund_id=1, entity_id=1, financial_year="2023-24", 
                  total_dividends_franked=0.0, dividends_franked_taxable_rate=0.0,
                  total_dividends_unfranked=0.0, dividends_unfranked_taxable_rate=0.0,
-                 total_interest_expense=0.0, interest_deduction_rate=0.0):
+                 total_interest_income=0.0, interest_taxable_rate=0.0,
+                 fy_debt_interest_deduction_sum_of_daily_interest=0.0, fy_debt_interest_deduction_rate=0.0,
+                 non_resident_withholding_tax_from_statement=0.0):
         self.fund_id = fund_id
+        self.entity_id = entity_id
         self.financial_year = financial_year
-        self.total_interest_income = total_interest_income
-        self.interest_taxable_rate = interest_taxable_rate
-        self.non_resident_withholding_tax_from_statement = non_resident_withholding_tax_from_statement
         self.total_dividends_franked = total_dividends_franked
         self.dividends_franked_taxable_rate = dividends_franked_taxable_rate
         self.total_dividends_unfranked = total_dividends_unfranked
         self.dividends_unfranked_taxable_rate = dividends_unfranked_taxable_rate
-        self.total_interest_expense = total_interest_expense
-        self.interest_deduction_rate = interest_deduction_rate
+        self.total_interest_income = total_interest_income
+        self.interest_taxable_rate = interest_taxable_rate
+        self.fy_debt_interest_deduction_sum_of_daily_interest = fy_debt_interest_deduction_sum_of_daily_interest
+        self.fy_debt_interest_deduction_rate = fy_debt_interest_deduction_rate
+        self.fy_debt_interest_deduction_total_deduction = 0.0
+        self.non_resident_withholding_tax_from_statement = non_resident_withholding_tax_from_statement
         self.tax_already_paid = 0.0
         self.tax_payment_date = date(2024, 6, 30)
         self._fy_dates = (date(2023, 7, 1), date(2024, 6, 30))
@@ -138,13 +140,14 @@ class DummyTaxStatement:
             self.tax_payable = 0.0
             self.tax_already_paid = 0.0
         return self.tax_payable
-    def calculate_interest_tax_benefit(self):
-        if self.total_interest_expense and self.interest_deduction_rate:
-            self.interest_benefit = (self.total_interest_expense * self.interest_deduction_rate) / 100
+    def calculate_fy_debt_interest_deduction_total_deduction(self):
+        """Calculate interest tax benefit for testing."""
+        if self.fy_debt_interest_deduction_sum_of_daily_interest and self.fy_debt_interest_deduction_rate:
+            self.interest_benefit = (self.fy_debt_interest_deduction_sum_of_daily_interest * self.fy_debt_interest_deduction_rate) / 100
         else:
             self.interest_benefit = 0.0
-        self.interest_tax_benefit = self.interest_benefit
-        return self.interest_tax_benefit
+        self.fy_debt_interest_deduction_total_deduction = self.interest_benefit
+        return self.fy_debt_interest_deduction_total_deduction
     def calculate_dividend_totals(self, session=None):
         return self.total_dividends_franked, self.total_dividends_unfranked
     def get_tax_payment_date(self):
@@ -201,21 +204,21 @@ def test_create_dividend_tax_payment_none():
 
 def test_create_fy_debt_cost_event():
     ts = DummyTaxStatement(
-        total_interest_expense=200.0,
-        interest_deduction_rate=25.0
+        fy_debt_interest_deduction_sum_of_daily_interest=200.0,
+        fy_debt_interest_deduction_rate=25.0
     )
-    ts.calculate_interest_tax_benefit()
+    ts.calculate_fy_debt_interest_deduction_total_deduction()
     event = TaxEventFactory.create_fy_debt_cost_event(ts)
     assert event is not None
-    assert event.amount == ts.interest_tax_benefit
+    assert event.amount == ts.fy_debt_interest_deduction_total_deduction
     assert event.event_type.name == 'FY_DEBT_COST'
 
 def test_create_fy_debt_cost_event_none():
     ts = DummyTaxStatement(
-        total_interest_expense=0.0,  # This will result in interest_tax_benefit = 0
-        interest_deduction_rate=25.0
+        fy_debt_interest_deduction_sum_of_daily_interest=0.0,  # This will result in interest_tax_benefit = 0
+        fy_debt_interest_deduction_rate=25.0
     )
-    ts.calculate_interest_tax_benefit()
+    ts.calculate_fy_debt_interest_deduction_total_deduction()
     event = TaxEventFactory.create_fy_debt_cost_event(ts)
     assert event is None
 
@@ -228,11 +231,11 @@ def test_create_all_tax_events():
         dividends_franked_taxable_rate=30.0,
         total_dividends_unfranked=150.0,
         dividends_unfranked_taxable_rate=20.0,
-        total_interest_expense=200.0,
-        interest_deduction_rate=25.0
+        fy_debt_interest_deduction_sum_of_daily_interest=200.0,
+        fy_debt_interest_deduction_rate=25.0
     )
     ts.calculate_tax_payable()
-    ts.calculate_interest_tax_benefit()
+    ts.calculate_fy_debt_interest_deduction_total_deduction()
     events = TaxEventFactory.create_all_tax_events(ts)
     # Should create 4 events: interest tax, franked, unfranked, fy debt cost
     assert len(events) == 4
@@ -295,11 +298,11 @@ def test_create_or_update_tax_events(in_memory_session):
         dividends_franked_taxable_rate=30.0,
         total_dividends_unfranked=150.0,
         dividends_unfranked_taxable_rate=20.0,
-        total_interest_expense=200.0,
-        interest_deduction_rate=25.0
+        fy_debt_interest_deduction_sum_of_daily_interest=200.0,
+        fy_debt_interest_deduction_rate=25.0
     )
     ts.calculate_tax_payable()
-    ts.calculate_interest_tax_benefit()
+    ts.calculate_fy_debt_interest_deduction_total_deduction()
     created = TaxEventManager.create_or_update_tax_events(ts, session)
     assert len(created) == 4
     event_types = {e.event_type.name for e in created}
@@ -316,11 +319,11 @@ def test_validate_event_creation():
         dividends_franked_taxable_rate=30.0,
         total_dividends_unfranked=150.0,
         dividends_unfranked_taxable_rate=20.0,
-        total_interest_expense=200.0,
-        interest_deduction_rate=25.0
+        fy_debt_interest_deduction_sum_of_daily_interest=200.0,
+        fy_debt_interest_deduction_rate=25.0
     )
     ts.calculate_tax_payable()
-    ts.calculate_interest_tax_benefit()
+    ts.calculate_fy_debt_interest_deduction_total_deduction()
     assert TaxEventManager.validate_event_creation(ts, EventType.TAX_PAYMENT, None)
     assert TaxEventManager.validate_event_creation(ts, TaxPaymentType.DIVIDENDS_FRANKED_TAX, None)
     assert TaxEventManager.validate_event_creation(ts, TaxPaymentType.DIVIDENDS_UNFRANKED_TAX, None)
@@ -329,15 +332,16 @@ def test_validate_event_creation():
     ts2 = DummyTaxStatement(
         total_interest_income=0.0,
         interest_taxable_rate=0.0,
+        non_resident_withholding_tax_from_statement=0.0,
         total_dividends_franked=0.0,
         dividends_franked_taxable_rate=0.0,
         total_dividends_unfranked=0.0,
         dividends_unfranked_taxable_rate=0.0,
-        total_interest_expense=0.0,
-        interest_deduction_rate=0.0
+        fy_debt_interest_deduction_sum_of_daily_interest=0.0,
+        fy_debt_interest_deduction_rate=0.0
     )
     ts2.calculate_tax_payable()
-    ts2.calculate_interest_tax_benefit()
+    ts2.calculate_fy_debt_interest_deduction_total_deduction()
     assert not TaxEventManager.validate_event_creation(ts2, EventType.TAX_PAYMENT, None)
     assert not TaxEventManager.validate_event_creation(ts2, TaxPaymentType.DIVIDENDS_FRANKED_TAX, None)
     assert not TaxEventManager.validate_event_creation(ts2, TaxPaymentType.DIVIDENDS_UNFRANKED_TAX, None)
