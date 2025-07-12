@@ -88,11 +88,13 @@ class TaxStatement(Base):
     # New manual field for interest taxable rate
     interest_taxable_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
 
-    # Manual fields for dividend income
-    total_dividends_franked = Column(Float, default=0.0)  # Manual or calculated franked dividends
-    total_dividends_unfranked = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
-    dividends_franked_taxable_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
-    dividends_unfranked_taxable_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
+    # Dividend income
+    dividend_franked_income_amount = Column(Float, default=0.0)  # Manual or calculated franked dividends
+    dividend_unfranked_income_amount = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
+    dividend_franked_income_tax_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
+    dividend_unfranked_income_tax_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
+    dividend_franked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
+    dividend_unfranked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
 
     # Calculated fields
     total_interest_income = Column(Float, default=0.0)  # Renamed from gross_total_interest_income
@@ -198,8 +200,10 @@ class TaxStatement(Base):
         return self.total_interest_income, self.net_interest_income 
 
     def calculate_dividend_totals(self, session=None):
-        """Calculate dividend totals from fund events if not manually set.
-        Returns a tuple: (total_dividends_franked, total_dividends_unfranked).
+        """
+        Calculate total franked and unfranked dividends from fund distributions.
+        Updates the dividend_franked_income_amount and dividend_unfranked_income_amount fields.
+        Returns a tuple: (dividend_franked_income_amount, dividend_unfranked_income_amount).
         """
         from sqlalchemy.orm import object_session
         from src.fund.models import FundEvent, EventType, DistributionType
@@ -234,13 +238,19 @@ class TaxStatement(Base):
                 unfranked_total += event.amount or 0.0
         
         # Update fields if not manually set
-        if self.total_dividends_franked is None or self.total_dividends_franked == 0.0:
-            self.total_dividends_franked = franked_total
+        if self.dividend_franked_income_amount is None or self.dividend_franked_income_amount == 0.0:
+            self.dividend_franked_income_amount = franked_total
+            self.dividend_franked_income_amount_from_tax_statement_flag = False
+        else:
+            self.dividend_franked_income_amount_from_tax_statement_flag = True
         
-        if self.total_dividends_unfranked is None or self.total_dividends_unfranked == 0.0:
-            self.total_dividends_unfranked = unfranked_total
+        if self.dividend_unfranked_income_amount is None or self.dividend_unfranked_income_amount == 0.0:
+            self.dividend_unfranked_income_amount = unfranked_total
+            self.dividend_unfranked_income_amount_from_tax_statement_flag = False
+        else:
+            self.dividend_unfranked_income_amount_from_tax_statement_flag = True
         
-        return self.total_dividends_franked, self.total_dividends_unfranked
+        return self.dividend_franked_income_amount, self.dividend_unfranked_income_amount
 
     # Removed methods:
     # - _create_tax_payment_event_object
