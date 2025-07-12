@@ -268,8 +268,8 @@ class Fund(Base):
                 if hasattr(statement, key):
                     setattr(statement, key, value)
         
-        # Calculate interest income fields (including total_interest_income)
-        statement.calculate_interest_income_fields()
+        # Calculate interest income amount (including total_interest_income)
+        statement.calculate_interest_income_amount()
         
 
         

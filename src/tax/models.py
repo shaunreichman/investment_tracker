@@ -141,16 +141,14 @@ class TaxStatement(Base):
         """Calculate the difference between tax withheld from statement and already withheld."""
         return (self.interest_non_resident_withholding_tax_from_statement or 0.0) - (self.interest_non_resident_withholding_tax_already_withheld or 0.0)
     
-    def calculate_interest_income_fields(self, session=None):
-        """Calculate interest income fields from manual inputs."""
-        # Calculate total interest income
+    def calculate_interest_income_amount(self, session=None):
+        """Calculate interest income amount from manual inputs."""
         self.interest_income_amount = (
             (self.interest_receivable_this_fy or 0.0) +
             (self.interest_receivable_prev_fy or 0.0) +
             (self.interest_received_in_cash or 0.0)
         )
-        
-        return self.interest_income_amount 
+        return self.interest_income_amount
 
     def calculate_dividend_totals(self, session=None):
         """
@@ -314,7 +312,7 @@ class TaxStatement(Base):
             for key, value in kwargs.items():
                 if hasattr(statement, key):
                     setattr(statement, key, value)
-        statement.calculate_interest_income_fields()
+        statement.calculate_interest_income_amount()
         statement.calculate_total_income()
         return statement
     
