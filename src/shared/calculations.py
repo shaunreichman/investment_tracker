@@ -298,31 +298,31 @@ def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
     }
 
 
-def net_income(total_income, non_resident_withholding_tax_from_statement):
+def net_income(total_income, interest_non_resident_withholding_tax_from_statement):
     """
     Calculate net income after non-resident withholding tax from statement.
     Args:
         total_income (float): Total income.
-        non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
+        interest_non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
     Returns:
         float: Net income.
     """
-    return (total_income or 0.0) - (non_resident_withholding_tax_from_statement or 0.0)
+    return (total_income or 0.0) - (interest_non_resident_withholding_tax_from_statement or 0.0)
 
 
-def tax_payable(total_interest_income, interest_taxable_rate, non_resident_withholding_tax_from_statement):
+def tax_payable(interest_income_amount, interest_income_tax_rate, interest_non_resident_withholding_tax_from_statement):
     """
-    Calculate tax payable as (total_interest_income * interest_taxable_rate / 100) - non_resident_withholding_tax_from_statement.
+    Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
     Args:
-        total_interest_income (float): Total interest income.
-        interest_taxable_rate (float): Taxable rate as a percentage.
-        non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
+        interest_income_amount (float): Total interest income.
+        interest_income_tax_rate (float): Taxable rate as a percentage.
+        interest_non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
     Returns:
         float: Tax payable (never negative).
     """
-    if interest_taxable_rate and total_interest_income and interest_taxable_rate != 0 and total_interest_income > 0:
-        total_tax_liability = total_interest_income * (interest_taxable_rate / 100)
-        return max(0, total_tax_liability - (non_resident_withholding_tax_from_statement or 0.0))
+    if interest_income_tax_rate and interest_income_amount and interest_income_tax_rate != 0 and interest_income_amount > 0:
+        total_tax_liability = interest_income_amount * (interest_income_tax_rate / 100)
+        return max(0, total_tax_liability - (interest_non_resident_withholding_tax_from_statement or 0.0))
     return 0.0
 
 

@@ -79,8 +79,8 @@ def test_dividend_tax_payments():
             fund_id=fund.id,
             entity_id=entity.id,
             financial_year="2023-24",
-            dividends_franked_taxable_rate=30.0,   # 30% tax rate
-            dividends_unfranked_taxable_rate=10.0  # 10% tax rate
+            dividend_franked_income_tax_rate=30.0,   # 30% tax rate
+            dividend_unfranked_income_tax_rate=10.0  # 10% tax rate
         )
         session.add(tax_statement)
         session.commit()
@@ -110,9 +110,9 @@ class DummyTaxStatement:
     def __init__(self, fund_id=1, entity_id=1, financial_year="2023-24", 
                  dividend_franked_income_amount=0.0, dividend_franked_income_tax_rate=0.0,
                  dividend_unfranked_income_amount=0.0, dividend_unfranked_income_tax_rate=0.0,
-                 total_interest_income=0.0, interest_taxable_rate=0.0,
+                 interest_income_amount=0.0, interest_income_tax_rate=0.0,
                  fy_debt_interest_deduction_sum_of_daily_interest=0.0, fy_debt_interest_deduction_rate=0.0,
-                 non_resident_withholding_tax_from_statement=0.0):
+                 interest_non_resident_withholding_tax_from_statement=0.0):
         self.fund_id = fund_id
         self.entity_id = entity_id
         self.financial_year = financial_year
@@ -124,26 +124,26 @@ class DummyTaxStatement:
         self.dividend_unfranked_income_amount_from_tax_statement_flag = dividend_unfranked_income_amount > 0
         self.dividend_franked_tax_amount = 0.0
         self.dividend_unfranked_tax_amount = 0.0
-        self.total_interest_income = total_interest_income
-        self.interest_taxable_rate = interest_taxable_rate
+        self.interest_income_amount = interest_income_amount
+        self.interest_income_tax_rate = interest_income_tax_rate
         self.fy_debt_interest_deduction_sum_of_daily_interest = fy_debt_interest_deduction_sum_of_daily_interest
         self.fy_debt_interest_deduction_rate = fy_debt_interest_deduction_rate
         self.fy_debt_interest_deduction_total_deduction = 0.0
-        self.non_resident_withholding_tax_from_statement = non_resident_withholding_tax_from_statement
+        self.interest_non_resident_withholding_tax_from_statement = interest_non_resident_withholding_tax_from_statement
         self.tax_already_paid = 0.0
         self.tax_payment_date = date(2024, 6, 30)
         self._fy_dates = (date(2023, 7, 1), date(2024, 6, 30))
-        self.tax_payable = 0.0
+        self.interest_income_tax_amount = 0.0
         self.interest_tax_benefit = 0.0
     def calculate_tax_payable(self):
-        if self.interest_taxable_rate and self.total_interest_income and self.interest_taxable_rate != 0 and self.total_interest_income > 0:
-            total_tax_liability = self.total_interest_income * (self.interest_taxable_rate / 100)
-            self.tax_payable = max(0, total_tax_liability - (self.non_resident_withholding_tax_from_statement or 0.0))
-            self.tax_already_paid = (self.non_resident_withholding_tax_from_statement or 0.0)
+        if self.interest_income_tax_rate and self.interest_income_amount and self.interest_income_tax_rate != 0 and self.interest_income_amount > 0:
+            total_tax_liability = self.interest_income_amount * (self.interest_income_tax_rate / 100)
+            self.interest_income_tax_amount = max(0, total_tax_liability - (self.interest_non_resident_withholding_tax_from_statement or 0.0))
+            self.tax_already_paid = (self.interest_non_resident_withholding_tax_from_statement or 0.0)
         else:
-            self.tax_payable = 0.0
+            self.interest_income_tax_amount = 0.0
             self.tax_already_paid = 0.0
-        return self.tax_payable
+        return self.interest_income_tax_amount
     def calculate_fy_debt_interest_deduction_total_deduction(self):
         """Calculate interest tax benefit for testing."""
         if self.fy_debt_interest_deduction_sum_of_daily_interest and self.fy_debt_interest_deduction_rate:
@@ -180,21 +180,21 @@ def test_create_interest_tax_payment():
     ts = DummyTaxStatement(
         fund_id=1,
         financial_year='2023-24',
-        total_interest_income=1000.0,
-        interest_taxable_rate=30.0,
-        non_resident_withholding_tax_from_statement=50.0
+        interest_income_amount=1000.0,
+        interest_income_tax_rate=30.0,
+        interest_non_resident_withholding_tax_from_statement=50.0
     )
     ts.calculate_tax_payable()
     event = TaxEventFactory.create_interest_tax_payment(ts)
     assert event is not None
-    assert event.amount == ts.tax_payable
+    assert event.amount == ts.interest_income_tax_amount
     assert event.fund_id == ts.fund_id
     assert event.event_type.name == 'TAX_PAYMENT'
 
 def test_create_interest_tax_payment_none():
     ts = DummyTaxStatement(
-        total_interest_income=0.0,  # This will result in tax_payable = 0
-        interest_taxable_rate=30.0
+        interest_income_amount=0.0,  # This will result in interest_income_tax_amount = 0
+        interest_income_tax_rate=30.0
     )
     ts.calculate_tax_payable()
     event = TaxEventFactory.create_interest_tax_payment(ts)
@@ -245,9 +245,9 @@ def test_create_fy_debt_cost_event_none():
 
 def test_create_all_tax_events():
     ts = DummyTaxStatement(
-        total_interest_income=1000.0,
-        interest_taxable_rate=30.0,
-        non_resident_withholding_tax_from_statement=50.0,
+        interest_income_amount=1000.0,
+        interest_income_tax_rate=30.0,
+        interest_non_resident_withholding_tax_from_statement=50.0,
         dividend_franked_income_amount=200.0,
         dividend_franked_income_tax_rate=30.0,
         dividend_unfranked_income_amount=150.0,
@@ -312,9 +312,9 @@ def test_find_existing_event(in_memory_session):
 def test_create_or_update_tax_events(in_memory_session):
     session = in_memory_session
     ts = DummyTaxStatement(
-        total_interest_income=1000.0,
-        interest_taxable_rate=30.0,
-        non_resident_withholding_tax_from_statement=50.0,
+        interest_income_amount=1000.0,
+        interest_income_tax_rate=30.0,
+        interest_non_resident_withholding_tax_from_statement=50.0,
         dividend_franked_income_amount=200.0,
         dividend_franked_income_tax_rate=30.0,
         dividend_unfranked_income_amount=150.0,
@@ -333,9 +333,9 @@ def test_create_or_update_tax_events(in_memory_session):
 
 def test_validate_event_creation():
     ts = DummyTaxStatement(
-        total_interest_income=1000.0,
-        interest_taxable_rate=30.0,
-        non_resident_withholding_tax_from_statement=50.0,
+        interest_income_amount=1000.0,
+        interest_income_tax_rate=30.0,
+        interest_non_resident_withholding_tax_from_statement=50.0,
         dividend_franked_income_amount=200.0,
         dividend_franked_income_tax_rate=30.0,
         dividend_unfranked_income_amount=150.0,
@@ -351,9 +351,9 @@ def test_validate_event_creation():
     assert TaxEventManager.validate_event_creation(ts, EventType.FY_DEBT_COST, None)
     # Negative cases
     ts2 = DummyTaxStatement(
-        total_interest_income=0.0,
-        interest_taxable_rate=0.0,
-        non_resident_withholding_tax_from_statement=0.0,
+        interest_income_amount=0.0,
+        interest_income_tax_rate=0.0,
+        interest_non_resident_withholding_tax_from_statement=0.0,
         dividend_franked_income_amount=0.0,
         dividend_franked_income_tax_rate=0.0,
         dividend_unfranked_income_amount=0.0,

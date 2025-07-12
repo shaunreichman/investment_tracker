@@ -49,7 +49,7 @@ class TaxStatement(Base):
     
     # After-tax IRR fields
     tax_already_paid = Column(Float, default=0.0)  # Tax already withheld/paid (no additional cash flow)
-    tax_payable = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
+    interest_income_tax_amount = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
     tax_payment_date = Column(Date)  # Date when additional tax is due (defaults to FY end)
     
     # Debt cost tracking for real IRR calculations
@@ -81,12 +81,12 @@ class TaxStatement(Base):
         return f"<TaxStatement(id={self.id}, fund_id={self.fund_id}, entity_id={self.entity_id}, fy={self.financial_year})>"
     
     # Manual fields for interest income reconciliation
-    distribution_receivable_this_fy = Column(Float, default=0.0)
-    distribution_received_prev_fy = Column(Float, default=0.0)
+    interest_receivable_this_fy = Column(Float, default=0.0)
+    interest_receivable_prev_fy = Column(Float, default=0.0)
     interest_received_in_cash = Column(Float, default=0.0)
-    non_resident_withholding_tax_from_statement = Column(Float, default=0.0)
+    interest_non_resident_withholding_tax_from_statement = Column(Float, default=0.0)
     # New manual field for interest taxable rate
-    interest_taxable_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
+    interest_income_tax_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
 
     # Dividend income
     dividend_franked_income_amount = Column(Float, default=0.0)  # Manual or calculated franked dividends
@@ -99,36 +99,36 @@ class TaxStatement(Base):
     dividend_unfranked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
     
     # Calculated fields
-    total_interest_income = Column(Float, default=0.0)  # Renamed from gross_total_interest_income
-    non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)
+    interest_income_amount = Column(Float, default=0.0)  # Renamed from total_interest_income
+    interest_non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)
     
     @property
     def net_interest_income(self):
-        """Net interest income is always calculated as total_interest_income - non_resident_withholding_tax_from_statement."""
+        """Net interest income is always calculated as interest_income_amount - interest_non_resident_withholding_tax_from_statement."""
         from .calculations import net_income
-        return net_income(self.total_interest_income, self.non_resident_withholding_tax_from_statement)
+        return net_income(self.interest_income_amount, self.interest_non_resident_withholding_tax_from_statement)
 
     def get_net_income(self):
         """Calculate net income after non-resident withholding tax from statement.
         Returns the net income as a float.
         """
         from .calculations import net_income
-        return net_income(self.total_income, self.non_resident_withholding_tax_from_statement)
+        return net_income(self.total_income, self.interest_non_resident_withholding_tax_from_statement)
 
     def calculate_tax_payable(self):
-        """Calculate tax payable as (total_interest_income * interest_taxable_rate / 100) - non_resident_withholding_tax_from_statement.
-        Updates the tax_payable and tax_already_paid fields.
+        """Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
+        Updates the interest_income_tax_amount and tax_already_paid fields.
         Returns the tax payable as a float.
         """
         from .calculations import tax_payable
         from sqlalchemy.sql.schema import Column
         from sqlalchemy.sql.elements import ColumnElement
-        self.tax_payable = tax_payable(self.total_interest_income, self.interest_taxable_rate, self.non_resident_withholding_tax_from_statement)
-        if (self.interest_taxable_rate is not None and not isinstance(self.interest_taxable_rate, (Column, ColumnElement)) and self.interest_taxable_rate != 0) and (self.total_interest_income is not None and not isinstance(self.total_interest_income, (Column, ColumnElement)) and self.total_interest_income > 0):
-            self.tax_already_paid = (self.non_resident_withholding_tax_from_statement or 0.0)
+        self.interest_income_tax_amount = tax_payable(self.interest_income_amount, self.interest_income_tax_rate, self.interest_non_resident_withholding_tax_from_statement)
+        if (self.interest_income_tax_rate is not None and not isinstance(self.interest_income_tax_rate, (Column, ColumnElement)) and self.interest_income_tax_rate != 0) and (self.interest_income_amount is not None and not isinstance(self.interest_income_amount, (Column, ColumnElement)) and self.interest_income_amount > 0):
+            self.tax_already_paid = (self.interest_non_resident_withholding_tax_from_statement or 0.0)
         else:
             self.tax_already_paid = 0.0
-        return self.tax_payable
+        return self.interest_income_tax_amount
 
     def calculate_fy_debt_interest_deduction_total_deduction(self):
         """
@@ -159,7 +159,7 @@ class TaxStatement(Base):
         Updates the total_income field and returns the value.
         """
         self.total_income = (
-            (self.total_interest_income or 0.0) +
+            (self.interest_income_amount or 0.0) +
             (self.foreign_income or 0.0) +
             (self.capital_gains or 0.0) +
             (self.other_income or 0.0)
@@ -170,7 +170,7 @@ class TaxStatement(Base):
         """Calculate net income after non-resident withholding tax from statement.
         Returns the net income as a float.
         """
-        return self.total_income - (self.non_resident_withholding_tax_from_statement or 0.0)
+        return self.total_income - (self.interest_non_resident_withholding_tax_from_statement or 0.0)
     
     def get_tax_payment_date(self):
         """Get the tax payment date, defaulting to financial year end if not specified.
@@ -185,21 +185,21 @@ class TaxStatement(Base):
     @property
     def non_resident_withholding_tax_difference(self):
         """Calculate the difference between tax withheld from statement and already withheld."""
-        return (self.non_resident_withholding_tax_from_statement or 0.0) - (self.non_resident_withholding_tax_already_withheld or 0.0)
+        return (self.interest_non_resident_withholding_tax_from_statement or 0.0) - (self.interest_non_resident_withholding_tax_already_withheld or 0.0)
     
     def calculate_interest_income_fields(self, session=None):
         """Calculate interest income fields from manual inputs."""
         # Calculate total interest income
-        self.total_interest_income = (
-            (self.distribution_receivable_this_fy or 0.0) +
-            (self.distribution_received_prev_fy or 0.0) +
+        self.interest_income_amount = (
+            (self.interest_receivable_this_fy or 0.0) +
+            (self.interest_receivable_prev_fy or 0.0) +
             (self.interest_received_in_cash or 0.0)
         )
         
         # Note: net_interest_income is a property, so we don't set it directly
         # It will be calculated automatically when accessed
         
-        return self.total_interest_income, self.net_interest_income 
+        return self.interest_income_amount, self.net_interest_income 
 
     def calculate_dividend_totals(self, session=None):
         """
@@ -331,11 +331,11 @@ class TaxStatement(Base):
             fund_id=fund_id,
             entity_id=entity_id,
             financial_year=financial_year,
-            total_interest_income=gross_income,  # Map gross_income to total_interest_income
+            interest_income_amount=gross_income,  # Map gross_income to interest_income_amount
             other_income=0.0,  # Default other income fields
             foreign_income=0.0,
             capital_gains=0.0,
-            tax_payable=tax_payable
+            interest_income_tax_amount=tax_payable
         )
         
         # Calculate total income

@@ -48,13 +48,13 @@ class TaxEventFactory:
         tax_statement.calculate_tax_payable()
         if not tax_statement:
             raise ValueError("tax_statement is required")
-        if tax_statement.tax_payable is None or tax_statement.tax_payable <= 0.01:
+        if tax_statement.interest_income_tax_amount is None or tax_statement.interest_income_tax_amount <= 0.01:
             return None
         event = FundEvent(
             fund_id=tax_statement.fund_id,
             event_type=EventType.TAX_PAYMENT,
             event_date=tax_statement.get_tax_payment_date(),
-            amount=tax_statement.tax_payable,
+            amount=tax_statement.interest_income_tax_amount,
             description=f"Tax payment for FY {tax_statement.financial_year}",
             reference_number=f"TAX-{tax_statement.financial_year}",
             tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
@@ -233,7 +233,7 @@ class TaxEventManager:
         """
         # Simple validation logic for now
         if event_type == EventType.TAX_PAYMENT:
-            return (tax_statement.tax_payable is not None and tax_statement.tax_payable > 0.01)
+            return (tax_statement.interest_income_tax_amount is not None and tax_statement.interest_income_tax_amount > 0.01)
         elif event_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX:
             return (
                 (tax_statement.dividend_franked_income_amount or 0.0) > 0 and
