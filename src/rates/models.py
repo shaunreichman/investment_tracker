@@ -57,7 +57,27 @@ class RiskFreeRate(Base):
         
         Returns:
             RiskFreeRate: The created risk-free rate
+        
+        Raises:
+            ValueError: If required fields are missing or uniqueness is violated
         """
+        # Explicit validation
+        if not currency or not isinstance(currency, str):
+            raise ValueError("currency is required and must be a string")
+        if not rate_date:
+            raise ValueError("rate_date is required")
+        if rate is None:
+            raise ValueError("rate is required")
+        if not rate_type or not isinstance(rate_type, str):
+            raise ValueError("rate_type is required and must be a string")
+        if session:
+            existing = session.query(cls).filter(
+                cls.currency == currency,
+                cls.rate_date == rate_date,
+                cls.rate_type == rate_type
+            ).first()
+            if existing:
+                raise ValueError(f"RiskFreeRate already exists for currency={currency}, rate_date={rate_date}, rate_type={rate_type}")
         risk_free_rate = cls(
             currency=currency,
             rate_date=rate_date,
@@ -65,11 +85,9 @@ class RiskFreeRate(Base):
             rate_type=rate_type,
             source=source
         )
-        
         if session:
             session.add(risk_free_rate)
             session.commit()
-        
         return risk_free_rate
     
     @classmethod
