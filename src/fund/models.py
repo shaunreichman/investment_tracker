@@ -268,11 +268,10 @@ class Fund(Base):
                 if hasattr(statement, key):
                     setattr(statement, key, value)
         
-        # Calculate interest income fields (including total_interest_income)
-        statement.calculate_interest_income_fields()
+        # Calculate interest income amount (including total_interest_income)
+        statement.calculate_interest_income_amount()
         
-        # Calculate total income
-        statement.calculate_total_income()
+
         
         return statement
 
@@ -658,7 +657,7 @@ class Fund(Base):
         return created_events
     
     @with_session
-    def calculate_financial_year_interest_expense(self, financial_year, session=None):
+    def calculate_fy_debt_interest_deduction_sum_of_daily_interest(self, financial_year, session=None):
         """Calculate the total interest expense for a given financial year for the fund.
         Used for tax deduction calculations. Returns the total expense as a float.
         """
@@ -717,14 +716,14 @@ class Fund(Base):
             return created_events  # Skip years with no TaxStatement
         
         # Calculate interest expense for this FY
-        interest_expense = self.calculate_financial_year_interest_expense(fy, session=session)
+        fy_debt_interest_deduction_sum_of_daily_interest = self.calculate_fy_debt_interest_deduction_sum_of_daily_interest(fy, session=session)
         
         # Set the interest expense on the tax statement
-        tax_statement.total_interest_expense = interest_expense
+        tax_statement.fy_debt_interest_deduction_sum_of_daily_interest = fy_debt_interest_deduction_sum_of_daily_interest
         
         # Calculate tax benefit and create event
-        tax_benefit = tax_statement.calculate_interest_tax_benefit()
-        if tax_benefit > 0:
+        fy_debt_interest_deduction_total_deduction = tax_statement.calculate_fy_debt_interest_deduction_total_deduction()
+        if fy_debt_interest_deduction_total_deduction > 0:
             from src.tax.events import TaxEventFactory
             event = TaxEventFactory.create_fy_debt_cost_event(tax_statement, session=session)
             if event:

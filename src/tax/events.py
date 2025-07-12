@@ -45,16 +45,16 @@ class TaxEventFactory:
         Returns the event object or None if not applicable.
         Does not add to the database.
         """
-        tax_statement.calculate_tax_payable()
+        tax_statement.calculate_interest_tax_amount()
         if not tax_statement:
             raise ValueError("tax_statement is required")
-        if tax_statement.tax_payable is None or tax_statement.tax_payable <= 0.01:
+        if tax_statement.interest_tax_amount is None or tax_statement.interest_tax_amount <= 0.01:
             return None
         event = FundEvent(
             fund_id=tax_statement.fund_id,
             event_type=EventType.TAX_PAYMENT,
             event_date=tax_statement.get_tax_payment_date(),
-            amount=tax_statement.tax_payable,
+            amount=tax_statement.interest_tax_amount,
             description=f"Tax payment for FY {tax_statement.financial_year}",
             reference_number=f"TAX-{tax_statement.financial_year}",
             tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
@@ -77,22 +77,18 @@ class TaxEventFactory:
         tax_statement.calculate_dividend_totals(session)
 
         if dividend_type == DistributionType.DIVIDEND_FRANKED:
-            total = tax_statement.total_dividends_franked or 0.0
-            rate = tax_statement.dividends_franked_taxable_rate or 0.0
+            tax_statement.calculate_dividend_franked_tax_amount()
+            tax_amount = tax_statement.dividend_franked_tax_amount
             payment_type = TaxPaymentType.DIVIDENDS_FRANKED_TAX
-            desc = f"Franked dividend tax (rate: {rate}%)"
+            desc = f"Franked dividend tax (rate: {tax_statement.dividend_franked_income_tax_rate}%)"
             ref = f"DIV_FRANKED_TAX_{tax_statement.financial_year}"
-        else:
-            total = tax_statement.total_dividends_unfranked or 0.0
-            rate = tax_statement.dividends_unfranked_taxable_rate or 0.0
+        elif dividend_type == DistributionType.DIVIDEND_UNFRANKED:
+            tax_statement.calculate_dividend_unfranked_tax_amount()
+            tax_amount = tax_statement.dividend_unfranked_tax_amount
             payment_type = TaxPaymentType.DIVIDENDS_UNFRANKED_TAX
-            desc = f"Unfranked dividend tax (rate: {rate}%)"
+            desc = f"Unfranked dividend tax (rate: {tax_statement.dividend_unfranked_income_tax_rate}%)"
             ref = f"DIV_UNFRANKED_TAX_{tax_statement.financial_year}"
 
-        if total <= 0 or rate <= 0:
-            return None
-
-        tax_amount = total * (rate / 100.0)
         if tax_amount <= 0:
             return None
 
@@ -116,7 +112,7 @@ class TaxEventFactory:
         """
         if not tax_statement:
             raise ValueError("tax_statement is required")
-        tax_benefit = tax_statement.calculate_interest_tax_benefit() if hasattr(tax_statement, 'calculate_interest_tax_benefit') else (tax_statement.interest_tax_benefit or 0.0)
+        tax_benefit = tax_statement.calculate_fy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_fy_debt_interest_deduction_total_deduction') else (tax_statement.fy_debt_interest_deduction_total_deduction or 0.0)
         if tax_benefit is None or tax_benefit <= 0:
             return None
         fy_start, fy_end = tax_statement.get_financial_year_dates() if hasattr(tax_statement, 'get_financial_year_dates') else (None, None)
@@ -237,18 +233,18 @@ class TaxEventManager:
         """
         # Simple validation logic for now
         if event_type == EventType.TAX_PAYMENT:
-            return (tax_statement.tax_payable is not None and tax_statement.tax_payable > 0.01)
+            return (tax_statement.interest_tax_amount is not None and tax_statement.interest_tax_amount > 0.01)
         elif event_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX:
             return (
-                (tax_statement.total_dividends_franked or 0.0) > 0 and
-                (tax_statement.dividends_franked_taxable_rate or 0.0) > 0
+                (tax_statement.dividend_franked_income_amount or 0.0) > 0 and
+                (tax_statement.dividend_franked_income_tax_rate or 0.0) > 0
             )
         elif event_type == TaxPaymentType.DIVIDENDS_UNFRANKED_TAX:
             return (
-                (tax_statement.total_dividends_unfranked or 0.0) > 0 and
-                (tax_statement.dividends_unfranked_taxable_rate or 0.0) > 0
+                (tax_statement.dividend_unfranked_income_amount or 0.0) > 0 and
+                (tax_statement.dividend_unfranked_income_tax_rate or 0.0) > 0
             )
         elif event_type == EventType.FY_DEBT_COST:
-            benefit = tax_statement.calculate_interest_tax_benefit() if hasattr(tax_statement, 'calculate_interest_tax_benefit') else (tax_statement.interest_tax_benefit or 0.0)
+            benefit = tax_statement.calculate_fy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_fy_debt_interest_deduction_total_deduction') else (tax_statement.fy_debt_interest_deduction_total_deduction or 0.0)
             return benefit > 0
         return False 

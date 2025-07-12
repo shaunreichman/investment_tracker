@@ -38,24 +38,37 @@ class TaxStatement(Base):
     entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False, index=True)  # Indexed for fast entity queries
     financial_year = Column(String(10), nullable=False, index=True)  # Indexed for fast year queries
     
-    # Tax components from fund statement
-    foreign_income = Column(Float, default=0.0)
-    capital_gains = Column(Float, default=0.0)
-    other_income = Column(Float, default=0.0)
-    total_income = Column(Float, default=0.0)
-    
-    # Tax withheld/credits
-    foreign_tax_credits = Column(Float, default=0.0)
+
     
     # After-tax IRR fields
-    tax_already_paid = Column(Float, default=0.0)  # Tax already withheld/paid (no additional cash flow)
-    tax_payable = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
     tax_payment_date = Column(Date)  # Date when additional tax is due (defaults to FY end)
     
+    # --------- INCOME ---------
+
+    # --------- Interest income ---------
+    interest_income_amount = Column(Float, default=0.0)  # Calculated
+    interest_income_tax_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
+    interest_tax_amount = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
+    interest_received_in_cash = Column(Float, default=0.0) # (Manual) Interest received in cash - defined in the tax statement
+    interest_receivable_this_fy = Column(Float, default=0.0) # (Manual) Interest receivable this FY, paid next FY - defined in the tax statement
+    interest_receivable_prev_fy = Column(Float, default=0.0) # (Manual) Interest receivable previous FY, paid this FY - defined in the tax statement
+    interest_non_resident_withholding_tax_from_statement = Column(Float, default=0.0) # (Manual) Interest non-resident withholding tax from statement - defined in the tax statement
+    interest_non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)  # (Calculated) Tax already withheld/paid (no additional cash flow)
+
+    # --------- Dividend income ---------
+    dividend_franked_income_amount = Column(Float, default=0.0)  # Manual or calculated franked dividends
+    dividend_unfranked_income_amount = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
+    dividend_franked_income_tax_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
+    dividend_unfranked_income_tax_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
+    dividend_franked_tax_amount = Column(Float, default=0.0)  # Calculated franked dividend tax amount
+    dividend_unfranked_tax_amount = Column(Float, default=0.0)  # Calculated unfranked dividend tax amount
+    dividend_franked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
+    dividend_unfranked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
+
     # Debt cost tracking for real IRR calculations
-    total_interest_expense = Column(Float, default=0.0)  # Total interest expense for the financial year
-    interest_deduction_rate = Column(Float, default=0.0)  # Tax deduction rate for interest (e.g., 30.0 for 30%)
-    interest_tax_benefit = Column(Float, default=0.0)  # Calculated tax benefit from interest deduction
+    fy_debt_interest_deduction_sum_of_daily_interest = Column(Float, default=0.0)  # Total interest expense for the financial year
+    fy_debt_interest_deduction_rate = Column(Float, default=0.0)  # Tax deduction rate for interest (e.g., 30.0 for 30%)
+    fy_debt_interest_deduction_total_deduction = Column(Float, default=0.0)  # Calculated tax benefit from interest deduction
     
     # Tax status
     non_resident = Column(Boolean, default=False)  # Whether entity was non-resident for tax purposes in this FY
@@ -79,60 +92,24 @@ class TaxStatement(Base):
     def __repr__(self):
         """Return a string representation of the TaxStatement instance for debugging/logging."""
         return f"<TaxStatement(id={self.id}, fund_id={self.fund_id}, entity_id={self.entity_id}, fy={self.financial_year})>"
-    
-    # Manual fields for interest income reconciliation
-    distribution_receivable_this_fy = Column(Float, default=0.0)
-    distribution_received_prev_fy = Column(Float, default=0.0)
-    interest_received_in_cash = Column(Float, default=0.0)
-    non_resident_withholding_tax_from_statement = Column(Float, default=0.0)
-    # New manual field for interest taxable rate
-    interest_taxable_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
 
-    # Manual fields for dividend income
-    total_dividends_franked = Column(Float, default=0.0)  # Manual or calculated franked dividends
-    total_dividends_unfranked = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
-    dividends_franked_taxable_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
-    dividends_unfranked_taxable_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
-
-    # Calculated fields
-    total_interest_income = Column(Float, default=0.0)  # Renamed from gross_total_interest_income
-    non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)
-    
-    @property
-    def net_interest_income(self):
-        """Net interest income is always calculated as total_interest_income - non_resident_withholding_tax_from_statement."""
-        from .calculations import net_income
-        return net_income(self.total_interest_income, self.non_resident_withholding_tax_from_statement)
-
-    def get_net_income(self):
-        """Calculate net income after non-resident withholding tax from statement.
-        Returns the net income as a float.
-        """
-        from .calculations import net_income
-        return net_income(self.total_income, self.non_resident_withholding_tax_from_statement)
-
-    def calculate_tax_payable(self):
-        """Calculate tax payable as (total_interest_income * interest_taxable_rate / 100) - non_resident_withholding_tax_from_statement.
-        Updates the tax_payable and tax_already_paid fields.
-        Returns the tax payable as a float.
+    def calculate_interest_tax_amount(self):
+        """Calculate interest tax amount as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
+        Updates the interest_tax_amount field.
+        Returns the tax amount as a float.
         """
         from .calculations import tax_payable
-        from sqlalchemy.sql.schema import Column
-        from sqlalchemy.sql.elements import ColumnElement
-        self.tax_payable = tax_payable(self.total_interest_income, self.interest_taxable_rate, self.non_resident_withholding_tax_from_statement)
-        if (self.interest_taxable_rate is not None and not isinstance(self.interest_taxable_rate, (Column, ColumnElement)) and self.interest_taxable_rate != 0) and (self.total_interest_income is not None and not isinstance(self.total_interest_income, (Column, ColumnElement)) and self.total_interest_income > 0):
-            self.tax_already_paid = (self.non_resident_withholding_tax_from_statement or 0.0)
-        else:
-            self.tax_already_paid = 0.0
-        return self.tax_payable
+        self.interest_tax_amount = tax_payable(self.interest_income_amount, self.interest_income_tax_rate, self.interest_non_resident_withholding_tax_from_statement)
+        return self.interest_tax_amount
 
-    def calculate_interest_tax_benefit(self):
-        """Calculate the tax benefit from interest expense deduction.
-        Updates the interest_tax_benefit field and returns the value.
+    def calculate_fy_debt_interest_deduction_total_deduction(self):
         """
-        from .calculations import interest_tax_benefit
-        self.interest_tax_benefit = interest_tax_benefit(self.total_interest_expense, self.interest_deduction_rate)
-        return self.interest_tax_benefit
+        Calculate the interest tax benefit based on total interest expense and deduction rate.
+        Updates the fy_debt_interest_deduction_total_deduction field and returns the value.
+        """
+        from .calculations import calculate_fy_debt_interest_deduction_total_deduction
+        self.fy_debt_interest_deduction_total_deduction = calculate_fy_debt_interest_deduction_total_deduction(self.fy_debt_interest_deduction_sum_of_daily_interest, self.fy_debt_interest_deduction_rate)
+        return self.fy_debt_interest_deduction_total_deduction
 
     def get_financial_year_dates(self):
         """Get the start and end dates for this financial year based on entity jurisdiction.
@@ -149,24 +126,6 @@ class TaxStatement(Base):
             return None, None
         return get_financial_year_dates(self.financial_year, entity.tax_jurisdiction)
     
-    def calculate_total_income(self):
-        """Calculate total income from all components, treating None as 0.0.
-        Updates the total_income field and returns the value.
-        """
-        self.total_income = (
-            (self.total_interest_income or 0.0) +
-            (self.foreign_income or 0.0) +
-            (self.capital_gains or 0.0) +
-            (self.other_income or 0.0)
-        )
-        return self.total_income
-    
-    def get_net_income(self):
-        """Calculate net income after non-resident withholding tax from statement.
-        Returns the net income as a float.
-        """
-        return self.total_income - (self.non_resident_withholding_tax_from_statement or 0.0)
-    
     def get_tax_payment_date(self):
         """Get the tax payment date, defaulting to financial year end if not specified.
         Returns a date object.
@@ -180,25 +139,22 @@ class TaxStatement(Base):
     @property
     def non_resident_withholding_tax_difference(self):
         """Calculate the difference between tax withheld from statement and already withheld."""
-        return (self.non_resident_withholding_tax_from_statement or 0.0) - (self.non_resident_withholding_tax_already_withheld or 0.0)
+        return (self.interest_non_resident_withholding_tax_from_statement or 0.0) - (self.interest_non_resident_withholding_tax_already_withheld or 0.0)
     
-    def calculate_interest_income_fields(self, session=None):
-        """Calculate interest income fields from manual inputs."""
-        # Calculate total interest income
-        self.total_interest_income = (
-            (self.distribution_receivable_this_fy or 0.0) +
-            (self.distribution_received_prev_fy or 0.0) +
+    def calculate_interest_income_amount(self, session=None):
+        """Calculate interest income amount from manual inputs."""
+        self.interest_income_amount = (
+            (self.interest_receivable_this_fy or 0.0) +
+            (self.interest_receivable_prev_fy or 0.0) +
             (self.interest_received_in_cash or 0.0)
         )
-        
-        # Note: net_interest_income is a property, so we don't set it directly
-        # It will be calculated automatically when accessed
-        
-        return self.total_interest_income, self.net_interest_income 
+        return self.interest_income_amount
 
     def calculate_dividend_totals(self, session=None):
-        """Calculate dividend totals from fund events if not manually set.
-        Returns a tuple: (total_dividends_franked, total_dividends_unfranked).
+        """
+        Calculate total franked and unfranked dividends from fund distributions.
+        Updates the dividend_franked_income_amount and dividend_unfranked_income_amount fields.
+        Returns a tuple: (dividend_franked_income_amount, dividend_unfranked_income_amount).
         """
         from sqlalchemy.orm import object_session
         from src.fund.models import FundEvent, EventType, DistributionType
@@ -233,13 +189,41 @@ class TaxStatement(Base):
                 unfranked_total += event.amount or 0.0
         
         # Update fields if not manually set
-        if self.total_dividends_franked is None or self.total_dividends_franked == 0.0:
-            self.total_dividends_franked = franked_total
+        if self.dividend_franked_income_amount is None or self.dividend_franked_income_amount == 0.0:
+            self.dividend_franked_income_amount = franked_total
+            self.dividend_franked_income_amount_from_tax_statement_flag = False
+        else:
+            self.dividend_franked_income_amount_from_tax_statement_flag = True
         
-        if self.total_dividends_unfranked is None or self.total_dividends_unfranked == 0.0:
-            self.total_dividends_unfranked = unfranked_total
+        if self.dividend_unfranked_income_amount is None or self.dividend_unfranked_income_amount == 0.0:
+            self.dividend_unfranked_income_amount = unfranked_total
+            self.dividend_unfranked_income_amount_from_tax_statement_flag = False
+        else:
+            self.dividend_unfranked_income_amount_from_tax_statement_flag = True
         
-        return self.total_dividends_franked, self.total_dividends_unfranked
+        return self.dividend_franked_income_amount, self.dividend_unfranked_income_amount
+
+    def calculate_dividend_franked_tax_amount(self):
+        """
+        Calculate the franked dividend tax amount based on income amount and tax rate.
+        Updates the dividend_franked_tax_amount field and returns the value.
+        """
+        if self.dividend_franked_income_amount and self.dividend_franked_income_tax_rate:
+            self.dividend_franked_tax_amount = (self.dividend_franked_income_amount * self.dividend_franked_income_tax_rate) / 100.0
+        else:
+            self.dividend_franked_tax_amount = 0.0
+        return self.dividend_franked_tax_amount
+
+    def calculate_dividend_unfranked_tax_amount(self):
+        """
+        Calculate the unfranked dividend tax amount based on income amount and tax rate.
+        Updates the dividend_unfranked_tax_amount field and returns the value.
+        """
+        if self.dividend_unfranked_income_amount and self.dividend_unfranked_income_tax_rate:
+            self.dividend_unfranked_tax_amount = (self.dividend_unfranked_income_amount * self.dividend_unfranked_income_tax_rate) / 100.0
+        else:
+            self.dividend_unfranked_tax_amount = 0.0
+        return self.dividend_unfranked_tax_amount
 
     # Removed methods:
     # - _create_tax_payment_event_object
@@ -296,11 +280,9 @@ class TaxStatement(Base):
             fund_id=fund_id,
             entity_id=entity_id,
             financial_year=financial_year,
-            total_interest_income=gross_income,  # Map gross_income to total_interest_income
-            other_income=0.0,  # Default other income fields
-            foreign_income=0.0,
-            capital_gains=0.0,
-            tax_payable=tax_payable
+            interest_income_amount=gross_income,  # Map gross_income to interest_income_amount
+            
+            interest_tax_amount=tax_payable
         )
         
         # Calculate total income
@@ -330,7 +312,7 @@ class TaxStatement(Base):
             for key, value in kwargs.items():
                 if hasattr(statement, key):
                     setattr(statement, key, value)
-        statement.calculate_interest_income_fields()
+        statement.calculate_interest_income_amount()
         statement.calculate_total_income()
         return statement
     
