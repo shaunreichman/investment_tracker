@@ -6,9 +6,9 @@ A Python-based system for tracking multiple investments across companies and fun
 
 ## ⚡️ Domain-Driven Architecture (2024 Migration)
 
-**This project has been migrated to a domain-driven architecture.**
-- All models, calculations, and creation logic are now organized by domain (fund, tax, entity, rates, investment company, shared).
-- The old `src/models.py`, `src/calculations.py`, and `src/utils.py` files are now **deprecated** and kept for reference only.
+**This project uses a domain-driven architecture.**
+- All models, calculations, and creation logic are organized by domain (fund, tax, entity, rates, investment company, shared).
+- Old files (`src/models.py`, `src/calculations.py`, `src/utils.py`) have been removed or are fully deprecated.
 - All imports should use the new domain modules (see below).
 
 ---
@@ -41,28 +41,30 @@ This app tracks investments, cash flows, and fund performance. It supports:
 
 ## Directory Structure (Domain-Driven)
 
-- `src/` — Main application code
-  - `__init__.py` — Package exports (imports from all domain modules)
-  - `database.py` — DB setup and connection
-  - `shared/` — Shared utilities and base classes
-    - `base.py`, `calculations.py`, `utils.py`
-  - `fund/` — Fund models, calculations, creation, queries
-    - `models.py`, `calculations.py`, `creation.py`, `queries.py`
-  - `tax/` — Tax statement models, calculations, creation
-    - `models.py`, `calculations.py`, `creation.py`
-  - `entity/` — Entity models, calculations, creation
-    - `models.py`, `calculations.py`, `creation.py`
-  - `rates/` — Risk-free rate models, calculations, creation
-    - `models.py`, `calculations.py`, `creation.py`
-  - `investment_company/` — Investment company models, calculations, creation
-    - `models.py`, `calculations.py`, `creation.py`
-  - `dashboard/` — (Optional) Dashboard code
-  - `models.py` — **DEPRECATED** (see above)
-  - `calculations.py` — **DEPRECATED** (see above)
-  - `utils.py` — **DEPRECATED** (see above)
-- `test_full_system.py` — Comprehensive system test
-- `data/` — Data files (e.g., risk-free rates)
-- `DESIGN_GUIDELINES.md` — In-depth design, conventions, and rationale
+```
+investment_tracker/
+├── src/                       # Core application code (domain-driven)
+│   ├── fund/                  # Fund models, calculations, queries
+│   ├── tax/                   # Tax models, events, calculations
+│   ├── entity/                # Entity models, calculations
+│   ├── investment_company/    # Investment company domain
+│   ├── rates/                 # Risk-free rates and related logic
+│   ├── shared/                # Shared utilities and base classes
+│   └── database.py            # Database setup and session management
+├── tests/                     # Test suite (unit, integration, system)
+│   └── output/                # Test output artifacts
+├── scripts/                   # Utility and migration scripts
+├── docs/                      # Documentation
+│   ├── DESIGN_GUIDELINES.md   # Core development/design patterns
+│   ├── PROJECT_CONTEXT.md     # Project context and onboarding
+│   └── refactor_plans/        # Refactoring and migration plans
+├── alembic/                   # Database migrations (Alembic)
+├── data/                      # Data files and backups
+├── requirements.txt           # Python dependencies
+├── pyproject.toml             # Project configuration
+├── README.md                  # User-facing documentation
+└── .gitignore
+```
 
 ---
 
@@ -79,13 +81,23 @@ This app tracks investments, cash flows, and fund performance. It supports:
   from src.investment_company.models import InvestmentCompany
   from src.shared.utils import with_session
   ```
-- **Old files** (`src/models.py`, `src/calculations.py`, `src/utils.py`) are kept for reference only and are fully commented out.
+
+---
+
+## Field Classification: (SYSTEM / MANUAL / CALCULATED / HYBRID)
+
+- **(SYSTEM):** Set by the database/ORM (e.g., primary keys, timestamps)
+- **(MANUAL):** Set by the user/developer (e.g., business data, foreign keys)
+- **(CALCULATED):** Set by business logic only, never manually
+- **(HYBRID):** Can be set manually or calculated, with clear precedence
+
+See [`docs/DESIGN_GUIDELINES.md`](./docs/DESIGN_GUIDELINES.md) for a full field reference and examples.
 
 ---
 
 ## Business Logic vs Database Operations
 
-All model methods are now designed to **separate business logic from database operations** for clarity, testability, and maintainability:
+All model methods are designed to **separate business logic from database operations** for clarity, testability, and maintainability:
 
 - **Pure business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in domain `calculations.py` files. These methods do not perform any database operations and do not require a session.
 - **Database operations** (adding, deleting, committing, querying) are handled only in public model methods decorated with `@with_session`. These methods are responsible for session management and call the pure business logic methods as needed.
@@ -113,15 +125,16 @@ class Fund(...):
 
 - **No business logic should be mixed with session.add, session.commit, or session.delete.**
 - This pattern is followed throughout all models (Fund, TaxStatement, etc.).
-- See `src/fund/models.py` and other domain modules for examples and `DESIGN_GUIDELINES.md` for more details.
+- See `src/fund/models.py` and other domain modules for examples and [`docs/DESIGN_GUIDELINES.md`](./docs/DESIGN_GUIDELINES.md) for more details.
 
 ---
 
 ## Session Handling
 
-All model methods that require a database session use the `@with_session` decorator (see `src/shared/utils.py`).  
-- **You do not need to manually resolve or pass a session** when calling these methods—just use the method as normal.
+All model methods that require a database session use the `@with_session` decorator (see `src/shared/utils.py`).
+- **Always pass `session` as a keyword argument.**
 - Only methods that perform database queries are decorated; orchestration/helper methods are not.
+- The backend (not clients) owns session lifecycle.
 
 ---
 
@@ -129,7 +142,7 @@ All model methods that require a database session use the `@with_session` decora
 
 ```sh
 pip install -r requirements.txt
-python3 test_full_system.py
+PYTHONPATH=. python tests/test_main.py
 ```
 
 ---
@@ -204,87 +217,50 @@ irr = fund.calculate_irr()
 
 - **Business logic** is separated from pure calculations (see `calculations.py`).
 - **Session handling** is centralized with `@with_session` for maintainability.
-- **Field classification**: Manual fields (set by user) vs calculated fields (set by system)
-- **See [`DESIGN_GUIDELINES.md`](./DESIGN_GUIDELINES.md)** for:
-  - Detailed field classification (manual vs. automatic)
+- **Field classification**: All fields are explicitly marked as (SYSTEM), (MANUAL), (CALCULATED), or (HYBRID) in the codebase and documentation.
+- **See [`docs/DESIGN_GUIDELINES.md`](./docs/DESIGN_GUIDELINES.md)** for:
+  - Detailed field classification
   - Event and tax statement modeling
   - Calculation workflows
   - Coding conventions and best practices
+- **See [`docs/refactor_plans/`](./docs/refactor_plans/)** for ongoing and historical refactoring plans.
 
 ---
 
 ## Testing
 
-Run the comprehensive system test:
+Run the main test suite:
 ```sh
-python3 test_full_system.py
+PYTHONPATH=. python tests/test_main.py
 ```
 This will clear the database, set up test data, recalculate all derived values, and verify correctness.
-
----
-
-## Project Structure
 
 - All test scripts are located in the `tests/` directory for better organization.
 - Source code is under `src/`.
 - Database and Alembic migration files are under `alembic/`.
 
-## Testing
-
-- To run all tests, use:
-  ```
-  pytest tests/
-  ```
+To run all tests with pytest (if desired):
+```
+pytest tests/
+```
 - All new test scripts should be placed in the `tests/` directory.
 - **Calculated fields** (e.g., `tax_payable`, `interest_tax_benefit`, `total_interest_expense`) must never be set directly in tests or production code. Always use the appropriate calculation method to set these fields.
+
+---
 
 ## Cleanup Policy
 
 - Debug and temporary output files (e.g., `CashFlowDebug.txt`, `DividendTaxDebug.txt`) should not be committed to the repository.
 - Reference files (e.g., historical versions of modules) should be removed after they are no longer needed.
+- Utility scripts are now organized in the `scripts/` directory.
+- All documentation (including refactor plans) is in the `docs/` directory.
 
 ---
 
 ## Roadmap
 
 - Streamlit dashboard for interactive performance and allocation visualization
-- Asset class breakdowns
-- Year-by-year performance reporting
-
----
-
-## Maintainer
-
-Shaun Reichman
-
----
-
-*For deeper technical rationale, see [DESIGN_GUIDELINES.md](./DESIGN_GUIDELINES.md).*
-
-## Tax Event Creation Framework
-
-This project uses a standardized, robust framework for creating tax payment events (interest, franked/unfranked dividends, FY debt cost, etc.) for investment funds.
-
-### Why?
-- Eliminates code duplication and inconsistencies
-- Ensures all tax events are deduplicated and updatable
-- Makes it easy to add new tax event types and maintain business logic
-
-### How to Use
-To create all applicable tax payment events for a fund's tax statement:
-
-```python
-from src.tax.events import TaxEventManager
-
-# Given a TaxStatement instance and a SQLAlchemy session:
-created_or_updated_events = TaxEventManager.create_or_update_tax_events(tax_statement, session)
-```
-
-Or, for all tax statements of a fund:
-
-```python
-created_events = fund.create_tax_payment_events(session=session)
-```
-
-- The framework will create, update, or deduplicate events as needed.
-- See DESIGN_GUIDELINES.md for advanced usage, edge cases, and technical rationale.
+- Additional financial metrics and calculations
+- Data import/export features
+- Real-time market data integration
+- Ongoing refactoring plans tracked in [`docs/refactor_plans/`](./docs/refactor_plans/)
