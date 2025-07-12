@@ -132,15 +132,15 @@ class DummyTaxStatement:
         self.interest_non_resident_withholding_tax_from_statement = interest_non_resident_withholding_tax_from_statement
         self.tax_payment_date = date(2024, 6, 30)
         self._fy_dates = (date(2023, 7, 1), date(2024, 6, 30))
-        self.interest_income_tax_amount = 0.0
+        self.interest_tax_amount = 0.0
         self.interest_tax_benefit = 0.0
-    def calculate_tax_payable(self):
+    def calculate_interest_tax_amount(self):
         if self.interest_income_tax_rate and self.interest_income_amount and self.interest_income_tax_rate != 0 and self.interest_income_amount > 0:
             total_tax_liability = self.interest_income_amount * (self.interest_income_tax_rate / 100)
-            self.interest_income_tax_amount = max(0, total_tax_liability - (self.interest_non_resident_withholding_tax_from_statement or 0.0))
+            self.interest_tax_amount = max(0, total_tax_liability - (self.interest_non_resident_withholding_tax_from_statement or 0.0))
         else:
-            self.interest_income_tax_amount = 0.0
-        return self.interest_income_tax_amount
+            self.interest_tax_amount = 0.0
+        return self.interest_tax_amount
     def calculate_fy_debt_interest_deduction_total_deduction(self):
         """Calculate interest tax benefit for testing."""
         if self.fy_debt_interest_deduction_sum_of_daily_interest and self.fy_debt_interest_deduction_rate:
@@ -181,19 +181,19 @@ def test_create_interest_tax_payment():
         interest_income_tax_rate=30.0,
         interest_non_resident_withholding_tax_from_statement=50.0
     )
-    ts.calculate_tax_payable()
+    ts.calculate_interest_tax_amount()
     event = TaxEventFactory.create_interest_tax_payment(ts)
     assert event is not None
-    assert event.amount == ts.interest_income_tax_amount
+    assert event.amount == ts.interest_tax_amount
     assert event.fund_id == ts.fund_id
     assert event.event_type.name == 'TAX_PAYMENT'
 
 def test_create_interest_tax_payment_none():
     ts = DummyTaxStatement(
-        interest_income_amount=0.0,  # This will result in interest_income_tax_amount = 0
+        interest_income_amount=0.0,  # This will result in interest_tax_amount = 0
         interest_income_tax_rate=30.0
     )
-    ts.calculate_tax_payable()
+    ts.calculate_interest_tax_amount()
     event = TaxEventFactory.create_interest_tax_payment(ts)
     assert event is None
 
@@ -252,7 +252,7 @@ def test_create_all_tax_events():
         fy_debt_interest_deduction_sum_of_daily_interest=200.0,
         fy_debt_interest_deduction_rate=25.0
     )
-    ts.calculate_tax_payable()
+    ts.calculate_interest_tax_amount()
     ts.calculate_fy_debt_interest_deduction_total_deduction()
     events = TaxEventFactory.create_all_tax_events(ts)
     # Should create 4 events: interest tax, franked, unfranked, fy debt cost
@@ -319,7 +319,7 @@ def test_create_or_update_tax_events(in_memory_session):
         fy_debt_interest_deduction_sum_of_daily_interest=200.0,
         fy_debt_interest_deduction_rate=25.0
     )
-    ts.calculate_tax_payable()
+    ts.calculate_interest_tax_amount()
     ts.calculate_fy_debt_interest_deduction_total_deduction()
     created = TaxEventManager.create_or_update_tax_events(ts, session)
     assert len(created) == 4
@@ -340,7 +340,7 @@ def test_validate_event_creation():
         fy_debt_interest_deduction_sum_of_daily_interest=200.0,
         fy_debt_interest_deduction_rate=25.0
     )
-    ts.calculate_tax_payable()
+    ts.calculate_interest_tax_amount()
     ts.calculate_fy_debt_interest_deduction_total_deduction()
     assert TaxEventManager.validate_event_creation(ts, EventType.TAX_PAYMENT, None)
     assert TaxEventManager.validate_event_creation(ts, TaxPaymentType.DIVIDENDS_FRANKED_TAX, None)
@@ -358,7 +358,7 @@ def test_validate_event_creation():
         fy_debt_interest_deduction_sum_of_daily_interest=0.0,
         fy_debt_interest_deduction_rate=0.0
     )
-    ts2.calculate_tax_payable()
+    ts2.calculate_interest_tax_amount()
     ts2.calculate_fy_debt_interest_deduction_total_deduction()
     assert not TaxEventManager.validate_event_creation(ts2, EventType.TAX_PAYMENT, None)
     assert not TaxEventManager.validate_event_creation(ts2, TaxPaymentType.DIVIDENDS_FRANKED_TAX, None)

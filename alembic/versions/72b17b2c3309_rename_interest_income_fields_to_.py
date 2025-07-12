@@ -27,7 +27,7 @@ def upgrade() -> None:
     op.alter_column('tax_statements', 'interest_taxable_rate', new_column_name='interest_income_tax_rate')
     op.alter_column('tax_statements', 'total_interest_income', new_column_name='interest_income_amount')
     op.alter_column('tax_statements', 'non_resident_withholding_tax_already_withheld', new_column_name='interest_non_resident_withholding_tax_already_withheld')
-    op.alter_column('tax_statements', 'tax_payable', new_column_name='interest_income_tax_amount')
+    op.alter_column('tax_statements', 'tax_payable', new_column_name='interest_tax_amount')
 
 
 def downgrade() -> None:
@@ -39,4 +39,4 @@ def downgrade() -> None:
     op.alter_column('tax_statements', 'interest_income_tax_rate', new_column_name='interest_taxable_rate')
     op.alter_column('tax_statements', 'interest_income_amount', new_column_name='total_interest_income')
     op.alter_column('tax_statements', 'interest_non_resident_withholding_tax_already_withheld', new_column_name='non_resident_withholding_tax_already_withheld')
-    op.alter_column('tax_statements', 'interest_income_tax_amount', new_column_name='tax_payable')
+    op.alter_column('tax_statements', 'interest_tax_amount', new_column_name='tax_payable')

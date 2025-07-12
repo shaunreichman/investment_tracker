@@ -48,7 +48,7 @@ class TaxStatement(Base):
     # --------- Interest income ---------
     interest_income_amount = Column(Float, default=0.0)  # Calculated
     interest_income_tax_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
-    interest_income_tax_amount = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
+    interest_tax_amount = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
     interest_received_in_cash = Column(Float, default=0.0) # (Manual) Interest received in cash - defined in the tax statement
     interest_receivable_this_fy = Column(Float, default=0.0) # (Manual) Interest receivable this FY, paid next FY - defined in the tax statement
     interest_receivable_prev_fy = Column(Float, default=0.0) # (Manual) Interest receivable previous FY, paid this FY - defined in the tax statement
@@ -93,14 +93,14 @@ class TaxStatement(Base):
         """Return a string representation of the TaxStatement instance for debugging/logging."""
         return f"<TaxStatement(id={self.id}, fund_id={self.fund_id}, entity_id={self.entity_id}, fy={self.financial_year})>"
 
-    def calculate_tax_payable(self):
-        """Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
-        Updates the interest_income_tax_amount field.
-        Returns the tax payable as a float.
+    def calculate_interest_tax_amount(self):
+        """Calculate interest tax amount as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
+        Updates the interest_tax_amount field.
+        Returns the tax amount as a float.
         """
         from .calculations import tax_payable
-        self.interest_income_tax_amount = tax_payable(self.interest_income_amount, self.interest_income_tax_rate, self.interest_non_resident_withholding_tax_from_statement)
-        return self.interest_income_tax_amount
+        self.interest_tax_amount = tax_payable(self.interest_income_amount, self.interest_income_tax_rate, self.interest_non_resident_withholding_tax_from_statement)
+        return self.interest_tax_amount
 
     def calculate_fy_debt_interest_deduction_total_deduction(self):
         """
@@ -125,10 +125,6 @@ class TaxStatement(Base):
         if not entity:
             return None, None
         return get_financial_year_dates(self.financial_year, entity.tax_jurisdiction)
-    
-
-    
-
     
     def get_tax_payment_date(self):
         """Get the tax payment date, defaulting to financial year end if not specified.
@@ -288,7 +284,7 @@ class TaxStatement(Base):
             financial_year=financial_year,
             interest_income_amount=gross_income,  # Map gross_income to interest_income_amount
             
-            interest_income_tax_amount=tax_payable
+            interest_tax_amount=tax_payable
         )
         
         # Calculate total income
