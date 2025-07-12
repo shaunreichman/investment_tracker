@@ -48,10 +48,30 @@ class TaxStatement(Base):
     foreign_tax_credits = Column(Float, default=0.0)
     
     # After-tax IRR fields
-    tax_already_paid = Column(Float, default=0.0)  # Tax already withheld/paid (no additional cash flow)
-    interest_income_tax_amount = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
     tax_payment_date = Column(Date)  # Date when additional tax is due (defaults to FY end)
     
+    # --------- INCOME ---------
+
+    # --------- Interest income ---------
+    interest_income_amount = Column(Float, default=0.0)  # Calculated
+    interest_income_tax_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
+    interest_income_tax_amount = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
+    interest_received_in_cash = Column(Float, default=0.0) # (Manual) Interest received in cash - defined in the tax statement
+    interest_receivable_this_fy = Column(Float, default=0.0) # (Manual) Interest receivable this FY, paid next FY - defined in the tax statement
+    interest_receivable_prev_fy = Column(Float, default=0.0) # (Manual) Interest receivable previous FY, paid this FY - defined in the tax statement
+    interest_non_resident_withholding_tax_from_statement = Column(Float, default=0.0) # (Manual) Interest non-resident withholding tax from statement - defined in the tax statement
+    interest_non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)  # (Calculated) Tax already withheld/paid (no additional cash flow)
+
+    # --------- Dividend income ---------
+    dividend_franked_income_amount = Column(Float, default=0.0)  # Manual or calculated franked dividends
+    dividend_unfranked_income_amount = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
+    dividend_franked_income_tax_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
+    dividend_unfranked_income_tax_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
+    dividend_franked_tax_amount = Column(Float, default=0.0)  # Calculated franked dividend tax amount
+    dividend_unfranked_tax_amount = Column(Float, default=0.0)  # Calculated unfranked dividend tax amount
+    dividend_franked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
+    dividend_unfranked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
+
     # Debt cost tracking for real IRR calculations
     fy_debt_interest_deduction_sum_of_daily_interest = Column(Float, default=0.0)  # Total interest expense for the financial year
     fy_debt_interest_deduction_rate = Column(Float, default=0.0)  # Tax deduction rate for interest (e.g., 30.0 for 30%)
@@ -79,28 +99,7 @@ class TaxStatement(Base):
     def __repr__(self):
         """Return a string representation of the TaxStatement instance for debugging/logging."""
         return f"<TaxStatement(id={self.id}, fund_id={self.fund_id}, entity_id={self.entity_id}, fy={self.financial_year})>"
-    
-    # Manual fields for interest income reconciliation
-    interest_receivable_this_fy = Column(Float, default=0.0)
-    interest_receivable_prev_fy = Column(Float, default=0.0)
-    interest_received_in_cash = Column(Float, default=0.0)
-    interest_non_resident_withholding_tax_from_statement = Column(Float, default=0.0)
-    # New manual field for interest taxable rate
-    interest_income_tax_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
 
-    # Dividend income
-    dividend_franked_income_amount = Column(Float, default=0.0)  # Manual or calculated franked dividends
-    dividend_unfranked_income_amount = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
-    dividend_franked_income_tax_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
-    dividend_unfranked_income_tax_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
-    dividend_franked_tax_amount = Column(Float, default=0.0)  # Calculated franked dividend tax amount
-    dividend_unfranked_tax_amount = Column(Float, default=0.0)  # Calculated unfranked dividend tax amount
-    dividend_franked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
-    dividend_unfranked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
-    
-    # Calculated fields
-    interest_income_amount = Column(Float, default=0.0)  # Renamed from total_interest_income
-    interest_non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)
     
     @property
     def net_interest_income(self):
@@ -117,17 +116,11 @@ class TaxStatement(Base):
 
     def calculate_tax_payable(self):
         """Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
-        Updates the interest_income_tax_amount and tax_already_paid fields.
+        Updates the interest_income_tax_amount field.
         Returns the tax payable as a float.
         """
         from .calculations import tax_payable
-        from sqlalchemy.sql.schema import Column
-        from sqlalchemy.sql.elements import ColumnElement
         self.interest_income_tax_amount = tax_payable(self.interest_income_amount, self.interest_income_tax_rate, self.interest_non_resident_withholding_tax_from_statement)
-        if (self.interest_income_tax_rate is not None and not isinstance(self.interest_income_tax_rate, (Column, ColumnElement)) and self.interest_income_tax_rate != 0) and (self.interest_income_amount is not None and not isinstance(self.interest_income_amount, (Column, ColumnElement)) and self.interest_income_amount > 0):
-            self.tax_already_paid = (self.interest_non_resident_withholding_tax_from_statement or 0.0)
-        else:
-            self.tax_already_paid = 0.0
         return self.interest_income_tax_amount
 
     def calculate_fy_debt_interest_deduction_total_deduction(self):
