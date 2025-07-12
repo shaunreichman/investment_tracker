@@ -4,17 +4,6 @@ Tax calculations module.
 This module contains tax-specific calculation functions for tax statements and related models.
 """
 
-def net_income(total_income, interest_non_resident_withholding_tax_from_statement):
-    """
-    Calculate net income after non-resident withholding tax from statement.
-    Args:
-        total_income (float): Total income.
-        interest_non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
-    Returns:
-        float: Net income.
-    """
-    return (total_income or 0.0) - (interest_non_resident_withholding_tax_from_statement or 0.0)
-
 
 def tax_payable(interest_income_amount, interest_income_tax_rate, interest_non_resident_withholding_tax_from_statement):
     """
@@ -49,7 +38,6 @@ def calculate_fy_debt_interest_deduction_total_deduction(fy_debt_interest_deduct
 
 
 __all__ = [
-    'net_income',
     'tax_payable',
     'calculate_fy_debt_interest_deduction_total_deduction',
 ] 

@@ -19,7 +19,7 @@ from .fund.calculations import (
 
 # Tax domain
 from .tax.models import TaxStatement
-from .tax.calculations import net_income, tax_payable, calculate_fy_debt_interest_deduction_total_deduction
+from .tax.calculations import tax_payable, calculate_fy_debt_interest_deduction_total_deduction
 
 # Rates domain
 from .rates.models import RiskFreeRate
@@ -48,7 +48,7 @@ __all__ = [
     'calculate_nav_event_amounts', 'calculate_cumulative_units_and_cost_basis', 'calculate_nav_based_cost_basis_for_irr',
     
     # Tax
-    'TaxStatement', 'net_income', 'tax_payable', 'calculate_fy_debt_interest_deduction_total_deduction',
+    'TaxStatement', 'tax_payable', 'calculate_fy_debt_interest_deduction_total_deduction',
     
     # Rates
     'RiskFreeRate', 'get_risk_free_rate_for_date',

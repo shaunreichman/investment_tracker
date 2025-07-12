@@ -298,16 +298,7 @@ def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
     }
 
 
-def net_income(total_income, interest_non_resident_withholding_tax_from_statement):
-    """
-    Calculate net income after non-resident withholding tax from statement.
-    Args:
-        total_income (float): Total income.
-        interest_non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
-    Returns:
-        float: Net income.
-    """
-    return (total_income or 0.0) - (interest_non_resident_withholding_tax_from_statement or 0.0)
+
 
 
 def tax_payable(interest_income_amount, interest_income_tax_rate, interest_non_resident_withholding_tax_from_statement):
@@ -466,7 +457,7 @@ __all__ = [
     'get_unit_events_for_fund',
     'calculate_nav_based_cost_basis_for_irr',
     'calculate_cumulative_units_and_cost_basis',
-    'net_income',
+
     'tax_payable',
     'interest_tax_benefit',
     'get_financial_year_dates',

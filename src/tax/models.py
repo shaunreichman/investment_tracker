@@ -101,18 +101,7 @@ class TaxStatement(Base):
         return f"<TaxStatement(id={self.id}, fund_id={self.fund_id}, entity_id={self.entity_id}, fy={self.financial_year})>"
 
     
-    @property
-    def net_interest_income(self):
-        """Net interest income is always calculated as interest_income_amount - interest_non_resident_withholding_tax_from_statement."""
-        from .calculations import net_income
-        return net_income(self.interest_income_amount, self.interest_non_resident_withholding_tax_from_statement)
 
-    def get_net_income(self):
-        """Calculate net income after non-resident withholding tax from statement.
-        Returns the net income as a float.
-        """
-        from .calculations import net_income
-        return net_income(self.total_income, self.interest_non_resident_withholding_tax_from_statement)
 
     def calculate_tax_payable(self):
         """Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
@@ -159,11 +148,7 @@ class TaxStatement(Base):
         )
         return self.total_income
     
-    def get_net_income(self):
-        """Calculate net income after non-resident withholding tax from statement.
-        Returns the net income as a float.
-        """
-        return self.total_income - (self.interest_non_resident_withholding_tax_from_statement or 0.0)
+
     
     def get_tax_payment_date(self):
         """Get the tax payment date, defaulting to financial year end if not specified.
@@ -189,10 +174,7 @@ class TaxStatement(Base):
             (self.interest_received_in_cash or 0.0)
         )
         
-        # Note: net_interest_income is a property, so we don't set it directly
-        # It will be calculated automatically when accessed
-        
-        return self.interest_income_amount, self.net_interest_income 
+        return self.interest_income_amount 
 
     def calculate_dividend_totals(self, session=None):
         """
