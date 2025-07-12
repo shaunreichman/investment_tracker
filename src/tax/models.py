@@ -38,14 +38,7 @@ class TaxStatement(Base):
     entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False, index=True)  # Indexed for fast entity queries
     financial_year = Column(String(10), nullable=False, index=True)  # Indexed for fast year queries
     
-    # Tax components from fund statement
-    foreign_income = Column(Float, default=0.0)
-    capital_gains = Column(Float, default=0.0)
-    other_income = Column(Float, default=0.0)
-    total_income = Column(Float, default=0.0)
-    
-    # Tax withheld/credits
-    foreign_tax_credits = Column(Float, default=0.0)
+
     
     # After-tax IRR fields
     tax_payment_date = Column(Date)  # Date when additional tax is due (defaults to FY end)
@@ -100,9 +93,6 @@ class TaxStatement(Base):
         """Return a string representation of the TaxStatement instance for debugging/logging."""
         return f"<TaxStatement(id={self.id}, fund_id={self.fund_id}, entity_id={self.entity_id}, fy={self.financial_year})>"
 
-    
-
-
     def calculate_tax_payable(self):
         """Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
         Updates the interest_income_tax_amount field.
@@ -136,17 +126,7 @@ class TaxStatement(Base):
             return None, None
         return get_financial_year_dates(self.financial_year, entity.tax_jurisdiction)
     
-    def calculate_total_income(self):
-        """Calculate total income from all components, treating None as 0.0.
-        Updates the total_income field and returns the value.
-        """
-        self.total_income = (
-            (self.interest_income_amount or 0.0) +
-            (self.foreign_income or 0.0) +
-            (self.capital_gains or 0.0) +
-            (self.other_income or 0.0)
-        )
-        return self.total_income
+
     
 
     
@@ -307,9 +287,7 @@ class TaxStatement(Base):
             entity_id=entity_id,
             financial_year=financial_year,
             interest_income_amount=gross_income,  # Map gross_income to interest_income_amount
-            other_income=0.0,  # Default other income fields
-            foreign_income=0.0,
-            capital_gains=0.0,
+            
             interest_income_tax_amount=tax_payable
         )
         

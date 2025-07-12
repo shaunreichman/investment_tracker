@@ -271,8 +271,7 @@ class Fund(Base):
         # Calculate interest income fields (including total_interest_income)
         statement.calculate_interest_income_fields()
         
-        # Calculate total income
-        statement.calculate_total_income()
+
         
         return statement
 
