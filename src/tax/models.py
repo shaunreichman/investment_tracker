@@ -33,52 +33,52 @@ class TaxStatement(Base):
     """
     __tablename__ = 'tax_statements'
     
-    id = Column(Integer, primary_key=True)
-    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # Indexed for fast fund queries
-    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False, index=True)  # Indexed for fast entity queries
-    financial_year = Column(String(10), nullable=False, index=True)  # Indexed for fast year queries
+    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
+    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (MANUAL) foreign key to fund
+    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False, index=True)  # (MANUAL) foreign key to entity
+    financial_year = Column(String(10), nullable=False, index=True)  # (MANUAL) financial year (e.g., "2023-24")
     
 
     
     # After-tax IRR fields
-    tax_payment_date = Column(Date)  # Date when additional tax is due (defaults to FY end)
+    tax_payment_date = Column(Date)  # (MANUAL) date when additional tax is due (defaults to FY end)
     
     # --------- INCOME ---------
 
     # --------- Interest income ---------
-    interest_income_amount = Column(Float, default=0.0)  # Calculated
-    interest_income_tax_rate = Column(Float, default=0.0)  # Manually defined interest tax rate (%)
-    interest_tax_amount = Column(Float, default=0.0)  # Additional tax payable (creates cash outflow)
-    interest_received_in_cash = Column(Float, default=0.0) # (Manual) Interest received in cash - defined in the tax statement
-    interest_receivable_this_fy = Column(Float, default=0.0) # (Manual) Interest receivable this FY, paid next FY - defined in the tax statement
-    interest_receivable_prev_fy = Column(Float, default=0.0) # (Manual) Interest receivable previous FY, paid this FY - defined in the tax statement
-    interest_non_resident_withholding_tax_from_statement = Column(Float, default=0.0) # (Manual) Interest non-resident withholding tax from statement - defined in the tax statement
-    interest_non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)  # (Calculated) Tax already withheld/paid (no additional cash flow)
+    interest_income_amount = Column(Float, default=0.0)  # (CALCULATED) calculated from manual interest fields
+    interest_income_tax_rate = Column(Float, default=0.0)  # (MANUAL) manually defined interest tax rate (%)
+    interest_tax_amount = Column(Float, default=0.0)  # (CALCULATED) calculated from interest income and rate
+    interest_received_in_cash = Column(Float, default=0.0)  # (MANUAL) actual cash flow received this FY
+    interest_receivable_this_fy = Column(Float, default=0.0)  # (MANUAL) accounting income for this FY, not yet received
+    interest_receivable_prev_fy = Column(Float, default=0.0)  # (MANUAL) accounting income from prev FY, received this FY
+    interest_non_resident_withholding_tax_from_statement = Column(Float, default=0.0)  # (MANUAL) withholding tax as reported
+    interest_non_resident_withholding_tax_already_withheld = Column(Float, default=0.0)  # (CALCULATED) sum of TAX_PAYMENT events
 
     # --------- Dividend income ---------
-    dividend_franked_income_amount = Column(Float, default=0.0)  # Manual or calculated franked dividends
-    dividend_unfranked_income_amount = Column(Float, default=0.0)  # Manual or calculated unfranked dividends
-    dividend_franked_income_tax_rate = Column(Float, default=0.0)  # Manually defined franked dividend tax rate (%)
-    dividend_unfranked_income_tax_rate = Column(Float, default=0.0)  # Manually defined unfranked dividend tax rate (%)
-    dividend_franked_tax_amount = Column(Float, default=0.0)  # Calculated franked dividend tax amount
-    dividend_unfranked_tax_amount = Column(Float, default=0.0)  # Calculated unfranked dividend tax amount
-    dividend_franked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
-    dividend_unfranked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # True if amount comes from tax statement
+    dividend_franked_income_amount = Column(Float, default=0.0)  # (HYBRID) manual or calculated franked dividends
+    dividend_unfranked_income_amount = Column(Float, default=0.0)  # (HYBRID) manual or calculated unfranked dividends
+    dividend_franked_income_tax_rate = Column(Float, default=0.0)  # (MANUAL) manually defined franked dividend tax rate (%)
+    dividend_unfranked_income_tax_rate = Column(Float, default=0.0)  # (MANUAL) manually defined unfranked dividend tax rate (%)
+    dividend_franked_tax_amount = Column(Float, default=0.0)  # (CALCULATED) calculated franked dividend tax amount
+    dividend_unfranked_tax_amount = Column(Float, default=0.0)  # (CALCULATED) calculated unfranked dividend tax amount
+    dividend_franked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # (CALCULATED) true if amount comes from tax statement
+    dividend_unfranked_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # (CALCULATED) true if amount comes from tax statement
 
     # Debt cost tracking for real IRR calculations
-    fy_debt_interest_deduction_sum_of_daily_interest = Column(Float, default=0.0)  # Total interest expense for the financial year
-    fy_debt_interest_deduction_rate = Column(Float, default=0.0)  # Tax deduction rate for interest (e.g., 30.0 for 30%)
-    fy_debt_interest_deduction_total_deduction = Column(Float, default=0.0)  # Calculated tax benefit from interest deduction
+    fy_debt_interest_deduction_sum_of_daily_interest = Column(Float, default=0.0)  # (CALCULATED) total interest expense for the FY
+    fy_debt_interest_deduction_rate = Column(Float, default=0.0)  # (MANUAL) tax deduction rate for interest (e.g., 30.0 for 30%)
+    fy_debt_interest_deduction_total_deduction = Column(Float, default=0.0)  # (CALCULATED) calculated tax benefit from interest deduction
     
     # Tax status
-    non_resident = Column(Boolean, default=False)  # Whether entity was non-resident for tax purposes in this FY
+    non_resident = Column(Boolean, default=False)  # (MANUAL) whether entity was non-resident for tax purposes in this FY
     
     # Additional fields
-    accountant = Column(String(255))  # Name of fund's accountant who prepared the tax statement
-    notes = Column(Text)
-    statement_date = Column(Date)  # Date the tax statement was issued
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    accountant = Column(String(255))  # (MANUAL) name of fund's accountant who prepared the tax statement
+    notes = Column(Text)  # (MANUAL) additional notes
+    statement_date = Column(Date)  # (MANUAL) date the tax statement was issued
+    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) timestamp when record was last updated
     
     # Relationships
     fund = relationship("Fund", back_populates="tax_statements", lazy='selectin')

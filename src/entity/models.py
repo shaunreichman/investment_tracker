@@ -16,12 +16,12 @@ class Entity(Base):
     """Model representing an investing entity (person or company)."""
     __tablename__ = 'entities'
     
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False, unique=True)
-    description = Column(Text)
-    tax_jurisdiction = Column(String(10), default="AU")  # Tax jurisdiction (e.g., 'AU' for Australia, 'US' for United States)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
+    name = Column(String(255), nullable=False, unique=True)  # (MANUAL) entity name
+    description = Column(Text)  # (MANUAL) entity description
+    tax_jurisdiction = Column(String(10), default="AU")  # (MANUAL) tax jurisdiction (e.g., 'AU' for Australia, 'US' for United States)
+    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) timestamp when record was last updated
     
     # Relationships
     funds = relationship("Fund", back_populates="entity", cascade="all, delete-orphan")

@@ -139,36 +139,36 @@ class Fund(Base):
     """
     __tablename__ = 'funds'
     
-    id = Column(Integer, primary_key=True)
-    investment_company_id = Column(Integer, ForeignKey('investment_companies.id'), nullable=False)
-    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)
-    name = Column(String(255), nullable=False)
-    fund_type = Column(String(100))  # e.g., 'Private Equity', 'Venture Capital', 'Real Estate', etc.
+    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
+    investment_company_id = Column(Integer, ForeignKey('investment_companies.id'), nullable=False)  # (MANUAL) foreign key to investment company
+    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)  # (MANUAL) foreign key to entity
+    name = Column(String(255), nullable=False)  # (MANUAL) fund name
+    fund_type = Column(String(100))  # (MANUAL) type of fund (e.g., 'Private Equity', 'Venture Capital')
     
     # Fund tracking type
-    tracking_type = Column(Enum(FundType), nullable=False, default=FundType.NAV_BASED)
+    tracking_type = Column(Enum(FundType), nullable=False, default=FundType.NAV_BASED)  # (MANUAL) NAV_BASED or COST_BASED
     
     # Investment tracking fields (common)
-    commitment_amount = Column(Float, nullable=True)  # Total amount committed to the fund (MANUAL) - not applicable for NAV-based funds
-    current_equity_balance = Column(Float, default=0.0)  # Current equity balance (CALCULATED)
-    average_equity_balance = Column(Float, default=0.0)  # Average equity balance over time (CALCULATED)
-    expected_irr = Column(Float)  # Expected Internal Rate of Return (as percentage) (MANUAL) - not applicable for NAV-based funds
-    expected_duration_months = Column(Integer)  # Expected fund duration in months (MANUAL) - not applicable for NAV-based funds
+    commitment_amount = Column(Float, nullable=True)  # (MANUAL) total amount committed to the fund
+    current_equity_balance = Column(Float, default=0.0)  # (CALCULATED) current equity balance from capital movements
+    average_equity_balance = Column(Float, default=0.0)  # (CALCULATED) time-weighted average equity balance
+    expected_irr = Column(Float)  # (MANUAL) expected IRR as percentage
+    expected_duration_months = Column(Integer)  # (MANUAL) expected fund duration in months
     
     # NAV-based fund specific fields (CALCULATED)
-    _current_units = Column('current_units', Float)  # (NAV-based only) Current number of units owned
-    _current_unit_price = Column('current_unit_price', Float)  # (NAV-based only) Current unit price
+    _current_units = Column('current_units', Float)  # (CALCULATED) current number of units owned
+    _current_unit_price = Column('current_unit_price', Float)  # (CALCULATED) current unit price from latest NAV update
     
     # Cost-based fund specific fields (CALCULATED)
-    _total_cost_basis = Column('total_cost_basis', Float)  # (Cost-based only) Total cost basis for cost-based funds
+    _total_cost_basis = Column('total_cost_basis', Float)  # (CALCULATED) total cost basis from capital movements
     
     # Status and metadata
-    is_active = Column(Boolean, default=True)  # Whether the fund is still active (CALCULATED)
-    final_tax_statement_received = Column(Boolean, default=False)  # Whether all expected tax statements have been received (CALCULATED)
-    description = Column(Text)  # (MANUAL)
-    currency = Column(String(10), default="AUD")  # Currency code for the fund (MANUAL)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = Column(Boolean, default=True)  # (CALCULATED) whether fund has positive equity balance
+    final_tax_statement_received = Column(Boolean, default=False)  # (CALCULATED) whether all expected tax statements received
+    description = Column(Text)  # (MANUAL) fund description
+    currency = Column(String(10), default="AUD")  # (MANUAL) currency code for the fund
+    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) timestamp when record was last updated
     
     # Relationships
     investment_company = relationship("InvestmentCompany", back_populates="funds", lazy='selectin')
@@ -1705,32 +1705,23 @@ class FundEvent(Base):
     """
     __tablename__ = 'fund_events'
     
-    id = Column(Integer, primary_key=True)
-    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # Indexed for fast fund queries
-    event_type = Column(Enum(EventType), nullable=False, index=True)  # Indexed for fast event type queries
-    event_date = Column(Date, nullable=False, index=True)  # Indexed for fast date queries
-    amount = Column(Float)  # Amount for the event (can be None for some event types)
-    
-    # Event-specific fields
-    nav_per_share = Column(Float)  # For NAV updates
-    units_owned = Column(Float)  # For NAV updates and unit purchases/sales
-    cost_of_units = Column(Float)  # For NAV-based funds: FIFO cost of remaining units after this event
-    
-    # Distribution type for tax purposes
-    distribution_type = Column(Enum(DistributionType))  # Type of distribution (for tax treatment)
-    # Tax payment type for tax payment events
-    tax_payment_type = Column(Enum(TaxPaymentType))  # Type of tax payment (for tax treatment)
-    
-    # NAV-based fund event fields
-    units_purchased = Column(Float)  # Units purchased in this event
-    units_sold = Column(Float)  # Units sold in this event
-    unit_price = Column(Float)  # Unit price for this event
-    brokerage_fee = Column(Float, default=0.0)  # Brokerage fee for unit purchases/sales (optional)
-    
-    # Metadata
-    description = Column(Text)
-    reference_number = Column(String(100))  # External reference number
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
+    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (MANUAL) foreign key to fund
+    event_type = Column(Enum(EventType), nullable=False, index=True)  # (MANUAL) type of event (CAPITAL_CALL, DISTRIBUTION, etc.)
+    event_date = Column(Date, nullable=False, index=True)  # (MANUAL) date of the event
+    amount = Column(Float)  # (HYBRID) cash flow amount, can be manual or calculated based on event type
+    nav_per_share = Column(Float)  # (MANUAL) NAV per share for NAV_UPDATE events
+    units_owned = Column(Float)  # (CALCULATED) cumulative units owned after this event
+    cost_of_units = Column(Float)  # (CALCULATED) FIFO cost basis of remaining units after this event
+    distribution_type = Column(Enum(DistributionType))  # (MANUAL) type of distribution (DIVIDEND, INTEREST, etc.)
+    tax_payment_type = Column(Enum(TaxPaymentType))  # (MANUAL) type of tax payment (INTEREST, CAPITAL_GAINS, etc.)
+    units_purchased = Column(Float)  # (MANUAL) units purchased in this event
+    units_sold = Column(Float)  # (MANUAL) units sold in this event
+    unit_price = Column(Float)  # (MANUAL) unit price for this transaction
+    brokerage_fee = Column(Float, default=0.0)  # (MANUAL) brokerage fee for unit transactions
+    description = Column(Text)  # (MANUAL) event description
+    reference_number = Column(String(100))  # (MANUAL) external reference number
+    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
