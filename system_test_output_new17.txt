@@ -26,9 +26,9 @@ Created 1 funds for Test Shares Company
 Funds after setup: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
 
 Initial fund state:
-  Senior Debt Fund No.24: equity=$0.00, avg=$0.00
-  3PG Finance: equity=$0.00, avg=$0.00
-  ABC Ltd: equity=$-482.30, avg=$0.00
+  Senior Debt Fund No.24: equity=$0.00, avg=$81598.52
+  3PG Finance: equity=$0.00, avg=$66045.18
+  ABC Ltd: equity=$0.00, avg=$3761.06
 
 3. Recalculating all derived values...
 Funds to recalculate: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
@@ -38,7 +38,6 @@ Recalculating for Senior Debt Fund No.24:
 Recalculated all fields for fund 'Senior Debt Fund No.24'
   Current equity: $0.00
   Average equity: $81,598.52
-  Total cost basis: $0.00
   Created 0 tax payment events
 Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
 Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
@@ -503,7 +502,6 @@ Recalculating for 3PG Finance:
 Recalculated all fields for fund '3PG Finance'
   Current equity: $0.00
   Average equity: $66,045.18
-  Total cost basis: $0.00
   Created 1 tax payment events
 Created 512 daily risk-free interest charge events for 3PG Finance
 Created 512 daily risk-free interest charge events for 3PG Finance
@@ -1094,11 +1092,10 @@ Created 2 FY debt cost events for 3PG Finance
 
 Recalculating for ABC Ltd:
 Recalculated all fields for fund 'ABC Ltd'
-  Current equity: $-482.30
-  Average equity: $3,737.12
+  Current equity: $0.00
+  Average equity: $3,746.21
   Current units: 0.00
   Current unit price: $61.2500
-  Current value: $-482.30
   Created 1 tax payment events
 Created 411 daily risk-free interest charge events for ABC Ltd
 Created 411 daily risk-free interest charge events for ABC Ltd
@@ -1106,7 +1103,7 @@ Created 2 FY debt cost events for ABC Ltd
 Created 2 FY debt cost events for ABC Ltd
   IRR: 11.43%
   After-tax IRR: 8.63%
-  Real IRR: 6.76%
+  Real IRR: 6.73%
 
     --- IRR Cash Flows ---
       1:    -4,949.95  unit_purchase | 2013-03-28 | 4,949.95 | Initial unit purchase
@@ -1287,262 +1284,262 @@ Created 2 FY debt cost events for ABC Ltd
      161:        -0.34  daily_risk_free_interest_charge | 2013-09-02 | 0.34 | Daily risk-free interest charge (2.50% p.a.)
      162:        -0.34  daily_risk_free_interest_charge | 2013-09-03 | 0.34 | Daily risk-free interest charge (2.50% p.a.)
      163:     2,423.05  unit_sale | 2013-09-04 | 2,423.05 | Partial unit sale
-     164:        -0.17  daily_risk_free_interest_charge | 2013-09-04 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     165:        -0.17  daily_risk_free_interest_charge | 2013-09-05 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     166:        -0.17  daily_risk_free_interest_charge | 2013-09-06 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     167:        -0.17  daily_risk_free_interest_charge | 2013-09-07 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     168:        -0.17  daily_risk_free_interest_charge | 2013-09-08 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     169:        -0.17  daily_risk_free_interest_charge | 2013-09-09 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     170:        -0.17  daily_risk_free_interest_charge | 2013-09-10 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     171:        -0.17  daily_risk_free_interest_charge | 2013-09-11 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
+     164:        -0.18  daily_risk_free_interest_charge | 2013-09-04 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     165:        -0.18  daily_risk_free_interest_charge | 2013-09-05 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     166:        -0.18  daily_risk_free_interest_charge | 2013-09-06 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     167:        -0.18  daily_risk_free_interest_charge | 2013-09-07 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     168:        -0.18  daily_risk_free_interest_charge | 2013-09-08 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     169:        -0.18  daily_risk_free_interest_charge | 2013-09-09 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     170:        -0.18  daily_risk_free_interest_charge | 2013-09-10 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     171:        -0.18  daily_risk_free_interest_charge | 2013-09-11 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
      172:        79.05  distribution | 2013-09-12 | 79.05 | Fully Franked Dividend
-     173:        -0.17  daily_risk_free_interest_charge | 2013-09-12 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     174:        -0.17  daily_risk_free_interest_charge | 2013-09-13 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     175:        -0.17  daily_risk_free_interest_charge | 2013-09-14 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     176:        -0.17  daily_risk_free_interest_charge | 2013-09-15 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     177:        -0.17  daily_risk_free_interest_charge | 2013-09-16 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     178:        -0.17  daily_risk_free_interest_charge | 2013-09-17 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     179:        -0.17  daily_risk_free_interest_charge | 2013-09-18 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     180:        -0.17  daily_risk_free_interest_charge | 2013-09-19 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     181:        -0.17  daily_risk_free_interest_charge | 2013-09-20 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     182:        -0.17  daily_risk_free_interest_charge | 2013-09-21 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     183:        -0.17  daily_risk_free_interest_charge | 2013-09-22 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     184:        -0.17  daily_risk_free_interest_charge | 2013-09-23 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     185:        -0.17  daily_risk_free_interest_charge | 2013-09-24 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     186:        -0.17  daily_risk_free_interest_charge | 2013-09-25 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     187:        -0.17  daily_risk_free_interest_charge | 2013-09-26 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     188:        -0.17  daily_risk_free_interest_charge | 2013-09-27 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     189:        -0.17  daily_risk_free_interest_charge | 2013-09-28 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     190:        -0.17  daily_risk_free_interest_charge | 2013-09-29 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     191:        -0.17  daily_risk_free_interest_charge | 2013-09-30 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     192:        -0.17  daily_risk_free_interest_charge | 2013-10-01 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     193:        -0.17  daily_risk_free_interest_charge | 2013-10-02 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     194:        -0.17  daily_risk_free_interest_charge | 2013-10-03 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     195:        -0.17  daily_risk_free_interest_charge | 2013-10-04 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     196:        -0.17  daily_risk_free_interest_charge | 2013-10-05 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     197:        -0.17  daily_risk_free_interest_charge | 2013-10-06 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     198:        -0.17  daily_risk_free_interest_charge | 2013-10-07 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     199:        -0.17  daily_risk_free_interest_charge | 2013-10-08 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     200:        -0.17  daily_risk_free_interest_charge | 2013-10-09 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     201:        -0.17  daily_risk_free_interest_charge | 2013-10-10 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     202:        -0.17  daily_risk_free_interest_charge | 2013-10-11 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     203:        -0.17  daily_risk_free_interest_charge | 2013-10-12 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     204:        -0.17  daily_risk_free_interest_charge | 2013-10-13 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     205:        -0.17  daily_risk_free_interest_charge | 2013-10-14 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     206:        -0.17  daily_risk_free_interest_charge | 2013-10-15 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     207:        -0.17  daily_risk_free_interest_charge | 2013-10-16 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     208:        -0.17  daily_risk_free_interest_charge | 2013-10-17 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     209:        -0.17  daily_risk_free_interest_charge | 2013-10-18 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     210:        -0.17  daily_risk_free_interest_charge | 2013-10-19 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     211:        -0.17  daily_risk_free_interest_charge | 2013-10-20 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     212:        -0.17  daily_risk_free_interest_charge | 2013-10-21 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     213:        -0.17  daily_risk_free_interest_charge | 2013-10-22 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     214:        -0.17  daily_risk_free_interest_charge | 2013-10-23 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     215:        -0.17  daily_risk_free_interest_charge | 2013-10-24 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     216:        -0.17  daily_risk_free_interest_charge | 2013-10-25 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     217:        -0.17  daily_risk_free_interest_charge | 2013-10-26 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     218:        -0.17  daily_risk_free_interest_charge | 2013-10-27 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     219:        -0.17  daily_risk_free_interest_charge | 2013-10-28 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     220:        -0.17  daily_risk_free_interest_charge | 2013-10-29 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     221:        -0.17  daily_risk_free_interest_charge | 2013-10-30 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     222:        -0.17  daily_risk_free_interest_charge | 2013-10-31 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     223:        -0.17  daily_risk_free_interest_charge | 2013-11-01 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     224:        -0.17  daily_risk_free_interest_charge | 2013-11-02 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     225:        -0.17  daily_risk_free_interest_charge | 2013-11-03 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     226:        -0.17  daily_risk_free_interest_charge | 2013-11-04 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     227:        -0.17  daily_risk_free_interest_charge | 2013-11-05 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     228:        -0.17  daily_risk_free_interest_charge | 2013-11-06 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     229:        -0.17  daily_risk_free_interest_charge | 2013-11-07 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     230:        -0.17  daily_risk_free_interest_charge | 2013-11-08 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     231:        -0.17  daily_risk_free_interest_charge | 2013-11-09 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     232:        -0.17  daily_risk_free_interest_charge | 2013-11-10 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     233:        -0.17  daily_risk_free_interest_charge | 2013-11-11 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     234:        -0.17  daily_risk_free_interest_charge | 2013-11-12 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     235:        -0.17  daily_risk_free_interest_charge | 2013-11-13 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     236:        -0.17  daily_risk_free_interest_charge | 2013-11-14 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     237:        -0.17  daily_risk_free_interest_charge | 2013-11-15 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     238:        -0.17  daily_risk_free_interest_charge | 2013-11-16 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     239:        -0.17  daily_risk_free_interest_charge | 2013-11-17 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     240:        -0.17  daily_risk_free_interest_charge | 2013-11-18 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     241:        -0.17  daily_risk_free_interest_charge | 2013-11-19 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     242:        -0.17  daily_risk_free_interest_charge | 2013-11-20 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     243:        -0.17  daily_risk_free_interest_charge | 2013-11-21 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     244:        -0.17  daily_risk_free_interest_charge | 2013-11-22 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     245:        -0.17  daily_risk_free_interest_charge | 2013-11-23 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     246:        -0.17  daily_risk_free_interest_charge | 2013-11-24 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     247:        -0.17  daily_risk_free_interest_charge | 2013-11-25 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     248:        -0.17  daily_risk_free_interest_charge | 2013-11-26 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     249:        -0.17  daily_risk_free_interest_charge | 2013-11-27 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     250:        -0.17  daily_risk_free_interest_charge | 2013-11-28 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     251:        -0.17  daily_risk_free_interest_charge | 2013-11-29 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     252:        -0.17  daily_risk_free_interest_charge | 2013-11-30 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     253:        -0.17  daily_risk_free_interest_charge | 2013-12-01 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     254:        -0.17  daily_risk_free_interest_charge | 2013-12-02 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     255:        -0.17  daily_risk_free_interest_charge | 2013-12-03 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     256:        -0.17  daily_risk_free_interest_charge | 2013-12-04 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     257:        -0.17  daily_risk_free_interest_charge | 2013-12-05 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     258:        -0.17  daily_risk_free_interest_charge | 2013-12-06 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     259:        -0.17  daily_risk_free_interest_charge | 2013-12-07 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     260:        -0.17  daily_risk_free_interest_charge | 2013-12-08 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     261:        -0.17  daily_risk_free_interest_charge | 2013-12-09 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     262:        -0.17  daily_risk_free_interest_charge | 2013-12-10 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     263:        -0.17  daily_risk_free_interest_charge | 2013-12-11 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     264:        -0.17  daily_risk_free_interest_charge | 2013-12-12 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     265:        -0.17  daily_risk_free_interest_charge | 2013-12-13 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     266:        -0.17  daily_risk_free_interest_charge | 2013-12-14 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     267:        -0.17  daily_risk_free_interest_charge | 2013-12-15 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     268:        -0.17  daily_risk_free_interest_charge | 2013-12-16 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     269:        -0.17  daily_risk_free_interest_charge | 2013-12-17 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     270:        -0.17  daily_risk_free_interest_charge | 2013-12-18 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     271:        -0.17  daily_risk_free_interest_charge | 2013-12-19 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     272:        -0.17  daily_risk_free_interest_charge | 2013-12-20 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     273:        -0.17  daily_risk_free_interest_charge | 2013-12-21 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     274:        -0.17  daily_risk_free_interest_charge | 2013-12-22 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     275:        -0.17  daily_risk_free_interest_charge | 2013-12-23 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     276:        -0.17  daily_risk_free_interest_charge | 2013-12-24 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     277:        -0.17  daily_risk_free_interest_charge | 2013-12-25 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     278:        -0.17  daily_risk_free_interest_charge | 2013-12-26 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     279:        -0.17  daily_risk_free_interest_charge | 2013-12-27 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     280:        -0.17  daily_risk_free_interest_charge | 2013-12-28 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     281:        -0.17  daily_risk_free_interest_charge | 2013-12-29 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     282:        -0.17  daily_risk_free_interest_charge | 2013-12-30 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     283:        -0.17  daily_risk_free_interest_charge | 2013-12-31 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     284:        -0.17  daily_risk_free_interest_charge | 2014-01-01 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     285:        -0.17  daily_risk_free_interest_charge | 2014-01-02 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     286:        -0.17  daily_risk_free_interest_charge | 2014-01-03 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     287:        -0.17  daily_risk_free_interest_charge | 2014-01-04 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     288:        -0.17  daily_risk_free_interest_charge | 2014-01-05 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     289:        -0.17  daily_risk_free_interest_charge | 2014-01-06 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     290:        -0.17  daily_risk_free_interest_charge | 2014-01-07 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     291:        -0.17  daily_risk_free_interest_charge | 2014-01-08 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     292:        -0.17  daily_risk_free_interest_charge | 2014-01-09 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     293:        -0.17  daily_risk_free_interest_charge | 2014-01-10 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     294:        -0.17  daily_risk_free_interest_charge | 2014-01-11 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     295:        -0.17  daily_risk_free_interest_charge | 2014-01-12 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     296:        -0.17  daily_risk_free_interest_charge | 2014-01-13 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     297:        -0.17  daily_risk_free_interest_charge | 2014-01-14 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     298:        -0.17  daily_risk_free_interest_charge | 2014-01-15 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     299:        -0.17  daily_risk_free_interest_charge | 2014-01-16 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     300:        -0.17  daily_risk_free_interest_charge | 2014-01-17 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     301:        -0.17  daily_risk_free_interest_charge | 2014-01-18 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     302:        -0.17  daily_risk_free_interest_charge | 2014-01-19 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     303:        -0.17  daily_risk_free_interest_charge | 2014-01-20 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     304:        -0.17  daily_risk_free_interest_charge | 2014-01-21 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     305:        -0.17  daily_risk_free_interest_charge | 2014-01-22 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     306:        -0.17  daily_risk_free_interest_charge | 2014-01-23 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     307:        -0.17  daily_risk_free_interest_charge | 2014-01-24 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     308:        -0.17  daily_risk_free_interest_charge | 2014-01-25 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     309:        -0.17  daily_risk_free_interest_charge | 2014-01-26 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     310:        -0.17  daily_risk_free_interest_charge | 2014-01-27 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     311:        -0.17  daily_risk_free_interest_charge | 2014-01-28 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     312:        -0.17  daily_risk_free_interest_charge | 2014-01-29 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     313:        -0.17  daily_risk_free_interest_charge | 2014-01-30 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     314:        -0.17  daily_risk_free_interest_charge | 2014-01-31 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     315:        -0.17  daily_risk_free_interest_charge | 2014-02-01 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     316:        -0.17  daily_risk_free_interest_charge | 2014-02-02 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     317:        -0.17  daily_risk_free_interest_charge | 2014-02-03 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     318:        -0.17  daily_risk_free_interest_charge | 2014-02-04 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     319:        -0.17  daily_risk_free_interest_charge | 2014-02-05 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     320:        -0.17  daily_risk_free_interest_charge | 2014-02-06 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     321:        -0.17  daily_risk_free_interest_charge | 2014-02-07 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     322:        -0.17  daily_risk_free_interest_charge | 2014-02-08 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     323:        -0.17  daily_risk_free_interest_charge | 2014-02-09 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     324:        -0.17  daily_risk_free_interest_charge | 2014-02-10 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     325:        -0.17  daily_risk_free_interest_charge | 2014-02-11 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     326:        -0.17  daily_risk_free_interest_charge | 2014-02-12 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     327:        -0.17  daily_risk_free_interest_charge | 2014-02-13 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     328:        -0.17  daily_risk_free_interest_charge | 2014-02-14 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     329:        -0.17  daily_risk_free_interest_charge | 2014-02-15 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     330:        -0.17  daily_risk_free_interest_charge | 2014-02-16 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     331:        -0.17  daily_risk_free_interest_charge | 2014-02-17 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     332:        -0.17  daily_risk_free_interest_charge | 2014-02-18 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     333:        -0.17  daily_risk_free_interest_charge | 2014-02-19 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     334:        -0.17  daily_risk_free_interest_charge | 2014-02-20 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     335:        -0.17  daily_risk_free_interest_charge | 2014-02-21 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     336:        -0.17  daily_risk_free_interest_charge | 2014-02-22 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     337:        -0.17  daily_risk_free_interest_charge | 2014-02-23 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     338:        -0.17  daily_risk_free_interest_charge | 2014-02-24 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     339:        -0.17  daily_risk_free_interest_charge | 2014-02-25 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     340:        -0.17  daily_risk_free_interest_charge | 2014-02-26 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     341:        -0.17  daily_risk_free_interest_charge | 2014-02-27 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     342:        -0.17  daily_risk_free_interest_charge | 2014-02-28 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     343:        -0.17  daily_risk_free_interest_charge | 2014-03-01 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     344:        -0.17  daily_risk_free_interest_charge | 2014-03-02 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     345:        -0.17  daily_risk_free_interest_charge | 2014-03-03 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     346:        -0.17  daily_risk_free_interest_charge | 2014-03-04 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     347:        -0.17  daily_risk_free_interest_charge | 2014-03-05 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     348:        -0.17  daily_risk_free_interest_charge | 2014-03-06 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     349:        -0.17  daily_risk_free_interest_charge | 2014-03-07 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     350:        -0.17  daily_risk_free_interest_charge | 2014-03-08 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     351:        -0.17  daily_risk_free_interest_charge | 2014-03-09 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     352:        -0.17  daily_risk_free_interest_charge | 2014-03-10 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     353:        -0.17  daily_risk_free_interest_charge | 2014-03-11 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     354:        -0.17  daily_risk_free_interest_charge | 2014-03-12 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     355:        -0.17  daily_risk_free_interest_charge | 2014-03-13 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     356:        -0.17  daily_risk_free_interest_charge | 2014-03-14 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     357:        -0.17  daily_risk_free_interest_charge | 2014-03-15 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     358:        -0.17  daily_risk_free_interest_charge | 2014-03-16 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     359:        -0.17  daily_risk_free_interest_charge | 2014-03-17 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     360:        -0.17  daily_risk_free_interest_charge | 2014-03-18 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     361:        -0.17  daily_risk_free_interest_charge | 2014-03-19 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     362:        -0.17  daily_risk_free_interest_charge | 2014-03-20 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     363:        -0.17  daily_risk_free_interest_charge | 2014-03-21 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     364:        -0.17  daily_risk_free_interest_charge | 2014-03-22 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     365:        -0.17  daily_risk_free_interest_charge | 2014-03-23 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     366:        -0.17  daily_risk_free_interest_charge | 2014-03-24 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     367:        -0.17  daily_risk_free_interest_charge | 2014-03-25 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     368:        -0.17  daily_risk_free_interest_charge | 2014-03-26 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     369:        -0.17  daily_risk_free_interest_charge | 2014-03-27 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     370:        -0.17  daily_risk_free_interest_charge | 2014-03-28 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     371:        -0.17  daily_risk_free_interest_charge | 2014-03-29 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     372:        -0.17  daily_risk_free_interest_charge | 2014-03-30 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     373:        -0.17  daily_risk_free_interest_charge | 2014-03-31 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     374:        -0.17  daily_risk_free_interest_charge | 2014-04-01 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     375:        -0.17  daily_risk_free_interest_charge | 2014-04-02 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     376:        -0.17  daily_risk_free_interest_charge | 2014-04-03 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     377:        -0.17  daily_risk_free_interest_charge | 2014-04-04 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     378:        -0.17  daily_risk_free_interest_charge | 2014-04-05 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     379:        -0.17  daily_risk_free_interest_charge | 2014-04-06 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     380:        -0.17  daily_risk_free_interest_charge | 2014-04-07 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     381:        -0.17  daily_risk_free_interest_charge | 2014-04-08 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     382:        -0.17  daily_risk_free_interest_charge | 2014-04-09 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     383:        -0.17  daily_risk_free_interest_charge | 2014-04-10 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     384:        -0.17  daily_risk_free_interest_charge | 2014-04-11 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     385:        -0.17  daily_risk_free_interest_charge | 2014-04-12 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     386:        -0.17  daily_risk_free_interest_charge | 2014-04-13 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     387:        -0.17  daily_risk_free_interest_charge | 2014-04-14 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     388:        -0.17  daily_risk_free_interest_charge | 2014-04-15 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     389:        -0.17  daily_risk_free_interest_charge | 2014-04-16 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     390:        -0.17  daily_risk_free_interest_charge | 2014-04-17 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     391:        -0.17  daily_risk_free_interest_charge | 2014-04-18 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     392:        -0.17  daily_risk_free_interest_charge | 2014-04-19 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     393:        -0.17  daily_risk_free_interest_charge | 2014-04-20 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     394:        -0.17  daily_risk_free_interest_charge | 2014-04-21 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     395:        -0.17  daily_risk_free_interest_charge | 2014-04-22 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     396:        -0.17  daily_risk_free_interest_charge | 2014-04-23 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     397:        -0.17  daily_risk_free_interest_charge | 2014-04-24 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     398:        -0.17  daily_risk_free_interest_charge | 2014-04-25 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     399:        -0.17  daily_risk_free_interest_charge | 2014-04-26 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     400:        -0.17  daily_risk_free_interest_charge | 2014-04-27 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     401:        -0.17  daily_risk_free_interest_charge | 2014-04-28 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
-     402:        -0.17  daily_risk_free_interest_charge | 2014-04-29 | 0.17 | Daily risk-free interest charge (2.50% p.a.)
+     173:        -0.18  daily_risk_free_interest_charge | 2013-09-12 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     174:        -0.18  daily_risk_free_interest_charge | 2013-09-13 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     175:        -0.18  daily_risk_free_interest_charge | 2013-09-14 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     176:        -0.18  daily_risk_free_interest_charge | 2013-09-15 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     177:        -0.18  daily_risk_free_interest_charge | 2013-09-16 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     178:        -0.18  daily_risk_free_interest_charge | 2013-09-17 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     179:        -0.18  daily_risk_free_interest_charge | 2013-09-18 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     180:        -0.18  daily_risk_free_interest_charge | 2013-09-19 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     181:        -0.18  daily_risk_free_interest_charge | 2013-09-20 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     182:        -0.18  daily_risk_free_interest_charge | 2013-09-21 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     183:        -0.18  daily_risk_free_interest_charge | 2013-09-22 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     184:        -0.18  daily_risk_free_interest_charge | 2013-09-23 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     185:        -0.18  daily_risk_free_interest_charge | 2013-09-24 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     186:        -0.18  daily_risk_free_interest_charge | 2013-09-25 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     187:        -0.18  daily_risk_free_interest_charge | 2013-09-26 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     188:        -0.18  daily_risk_free_interest_charge | 2013-09-27 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     189:        -0.18  daily_risk_free_interest_charge | 2013-09-28 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     190:        -0.18  daily_risk_free_interest_charge | 2013-09-29 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     191:        -0.18  daily_risk_free_interest_charge | 2013-09-30 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     192:        -0.18  daily_risk_free_interest_charge | 2013-10-01 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     193:        -0.18  daily_risk_free_interest_charge | 2013-10-02 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     194:        -0.18  daily_risk_free_interest_charge | 2013-10-03 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     195:        -0.18  daily_risk_free_interest_charge | 2013-10-04 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     196:        -0.18  daily_risk_free_interest_charge | 2013-10-05 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     197:        -0.18  daily_risk_free_interest_charge | 2013-10-06 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     198:        -0.18  daily_risk_free_interest_charge | 2013-10-07 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     199:        -0.18  daily_risk_free_interest_charge | 2013-10-08 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     200:        -0.18  daily_risk_free_interest_charge | 2013-10-09 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     201:        -0.18  daily_risk_free_interest_charge | 2013-10-10 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     202:        -0.18  daily_risk_free_interest_charge | 2013-10-11 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     203:        -0.18  daily_risk_free_interest_charge | 2013-10-12 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     204:        -0.18  daily_risk_free_interest_charge | 2013-10-13 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     205:        -0.18  daily_risk_free_interest_charge | 2013-10-14 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     206:        -0.18  daily_risk_free_interest_charge | 2013-10-15 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     207:        -0.18  daily_risk_free_interest_charge | 2013-10-16 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     208:        -0.18  daily_risk_free_interest_charge | 2013-10-17 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     209:        -0.18  daily_risk_free_interest_charge | 2013-10-18 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     210:        -0.18  daily_risk_free_interest_charge | 2013-10-19 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     211:        -0.18  daily_risk_free_interest_charge | 2013-10-20 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     212:        -0.18  daily_risk_free_interest_charge | 2013-10-21 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     213:        -0.18  daily_risk_free_interest_charge | 2013-10-22 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     214:        -0.18  daily_risk_free_interest_charge | 2013-10-23 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     215:        -0.18  daily_risk_free_interest_charge | 2013-10-24 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     216:        -0.18  daily_risk_free_interest_charge | 2013-10-25 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     217:        -0.18  daily_risk_free_interest_charge | 2013-10-26 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     218:        -0.18  daily_risk_free_interest_charge | 2013-10-27 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     219:        -0.18  daily_risk_free_interest_charge | 2013-10-28 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     220:        -0.18  daily_risk_free_interest_charge | 2013-10-29 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     221:        -0.18  daily_risk_free_interest_charge | 2013-10-30 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     222:        -0.18  daily_risk_free_interest_charge | 2013-10-31 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     223:        -0.18  daily_risk_free_interest_charge | 2013-11-01 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     224:        -0.18  daily_risk_free_interest_charge | 2013-11-02 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     225:        -0.18  daily_risk_free_interest_charge | 2013-11-03 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     226:        -0.18  daily_risk_free_interest_charge | 2013-11-04 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     227:        -0.18  daily_risk_free_interest_charge | 2013-11-05 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     228:        -0.18  daily_risk_free_interest_charge | 2013-11-06 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     229:        -0.18  daily_risk_free_interest_charge | 2013-11-07 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     230:        -0.18  daily_risk_free_interest_charge | 2013-11-08 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     231:        -0.18  daily_risk_free_interest_charge | 2013-11-09 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     232:        -0.18  daily_risk_free_interest_charge | 2013-11-10 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     233:        -0.18  daily_risk_free_interest_charge | 2013-11-11 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     234:        -0.18  daily_risk_free_interest_charge | 2013-11-12 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     235:        -0.18  daily_risk_free_interest_charge | 2013-11-13 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     236:        -0.18  daily_risk_free_interest_charge | 2013-11-14 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     237:        -0.18  daily_risk_free_interest_charge | 2013-11-15 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     238:        -0.18  daily_risk_free_interest_charge | 2013-11-16 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     239:        -0.18  daily_risk_free_interest_charge | 2013-11-17 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     240:        -0.18  daily_risk_free_interest_charge | 2013-11-18 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     241:        -0.18  daily_risk_free_interest_charge | 2013-11-19 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     242:        -0.18  daily_risk_free_interest_charge | 2013-11-20 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     243:        -0.18  daily_risk_free_interest_charge | 2013-11-21 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     244:        -0.18  daily_risk_free_interest_charge | 2013-11-22 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     245:        -0.18  daily_risk_free_interest_charge | 2013-11-23 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     246:        -0.18  daily_risk_free_interest_charge | 2013-11-24 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     247:        -0.18  daily_risk_free_interest_charge | 2013-11-25 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     248:        -0.18  daily_risk_free_interest_charge | 2013-11-26 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     249:        -0.18  daily_risk_free_interest_charge | 2013-11-27 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     250:        -0.18  daily_risk_free_interest_charge | 2013-11-28 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     251:        -0.18  daily_risk_free_interest_charge | 2013-11-29 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     252:        -0.18  daily_risk_free_interest_charge | 2013-11-30 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     253:        -0.18  daily_risk_free_interest_charge | 2013-12-01 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     254:        -0.18  daily_risk_free_interest_charge | 2013-12-02 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     255:        -0.18  daily_risk_free_interest_charge | 2013-12-03 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     256:        -0.18  daily_risk_free_interest_charge | 2013-12-04 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     257:        -0.18  daily_risk_free_interest_charge | 2013-12-05 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     258:        -0.18  daily_risk_free_interest_charge | 2013-12-06 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     259:        -0.18  daily_risk_free_interest_charge | 2013-12-07 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     260:        -0.18  daily_risk_free_interest_charge | 2013-12-08 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     261:        -0.18  daily_risk_free_interest_charge | 2013-12-09 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     262:        -0.18  daily_risk_free_interest_charge | 2013-12-10 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     263:        -0.18  daily_risk_free_interest_charge | 2013-12-11 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     264:        -0.18  daily_risk_free_interest_charge | 2013-12-12 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     265:        -0.18  daily_risk_free_interest_charge | 2013-12-13 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     266:        -0.18  daily_risk_free_interest_charge | 2013-12-14 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     267:        -0.18  daily_risk_free_interest_charge | 2013-12-15 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     268:        -0.18  daily_risk_free_interest_charge | 2013-12-16 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     269:        -0.18  daily_risk_free_interest_charge | 2013-12-17 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     270:        -0.18  daily_risk_free_interest_charge | 2013-12-18 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     271:        -0.18  daily_risk_free_interest_charge | 2013-12-19 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     272:        -0.18  daily_risk_free_interest_charge | 2013-12-20 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     273:        -0.18  daily_risk_free_interest_charge | 2013-12-21 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     274:        -0.18  daily_risk_free_interest_charge | 2013-12-22 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     275:        -0.18  daily_risk_free_interest_charge | 2013-12-23 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     276:        -0.18  daily_risk_free_interest_charge | 2013-12-24 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     277:        -0.18  daily_risk_free_interest_charge | 2013-12-25 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     278:        -0.18  daily_risk_free_interest_charge | 2013-12-26 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     279:        -0.18  daily_risk_free_interest_charge | 2013-12-27 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     280:        -0.18  daily_risk_free_interest_charge | 2013-12-28 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     281:        -0.18  daily_risk_free_interest_charge | 2013-12-29 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     282:        -0.18  daily_risk_free_interest_charge | 2013-12-30 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     283:        -0.18  daily_risk_free_interest_charge | 2013-12-31 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     284:        -0.18  daily_risk_free_interest_charge | 2014-01-01 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     285:        -0.18  daily_risk_free_interest_charge | 2014-01-02 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     286:        -0.18  daily_risk_free_interest_charge | 2014-01-03 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     287:        -0.18  daily_risk_free_interest_charge | 2014-01-04 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     288:        -0.18  daily_risk_free_interest_charge | 2014-01-05 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     289:        -0.18  daily_risk_free_interest_charge | 2014-01-06 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     290:        -0.18  daily_risk_free_interest_charge | 2014-01-07 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     291:        -0.18  daily_risk_free_interest_charge | 2014-01-08 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     292:        -0.18  daily_risk_free_interest_charge | 2014-01-09 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     293:        -0.18  daily_risk_free_interest_charge | 2014-01-10 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     294:        -0.18  daily_risk_free_interest_charge | 2014-01-11 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     295:        -0.18  daily_risk_free_interest_charge | 2014-01-12 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     296:        -0.18  daily_risk_free_interest_charge | 2014-01-13 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     297:        -0.18  daily_risk_free_interest_charge | 2014-01-14 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     298:        -0.18  daily_risk_free_interest_charge | 2014-01-15 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     299:        -0.18  daily_risk_free_interest_charge | 2014-01-16 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     300:        -0.18  daily_risk_free_interest_charge | 2014-01-17 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     301:        -0.18  daily_risk_free_interest_charge | 2014-01-18 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     302:        -0.18  daily_risk_free_interest_charge | 2014-01-19 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     303:        -0.18  daily_risk_free_interest_charge | 2014-01-20 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     304:        -0.18  daily_risk_free_interest_charge | 2014-01-21 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     305:        -0.18  daily_risk_free_interest_charge | 2014-01-22 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     306:        -0.18  daily_risk_free_interest_charge | 2014-01-23 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     307:        -0.18  daily_risk_free_interest_charge | 2014-01-24 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     308:        -0.18  daily_risk_free_interest_charge | 2014-01-25 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     309:        -0.18  daily_risk_free_interest_charge | 2014-01-26 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     310:        -0.18  daily_risk_free_interest_charge | 2014-01-27 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     311:        -0.18  daily_risk_free_interest_charge | 2014-01-28 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     312:        -0.18  daily_risk_free_interest_charge | 2014-01-29 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     313:        -0.18  daily_risk_free_interest_charge | 2014-01-30 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     314:        -0.18  daily_risk_free_interest_charge | 2014-01-31 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     315:        -0.18  daily_risk_free_interest_charge | 2014-02-01 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     316:        -0.18  daily_risk_free_interest_charge | 2014-02-02 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     317:        -0.18  daily_risk_free_interest_charge | 2014-02-03 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     318:        -0.18  daily_risk_free_interest_charge | 2014-02-04 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     319:        -0.18  daily_risk_free_interest_charge | 2014-02-05 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     320:        -0.18  daily_risk_free_interest_charge | 2014-02-06 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     321:        -0.18  daily_risk_free_interest_charge | 2014-02-07 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     322:        -0.18  daily_risk_free_interest_charge | 2014-02-08 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     323:        -0.18  daily_risk_free_interest_charge | 2014-02-09 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     324:        -0.18  daily_risk_free_interest_charge | 2014-02-10 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     325:        -0.18  daily_risk_free_interest_charge | 2014-02-11 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     326:        -0.18  daily_risk_free_interest_charge | 2014-02-12 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     327:        -0.18  daily_risk_free_interest_charge | 2014-02-13 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     328:        -0.18  daily_risk_free_interest_charge | 2014-02-14 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     329:        -0.18  daily_risk_free_interest_charge | 2014-02-15 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     330:        -0.18  daily_risk_free_interest_charge | 2014-02-16 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     331:        -0.18  daily_risk_free_interest_charge | 2014-02-17 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     332:        -0.18  daily_risk_free_interest_charge | 2014-02-18 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     333:        -0.18  daily_risk_free_interest_charge | 2014-02-19 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     334:        -0.18  daily_risk_free_interest_charge | 2014-02-20 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     335:        -0.18  daily_risk_free_interest_charge | 2014-02-21 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     336:        -0.18  daily_risk_free_interest_charge | 2014-02-22 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     337:        -0.18  daily_risk_free_interest_charge | 2014-02-23 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     338:        -0.18  daily_risk_free_interest_charge | 2014-02-24 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     339:        -0.18  daily_risk_free_interest_charge | 2014-02-25 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     340:        -0.18  daily_risk_free_interest_charge | 2014-02-26 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     341:        -0.18  daily_risk_free_interest_charge | 2014-02-27 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     342:        -0.18  daily_risk_free_interest_charge | 2014-02-28 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     343:        -0.18  daily_risk_free_interest_charge | 2014-03-01 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     344:        -0.18  daily_risk_free_interest_charge | 2014-03-02 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     345:        -0.18  daily_risk_free_interest_charge | 2014-03-03 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     346:        -0.18  daily_risk_free_interest_charge | 2014-03-04 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     347:        -0.18  daily_risk_free_interest_charge | 2014-03-05 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     348:        -0.18  daily_risk_free_interest_charge | 2014-03-06 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     349:        -0.18  daily_risk_free_interest_charge | 2014-03-07 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     350:        -0.18  daily_risk_free_interest_charge | 2014-03-08 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     351:        -0.18  daily_risk_free_interest_charge | 2014-03-09 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     352:        -0.18  daily_risk_free_interest_charge | 2014-03-10 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     353:        -0.18  daily_risk_free_interest_charge | 2014-03-11 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     354:        -0.18  daily_risk_free_interest_charge | 2014-03-12 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     355:        -0.18  daily_risk_free_interest_charge | 2014-03-13 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     356:        -0.18  daily_risk_free_interest_charge | 2014-03-14 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     357:        -0.18  daily_risk_free_interest_charge | 2014-03-15 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     358:        -0.18  daily_risk_free_interest_charge | 2014-03-16 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     359:        -0.18  daily_risk_free_interest_charge | 2014-03-17 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     360:        -0.18  daily_risk_free_interest_charge | 2014-03-18 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     361:        -0.18  daily_risk_free_interest_charge | 2014-03-19 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     362:        -0.18  daily_risk_free_interest_charge | 2014-03-20 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     363:        -0.18  daily_risk_free_interest_charge | 2014-03-21 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     364:        -0.18  daily_risk_free_interest_charge | 2014-03-22 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     365:        -0.18  daily_risk_free_interest_charge | 2014-03-23 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     366:        -0.18  daily_risk_free_interest_charge | 2014-03-24 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     367:        -0.18  daily_risk_free_interest_charge | 2014-03-25 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     368:        -0.18  daily_risk_free_interest_charge | 2014-03-26 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     369:        -0.18  daily_risk_free_interest_charge | 2014-03-27 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     370:        -0.18  daily_risk_free_interest_charge | 2014-03-28 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     371:        -0.18  daily_risk_free_interest_charge | 2014-03-29 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     372:        -0.18  daily_risk_free_interest_charge | 2014-03-30 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     373:        -0.18  daily_risk_free_interest_charge | 2014-03-31 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     374:        -0.18  daily_risk_free_interest_charge | 2014-04-01 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     375:        -0.18  daily_risk_free_interest_charge | 2014-04-02 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     376:        -0.18  daily_risk_free_interest_charge | 2014-04-03 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     377:        -0.18  daily_risk_free_interest_charge | 2014-04-04 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     378:        -0.18  daily_risk_free_interest_charge | 2014-04-05 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     379:        -0.18  daily_risk_free_interest_charge | 2014-04-06 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     380:        -0.18  daily_risk_free_interest_charge | 2014-04-07 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     381:        -0.18  daily_risk_free_interest_charge | 2014-04-08 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     382:        -0.18  daily_risk_free_interest_charge | 2014-04-09 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     383:        -0.18  daily_risk_free_interest_charge | 2014-04-10 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     384:        -0.18  daily_risk_free_interest_charge | 2014-04-11 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     385:        -0.18  daily_risk_free_interest_charge | 2014-04-12 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     386:        -0.18  daily_risk_free_interest_charge | 2014-04-13 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     387:        -0.18  daily_risk_free_interest_charge | 2014-04-14 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     388:        -0.18  daily_risk_free_interest_charge | 2014-04-15 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     389:        -0.18  daily_risk_free_interest_charge | 2014-04-16 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     390:        -0.18  daily_risk_free_interest_charge | 2014-04-17 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     391:        -0.18  daily_risk_free_interest_charge | 2014-04-18 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     392:        -0.18  daily_risk_free_interest_charge | 2014-04-19 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     393:        -0.18  daily_risk_free_interest_charge | 2014-04-20 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     394:        -0.18  daily_risk_free_interest_charge | 2014-04-21 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     395:        -0.18  daily_risk_free_interest_charge | 2014-04-22 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     396:        -0.18  daily_risk_free_interest_charge | 2014-04-23 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     397:        -0.18  daily_risk_free_interest_charge | 2014-04-24 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     398:        -0.18  daily_risk_free_interest_charge | 2014-04-25 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     399:        -0.18  daily_risk_free_interest_charge | 2014-04-26 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     400:        -0.18  daily_risk_free_interest_charge | 2014-04-27 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     401:        -0.18  daily_risk_free_interest_charge | 2014-04-28 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
+     402:        -0.18  daily_risk_free_interest_charge | 2014-04-29 | 0.18 | Daily risk-free interest charge (2.50% p.a.)
      403:    -7,387.95  unit_purchase | 2014-04-30 | 7,387.95 | Additional unit purchase
-     404:        -0.67  daily_risk_free_interest_charge | 2014-04-30 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     405:        -0.67  daily_risk_free_interest_charge | 2014-05-01 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     406:        -0.67  daily_risk_free_interest_charge | 2014-05-02 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     407:        -0.67  daily_risk_free_interest_charge | 2014-05-03 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     408:        -0.67  daily_risk_free_interest_charge | 2014-05-04 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     409:        -0.67  daily_risk_free_interest_charge | 2014-05-05 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     410:        -0.67  daily_risk_free_interest_charge | 2014-05-06 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     411:        -0.67  daily_risk_free_interest_charge | 2014-05-07 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     412:        -0.67  daily_risk_free_interest_charge | 2014-05-08 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     413:        -0.67  daily_risk_free_interest_charge | 2014-05-09 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     414:        -0.67  daily_risk_free_interest_charge | 2014-05-10 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     415:        -0.67  daily_risk_free_interest_charge | 2014-05-11 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
-     416:        -0.67  daily_risk_free_interest_charge | 2014-05-12 | 0.67 | Daily risk-free interest charge (2.50% p.a.)
+     404:        -0.68  daily_risk_free_interest_charge | 2014-04-30 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     405:        -0.68  daily_risk_free_interest_charge | 2014-05-01 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     406:        -0.68  daily_risk_free_interest_charge | 2014-05-02 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     407:        -0.68  daily_risk_free_interest_charge | 2014-05-03 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     408:        -0.68  daily_risk_free_interest_charge | 2014-05-04 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     409:        -0.68  daily_risk_free_interest_charge | 2014-05-05 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     410:        -0.68  daily_risk_free_interest_charge | 2014-05-06 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     411:        -0.68  daily_risk_free_interest_charge | 2014-05-07 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     412:        -0.68  daily_risk_free_interest_charge | 2014-05-08 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     413:        -0.68  daily_risk_free_interest_charge | 2014-05-09 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     414:        -0.68  daily_risk_free_interest_charge | 2014-05-10 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     415:        -0.68  daily_risk_free_interest_charge | 2014-05-11 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
+     416:        -0.68  daily_risk_free_interest_charge | 2014-05-12 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
      417:    10,312.35  unit_sale | 2014-05-13 | 10,312.35 | Full unit sale
      418:      -119.25  tax_payment | 2014-06-30 | 119.25 | Capital gain tax (rate: 30.0%)
-     419:        23.52  fy_debt_cost | 2014-06-30 | 23.52 | FY 2013-14 Interest Tax Benefit ($23.52)
+     419:        24.24  fy_debt_cost | 2014-06-30 | 24.24 | FY 2013-14 Interest Tax Benefit ($24.24)
 Completed recalculation loop. Iterations: 3
 
 All recalculations completed!
@@ -1562,7 +1559,6 @@ Senior Debt Fund No.24:
   Tax payment events: 5
   FY debt cost events: 2
   Daily interest charges: 406
-  Total cost basis: $0.00
 
 3PG Finance:
   Type: cost_based
@@ -1572,19 +1568,17 @@ Senior Debt Fund No.24:
   Tax payment events: 7
   FY debt cost events: 2
   Daily interest charges: 512
-  Total cost basis: $0.00
 
 ABC Ltd:
   Type: nav_based
-  Current equity: $-482.30
-  Average equity: $3,737.12
+  Current equity: $0.00
+  Average equity: $3,746.21
   Events: {'unit_purchase': 2, 'nav_update': 14, 'unit_sale': 2, 'distribution': 1, 'tax_payment': 1, 'daily_risk_free_interest_charge': 411, 'fy_debt_cost': 2}
   Tax payment events: 1
   FY debt cost events: 2
   Daily interest charges: 411
   Current units: 0.00
   Current unit price: $61.2500
-  Current value: $-482.30
   NAV update events: 14
   Unit purchases: 2, Unit sales: 2
 
@@ -1610,9 +1604,9 @@ Tax statements: 6
 
 === Equity Balance Over Time: ABC Ltd ===
 2013-03-28 | UNIT_PURCHASE   | Equity:     4,930.00 | Days: 160
-2013-09-04 | UNIT_SALE       | Equity:     2,482.00 | Days: 238
-2014-04-30 | UNIT_PURCHASE   | Equity:     9,850.00 | Days: 13
-2014-05-13 | UNIT_SALE       | Equity:      -482.30 | Days: 48
+2013-09-04 | UNIT_SALE       | Equity:     2,610.00 | Days: 238
+2014-04-30 | UNIT_PURCHASE   | Equity:     9,978.00 | Days: 13
+2014-05-13 | UNIT_SALE       | Equity:         0.00 | Days: 48
 
 === DOMAIN STRUCTURE TEST COMPLETED SUCCESSFULLY ===
 
@@ -1625,101 +1619,101 @@ Tax statements: 6
    - Stateless external clients (sessions hidden from API consumers)
 
 === Daily Risk-Free Interest Charges for ABC Ltd (FY13) ===
-2013-03-28 | Rate:  3.00% | Daily Charge:   0.4049
-2013-03-29 | Rate:  3.00% | Daily Charge:   0.4049
-2013-03-30 | Rate:  3.00% | Daily Charge:   0.4049
-2013-03-31 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-01 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-02 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-03 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-04 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-05 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-06 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-07 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-08 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-09 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-10 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-11 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-12 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-13 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-14 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-15 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-16 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-17 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-18 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-19 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-20 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-21 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-22 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-23 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-24 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-25 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-26 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-27 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-28 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-29 | Rate:  3.00% | Daily Charge:   0.4049
-2013-04-30 | Rate:  3.00% | Daily Charge:   0.4049
-2013-05-01 | Rate:  3.00% | Daily Charge:   0.4049
-2013-05-02 | Rate:  3.00% | Daily Charge:   0.4049
-2013-05-03 | Rate:  3.00% | Daily Charge:   0.4049
-2013-05-04 | Rate:  3.00% | Daily Charge:   0.4049
-2013-05-05 | Rate:  3.00% | Daily Charge:   0.4049
-2013-05-06 | Rate:  3.00% | Daily Charge:   0.4049
-2013-05-07 | Rate:  3.00% | Daily Charge:   0.4049
-2013-05-08 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-09 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-10 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-11 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-12 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-13 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-14 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-15 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-16 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-17 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-18 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-19 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-20 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-21 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-22 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-23 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-24 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-25 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-26 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-27 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-28 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-29 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-30 | Rate:  2.75% | Daily Charge:   0.3712
-2013-05-31 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-01 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-02 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-03 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-04 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-05 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-06 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-07 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-08 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-09 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-10 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-11 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-12 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-13 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-14 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-15 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-16 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-17 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-18 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-19 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-20 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-21 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-22 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-23 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-24 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-25 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-26 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-27 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-28 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-29 | Rate:  2.75% | Daily Charge:   0.3712
-2013-06-30 | Rate:  2.75% | Daily Charge:   0.3712
+2013-03-28 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-03-29 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-03-30 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-03-31 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-01 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-02 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-03 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-04 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-05 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-06 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-07 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-08 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-09 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-10 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-11 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-12 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-13 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-14 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-15 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-16 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-17 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-18 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-19 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-20 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-21 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-22 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-23 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-24 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-25 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-26 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-27 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-28 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-29 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-04-30 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-05-01 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-05-02 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-05-03 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-05-04 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-05-05 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-05-06 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-05-07 | Rate:  3.00% | Daily Charge:   0.4049 | Equity:     4,930.00
+2013-05-08 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-09 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-10 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-11 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-12 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-13 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-14 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-15 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-16 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-17 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-18 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-19 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-20 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-21 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-22 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-23 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-24 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-25 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-26 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-27 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-28 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-29 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-30 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-05-31 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-01 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-02 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-03 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-04 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-05 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-06 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-07 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-08 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-09 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-10 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-11 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-12 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-13 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-14 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-15 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-16 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-17 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-18 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-19 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-20 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-21 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-22 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-23 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-24 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-25 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-26 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-27 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-28 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-29 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-06-30 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
 Total for FY13: 36.6460
 
 Summary of unique daily charges for FY13:
@@ -1730,329 +1724,329 @@ Daily Charge |  Days
 
 
 === Daily Risk-Free Interest Charges for ABC Ltd (FY14) ===
-2013-07-01 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-02 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-03 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-04 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-05 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-06 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-07 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-08 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-09 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-10 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-11 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-12 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-13 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-14 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-15 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-16 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-17 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-18 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-19 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-20 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-21 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-22 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-23 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-24 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-25 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-26 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-27 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-28 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-29 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-30 | Rate:  2.75% | Daily Charge:   0.3712
-2013-07-31 | Rate:  2.75% | Daily Charge:   0.3712
-2013-08-01 | Rate:  2.75% | Daily Charge:   0.3712
-2013-08-02 | Rate:  2.75% | Daily Charge:   0.3712
-2013-08-03 | Rate:  2.75% | Daily Charge:   0.3712
-2013-08-04 | Rate:  2.75% | Daily Charge:   0.3712
-2013-08-05 | Rate:  2.75% | Daily Charge:   0.3712
-2013-08-06 | Rate:  2.75% | Daily Charge:   0.3712
-2013-08-07 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-08 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-09 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-10 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-11 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-12 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-13 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-14 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-15 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-16 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-17 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-18 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-19 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-20 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-21 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-22 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-23 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-24 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-25 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-26 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-27 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-28 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-29 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-30 | Rate:  2.50% | Daily Charge:   0.3374
-2013-08-31 | Rate:  2.50% | Daily Charge:   0.3374
-2013-09-01 | Rate:  2.50% | Daily Charge:   0.3374
-2013-09-02 | Rate:  2.50% | Daily Charge:   0.3374
-2013-09-03 | Rate:  2.50% | Daily Charge:   0.3374
-2013-09-04 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-05 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-06 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-07 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-08 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-09 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-10 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-11 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-12 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-13 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-14 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-15 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-16 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-17 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-18 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-19 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-20 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-21 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-22 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-23 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-24 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-25 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-26 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-27 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-28 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-29 | Rate:  2.50% | Daily Charge:   0.1699
-2013-09-30 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-01 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-02 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-03 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-04 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-05 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-06 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-07 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-08 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-09 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-10 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-11 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-12 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-13 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-14 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-15 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-16 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-17 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-18 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-19 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-20 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-21 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-22 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-23 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-24 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-25 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-26 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-27 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-28 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-29 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-30 | Rate:  2.50% | Daily Charge:   0.1699
-2013-10-31 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-01 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-02 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-03 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-04 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-05 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-06 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-07 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-08 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-09 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-10 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-11 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-12 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-13 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-14 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-15 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-16 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-17 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-18 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-19 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-20 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-21 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-22 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-23 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-24 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-25 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-26 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-27 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-28 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-29 | Rate:  2.50% | Daily Charge:   0.1699
-2013-11-30 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-01 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-02 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-03 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-04 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-05 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-06 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-07 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-08 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-09 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-10 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-11 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-12 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-13 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-14 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-15 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-16 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-17 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-18 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-19 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-20 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-21 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-22 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-23 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-24 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-25 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-26 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-27 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-28 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-29 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-30 | Rate:  2.50% | Daily Charge:   0.1699
-2013-12-31 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-01 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-02 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-03 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-04 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-05 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-06 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-07 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-08 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-09 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-10 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-11 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-12 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-13 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-14 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-15 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-16 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-17 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-18 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-19 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-20 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-21 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-22 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-23 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-24 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-25 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-26 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-27 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-28 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-29 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-30 | Rate:  2.50% | Daily Charge:   0.1699
-2014-01-31 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-01 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-02 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-03 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-04 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-05 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-06 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-07 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-08 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-09 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-10 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-11 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-12 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-13 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-14 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-15 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-16 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-17 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-18 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-19 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-20 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-21 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-22 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-23 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-24 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-25 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-26 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-27 | Rate:  2.50% | Daily Charge:   0.1699
-2014-02-28 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-01 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-02 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-03 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-04 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-05 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-06 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-07 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-08 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-09 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-10 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-11 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-12 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-13 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-14 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-15 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-16 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-17 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-18 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-19 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-20 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-21 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-22 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-23 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-24 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-25 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-26 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-27 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-28 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-29 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-30 | Rate:  2.50% | Daily Charge:   0.1699
-2014-03-31 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-01 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-02 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-03 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-04 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-05 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-06 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-07 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-08 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-09 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-10 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-11 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-12 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-13 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-14 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-15 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-16 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-17 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-18 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-19 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-20 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-21 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-22 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-23 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-24 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-25 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-26 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-27 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-28 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-29 | Rate:  2.50% | Daily Charge:   0.1699
-2014-04-30 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-01 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-02 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-03 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-04 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-05 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-06 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-07 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-08 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-09 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-10 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-11 | Rate:  2.50% | Daily Charge:   0.6742
-2014-05-12 | Rate:  2.50% | Daily Charge:   0.6742
-Total for FY14: 72.3790
+2013-07-01 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-02 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-03 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-04 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-05 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-06 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-07 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-08 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-09 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-10 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-11 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-12 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-13 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-14 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-15 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-16 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-17 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-18 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-19 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-20 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-21 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-22 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-23 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-24 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-25 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-26 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-27 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-28 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-29 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-30 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-07-31 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-08-01 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-08-02 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-08-03 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-08-04 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-08-05 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-08-06 | Rate:  2.75% | Daily Charge:   0.3712 | Equity:     4,930.00
+2013-08-07 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-08 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-09 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-10 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-11 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-12 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-13 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-14 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-15 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-16 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-17 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-18 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-19 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-20 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-21 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-22 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-23 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-24 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-25 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-26 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-27 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-28 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-29 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-30 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-08-31 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-09-01 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-09-02 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-09-03 | Rate:  2.50% | Daily Charge:   0.3374 | Equity:     4,930.00
+2013-09-04 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-05 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-06 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-07 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-08 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-09 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-10 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-11 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-12 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-13 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-14 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-15 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-16 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-17 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-18 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-19 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-20 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-21 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-22 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-23 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-24 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-25 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-26 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-27 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-28 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-29 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-09-30 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-01 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-02 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-03 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-04 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-05 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-06 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-07 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-08 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-09 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-10 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-11 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-12 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-13 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-14 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-15 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-16 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-17 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-18 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-19 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-20 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-21 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-22 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-23 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-24 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-25 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-26 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-27 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-28 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-29 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-30 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-10-31 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-01 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-02 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-03 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-04 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-05 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-06 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-07 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-08 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-09 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-10 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-11 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-12 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-13 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-14 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-15 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-16 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-17 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-18 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-19 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-20 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-21 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-22 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-23 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-24 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-25 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-26 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-27 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-28 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-29 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-11-30 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-01 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-02 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-03 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-04 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-05 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-06 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-07 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-08 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-09 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-10 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-11 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-12 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-13 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-14 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-15 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-16 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-17 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-18 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-19 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-20 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-21 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-22 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-23 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-24 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-25 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-26 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-27 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-28 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-29 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-30 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2013-12-31 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-01 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-02 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-03 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-04 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-05 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-06 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-07 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-08 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-09 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-10 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-11 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-12 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-13 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-14 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-15 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-16 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-17 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-18 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-19 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-20 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-21 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-22 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-23 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-24 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-25 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-26 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-27 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-28 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-29 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-30 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-01-31 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-01 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-02 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-03 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-04 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-05 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-06 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-07 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-08 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-09 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-10 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-11 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-12 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-13 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-14 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-15 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-16 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-17 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-18 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-19 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-20 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-21 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-22 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-23 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-24 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-25 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-26 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-27 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-02-28 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-01 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-02 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-03 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-04 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-05 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-06 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-07 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-08 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-09 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-10 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-11 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-12 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-13 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-14 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-15 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-16 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-17 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-18 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-19 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-20 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-21 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-22 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-23 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-24 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-25 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-26 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-27 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-28 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-29 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-30 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-03-31 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-01 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-02 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-03 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-04 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-05 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-06 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-07 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-08 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-09 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-10 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-11 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-12 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-13 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-14 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-15 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-16 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-17 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-18 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-19 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-20 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-21 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-22 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-23 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-24 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-25 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-26 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-27 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-28 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-29 | Rate:  2.50% | Daily Charge:   0.1786 | Equity:     2,610.00
+2014-04-30 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-01 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-02 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-03 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-04 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-05 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-06 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-07 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-08 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-09 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-10 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-11 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+2014-05-12 | Rate:  2.50% | Daily Charge:   0.6830 | Equity:     9,978.00
+Total for FY14: 74.5780
 
 Summary of unique daily charges for FY14:
 Daily Charge |  Days
 ----------------------
-    0.169884 |   238
+    0.178645 |   238
     0.337440 |    28
     0.371184 |    37
-    0.674196 |    13
+    0.682957 |    13
 
