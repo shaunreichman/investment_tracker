@@ -426,7 +426,7 @@ def calculate_nav_event_amounts(unit_events):
             # Calculate cost of remaining units using FIFO
             total_cost = sum(units * cost for units, cost, _ in available_units)
             event.current_equity_balance = total_cost
-        
+            
         elif event.event_type == EventType.UNIT_SALE:
             units = event.units_sold or 0
             unit_price = event.unit_price or 0

@@ -6,7 +6,7 @@ This module contains shared utility functions and decorators used across domains
 
 from functools import wraps
 from sqlalchemy.orm import object_session
-from ..database import get_database_session
+from src.database import get_database_session
 
 def with_session(method):
     """

@@ -540,13 +540,9 @@ def recalculate_everything(session, show_irr_cashflows=True):
         if fund.tracking_type == FundType.NAV_BASED:
             current_units = fund.current_units
             current_unit_price = fund.current_unit_price
-            current_value = fund.current_value
             print(f"  Current units: {current_units:.2f}")
             print(f"  Current unit price: ${current_unit_price:.4f}")
-            print(f"  Current value: ${current_value:,.2f}")
-        else:
-            total_cost_basis = fund.total_cost_basis
-            print(f"  Total cost basis: ${total_cost_basis:,.2f}")
+        # Remove lines that reference fund.total_cost_basis and their print statements
         
         # Create tax payment events using domain methods
         tax_events = fund.create_tax_payment_events(session=session)
@@ -655,11 +651,9 @@ def verify_results(session):
         if fund.tracking_type == FundType.NAV_BASED:
             current_units = fund.current_units
             current_unit_price = fund.current_unit_price
-            current_value = fund.current_value
             
             print(f"  Current units: {current_units:.2f}")
             print(f"  Current unit price: ${current_unit_price:.4f}")
-            print(f"  Current value: ${current_value:,.2f}")
             
             # Count NAV-specific events
             nav_events = [e for e in events if e.event_type == EventType.NAV_UPDATE]
@@ -668,9 +662,7 @@ def verify_results(session):
             
             print(f"  NAV update events: {len(nav_events)}")
             print(f"  Unit purchases: {len(unit_purchases)}, Unit sales: {len(unit_sales)}")
-        else:
-            total_cost_basis = fund.total_cost_basis
-            print(f"  Total cost basis: ${total_cost_basis:,.2f}")
+        # Remove lines that reference fund.total_cost_basis and their print statements
     
     # Get risk-free rates count using domain methods
     risk_free_rates = session.query(RiskFreeRate).all()
