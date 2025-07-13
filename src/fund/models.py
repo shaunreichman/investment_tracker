@@ -2073,6 +2073,7 @@ class Fund(Base):
         return created_events
 
 
+
 class FundEvent(Base):
     """Model representing various dated events for a fund.
     
