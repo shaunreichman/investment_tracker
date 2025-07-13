@@ -449,7 +449,7 @@ class Fund(Base):
         # Update fund-type specific fields
         if self.tracking_type == FundType.NAV_BASED:
             self.update_current_units_and_price(session=session)
-        else:
+        elif self.tracking_type == FundType.COST_BASED:
             self.update_total_cost_basis(session=session)
         
         # Update final tax statement status
@@ -1008,7 +1008,7 @@ class Fund(Base):
         """
         if self.tracking_type == FundType.NAV_BASED:
             return self._calculate_nav_based_capital_gains(session=session)
-        else:
+        elif self.tracking_type == FundType.COST_BASED:
             return self._get_cost_based_capital_gains(session=session)
     
     @with_session
@@ -1067,7 +1067,7 @@ class Fund(Base):
                 FundEvent.fund_id == self.id,
                 FundEvent.event_type == EventType.UNIT_PURCHASE
             ).scalar() or 0
-        else:
+        elif self.tracking_type == FundType.COST_BASED:
             # For cost-based funds, sum all capital calls
             total = session.query(func.sum(FundEvent.amount)).filter(
                 FundEvent.fund_id == self.id,
@@ -1217,7 +1217,7 @@ class Fund(Base):
             if not isinstance(self._current_units, (Column, ColumnElement)) and not isinstance(self._current_unit_price, (Column, ColumnElement)) and self._current_units is not None and self._current_unit_price is not None and self._current_units != 0 and self._current_unit_price != 0:
                 return self._current_units * self._current_unit_price
             return self.current_equity_balance
-        else:
+        elif self.tracking_type == FundType.COST_BASED:
             # For cost-based funds, use the cost basis
             return self._total_cost_basis or self.current_equity_balance
     
@@ -1440,7 +1440,7 @@ class Fund(Base):
         """
         if self.tracking_type == FundType.NAV_BASED:
             self.update_current_units_and_price(session=session)
-        else:  # COST_BASED
+        elif self.tracking_type == FundType.COST_BASED:
             self.update_total_cost_basis(session=session)
         
         # Recalculate average equity balance
@@ -1508,7 +1508,7 @@ class Fund(Base):
         """
         if self.tracking_type == FundType.NAV_BASED:
             return self._current_units is not None and self._current_units > 0
-        else:
+        elif self.tracking_type == FundType.COST_BASED:
             return self.current_equity_balance is not None and self.current_equity_balance > 0
 
     @property
@@ -1527,7 +1527,7 @@ class Fund(Base):
                 FundEvent.fund_id == self.id,
                 FundEvent.event_type == EventType.UNIT_PURCHASE
             ).order_by(FundEvent.event_date).first()
-        else:
+        elif self.tracking_type == FundType.COST_BASED:
             # For cost-based funds, use the first capital call event
             first_event = session.query(FundEvent).filter(
                 FundEvent.fund_id == self.id,
@@ -1653,7 +1653,7 @@ class Fund(Base):
                 pass  # No need to set again; already set
             # Update fund's field to match latest event
             self.current_equity_balance = events[-1].current_equity_balance if events[-1].current_equity_balance is not None else 0.0
-        else:
+        elif self.tracking_type == FundType.COST_BASED:
             # Cost-based funds: sum cash flows as before
             # If this is the last event, only update this one
             if idx == len(events) - 1:
@@ -1669,14 +1669,43 @@ class Fund(Base):
                 self.current_equity_balance = events[-1].current_equity_balance
         session.commit()
 
-    def calculate_average_equity_balance(self, session=None):
-        """Calculate and return the average equity balance for the fund.
-        Uses NAV or cost-based method depending on fund type.
+    def calculate_average_equity_balance(self, session=None, events=None):
         """
-        if self.tracking_type == FundType.NAV_BASED:
-            return self._calculate_nav_based_average_equity(session=session)
-        else:
-            return self._calculate_cost_based_average_equity(session=session)
+        [NEW FLOW] Calculate average equity balance for the fund, regardless of FundType.
+        Uses per-event current_equity_balance values and time-weighting.
+        Accepts an in-memory events list for efficiency.
+        """
+        # Use provided events list if available, otherwise query
+        if events is None:
+            if self.tracking_type == FundType.NAV_BASED:
+                event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
+            elif self.tracking_type == FundType.COST_BASED:
+                event_types = [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]
+            events = session.query(FundEvent).filter(
+                FundEvent.fund_id == self.id,
+                FundEvent.event_type.in_(event_types)
+            ).order_by(FundEvent.event_date, FundEvent.id).all()
+        if not events or len(events) < 2:
+            return 0.0
+        # Time-weighted average: sum(balance * days) / total_days
+        total_weighted_equity = 0.0
+        total_days = 0
+        for i in range(len(events) - 1):
+            e = events[i]
+            next_e = events[i + 1]
+            days = (next_e.event_date - e.event_date).days
+            equity = e.current_equity_balance if e.current_equity_balance is not None else 0.0
+            total_weighted_equity += equity * days
+            total_days += days
+        # Optionally, include period from last event to today if fund is still active
+        from datetime import date
+        last_event = events[-1]
+        days = (date.today() - last_event.event_date).days
+        if days > 0:
+            equity = last_event.current_equity_balance if last_event.current_equity_balance is not None else 0.0
+            total_weighted_equity += equity * days
+            total_days += days
+        return total_weighted_equity / total_days if total_days > 0 else 0.0
 
     @with_session
     def update_average_equity_balance(self, session=None):
@@ -1703,6 +1732,416 @@ class Fund(Base):
         ).order_by(FundEvent.event_date).all()
         # Calculate amounts using pure function
         calculate_nav_event_amounts(unit_events)
+
+    def add_unit_purchase_v2(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
+        """
+        [NEW FLOW] Add a unit purchase event and update all relevant calculated fields using the unified capital recalculation flow.
+        """
+        if self.tracking_type != FundType.NAV_BASED:
+            raise ValueError("Unit purchases are only applicable for NAV-based funds")
+        amount = (units * price) + brokerage_fee
+        event = FundEvent(
+            fund_id=self.id,
+            event_type=EventType.UNIT_PURCHASE,
+            event_date=date,
+            units_purchased=units,
+            unit_price=price,
+            brokerage_fee=brokerage_fee,
+            amount=amount,
+            description=description or f"Unit purchase: {units} units at ${price:.2f}",
+            reference_number=reference_number
+        )
+        session.add(event)
+        session.flush()
+        self.recalculate_capital_chain_from(event, session=session)
+        return event
+
+    def update_unit_purchase_v2(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
+        """
+        [NEW FLOW] Update an existing unit purchase event and recalculate all affected fields using the unified capital recalculation flow.
+        """
+        event = session.query(FundEvent).filter(
+            FundEvent.id == event_id,
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.UNIT_PURCHASE
+        ).first()
+        if not event:
+            raise ValueError("Unit purchase event not found")
+        if units is not None:
+            event.units_purchased = units
+        if price is not None:
+            event.unit_price = price
+        if date is not None:
+            event.event_date = date
+        if brokerage_fee is not None:
+            event.brokerage_fee = brokerage_fee
+        if description is not None:
+            event.description = description
+        if reference_number is not None:
+            event.reference_number = reference_number
+        # Recalculate amount
+        event.amount = (event.units_purchased * event.unit_price) + (event.brokerage_fee or 0.0)
+        session.flush()
+        self.recalculate_capital_chain_from(event, session=session)
+        return event
+
+    def add_unit_sale_v2(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
+        """
+        [NEW FLOW] Add a unit sale event and update all relevant calculated fields using the unified capital recalculation flow.
+        """
+        if self.tracking_type != FundType.NAV_BASED:
+            raise ValueError("Unit sales are only applicable for NAV-based funds")
+        amount = (units * price) - brokerage_fee
+        event = FundEvent(
+            fund_id=self.id,
+            event_type=EventType.UNIT_SALE,
+            event_date=date,
+            units_sold=units,
+            unit_price=price,
+            brokerage_fee=brokerage_fee,
+            amount=amount,
+            description=description or f"Unit sale: {units} units at ${price:.2f}",
+            reference_number=reference_number
+        )
+        session.add(event)
+        session.flush()
+        self.recalculate_capital_chain_from(event, session=session)
+        return event
+
+    def update_unit_sale_v2(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
+        """
+        [NEW FLOW] Update an existing unit sale event and recalculate all affected fields using the unified capital recalculation flow.
+        """
+        event = session.query(FundEvent).filter(
+            FundEvent.id == event_id,
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.UNIT_SALE
+        ).first()
+        if not event:
+            raise ValueError("Unit sale event not found")
+        if units is not None:
+            event.units_sold = units
+        if price is not None:
+            event.unit_price = price
+        if date is not None:
+            event.event_date = date
+        if brokerage_fee is not None:
+            event.brokerage_fee = brokerage_fee
+        if description is not None:
+            event.description = description
+        if reference_number is not None:
+            event.reference_number = reference_number
+        # Recalculate amount
+        event.amount = (event.units_sold * event.unit_price) - (event.brokerage_fee or 0.0)
+        session.flush()
+        self.recalculate_capital_chain_from(event, session=session)
+        return event
+
+    def add_capital_call_v2(self, amount, date, description=None, reference_number=None, session=None):
+        """
+        [NEW FLOW] Add a capital call event and update all relevant calculated fields using the unified capital recalculation flow.
+        """
+        if self.tracking_type != FundType.COST_BASED:
+            raise ValueError("Capital calls are only applicable for cost-based funds")
+        event = FundEvent(
+            fund_id=self.id,
+            event_type=EventType.CAPITAL_CALL,
+            event_date=date,
+            amount=amount,
+            description=description or f"Capital call: ${amount:,.2f}",
+            reference_number=reference_number
+        )
+        session.add(event)
+        session.flush()
+        self.recalculate_capital_chain_from(event, session=session)
+        return event
+
+    def update_capital_call_v2(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
+        """
+        [NEW FLOW] Update an existing capital call event and recalculate all affected fields using the unified capital recalculation flow.
+        """
+        event = session.query(FundEvent).filter(
+            FundEvent.id == event_id,
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.CAPITAL_CALL
+        ).first()
+        if not event:
+            raise ValueError("Capital call event not found")
+        if amount is not None:
+            event.amount = amount
+        if date is not None:
+            event.event_date = date
+        if description is not None:
+            event.description = description
+        if reference_number is not None:
+            event.reference_number = reference_number
+        session.flush()
+        self.recalculate_capital_chain_from(event, session=session)
+        return event
+
+    def add_return_of_capital_v2(self, amount, date, description=None, reference_number=None, session=None):
+        """
+        [NEW FLOW] Add a return of capital event and update all relevant calculated fields using the unified capital recalculation flow.
+        """
+        if self.tracking_type != FundType.COST_BASED:
+            raise ValueError("Returns of capital are only applicable for cost-based funds")
+        event = FundEvent(
+            fund_id=self.id,
+            event_type=EventType.RETURN_OF_CAPITAL,
+            event_date=date,
+            amount=amount,
+            description=description or f"Return of capital: ${amount:,.2f}",
+            reference_number=reference_number
+        )
+        session.add(event)
+        session.flush()
+        self.recalculate_capital_chain_from(event, session=session)
+        return event
+
+    def update_return_of_capital_v2(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
+        """
+        [NEW FLOW] Update an existing return of capital event and recalculate all affected fields using the unified capital recalculation flow.
+        """
+        event = session.query(FundEvent).filter(
+            FundEvent.id == event_id,
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.RETURN_OF_CAPITAL
+        ).first()
+        if not event:
+            raise ValueError("Return of capital event not found")
+        if amount is not None:
+            event.amount = amount
+        if date is not None:
+            event.event_date = date
+        if description is not None:
+            event.description = description
+        if reference_number is not None:
+            event.reference_number = reference_number
+        session.flush()
+        self.recalculate_capital_chain_from(event, session=session)
+        return event
+
+    def recalculate_capital_chain_from(self, event, session=None):
+        """
+        [NEW FLOW] Unified entry point: Recalculate all capital-related fields for this event and all subsequent capital events.
+        Delegates to fund-type-specific logic as needed.
+        """
+        # Get all capital events for this fund, ordered by (event_date, id)
+        CAPITAL_EVENT_TYPES = [
+            EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL
+        ]
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_(CAPITAL_EVENT_TYPES)
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        if not events:
+            return
+        # Find the index of the given event
+        idx = None
+        for i, e in enumerate(events):
+            if e.id == event.id:
+                idx = i
+                break
+        if idx is None:
+            return
+        # Recalculate all fields from this event forward
+        self._recalculate_subsequent_capital_fund_events_after_capital_event(events, idx, session=session)
+        # Update fund-level summary fields
+        self.update_fund_summary_fields_after_capital_event(session=session)
+        # Commit session
+        session.commit()
+
+    def _recalculate_subsequent_capital_fund_events_after_capital_event(self, events, start_idx, session=None):
+        """
+        [NEW FLOW] Efficiently recalculate all relevant per-event fields for all subsequent events in a single pass.
+        Delegates to fund-type-specific single-pass calculators.
+        """
+        if self.tracking_type == FundType.NAV_BASED:
+            self._calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event(events, start_idx, session)
+        elif self.tracking_type == FundType.COST_BASED:
+            self._calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event(events, start_idx, session)
+
+    def _calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event(self, events, start_idx, session=None):
+        """
+        [NEW FLOW] Efficiently recalculate NAV-based fields (units_owned, current_equity_balance, amount, etc.) for all subsequent events in a single pass.
+        Builds FIFO and units up to start_idx, then processes all subsequent events.
+        """
+        # Build FIFO and cumulative units up to (but not including) start_idx
+        fifo = []  # Each entry: (units, unit_price, event_date)
+        cumulative_units = 0.0
+        for i in range(start_idx):
+            e = events[i]
+            if e.event_type == EventType.UNIT_PURCHASE:
+                units = e.units_purchased or 0
+                unit_price = e.unit_price or 0
+                brokerage_fee = e.brokerage_fee or 0
+                if units > 0:
+                    effective_price = unit_price + (brokerage_fee / units)
+                    fifo.append((units, effective_price, e.event_date))
+                cumulative_units += units
+            elif e.event_type == EventType.UNIT_SALE:
+                units = e.units_sold or 0
+                remaining = units
+                while remaining > 0 and fifo:
+                    oldest_units, oldest_price, oldest_date = fifo[0]
+                    if oldest_units <= remaining:
+                        fifo.pop(0)
+                        remaining -= oldest_units
+                    else:
+                        fifo[0] = (oldest_units - remaining, oldest_price, oldest_date)
+                        remaining = 0
+                cumulative_units -= units
+        # Now process all subsequent events in a single pass
+        for i in range(start_idx, len(events)):
+            e = events[i]
+            if e.event_type == EventType.UNIT_PURCHASE:
+                units = e.units_purchased or 0
+                unit_price = e.unit_price or 0
+                brokerage_fee = e.brokerage_fee or 0
+                e.amount = (units * unit_price) + brokerage_fee
+                if units > 0:
+                    effective_price = unit_price + (brokerage_fee / units)
+                    fifo.append((units, effective_price, e.event_date))
+                cumulative_units += units
+                e.units_owned = cumulative_units
+                total_cost = sum(u * p for u, p, _ in fifo)
+                e.current_equity_balance = total_cost
+            elif e.event_type == EventType.UNIT_SALE:
+                units = e.units_sold or 0
+                unit_price = e.unit_price or 0
+                brokerage_fee = e.brokerage_fee or 0
+                e.amount = (units * unit_price) - brokerage_fee
+                remaining = units
+                while remaining > 0 and fifo:
+                    oldest_units, oldest_price, oldest_date = fifo[0]
+                    if oldest_units <= remaining:
+                        fifo.pop(0)
+                        remaining -= oldest_units
+                    else:
+                        fifo[0] = (oldest_units - remaining, oldest_price, oldest_date)
+                        remaining = 0
+                cumulative_units -= units
+                e.units_owned = cumulative_units
+                total_cost = sum(u * p for u, p, _ in fifo)
+                e.current_equity_balance = total_cost
+            else:
+                # Not a capital event we care about for NAV-based
+                e.units_owned = cumulative_units
+                e.current_equity_balance = sum(u * p for u, p, _ in fifo)
+        # End of single-pass NAV recalculation
+
+    def _calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event(self, events, start_idx, session=None):
+        """
+        [NEW FLOW] Efficiently recalculate cost-based fields (current_equity_balance, amount, etc.) for all subsequent events in a single pass.
+        Builds running balance up to start_idx, then processes all subsequent events.
+        """
+        balance = 0.0
+        for i in range(start_idx):
+            e = events[i]
+            if e.event_type == EventType.CAPITAL_CALL:
+                balance += e.amount or 0.0
+            elif e.event_type == EventType.RETURN_OF_CAPITAL:
+                balance -= e.amount or 0.0
+        for i in range(start_idx, len(events)):
+            e = events[i]
+            if e.event_type == EventType.CAPITAL_CALL:
+                balance += e.amount or 0.0
+                e.current_equity_balance = balance
+            elif e.event_type == EventType.RETURN_OF_CAPITAL:
+                balance -= e.amount or 0.0
+                e.current_equity_balance = balance
+            else:
+                e.current_equity_balance = balance
+        # End of single-pass cost-based recalculation
+
+    def update_fund_summary_fields_after_capital_event(self, session=None):
+        """
+        [NEW FLOW] Update fund-level fields: current_equity_balance, current_units, average_equity_balance, total_cost_basis, etc.
+        Delegates to fund-type-specific summary updaters.
+        """
+        if self.tracking_type == FundType.NAV_BASED:
+            self._update_nav_fund_summary_after_capital_event(session)
+        elif self.tracking_type == FundType.COST_BASED:
+            self._update_cost_based_fund_summary_after_capital_event(session)
+
+    def _update_nav_fund_summary_after_capital_event(self, session):
+        """
+        [NEW FLOW] Set current_units, current_equity_balance, average_equity_balance, etc. for NAV-based funds.
+        Uses the latest event values.
+        """
+        # Get all unit purchase/sale events ordered by date
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        if events:
+            latest_event = events[-1]
+            self._current_units = latest_event.units_owned if latest_event.units_owned is not None else 0.0
+            self.current_equity_balance = latest_event.current_equity_balance if latest_event.current_equity_balance is not None else 0.0
+        else:
+            self._current_units = 0.0
+            self.current_equity_balance = 0.0
+        # Average equity balance (unified method)
+        self.average_equity_balance = self.calculate_average_equity_balance(session=session)
+
+    def _update_cost_based_fund_summary_after_capital_event(self, session):
+        """
+        [NEW FLOW] Set current_equity_balance, total_cost_basis, average_equity_balance, etc. for cost-based funds.
+        Uses the latest event values.
+        """
+        # Get all capital call/return events ordered by date
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_([EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL])
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        if events:
+            latest_event = events[-1]
+            self.current_equity_balance = latest_event.current_equity_balance if latest_event.current_equity_balance is not None else 0.0
+        else:
+            self.current_equity_balance = 0.0
+        # Total cost basis = sum of capital calls - sum of returns
+        total_calls = sum(e.amount or 0.0 for e in events if e.event_type == EventType.CAPITAL_CALL)
+        total_returns = sum(e.amount or 0.0 for e in events if e.event_type == EventType.RETURN_OF_CAPITAL)
+        self._total_cost_basis = total_calls - total_returns
+        # Average equity balance (unified method)
+        self.average_equity_balance = self.calculate_average_equity_balance(session=session)
+
+    def calculate_average_equity_balance(self, session=None):
+        """
+        [NEW FLOW] Calculate average equity balance for the fund, regardless of FundType.
+        Uses per-event current_equity_balance values and time-weighting.
+        """
+        # Get all relevant capital events ordered by date
+        if self.tracking_type == FundType.NAV_BASED:
+            event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
+        elif self.tracking_type == FundType.COST_BASED:
+            event_types = [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_(event_types)
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        if not events or len(events) < 2:
+            return 0.0
+        # Time-weighted average: sum(balance * days) / total_days
+        total_weighted_equity = 0.0
+        total_days = 0
+        for i in range(len(events) - 1):
+            e = events[i]
+            next_e = events[i + 1]
+            days = (next_e.event_date - e.event_date).days
+            equity = e.current_equity_balance if e.current_equity_balance is not None else 0.0
+            total_weighted_equity += equity * days
+            total_days += days
+        # Optionally, include period from last event to today if fund is still active
+        from datetime import date
+        last_event = events[-1]
+        days = (date.today() - last_event.event_date).days
+        if days > 0:
+            equity = last_event.current_equity_balance if last_event.current_equity_balance is not None else 0.0
+            total_weighted_equity += equity * days
+            total_days += days
+        return total_weighted_equity / total_days if total_days > 0 else 0.0
+
 
 
 class FundEvent(Base):
