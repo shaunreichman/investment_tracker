@@ -7,6 +7,20 @@ from sqlalchemy import pool
 
 from alembic import context
 
+# Enable autogeneration: import Base and set target_metadata
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+from src.shared.base import Base
+
+# Explicitly import all model modules to register them with Base
+import src.fund.models
+import src.entity.models
+import src.tax.models
+import src.rates.models
+import src.investment_company.models
+
+target_metadata = Base.metadata
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -18,7 +32,6 @@ if config.config_file_name is not None:
 
 # For now, we'll run without model imports to avoid import issues
 # We can add model imports later for autogenerate functionality
-target_metadata = None
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

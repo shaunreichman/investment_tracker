@@ -112,7 +112,8 @@ class DummyTaxStatement:
                  dividend_unfranked_income_amount=0.0, dividend_unfranked_income_tax_rate=0.0,
                  interest_income_amount=0.0, interest_income_tax_rate=0.0,
                  fy_debt_interest_deduction_sum_of_daily_interest=0.0, fy_debt_interest_deduction_rate=0.0,
-                 interest_non_resident_withholding_tax_from_statement=0.0):
+                 interest_non_resident_withholding_tax_from_statement=0.0,
+                 capital_gain_income_amount=0.0, capital_gain_income_tax_rate=0.0):
         self.fund_id = fund_id
         self.entity_id = entity_id
         self.financial_year = financial_year
@@ -134,6 +135,12 @@ class DummyTaxStatement:
         self._fy_dates = (date(2023, 7, 1), date(2024, 6, 30))
         self.interest_tax_amount = 0.0
         self.interest_tax_benefit = 0.0
+        # Capital gain fields
+        self.capital_gain_income_amount = capital_gain_income_amount
+        self.capital_gain_income_tax_rate = capital_gain_income_tax_rate
+        self.capital_gain_tax_amount = 0.0
+        self.capital_gain_discount_amount = 0.0
+        self.capital_gain_income_amount_from_tax_statement_flag = capital_gain_income_amount > 0
     def calculate_interest_tax_amount(self):
         if self.interest_income_tax_rate and self.interest_income_amount and self.interest_income_tax_rate != 0 and self.interest_income_amount > 0:
             total_tax_liability = self.interest_income_amount * (self.interest_income_tax_rate / 100)
@@ -172,6 +179,24 @@ class DummyTaxStatement:
         else:
             self.dividend_unfranked_tax_amount = 0.0
         return self.dividend_unfranked_tax_amount
+
+    def calculate_capital_gain_totals(self, session=None):
+        # Dummy: just return the set value
+        return self.capital_gain_income_amount
+    def calculate_capital_gain_discount(self, session=None):
+        # Dummy: 50% discount if gain exists
+        if self.capital_gain_income_amount > 0:
+            self.capital_gain_discount_amount = 0.5 * self.capital_gain_income_amount
+        else:
+            self.capital_gain_discount_amount = 0.0
+        return self.capital_gain_discount_amount
+    def calculate_capital_gain_tax_amount(self, session=None):
+        # Dummy: tax on full gain (not discounted)
+        if self.capital_gain_income_amount and self.capital_gain_income_tax_rate:
+            self.capital_gain_tax_amount = (self.capital_gain_income_amount * self.capital_gain_income_tax_rate) / 100.0
+        else:
+            self.capital_gain_tax_amount = 0.0
+        return self.capital_gain_tax_amount
 
 def test_create_interest_tax_payment():
     ts = DummyTaxStatement(
@@ -586,6 +611,87 @@ def test_negative_dividend_amount(in_memory_session):
         FundEvent.tax_payment_type == TaxPaymentType.DIVIDENDS_FRANKED_TAX
     ).first()
     assert event is None
+
+def test_capital_gain_tax_payment_event():
+    """
+    Test capital gain tax payment event creation for NAV-based fund with FIFO and AU discount logic.
+    """
+    from src.fund.models import Fund, FundType, EventType, FundEvent, DistributionType, TaxPaymentType
+    from src.tax.models import TaxStatement
+    from src.tax.events import TaxEventFactory
+    from datetime import date, timedelta
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker, scoped_session
+    from src.entity.models import Entity
+
+    # Setup in-memory SQLite DB
+    engine = create_engine('sqlite:///:memory:')
+    Fund.metadata.create_all(engine)
+    Entity.metadata.create_all(engine)
+    FundEvent.metadata.create_all(engine)
+    TaxStatement.metadata.create_all(engine)
+    Session = scoped_session(sessionmaker(bind=engine))
+    session = Session()
+
+    try:
+        # Create AU entity
+        entity = Entity.create(name="Test AU Entity", tax_jurisdiction="AU", session=session)
+        # Create NAV-based fund
+        fund = Fund.create(
+            investment_company_id=1,
+            entity_id=entity.id,
+            name="Test NAV Fund",
+            fund_type="Equity",
+            tracking_type=FundType.NAV_BASED,
+            session=session
+        )
+        # Unit purchase: 100 units @ $10 on 2022-01-01
+        purchase_date = date(2022, 1, 1)
+        fund_event1 = FundEvent(
+            fund_id=fund.id,
+            event_type=EventType.UNIT_PURCHASE,
+            event_date=purchase_date,
+            units_purchased=100,
+            unit_price=10.0
+        )
+        session.add(fund_event1)
+        # Unit sale: 100 units @ $20 on 2023-07-01 (holding > 12 months)
+        sale_date = date(2023, 7, 1)
+        fund_event2 = FundEvent(
+            fund_id=fund.id,
+            event_type=EventType.UNIT_SALE,
+            event_date=sale_date,
+            units_sold=100,
+            unit_price=20.0
+        )
+        session.add(fund_event2)
+        session.commit()
+        # Create tax statement for FY 2023-24
+        tax_statement = TaxStatement(
+            fund_id=fund.id,
+            entity_id=entity.id,
+            financial_year="2023-24",
+            capital_gain_income_tax_rate=30.0
+        )
+        session.add(tax_statement)
+        session.commit()
+        # Calculate capital gain totals and discount
+        tax_statement.calculate_capital_gain_totals(session=session)
+        tax_statement.calculate_capital_gain_discount(session=session)
+        # Should be 100 * (20-10) = $1000 gain, all eligible for 50% discount
+        assert abs(tax_statement.capital_gain_income_amount - 1000.0) < 0.01
+        assert abs(tax_statement.capital_gain_discount_amount - 500.0) < 0.01
+        # Calculate tax amount (should be on full gain, not discounted)
+        tax_statement.calculate_capital_gain_tax_amount()
+        assert abs(tax_statement.capital_gain_tax_amount - 300.0) < 0.01
+        # Create capital gain tax payment event
+        event = TaxEventFactory.create_capital_gain_tax_payment(tax_statement, session=session)
+        assert event is not None
+        assert event.tax_payment_type == TaxPaymentType.CAPITAL_GAINS_TAX
+        assert abs(event.amount - 300.0) < 0.01
+        print("\n✅ Capital gain tax payment event logic works as expected!")
+    finally:
+        session.close()
 
 if __name__ == "__main__":
     test_dividend_tax_payments() 

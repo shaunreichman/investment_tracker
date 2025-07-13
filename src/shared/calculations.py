@@ -79,6 +79,7 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
 def get_equity_change_for_event(event, fund_type):
     """
     Calculate the equity change for a given event based on fund type.
+    For NAV_BASED funds, exclude brokerage from equity (use units * unit_price).
     Args:
         event: FundEvent object
         fund_type (FundType): Type of fund (NAV_BASED or COST_BASED)
@@ -89,9 +90,11 @@ def get_equity_change_for_event(event, fund_type):
 
     if fund_type == FundType.NAV_BASED:
         if event.event_type == EventType.UNIT_PURCHASE:
-            return event.amount or 0.0
+            # Exclude brokerage: equity is units * unit_price
+            return (event.units_purchased or 0.0) * (event.unit_price or 0.0)
         elif event.event_type == EventType.UNIT_SALE:
-            return -(event.amount or 0.0)
+            # Exclude brokerage: equity is units * unit_price
+            return -((event.units_sold or 0.0) * (event.unit_price or 0.0))
     elif fund_type == FundType.COST_BASED:
         if event.event_type == EventType.CAPITAL_CALL:
             return event.amount or 0.0

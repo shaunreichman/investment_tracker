@@ -12,6 +12,8 @@ import sys
 import os
 import argparse
 from datetime import date
+from sqlalchemy import func
+import re
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -94,7 +96,7 @@ def setup_test_data(session):
     print("Adding Senior Debt Fund events using domain methods...")
     
     # Add capital call
-    senior_debt_fund.add_capital_call(
+    senior_debt_fund.add_capital_call_v2(
         amount=100000.0,
         date=date(2023, 6, 23),
         description="Initial capital call",
@@ -102,19 +104,19 @@ def setup_test_data(session):
     )
     
     # Add returns of capital
-    senior_debt_fund.add_return_of_capital(
+    senior_debt_fund.add_return_of_capital_v2(
         amount=7000.0,
         date=date(2023, 12, 8),
         description="Return of capital",
         session=session
     )
-    senior_debt_fund.add_return_of_capital(
+    senior_debt_fund.add_return_of_capital_v2(
         amount=45000.0,
         date=date(2024, 3, 26),
         description="Partial exit distribution",
         session=session
     )
-    senior_debt_fund.add_return_of_capital(
+    senior_debt_fund.add_return_of_capital_v2(
         amount=48000.0,
         date=date(2024, 8, 2),
         description="Return of capital",
@@ -168,7 +170,7 @@ def setup_test_data(session):
     print("Adding 3PG Finance events using domain methods...")
     
     # Add capital call
-    finance_fund.add_capital_call(
+    finance_fund.add_capital_call_v2(
         amount=100000.0,
         date=date(2022, 11, 24),
         description="Initial capital call",
@@ -176,43 +178,43 @@ def setup_test_data(session):
     )
     
     # Add returns of capital
-    finance_fund.add_return_of_capital(
+    finance_fund.add_return_of_capital_v2(
         amount=7324.42,
         date=date(2023, 3, 24),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital(
+    finance_fund.add_return_of_capital_v2(
         amount=26326.88,
         date=date(2023, 7, 7),
         description="Partial exit distribution",
         session=session
     )
-    finance_fund.add_return_of_capital(
+    finance_fund.add_return_of_capital_v2(
         amount=8527.53,
         date=date(2023, 8, 4),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital(
+    finance_fund.add_return_of_capital_v2(
         amount=8805.21,
         date=date(2023, 9, 22),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital(
+    finance_fund.add_return_of_capital_v2(
         amount=9814.74,
         date=date(2023, 10, 13),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital(
+    finance_fund.add_return_of_capital_v2(
         amount=6967.81,
         date=date(2023, 11, 21),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital(
+    finance_fund.add_return_of_capital_v2(
         amount=32233.41,
         date=date(2024, 4, 19),
         description="Final return of capital",
@@ -282,7 +284,7 @@ def setup_test_data(session):
     
     # Add events for ABC Ltd NAV-based fund (match original test)
     # Initial unit purchase
-    abc_fund.add_unit_purchase(
+    abc_fund.add_unit_purchase_v2(
         units=85.0,
         price=58.00,
         date=date(2013, 3, 28),
@@ -328,7 +330,7 @@ def setup_test_data(session):
         session=session
     )
     # Partial unit sale
-    abc_fund.add_unit_sale(
+    abc_fund.add_unit_sale_v2(
         units=40.0,
         price=61.20,
         date=date(2013, 9, 4),
@@ -388,7 +390,7 @@ def setup_test_data(session):
         session=session
     )
     # Additional unit purchase
-    abc_fund.add_unit_purchase(
+    abc_fund.add_unit_purchase_v2(
         units=120.0,
         price=61.4,
         date=date(2014, 4, 30),
@@ -404,7 +406,7 @@ def setup_test_data(session):
         session=session
     )
     # Final unit sale
-    abc_fund.add_unit_sale(
+    abc_fund.add_unit_sale_v2(
         units=165.0,
         price=62.62,
         date=date(2014, 5, 13),
@@ -462,7 +464,7 @@ def setup_test_data(session):
         session=session
     )
     # ABC Ltd Tax Statements (NAV-based fund)
-    abc_fund.create_or_update_tax_statement(
+    abc_tax_statement_2012_13 = abc_fund.create_or_update_tax_statement(
         entity_id=entity.id,
         financial_year="2012-13",
         notes="FY13 tax statement from fund manager",
@@ -471,16 +473,30 @@ def setup_test_data(session):
         fy_debt_interest_deduction_rate=32.5,
         session=session
     )
-    abc_fund.create_or_update_tax_statement(
+    abc_tax_statement_2013_14 = abc_fund.create_or_update_tax_statement(
         entity_id=entity.id,
         financial_year="2013-14",
         notes="FY14 tax statement from fund manager",
-        interest_received_in_cash=79.05,
         accountant='Findex',
         statement_date=date(2024, 8, 12),
+        capital_gain_income_tax_rate=30,
         fy_debt_interest_deduction_rate=32.5,
         session=session
     )
+
+    # --- Capital gain calculation and cash flow addition ---
+    for tax_statement, label in [
+        (abc_tax_statement_2012_13, "2012-13"),
+        (abc_tax_statement_2013_14, "2013-14")
+    ]:
+        try:
+            tax_statement.calculate_capital_gain_totals(session=session)
+            tax_statement.calculate_capital_gain_discount(session=session)
+            tax_statement.calculate_capital_gain_tax_amount(session=session)
+            if getattr(tax_statement, 'capital_gain_income_amount', 0) > 0:
+                print(f"ABC Ltd capital gain for {label}: {tax_statement.capital_gain_income_amount:.2f} (discount: {tax_statement.capital_gain_discount_amount:.2f}, tax: {tax_statement.capital_gain_tax_amount:.2f})")
+        except Exception as e:
+            print(f"Error calculating capital gains for ABC Ltd {label}: {e}")
     
     print("Test data setup complete!")
     print(f"Created {len(company.funds)} funds for {company.name}")
@@ -524,13 +540,9 @@ def recalculate_everything(session, show_irr_cashflows=True):
         if fund.tracking_type == FundType.NAV_BASED:
             current_units = fund.current_units
             current_unit_price = fund.current_unit_price
-            current_value = fund.current_value
             print(f"  Current units: {current_units:.2f}")
             print(f"  Current unit price: ${current_unit_price:.4f}")
-            print(f"  Current value: ${current_value:,.2f}")
-        else:
-            total_cost_basis = fund.total_cost_basis
-            print(f"  Total cost basis: ${total_cost_basis:,.2f}")
+        # Remove lines that reference fund.total_cost_basis and their print statements
         
         # Create tax payment events using domain methods
         tax_events = fund.create_tax_payment_events(session=session)
@@ -639,11 +651,9 @@ def verify_results(session):
         if fund.tracking_type == FundType.NAV_BASED:
             current_units = fund.current_units
             current_unit_price = fund.current_unit_price
-            current_value = fund.current_value
             
             print(f"  Current units: {current_units:.2f}")
             print(f"  Current unit price: ${current_unit_price:.4f}")
-            print(f"  Current value: ${current_value:,.2f}")
             
             # Count NAV-specific events
             nav_events = [e for e in events if e.event_type == EventType.NAV_UPDATE]
@@ -652,9 +662,7 @@ def verify_results(session):
             
             print(f"  NAV update events: {len(nav_events)}")
             print(f"  Unit purchases: {len(unit_purchases)}, Unit sales: {len(unit_sales)}")
-        else:
-            total_cost_basis = fund.total_cost_basis
-            print(f"  Total cost basis: ${total_cost_basis:,.2f}")
+        # Remove lines that reference fund.total_cost_basis and their print statements
     
     # Get risk-free rates count using domain methods
     risk_free_rates = session.query(RiskFreeRate).all()
@@ -667,6 +675,85 @@ def verify_results(session):
     # Get tax statements count using domain methods
     tax_statements = session.query(TaxStatement).all()
     print(f"Tax statements: {len(tax_statements)}")
+
+def print_equity_balance_over_time(fund, session):
+    """Print equity balance over time for a fund, including number of days each balance persisted."""
+    from src.fund.models import FundEvent, EventType
+    print(f"\n=== Equity Balance Over Time: {fund.name} ===")
+    # Get all events that affect equity, ordered by date
+    if fund.tracking_type.name == 'COST_BASED':
+        event_types = [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]
+    else:
+        event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
+    events = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.event_type.in_(event_types)
+    ).order_by(FundEvent.event_date).all()
+    if not events:
+        print("No events.")
+        return
+    # For each event, recalculate equity and print
+    prev_date = None
+    prev_equity = None
+    for i, event in enumerate(events):
+        # Use the event's current_equity_balance field (set by the system)
+        equity = event.current_equity_balance if event.current_equity_balance is not None else 0.0
+        # Calculate number of days this balance persisted
+        if i + 1 < len(events):
+            days = (events[i+1].event_date - event.event_date).days
+        else:
+            # If last event, use fund end_date or today
+            end_date = getattr(fund, 'end_date', None) or event.event_date
+            if end_date is None or end_date < event.event_date:
+                from datetime import date as dtdate
+                end_date = dtdate.today()
+            days = (end_date - event.event_date).days
+        print(f"{event.event_date} | {event.event_type.name:15} | Equity: {equity:12,.2f} | Days: {days}")
+        prev_date = event.event_date
+        prev_equity = equity
+
+def print_daily_debt_cost_breakdown(fund, session, fy_label, fy_start, fy_end):
+    """Print the exact daily breakdown of risk-free interest charges for a fund in a given FY, and summarize how many days each unique charge appears."""
+    print(f"\n=== Daily Risk-Free Interest Charges for {fund.name} ({fy_label}) ===")
+    # Get all daily risk-free interest charges for the FY
+    daily_events = fund.get_daily_risk_free_charges(session, start_date=fy_start, end_date=fy_end)
+    if not daily_events:
+        print("No daily risk-free interest charges found.")
+        return
+    from collections import defaultdict
+    total = 0.0
+    charge_counter = defaultdict(int)
+    for event in daily_events:
+        date = event.event_date
+        charge = event.amount
+        rate = getattr(event, 'risk_free_rate', None)
+        # Find the most recent capital event on or before this date
+        capital_event_types = [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
+        latest_cap_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type.in_(capital_event_types),
+            FundEvent.event_date <= date
+        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+        equity = latest_cap_event.current_equity_balance if latest_cap_event and latest_cap_event.current_equity_balance is not None else 0.0
+        # Try to parse rate from description if not present
+        if rate is None and event.description:
+            match = re.search(r'\((\d+\.\d+)% p\.a\.\)', event.description)
+            if match:
+                rate = float(match.group(1))
+        if rate is not None:
+            print(f"{date} | Rate: {rate:5.2f}% | Daily Charge: {charge:8.4f} | Equity: {equity:12,.2f}")
+        else:
+            print(f"{date} | Rate:   N/A | Daily Charge: {charge:8.4f} | Equity: {equity:12,.2f}")
+        total += charge
+        charge_counter[round(charge, 6)] += 1  # Use rounded charge as key for grouping
+    print(f"Total for {fy_label}: {total:.4f}\n")
+    # Print summary of unique daily charges
+    print(f"Summary of unique daily charges for {fy_label}:")
+    print(f"{'Daily Charge':>12} | {'Days':>5}")
+    print("-" * 22)
+    for charge, days in sorted(charge_counter.items()):
+        print(f"{charge:12.6f} | {days:5}")
+    print()
 
 def main():
     """Main test function demonstrating proper session management architecture."""
@@ -708,6 +795,16 @@ def main():
         # Verify results using domain methods
         verify_results(session)
         
+        # After recalculation and verification, print equity balance over time for each fund
+        # Find the funds we created in setup_test_data
+        senior_debt_fund = session.query(Fund).filter(Fund.name == "Senior Debt Fund No.24").first()
+        finance_fund = session.query(Fund).filter(Fund.name == "3PG Finance").first()
+        abc_fund = session.query(Fund).filter(Fund.name == "ABC Ltd").first()
+
+        print_equity_balance_over_time(senior_debt_fund, session)
+        print_equity_balance_over_time(finance_fund, session)
+        print_equity_balance_over_time(abc_fund, session)
+        
         print("\n=== DOMAIN STRUCTURE TEST COMPLETED SUCCESSFULLY ===")
         print("\n🎉 All domain structure tests passed! Migration was successful.")
         print("\n✅ Architectural pattern verified:")
@@ -722,3 +819,21 @@ def main():
 
 if __name__ == "__main__":
     main() 
+    # --- Print exact daily breakdown for ABC fund debt cost ---
+    engine, session_factory, scoped_session = get_database_session()
+    session = scoped_session()
+    try:
+        abc_fund = session.query(Fund).filter(Fund.name == "ABC Ltd").first()
+        if abc_fund:
+            # FY13: 2012-07-01 to 2013-06-30
+            print_daily_debt_cost_breakdown(
+                abc_fund, session, "FY13", date(2012, 7, 1), date(2013, 6, 30)
+            )
+            # FY14: 2013-07-01 to 2014-06-30
+            print_daily_debt_cost_breakdown(
+                abc_fund, session, "FY14", date(2013, 7, 1), date(2014, 6, 30)
+            )
+        else:
+            print("ABC Ltd fund not found for daily debt cost breakdown.")
+    finally:
+        session.close() 
