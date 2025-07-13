@@ -104,6 +104,37 @@ class TaxEventFactory:
         return event
 
     @staticmethod
+    def create_capital_gain_tax_payment(tax_statement: TaxStatement, session: Optional[Session] = None) -> Optional[FundEvent]:
+        """
+        Create a capital gain tax payment event object for the given tax statement.
+        Returns the event object or None if not applicable.
+        Does not add to the database.
+        """
+        if not tax_statement:
+            raise ValueError("tax_statement is required")
+
+        # Ensure capital gain totals are calculated from fund events if not set
+        tax_statement.calculate_capital_gain_totals(session)
+        
+        # Calculate capital gain tax amount
+        tax_statement.calculate_capital_gain_tax_amount()
+        tax_amount = tax_statement.capital_gain_tax_amount
+
+        if tax_amount <= 0:
+            return None
+
+        event = FundEvent(
+            fund_id=tax_statement.fund_id,
+            event_type=EventType.TAX_PAYMENT,
+            event_date=tax_statement.get_tax_payment_date(),
+            amount=tax_amount,
+            description=f"Capital gain tax (rate: {tax_statement.capital_gain_income_tax_rate}%)",
+            reference_number=f"CAPITAL_GAIN_TAX_{tax_statement.financial_year}",
+            tax_payment_type=TaxPaymentType.CAPITAL_GAINS_TAX
+        )
+        return event
+
+    @staticmethod
     def create_fy_debt_cost_event(tax_statement: TaxStatement, session: Optional[Session] = None) -> Optional[FundEvent]:
         """
         Create a financial year debt cost event object for the given tax statement.
@@ -149,6 +180,10 @@ class TaxEventFactory:
             tax_statement, DistributionType.DIVIDEND_UNFRANKED, session=session)
         if unfranked_event:
             events.append(unfranked_event)
+        # Capital gain tax payment
+        capital_gain_event = TaxEventFactory.create_capital_gain_tax_payment(tax_statement, session=session)
+        if capital_gain_event:
+            events.append(capital_gain_event)
         # FY debt cost event
         fy_debt_cost_event = TaxEventFactory.create_fy_debt_cost_event(tax_statement, session=session)
         if fy_debt_cost_event:
