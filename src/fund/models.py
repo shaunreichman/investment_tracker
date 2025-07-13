@@ -1644,15 +1644,15 @@ class Fund(Base):
                 break
         if idx is None:
             return
-        # NAV-based funds: use FIFO cost base for equity balance
+        # NAV-based funds: use current_equity_balance for equity balance
         if self.tracking_type == FundType.NAV_BASED:
             # Recalculate from this event forward to ensure FIFO is correct
             for i in range(idx, len(events)):
                 e = events[i]
-                # cost_of_units should already be up-to-date from calculate_nav_event_amounts
-                e.current_equity_balance = e.cost_of_units if e.cost_of_units is not None else 0.0
+                # current_equity_balance should already be up-to-date from calculate_nav_event_amounts
+                pass  # No need to set again; already set
             # Update fund's field to match latest event
-            self.current_equity_balance = events[-1].cost_of_units if events[-1].cost_of_units is not None else 0.0
+            self.current_equity_balance = events[-1].current_equity_balance if events[-1].current_equity_balance is not None else 0.0
         else:
             # Cost-based funds: sum cash flows as before
             # If this is the last event, only update this one
@@ -1730,7 +1730,6 @@ class FundEvent(Base):
     amount = Column(Float)  # (HYBRID) cash flow amount, can be manual or calculated based on event type
     nav_per_share = Column(Float)  # (MANUAL) NAV per share for NAV_UPDATE events
     units_owned = Column(Float)  # (CALCULATED) cumulative units owned after this event
-    cost_of_units = Column(Float)  # (CALCULATED) FIFO cost basis of remaining units after this event
     distribution_type = Column(Enum(DistributionType))  # (MANUAL) type of distribution (DIVIDEND, INTEREST, etc.)
     tax_payment_type = Column(Enum(TaxPaymentType))  # (MANUAL) type of tax payment (INTEREST, CAPITAL_GAINS, etc.)
     units_purchased = Column(Float)  # (MANUAL) units purchased in this event
@@ -1740,7 +1739,7 @@ class FundEvent(Base):
     description = Column(Text)  # (MANUAL) event description
     reference_number = Column(String(100))  # (MANUAL) external reference number
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
-    current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) equity after this event (capital events only)
+    current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event (set only on capital events). For cost-based funds: net capital after this event (set only on capital events).
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
