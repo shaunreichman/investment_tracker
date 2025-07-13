@@ -26,15 +26,12 @@ Created 1 funds for Test Shares Company
 Funds after setup: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
 
 Initial fund state:
-  Senior Debt Fund No.24: equity=$0.00, avg=$44113.18
-  3PG Finance: equity=$0.00, avg=$35150.86
-  ABC Ltd: equity=$0.00, avg=$344.28
+  Senior Debt Fund No.24: equity=$0.00, avg=$81598.52
+  3PG Finance: equity=$0.00, avg=$66045.18
+  ABC Ltd: equity=$0.00, avg=$3761.06
 
 3. Recalculating all derived values...
 Funds to recalculate: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
 Number of funds to recalculate: 3
 
 Recalculating for Senior Debt Fund No.24:
-Recalculated all fields for fund 'Senior Debt Fund No.24'
-  Current equity: $0.00
-  Average equity: $44,113.18

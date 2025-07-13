@@ -1108,27 +1108,6 @@ class Fund(Base):
         
         return True
 
-    @with_session
-    def recalculate_all_fields(self, session=None):
-        """Recalculate all calculated fields for this fund.
-        Args:
-            session: Database session
-        """
-        if self.tracking_type == FundType.NAV_BASED:
-            # Find the latest capital event (unit purchase or sale)
-            latest_event = session.query(FundEvent).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type.in_([
-                    EventType.UNIT_PURCHASE, EventType.UNIT_SALE
-                ])
-            ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
-            if latest_event:
-                self.recalculate_capital_chain_from(latest_event, session=session)
-        # For COST_BASED, nothing to do (handled by v2 flows)
-        # Recalculate average equity balance
-        self.update_average_equity_balance(session=session)
-        print(f"Recalculated all fields for fund '{self.name}'")
-
     def _create_bulk_event_objects(self, events_data):
         """Create FundEvent objects from event data.
         Returns a list of FundEvent objects. No database operations.

@@ -527,9 +527,6 @@ def recalculate_everything(session, show_irr_cashflows=True):
         iteration_count += 1
         print(f"\nRecalculating for {fund.name}:")
         
-        # Recalculate using domain methods
-        fund.recalculate_all_fields(session=session)
-        
         # Get current values
         current_equity = fund.current_equity_balance
         average_equity = fund.average_equity_balance
