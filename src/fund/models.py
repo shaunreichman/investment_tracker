@@ -17,6 +17,7 @@ from sqlalchemy import event
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import object_session
 
 # Import the Base from shared
 from ..shared.base import Base
@@ -41,7 +42,6 @@ from .calculations import (
 # Import models from other domains
 from ..rates.models import RiskFreeRate
 from ..entity.models import Entity
-from ..tax.models import TaxStatement
 
 # Import shared calculations
 from ..shared.calculations import get_equity_change_for_event, get_financial_years_for_fund_period
@@ -244,16 +244,17 @@ class Fund(Base):
         """Return a string representation of the Fund instance for debugging/logging."""
         return f"<Fund(id={self.id}, name='{self.name}', company='{self.investment_company.name if self.investment_company else 'Unknown'}')>"
     
+    @with_session
     def _create_or_update_tax_statement_object(self, entity_id, financial_year, **kwargs):
         """Create or update a tax statement object.
         Returns the TaxStatement object. No database operations.
         """
+        from ..tax.models import TaxStatement
         # Try to find existing statement
         statement = self.get_tax_statement_for_entity_financial_year(entity_id, financial_year)
         
         if statement is None:
             # Create new statement
-            from ..tax.models import TaxStatement
             # Remove session from kwargs if present
             kwargs.pop('session', None)
             statement = TaxStatement(
@@ -275,12 +276,14 @@ class Fund(Base):
         
         return statement
 
+    @with_session
     def create_or_update_tax_statement(self, entity_id, financial_year, **kwargs):
         """Create or update a tax statement for a specific entity and financial year.
         If a statement exists, updates its fields; otherwise, creates a new one.
         Commits the change to the database.
         Returns the TaxStatement instance.
         """
+        from src.tax.models import TaxStatement
         from sqlalchemy.orm import object_session
         session = object_session(self)
         
@@ -294,9 +297,9 @@ class Fund(Base):
         session.commit()
         return statement
     
+    @with_session
     def get_tax_statement_for_entity_financial_year(self, entity_id, financial_year, session=None):
         """Return the tax statement for a specific entity and financial year, or None if not found."""
-        from sqlalchemy.orm import object_session
         from src.tax.models import TaxStatement
         if session is None:
             session = object_session(self)
@@ -307,68 +310,6 @@ class Fund(Base):
         ).first()
     
     # Update methods for calculated fields
-    @with_session
-    def update_current_equity_balance(self, session=None):
-        """Update the current equity balance.
-        - For cost-based funds: from capital movements (calls - returns).
-        - For NAV-based funds: from cost_of_units from the latest unit event (FIFO cost basis of remaining units).
-        Also updates the fund's active status.
-        Note: This method does NOT commit the session. The caller is responsible for committing.
-        """
-        if self.tracking_type == FundType.NAV_BASED:
-            # For NAV-based funds, use cost_of_units from the latest unit event (FIFO cost basis)
-            latest_unit_event = session.query(FundEvent).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-            ).order_by(FundEvent.event_date.desc()).first()
-            if latest_unit_event and latest_unit_event.cost_of_units is not None:
-                self.current_equity_balance = latest_unit_event.cost_of_units
-            else:
-                self.current_equity_balance = 0.0
-        else:
-            # For cost-based funds, use capital calls - returns
-            capital_movements = self.get_capital_movements(session=session)
-            net_capital_invested = capital_movements['calls'] - capital_movements['returns']
-            self.current_equity_balance = net_capital_invested
-        # Update active status based on new equity balance
-        self.update_active_status(session=session)
-        # No session.commit() here
-    
-    def calculate_average_equity_balance(self, session=None):
-        """Calculate and return the average equity balance for the fund.
-        Uses NAV or cost-based method depending on fund type.
-        """
-        if self.tracking_type == FundType.NAV_BASED:
-            return self._calculate_nav_based_average_equity(session=session)
-        else:
-            return self._calculate_cost_based_average_equity(session=session)
-
-    @with_session
-    def update_average_equity_balance(self, session=None):
-        """Update the stored average equity balance with the calculated value for the fund type.
-        Note: This method does NOT commit the session. The caller is responsible for committing.
-        """
-        calculated_average = self.calculate_average_equity_balance(session=session)
-        self.average_equity_balance = calculated_average
-        # No session.commit() here
-    
-    @with_session
-    def _calculate_nav_event_amounts(self, session=None):
-        """Calculate amounts for unit purchases/sales and update units_owned and cost_of_units for NAV updates.
-        This method ensures that:
-        - Unit purchase/sale amounts = units * unit_price + brokerage_fee
-        - units_owned is updated for purchase/sale events
-        - cost_of_units is calculated using FIFO for remaining units
-        """
-        # Get all unit events for this fund
-        event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.NAV_UPDATE]
-        unit_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_(event_types)
-        ).order_by(FundEvent.event_date).all()
-        
-        # Calculate amounts using pure function
-        calculate_nav_event_amounts(unit_events)
     
     @with_session
     def update_current_units_and_price(self, session=None):
@@ -541,46 +482,33 @@ class Fund(Base):
         Returns a list of FundEvent objects. No database operations.
         """
         from datetime import timedelta
-        
+        from sqlalchemy.orm import object_session
+        session = object_session(self)
         created_events = []
-        current_equity = 0
         current_date = start_date
-        
-        # Process each event and calculate daily interest charges
-        for event in cash_flow_events:
-            # Add interest charges for each day from current_date to event_date
-            while current_date < event.event_date:
-                if current_date not in existing_dates:
-                    # Find risk-free rate for this date
-                    rate = get_risk_free_rate_for_date(current_date, risk_free_rates)
-                    if rate is not None and current_equity > 0:
-                        # Calculate daily interest charge
-                        daily_interest = current_equity * (rate / 100) / 365.25
-                        
-                        # Create interest charge event object
-                        interest_event = FundEvent(
-                            fund_id=self.id,
-                            event_type=EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
-                            event_date=current_date,
-                            amount=daily_interest,
-                            description=f"Daily risk-free interest charge ({rate:.2f}% p.a.)",
-                            reference_number=f"RFR-{current_date.strftime('%Y%m%d')}"
-                        )
-                        created_events.append(interest_event)
-                
-                current_date += timedelta(days=1)
-            
-            # Update equity balance for the actual event
-            current_equity += get_equity_change_for_event(event, self.tracking_type)
-            current_date = event.event_date
-        
-        # Add interest charges for remaining days until end_date
+        # Pre-fetch all capital events with their current_equity_balance
+        capital_event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE] if self.tracking_type == FundType.NAV_BASED else [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]
+        capital_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_(capital_event_types)
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        # Build a list of (date, equity_balance) tuples
+        equity_by_date = []
+        for e in capital_events:
+            equity_by_date.append((e.event_date, e.current_equity_balance if e.current_equity_balance is not None else 0.0))
+        # For each day, find the most recent capital event on or before that day
         while current_date <= end_date:
             if current_date not in existing_dates:
+                # Find risk-free rate for this date
                 rate = get_risk_free_rate_for_date(current_date, risk_free_rates)
-                if rate is not None and current_equity > 0:
-                    daily_interest = current_equity * (rate / 100) / 365.25
-                    
+                # Find latest equity balance as of this date
+                equity = 0.0
+                for event_date, eq in reversed(equity_by_date):
+                    if event_date <= current_date:
+                        equity = eq
+                        break
+                if rate is not None and equity > 0:
+                    daily_interest = equity * (rate / 100) / 365.25
                     interest_event = FundEvent(
                         fund_id=self.id,
                         event_type=EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
@@ -590,9 +518,7 @@ class Fund(Base):
                         reference_number=f"RFR-{current_date.strftime('%Y%m%d')}"
                     )
                     created_events.append(interest_event)
-            
             current_date += timedelta(days=1)
-        
         return created_events
     
     @with_session
@@ -1056,9 +982,7 @@ class Fund(Base):
             session=session
         )
         
-        # Update fund's current equity balance
-        if distribution_event:
-            self.update_current_equity_balance(session=session)
+        # (Removed call to self.update_current_equity_balance(session=session))
         
         return distribution_event, tax_event
     
@@ -1179,10 +1103,11 @@ class Fund(Base):
         )
         
         session.add(event)
-        
+        session.flush()  # Ensure event.id is available
         # Update calculated fields
-        self.update_current_equity_balance(session=session)
+        self.update_current_units_and_price(session=session)
         self.update_total_cost_basis(session=session)
+        self.update_equity_balance_for_event(event, session=session)
         
         return event
     
@@ -1213,10 +1138,11 @@ class Fund(Base):
         )
         
         session.add(event)
-        
+        session.flush()  # Ensure event.id is available
         # Update calculated fields
-        self.update_current_equity_balance(session=session)
+        self.update_current_units_and_price(session=session)
         self.update_total_cost_basis(session=session)
+        self.update_equity_balance_for_event(event, session=session)
         
         return event
     
@@ -1303,6 +1229,7 @@ class Fund(Base):
         """Create tax payment events for this fund based on tax statements using the new event management framework.
         Commits new events to the database. Returns a list of created events.
         """
+        from src.tax.models import TaxStatement
         from src.tax.events import TaxEventManager
         # Get all tax statements for this fund
         tax_statements = session.query(TaxStatement).filter(
@@ -1350,10 +1277,10 @@ class Fund(Base):
         )
         
         session.add(event)
-        
+        session.flush()  # Ensure event.id is available
         # Update calculated fields
         self.update_current_units_and_price(session=session)
-        self.update_current_equity_balance(session=session)
+        self.update_equity_balance_for_event(event, session=session)
         
         return event
 
@@ -1392,10 +1319,10 @@ class Fund(Base):
         )
         
         session.add(event)
-        
+        session.flush()  # Ensure event.id is available
         # Update calculated fields
         self.update_current_units_and_price(session=session)
-        self.update_current_equity_balance(session=session)
+        self.update_equity_balance_for_event(event, session=session)
         
         return event
 
@@ -1463,11 +1390,11 @@ class Fund(Base):
         Returns a list of method names to call.
         """
         if event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
-            return ['update_current_units_and_price', 'update_current_equity_balance']
+            return ['update_current_units_and_price']
         elif event_type == EventType.NAV_UPDATE:
             return ['update_current_units_and_price']
         elif event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]:
-            return ['update_current_equity_balance', 'update_total_cost_basis']
+            return ['update_total_cost_basis']
         else:
             return []
 
@@ -1513,9 +1440,7 @@ class Fund(Base):
         """
         if self.tracking_type == FundType.NAV_BASED:
             self.update_current_units_and_price(session=session)
-            self.update_current_equity_balance(session=session)
         else:  # COST_BASED
-            self.update_current_equity_balance(session=session)
             self.update_total_cost_basis(session=session)
         
         # Recalculate average equity balance
@@ -1686,6 +1611,99 @@ class Fund(Base):
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
         return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, session=session)
 
+    @with_session
+    def recalculate_all_equity_balances(self, session=None):
+        """Recalculate and set current_equity_balance for all events in date order, and update fund.current_equity_balance to the latest."""
+        events = session.query(FundEvent).filter(FundEvent.fund_id == self.id).order_by(FundEvent.event_date, FundEvent.id).all()
+        equity = 0.0
+        for event in events:
+            if event.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]:
+                equity += get_equity_change_for_event(event, self.tracking_type)
+                event.current_equity_balance = equity
+            else:
+                event.current_equity_balance = None
+        # Update fund's field to match latest event
+        if events:
+            self.current_equity_balance = events[-1].current_equity_balance
+        session.commit()
+
+    def update_equity_balance_for_event(self, event, session=None):
+        """Efficiently update current_equity_balance for a new or edited capital event, and update fund.current_equity_balance if this is the latest event."""
+        CAPITAL_EVENT_TYPES = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]
+        # Get all capital events for this fund, ordered by (event_date, id)
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_(CAPITAL_EVENT_TYPES)
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        if not events:
+            return
+        idx = None
+        for i, e in enumerate(events):
+            if e.id == event.id:
+                idx = i
+                break
+        if idx is None:
+            return
+        # NAV-based funds: use FIFO cost base for equity balance
+        if self.tracking_type == FundType.NAV_BASED:
+            # Recalculate from this event forward to ensure FIFO is correct
+            for i in range(idx, len(events)):
+                e = events[i]
+                # cost_of_units should already be up-to-date from calculate_nav_event_amounts
+                e.current_equity_balance = e.cost_of_units if e.cost_of_units is not None else 0.0
+            # Update fund's field to match latest event
+            self.current_equity_balance = events[-1].cost_of_units if events[-1].cost_of_units is not None else 0.0
+        else:
+            # Cost-based funds: sum cash flows as before
+            # If this is the last event, only update this one
+            if idx == len(events) - 1:
+                prev_balance = events[idx-1].current_equity_balance if idx > 0 else 0.0
+                event.current_equity_balance = prev_balance + get_equity_change_for_event(event, self.tracking_type)
+                self.current_equity_balance = event.current_equity_balance
+            else:
+                prev_balance = events[idx-1].current_equity_balance if idx > 0 else 0.0
+                for i in range(idx, len(events)):
+                    e = events[i]
+                    prev_balance += get_equity_change_for_event(e, self.tracking_type)
+                    e.current_equity_balance = prev_balance
+                self.current_equity_balance = events[-1].current_equity_balance
+        session.commit()
+
+    def calculate_average_equity_balance(self, session=None):
+        """Calculate and return the average equity balance for the fund.
+        Uses NAV or cost-based method depending on fund type.
+        """
+        if self.tracking_type == FundType.NAV_BASED:
+            return self._calculate_nav_based_average_equity(session=session)
+        else:
+            return self._calculate_cost_based_average_equity(session=session)
+
+    @with_session
+    def update_average_equity_balance(self, session=None):
+        """Update the stored average equity balance with the calculated value for the fund type.
+        Note: This method does NOT commit the session. The caller is responsible for committing.
+        """
+        calculated_average = self.calculate_average_equity_balance(session=session)
+        self.average_equity_balance = calculated_average
+        # No session.commit() here
+
+    @with_session
+    def _calculate_nav_event_amounts(self, session=None):
+        """Calculate amounts for unit purchases/sales and update units_owned and cost_of_units for NAV updates.
+        This method ensures that:
+        - Unit purchase/sale amounts = units * unit_price + brokerage_fee
+        - units_owned is updated for purchase/sale events
+        - cost_of_units is calculated using FIFO for remaining units
+        """
+        # Get all unit events for this fund
+        event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.NAV_UPDATE]
+        unit_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_(event_types)
+        ).order_by(FundEvent.event_date).all()
+        # Calculate amounts using pure function
+        calculate_nav_event_amounts(unit_events)
+
 
 class FundEvent(Base):
     """Model representing various dated events for a fund.
@@ -1722,6 +1740,7 @@ class FundEvent(Base):
     description = Column(Text)  # (MANUAL) event description
     reference_number = Column(String(100))  # (MANUAL) external reference number
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
+    current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) equity after this event (capital events only)
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists

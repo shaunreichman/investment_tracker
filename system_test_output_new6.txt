@@ -1,0 +1,28 @@
+Starting comprehensive system test...
+Demonstrating proper session management architecture:
+- Outermost backend layer manages sessions
+- Domain methods accept session parameters
+- No direct database operations from external clients
+
+1. Clearing database (preserving Risk Free Rates)...
+Cleared tax_statements
+Cleared fund_events
+Cleared funds
+Cleared entities
+Cleared investment_companies
+Database cleared (Risk Free Rates preserved)
+
+2. Setting up test data...
+Setting up test data using domain methods...
+Adding Senior Debt Fund events using domain methods...
+Fund 'Senior Debt Fund No.24' status updated: Exited
+Fund 'Senior Debt Fund No.24' status updated: Active
+Adding Senior Debt Fund distributions with tax...
+Fund 'Senior Debt Fund No.24' status updated: Exited
+Adding 3PG Finance events using domain methods...
+Fund '3PG Finance' status updated: Exited
+Fund '3PG Finance' status updated: Active
+Adding 3PG Finance distributions with tax...
+Fund '3PG Finance' status updated: Exited
+Fund 'ABC Ltd' status updated: Exited
+Fund 'ABC Ltd' status updated: Active

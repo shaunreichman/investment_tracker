@@ -131,7 +131,7 @@ class Fund(...):
 
 ## Session Handling
 
-All model methods that require a database session use the `@with_session` decorator (see `src/shared/utils.py`).
+All model methods that require a database session use the `@with_session` decorator (see `src/shared/utils.py`).  
 - **Always pass `session` as a keyword argument.**
 - Only methods that perform database queries are decorated; orchestration/helper methods are not.
 - The backend (not clients) owns session lifecycle.
@@ -240,9 +240,9 @@ This will clear the database, set up test data, recalculate all derived values, 
 - Database and Alembic migration files are under `alembic/`.
 
 To run all tests with pytest (if desired):
-```
-pytest tests/
-```
+  ```
+  pytest tests/
+  ```
 - All new test scripts should be placed in the `tests/` directory.
 - **Calculated fields** (e.g., `tax_payable`, `interest_tax_benefit`, `total_interest_expense`) must never be set directly in tests or production code. Always use the appropriate calculation method to set these fields.
 

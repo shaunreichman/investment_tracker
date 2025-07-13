@@ -13,6 +13,7 @@ import enum
 # Import the Base from shared
 from ..shared.base import Base
 from ..shared.utils import with_session, with_class_session
+from src.fund.models import Fund
 
 
 class TaxStatement(Base):
@@ -239,7 +240,7 @@ class TaxStatement(Base):
         Returns the capital_gain_income_amount.
         """
         from sqlalchemy.orm import object_session
-        from src.fund.models import FundEvent, EventType, DistributionType, FundType
+        from src.fund.models import FundEvent, EventType, DistributionType, FundType, Fund
         
         if session is None:
             session = object_session(self)

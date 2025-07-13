@@ -235,38 +235,41 @@ def calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
 
 def calculate_nav_based_capital_gains(events):
     """
-    Calculate capital gains for NAV-based funds using FIFO method.
-    
+    Calculate capital gains for NAV-based funds using FIFO method, including brokerage fees.
+    - Purchase: cost base per unit = (units * unit_price + brokerage_fee) / units
+    - Sale: proceeds per unit = unit_price - (brokerage_fee / units_sold)
     Args:
         events (list): List of FundEvent objects (unit purchases/sales).
-    
     Returns:
         float: Total capital gains.
-    
     Business context:
         Used for tax calculations and performance reporting in NAV-based funds.
     """
     from collections import deque
-    available_units = deque()
+    available_units = deque()  # Each entry: (units, cost_per_unit)
     total_capital_gains = 0
-    
     for event in events:
         if event.event_type.name == 'UNIT_PURCHASE':
             units = event.units_purchased or 0
-            cost_per_unit = event.unit_price or 0
-            if units > 0 and cost_per_unit > 0:
+            unit_price = event.unit_price or 0
+            brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
+            if units > 0 and unit_price > 0:
+                # Apportion brokerage per unit and add to cost base
+                cost_per_unit = unit_price + (brokerage_fee / units)
                 available_units.append((units, cost_per_unit))
         elif event.event_type.name == 'UNIT_SALE':
             units_to_sell = event.units_sold or 0
             sale_price_per_unit = event.unit_price or 0
+            sale_brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
             if units_to_sell > 0 and sale_price_per_unit > 0:
-                # Apply FIFO: calculate capital gains for each unit sold
+                # Apportion sale brokerage per unit
+                proceeds_per_unit = sale_price_per_unit - (sale_brokerage_fee / units_to_sell)
                 remaining_units_to_sell = units_to_sell
                 while remaining_units_to_sell > 0 and available_units:
                     available_units_count, cost_per_unit = available_units[0]
                     units_from_this_purchase = min(remaining_units_to_sell, available_units_count)
                     # Calculate capital gain for these units
-                    capital_gain = units_from_this_purchase * (sale_price_per_unit - cost_per_unit)
+                    capital_gain = units_from_this_purchase * (proceeds_per_unit - cost_per_unit)
                     total_capital_gains += capital_gain
                     remaining_units_to_sell -= units_from_this_purchase
                     # Update or remove from available units
@@ -274,7 +277,6 @@ def calculate_nav_based_capital_gains(events):
                         available_units.popleft()
                     else:
                         available_units[0] = (available_units_count - units_from_this_purchase, cost_per_unit)
-    
     return total_capital_gains
 
 def calculate_cost_based_capital_gains(events):
