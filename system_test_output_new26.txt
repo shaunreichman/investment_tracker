@@ -1,0 +1,174 @@
+Starting comprehensive system test...
+Demonstrating proper session management architecture:
+- Outermost backend layer manages sessions
+- Domain methods accept session parameters
+- No direct database operations from external clients
+
+1. Clearing database (preserving Risk Free Rates)...
+Cleared tax_statements
+Cleared fund_events
+Cleared funds
+Cleared entities
+Cleared investment_companies
+Database cleared (Risk Free Rates preserved)
+
+2. Setting up test data...
+Setting up test data using domain methods...
+Adding Senior Debt Fund events using domain methods...
+Adding Senior Debt Fund distributions with tax...
+Adding 3PG Finance events using domain methods...
+Adding 3PG Finance distributions with tax...
+Error calculating capital gains for ABC Ltd 2012-13: TaxStatement.calculate_capital_gain_tax_amount() got an unexpected keyword argument 'session'
+Error calculating capital gains for ABC Ltd 2013-14: TaxStatement.calculate_capital_gain_tax_amount() got an unexpected keyword argument 'session'
+Test data setup complete!
+Created 2 funds for Test Company
+Created 1 funds for Test Shares Company
+Funds after setup: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
+
+Initial fund state:
+  Senior Debt Fund No.24: equity=$0.00, avg=$44113.18
+  3PG Finance: equity=$0.00, avg=$35150.86
+  ABC Ltd: equity=$0.00, avg=$344.28
+
+3. Recalculating all derived values...
+Funds to recalculate: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
+Number of funds to recalculate: 3
+
+Recalculating for Senior Debt Fund No.24:
+Recalculated all fields for fund 'Senior Debt Fund No.24'
+  Current equity: $0.00
+  Average equity: $44,113.18
+  Created 0 tax payment events
+Warning: No risk-free rates found for AUD <= 2024-08-02
+Created 0 daily risk-free interest charge events for Senior Debt Fund No.24
+Created 0 FY debt cost events for Senior Debt Fund No.24
+Warning: No risk-free rates found for AUD <= 2024-08-02
+  IRR: 11.92%
+  After-tax IRR: 10.69%
+  Real IRR: 10.69%
+
+    --- IRR Cash Flows ---
+      1:  -100,000.00  capital_call | 2023-06-23 | 100,000.00 | Initial capital call
+      2:     3,030.62  distribution | 2023-10-20 | 3,030.62 | Interest distribution
+      3:     7,000.00  return_of_capital | 2023-12-08 | 7,000.00 | Return of capital
+      4:     2,836.98  distribution | 2024-01-16 | 2,836.98 | Interest distribution
+      5:    45,000.00  return_of_capital | 2024-03-26 | 45,000.00 | Partial exit distribution
+      6:     2,630.16  distribution | 2024-03-26 | 2,630.16 | Interest distribution
+      7:     1,392.19  distribution | 2024-07-09 | 1,392.19 | Interest distribution
+      8:    48,000.00  return_of_capital | 2024-08-02 | 48,000.00 | Return of capital
+      9:       509.84  distribution | 2024-08-02 | 509.84 | Interest distribution
+
+    --- After-tax IRR Cash Flows ---
+      1:  -100,000.00  capital_call | 2023-06-23 | 100,000.00 | Initial capital call
+      2:     3,030.62  distribution | 2023-10-20 | 3,030.62 | Interest distribution
+      3:      -303.06  tax_payment | 2023-10-20 | 303.06 | Tax withheld on distribution (rate: 10.0%)
+      4:     7,000.00  return_of_capital | 2023-12-08 | 7,000.00 | Return of capital
+      5:     2,836.98  distribution | 2024-01-16 | 2,836.98 | Interest distribution
+      6:      -283.70  tax_payment | 2024-01-16 | 283.70 | Tax withheld on distribution (rate: 10.0%)
+      7:    45,000.00  return_of_capital | 2024-03-26 | 45,000.00 | Partial exit distribution
+      8:     2,630.16  distribution | 2024-03-26 | 2,630.16 | Interest distribution
+      9:      -263.02  tax_payment | 2024-03-26 | 263.02 | Tax withheld on distribution (rate: 10.0%)
+     10:     1,392.19  distribution | 2024-07-09 | 1,392.19 | Interest distribution
+     11:      -139.22  tax_payment | 2024-07-09 | 139.22 | Tax withheld on distribution (rate: 10.0%)
+     12:    48,000.00  return_of_capital | 2024-08-02 | 48,000.00 | Return of capital
+     13:       509.84  distribution | 2024-08-02 | 509.84 | Interest distribution
+     14:       -50.98  tax_payment | 2024-08-02 | 50.98 | Tax withheld on distribution (rate: 10.0%)
+
+    --- Real IRR Cash Flows ---
+      1:  -100,000.00  capital_call | 2023-06-23 | 100,000.00 | Initial capital call
+      2:     3,030.62  distribution | 2023-10-20 | 3,030.62 | Interest distribution
+      3:      -303.06  tax_payment | 2023-10-20 | 303.06 | Tax withheld on distribution (rate: 10.0%)
+      4:     7,000.00  return_of_capital | 2023-12-08 | 7,000.00 | Return of capital
+      5:     2,836.98  distribution | 2024-01-16 | 2,836.98 | Interest distribution
+      6:      -283.70  tax_payment | 2024-01-16 | 283.70 | Tax withheld on distribution (rate: 10.0%)
+      7:    45,000.00  return_of_capital | 2024-03-26 | 45,000.00 | Partial exit distribution
+      8:     2,630.16  distribution | 2024-03-26 | 2,630.16 | Interest distribution
+      9:      -263.02  tax_payment | 2024-03-26 | 263.02 | Tax withheld on distribution (rate: 10.0%)
+     10:     1,392.19  distribution | 2024-07-09 | 1,392.19 | Interest distribution
+     11:      -139.22  tax_payment | 2024-07-09 | 139.22 | Tax withheld on distribution (rate: 10.0%)
+     12:    48,000.00  return_of_capital | 2024-08-02 | 48,000.00 | Return of capital
+     13:       509.84  distribution | 2024-08-02 | 509.84 | Interest distribution
+     14:       -50.98  tax_payment | 2024-08-02 | 50.98 | Tax withheld on distribution (rate: 10.0%)
+
+Recalculating for 3PG Finance:
+Recalculated all fields for fund '3PG Finance'
+  Current equity: $0.00
+  Average equity: $35,150.86
+  Created 1 tax payment events
+Warning: No risk-free rates found for AUD <= 2024-04-19
+Created 0 daily risk-free interest charge events for 3PG Finance
+Created 0 FY debt cost events for 3PG Finance
+Warning: No risk-free rates found for AUD <= 2024-04-19
+  IRR: 16.54%
+  After-tax IRR: 14.86%
+  Real IRR: 14.86%
+
+    --- IRR Cash Flows ---
+      1:  -100,000.00  capital_call | 2022-11-24 | 100,000.00 | Initial capital call
+      2:     7,324.42  return_of_capital | 2023-03-24 | 7,324.42 | Return of capital
+      3:     3,075.58  distribution | 2023-03-24 | 3,075.58 | Interest distribution
+      4:    26,326.88  return_of_capital | 2023-07-07 | 26,326.88 | Partial exit distribution
+      5:     4,472.36  distribution | 2023-07-07 | 4,472.36 | Interest distribution
+      6:     8,527.53  return_of_capital | 2023-08-04 | 8,527.53 | Return of capital
+      7:       871.63  distribution | 2023-08-04 | 871.63 | Interest distribution
+      8:     8,805.21  return_of_capital | 2023-09-22 | 8,805.21 | Return of capital
+      9:       794.21  distribution | 2023-09-22 | 794.21 | Interest distribution
+     10:     9,814.74  return_of_capital | 2023-10-13 | 9,814.74 | Return of capital
+     11:       684.73  distribution | 2023-10-13 | 684.73 | Interest distribution
+     12:     6,967.81  return_of_capital | 2023-11-21 | 6,967.81 | Return of capital
+     13:       531.32  distribution | 2023-11-21 | 531.32 | Interest distribution
+     14:    32,233.41  return_of_capital | 2024-04-19 | 32,233.41 | Final return of capital
+     15:     4,399.27  distribution | 2024-04-19 | 4,399.27 | Interest distribution
+
+    --- After-tax IRR Cash Flows ---
+      1:  -100,000.00  capital_call | 2022-11-24 | 100,000.00 | Initial capital call
+      2:     7,324.42  return_of_capital | 2023-03-24 | 7,324.42 | Return of capital
+      3:     3,075.58  distribution | 2023-03-24 | 3,075.58 | Interest distribution
+      4:      -307.56  tax_payment | 2023-06-30 | 307.56 | Tax payment for FY 2022-23
+      5:    26,326.88  return_of_capital | 2023-07-07 | 26,326.88 | Partial exit distribution
+      6:     4,472.36  distribution | 2023-07-07 | 4,472.36 | Interest distribution
+      7:      -447.24  tax_payment | 2023-07-07 | 447.24 | Tax withheld on distribution (rate: 10.0%)
+      8:     8,527.53  return_of_capital | 2023-08-04 | 8,527.53 | Return of capital
+      9:       871.63  distribution | 2023-08-04 | 871.63 | Interest distribution
+     10:       -87.16  tax_payment | 2023-08-04 | 87.16 | Tax withheld on distribution (rate: 10.0%)
+     11:     8,805.21  return_of_capital | 2023-09-22 | 8,805.21 | Return of capital
+     12:       794.21  distribution | 2023-09-22 | 794.21 | Interest distribution
+     13:       -79.42  tax_payment | 2023-09-22 | 79.42 | Tax withheld on distribution (rate: 10.0%)
+     14:     9,814.74  return_of_capital | 2023-10-13 | 9,814.74 | Return of capital
+     15:       684.73  distribution | 2023-10-13 | 684.73 | Interest distribution
+     16:       -68.47  tax_payment | 2023-10-13 | 68.47 | Tax withheld on distribution (rate: 10.0%)
+     17:     6,967.81  return_of_capital | 2023-11-21 | 6,967.81 | Return of capital
+     18:       531.32  distribution | 2023-11-21 | 531.32 | Interest distribution
+     19:       -53.13  tax_payment | 2023-11-21 | 53.13 | Tax withheld on distribution (rate: 10.0%)
+     20:    32,233.41  return_of_capital | 2024-04-19 | 32,233.41 | Final return of capital
+     21:     4,399.27  distribution | 2024-04-19 | 4,399.27 | Interest distribution
+     22:      -439.93  tax_payment | 2024-04-19 | 439.93 | Tax withheld on distribution (rate: 10.0%)
+
+    --- Real IRR Cash Flows ---
+      1:  -100,000.00  capital_call | 2022-11-24 | 100,000.00 | Initial capital call
+      2:     7,324.42  return_of_capital | 2023-03-24 | 7,324.42 | Return of capital
+      3:     3,075.58  distribution | 2023-03-24 | 3,075.58 | Interest distribution
+      4:      -307.56  tax_payment | 2023-06-30 | 307.56 | Tax payment for FY 2022-23
+      5:    26,326.88  return_of_capital | 2023-07-07 | 26,326.88 | Partial exit distribution
+      6:     4,472.36  distribution | 2023-07-07 | 4,472.36 | Interest distribution
+      7:      -447.24  tax_payment | 2023-07-07 | 447.24 | Tax withheld on distribution (rate: 10.0%)
+      8:     8,527.53  return_of_capital | 2023-08-04 | 8,527.53 | Return of capital
+      9:       871.63  distribution | 2023-08-04 | 871.63 | Interest distribution
+     10:       -87.16  tax_payment | 2023-08-04 | 87.16 | Tax withheld on distribution (rate: 10.0%)
+     11:     8,805.21  return_of_capital | 2023-09-22 | 8,805.21 | Return of capital
+     12:       794.21  distribution | 2023-09-22 | 794.21 | Interest distribution
+     13:       -79.42  tax_payment | 2023-09-22 | 79.42 | Tax withheld on distribution (rate: 10.0%)
+     14:     9,814.74  return_of_capital | 2023-10-13 | 9,814.74 | Return of capital
+     15:       684.73  distribution | 2023-10-13 | 684.73 | Interest distribution
+     16:       -68.47  tax_payment | 2023-10-13 | 68.47 | Tax withheld on distribution (rate: 10.0%)
+     17:     6,967.81  return_of_capital | 2023-11-21 | 6,967.81 | Return of capital
+     18:       531.32  distribution | 2023-11-21 | 531.32 | Interest distribution
+     19:       -53.13  tax_payment | 2023-11-21 | 53.13 | Tax withheld on distribution (rate: 10.0%)
+     20:    32,233.41  return_of_capital | 2024-04-19 | 32,233.41 | Final return of capital
+     21:     4,399.27  distribution | 2024-04-19 | 4,399.27 | Interest distribution
+     22:      -439.93  tax_payment | 2024-04-19 | 439.93 | Tax withheld on distribution (rate: 10.0%)
+
+Recalculating for ABC Ltd:
+Recalculated all fields for fund 'ABC Ltd'
+  Current equity: $0.00
+  Average equity: $342.92

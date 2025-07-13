@@ -176,46 +176,6 @@ def get_reconciliation_explanation(gross_diff, tax_diff, net_diff):
     return "; ".join(explanations)
 
 
-def calculate_nav_event_amounts(nav_events, as_of_date=None):
-    """
-    Calculate NAV-based fund amounts from NAV update events.
-    This is a pure function that takes a list of events and returns calculated amounts.
-    
-    Args:
-        nav_events: List of FundEvent objects with NAV_UPDATE event_type
-        as_of_date: Calculate as of this date. If None, calculates to the end.
-    
-    Returns:
-        dict: Dictionary with 'current_units', 'current_unit_price', 'current_value'
-    """
-    if not nav_events:
-        return {
-            'current_units': 0.0,
-            'current_unit_price': 0.0,
-            'current_value': 0.0
-        }
-    
-    # Filter events by date if specified
-    if as_of_date:
-        nav_events = [e for e in nav_events if e.event_date <= as_of_date]
-    
-    if not nav_events:
-        return {
-            'current_units': 0.0,
-            'current_unit_price': 0.0,
-            'current_value': 0.0
-        }
-    
-    # Get the most recent NAV event
-    latest_nav_event = max(nav_events, key=lambda e: e.event_date)
-    
-    return {
-        'current_units': latest_nav_event.units_owned or 0.0,
-        'current_unit_price': latest_nav_event.unit_price or 0.0,
-        'current_value': (latest_nav_event.units_owned or 0.0) * (latest_nav_event.unit_price or 0.0)
-    }
-
-
 def get_unit_events_for_fund(unit_events, as_of_date=None):
     """
     Filter unit events up to a given date.
@@ -456,7 +416,6 @@ __all__ = [
     'get_risk_free_rate_for_date',
     'get_financial_years_for_fund_period',
     'get_reconciliation_explanation',
-    'calculate_nav_event_amounts',
     'get_unit_events_for_fund',
     'calculate_nav_based_cost_basis_for_irr',
     'calculate_cumulative_units_and_cost_basis',
