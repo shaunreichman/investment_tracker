@@ -134,6 +134,44 @@ TaxEventManager.create_or_update_tax_events(tax_statement, session)
 event = FundEvent(event_type=EventType.TAX_PAYMENT, ...)  # System should create this
 ```
 
+### **Capital Event Handling v2 (Unified Recalculation Flow)**
+
+#### **Overview**
+- All capital events (unit purchases/sales for NAV-based funds, capital calls/returns for cost-based funds) now use standardized v2 methods and a unified recalculation orchestrator.
+- This ensures consistency, maintainability, and efficient recalculation for edits/inserts anywhere in the event chain.
+- The recalculation flow is efficient (single-pass) and robust for both NAV-based and cost-based funds.
+
+#### **Key v2 Methods**
+- For NAV-based funds:
+  - `add_unit_purchase_v2`, `update_unit_purchase_v2`
+  - `add_unit_sale_v2`, `update_unit_sale_v2`
+- For cost-based funds:
+  - `add_capital_call_v2`, `update_capital_call_v2`
+  - `add_return_of_capital_v2`, `update_return_of_capital_v2`
+- All v2 methods automatically call `recalculate_capital_chain_from(event, session=session)` after insert/update.
+
+#### **Unified Recalculation Orchestrator**
+- `recalculate_capital_chain_from(event, session=None)` efficiently recalculates all capital-related fields for the given event and all subsequent capital events.
+- Delegates to fund-type-specific single-pass recalculators:
+  - NAV-based: `_calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event`
+  - Cost-based: `_calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event`
+- After recalculation, fund-level summary fields are updated via `update_fund_summary_fields_after_capital_event`.
+
+#### **Architectural Rules**
+- **Always use v2 methods** for adding/updating capital events. Do not use legacy methods for new code.
+- **Never set calculated fields manually** (e.g., `current_equity_balance`, `units_owned`).
+- **All recalculation logic is centralized** in the orchestrator and single-pass methods for maintainability.
+- **Session management**: v2 methods require a session parameter, as with all domain methods.
+
+#### **Example Usage**
+```python
+# NAV-based fund: add a unit purchase
+fund.add_unit_purchase_v2(units=100, price=10.0, date=date(2024, 1, 1), session=session)
+
+# Cost-based fund: update a capital call
+fund.update_capital_call_v2(event_id=123, amount=50000.0, date=date(2024, 2, 1), session=session)
+```
+
 ### **Separation of Concerns**
 
 #### **Models (`models.py`)**
@@ -386,303 +424,4 @@ statement.calculate_fy_debt_interest_deduction_total_deduction()
 ```
 
 #### **Step 3: Create Tax Payment Events**
-```python
-# Create tax payment events using manager
-from src.tax.events import TaxEventManager
-TaxEventManager.create_or_update_tax_events(statement, session)
 ```
-
-### **NAV-Based Fund Setup**
-
-#### **Step 1: Create NAV-Based Fund**
-```python
-fund = company.create_fund(
-    entity=entity,
-    name="ABC Ltd",
-    fund_type="Equity - Consumer Discretionary",
-    tracking_type=FundType.NAV_BASED,
-    currency="AUD",
-    description="ABC Ltd on the ASX",
-    session=session
-)
-```
-
-#### **Step 2: Add Unit Purchase**
-```python
-# Add unit purchase event
-purchase_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.UNIT_PURCHASE,
-    event_date=date(2023, 3, 28),
-    units_purchased=85.0,
-    unit_price=58.00,
-    brokerage_fee=19.95,
-    description="Initial unit purchase"
-)
-session.add(purchase_event)
-```
-
-#### **Step 3: Add NAV Update**
-```python
-# Add NAV update event
-nav_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.NAV_UPDATE,
-    event_date=date(2023, 3, 31),
-    nav_per_share=57.20,
-    description="March 2023 NAV update"
-)
-session.add(nav_event)
-```
-
-#### **Step 4: Update Calculated Fields**
-```python
-# Update calculated fields
-fund.update_current_units_and_price(session=session)
-fund.update_current_equity_balance(session=session)
-fund.update_average_equity_balance(session=session)
-```
-
----
-
-## Testing Guidelines
-
-### **Session Management in Tests**
-
-#### **✅ CORRECT: Use Domain Methods with Shared Session**
-```python
-def setup_test_data(session):
-    """Set up test data using domain methods."""
-    # Create entities using class methods
-    company = InvestmentCompany.create(name="Test Company", session=session)
-    entity = Entity.create(name="Test Entity", session=session)
-    
-    # Create funds using class methods
-    fund = Fund.create(
-        investment_company_id=company.id,
-        entity_id=entity.id,
-        name="Test Fund",
-        fund_type="Private Debt",
-        tracking_type=FundType.COST_BASED,
-        session=session
-    )
-    
-    # Add events using domain methods
-    fund.add_capital_call(
-        amount=100000.0,
-        date=date(2023, 1, 1),
-        description="Initial capital call",
-        session=session
-    )
-    
-    # Create tax statements using class methods
-    TaxStatement.create(
-        fund_id=fund.id,
-        entity_id=entity.id,
-        financial_year="2023-24",
-        interest_received_in_cash=5000.0,
-        interest_income_tax_rate=10.0,
-        session=session
-    )
-
-def main():
-    """Main test function."""
-    # Get database session
-    engine, session_factory, scoped_session = get_database_session()
-    session = scoped_session()
-    
-    try:
-        # Set up test data with shared session
-        setup_test_data(session)
-        
-        # Run tests with shared session
-        recalculate_everything(session)
-        verify_results(session)
-        
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
-```
-
-### **Field Setting Rules**
-
-#### **✅ DO: Set Manual Fields**
-```python
-# ✅ CORRECT: Set manual fields
-fund = Fund.create(
-    name="My Fund",
-    fund_type="Private Debt",
-    tracking_type=FundType.COST_BASED,
-    commitment_amount=100000.0,
-    session=session
-)
-
-statement = TaxStatement.create(
-    fund_id=fund.id,
-    entity_id=entity.id,
-    financial_year="2023-24",
-    interest_received_in_cash=5000.0,
-    interest_income_tax_rate=10.0,
-    session=session
-)
-```
-
-#### **❌ DON'T: Set Calculated Fields**
-```python
-# ❌ INCORRECT: Setting calculated fields
-fund.current_equity_balance = 100000.0  # Should be calculated from events
-fund.is_active = True  # Should be calculated from equity balance
-statement.interest_income_amount = 5000.0  # Should be calculated from manual fields
-statement.interest_tax_amount = 500.0  # Should be calculated from rate
-```
-
-#### **✅ DO: Call Calculation Methods**
-```python
-# ✅ CORRECT: Call calculation methods
-statement.calculate_interest_income_amount()
-statement.calculate_interest_tax_amount()
-fund.update_current_equity_balance(session=session)
-fund.update_average_equity_balance(session=session)
-```
-
-### **Test Structure**
-
-#### **All tests must reside in the `tests/` directory**
-- Unit tests for pure functions in `calculations.py`
-- Integration tests for model methods
-- System tests for end-to-end workflows
-
-#### **Test Data Setup**
-- Use domain methods for object creation
-- Set only manual fields
-- Call calculation methods to verify they work
-- Use shared session for all operations
-
-#### **Verification**
-- Verify calculated fields are correct
-- Verify system-generated events are created
-- Verify business logic is applied correctly
-
----
-
-## Common Mistakes to Avoid
-
-### **1. Session Management**
-```python
-# ❌ INCORRECT: Creating sessions in domain methods
-def add_capital_call(self, amount, date, description):
-    session = Session()  # Don't do this!
-    # ... rest of method
-
-# ✅ CORRECT: Accept session from caller
-def add_capital_call(self, amount, date, description, session=None):
-    # Use provided session
-```
-
-### **2. Direct Constructor Usage**
-```python
-# ❌ INCORRECT: Direct constructor
-fund = Fund(investment_company_id=company.id, ...)
-session.add(fund)
-
-# ✅ CORRECT: Use class method
-fund = Fund.create(investment_company_id=company.id, ..., session=session)
-```
-
-### **3. Setting Calculated Fields**
-```python
-# ❌ INCORRECT: Setting calculated fields
-fund.current_equity_balance = 100000.0
-statement.interest_income_amount = 5000.0
-
-# ✅ CORRECT: Let system calculate
-fund.update_current_equity_balance(session=session)
-statement.calculate_interest_income_amount()
-```
-
-### **4. Direct System Event Creation**
-```python
-# ❌ INCORRECT: Creating system events directly
-event = FundEvent(event_type=EventType.TAX_PAYMENT, ...)
-
-# ✅ CORRECT: Use managers for system events
-TaxEventManager.create_or_update_tax_events(tax_statement, session)
-```
-
-### **5. Positional Session Arguments**
-```python
-# ❌ INCORRECT: Positional session argument
-fund.add_capital_call(100000, date(2023, 1, 1), session)
-
-# ✅ CORRECT: Keyword session argument
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
-```
-
----
-
-## Migration Notes
-
-### **Deprecated Files**
-- `src/models.py` - Moved to domain modules
-- `src/calculations.py` - Moved to domain modules  
-- `src/utils.py` - Moved to `src/shared/utils.py`
-
-### **Deprecated Fields**
-- `vintage_year` - Removed, can be derived from `start_date`
-- `gross_interest_income` - Removed, use interest income breakdown fields
-- `tax_withheld` - Removed, use event-based tax payments
-
-### **Deprecated Methods**
-- `_create_tax_payment_event_object()` - Use `TaxEventManager`
-- `create_tax_payment_events()` - Use `TaxEventManager.create_or_update_tax_events()`
-
-### **Updated Field Names**
-- `interest_taxable_rate` → `interest_income_tax_rate`
-- `interest_deduction_rate` → `fy_debt_interest_deduction_rate`
-
----
-
-## Quick Reference
-
-### **Import Patterns**
-```python
-from src.fund.models import Fund, FundEvent, FundType
-from src.tax.models import TaxStatement
-from src.entity.models import Entity
-from src.rates.models import RiskFreeRate
-from src.investment_company.models import InvestmentCompany
-from src.shared.utils import with_session
-from src.tax.events import TaxEventManager
-```
-
-### **Common Workflows**
-```python
-# Create fund with events
-company = InvestmentCompany.create(name="Company", session=session)
-entity = Entity.create(name="Entity", session=session)
-fund = company.create_fund(entity, "Fund", session=session)
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
-
-# Create tax statement with payments
-statement = TaxStatement.create(fund_id=fund.id, entity_id=entity.id, financial_year="2023-24", session=session)
-statement.calculate_interest_income_amount()
-TaxEventManager.create_or_update_tax_events(statement, session)
-```
-
-### **Session Management**
-```python
-# Always use keyword arguments
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
-
-# Outermost layer manages sessions
-engine, session_factory, scoped_session = get_database_session()
-session = scoped_session()
-try:
-    # ... operations ...
-    session.commit()
-finally:
-    session.close()
-``` 
