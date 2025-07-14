@@ -1575,7 +1575,8 @@ class Fund(Base):
         Builds FIFO and units up to start_idx, then processes all subsequent events.
         """
         # Build FIFO and cumulative units up to (but not including) start_idx
-        fifo = []  # Each entry: (units, unit_price, event_date)
+        # Each FIFO entry: (units, unit_price, effective_price, event_date, brokerage_fee)
+        fifo = []
         cumulative_units = 0.0
         for i in range(start_idx):
             e = events[i]
@@ -1585,18 +1586,18 @@ class Fund(Base):
                 brokerage_fee = e.brokerage_fee or 0
                 if units > 0:
                     effective_price = unit_price + (brokerage_fee / units)
-                    fifo.append((units, effective_price, e.event_date))
+                    fifo.append((units, unit_price, effective_price, e.event_date, brokerage_fee))
                 cumulative_units += units
             elif e.event_type == EventType.UNIT_SALE:
                 units = e.units_sold or 0
                 remaining = units
                 while remaining > 0 and fifo:
-                    oldest_units, oldest_price, oldest_date = fifo[0]
+                    oldest_units, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage = fifo[0]
                     if oldest_units <= remaining:
                         fifo.pop(0)
                         remaining -= oldest_units
                     else:
-                        fifo[0] = (oldest_units - remaining, oldest_price, oldest_date)
+                        fifo[0] = (oldest_units - remaining, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage)
                         remaining = 0
                 cumulative_units -= units
         # Now process all subsequent events in a single pass
@@ -1609,11 +1610,12 @@ class Fund(Base):
                 e.amount = (units * unit_price) + brokerage_fee
                 if units > 0:
                     effective_price = unit_price + (brokerage_fee / units)
-                    fifo.append((units, effective_price, e.event_date))
+                    fifo.append((units, unit_price, effective_price, e.event_date, brokerage_fee))
                 cumulative_units += units
                 e.units_owned = cumulative_units
-                total_cost = sum(u * p for u, p, _ in fifo)
-                e.current_equity_balance = total_cost
+                # For equity balance, exclude brokerage: only units * unit_price
+                total_equity = sum(u * p for u, p, _, _, _ in fifo)
+                e.current_equity_balance = total_equity
             elif e.event_type == EventType.UNIT_SALE:
                 units = e.units_sold or 0
                 unit_price = e.unit_price or 0
@@ -1621,21 +1623,22 @@ class Fund(Base):
                 e.amount = (units * unit_price) - brokerage_fee
                 remaining = units
                 while remaining > 0 and fifo:
-                    oldest_units, oldest_price, oldest_date = fifo[0]
+                    oldest_units, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage = fifo[0]
                     if oldest_units <= remaining:
                         fifo.pop(0)
                         remaining -= oldest_units
                     else:
-                        fifo[0] = (oldest_units - remaining, oldest_price, oldest_date)
+                        fifo[0] = (oldest_units - remaining, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage)
                         remaining = 0
                 cumulative_units -= units
                 e.units_owned = cumulative_units
-                total_cost = sum(u * p for u, p, _ in fifo)
-                e.current_equity_balance = total_cost
+                # For equity balance, exclude brokerage: only units * unit_price
+                total_equity = sum(u * p for u, p, _, _, _ in fifo)
+                e.current_equity_balance = total_equity
             else:
                 # Not a capital event we care about for NAV-based
                 e.units_owned = cumulative_units
-                e.current_equity_balance = sum(u * p for u, p, _ in fifo)
+                e.current_equity_balance = sum(u * p for u, p, _, _, _ in fifo)
         # End of single-pass NAV recalculation
 
     def _calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event(self, events, start_idx, session=None):
