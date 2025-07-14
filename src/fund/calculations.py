@@ -375,36 +375,6 @@ def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
     latest_event = max(filtered, key=lambda e: (e.event_date, getattr(e, 'id', 0)))
     return latest_event.current_equity_balance if latest_event.current_equity_balance is not None else 0.0
 
-def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
-    """
-    Deprecated: Use current_equity_balance on the latest capital event for cost base reporting.
-    This function is retained only for capital gains FIFO matching logic.
-    """
-    # For cost base reporting, use current_equity_balance on the latest event.
-    # For capital gains, FIFO logic is still needed (see calculate_nav_based_capital_gains).
-    if not unit_events:
-        return {
-            'cumulative_units': 0.0,
-            'total_cost_basis': 0.0,
-            'unit_purchases': [],
-            'unit_sales': []
-        }
-    filtered = [e for e in unit_events if as_of_date is None or e.event_date <= as_of_date]
-    if not filtered:
-        return {
-            'cumulative_units': 0.0,
-            'total_cost_basis': 0.0,
-            'unit_purchases': [],
-            'unit_sales': []
-        }
-    latest_event = max(filtered, key=lambda e: (e.event_date, getattr(e, 'id', 0)))
-    return {
-        'cumulative_units': getattr(latest_event, 'units_owned', 0.0),
-        'total_cost_basis': latest_event.current_equity_balance if latest_event.current_equity_balance is not None else 0.0,
-        'unit_purchases': [],  # Not needed for reporting
-        'unit_sales': []       # Not needed for reporting
-    }
-
 __all__ = [
     'calculate_irr',
     'calculate_average_equity_balance_nav',
@@ -414,5 +384,4 @@ __all__ = [
     'calculate_cost_based_capital_gains',
     'orchestrate_irr_base',
     'calculate_nav_based_cost_basis_for_irr',
-    'calculate_cumulative_units_and_cost_basis',
 ] 

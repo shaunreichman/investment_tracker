@@ -26,18 +26,17 @@ Created 1 funds for Test Shares Company
 Funds after setup: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
 
 Initial fund state:
-  Senior Debt Fund No.24: equity=$0.00, avg=$44113.18
-  3PG Finance: equity=$0.00, avg=$35150.86
-  ABC Ltd: equity=$0.00, avg=$344.28
+  Senior Debt Fund No.24: equity=$0.00, avg=$81598.52
+  3PG Finance: equity=$0.00, avg=$66045.18
+  ABC Ltd: equity=$0.00, avg=$3746.21
 
 3. Recalculating all derived values...
 Funds to recalculate: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
 Number of funds to recalculate: 3
 
 Recalculating for Senior Debt Fund No.24:
-Recalculated all fields for fund 'Senior Debt Fund No.24'
   Current equity: $0.00
-  Average equity: $44,113.18
+  Average equity: $81,598.52
   Created 0 tax payment events
 Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
 Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
@@ -499,9 +498,8 @@ Created 2 FY debt cost events for Senior Debt Fund No.24
      422:       -50.98  tax_payment | 2024-08-02 | 50.98 | Tax withheld on distribution (rate: 10.0%)
 
 Recalculating for 3PG Finance:
-Recalculated all fields for fund '3PG Finance'
   Current equity: $0.00
-  Average equity: $35,150.86
+  Average equity: $66,045.18
   Created 1 tax payment events
 Created 512 daily risk-free interest charge events for 3PG Finance
 Created 512 daily risk-free interest charge events for 3PG Finance
@@ -1091,11 +1089,10 @@ Created 2 FY debt cost events for 3PG Finance
      536:       473.03  fy_debt_cost | 2024-06-30 | 473.03 | FY 2023-24 Interest Tax Benefit ($473.03)
 
 Recalculating for ABC Ltd:
-Recalculated all fields for fund 'ABC Ltd'
   Current equity: $0.00
-  Average equity: $342.92
+  Average equity: $3,746.21
   Current units: 0.00
-  Current unit price: $61.2500
+  Current unit price: $62.6200
   Created 1 tax payment events
 Created 411 daily risk-free interest charge events for ABC Ltd
 Created 411 daily risk-free interest charge events for ABC Ltd
@@ -1554,7 +1551,7 @@ Funds found: 3
 Senior Debt Fund No.24:
   Type: cost_based
   Current equity: $0.00
-  Average equity: $44,113.18
+  Average equity: $81,598.52
   Events: {'capital_call': 1, 'return_of_capital': 3, 'distribution': 5, 'tax_payment': 5, 'daily_risk_free_interest_charge': 406, 'fy_debt_cost': 2}
   Tax payment events: 5
   FY debt cost events: 2
@@ -1563,7 +1560,7 @@ Senior Debt Fund No.24:
 3PG Finance:
   Type: cost_based
   Current equity: $0.00
-  Average equity: $35,150.86
+  Average equity: $66,045.18
   Events: {'capital_call': 1, 'return_of_capital': 7, 'distribution': 7, 'tax_payment': 7, 'daily_risk_free_interest_charge': 512, 'fy_debt_cost': 2}
   Tax payment events: 7
   FY debt cost events: 2
@@ -1572,13 +1569,13 @@ Senior Debt Fund No.24:
 ABC Ltd:
   Type: nav_based
   Current equity: $0.00
-  Average equity: $342.92
+  Average equity: $3,746.21
   Events: {'unit_purchase': 2, 'nav_update': 14, 'unit_sale': 2, 'distribution': 1, 'tax_payment': 1, 'daily_risk_free_interest_charge': 411, 'fy_debt_cost': 2}
   Tax payment events: 1
   FY debt cost events: 2
   Daily interest charges: 411
   Current units: 0.00
-  Current unit price: $61.2500
+  Current unit price: $62.6200
   NAV update events: 14
   Unit purchases: 2, Unit sales: 2
 
