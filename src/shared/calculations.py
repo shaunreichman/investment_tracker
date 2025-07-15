@@ -37,23 +37,6 @@ def get_equity_change_for_event(event, fund_type):
     return 0.0
 
 
-def get_financial_years_for_fund_period(start_date, end_date, entity):
-    """Get all financial years between start and end dates.
-    Returns a set of financial year strings. No database operations.
-    """
-    financial_years = set()
-    current_date = start_date
-    while current_date <= end_date:
-        fy = entity.get_financial_year(current_date)
-        financial_years.add(fy)
-        # Move to next month
-        if current_date.month == 12:
-            current_date = date(current_date.year + 1, 1, 1)
-        else:
-            current_date = date(current_date.year, current_date.month + 1, 1)
-    return financial_years
-
-
 def get_reconciliation_explanation(gross_diff, tax_diff, net_diff):
     """
     Generate a human-readable explanation for the reconciliation differences.
@@ -211,7 +194,6 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
 
 __all__ = [
     'get_equity_change_for_event',
-    'get_financial_years_for_fund_period',
     'get_reconciliation_explanation',
     'get_financial_year_dates',
     'orchestrate_irr_base',

@@ -39,7 +39,8 @@ from ..rates.models import RiskFreeRate
 from ..entity.models import Entity
 
 # Import shared calculations
-from ..shared.calculations import get_equity_change_for_event, get_financial_years_for_fund_period
+from ..shared.calculations import get_equity_change_for_event
+from src.entity.calculations import get_financial_years_for_fund_period
 from ..rates.calculations import get_risk_free_rate_for_date
 
 
