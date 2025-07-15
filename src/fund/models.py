@@ -31,8 +31,7 @@ from .calculations import (
     calculate_debt_cost,
     calculate_nav_based_capital_gains,
     calculate_cost_based_capital_gains,
-    orchestrate_irr_base,
-    calculate_nav_based_cost_basis_for_irr
+    orchestrate_irr_base
 )
 
 # Import models from other domains
@@ -337,30 +336,6 @@ class Fund(Base):
         if not capital_events:
             return 0
         return orchestrate_cost_based_average_equity(capital_events)
-    
-    @with_session
-    def get_nav_based_cost_basis(self, as_of_date=None, session=None):
-        """Get the cost basis for NAV-based funds up to a given date.
-        This is used for IRR calculations where we need to know the total amount invested.
-        
-        Args:
-            as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
-            session: Database session
-            
-        Returns:
-            float: Total cost basis (sum of all unit purchases minus unit sales)
-        """
-        if self.tracking_type != FundType.NAV_BASED:
-            return 0.0
-            
-        # Get all unit events for this fund
-        unit_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-        ).order_by(FundEvent.event_date).all()
-        
-        # Calculate cost basis using pure function
-        return calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date)
     
     @with_session
     def calculate_debt_cost(self, session=None, risk_free_rate_currency=None):

@@ -14,7 +14,6 @@ from .fund.calculations import (
     calculate_irr, calculate_average_equity_balance_nav, calculate_average_equity_balance_cost,
     calculate_debt_cost, calculate_nav_based_capital_gains, calculate_cost_based_capital_gains,
     orchestrate_irr_base,
-    calculate_nav_based_cost_basis_for_irr
 )
 
 # Tax domain
@@ -45,7 +44,6 @@ __all__ = [
     'calculate_irr', 'calculate_average_equity_balance_nav', 'calculate_average_equity_balance_cost',
     'calculate_debt_cost', 'calculate_nav_based_capital_gains', 'calculate_cost_based_capital_gains',
     'orchestrate_irr_base',
-    'calculate_nav_based_cost_basis_for_irr',
     
     # Tax
     'TaxStatement', 'tax_payable', 'calculate_fy_debt_interest_deduction_total_deduction',

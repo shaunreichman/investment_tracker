@@ -355,26 +355,6 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
     else:
         return irr_result
 
-def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
-    """
-    Get the cost basis for NAV-based funds up to a given date using the stored current_equity_balance on the latest capital event.
-    This is used for IRR calculations where we need to know the total amount invested.
-    Args:
-        unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
-        as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
-    Returns:
-        float: Total cost basis (FIFO cost base from current_equity_balance on the latest event)
-    """
-    if not unit_events:
-        return 0.0
-    # Filter to events up to as_of_date (if provided)
-    filtered = [e for e in unit_events if as_of_date is None or e.event_date <= as_of_date]
-    if not filtered:
-        return 0.0
-    # Use the current_equity_balance from the latest event
-    latest_event = max(filtered, key=lambda e: (e.event_date, getattr(e, 'id', 0)))
-    return latest_event.current_equity_balance if latest_event.current_equity_balance is not None else 0.0
-
 __all__ = [
     'calculate_irr',
     'calculate_average_equity_balance_nav',
@@ -383,5 +363,4 @@ __all__ = [
     'calculate_nav_based_capital_gains',
     'calculate_cost_based_capital_gains',
     'orchestrate_irr_base',
-    'calculate_nav_based_cost_basis_for_irr',
 ] 

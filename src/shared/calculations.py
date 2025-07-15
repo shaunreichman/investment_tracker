@@ -193,22 +193,6 @@ def get_unit_events_for_fund(unit_events, as_of_date=None):
     return [e for e in unit_events if e.event_date <= as_of_date]
 
 
-def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
-    """
-    Calculate the cost basis for NAV-based funds up to a given date.
-    This is used for IRR calculations where we need to know the total amount invested.
-    
-    Args:
-        unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
-        as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
-    
-    Returns:
-        float: Total cost basis (sum of all unit purchases minus unit sales)
-    """
-    result = calculate_cumulative_units_and_cost_basis(unit_events, as_of_date)
-    return result['total_cost_basis']
-
-
 def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
     """
     Calculate cumulative units owned and total cost basis up to a given date.
@@ -417,7 +401,6 @@ __all__ = [
     'get_financial_years_for_fund_period',
     'get_reconciliation_explanation',
     'get_unit_events_for_fund',
-    'calculate_nav_based_cost_basis_for_irr',
     'calculate_cumulative_units_and_cost_basis',
 
     'tax_payable',
