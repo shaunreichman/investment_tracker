@@ -11,7 +11,7 @@ from .entity.calculations import get_financial_years_for_fund_period
 # Fund domain
 from .fund.models import Fund, FundEvent, FundType, EventType, DistributionType, TaxPaymentType
 from .fund.calculations import (
-    calculate_irr, calculate_average_equity_balance_cost,
+    calculate_irr,
     calculate_debt_cost, calculate_nav_based_capital_gains, calculate_cost_based_capital_gains
 )
 from .shared.calculations import orchestrate_irr_base
@@ -40,7 +40,7 @@ __all__ = [
     
     # Fund
     'Fund', 'FundEvent', 'FundType', 'EventType', 'DistributionType', 'TaxPaymentType',
-    'calculate_irr', 'calculate_average_equity_balance_cost',
+    'calculate_irr',
     'calculate_debt_cost', 'calculate_nav_based_capital_gains', 'calculate_cost_based_capital_gains',
     'orchestrate_irr_base',
     

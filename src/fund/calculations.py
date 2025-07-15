@@ -55,41 +55,6 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
             return None
     return None
 
-# Average equity balance utility (cost-based)
-def calculate_average_equity_balance_cost(capital_events):
-    """
-    Calculate average equity balance for cost-based funds using weighted periods.
-    
-    Args:
-        capital_events (list): List of FundEvent objects (capital calls/returns).
-    
-    Returns:
-        float: The average equity balance over the period.
-    
-    Business context:
-        Used for performance and risk calculations in cost-based funds, accounting for time-weighted capital.
-    """
-    if not capital_events:
-        return 0
-    total_weighted_equity = 0
-    total_days = 0
-    current_equity = 0
-    current_date = None
-    for i, event in enumerate(capital_events):
-        if i == 0:
-            current_date = event.event_date
-            if hasattr(event, 'fund'):
-                current_equity += get_equity_change_for_event(event, event.fund.tracking_type)
-            continue
-        duration_days = (event.event_date - current_date).days
-        weighted_equity = current_equity * duration_days
-        total_weighted_equity += weighted_equity
-        total_days += duration_days
-        if hasattr(event, 'fund'):
-            current_equity += get_equity_change_for_event(event, event.fund.tracking_type)
-        current_date = event.event_date
-    return total_weighted_equity / total_days if total_days > 0 else 0
-
 # Debt cost calculation utility
 def calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency):
     """
@@ -247,7 +212,6 @@ def calculate_cost_based_capital_gains(events):
 
 __all__ = [
     'calculate_irr',
-    'calculate_average_equity_balance_cost',
     'calculate_debt_cost',
     'calculate_nav_based_capital_gains',
     'calculate_cost_based_capital_gains',

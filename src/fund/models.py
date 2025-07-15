@@ -26,7 +26,6 @@ from ..shared.base import Base
 from ..shared.utils import with_session, with_class_session
 from .calculations import (
     calculate_irr,
-    calculate_average_equity_balance_cost,
     calculate_debt_cost,
     calculate_nav_based_capital_gains,
     calculate_cost_based_capital_gains
