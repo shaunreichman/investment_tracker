@@ -18,7 +18,6 @@ from .shared.calculations import orchestrate_irr_base
 
 # Tax domain
 from .tax.models import TaxStatement
-from .tax.calculations import tax_payable, calculate_fy_debt_interest_deduction_total_deduction
 
 # Rates domain
 from .rates.models import RiskFreeRate
@@ -46,7 +45,7 @@ __all__ = [
     'orchestrate_irr_base',
     
     # Tax
-    'TaxStatement', 'tax_payable', 'calculate_fy_debt_interest_deduction_total_deduction',
+    'TaxStatement',
     
     # Rates
     'RiskFreeRate', 'get_risk_free_rate_for_date',
