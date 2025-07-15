@@ -266,9 +266,7 @@ class Fund(Base):
         
         # Calculate interest income amount (including total_interest_income)
         statement.calculate_interest_income_amount()
-        
 
-        
         return statement
 
     @with_session
@@ -303,39 +301,6 @@ class Fund(Base):
             TaxStatement.entity_id == entity_id,
             TaxStatement.financial_year == financial_year
         ).first()
-    
-    
-    @with_session
-    def _calculate_nav_based_average_equity(self, session=None):
-        """Calculate average equity balance for NAV-based funds using unit events.
-        Delegates to orchestrate_nav_based_average_equity in calculations.py.
-        """
-        from src.fund.calculations import orchestrate_nav_based_average_equity
-        unit_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-        ).order_by(FundEvent.event_date).all()
-        if not unit_events:
-            return 0
-        # If fund is still active, use today's date as end_date (handled by caller if needed)
-        return orchestrate_nav_based_average_equity(unit_events)
-
-
-    @with_session
-    def _calculate_cost_based_average_equity(self, session=None):
-        """Calculate average equity balance for cost-based funds using capital events.
-        Delegates to orchestrate_cost_based_average_equity in calculations.py.
-        """
-        from src.fund.calculations import orchestrate_cost_based_average_equity
-        capital_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([
-                EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE
-            ])
-        ).order_by(FundEvent.event_date).all()
-        if not capital_events:
-            return 0
-        return orchestrate_cost_based_average_equity(capital_events)
     
     @with_session
     def calculate_debt_cost(self, session=None, risk_free_rate_currency=None):
