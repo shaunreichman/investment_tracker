@@ -37,24 +37,6 @@ def get_equity_change_for_event(event, fund_type):
     return 0.0
 
 
-def get_risk_free_rate_for_date(target_date, risk_free_rates):
-    """Get the risk-free rate for a specific date from a list of rates.
-    Returns the most recent rate available on or before the target date, or None if not found.
-    """
-    if not risk_free_rates:
-        return None
-    
-    # Find the most recent rate that's <= target_date
-    applicable_rate = None
-    for rate in risk_free_rates:
-        if rate.rate_date <= target_date:
-            applicable_rate = rate
-        else:
-            break
-    
-    return applicable_rate.rate if applicable_rate else None
-
-
 def get_financial_years_for_fund_period(start_date, end_date, entity):
     """Get all financial years between start and end dates.
     Returns a set of financial year strings. No database operations.
@@ -229,7 +211,6 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
 
 __all__ = [
     'get_equity_change_for_event',
-    'get_risk_free_rate_for_date',
     'get_financial_years_for_fund_period',
     'get_reconciliation_explanation',
     'get_financial_year_dates',
