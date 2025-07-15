@@ -193,61 +193,6 @@ def get_unit_events_for_fund(unit_events, as_of_date=None):
     return [e for e in unit_events if e.event_date <= as_of_date]
 
 
-def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
-    """
-    Calculate cumulative units owned and total cost basis up to a given date.
-    Shared utility for NAV-based calculations.
-    
-    Args:
-        unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
-        as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
-    
-    Returns:
-        dict: {
-            'cumulative_units': float,
-            'total_cost_basis': float,
-            'unit_purchases': list of (units, cost_per_unit, date),
-            'unit_sales': list of (units, sale_price_per_unit, date)
-        }
-    """
-    from src.fund.models import EventType
-    
-    cumulative_units = 0.0
-    total_cost_basis = 0.0
-    unit_purchases = []
-    unit_sales = []
-    
-    for event in unit_events:
-        # Stop if we've reached the as_of_date
-        if as_of_date and event.event_date > as_of_date:
-            break
-            
-        if event.event_type == EventType.UNIT_PURCHASE:
-            units = event.units_purchased or 0
-            unit_price = event.unit_price or 0
-            if units > 0 and unit_price > 0:
-                cumulative_units += units
-                total_cost_basis += units * unit_price
-                unit_purchases.append((units, unit_price, event.event_date))
-                
-        elif event.event_type == EventType.UNIT_SALE:
-            units = event.units_sold or 0
-            unit_price = event.unit_price or 0
-            if units > 0:
-                cumulative_units -= units
-                unit_sales.append((units, unit_price, event.event_date))
-    
-    return {
-        'cumulative_units': cumulative_units,
-        'total_cost_basis': total_cost_basis,
-        'unit_purchases': unit_purchases,
-        'unit_sales': unit_sales
-    }
-
-
-
-
-
 def tax_payable(interest_income_amount, interest_income_tax_rate, interest_non_resident_withholding_tax_from_statement):
     """
     Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
@@ -401,8 +346,6 @@ __all__ = [
     'get_financial_years_for_fund_period',
     'get_reconciliation_explanation',
     'get_unit_events_for_fund',
-    'calculate_cumulative_units_and_cost_basis',
-
     'tax_payable',
     'interest_tax_benefit',
     'get_financial_year_dates',
