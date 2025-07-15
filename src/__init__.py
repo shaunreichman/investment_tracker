@@ -13,8 +13,8 @@ from .fund.models import Fund, FundEvent, FundType, EventType, DistributionType,
 from .fund.calculations import (
     calculate_irr, calculate_average_equity_balance_nav, calculate_average_equity_balance_cost,
     calculate_debt_cost, calculate_nav_based_capital_gains, calculate_cost_based_capital_gains,
-    orchestrate_nav_based_average_equity, orchestrate_cost_based_average_equity, orchestrate_irr_base,
-    calculate_nav_event_amounts, calculate_cumulative_units_and_cost_basis, calculate_nav_based_cost_basis_for_irr
+    orchestrate_irr_base,
+    calculate_nav_based_cost_basis_for_irr
 )
 
 # Tax domain
@@ -44,8 +44,8 @@ __all__ = [
     'Fund', 'FundEvent', 'FundType', 'EventType', 'DistributionType', 'TaxPaymentType',
     'calculate_irr', 'calculate_average_equity_balance_nav', 'calculate_average_equity_balance_cost',
     'calculate_debt_cost', 'calculate_nav_based_capital_gains', 'calculate_cost_based_capital_gains',
-    'orchestrate_nav_based_average_equity', 'orchestrate_cost_based_average_equity', 'orchestrate_irr_base',
-    'calculate_nav_event_amounts', 'calculate_cumulative_units_and_cost_basis', 'calculate_nav_based_cost_basis_for_irr',
+    'orchestrate_irr_base',
+    'calculate_nav_based_cost_basis_for_irr',
     
     # Tax
     'TaxStatement', 'tax_payable', 'calculate_fy_debt_interest_deduction_total_deduction',

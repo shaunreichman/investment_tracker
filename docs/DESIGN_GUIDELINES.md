@@ -1,16 +1,57 @@
-# Investment Tracker Design Guidelines v2
 
-> **2024 Migration Note:** This project uses a domain-driven architecture. All models, calculations, and creation logic are organized by domain (fund, tax, entity, rates, investment company, shared). Old files (`src/models.py`, `src/calculations.py`, `src/utils.py`) are deprecated.
+## AI Agent Collaboration Guidelines
+
+- **Testing:**
+  - Run tests frequently, especially after any non-trivial change.
+  - For `test_main.py`, always:
+    - Save its output to `tests/output/test_main_output_new.txt`.
+    - Compare this output to `tests/output/test_main_output1.txt`.
+    - If outputs differ, inform the user immediately, as this likely indicates a problem.
+- **Iteration:**
+  - Prefer small, reviewable steps over large, sweeping changes.
+  - Summarize each change clearly before and after making it.
+  - When in doubt, ask for confirmation before making structural or potentially controversial changes.
+- **Communication:**
+  - Be explicit about what is being changed and why.
+  - Default to autonomy for routine or obvious improvements, but pause for user input on ambiguous or high-impact decisions.
+  - Use dedicated debug scripts for deep dives or complex logic issues.
+- **Code & Architecture:**
+  - Follow domain-driven design and project conventions.
+  - All database operations must be handled by the core system, not by clients.
+  - Use class methods and domain methods for object creation and manipulation (never direct constructors).
+- **Documentation:**
+  - Update documentation and code comments to reflect any significant changes or new patterns.
+- **Proactive Debugging:**
+  - When encountering unexpected behavior or logic issues, create a dedicated debug script to inspect the state and isolate the problem, rather than making speculative fixes.
+- **Refactoring Philosophy:**
+  - Only propose refactors that clearly improve code clarity, maintainability, or future extensibility—not for the sake of refactoring alone.
+- **Session & State Management:**
+  - Always treat the backend as the owner of session and state; clients should remain stateless and never perform direct database operations.
+- **Commit Discipline:**
+  - Only suggest committing changes after all tests have passed and the user has reviewed the changes, unless otherwise directed.
+- **Documentation Consistency:**
+  - When introducing new patterns or conventions, update both code comments and relevant documentation to keep everything in sync.
+- **User Preferences First:**
+  - When in doubt, defer to explicit user preferences or ask for clarification before proceeding with ambiguous tasks.
 
 ---
 
 ## Table of Contents
 
-1. [Quick Start (5 min read)](#quick-start)
-2. [Architecture Principles](#architecture-principles)
-3. [Field Reference](#field-reference)
-4. [Workflow Examples](#workflow-examples)
-5. [Testing Guidelines](#testing-guidelines)
+1. AI Agent Collaboration Guidelines
+2. Getting Started / Onboarding Checklist
+3. Quick Reference Table
+4. Overview
+5. Session Management
+6. Object/Event Creation
+7. Field Classification
+8. Architectural Rules
+9. Validation
+10. Error Handling Policy
+11. Glossary / Definitions
+12. Examples
+13. FAQ
+14. Change History
 
 ---
 
@@ -134,42 +175,42 @@ TaxEventManager.create_or_update_tax_events(tax_statement, session)
 event = FundEvent(event_type=EventType.TAX_PAYMENT, ...)  # System should create this
 ```
 
-### **Capital Event Handling v2 (Unified Recalculation Flow)**
+### Capital Event Handling (Unified Flow)
 
-#### **Overview**
-- All capital events (unit purchases/sales for NAV-based funds, capital calls/returns for cost-based funds) now use standardized v2 methods and a unified recalculation orchestrator.
+#### Overview
+- All capital events (unit purchases/sales for NAV-based funds, capital calls/returns for cost-based funds) now use standardized unified methods and a unified recalculation orchestrator.
 - This ensures consistency, maintainability, and efficient recalculation for edits/inserts anywhere in the event chain.
 - The recalculation flow is efficient (single-pass) and robust for both NAV-based and cost-based funds.
 
-#### **Key v2 Methods**
+#### Key Methods
 - For NAV-based funds:
-  - `add_unit_purchase_v2`, `update_unit_purchase_v2`
-  - `add_unit_sale_v2`, `update_unit_sale_v2`
+  - `add_unit_purchase`, `update_unit_purchase`
+  - `add_unit_sale`, `update_unit_sale`
 - For cost-based funds:
-  - `add_capital_call_v2`, `update_capital_call_v2`
-  - `add_return_of_capital_v2`, `update_return_of_capital_v2`
-- All v2 methods automatically call `recalculate_capital_chain_from(event, session=session)` after insert/update.
+  - `add_capital_call`, `update_capital_call`
+  - `add_return_of_capital`, `update_return_of_capital`
+- All methods automatically call `recalculate_capital_chain_from(event, session=session)` after insert/update.
 
-#### **Unified Recalculation Orchestrator**
+#### Unified Recalculation Orchestrator
 - `recalculate_capital_chain_from(event, session=None)` efficiently recalculates all capital-related fields for the given event and all subsequent capital events.
 - Delegates to fund-type-specific single-pass recalculators:
   - NAV-based: `_calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event`
   - Cost-based: `_calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event`
 - After recalculation, fund-level summary fields are updated via `update_fund_summary_fields_after_capital_event`.
 
-#### **Architectural Rules**
-- **Always use v2 methods** for adding/updating capital events. Do not use legacy methods for new code.
+#### Architectural Rules
+- **Always use the unified methods** for adding/updating capital events. Legacy methods are removed.
 - **Never set calculated fields manually** (e.g., `current_equity_balance`, `units_owned`).
 - **All recalculation logic is centralized** in the orchestrator and single-pass methods for maintainability.
-- **Session management**: v2 methods require a session parameter, as with all domain methods.
+- **Session management**: Unified methods require a session parameter, as with all domain methods.
 
-#### **Example Usage**
+#### Example Usage
 ```python
 # NAV-based fund: add a unit purchase
-fund.add_unit_purchase_v2(units=100, price=10.0, date=date(2024, 1, 1), session=session)
+fund.add_unit_purchase(units=100, price=10.0, date=date(2024, 1, 1), session=session)
 
 # Cost-based fund: update a capital call
-fund.update_capital_call_v2(event_id=123, amount=50000.0, date=date(2024, 2, 1), session=session)
+fund.update_capital_call(event_id=123, amount=50000.0, date=date(2024, 2, 1), session=session)
 ```
 
 ### **Separation of Concerns**
@@ -424,4 +465,54 @@ statement.calculate_fy_debt_interest_deduction_total_deduction()
 ```
 
 #### **Step 3: Create Tax Payment Events**
+``` 
 ```
+
+## Testing Guidelines
+
+- Run the main test script (`tests/test_main.py`) after all major changes.
+- Output test results to a new file using the convention `system_test_output_new##.txt` for traceability.
+- Run tests frequently during development to catch regressions early.
+- All new features and refactors must be accompanied by a successful test run before commit.
+
+# Getting Started / Onboarding Checklist
+- Read the "Overview" and "Architectural Rules" sections first.
+- Review the "Quick Reference" table below for common methods and usage.
+- Always use the `@with_session` decorator for DB methods.
+- Run `tests/test_main.py` after any major change.
+- Output test results to a new file (see Testing Guidelines).
+- See the Glossary for definitions of key terms.
+
+## Quick Reference Table
+| Method                | Purpose                                 | Usage Example                  |
+|-----------------------|-----------------------------------------|--------------------------------|
+| add_unit_purchase     | Add a unit purchase event (NAV fund)    | fund.add_unit_purchase(...)    |
+| update_unit_sale      | Update a unit sale event                | fund.update_unit_sale(...)     |
+| add_capital_call      | Add a capital call (cost-based fund)    | fund.add_capital_call(...)     |
+| add_return_of_capital | Add a return of capital                 | fund.add_return_of_capital(...)|
+
+## Validation
+- All input validation must occur at the domain method boundary (e.g., inside `add_unit_purchase`, not in the API layer).
+- Raise clear, domain-specific exceptions for invalid input (e.g., `InvalidEventError`).
+- Never silently ignore or coerce invalid data.
+
+## Error Handling Policy
+- Always raise explicit exceptions for error conditions; never return None or ambiguous values.
+- Use domain-specific exception classes where possible.
+- Log unexpected exceptions with enough context for debugging.
+- Do not leak raw DB or system errors to the API layer—wrap in domain errors.
+
+## Glossary / Definitions
+- **NAV-based fund:** A fund where value is tracked by Net Asset Value per unit.
+- **Cost-based fund:** A fund where value is tracked by contributed/returned capital.
+- **FIFO:** First-In, First-Out; used for cost base and capital gains calculations.
+- **Capital event:** Any event that changes the equity/capital of a fund (purchase, sale, call, return).
+- **@with_session:** Decorator to ensure DB session management is handled by the backend.
+- **Domain method:** A method on a domain model (e.g., Fund) that encapsulates business logic.
+
+[See also: Session Management](#session-management)
+[See also: Architectural Rules](#architectural-rules)
+
+## Change History
+- 2024-07-13: Major update—removed v2 method references, clarified legacy file removal, added explicit testing guidelines, onboarding checklist, error handling, validation, glossary, and quick reference table.
+

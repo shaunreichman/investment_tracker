@@ -283,42 +283,6 @@ def calculate_cost_based_capital_gains(events):
             total_capital_gains += event.amount or 0
     return total_capital_gains
 
-def orchestrate_nav_based_average_equity(unit_events):
-    """
-    Orchestrate average equity calculation for NAV-based funds.
-    
-    Args:
-        unit_events (list): List of FundEvent objects (unit purchases/sales).
-    
-    Returns:
-        float: Average equity balance.
-    
-    Business context:
-        Used for performance calculations in NAV-based funds.
-    """
-    if not unit_events:
-        return 0
-    # Get date range from events
-    dates = [event.event_date for event in unit_events]
-    start_date = min(dates)
-    end_date = max(dates) + timedelta(days=1)
-    return calculate_average_equity_balance_nav(unit_events, start_date, end_date)
-
-def orchestrate_cost_based_average_equity(capital_events):
-    """
-    Orchestrate average equity calculation for cost-based funds.
-    
-    Args:
-        capital_events (list): List of FundEvent objects (capital calls/returns).
-    
-    Returns:
-        float: Average equity balance.
-    
-    Business context:
-        Used for performance calculations in cost-based funds.
-    """
-    return calculate_average_equity_balance_cost(capital_events)
-
 def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, return_cashflows=False):
     """
     Orchestrate IRR calculation with various options for cash flow inclusion.
@@ -391,69 +355,6 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
     else:
         return irr_result
 
-def calculate_nav_event_amounts(unit_events):
-    """Calculate amounts for unit purchases/sales and update units_owned and current_equity_balance for NAV-based funds.
-    This function ensures that:
-    - Unit purchase/sale amounts = units * unit_price + brokerage_fee
-    - units_owned is updated only after purchase/sale events (not NAV updates)
-    - current_equity_balance is calculated using FIFO for remaining units after each event (capital events only)
-    
-    Args:
-        unit_events (list): List of FundEvent objects with UNIT_PURCHASE, UNIT_SALE, and NAV_UPDATE events
-        
-    Note: This function updates the event objects in place. No database operations are performed.
-    """
-    from src.fund.models import EventType
-    
-    # Calculate amounts for unit purchases/sales and update units_owned and current_equity_balance
-    cumulative_units = 0.0
-    available_units = []  # FIFO queue: [(units, cost_per_unit, date), ...]
-    
-    for event in unit_events:
-        if event.event_type == EventType.UNIT_PURCHASE:
-            units = event.units_purchased or 0
-            unit_price = event.unit_price or 0
-            brokerage_fee = event.brokerage_fee or 0
-            event.amount = (units * unit_price) + brokerage_fee
-            
-            # Add to FIFO queue
-            if units > 0 and unit_price > 0:
-                available_units.append((units, unit_price, event.event_date))
-            
-            cumulative_units += units
-            event.units_owned = cumulative_units
-            
-            # Calculate cost of remaining units using FIFO
-            total_cost = sum(units * cost for units, cost, _ in available_units)
-            event.current_equity_balance = total_cost
-            
-        elif event.event_type == EventType.UNIT_SALE:
-            units = event.units_sold or 0
-            unit_price = event.unit_price or 0
-            brokerage_fee = event.brokerage_fee or 0
-            event.amount = (units * unit_price) - brokerage_fee  # Negative for sales
-            
-            # Remove units from FIFO queue (FIFO order)
-            remaining_units_to_sell = units
-            while remaining_units_to_sell > 0 and available_units:
-                oldest_units, oldest_cost, _ = available_units[0]
-                if oldest_units <= remaining_units_to_sell:
-                    # Sell all oldest units
-                    available_units.pop(0)
-                    remaining_units_to_sell -= oldest_units
-                else:
-                    # Sell partial oldest units
-                    available_units[0] = (oldest_units - remaining_units_to_sell, oldest_cost, available_units[0][2])
-                    remaining_units_to_sell = 0
-            
-            cumulative_units -= units
-            event.units_owned = cumulative_units
-            
-            # Calculate cost of remaining units using FIFO
-            total_cost = sum(units * cost for units, cost, _ in available_units)
-            event.current_equity_balance = total_cost
-        # Do not update units_owned or current_equity_balance for NAV_UPDATE events
-
 def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
     """
     Get the cost basis for NAV-based funds up to a given date using the stored current_equity_balance on the latest capital event.
@@ -474,36 +375,6 @@ def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
     latest_event = max(filtered, key=lambda e: (e.event_date, getattr(e, 'id', 0)))
     return latest_event.current_equity_balance if latest_event.current_equity_balance is not None else 0.0
 
-def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
-    """
-    Deprecated: Use current_equity_balance on the latest capital event for cost base reporting.
-    This function is retained only for capital gains FIFO matching logic.
-    """
-    # For cost base reporting, use current_equity_balance on the latest event.
-    # For capital gains, FIFO logic is still needed (see calculate_nav_based_capital_gains).
-    if not unit_events:
-        return {
-            'cumulative_units': 0.0,
-            'total_cost_basis': 0.0,
-            'unit_purchases': [],
-            'unit_sales': []
-        }
-    filtered = [e for e in unit_events if as_of_date is None or e.event_date <= as_of_date]
-    if not filtered:
-        return {
-            'cumulative_units': 0.0,
-            'total_cost_basis': 0.0,
-            'unit_purchases': [],
-            'unit_sales': []
-        }
-    latest_event = max(filtered, key=lambda e: (e.event_date, getattr(e, 'id', 0)))
-    return {
-        'cumulative_units': getattr(latest_event, 'units_owned', 0.0),
-        'total_cost_basis': latest_event.current_equity_balance if latest_event.current_equity_balance is not None else 0.0,
-        'unit_purchases': [],  # Not needed for reporting
-        'unit_sales': []       # Not needed for reporting
-    }
-
 __all__ = [
     'calculate_irr',
     'calculate_average_equity_balance_nav',
@@ -511,10 +382,6 @@ __all__ = [
     'calculate_debt_cost',
     'calculate_nav_based_capital_gains',
     'calculate_cost_based_capital_gains',
-    'orchestrate_nav_based_average_equity',
-    'orchestrate_cost_based_average_equity',
     'orchestrate_irr_base',
-    'calculate_nav_event_amounts',
-    'calculate_cumulative_units_and_cost_basis',
     'calculate_nav_based_cost_basis_for_irr',
 ] 

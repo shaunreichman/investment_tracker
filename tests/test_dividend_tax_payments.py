@@ -190,7 +190,7 @@ class DummyTaxStatement:
         else:
             self.capital_gain_discount_amount = 0.0
         return self.capital_gain_discount_amount
-    def calculate_capital_gain_tax_amount(self, session=None):
+    def calculate_capital_gain_tax_amount(self):
         # Dummy: tax on full gain (not discounted)
         if self.capital_gain_income_amount and self.capital_gain_income_tax_rate:
             self.capital_gain_tax_amount = (self.capital_gain_income_amount * self.capital_gain_income_tax_rate) / 100.0
