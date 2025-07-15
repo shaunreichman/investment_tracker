@@ -96,7 +96,7 @@ def setup_test_data(session):
     print("Adding Senior Debt Fund events using domain methods...")
     
     # Add capital call
-    senior_debt_fund.add_capital_call_v2(
+    senior_debt_fund.add_capital_call(
         amount=100000.0,
         date=date(2023, 6, 23),
         description="Initial capital call",
@@ -104,19 +104,19 @@ def setup_test_data(session):
     )
     
     # Add returns of capital
-    senior_debt_fund.add_return_of_capital_v2(
+    senior_debt_fund.add_return_of_capital(
         amount=7000.0,
         date=date(2023, 12, 8),
         description="Return of capital",
         session=session
     )
-    senior_debt_fund.add_return_of_capital_v2(
+    senior_debt_fund.add_return_of_capital(
         amount=45000.0,
         date=date(2024, 3, 26),
         description="Partial exit distribution",
         session=session
     )
-    senior_debt_fund.add_return_of_capital_v2(
+    senior_debt_fund.add_return_of_capital(
         amount=48000.0,
         date=date(2024, 8, 2),
         description="Return of capital",
@@ -170,7 +170,7 @@ def setup_test_data(session):
     print("Adding 3PG Finance events using domain methods...")
     
     # Add capital call
-    finance_fund.add_capital_call_v2(
+    finance_fund.add_capital_call(
         amount=100000.0,
         date=date(2022, 11, 24),
         description="Initial capital call",
@@ -178,43 +178,43 @@ def setup_test_data(session):
     )
     
     # Add returns of capital
-    finance_fund.add_return_of_capital_v2(
+    finance_fund.add_return_of_capital(
         amount=7324.42,
         date=date(2023, 3, 24),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital_v2(
+    finance_fund.add_return_of_capital(
         amount=26326.88,
         date=date(2023, 7, 7),
         description="Partial exit distribution",
         session=session
     )
-    finance_fund.add_return_of_capital_v2(
+    finance_fund.add_return_of_capital(
         amount=8527.53,
         date=date(2023, 8, 4),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital_v2(
+    finance_fund.add_return_of_capital(
         amount=8805.21,
         date=date(2023, 9, 22),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital_v2(
+    finance_fund.add_return_of_capital(
         amount=9814.74,
         date=date(2023, 10, 13),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital_v2(
+    finance_fund.add_return_of_capital(
         amount=6967.81,
         date=date(2023, 11, 21),
         description="Return of capital",
         session=session
     )
-    finance_fund.add_return_of_capital_v2(
+    finance_fund.add_return_of_capital(
         amount=32233.41,
         date=date(2024, 4, 19),
         description="Final return of capital",
@@ -284,7 +284,7 @@ def setup_test_data(session):
     
     # Add events for ABC Ltd NAV-based fund (match original test)
     # Initial unit purchase
-    abc_fund.add_unit_purchase_v2(
+    abc_fund.add_unit_purchase(
         units=85.0,
         price=58.00,
         date=date(2013, 3, 28),
@@ -330,7 +330,7 @@ def setup_test_data(session):
         session=session
     )
     # Partial unit sale
-    abc_fund.add_unit_sale_v2(
+    abc_fund.add_unit_sale(
         units=40.0,
         price=61.20,
         date=date(2013, 9, 4),
@@ -390,7 +390,7 @@ def setup_test_data(session):
         session=session
     )
     # Additional unit purchase
-    abc_fund.add_unit_purchase_v2(
+    abc_fund.add_unit_purchase(
         units=120.0,
         price=61.4,
         date=date(2014, 4, 30),
@@ -406,7 +406,7 @@ def setup_test_data(session):
         session=session
     )
     # Final unit sale
-    abc_fund.add_unit_sale_v2(
+    abc_fund.add_unit_sale(
         units=165.0,
         price=62.62,
         date=date(2014, 5, 13),

@@ -18,3 +18,49 @@ Adding Senior Debt Fund events using domain methods...
 Adding Senior Debt Fund distributions with tax...
 Adding 3PG Finance events using domain methods...
 Adding 3PG Finance distributions with tax...
+Error calculating capital gains for ABC Ltd 2012-13: TaxStatement.calculate_capital_gain_tax_amount() got an unexpected keyword argument 'session'
+Error calculating capital gains for ABC Ltd 2013-14: TaxStatement.calculate_capital_gain_tax_amount() got an unexpected keyword argument 'session'
+Test data setup complete!
+Created 2 funds for Test Company
+Created 1 funds for Test Shares Company
+Funds after setup: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
+
+Initial fund state:
+  Senior Debt Fund No.24: equity=$0.00, avg=$81598.52
+  3PG Finance: equity=$0.00, avg=$66045.18
+  ABC Ltd: equity=$0.00, avg=$3746.21
+
+3. Recalculating all derived values...
+Funds to recalculate: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
+Number of funds to recalculate: 3
+
+Recalculating for Senior Debt Fund No.24:
+  Current equity: $0.00
+  Average equity: $81,598.52
+  Created 0 tax payment events
+Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
+Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
+Created 2 FY debt cost events for Senior Debt Fund No.24
+Created 2 FY debt cost events for Senior Debt Fund No.24
+Traceback (most recent call last):
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/tests/test_main.py", line 818, in <module>
+    main()
+    ~~~~^^
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/tests/test_main.py", line 790, in main
+    recalculate_everything(session, show_irr_cashflows=not args.no_cashflows)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/tests/test_main.py", line 559, in recalculate_everything
+    real_irr = fund.calculate_real_irr(session=session)
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/fund/models.py", line 1260, in calculate_real_irr
+    self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/shared/utils.py", line 36, in wrapper
+    return method(self, *args, session=resolved_session, **kwargs)
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/fund/models.py", line 476, in create_daily_risk_free_interest_charges
+    created_events = self._calculate_daily_interest_charge_objects(
+        start_date, end_date, risk_free_rates, existing_dates, cash_flow_events
+    )
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/fund/models.py", line 415, in _calculate_daily_interest_charge_objects
+    if rate is not None and equity > 0:
+       ^^^^
+UnboundLocalError: cannot access local variable 'rate' where it is not associated with a value

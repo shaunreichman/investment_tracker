@@ -305,7 +305,7 @@ class Fund(Base):
             TaxStatement.financial_year == financial_year
         ).first()
     
-
+    
     @with_session
     def _calculate_nav_based_average_equity(self, session=None):
         """Calculate average equity balance for NAV-based funds using unit events.
@@ -403,26 +403,27 @@ class Fund(Base):
             equity_by_date.append((e.event_date, e.current_equity_balance if e.current_equity_balance is not None else 0.0))
         # For each day, find the most recent capital event on or before that day
         while current_date <= end_date:
+            rate = None
             if current_date not in existing_dates:
                 # Find risk-free rate for this date
                 rate = get_risk_free_rate_for_date(current_date, risk_free_rates)
-                # Find latest equity balance as of this date
-                equity = 0.0
-                for event_date, eq in reversed(equity_by_date):
-                    if event_date <= current_date:
-                        equity = eq
-                        break
-                if rate is not None and equity > 0:
-                    daily_interest = equity * (rate / 100) / 365.25
-                    interest_event = FundEvent(
-                        fund_id=self.id,
-                        event_type=EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
-                        event_date=current_date,
-                        amount=daily_interest,
-                        description=f"Daily risk-free interest charge ({rate:.2f}% p.a.)",
-                        reference_number=f"RFR-{current_date.strftime('%Y%m%d')}"
-                    )
-                    created_events.append(interest_event)
+            # Find latest equity balance as of this date
+            equity = 0.0
+            for event_date, eq in reversed(equity_by_date):
+                if event_date <= current_date:
+                    equity = eq
+                    break
+            if rate is not None and equity > 0:
+                daily_interest = equity * (rate / 100) / 365.25
+                interest_event = FundEvent(
+                    fund_id=self.id,
+                    event_type=EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
+                    event_date=current_date,
+                    amount=daily_interest,
+                    description=f"Daily risk-free interest charge ({rate:.2f}% p.a.)",
+                    reference_number=f"RFR-{current_date.strftime('%Y%m%d')}"
+                )
+                created_events.append(interest_event)
             current_date += timedelta(days=1)
         return created_events
     
@@ -1069,11 +1070,6 @@ class Fund(Base):
         
         return query.order_by(FundEvent.event_date).all()
 
-    def _get_recalculation_methods_for_event_type(self, event_type):
-        """Get the list of recalculation methods needed for a given event type. Returns a list of method names to call."""
-        # All recalculation is now handled by the v2 flow; this is a no-op.
-        return []
-
     @with_session
     def delete_event(self, event_id, session=None):
         """Delete a specific event and recalculate affected fields.
@@ -1099,12 +1095,7 @@ class Fund(Base):
         # Delete the event
         session.delete(event)
         
-        # Recalculate affected fields based on event type
-        recalculation_methods = self._get_recalculation_methods_for_event_type(event_type)
-        for method_name in recalculation_methods:
-            method = getattr(self, method_name)
-            method(session=session)
-        
+        # No recalculation methods needed; handled by unified flow
         return True
 
     def _create_bulk_event_objects(self, events_data):
@@ -1340,7 +1331,7 @@ class Fund(Base):
         self.average_equity_balance = calculated_average
         # No session.commit() here
 
-    def add_unit_purchase_v2(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
+    def add_unit_purchase(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
         """
         [NEW FLOW] Add a unit purchase event and update all relevant calculated fields using the unified capital recalculation flow.
         """
@@ -1363,7 +1354,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_unit_purchase_v2(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
+    def update_unit_purchase(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
         """
         [NEW FLOW] Update an existing unit purchase event and recalculate all affected fields using the unified capital recalculation flow.
         """
@@ -1392,7 +1383,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def add_unit_sale_v2(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
+    def add_unit_sale(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
         """
         [NEW FLOW] Add a unit sale event and update all relevant calculated fields using the unified capital recalculation flow.
         """
@@ -1415,7 +1406,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_unit_sale_v2(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
+    def update_unit_sale(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
         """
         [NEW FLOW] Update an existing unit sale event and recalculate all affected fields using the unified capital recalculation flow.
         """
@@ -1444,7 +1435,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def add_capital_call_v2(self, amount, date, description=None, reference_number=None, session=None):
+    def add_capital_call(self, amount, date, description=None, reference_number=None, session=None):
         """
         [NEW FLOW] Add a capital call event and update all relevant calculated fields using the unified capital recalculation flow.
         """
@@ -1463,7 +1454,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_capital_call_v2(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
+    def update_capital_call(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
         """
         [NEW FLOW] Update an existing capital call event and recalculate all affected fields using the unified capital recalculation flow.
         """
@@ -1486,7 +1477,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def add_return_of_capital_v2(self, amount, date, description=None, reference_number=None, session=None):
+    def add_return_of_capital(self, amount, date, description=None, reference_number=None, session=None):
         """
         [NEW FLOW] Add a return of capital event and update all relevant calculated fields using the unified capital recalculation flow.
         """
@@ -1505,7 +1496,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_return_of_capital_v2(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
+    def update_return_of_capital(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
         """
         [NEW FLOW] Update an existing return of capital event and recalculate all affected fields using the unified capital recalculation flow.
         """
@@ -1603,6 +1594,7 @@ class Fund(Base):
         for i in range(start_idx, len(events)):
             e = events[i]
             if e.event_type == EventType.UNIT_PURCHASE:
+                # Update the FIFO and cumulative units
                 units = e.units_purchased or 0
                 unit_price = e.unit_price or 0
                 brokerage_fee = e.brokerage_fee or 0
