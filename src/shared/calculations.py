@@ -144,19 +144,6 @@ def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
     return fy_start, fy_end
 
 
-def interest_tax_benefit(interest_income, tax_rate=0.45):
-    """Calculate the tax benefit from interest income.
-    
-    Args:
-        interest_income (float): Interest income amount
-        tax_rate (float): Tax rate as decimal (default 0.45 for 45%)
-        
-    Returns:
-        float: Tax benefit amount
-    """
-    return interest_income * tax_rate
-
-
 def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, return_cashflows=False):
     """Orchestrate IRR calculation with configurable cash flow inclusion.
     This is a shared calculation function that can be used by any domain.
@@ -245,7 +232,6 @@ __all__ = [
     'get_risk_free_rate_for_date',
     'get_financial_years_for_fund_period',
     'get_reconciliation_explanation',
-    'interest_tax_benefit',
     'get_financial_year_dates',
     'orchestrate_irr_base',
 ] 
