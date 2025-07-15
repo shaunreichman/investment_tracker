@@ -30,9 +30,9 @@ from .calculations import (
     calculate_average_equity_balance_cost,
     calculate_debt_cost,
     calculate_nav_based_capital_gains,
-    calculate_cost_based_capital_gains,
-    orchestrate_irr_base
+    calculate_cost_based_capital_gains
 )
+from src.shared.calculations import orchestrate_irr_base
 
 # Import models from other domains
 from ..rates.models import RiskFreeRate
@@ -1152,7 +1152,6 @@ class Fund(Base):
         """Base IRR calculation method for the fund.
         Delegates to orchestrate_irr_base in calculations.py.
         """
-        from src.shared.calculations import orchestrate_irr_base
         from datetime import date
         # Only calculate IRR for completed funds
         if self.should_be_active:

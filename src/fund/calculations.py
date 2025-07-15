@@ -283,78 +283,6 @@ def calculate_cost_based_capital_gains(events):
             total_capital_gains += event.amount or 0
     return total_capital_gains
 
-def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, return_cashflows=False):
-    """
-    Orchestrate IRR calculation with various options for cash flow inclusion.
-    
-    Args:
-        cash_flow_events (list): List of FundEvent objects (cash flows).
-        start_date (date): Start date for IRR calculation.
-        include_tax_payments (bool): Whether to include tax payment events.
-        include_risk_free_charges (bool): Whether to include risk-free interest charges.
-        include_fy_debt_cost (bool): Whether to include financial year debt cost events.
-        return_cashflows (bool): Whether to return cash flow details.
-    
-    Returns:
-        dict or float: IRR result or cash flow details if return_cashflows=True.
-    
-    Business context:
-        Used for IRR calculations in Fund models with configurable cash flow inclusion.
-    """
-    # Filter events based on options
-    filtered_events = []
-    for event in cash_flow_events:
-        include_event = False
-        if event.event_type.name in ['UNIT_PURCHASE', 'UNIT_SALE', 'CAPITAL_CALL', 'RETURN_OF_CAPITAL', 'DISTRIBUTION']:
-            include_event = True
-        elif include_tax_payments and event.event_type.name == 'TAX_PAYMENT':
-            include_event = True
-        elif include_risk_free_charges and event.event_type.name == 'RISK_FREE_INTEREST_CHARGE':
-            include_event = True
-        elif include_fy_debt_cost and event.event_type.name == 'FY_DEBT_COST':
-            include_event = True
-        if include_event:
-            filtered_events.append(event)
-    
-    # Sort events by date
-    filtered_events.sort(key=lambda e: e.event_date)
-    
-    # Prepare cash flows for IRR calculation
-    cash_flows = []
-    days_from_start = []
-    
-    for event in filtered_events:
-        amount = event.amount or 0
-        # Adjust sign based on event type
-        if event.event_type.name in ['UNIT_PURCHASE', 'CAPITAL_CALL']:
-            amount = -abs(amount)  # Outflow
-        elif event.event_type.name in ['UNIT_SALE', 'RETURN_OF_CAPITAL', 'DISTRIBUTION', 'FY_DEBT_COST']:
-            amount = abs(amount)  # Inflow
-        elif event.event_type.name == 'TAX_PAYMENT':
-            amount = -abs(amount)  # Outflow
-        elif event.event_type.name == 'RISK_FREE_INTEREST_CHARGE':
-            amount = -abs(amount)  # Outflow
-        
-        cash_flows.append(amount)
-        days = (event.event_date - start_date).days
-        days_from_start.append(days)
-    
-    # Calculate IRR
-    if len(cash_flows) < 2:
-        return None
-    
-    irr_result = calculate_irr(cash_flows, days_from_start)
-    
-    if return_cashflows:
-        return {
-            'irr': irr_result,
-            'cash_flows': cash_flows,
-            'days_from_start': days_from_start,
-            'events': filtered_events
-        }
-    else:
-        return irr_result
-
 __all__ = [
     'calculate_irr',
     'calculate_average_equity_balance_nav',
@@ -362,5 +290,4 @@ __all__ = [
     'calculate_debt_cost',
     'calculate_nav_based_capital_gains',
     'calculate_cost_based_capital_gains',
-    'orchestrate_irr_base',
 ] 
