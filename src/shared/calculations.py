@@ -110,39 +110,6 @@ def get_reconciliation_explanation(gross_diff, tax_diff, net_diff):
     return "; ".join(explanations)
 
 
-def get_unit_events_for_fund(unit_events, as_of_date=None):
-    """
-    Filter unit events up to a given date.
-    
-    Args:
-        unit_events: List of FundEvent objects
-        as_of_date: Filter events up to this date. If None, includes all events.
-    
-    Returns:
-        list: Filtered list of unit events
-    """
-    if as_of_date is None:
-        return unit_events
-    
-    return [e for e in unit_events if e.event_date <= as_of_date]
-
-
-def tax_payable(interest_income_amount, interest_income_tax_rate, interest_non_resident_withholding_tax_from_statement):
-    """
-    Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
-    Args:
-        interest_income_amount (float): Total interest income.
-        interest_income_tax_rate (float): Taxable rate as a percentage.
-        interest_non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
-    Returns:
-        float: Tax payable (never negative).
-    """
-    if interest_income_tax_rate and interest_income_amount and interest_income_tax_rate != 0 and interest_income_amount > 0:
-        total_tax_liability = interest_income_amount * (interest_income_tax_rate / 100)
-        return max(0, total_tax_liability - (interest_non_resident_withholding_tax_from_statement or 0.0))
-    return 0.0
-
-
 def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
     """
     Get the start and end dates for a financial year based on jurisdiction.
@@ -278,8 +245,6 @@ __all__ = [
     'get_risk_free_rate_for_date',
     'get_financial_years_for_fund_period',
     'get_reconciliation_explanation',
-    'get_unit_events_for_fund',
-    'tax_payable',
     'interest_tax_benefit',
     'get_financial_year_dates',
     'orchestrate_irr_base',

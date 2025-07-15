@@ -58,5 +58,5 @@ __all__ = [
     # Shared
     'with_session',
     'get_equity_change_for_event', 'get_reconciliation_explanation',
-    'get_unit_events_for_fund', 'get_financial_year_dates',
+    'get_financial_year_dates',
 ] 
