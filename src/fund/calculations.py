@@ -55,44 +55,6 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
             return None
     return None
 
-# Average equity balance utility (NAV-based)
-def calculate_average_equity_balance_nav(unit_events, start_date, end_date):
-    """
-    Calculate average equity balance for NAV-based funds using FIFO cost basis.
-    
-    Args:
-        unit_events (list): List of FundEvent objects (unit purchases/sales).
-        start_date (date): Start date for the calculation period.
-        end_date (date): End date for the calculation period (exclusive).
-    
-    Returns:
-        float: The average equity balance over the period.
-    
-    Business context:
-        Used for performance and risk calculations in NAV-based funds, accounting for unit-level cost base.
-    """
-    if not unit_events:
-        return 0
-    from collections import deque
-    daily_equity_balance = {}
-    current_date = start_date
-    # Initialize daily equity balance for each day in the period (exclusive of end_date)
-    while current_date < end_date:
-        daily_equity_balance[current_date] = 0
-        current_date += timedelta(days=1)
-    for event in unit_events:
-        if hasattr(event, 'current_equity_balance') and event.current_equity_balance is not None:
-            current_equity = event.current_equity_balance
-        else:
-            current_equity = 0
-        current_date = event.event_date
-        while current_date < end_date:
-            daily_equity_balance[current_date] = current_equity
-            current_date += timedelta(days=1)
-    total_equity = sum(daily_equity_balance.values())
-    total_days = len(daily_equity_balance)
-    return total_equity / total_days if total_days > 0 else 0
-
 # Average equity balance utility (cost-based)
 def calculate_average_equity_balance_cost(capital_events):
     """
@@ -285,7 +247,6 @@ def calculate_cost_based_capital_gains(events):
 
 __all__ = [
     'calculate_irr',
-    'calculate_average_equity_balance_nav',
     'calculate_average_equity_balance_cost',
     'calculate_debt_cost',
     'calculate_nav_based_capital_gains',
