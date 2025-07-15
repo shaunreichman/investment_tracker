@@ -5,22 +5,6 @@ This module contains tax-specific calculation functions for tax statements and r
 """
 
 
-def tax_payable(interest_income_amount, interest_income_tax_rate, interest_non_resident_withholding_tax_from_statement):
-    """
-    Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
-    Args:
-        interest_income_amount (float): Total interest income.
-        interest_income_tax_rate (float): Taxable rate as a percentage.
-        interest_non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
-    Returns:
-        float: Tax payable (never negative).
-    """
-    if interest_income_tax_rate and interest_income_amount and interest_income_tax_rate != 0 and interest_income_amount > 0:
-        total_tax_liability = interest_income_amount * (interest_income_tax_rate / 100)
-        return max(0, total_tax_liability - (interest_non_resident_withholding_tax_from_statement or 0.0))
-    return 0.0
-
-
 def calculate_fy_debt_interest_deduction_total_deduction(fy_debt_interest_deduction_sum_of_daily_interest, fy_debt_interest_deduction_rate):
     """
     Calculate the tax benefit from interest expense deduction.
@@ -38,6 +22,5 @@ def calculate_fy_debt_interest_deduction_total_deduction(fy_debt_interest_deduct
 
 
 __all__ = [
-    'tax_payable',
     'calculate_fy_debt_interest_deduction_total_deduction',
 ] 
