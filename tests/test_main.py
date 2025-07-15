@@ -492,7 +492,7 @@ def setup_test_data(session):
         try:
             tax_statement.calculate_capital_gain_totals(session=session)
             tax_statement.calculate_capital_gain_discount(session=session)
-            tax_statement.calculate_capital_gain_tax_amount(session=session)
+            tax_statement.calculate_capital_gain_tax_amount()
             if getattr(tax_statement, 'capital_gain_income_amount', 0) > 0:
                 print(f"ABC Ltd capital gain for {label}: {tax_statement.capital_gain_income_amount:.2f} (discount: {tax_statement.capital_gain_discount_amount:.2f}, tax: {tax_statement.capital_gain_tax_amount:.2f})")
         except Exception as e:
