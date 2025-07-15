@@ -126,8 +126,12 @@ class TaxStatement(Base):
         Calculate the interest tax benefit based on total interest expense and deduction rate.
         Updates the fy_debt_interest_deduction_total_deduction field and returns the value.
         """
-        from .calculations import calculate_fy_debt_interest_deduction_total_deduction
-        self.fy_debt_interest_deduction_total_deduction = calculate_fy_debt_interest_deduction_total_deduction(self.fy_debt_interest_deduction_sum_of_daily_interest, self.fy_debt_interest_deduction_rate)
+        if self.fy_debt_interest_deduction_sum_of_daily_interest and self.fy_debt_interest_deduction_rate:
+            self.fy_debt_interest_deduction_total_deduction = (
+                self.fy_debt_interest_deduction_sum_of_daily_interest * self.fy_debt_interest_deduction_rate
+            ) / 100
+        else:
+            self.fy_debt_interest_deduction_total_deduction = 0.0
         return self.fy_debt_interest_deduction_total_deduction
 
     def get_financial_year_dates(self):

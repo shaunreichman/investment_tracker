@@ -847,47 +847,6 @@ class Fund(Base):
     
     
     @with_session
-    def get_capital_movements(self, session=None):
-        """Return a dictionary with total capital calls and returns for the fund.
-        Used for calculating net capital invested and cost basis.
-        Keys: 'calls', 'returns'.
-        """
-        # Calculate total capital calls (handles both fund types)
-        total_calls = self.get_capital_calls(session=session)
-        
-        # Calculate total capital returns
-        total_returns = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.RETURN_OF_CAPITAL
-        ).scalar() or 0
-        
-        return {"calls": total_calls, "returns": total_returns}
-    
-    @with_session
-    def get_capital_calls(self, session=None):
-        """Return the total capital calls for the fund, depending on fund type.
-        - NAV-based: sum of UNIT_PURCHASE events.
-        - Cost-based: sum of CAPITAL_CALL events.
-        Returns 0 if no events exist.
-        """
-        from sqlalchemy import func
-
-        if self.tracking_type == FundType.NAV_BASED:
-            # For NAV-based funds, sum all unit purchases
-            total = session.query(func.sum(FundEvent.amount)).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.UNIT_PURCHASE
-            ).scalar() or 0
-        elif self.tracking_type == FundType.COST_BASED:
-            # For cost-based funds, sum all capital calls
-            total = session.query(func.sum(FundEvent.amount)).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.CAPITAL_CALL
-            ).scalar() or 0
-        
-        return total
-    
-    @with_session
     def add_nav_update(self, nav_per_share, date, description=None, reference_number=None, session=None):
         """
         Add a NAV update event. If this is the latest NAV_UPDATE event, update NAV-specific fund summary fields.
