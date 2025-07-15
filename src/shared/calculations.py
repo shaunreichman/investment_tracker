@@ -10,72 +10,6 @@ from typing import List, Dict, Any, Optional
 import math
 
 
-def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
-    """
-    Calculate IRR using daily cash flows and a root-finding algorithm.
-    
-    Args:
-        cash_flows: List of (amount, days_from_start) tuples
-        days_from_start: List of days from start for each cash flow
-        tolerance: Tolerance for convergence
-        max_iterations: Maximum number of iterations
-        
-    Returns:
-        float: IRR as a percentage, or None if calculation fails
-    """
-    if not cash_flows or len(cash_flows) < 2:
-        return None
-    
-    # Initial guess: simple rate based on total return
-    total_invested = sum(cf for cf in cash_flows if cf < 0)
-    total_returned = sum(cf for cf in cash_flows if cf > 0)
-    
-    if total_invested == 0 or total_returned == 0:
-        return None
-    
-    # Simple annualized return as initial guess
-    total_days = max(days_from_start) if days_from_start else 365
-    simple_return = (total_returned / abs(total_invested)) - 1
-    initial_guess = ((1 + simple_return) ** (365.25 / total_days)) - 1
-    
-    rate = initial_guess
-    
-    for iteration in range(max_iterations):
-        npv = 0
-        npv_derivative = 0
-        
-        for i, (cf, days) in enumerate(zip(cash_flows, days_from_start)):
-            if days == 0:
-                npv += cf
-            else:
-                discount_factor = (1 + rate) ** (days / 365.25)
-                npv += cf / discount_factor
-                
-                if days > 0:
-                    npv_derivative -= (cf * days) / (365.25 * discount_factor * (1 + rate))
-        
-        if abs(npv) < tolerance:
-            return rate  # Return as decimal, not percentage
-        
-        if abs(npv_derivative) < 1e-15:
-            break
-            
-        rate_new = rate - npv / npv_derivative
-        
-        # Prevent extreme values
-        if rate_new < -0.99:
-            rate_new = -0.99
-        elif rate_new > 10:
-            rate_new = 10
-            
-        if abs(rate_new - rate) < tolerance:
-            return rate_new  # Return as decimal, not percentage
-            
-        rate = rate_new
-    
-    return None
-
-
 def get_equity_change_for_event(event, fund_type):
     """
     Calculate the equity change for a given event based on fund type.
@@ -101,41 +35,6 @@ def get_equity_change_for_event(event, fund_type):
         elif event.event_type == EventType.RETURN_OF_CAPITAL:
             return -(event.amount or 0.0)
     return 0.0
-
-
-def get_risk_free_rate_for_date(target_date, risk_free_rates):
-    """Get the risk-free rate for a specific date from a list of rates.
-    Returns the most recent rate available on or before the target date, or None if not found.
-    """
-    if not risk_free_rates:
-        return None
-    
-    # Find the most recent rate that's <= target_date
-    applicable_rate = None
-    for rate in risk_free_rates:
-        if rate.rate_date <= target_date:
-            applicable_rate = rate
-        else:
-            break
-    
-    return applicable_rate.rate if applicable_rate else None
-
-
-def get_financial_years_for_fund_period(start_date, end_date, entity):
-    """Get all financial years between start and end dates.
-    Returns a set of financial year strings. No database operations.
-    """
-    financial_years = set()
-    current_date = start_date
-    while current_date <= end_date:
-        fy = entity.get_financial_year(current_date)
-        financial_years.add(fy)
-        # Move to next month
-        if current_date.month == 12:
-            current_date = date(current_date.year + 1, 1, 1)
-        else:
-            current_date = date(current_date.year, current_date.month + 1, 1)
-    return financial_years
 
 
 def get_reconciliation_explanation(gross_diff, tax_diff, net_diff):
@@ -176,110 +75,6 @@ def get_reconciliation_explanation(gross_diff, tax_diff, net_diff):
     return "; ".join(explanations)
 
 
-def get_unit_events_for_fund(unit_events, as_of_date=None):
-    """
-    Filter unit events up to a given date.
-    
-    Args:
-        unit_events: List of FundEvent objects
-        as_of_date: Filter events up to this date. If None, includes all events.
-    
-    Returns:
-        list: Filtered list of unit events
-    """
-    if as_of_date is None:
-        return unit_events
-    
-    return [e for e in unit_events if e.event_date <= as_of_date]
-
-
-def calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date=None):
-    """
-    Calculate the cost basis for NAV-based funds up to a given date.
-    This is used for IRR calculations where we need to know the total amount invested.
-    
-    Args:
-        unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
-        as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
-    
-    Returns:
-        float: Total cost basis (sum of all unit purchases minus unit sales)
-    """
-    result = calculate_cumulative_units_and_cost_basis(unit_events, as_of_date)
-    return result['total_cost_basis']
-
-
-def calculate_cumulative_units_and_cost_basis(unit_events, as_of_date=None):
-    """
-    Calculate cumulative units owned and total cost basis up to a given date.
-    Shared utility for NAV-based calculations.
-    
-    Args:
-        unit_events (list): List of FundEvent objects with UNIT_PURCHASE and UNIT_SALE events
-        as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
-    
-    Returns:
-        dict: {
-            'cumulative_units': float,
-            'total_cost_basis': float,
-            'unit_purchases': list of (units, cost_per_unit, date),
-            'unit_sales': list of (units, sale_price_per_unit, date)
-        }
-    """
-    from src.fund.models import EventType
-    
-    cumulative_units = 0.0
-    total_cost_basis = 0.0
-    unit_purchases = []
-    unit_sales = []
-    
-    for event in unit_events:
-        # Stop if we've reached the as_of_date
-        if as_of_date and event.event_date > as_of_date:
-            break
-            
-        if event.event_type == EventType.UNIT_PURCHASE:
-            units = event.units_purchased or 0
-            unit_price = event.unit_price or 0
-            if units > 0 and unit_price > 0:
-                cumulative_units += units
-                total_cost_basis += units * unit_price
-                unit_purchases.append((units, unit_price, event.event_date))
-                
-        elif event.event_type == EventType.UNIT_SALE:
-            units = event.units_sold or 0
-            unit_price = event.unit_price or 0
-            if units > 0:
-                cumulative_units -= units
-                unit_sales.append((units, unit_price, event.event_date))
-    
-    return {
-        'cumulative_units': cumulative_units,
-        'total_cost_basis': total_cost_basis,
-        'unit_purchases': unit_purchases,
-        'unit_sales': unit_sales
-    }
-
-
-
-
-
-def tax_payable(interest_income_amount, interest_income_tax_rate, interest_non_resident_withholding_tax_from_statement):
-    """
-    Calculate tax payable as (interest_income_amount * interest_income_tax_rate / 100) - interest_non_resident_withholding_tax_from_statement.
-    Args:
-        interest_income_amount (float): Total interest income.
-        interest_income_tax_rate (float): Taxable rate as a percentage.
-        interest_non_resident_withholding_tax_from_statement (float): Tax withheld from statement.
-    Returns:
-        float: Tax payable (never negative).
-    """
-    if interest_income_tax_rate and interest_income_amount and interest_income_tax_rate != 0 and interest_income_amount > 0:
-        total_tax_liability = interest_income_amount * (interest_income_tax_rate / 100)
-        return max(0, total_tax_liability - (interest_non_resident_withholding_tax_from_statement or 0.0))
-    return 0.0
-
-
 def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
     """
     Get the start and end dates for a financial year based on jurisdiction.
@@ -312,19 +107,6 @@ def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
             fy_start = date(year, 1, 1)
             fy_end = date(year, 12, 31)
     return fy_start, fy_end
-
-
-def interest_tax_benefit(interest_income, tax_rate=0.45):
-    """Calculate the tax benefit from interest income.
-    
-    Args:
-        interest_income (float): Interest income amount
-        tax_rate (float): Tax rate as decimal (default 0.45 for 45%)
-        
-    Returns:
-        float: Tax benefit amount
-    """
-    return interest_income * tax_rate
 
 
 def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, return_cashflows=False):
@@ -411,17 +193,8 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
 
 
 __all__ = [
-    'calculate_irr',
     'get_equity_change_for_event',
-    'get_risk_free_rate_for_date',
-    'get_financial_years_for_fund_period',
     'get_reconciliation_explanation',
-    'get_unit_events_for_fund',
-    'calculate_nav_based_cost_basis_for_irr',
-    'calculate_cumulative_units_and_cost_basis',
-
-    'tax_payable',
-    'interest_tax_benefit',
     'get_financial_year_dates',
     'orchestrate_irr_base',
 ] 

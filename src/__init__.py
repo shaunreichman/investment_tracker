@@ -11,15 +11,13 @@ from .entity.calculations import get_financial_years_for_fund_period
 # Fund domain
 from .fund.models import Fund, FundEvent, FundType, EventType, DistributionType, TaxPaymentType
 from .fund.calculations import (
-    calculate_irr, calculate_average_equity_balance_nav, calculate_average_equity_balance_cost,
-    calculate_debt_cost, calculate_nav_based_capital_gains, calculate_cost_based_capital_gains,
-    orchestrate_irr_base,
-    calculate_nav_based_cost_basis_for_irr
+    calculate_irr,
+    calculate_debt_cost, calculate_nav_based_capital_gains, calculate_cost_based_capital_gains
 )
+from .shared.calculations import orchestrate_irr_base
 
 # Tax domain
 from .tax.models import TaxStatement
-from .tax.calculations import tax_payable, calculate_fy_debt_interest_deduction_total_deduction
 
 # Rates domain
 from .rates.models import RiskFreeRate
@@ -42,13 +40,12 @@ __all__ = [
     
     # Fund
     'Fund', 'FundEvent', 'FundType', 'EventType', 'DistributionType', 'TaxPaymentType',
-    'calculate_irr', 'calculate_average_equity_balance_nav', 'calculate_average_equity_balance_cost',
+    'calculate_irr',
     'calculate_debt_cost', 'calculate_nav_based_capital_gains', 'calculate_cost_based_capital_gains',
     'orchestrate_irr_base',
-    'calculate_nav_based_cost_basis_for_irr',
     
     # Tax
-    'TaxStatement', 'tax_payable', 'calculate_fy_debt_interest_deduction_total_deduction',
+    'TaxStatement',
     
     # Rates
     'RiskFreeRate', 'get_risk_free_rate_for_date',
@@ -60,5 +57,5 @@ __all__ = [
     # Shared
     'with_session',
     'get_equity_change_for_event', 'get_reconciliation_explanation',
-    'get_unit_events_for_fund', 'get_financial_year_dates',
+    'get_financial_year_dates',
 ] 

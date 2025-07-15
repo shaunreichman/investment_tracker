@@ -26,21 +26,17 @@ from ..shared.base import Base
 from ..shared.utils import with_session, with_class_session
 from .calculations import (
     calculate_irr,
-    calculate_average_equity_balance_nav,
-    calculate_average_equity_balance_cost,
-    calculate_debt_cost,
-    calculate_nav_based_capital_gains,
-    calculate_cost_based_capital_gains,
-    orchestrate_irr_base,
-    calculate_nav_based_cost_basis_for_irr
+    calculate_debt_cost
 )
+from src.shared.calculations import orchestrate_irr_base
 
 # Import models from other domains
 from ..rates.models import RiskFreeRate
 from ..entity.models import Entity
 
 # Import shared calculations
-from ..shared.calculations import get_equity_change_for_event, get_financial_years_for_fund_period
+from ..shared.calculations import get_equity_change_for_event
+from src.entity.calculations import get_financial_years_for_fund_period
 from ..rates.calculations import get_risk_free_rate_for_date
 
 
@@ -267,9 +263,7 @@ class Fund(Base):
         
         # Calculate interest income amount (including total_interest_income)
         statement.calculate_interest_income_amount()
-        
 
-        
         return statement
 
     @with_session
@@ -304,63 +298,6 @@ class Fund(Base):
             TaxStatement.entity_id == entity_id,
             TaxStatement.financial_year == financial_year
         ).first()
-    
-    
-    @with_session
-    def _calculate_nav_based_average_equity(self, session=None):
-        """Calculate average equity balance for NAV-based funds using unit events.
-        Delegates to orchestrate_nav_based_average_equity in calculations.py.
-        """
-        from src.fund.calculations import orchestrate_nav_based_average_equity
-        unit_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-        ).order_by(FundEvent.event_date).all()
-        if not unit_events:
-            return 0
-        # If fund is still active, use today's date as end_date (handled by caller if needed)
-        return orchestrate_nav_based_average_equity(unit_events)
-
-
-    @with_session
-    def _calculate_cost_based_average_equity(self, session=None):
-        """Calculate average equity balance for cost-based funds using capital events.
-        Delegates to orchestrate_cost_based_average_equity in calculations.py.
-        """
-        from src.fund.calculations import orchestrate_cost_based_average_equity
-        capital_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([
-                EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE
-            ])
-        ).order_by(FundEvent.event_date).all()
-        if not capital_events:
-            return 0
-        return orchestrate_cost_based_average_equity(capital_events)
-    
-    @with_session
-    def get_nav_based_cost_basis(self, as_of_date=None, session=None):
-        """Get the cost basis for NAV-based funds up to a given date.
-        This is used for IRR calculations where we need to know the total amount invested.
-        
-        Args:
-            as_of_date (date, optional): Calculate as of this date. If None, calculates to the end.
-            session: Database session
-            
-        Returns:
-            float: Total cost basis (sum of all unit purchases minus unit sales)
-        """
-        if self.tracking_type != FundType.NAV_BASED:
-            return 0.0
-            
-        # Get all unit events for this fund
-        unit_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-        ).order_by(FundEvent.event_date).all()
-        
-        # Calculate cost basis using pure function
-        return calculate_nav_based_cost_basis_for_irr(unit_events, as_of_date)
     
     @with_session
     def calculate_debt_cost(self, session=None, risk_free_rate_currency=None):
@@ -908,79 +845,6 @@ class Fund(Base):
             session=session
         )
     
-    def get_capital_gains(self, session=None):
-        """Return the total capital gains for the fund, using the appropriate method for the fund type.
-        NAV-based funds use FIFO on unit sales; cost-based funds use explicit events.
-        """
-        if self.tracking_type == FundType.NAV_BASED:
-            return self._calculate_nav_based_capital_gains(session=session)
-        elif self.tracking_type == FundType.COST_BASED:
-            return self._get_cost_based_capital_gains(session=session)
-    
-    @with_session
-    def _calculate_nav_based_capital_gains(self, session=None):
-        """Calculate capital gains for NAV-based funds using FIFO on unit sales.
-        Delegates to calculate_nav_based_capital_gains in calculations.py.
-        """
-        # Get all unit purchase and sale events in chronological order
-        events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-        ).order_by(FundEvent.event_date).all()
-        return calculate_nav_based_capital_gains(events)
-    
-    @with_session
-    def _get_cost_based_capital_gains(self, session=None):
-        """Get capital gains for cost-based funds from explicit capital gain events.
-        Delegates to calculate_cost_based_capital_gains in calculations.py.
-        """
-        # Get all relevant events (could be filtered further if needed)
-        events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.DISTRIBUTION
-        ).all()
-        return calculate_cost_based_capital_gains(events)
-    
-    @with_session
-    def get_capital_movements(self, session=None):
-        """Return a dictionary with total capital calls and returns for the fund.
-        Used for calculating net capital invested and cost basis.
-        Keys: 'calls', 'returns'.
-        """
-        # Calculate total capital calls (handles both fund types)
-        total_calls = self.get_capital_calls(session=session)
-        
-        # Calculate total capital returns
-        total_returns = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.RETURN_OF_CAPITAL
-        ).scalar() or 0
-        
-        return {"calls": total_calls, "returns": total_returns}
-    
-    @with_session
-    def get_capital_calls(self, session=None):
-        """Return the total capital calls for the fund, depending on fund type.
-        - NAV-based: sum of UNIT_PURCHASE events.
-        - Cost-based: sum of CAPITAL_CALL events.
-        Returns 0 if no events exist.
-        """
-        from sqlalchemy import func
-
-        if self.tracking_type == FundType.NAV_BASED:
-            # For NAV-based funds, sum all unit purchases
-            total = session.query(func.sum(FundEvent.amount)).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.UNIT_PURCHASE
-            ).scalar() or 0
-        elif self.tracking_type == FundType.COST_BASED:
-            # For cost-based funds, sum all capital calls
-            total = session.query(func.sum(FundEvent.amount)).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type == EventType.CAPITAL_CALL
-            ).scalar() or 0
-        
-        return total
     
     @with_session
     def add_nav_update(self, nav_per_share, date, description=None, reference_number=None, session=None):
@@ -1212,7 +1076,6 @@ class Fund(Base):
         """Base IRR calculation method for the fund.
         Delegates to orchestrate_irr_base in calculations.py.
         """
-        from src.shared.calculations import orchestrate_irr_base
         from datetime import date
         # Only calculate IRR for completed funds
         if self.should_be_active:

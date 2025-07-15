@@ -106,8 +106,19 @@ class TaxStatement(Base):
         Updates the interest_tax_amount field.
         Returns the tax amount as a float.
         """
-        from .calculations import tax_payable
-        self.interest_tax_amount = tax_payable(self.interest_income_amount, self.interest_income_tax_rate, self.interest_non_resident_withholding_tax_from_statement)
+        if (
+            self.interest_income_tax_rate
+            and self.interest_income_amount
+            and self.interest_income_tax_rate != 0
+            and self.interest_income_amount > 0
+        ):
+            total_tax_liability = self.interest_income_amount * (self.interest_income_tax_rate / 100)
+            self.interest_tax_amount = max(
+                0,
+                total_tax_liability - (self.interest_non_resident_withholding_tax_from_statement or 0.0),
+            )
+        else:
+            self.interest_tax_amount = 0.0
         return self.interest_tax_amount
 
     def calculate_fy_debt_interest_deduction_total_deduction(self):
@@ -115,8 +126,12 @@ class TaxStatement(Base):
         Calculate the interest tax benefit based on total interest expense and deduction rate.
         Updates the fy_debt_interest_deduction_total_deduction field and returns the value.
         """
-        from .calculations import calculate_fy_debt_interest_deduction_total_deduction
-        self.fy_debt_interest_deduction_total_deduction = calculate_fy_debt_interest_deduction_total_deduction(self.fy_debt_interest_deduction_sum_of_daily_interest, self.fy_debt_interest_deduction_rate)
+        if self.fy_debt_interest_deduction_sum_of_daily_interest and self.fy_debt_interest_deduction_rate:
+            self.fy_debt_interest_deduction_total_deduction = (
+                self.fy_debt_interest_deduction_sum_of_daily_interest * self.fy_debt_interest_deduction_rate
+            ) / 100
+        else:
+            self.fy_debt_interest_deduction_total_deduction = 0.0
         return self.fy_debt_interest_deduction_total_deduction
 
     def get_financial_year_dates(self):

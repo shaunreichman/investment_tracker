@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/tests/test_main.py", line 22, in <module>
+    from src.fund.models import Fund, FundEvent, EventType, FundType, DistributionType
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/__init__.py", line 12, in <module>
+    from .fund.models import Fund, FundEvent, FundType, EventType, DistributionType, TaxPaymentType
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/fund/__init__.py", line 8, in <module>
+    from .models import Fund, FundEvent, FundType, EventType, DistributionType, TaxPaymentType
+  File "/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/fund/models.py", line 27, in <module>
+    from .calculations import (
+    ...<4 lines>...
+    )
+ImportError: cannot import name 'calculate_nav_based_capital_gains' from 'src.fund.calculations' (/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/src/fund/calculations.py)
