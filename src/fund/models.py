@@ -26,9 +26,7 @@ from ..shared.base import Base
 from ..shared.utils import with_session, with_class_session
 from .calculations import (
     calculate_irr,
-    calculate_debt_cost,
-    calculate_nav_based_capital_gains,
-    calculate_cost_based_capital_gains
+    calculate_debt_cost
 )
 from src.shared.calculations import orchestrate_irr_base
 
@@ -847,38 +845,6 @@ class Fund(Base):
             session=session
         )
     
-    def get_capital_gains(self, session=None):
-        """Return the total capital gains for the fund, using the appropriate method for the fund type.
-        NAV-based funds use FIFO on unit sales; cost-based funds use explicit events.
-        """
-        if self.tracking_type == FundType.NAV_BASED:
-            return self._calculate_nav_based_capital_gains(session=session)
-        elif self.tracking_type == FundType.COST_BASED:
-            return self._get_cost_based_capital_gains(session=session)
-    
-    @with_session
-    def _calculate_nav_based_capital_gains(self, session=None):
-        """Calculate capital gains for NAV-based funds using FIFO on unit sales.
-        Delegates to calculate_nav_based_capital_gains in calculations.py.
-        """
-        # Get all unit purchase and sale events in chronological order
-        events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-        ).order_by(FundEvent.event_date).all()
-        return calculate_nav_based_capital_gains(events)
-    
-    @with_session
-    def _get_cost_based_capital_gains(self, session=None):
-        """Get capital gains for cost-based funds from explicit capital gain events.
-        Delegates to calculate_cost_based_capital_gains in calculations.py.
-        """
-        # Get all relevant events (could be filtered further if needed)
-        events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.DISTRIBUTION
-        ).all()
-        return calculate_cost_based_capital_gains(events)
     
     @with_session
     def get_capital_movements(self, session=None):
