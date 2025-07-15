@@ -10,72 +10,6 @@ from typing import List, Dict, Any, Optional
 import math
 
 
-def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
-    """
-    Calculate IRR using daily cash flows and a root-finding algorithm.
-    
-    Args:
-        cash_flows: List of (amount, days_from_start) tuples
-        days_from_start: List of days from start for each cash flow
-        tolerance: Tolerance for convergence
-        max_iterations: Maximum number of iterations
-        
-    Returns:
-        float: IRR as a percentage, or None if calculation fails
-    """
-    if not cash_flows or len(cash_flows) < 2:
-        return None
-    
-    # Initial guess: simple rate based on total return
-    total_invested = sum(cf for cf in cash_flows if cf < 0)
-    total_returned = sum(cf for cf in cash_flows if cf > 0)
-    
-    if total_invested == 0 or total_returned == 0:
-        return None
-    
-    # Simple annualized return as initial guess
-    total_days = max(days_from_start) if days_from_start else 365
-    simple_return = (total_returned / abs(total_invested)) - 1
-    initial_guess = ((1 + simple_return) ** (365.25 / total_days)) - 1
-    
-    rate = initial_guess
-    
-    for iteration in range(max_iterations):
-        npv = 0
-        npv_derivative = 0
-        
-        for i, (cf, days) in enumerate(zip(cash_flows, days_from_start)):
-            if days == 0:
-                npv += cf
-            else:
-                discount_factor = (1 + rate) ** (days / 365.25)
-                npv += cf / discount_factor
-                
-                if days > 0:
-                    npv_derivative -= (cf * days) / (365.25 * discount_factor * (1 + rate))
-        
-        if abs(npv) < tolerance:
-            return rate  # Return as decimal, not percentage
-        
-        if abs(npv_derivative) < 1e-15:
-            break
-            
-        rate_new = rate - npv / npv_derivative
-        
-        # Prevent extreme values
-        if rate_new < -0.99:
-            rate_new = -0.99
-        elif rate_new > 10:
-            rate_new = 10
-            
-        if abs(rate_new - rate) < tolerance:
-            return rate_new  # Return as decimal, not percentage
-            
-        rate = rate_new
-    
-    return None
-
-
 def get_equity_change_for_event(event, fund_type):
     """
     Calculate the equity change for a given event based on fund type.
@@ -340,7 +274,6 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
 
 
 __all__ = [
-    'calculate_irr',
     'get_equity_change_for_event',
     'get_risk_free_rate_for_date',
     'get_financial_years_for_fund_period',
