@@ -2,6 +2,152 @@
 
 A Python-based system for tracking multiple investments across companies and funds, with support for both NAV-based and cost-based valuation, IRR calculation, tax statement reconciliation, and robust event modeling.
 
+## Features
+
+- **Multi-Company Support:** Track investments across different investment companies
+- **Fund Management:** Support for both NAV-based and cost-based fund tracking
+- **Event Modeling:** Comprehensive event system for capital calls, distributions, NAV updates, and more
+- **IRR Calculations:** Multiple IRR calculation methods including after-tax and real IRR
+- **Tax Integration:** Tax statement reconciliation and tax payment event generation
+- **Risk-Free Rate Tracking:** Market data integration for opportunity cost calculations
+- **Web UI:** Modern React-based web interface for viewing and managing investments
+
+## Architecture
+
+The system follows a domain-driven design with clear separation of concerns:
+
+- **Entity Domain:** Investment entities (persons/companies)
+- **Investment Company Domain:** Investment companies and fund management
+- **Fund Domain:** Fund tracking, events, and calculations
+- **Tax Domain:** Tax statements and tax payment events
+- **Rates Domain:** Market data and risk-free rates
+- **Web UI:** React frontend with Flask API backend
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.8+
+- Node.js 18+ (for web UI)
+- SQLite (included with Python)
+
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd investment_tracker
+   ```
+
+2. **Set up Python environment:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. **Set up database:**
+   ```bash
+   python scripts/init_database.py
+   ```
+
+4. **Set up web UI (optional):**
+   ```bash
+   cd frontend
+   npm install
+   cd ..
+   npm install  # Install root-level dependencies
+   ```
+
+### Running the Application
+
+#### Backend Only (Python)
+
+Run the Flask API server:
+```bash
+source venv/bin/activate
+python3 src/api.py
+```
+
+The API will be available at http://localhost:5001
+
+#### Full Stack (Backend + Frontend)
+
+Run both the Flask API and React frontend concurrently:
+```bash
+npm run dev
+```
+
+This will start:
+- **Flask API:** http://localhost:5001
+- **React Frontend:** http://localhost:3000
+
+#### Frontend Only (if backend is already running)
+
+```bash
+cd frontend
+npm start
+```
+
+### Development
+
+#### Project Structure
+
+```
+investment_tracker/
+├── src/                    # Python backend
+│   ├── api/               # Flask API endpoints
+│   ├── entity/            # Entity domain
+│   ├── fund/              # Fund domain
+│   ├── investment_company/ # Investment company domain
+│   ├── tax/               # Tax domain
+│   ├── rates/             # Rates domain
+│   └── shared/            # Shared utilities
+├── frontend/              # React frontend
+│   ├── src/               # React source code
+│   └── public/            # Static assets
+├── tests/                 # Test files
+├── scripts/               # Utility scripts
+└── docs/                  # Documentation
+```
+
+#### Environment Variables
+
+The React frontend uses environment variables for configuration:
+
+- `REACT_APP_API_BASE_URL`: Base URL for the Flask API (default: http://localhost:5001)
+
+Create a `.env` file in the `frontend/` directory:
+```
+REACT_APP_API_BASE_URL=http://localhost:5001
+```
+
+#### API Endpoints
+
+- `GET /api/health` - Health check endpoint
+- `GET /api/funds/summary` - Get summary of all funds (planned)
+- `GET /api/funds/<fund_id>` - Get detailed fund information (planned)
+
+## Testing
+
+Run the main test suite:
+```bash
+python tests/test_main.py
+```
+
+## Documentation
+
+- [Design Guidelines](docs/DESIGN_GUIDELINES.md) - Architecture and development guidelines
+- [Web UI Tasks](docs/web_app_summary_dashboard_tasks.md) - Web UI development roadmap
+
+## Contributing
+
+Please read the [Design Guidelines](docs/DESIGN_GUIDELINES.md) before contributing to understand the project's architecture and development patterns.
+
+## License
+
+[Add your license information here]
+
 ---
 
 ## ⚡️ Domain-Driven Architecture (2024 Migration)
@@ -131,7 +277,7 @@ class Fund(...):
 
 ## Session Handling
 
-All model methods that require a database session use the `@with_session` decorator (see `src/shared/utils.py`).  
+All model methods that require a database session use the `@with_session` decorator (see `src/shared/utils.py`).
 - **Always pass `session` as a keyword argument.**
 - Only methods that perform database queries are decorated; orchestration/helper methods are not.
 - The backend (not clients) owns session lifecycle.

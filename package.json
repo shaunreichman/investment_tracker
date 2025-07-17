@@ -1,0 +1,28 @@
+{
+  "name": "investment_tracker",
+  "version": "1.0.0",
+  "description": "A Python-based system for tracking multiple investments across companies and funds, with support for both NAV-based and cost-based valuation, IRR calculation, tax statement reconciliation, and robust event modeling.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "concurrently \"cd frontend && npm start\" \"source venv/bin/activate && python3 src/api.py\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shaunreichman/investment_tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shaunreichman/investment_tracker/issues"
+  },
+  "homepage": "https://github.com/shaunreichman/investment_tracker#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
