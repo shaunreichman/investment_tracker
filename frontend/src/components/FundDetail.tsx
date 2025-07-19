@@ -378,35 +378,85 @@ const FundDetail: React.FC = () => {
                 <TableCell>Date</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Description</TableCell>
-                <TableCell align="right">Amount</TableCell>
+                <TableCell colSpan={2} align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                  EQUITY
+                </TableCell>
+                <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                  DISTRIBUTIONS
+                </TableCell>
+                <TableCell align="right">Other</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell align="right" sx={{ borderBottom: 0 }}>
+                  {fund.tracking_type === 'nav_based' ? 'Purchase' : 'Call'}
+                </TableCell>
+                <TableCell align="right" sx={{ borderBottom: 0 }}>
+                  {fund.tracking_type === 'nav_based' ? 'Sale' : 'Return'}
+                </TableCell>
+                <TableCell align="right" sx={{ borderBottom: 0 }}>
+                  Amount
+                </TableCell>
+                <TableCell align="right" sx={{ borderBottom: 0 }}>
+                  Amount
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {events.map((event) => (
-                <TableRow key={event.id} hover>
-                  <TableCell>{formatDate(event.event_date)}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={getEventTypeLabel(event)}
-                      color={getEventTypeColor(event.event_type) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {event.description || '-'}
-                    </Typography>
-                    {event.distribution_type && (
-                      <Typography variant="caption" color="text.secondary">
-                        {event.distribution_type}
+              {events.map((event) => {
+                const isNavBased = fund.tracking_type === 'nav_based';
+                const isEquityEvent = isNavBased 
+                  ? (event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE')
+                  : (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL');
+                const isDistributionEvent = event.event_type === 'DISTRIBUTION';
+                const isOtherEvent = !isEquityEvent && !isDistributionEvent;
+
+                return (
+                  <TableRow key={event.id} hover>
+                    <TableCell>{formatDate(event.event_date)}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={getEventTypeLabel(event)}
+                        color={getEventTypeColor(event.event_type) as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {event.description || '-'}
                       </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell align="right">
-                    {event.amount ? formatCurrency(event.amount, fund.currency) : '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
+                      {event.distribution_type && (
+                        <Typography variant="caption" color="text.secondary">
+                          {event.distribution_type}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    {/* EQUITY Section */}
+                    <TableCell align="right">
+                      {isEquityEvent && (
+                        (isNavBased && event.event_type === 'UNIT_PURCHASE') ||
+                        (!isNavBased && event.event_type === 'CAPITAL_CALL')
+                      ) ? formatCurrency(event.amount, fund.currency) : ''}
+                    </TableCell>
+                    <TableCell align="right">
+                      {isEquityEvent && (
+                        (isNavBased && event.event_type === 'UNIT_SALE') ||
+                        (!isNavBased && event.event_type === 'RETURN_OF_CAPITAL')
+                      ) ? formatCurrency(event.amount, fund.currency) : ''}
+                    </TableCell>
+                    {/* DISTRIBUTIONS Section */}
+                    <TableCell align="right">
+                      {isDistributionEvent ? formatCurrency(event.amount, fund.currency) : ''}
+                    </TableCell>
+                    {/* Other Section */}
+                    <TableCell align="right">
+                      {isOtherEvent && event.amount ? formatCurrency(event.amount, fund.currency) : ''}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
