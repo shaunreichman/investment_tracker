@@ -411,71 +411,160 @@ const FundDetail: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {events.map((event) => {
-                const isNavBased = fund.tracking_type === 'NAV_BASED';
-                const isEquityEvent = isNavBased 
-                  ? (event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE')
-                  : (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL');
-                const isDistributionEvent = event.event_type === 'DISTRIBUTION';
-                const isOtherEvent = !isEquityEvent && !isDistributionEvent;
+              {(() => {
+                // Group events by date and type to combine interest distributions with withholding tax
+                const groupedEvents: { [key: string]: FundEvent[] } = {};
+                
+                events.forEach(event => {
+                  const dateKey = event.event_date;
+                  if (!groupedEvents[dateKey]) {
+                    groupedEvents[dateKey] = [];
+                  }
+                  groupedEvents[dateKey].push(event);
+                });
 
-                return (
-                  <TableRow key={event.id} hover>
-                    <TableCell>{formatDate(event.event_date)}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getEventTypeLabel(event)}
-                        color={getEventTypeColor(event.event_type) as any}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {event.description || '-'}
-                      </Typography>
-                      {event.distribution_type && (
-                        <Typography variant="caption" color="text.secondary">
-                          {event.distribution_type}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    {/* EQUITY Section */}
-                    {isNavBased ? (
-                      <>
-                        <TableCell align="right">
-                          {isEquityEvent ? (event.units_purchased || event.units_sold || '').toString() : ''}
+                return Object.entries(groupedEvents).map(([date, dateEvents]) => {
+                  // Find interest distribution and related withholding tax for this date
+                  const interestEvent = dateEvents.find(e => 
+                    e.event_type === 'DISTRIBUTION' && e.distribution_type === 'INTEREST'
+                  );
+                  const withholdingEvent = dateEvents.find(e => 
+                    e.event_type === 'TAX_PAYMENT' && e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING'
+                  );
+
+                  // If we have both interest and withholding on the same date, combine them
+                  if (interestEvent && withholdingEvent) {
+                    const isNavBased = fund.tracking_type === 'NAV_BASED';
+                    const isEquityEvent = isNavBased 
+                      ? (interestEvent.event_type === 'UNIT_PURCHASE' || interestEvent.event_type === 'UNIT_SALE')
+                      : (interestEvent.event_type === 'CAPITAL_CALL' || interestEvent.event_type === 'RETURN_OF_CAPITAL');
+                    const isDistributionEvent = interestEvent.event_type === 'DISTRIBUTION';
+                    const isOtherEvent = !isEquityEvent && !isDistributionEvent;
+
+                    return (
+                      <TableRow key={`${date}-combined`} hover>
+                        <TableCell>{formatDate(date)}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label="Interest"
+                            color={getEventTypeColor('DISTRIBUTION') as any}
+                            size="small"
+                          />
                         </TableCell>
-                        <TableCell align="right">
-                          {isEquityEvent ? (event.unit_price ? formatCurrency(event.unit_price, fund.currency) : '') : ''}
+                        <TableCell>
+                          <Typography variant="body2">
+                            {interestEvent.description || '-'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Withholding: {formatCurrency(withholdingEvent.amount, fund.currency)}
+                          </Typography>
                         </TableCell>
+                        {/* EQUITY Section */}
+                        {isNavBased ? (
+                          <>
+                            <TableCell align="right"></TableCell>
+                            <TableCell align="right"></TableCell>
+                            <TableCell align="right"></TableCell>
+                            <TableCell align="right"></TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell align="right"></TableCell>
+                            <TableCell align="right"></TableCell>
+                          </>
+                        )}
+                        {/* DISTRIBUTIONS Section */}
                         <TableCell align="right">
-                          {isEquityEvent && event.event_type === 'UNIT_PURCHASE' ? formatCurrency(event.amount, fund.currency) : ''}
+                          {isDistributionEvent ? (
+                            <Box>
+                              <Typography variant="body2">
+                                {formatCurrency(interestEvent.amount, fund.currency)}
+                              </Typography>
+                              <Typography variant="caption" color="error.main">
+                                -{formatCurrency(withholdingEvent.amount, fund.currency)}
+                              </Typography>
+                            </Box>
+                          ) : ''}
                         </TableCell>
+                        {/* Other Section */}
+                        <TableCell align="right"></TableCell>
+                      </TableRow>
+                    );
+                  }
+
+                  // For all other events, display normally
+                  return dateEvents.map((event) => {
+                    const isNavBased = fund.tracking_type === 'NAV_BASED';
+                    const isEquityEvent = isNavBased 
+                      ? (event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE')
+                      : (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL');
+                    const isDistributionEvent = event.event_type === 'DISTRIBUTION';
+                    const isOtherEvent = !isEquityEvent && !isDistributionEvent;
+
+                    // Skip withholding tax events that are already combined
+                    if (event.event_type === 'TAX_PAYMENT' && event.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING') {
+                      return null;
+                    }
+
+                    return (
+                      <TableRow key={event.id} hover>
+                        <TableCell>{formatDate(event.event_date)}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={getEventTypeLabel(event)}
+                            color={getEventTypeColor(event.event_type) as any}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {event.description || '-'}
+                          </Typography>
+                          {event.distribution_type && (
+                            <Typography variant="caption" color="text.secondary">
+                              {event.distribution_type}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        {/* EQUITY Section */}
+                        {isNavBased ? (
+                          <>
+                            <TableCell align="right">
+                              {isEquityEvent ? (event.units_purchased || event.units_sold || '').toString() : ''}
+                            </TableCell>
+                            <TableCell align="right">
+                              {isEquityEvent ? (event.unit_price ? formatCurrency(event.unit_price, fund.currency) : '') : ''}
+                            </TableCell>
+                            <TableCell align="right">
+                              {isEquityEvent && event.event_type === 'UNIT_PURCHASE' ? formatCurrency(event.amount, fund.currency) : ''}
+                            </TableCell>
+                            <TableCell align="right">
+                              {isEquityEvent && event.event_type === 'UNIT_SALE' ? formatCurrency(event.amount, fund.currency) : ''}
+                            </TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell align="right">
+                              {isEquityEvent && event.event_type === 'CAPITAL_CALL' ? formatCurrency(event.amount, fund.currency) : ''}
+                            </TableCell>
+                            <TableCell align="right">
+                              {isEquityEvent && event.event_type === 'RETURN_OF_CAPITAL' ? formatCurrency(event.amount, fund.currency) : ''}
+                            </TableCell>
+                          </>
+                        )}
+                        {/* DISTRIBUTIONS Section */}
                         <TableCell align="right">
-                          {isEquityEvent && event.event_type === 'UNIT_SALE' ? formatCurrency(event.amount, fund.currency) : ''}
+                          {isDistributionEvent ? formatCurrency(event.amount, fund.currency) : ''}
                         </TableCell>
-                      </>
-                    ) : (
-                      <>
+                        {/* Other Section */}
                         <TableCell align="right">
-                          {isEquityEvent && event.event_type === 'CAPITAL_CALL' ? formatCurrency(event.amount, fund.currency) : ''}
+                          {isOtherEvent && event.amount ? formatCurrency(event.amount, fund.currency) : ''}
                         </TableCell>
-                        <TableCell align="right">
-                          {isEquityEvent && event.event_type === 'RETURN_OF_CAPITAL' ? formatCurrency(event.amount, fund.currency) : ''}
-                        </TableCell>
-                      </>
-                    )}
-                    {/* DISTRIBUTIONS Section */}
-                    <TableCell align="right">
-                      {isDistributionEvent ? formatCurrency(event.amount, fund.currency) : ''}
-                    </TableCell>
-                    {/* Other Section */}
-                    <TableCell align="right">
-                      {isOtherEvent && event.amount ? formatCurrency(event.amount, fund.currency) : ''}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                      </TableRow>
+                    );
+                  }).filter(Boolean);
+                }).flat();
+              })()}
             </TableBody>
           </Table>
         </TableContainer>
