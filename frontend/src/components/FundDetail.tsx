@@ -147,17 +147,16 @@ const FundDetail: React.FC = () => {
   };
 
   const getEventTypeLabel = (event: FundEvent) => {
-    const baseType = event.event_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    
-    // Add subtype information if available
+    // Show only subtype if available, otherwise show the main type
     if (event.distribution_type) {
-      return `${baseType} → ${event.distribution_type}`;
+      return event.distribution_type;
     }
     if (event.tax_payment_type) {
-      return `${baseType} → ${event.tax_payment_type}`;
+      return event.tax_payment_type;
     }
     
-    return baseType;
+    // For events without subtypes, show the main type
+    return event.event_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   if (loading) {
