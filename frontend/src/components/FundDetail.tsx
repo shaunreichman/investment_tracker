@@ -378,7 +378,7 @@ const FundDetail: React.FC = () => {
                 <TableCell>Date</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Description</TableCell>
-                <TableCell colSpan={fund.tracking_type === 'nav_based' ? 4 : 2} align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TableCell colSpan={fund.tracking_type === 'NAV_BASED' ? 4 : 2} align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
                   EQUITY
                 </TableCell>
                 <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -390,7 +390,7 @@ const FundDetail: React.FC = () => {
                 <TableCell></TableCell>
                 <TableCell></TableCell>
                 <TableCell></TableCell>
-                {fund.tracking_type === 'nav_based' ? (
+                {fund.tracking_type === 'NAV_BASED' ? (
                   <>
                     <TableCell align="right" sx={{ borderBottom: 0 }}>Purchase</TableCell>
                     <TableCell align="right" sx={{ borderBottom: 0 }}>Sale</TableCell>
@@ -413,7 +413,7 @@ const FundDetail: React.FC = () => {
             </TableHead>
             <TableBody>
               {events.map((event) => {
-                const isNavBased = fund.tracking_type === 'nav_based';
+                const isNavBased = fund.tracking_type === 'NAV_BASED';
                 const isEquityEvent = isNavBased 
                   ? (event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE')
                   : (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL');
