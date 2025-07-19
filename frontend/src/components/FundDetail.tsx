@@ -377,7 +377,7 @@ const FundDetail: React.FC = () => {
                 <TableCell>Date</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Description</TableCell>
-                <TableCell colSpan={fund.tracking_type === 'NAV_BASED' ? 4 : 2} align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TableCell colSpan={2} align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
                   EQUITY
                 </TableCell>
                 <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -389,19 +389,12 @@ const FundDetail: React.FC = () => {
                 <TableCell></TableCell>
                 <TableCell></TableCell>
                 <TableCell></TableCell>
-                {fund.tracking_type === 'NAV_BASED' ? (
-                  <>
-                    <TableCell align="right" sx={{ borderBottom: 0 }}>Units</TableCell>
-                    <TableCell align="right" sx={{ borderBottom: 0 }}>Price</TableCell>
-                    <TableCell align="right" sx={{ borderBottom: 0 }}>Purchase</TableCell>
-                    <TableCell align="right" sx={{ borderBottom: 0 }}>Sale</TableCell>
-                  </>
-                ) : (
-                  <>
-                    <TableCell align="right" sx={{ borderBottom: 0 }}>Call</TableCell>
-                    <TableCell align="right" sx={{ borderBottom: 0 }}>Return</TableCell>
-                  </>
-                )}
+                <TableCell align="right" sx={{ borderBottom: 0 }}>
+                  {fund.tracking_type === 'NAV_BASED' ? 'Purchase' : 'Call'}
+                </TableCell>
+                <TableCell align="right" sx={{ borderBottom: 0 }}>
+                  {fund.tracking_type === 'NAV_BASED' ? 'Sale' : 'Return'}
+                </TableCell>
                 <TableCell align="right" sx={{ borderBottom: 0 }}>
                   Amount
                 </TableCell>
@@ -460,19 +453,8 @@ const FundDetail: React.FC = () => {
                           </Typography>
                         </TableCell>
                         {/* EQUITY Section */}
-                        {isNavBased ? (
-                          <>
-                            <TableCell align="right"></TableCell>
-                            <TableCell align="right"></TableCell>
-                            <TableCell align="right"></TableCell>
-                            <TableCell align="right"></TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell align="right"></TableCell>
-                            <TableCell align="right"></TableCell>
-                          </>
-                        )}
+                        <TableCell align="right"></TableCell>
+                        <TableCell align="right"></TableCell>
                         {/* DISTRIBUTIONS Section */}
                         <TableCell align="right">
                           {isDistributionEvent ? (
@@ -527,31 +509,42 @@ const FundDetail: React.FC = () => {
                           )}
                         </TableCell>
                         {/* EQUITY Section */}
-                        {isNavBased ? (
-                          <>
-                            <TableCell align="right">
-                              {isEquityEvent ? (event.units_purchased || event.units_sold || '').toString() : ''}
-                            </TableCell>
-                            <TableCell align="right">
-                              {isEquityEvent ? (event.unit_price ? formatCurrency(event.unit_price, fund.currency) : '') : ''}
-                            </TableCell>
-                            <TableCell align="right">
-                              {isEquityEvent && event.event_type === 'UNIT_PURCHASE' ? formatCurrency(event.amount, fund.currency) : ''}
-                            </TableCell>
-                            <TableCell align="right">
-                              {isEquityEvent && event.event_type === 'UNIT_SALE' ? formatCurrency(event.amount, fund.currency) : ''}
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell align="right">
-                              {isEquityEvent && event.event_type === 'CAPITAL_CALL' ? formatCurrency(event.amount, fund.currency) : ''}
-                            </TableCell>
-                            <TableCell align="right">
-                              {isEquityEvent && event.event_type === 'RETURN_OF_CAPITAL' ? formatCurrency(event.amount, fund.currency) : ''}
-                            </TableCell>
-                          </>
-                        )}
+                        <TableCell align="right">
+                          {isEquityEvent && (
+                            isNavBased 
+                              ? (event.event_type === 'UNIT_PURCHASE' ? (
+                                  <Box>
+                                    <Typography variant="body2">
+                                      {formatCurrency(event.amount, fund.currency)}
+                                    </Typography>
+                                    {event.units_purchased && event.unit_price && (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                ) : '')
+                              : (event.event_type === 'CAPITAL_CALL' ? formatCurrency(event.amount, fund.currency) : '')
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          {isEquityEvent && (
+                            isNavBased 
+                              ? (event.event_type === 'UNIT_SALE' ? (
+                                  <Box>
+                                    <Typography variant="body2">
+                                      {formatCurrency(event.amount, fund.currency)}
+                                    </Typography>
+                                    {event.units_sold && event.unit_price && (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                ) : '')
+                              : (event.event_type === 'RETURN_OF_CAPITAL' ? formatCurrency(event.amount, fund.currency) : '')
+                          )}
+                        </TableCell>
                         {/* DISTRIBUTIONS Section */}
                         <TableCell align="right">
                           {isDistributionEvent ? formatCurrency(event.amount, fund.currency) : ''}
