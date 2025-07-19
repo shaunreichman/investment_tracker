@@ -392,10 +392,10 @@ const FundDetail: React.FC = () => {
                 <TableCell></TableCell>
                 {fund.tracking_type === 'NAV_BASED' ? (
                   <>
-                    <TableCell align="right" sx={{ borderBottom: 0 }}>Purchase</TableCell>
-                    <TableCell align="right" sx={{ borderBottom: 0 }}>Sale</TableCell>
                     <TableCell align="right" sx={{ borderBottom: 0 }}>Units</TableCell>
                     <TableCell align="right" sx={{ borderBottom: 0 }}>Price</TableCell>
+                    <TableCell align="right" sx={{ borderBottom: 0 }}>Purchase</TableCell>
+                    <TableCell align="right" sx={{ borderBottom: 0 }}>Sale</TableCell>
                   </>
                 ) : (
                   <>
@@ -444,16 +444,16 @@ const FundDetail: React.FC = () => {
                     {isNavBased ? (
                       <>
                         <TableCell align="right">
-                          {isEquityEvent && event.event_type === 'UNIT_PURCHASE' ? formatCurrency(event.amount, fund.currency) : ''}
-                        </TableCell>
-                        <TableCell align="right">
-                          {isEquityEvent && event.event_type === 'UNIT_SALE' ? formatCurrency(event.amount, fund.currency) : ''}
-                        </TableCell>
-                        <TableCell align="right">
                           {isEquityEvent ? (event.units_purchased || event.units_sold || '').toString() : ''}
                         </TableCell>
                         <TableCell align="right">
                           {isEquityEvent ? (event.unit_price ? formatCurrency(event.unit_price, fund.currency) : '') : ''}
+                        </TableCell>
+                        <TableCell align="right">
+                          {isEquityEvent && event.event_type === 'UNIT_PURCHASE' ? formatCurrency(event.amount, fund.currency) : ''}
+                        </TableCell>
+                        <TableCell align="right">
+                          {isEquityEvent && event.event_type === 'UNIT_SALE' ? formatCurrency(event.amount, fund.currency) : ''}
                         </TableCell>
                       </>
                     ) : (
