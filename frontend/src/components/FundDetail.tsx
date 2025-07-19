@@ -146,8 +146,18 @@ const FundDetail: React.FC = () => {
     }
   };
 
-  const getEventTypeLabel = (eventType: string) => {
-    return eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const getEventTypeLabel = (event: FundEvent) => {
+    const baseType = event.event_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    
+    // Add subtype information if available
+    if (event.distribution_type) {
+      return `${baseType} → ${event.distribution_type}`;
+    }
+    if (event.tax_payment_type) {
+      return `${baseType} → ${event.tax_payment_type}`;
+    }
+    
+    return baseType;
   };
 
   if (loading) {
@@ -377,7 +387,7 @@ const FundDetail: React.FC = () => {
                   <TableCell>{formatDate(event.event_date)}</TableCell>
                   <TableCell>
                     <Chip
-                      label={getEventTypeLabel(event.event_type)}
+                      label={getEventTypeLabel(event)}
                       color={getEventTypeColor(event.event_type) as any}
                       size="small"
                     />
