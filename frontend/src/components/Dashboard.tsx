@@ -14,7 +14,8 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Divider
+  Divider,
+  Link
 } from '@mui/material';
 import {
   TrendingUp,
@@ -24,6 +25,7 @@ import {
   AttachMoney,
   Business
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 interface PortfolioSummary {
   total_funds: number;
@@ -61,6 +63,7 @@ interface FundEvent {
 }
 
 interface PerformanceData {
+  fund_id: number;
   fund_name: string;
   current_equity: number;
   average_equity: number;
@@ -69,6 +72,7 @@ interface PerformanceData {
 }
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
   const [funds, setFunds] = useState<Fund[]>([]);
   const [recentEvents, setRecentEvents] = useState<FundEvent[]>([]);
@@ -274,7 +278,14 @@ const Dashboard: React.FC = () => {
                       <TableRow key={fund.id}>
                         <TableCell>
                           <Box>
-                            <Typography variant="subtitle2">{fund.name}</Typography>
+                            <Link
+                              component="button"
+                              variant="subtitle2"
+                              onClick={() => navigate(`/fund/${fund.id}`)}
+                              sx={{ textDecoration: 'none', cursor: 'pointer' }}
+                            >
+                              {fund.name}
+                            </Link>
                             <Typography variant="caption" color="textSecondary">
                               {fund.investment_company}
                             </Typography>
@@ -360,9 +371,14 @@ const Dashboard: React.FC = () => {
               {performanceData.map((fund) => (
                 <Card key={fund.fund_name} variant="outlined" sx={{ flex: '1 1 300px', minWidth: '300px' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>
+                    <Link
+                      component="button"
+                      variant="subtitle1"
+                      onClick={() => navigate(`/fund/${fund.fund_id}`)}
+                      sx={{ textDecoration: 'none', cursor: 'pointer', textAlign: 'left', display: 'block' }}
+                    >
                       {fund.fund_name}
-                    </Typography>
+                    </Link>
                     <Typography variant="h6" color="primary">
                       {formatCurrency(fund.current_equity)}
                     </Typography>

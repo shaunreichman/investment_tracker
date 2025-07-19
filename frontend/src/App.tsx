@@ -1,26 +1,19 @@
 import React from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+import FundDetail from './components/FundDetail';
+import './App.css';
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Dashboard />
-    </ThemeProvider>
+    <BrowserRouter>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/fund/:fundId" element={<FundDetail />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
 

@@ -152,39 +152,166 @@ def create_app():
             return jsonify({"error": str(e)}), 500
 
     @app.route('/api/dashboard/performance', methods=['GET'])
-    def performance_data():
-        """Get performance data for charts"""
+    def dashboard_performance():
+        """Get performance data for all funds"""
         try:
             session = get_db_session()
             
             try:
-                # Get all funds
-                funds_query = text("SELECT id, name, current_equity_balance, average_equity_balance FROM funds")
-                funds_result = session.execute(funds_query).fetchall()
+                # Get performance data with fund IDs
+                query = text("""
+                    SELECT 
+                        f.id as fund_id,
+                        f.name as fund_name,
+                        f.current_equity_balance as current_equity,
+                        f.average_equity_balance as average_equity,
+                        COUNT(fe.id) as total_events,
+                        MAX(fe.event_date) as last_event_date
+                    FROM funds f
+                    LEFT JOIN fund_events fe ON f.id = fe.fund_id
+                    GROUP BY f.id, f.name, f.current_equity_balance, f.average_equity_balance
+                    ORDER BY f.name
+                """)
+                
+                result = session.execute(query).fetchall()
                 
                 performance_data = []
-                for fund in funds_result:
-                    # Get total events for this fund
-                    total_events = session.execute(
-                        text("SELECT COUNT(*) FROM fund_events WHERE fund_id = :fund_id"),
-                        {"fund_id": fund.id}
-                    ).scalar()
-                    
-                    # Get last event date
-                    last_event = session.execute(
-                        text("SELECT event_date FROM fund_events WHERE fund_id = :fund_id ORDER BY event_date DESC LIMIT 1"),
-                        {"fund_id": fund.id}
-                    ).fetchone()
-                    
+                for row in result:
                     performance_data.append({
-                        "fund_name": fund.name,
-                        "current_equity": float(fund.current_equity_balance) if fund.current_equity_balance else 0.0,
-                        "average_equity": float(fund.average_equity_balance) if fund.average_equity_balance else 0.0,
-                        "total_events": total_events,
-                        "last_event_date": last_event.event_date if isinstance(last_event.event_date, str) else last_event.event_date.isoformat() if last_event and last_event.event_date else None
+                        "fund_id": row.fund_id,
+                        "fund_name": row.fund_name,
+                        "current_equity": float(row.current_equity) if row.current_equity else 0.0,
+                        "average_equity": float(row.average_equity) if row.average_equity else 0.0,
+                        "total_events": row.total_events,
+                        "last_event_date": row.last_event_date if isinstance(row.last_event_date, str) else row.last_event_date.isoformat() if row.last_event_date else None
                     })
                 
                 return jsonify({"performance": performance_data}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/funds/<int:fund_id>', methods=['GET'])
+    def fund_detail(fund_id):
+        """Get detailed information for a specific fund"""
+        try:
+            session = get_db_session()
+            
+            try:
+                # Get fund with related data
+                fund_query = text("""
+                    SELECT 
+                        f.id, f.name, f.fund_type, f.tracking_type, f.currency,
+                        f.current_equity_balance, f.average_equity_balance, f.is_active,
+                        f.commitment_amount, f.expected_irr, f.expected_duration_months,
+                        f.description, f.created_at, f.updated_at,
+                        ic.name as investment_company_name, e.name as entity_name
+                    FROM funds f
+                    JOIN investment_companies ic ON f.investment_company_id = ic.id
+                    JOIN entities e ON f.entity_id = e.id
+                    WHERE f.id = :fund_id
+                """)
+                
+                fund_result = session.execute(fund_query, {"fund_id": fund_id}).fetchone()
+                
+                if not fund_result:
+                    return jsonify({"error": "Fund not found"}), 404
+                
+                # Get fund events
+                events_query = text("""
+                    SELECT 
+                        id, event_type, event_date, amount, description, reference_number,
+                        distribution_type, tax_payment_type, units_purchased, units_sold,
+                        unit_price, nav_per_share, brokerage_fee
+                    FROM fund_events 
+                    WHERE fund_id = :fund_id 
+                    ORDER BY event_date DESC, id DESC
+                """)
+                
+                events_result = session.execute(events_query, {"fund_id": fund_id}).fetchall()
+                
+                # Get fund statistics
+                stats_query = text("""
+                    SELECT 
+                        COUNT(*) as total_events,
+                        COUNT(CASE WHEN event_type = 'CAPITAL_CALL' THEN 1 END) as capital_calls,
+                        COUNT(CASE WHEN event_type = 'DISTRIBUTION' THEN 1 END) as distributions,
+                        COUNT(CASE WHEN event_type = 'NAV_UPDATE' THEN 1 END) as nav_updates,
+                        COUNT(CASE WHEN event_type = 'UNIT_PURCHASE' THEN 1 END) as unit_purchases,
+                        COUNT(CASE WHEN event_type = 'UNIT_SALE' THEN 1 END) as unit_sales,
+                        SUM(CASE WHEN event_type = 'CAPITAL_CALL' THEN amount ELSE 0 END) as total_capital_called,
+                        SUM(CASE WHEN event_type = 'RETURN_OF_CAPITAL' THEN amount ELSE 0 END) as total_capital_returned,
+                        SUM(CASE WHEN event_type = 'DISTRIBUTION' THEN amount ELSE 0 END) as total_distributions,
+                        MIN(event_date) as first_event_date,
+                        MAX(event_date) as last_event_date
+                    FROM fund_events 
+                    WHERE fund_id = :fund_id
+                """)
+                
+                stats_result = session.execute(stats_query, {"fund_id": fund_id}).fetchone()
+                
+                # Format fund data
+                fund_data = {
+                    "id": fund_result.id,
+                    "name": fund_result.name,
+                    "fund_type": fund_result.fund_type,
+                    "tracking_type": fund_result.tracking_type,
+                    "currency": fund_result.currency,
+                    "current_equity_balance": float(fund_result.current_equity_balance) if fund_result.current_equity_balance else 0.0,
+                    "average_equity_balance": float(fund_result.average_equity_balance) if fund_result.average_equity_balance else 0.0,
+                    "is_active": fund_result.is_active if fund_result.is_active is not None else True,
+                    "commitment_amount": float(fund_result.commitment_amount) if fund_result.commitment_amount else None,
+                    "expected_irr": float(fund_result.expected_irr) if fund_result.expected_irr else None,
+                    "expected_duration_months": fund_result.expected_duration_months,
+                    "description": fund_result.description,
+                    "investment_company": fund_result.investment_company_name or "Unknown",
+                    "entity": fund_result.entity_name or "Unknown",
+                    "created_at": fund_result.created_at if isinstance(fund_result.created_at, str) else fund_result.created_at.isoformat() if fund_result.created_at else None,
+                    "updated_at": fund_result.updated_at if isinstance(fund_result.updated_at, str) else fund_result.updated_at.isoformat() if fund_result.updated_at else None
+                }
+                
+                # Format events data
+                events_data = []
+                for event in events_result:
+                    events_data.append({
+                        "id": event.id,
+                        "event_type": event.event_type,
+                        "event_date": event.event_date if isinstance(event.event_date, str) else event.event_date.isoformat() if event.event_date else None,
+                        "amount": float(event.amount) if event.amount else None,
+                        "description": event.description,
+                        "reference_number": event.reference_number,
+                        "distribution_type": event.distribution_type,
+                        "tax_payment_type": event.tax_payment_type,
+                        "units_purchased": float(event.units_purchased) if event.units_purchased else None,
+                        "units_sold": float(event.units_sold) if event.units_sold else None,
+                        "unit_price": float(event.unit_price) if event.unit_price else None,
+                        "nav_per_share": float(event.nav_per_share) if event.nav_per_share else None,
+                        "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None
+                    })
+                
+                # Format statistics data
+                stats_data = {
+                    "total_events": stats_result.total_events,
+                    "capital_calls": stats_result.capital_calls,
+                    "distributions": stats_result.distributions,
+                    "nav_updates": stats_result.nav_updates,
+                    "unit_purchases": stats_result.unit_purchases,
+                    "unit_sales": stats_result.unit_sales,
+                    "total_capital_called": float(stats_result.total_capital_called) if stats_result.total_capital_called else 0.0,
+                    "total_capital_returned": float(stats_result.total_capital_returned) if stats_result.total_capital_returned else 0.0,
+                    "total_distributions": float(stats_result.total_distributions) if stats_result.total_distributions else 0.0,
+                    "first_event_date": stats_result.first_event_date if isinstance(stats_result.first_event_date, str) else stats_result.first_event_date.isoformat() if stats_result.first_event_date else None,
+                    "last_event_date": stats_result.last_event_date if isinstance(stats_result.last_event_date, str) else stats_result.last_event_date.isoformat() if stats_result.last_event_date else None
+                }
+                
+                return jsonify({
+                    "fund": fund_data,
+                    "events": events_data,
+                    "statistics": stats_data
+                }), 200
                 
             finally:
                 session.close()
