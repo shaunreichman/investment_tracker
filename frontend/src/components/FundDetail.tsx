@@ -118,6 +118,18 @@ const FundDetail: React.FC = () => {
     }).format(amount);
   };
 
+  const formatBrokerageFee = (amount: number | null, currency: string = 'AUD') => {
+    if (amount === null) return '-';
+    const rounded = Math.round(amount);
+    const formatted = new Intl.NumberFormat('en-AU', {
+      style: 'currency',
+      currency: currency,
+    }).format(rounded);
+    
+    // Remove .00 for whole numbers
+    return formatted.replace(/\.00$/, '');
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -372,7 +384,7 @@ const FundDetail: React.FC = () => {
             <Typography variant="h6">
               Fund Events ({(() => {
                 const filteredEvents = events.filter(event => {
-                  if (!showTaxEvents && event.event_type === 'TAX_PAYMENT') {
+                  if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'FY_DEBT_COST')) {
                     return false;
                   }
                   return true;
@@ -382,7 +394,7 @@ const FundDetail: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
-                Show Tax Events
+                Show Tax & Debt Events
               </Typography>
               <Switch
                 checked={showTaxEvents}
@@ -526,8 +538,8 @@ const FundDetail: React.FC = () => {
                             return null;
                           }
 
-                          // Skip tax payment events if toggle is off
-                          if (!showTaxEvents && event.event_type === 'TAX_PAYMENT') {
+                          // Skip tax and debt events if toggle is off
+                          if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'FY_DEBT_COST')) {
                             return null;
                           }
 
@@ -625,8 +637,8 @@ const FundDetail: React.FC = () => {
                       return null;
                     }
 
-                    // Skip tax payment events if toggle is off
-                    if (!showTaxEvents && event.event_type === 'TAX_PAYMENT') {
+                    // Skip tax and debt events if toggle is off
+                    if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'FY_DEBT_COST')) {
                       return null;
                     }
 
@@ -664,6 +676,11 @@ const FundDetail: React.FC = () => {
                                         {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
                                       </Typography>
                                     )}
+                                    {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                      <Typography variant="caption" color="error.main">
+                                        - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                      </Typography>
+                                    )}
                                   </Box>
                                 ) : '')
                               : (event.event_type === 'CAPITAL_CALL' ? formatCurrency(event.amount, fund.currency) : '')
@@ -680,6 +697,11 @@ const FundDetail: React.FC = () => {
                                     {event.units_sold && event.unit_price && (
                                       <Typography variant="caption" color="text.secondary">
                                         {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
+                                      </Typography>
+                                    )}
+                                    {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                      <Typography variant="caption" color="error.main">
+                                        - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
                                       </Typography>
                                     )}
                                   </Box>
