@@ -2,7 +2,15 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import StaticPool
 import os
-from .shared.base import Base
+
+# Import Base using absolute import
+try:
+    from shared.base import Base
+except ImportError:
+    # Fallback for when running as script
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__)))
+    from shared.base import Base
 
 
 def create_database_engine(database_url=None):
