@@ -51,12 +51,11 @@ The system follows a domain-driven design with clear separation of concerns:
    python scripts/init_database.py
    ```
 
-4. **Set up web UI (optional):**
+4. **Set up web UI:**
    ```bash
    cd frontend
    npm install
    cd ..
-   npm install  # Install root-level dependencies
    ```
 
 ### Running the Application
@@ -66,28 +65,56 @@ The system follows a domain-driven design with clear separation of concerns:
 Run the Flask API server:
 ```bash
 source venv/bin/activate
-python3 src/api.py
+python src/api.py
 ```
 
 The API will be available at http://localhost:5001
 
-#### Full Stack (Backend + Frontend)
-
-Run both the Flask API and React frontend concurrently:
-```bash
-npm run dev
-```
-
-This will start:
-- **Flask API:** http://localhost:5001
-- **React Frontend:** http://localhost:3000
-
-#### Frontend Only (if backend is already running)
+#### Frontend Only (React)
 
 ```bash
 cd frontend
 npm start
 ```
+
+The React app will be available at http://localhost:3000
+
+#### Running Both Servers
+
+You'll need to run both servers in separate terminals:
+
+**Terminal 1 (Backend):**
+```bash
+source venv/bin/activate
+python src/api.py
+```
+
+**Terminal 2 (Frontend):**
+```bash
+cd frontend
+npm start
+```
+
+### Web UI Features
+
+The web interface provides:
+
+- **Dashboard**: Overview of all funds with portfolio summary, fund table, and recent events
+- **Fund Details**: Detailed view of individual funds with events, statistics, and transaction history
+- **Real-time Data**: All data comes from the live database via Flask API
+- **Responsive Design**: Works on desktop and mobile devices
+- **Professional UI**: Material UI components with modern styling
+
+### API Endpoints
+
+The Flask API provides the following endpoints:
+
+- `GET /api/health` - Health check endpoint
+- `GET /api/dashboard/portfolio-summary` - Portfolio overview statistics
+- `GET /api/dashboard/funds` - List of all funds with key metrics
+- `GET /api/dashboard/recent-events` - Recent fund events
+- `GET /api/dashboard/performance` - Performance data for all funds
+- `GET /api/funds/<fund_id>` - Detailed fund information and events
 
 ### Development
 
@@ -124,21 +151,50 @@ REACT_APP_API_BASE_URL=http://localhost:5001
 
 #### API Endpoints
 
+The Flask API provides the following endpoints:
+
 - `GET /api/health` - Health check endpoint
-- `GET /api/funds/summary` - Get summary of all funds (planned)
-- `GET /api/funds/<fund_id>` - Get detailed fund information (planned)
+- `GET /api/dashboard/portfolio-summary` - Portfolio overview statistics
+- `GET /api/dashboard/funds` - List of all funds with key metrics
+- `GET /api/dashboard/recent-events` - Recent fund events
+- `GET /api/dashboard/performance` - Performance data for all funds
+- `GET /api/funds/<fund_id>` - Detailed fund information and events
 
 ## Testing
+
+### Backend Tests
 
 Run the main test suite:
 ```bash
 python tests/test_main.py
 ```
 
+Run API endpoint tests:
+```bash
+python tests/test_api_endpoints.py
+```
+
+### Frontend Tests
+
+Run React component tests:
+```bash
+cd frontend
+npm test
+```
+
+### System Tests
+
+The system includes comprehensive tests for:
+- Backend API endpoints and data validation
+- React component rendering and user interactions
+- End-to-end data flow from database to frontend
+- Error handling and loading states
+
 ## Documentation
 
 - [Design Guidelines](docs/DESIGN_GUIDELINES.md) - Architecture and development guidelines
-- [Web UI Tasks](docs/web_app_summary_dashboard_tasks.md) - Web UI development roadmap
+- [Web UI Tasks](docs/web_app_summary_dashboard_tasks.md) - Web UI development roadmap and current status
+- [Project Context](docs/PROJECT_CONTEXT.md) - Project overview and context
 
 ## Contributing
 

@@ -140,9 +140,18 @@ Ensure smooth integration between frontend and backend, robust testing, and plan
 - ✅ **Data Consistency**: API endpoints returning real database data with proper validation
 - ✅ **UI Correctness**: Components rendering expected content with proper error handling
 
-3. **Documentation**
-   - [ ] Update README with setup, run, and usage instructions
-   - [ ] Document API endpoints and data contracts
+3. **Documentation** ✅
+   - [x] Update README with setup, run, and usage instructions
+   - [x] Document API endpoints and data contracts
+
+### Current Status
+- ✅ **README Updated**: Comprehensive setup and usage instructions for both backend and frontend
+- ✅ **API Documentation**: Complete documentation of all Flask API endpoints with descriptions
+- ✅ **Installation Guide**: Step-by-step instructions for setting up Python environment, database, and React frontend
+- ✅ **Running Instructions**: Clear instructions for running backend, frontend, or both servers
+- ✅ **Web UI Features**: Documentation of dashboard and fund detail page features
+- ✅ **Testing Documentation**: Instructions for running backend and frontend tests
+- ✅ **Development Guidelines**: Updated project structure and environment setup
 
 4. **Future Enhancements (Optional)**
    - User authentication
