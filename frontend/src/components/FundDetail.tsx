@@ -15,7 +15,8 @@ import {
   Chip,
   Button,
   CircularProgress,
-  Alert
+  Alert,
+  Switch
 } from '@mui/material';
 import { ArrowBack, TrendingUp, AccountBalance, Event } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -81,6 +82,7 @@ const FundDetail: React.FC = () => {
   const [fundData, setFundData] = useState<FundDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showTaxEvents, setShowTaxEvents] = useState(true);
 
   useEffect(() => {
     const fetchFundDetail = async () => {
@@ -366,9 +368,29 @@ const FundDetail: React.FC = () => {
       {/* Events Table */}
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h6">
-            Fund Events ({events.length})
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Fund Events ({(() => {
+                const filteredEvents = events.filter(event => {
+                  if (!showTaxEvents && event.event_type === 'TAX_PAYMENT') {
+                    return false;
+                  }
+                  return true;
+                });
+                return filteredEvents.length;
+              })()})
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Show Tax Events
+              </Typography>
+              <Switch
+                checked={showTaxEvents}
+                onChange={(e) => setShowTaxEvents(e.target.checked)}
+                size="small"
+              />
+            </Box>
+          </Box>
         </Box>
         <TableContainer sx={{ maxHeight: 600 }}>
           <Table stickyHeader>
@@ -485,6 +507,11 @@ const FundDetail: React.FC = () => {
 
                     // Skip withholding tax events that are already combined
                     if (event.event_type === 'TAX_PAYMENT' && event.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING') {
+                      return null;
+                    }
+
+                    // Skip tax payment events if toggle is off
+                    if (!showTaxEvents && event.event_type === 'TAX_PAYMENT') {
                       return null;
                     }
 
