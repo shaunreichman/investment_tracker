@@ -118,7 +118,11 @@ const FundDetail: React.FC = () => {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-AU');
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-AU', { month: 'short' });
+    const year = date.getFullYear().toString().slice(-2);
+    return `${day}-${month}-${year}`;
   };
 
   const getEventTypeColor = (eventType: string) => {
