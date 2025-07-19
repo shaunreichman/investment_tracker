@@ -42,20 +42,56 @@
 2. Getting Started / Onboarding Checklist
 3. Quick Reference Table
 4. Overview
-5. Session Management
-6. Object/Event Creation
-7. Field Classification
-8. Architectural Rules
-9. Validation
-10. Error Handling Policy
-11. Glossary / Definitions
-12. Examples
-13. FAQ
-14. Change History
+5. Web UI Architecture
+6. Session Management
+7. Object/Event Creation
+8. Field Classification
+9. Architectural Rules
+10. API Design Patterns
+11. React Component Patterns
+12. Testing Strategy
+13. Validation
+14. Error Handling Policy
+15. Glossary / Definitions
+16. Examples
+17. FAQ
+18. Change History
 
 ---
 
 ## Quick Start
+
+### **Core Patterns (Everyone Needs to Know)**
+
+#### **React Component Patterns**
+```typescript
+// ✅ CORRECT: Functional components with hooks
+const Dashboard = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchData()
+      .then(setData)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage error={error} />;
+  return <DashboardContent data={data} />;
+};
+
+// ✅ CORRECT: API integration with error handling
+const fetchData = async () => {
+  const response = await fetch('/api/dashboard/funds');
+  if (!response.ok) {
+    throw new Error('Failed to fetch data');
+  }
+  return response.json();
+};
+```
 
 ### **Core Patterns (Everyone Needs to Know)**
 
@@ -104,6 +140,44 @@ TaxEventManager.create_or_update_tax_events(tax_statement, session)
 ---
 
 ## Architecture Principles
+
+### **Web UI Architecture**
+
+#### **Frontend-Backend Separation**
+- **React Frontend**: Handles UI rendering, user interactions, and state management
+- **Flask Backend**: Handles data access, business logic, and API endpoints
+- **API-First Design**: All data flows through RESTful API endpoints
+- **Stateless Frontend**: React components remain stateless, all data comes from API
+
+#### **API Design Patterns**
+```python
+# ✅ CORRECT: RESTful API endpoints with consistent naming
+GET /api/health                    # Health check
+GET /api/dashboard/portfolio-summary  # Portfolio overview
+GET /api/dashboard/funds           # List all funds
+GET /api/dashboard/recent-events   # Recent events
+GET /api/dashboard/performance     # Performance data
+GET /api/funds/<fund_id>          # Fund details
+
+# ✅ CORRECT: Consistent response format
+{
+  "funds": [...],           # Array of objects
+  "events": [...],          # Array of objects  
+  "performance": [...],      # Array of objects
+  "error": "message"        # Error messages
+}
+```
+
+#### **CORS and Environment Configuration**
+```python
+# ✅ CORRECT: CORS setup for development
+from flask_cors import CORS
+app = Flask(__name__)
+CORS(app)  # Allow cross-origin requests from React
+
+# ✅ CORRECT: Environment variables in React
+REACT_APP_API_BASE_URL=http://localhost:5001
+```
 
 ### **Session Management**
 
@@ -470,10 +544,25 @@ statement.calculate_fy_debt_interest_deduction_total_deduction()
 
 ## Testing Guidelines
 
+### **Backend Testing**
 - Run the main test script (`tests/test_main.py`) after all major changes.
 - Output test results to a new file using the convention `system_test_output_new##.txt` for traceability.
+- Run API endpoint tests (`tests/test_api_endpoints.py`) to validate API functionality.
 - Run tests frequently during development to catch regressions early.
 - All new features and refactors must be accompanied by a successful test run before commit.
+
+### **Frontend Testing**
+- Write component tests for all React components (`*.test.tsx`).
+- Test component rendering, user interactions, and API integration.
+- Mock external dependencies (fetch API, React Router hooks).
+- Test loading states, error handling, and data formatting.
+- Use React Testing Library for component testing.
+
+### **Integration Testing**
+- Test end-to-end data flow from database to frontend.
+- Validate API response formats and error handling.
+- Test CORS configuration and environment setup.
+- Ensure consistent data formatting between backend and frontend.
 
 # Getting Started / Onboarding Checklist
 - Read the "Overview" and "Architectural Rules" sections first.
@@ -497,10 +586,52 @@ statement.calculate_fy_debt_interest_deduction_total_deduction()
 - Never silently ignore or coerce invalid data.
 
 ## Error Handling Policy
+
+### **Backend Error Handling**
 - Always raise explicit exceptions for error conditions; never return None or ambiguous values.
 - Use domain-specific exception classes where possible.
 - Log unexpected exceptions with enough context for debugging.
 - Do not leak raw DB or system errors to the API layer—wrap in domain errors.
+
+### **API Error Handling**
+```python
+# ✅ CORRECT: Consistent API error responses
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Resource not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error'}), 500
+
+# ✅ CORRECT: Domain-specific error handling
+try:
+    fund = session.query(Fund).filter_by(id=fund_id).first()
+    if not fund:
+        return jsonify({'error': 'Fund not found'}), 404
+except Exception as e:
+    return jsonify({'error': 'Database error'}), 500
+```
+
+### **Frontend Error Handling**
+```typescript
+// ✅ CORRECT: Graceful error handling in components
+const [error, setError] = useState<string | null>(null);
+
+const handleError = (error: Error) => {
+  setError(error.message);
+  console.error('API Error:', error);
+};
+
+// ✅ CORRECT: User-friendly error messages
+if (error) {
+  return (
+    <Alert severity="error">
+      {error.includes('not found') ? 'Fund not found' : 'An error occurred'}
+    </Alert>
+  );
+}
+```
 
 ## Glossary / Definitions
 - **NAV-based fund:** A fund where value is tracked by Net Asset Value per unit.
@@ -509,6 +640,10 @@ statement.calculate_fy_debt_interest_deduction_total_deduction()
 - **Capital event:** Any event that changes the equity/capital of a fund (purchase, sale, call, return).
 - **@with_session:** Decorator to ensure DB session management is handled by the backend.
 - **Domain method:** A method on a domain model (e.g., Fund) that encapsulates business logic.
+- **API-First Design:** Architecture where all data flows through RESTful API endpoints.
+- **Stateless Frontend:** React components that don't maintain application state, relying on API data.
+- **CORS:** Cross-Origin Resource Sharing; allows frontend to make requests to backend API.
+- **Component Testing:** Testing React components in isolation with mocked dependencies.
 
 [See also: Session Management](#session-management)
 [See also: Architectural Rules](#architectural-rules)
