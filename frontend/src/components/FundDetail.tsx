@@ -303,8 +303,8 @@ const FundDetail: React.FC = () => {
                   />
                 </Box>
                 <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Created</Typography>
-                  <Typography variant="body1">{formatDate(fund.created_at)}</Typography>
+                  <Typography variant="body2" color="text.secondary">Entity</Typography>
+                  <Typography variant="body1">{fund.entity}</Typography>
                 </Box>
               </Box>
               {fund.description && (
