@@ -82,9 +82,9 @@ def create_app():
                 
                 fund_data = []
                 for fund in funds_result:
-                    # Get recent events count for this fund
+                    # Get recent events count for this fund (excluding system events)
                     recent_events_count = session.execute(
-                        text("SELECT COUNT(*) FROM fund_events WHERE fund_id = :fund_id AND event_date >= :date"),
+                        text("SELECT COUNT(*) FROM fund_events WHERE fund_id = :fund_id AND event_date >= :date AND event_type != 'DAILY_RISK_FREE_INTEREST_CHARGE'"),
                         {"fund_id": fund.id, "date": date.today() - timedelta(days=30)}
                     ).scalar()
                     
@@ -118,13 +118,14 @@ def create_app():
             session = get_db_session()
             
             try:
-                # Get recent events with fund information
+                # Get recent events with fund information (excluding system events)
                 events_query = text("""
                     SELECT 
                         fe.id, fe.event_type, fe.event_date, fe.amount, 
                         fe.description, fe.reference_number, f.name as fund_name
                     FROM fund_events fe
                     JOIN funds f ON fe.fund_id = f.id
+                    WHERE fe.event_type != 'DAILY_RISK_FREE_INTEREST_CHARGE'
                     ORDER BY fe.event_date DESC
                     LIMIT 10
                 """)
@@ -158,7 +159,7 @@ def create_app():
             session = get_db_session()
             
             try:
-                # Get performance data with fund IDs
+                # Get performance data with fund IDs (excluding system events)
                 query = text("""
                     SELECT 
                         f.id as fund_id,
@@ -168,7 +169,7 @@ def create_app():
                         COUNT(fe.id) as total_events,
                         MAX(fe.event_date) as last_event_date
                     FROM funds f
-                    LEFT JOIN fund_events fe ON f.id = fe.fund_id
+                    LEFT JOIN fund_events fe ON f.id = fe.fund_id AND fe.event_type != 'DAILY_RISK_FREE_INTEREST_CHARGE'
                     GROUP BY f.id, f.name, f.current_equity_balance, f.average_equity_balance
                     ORDER BY f.name
                 """)
@@ -220,7 +221,7 @@ def create_app():
                 if not fund_result:
                     return jsonify({"error": "Fund not found"}), 404
                 
-                # Get fund events
+                # Get fund events (filter out system events and sort by date ascending)
                 events_query = text("""
                     SELECT 
                         id, event_type, event_date, amount, description, reference_number,
@@ -228,12 +229,13 @@ def create_app():
                         unit_price, nav_per_share, brokerage_fee
                     FROM fund_events 
                     WHERE fund_id = :fund_id 
-                    ORDER BY event_date DESC, id DESC
+                    AND event_type != 'DAILY_RISK_FREE_INTEREST_CHARGE'
+                    ORDER BY event_date ASC, id ASC
                 """)
                 
                 events_result = session.execute(events_query, {"fund_id": fund_id}).fetchall()
                 
-                # Get fund statistics
+                # Get fund statistics (excluding system events)
                 stats_query = text("""
                     SELECT 
                         COUNT(*) as total_events,
@@ -249,6 +251,7 @@ def create_app():
                         MAX(event_date) as last_event_date
                     FROM fund_events 
                     WHERE fund_id = :fund_id
+                    AND event_type != 'DAILY_RISK_FREE_INTEREST_CHARGE'
                 """)
                 
                 stats_result = session.execute(stats_query, {"fund_id": fund_id}).fetchone()

@@ -365,7 +365,6 @@ const FundDetail: React.FC = () => {
                 <TableCell>Type</TableCell>
                 <TableCell>Description</TableCell>
                 <TableCell align="right">Amount</TableCell>
-                <TableCell>Reference</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -391,11 +390,6 @@ const FundDetail: React.FC = () => {
                   </TableCell>
                   <TableCell align="right">
                     {event.amount ? formatCurrency(event.amount, fund.currency) : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {event.reference_number || '-'}
-                    </Typography>
                   </TableCell>
                 </TableRow>
               ))}
