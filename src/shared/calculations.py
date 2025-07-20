@@ -109,7 +109,7 @@ def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
     return fy_start, fy_end
 
 
-def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, return_cashflows=False):
+def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, return_cashflows=False):
     """Orchestrate IRR calculation with configurable cash flow inclusion.
     This is a shared calculation function that can be used by any domain.
     
@@ -118,7 +118,7 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
         start_date (date): Start date for IRR calculation
         include_tax_payments (bool): Whether to include tax payment events
         include_risk_free_charges (bool): Whether to include risk-free interest charges
-        include_fy_debt_cost (bool): Whether to include FY debt cost events
+        include_eofy_debt_cost (bool): Whether to include EOFY debt cost events
         return_cashflows (bool): Whether to return cash flow details
         
     Returns:
@@ -136,7 +136,7 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
             include_event = True
         elif include_risk_free_charges and event.event_type.name == 'DAILY_RISK_FREE_INTEREST_CHARGE':
             include_event = True
-        elif include_fy_debt_cost and event.event_type.name == 'FY_DEBT_COST':
+        elif include_eofy_debt_cost and event.event_type.name == 'EOFY_DEBT_COST':
             include_event = True
         if include_event:
             filtered_events.append(event)
@@ -153,7 +153,7 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
         # Adjust sign based on event type
         if event.event_type.name in ['UNIT_PURCHASE', 'CAPITAL_CALL']:
             amount = -abs(amount)  # Outflow
-        elif event.event_type.name in ['UNIT_SALE', 'RETURN_OF_CAPITAL', 'DISTRIBUTION', 'FY_DEBT_COST']:
+        elif event.event_type.name in ['UNIT_SALE', 'RETURN_OF_CAPITAL', 'DISTRIBUTION', 'EOFY_DEBT_COST']:
             amount = abs(amount)  # Inflow
         elif event.event_type.name == 'TAX_PAYMENT':
             amount = -abs(amount)  # Outflow

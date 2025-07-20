@@ -57,7 +57,8 @@ class TaxEventFactory:
             amount=tax_statement.interest_tax_amount,
             description=f"Tax payment for FY {tax_statement.financial_year}",
             reference_number=f"TAX-{tax_statement.financial_year}",
-            tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
+            tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX,
+            tax_statement_id=tax_statement.id
         )
         return event
 
@@ -99,7 +100,8 @@ class TaxEventFactory:
             amount=tax_amount,
             description=desc,
             reference_number=ref,
-            tax_payment_type=payment_type
+            tax_payment_type=payment_type,
+            tax_statement_id=tax_statement.id
         )
         return event
 
@@ -130,12 +132,13 @@ class TaxEventFactory:
             amount=tax_amount,
             description=f"Capital gain tax (rate: {tax_statement.capital_gain_income_tax_rate}%)",
             reference_number=f"CAPITAL_GAIN_TAX_{tax_statement.financial_year}",
-            tax_payment_type=TaxPaymentType.CAPITAL_GAINS_TAX
+            tax_payment_type=TaxPaymentType.CAPITAL_GAINS_TAX,
+            tax_statement_id=tax_statement.id
         )
         return event
 
     @staticmethod
-    def create_fy_debt_cost_event(tax_statement: TaxStatement, session: Optional[Session] = None) -> Optional[FundEvent]:
+    def create_eofy_debt_cost_event(tax_statement: TaxStatement, session: Optional[Session] = None) -> Optional[FundEvent]:
         """
         Create a financial year debt cost event object for the given tax statement.
         Returns the event object or None if not applicable.
@@ -143,7 +146,7 @@ class TaxEventFactory:
         """
         if not tax_statement:
             raise ValueError("tax_statement is required")
-        tax_benefit = tax_statement.calculate_fy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_fy_debt_interest_deduction_total_deduction') else (tax_statement.fy_debt_interest_deduction_total_deduction or 0.0)
+        tax_benefit = tax_statement.calculate_eofy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_eofy_debt_interest_deduction_total_deduction') else (tax_statement.eofy_debt_interest_deduction_total_deduction or 0.0)
         if tax_benefit is None or tax_benefit <= 0:
             return None
         fy_start, fy_end = tax_statement.get_financial_year_dates() if hasattr(tax_statement, 'get_financial_year_dates') else (None, None)
@@ -151,11 +154,12 @@ class TaxEventFactory:
             return None
         event = FundEvent(
             fund_id=tax_statement.fund_id,
-            event_type=EventType.FY_DEBT_COST,
+            event_type=EventType.EOFY_DEBT_COST,
             event_date=fy_end,
             amount=tax_benefit,
             description=f"FY {tax_statement.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
-            reference_number=f"FY_DEBT_COST_{tax_statement.financial_year}"
+            reference_number=f"EOFY_DEBT_COST_{tax_statement.financial_year}",
+            tax_statement_id=tax_statement.id
         )
         return event
 
@@ -185,9 +189,9 @@ class TaxEventFactory:
         if capital_gain_event:
             events.append(capital_gain_event)
         # FY debt cost event
-        fy_debt_cost_event = TaxEventFactory.create_fy_debt_cost_event(tax_statement, session=session)
-        if fy_debt_cost_event:
-            events.append(fy_debt_cost_event)
+        eofy_debt_cost_event = TaxEventFactory.create_eofy_debt_cost_event(tax_statement, session=session)
+        if eofy_debt_cost_event:
+            events.append(eofy_debt_cost_event)
         return events
 
 class TaxEventManager:
@@ -218,20 +222,24 @@ class TaxEventManager:
                 FundEvent.fund_id == event.fund_id,
                 FundEvent.event_type == event.event_type,
                 FundEvent.event_date == event.event_date,
-                FundEvent.tax_payment_type == getattr(event, 'tax_payment_type', None)
+                FundEvent.tax_payment_type == getattr(event, 'tax_payment_type', None),
+                FundEvent.tax_statement_id == getattr(event, 'tax_statement_id', None)
             )
             existing = query.first()
             if not existing:
                 session.add(event)
                 created_or_updated_events.append(event)
             else:
-                # If amount or description has changed, update
+                # If amount, description, or tax_statement_id has changed, update
                 updated = False
                 if existing.amount != event.amount:
                     existing.amount = event.amount
                     updated = True
                 if hasattr(existing, 'description') and existing.description != event.description:
                     existing.description = event.description
+                    updated = True
+                if hasattr(existing, 'tax_statement_id') and existing.tax_statement_id != getattr(event, 'tax_statement_id', None):
+                    existing.tax_statement_id = getattr(event, 'tax_statement_id', None)
                     updated = True
                 if updated:
                     created_or_updated_events.append(existing)
@@ -279,7 +287,7 @@ class TaxEventManager:
                 (tax_statement.dividend_unfranked_income_amount or 0.0) > 0 and
                 (tax_statement.dividend_unfranked_income_tax_rate or 0.0) > 0
             )
-        elif event_type == EventType.FY_DEBT_COST:
-            benefit = tax_statement.calculate_fy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_fy_debt_interest_deduction_total_deduction') else (tax_statement.fy_debt_interest_deduction_total_deduction or 0.0)
+        elif event_type == EventType.EOFY_DEBT_COST:
+            benefit = tax_statement.calculate_eofy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_eofy_debt_interest_deduction_total_deduction') else (tax_statement.eofy_debt_interest_deduction_total_deduction or 0.0)
             return benefit > 0
         return False 

@@ -20,24 +20,24 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import object_session
 
 # Import the Base from shared
-from shared.base import Base
+from ..shared.base import Base
 
 # Import utilities and calculations
-from shared.utils import with_session, with_class_session
+from ..shared.utils import with_session, with_class_session
 from .calculations import (
     calculate_irr,
     calculate_debt_cost
 )
-from shared.calculations import orchestrate_irr_base
+from ..shared.calculations import orchestrate_irr_base
 
 # Import models from other domains
-from rates.models import RiskFreeRate
-from entity.models import Entity
+from ..rates.models import RiskFreeRate
+from ..entity.models import Entity
 
 # Import shared calculations
-from shared.calculations import get_equity_change_for_event
-from entity.calculations import get_financial_years_for_fund_period
-from rates.calculations import get_risk_free_rate_for_date
+from ..shared.calculations import get_equity_change_for_event
+from ..entity.calculations import get_financial_years_for_fund_period
+from ..rates.calculations import get_risk_free_rate_for_date
 
 
 class EventType(enum.Enum):
@@ -48,7 +48,7 @@ class EventType(enum.Enum):
     - DISTRIBUTION: Distribution (income, interest, etc.)
     - TAX_PAYMENT: Tax payment event
     - DAILY_RISK_FREE_INTEREST_CHARGE: Daily risk-free interest charge (for real IRR)
-    - FY_DEBT_COST: Financial year debt cost tax benefit (for real IRR)
+    - EOFY_DEBT_COST: End of financial year debt cost tax benefit (for real IRR)
     - NAV_UPDATE: NAV update (NAV-based funds)
     - UNIT_PURCHASE: Unit purchase (NAV-based funds)
     - UNIT_SALE: Unit sale (NAV-based funds)
@@ -61,7 +61,7 @@ class EventType(enum.Enum):
     DISTRIBUTION = "distribution"
     TAX_PAYMENT = "tax_payment"
     DAILY_RISK_FREE_INTEREST_CHARGE = "daily_risk_free_interest_charge"
-    FY_DEBT_COST = "fy_debt_cost"
+    EOFY_DEBT_COST = "eofy_debt_cost"
     NAV_UPDATE = "nav_update"
     UNIT_PURCHASE = "unit_purchase"
     UNIT_SALE = "unit_sale"
@@ -426,7 +426,7 @@ class Fund(Base):
         return created_events
     
     @with_session
-    def calculate_fy_debt_interest_deduction_sum_of_daily_interest(self, financial_year, session=None):
+    def calculate_eofy_debt_interest_deduction_sum_of_daily_interest(self, financial_year, session=None):
         """Calculate the total interest expense for a given financial year for the fund.
         Used for tax deduction calculations. Returns the total expense as a float.
         """
@@ -485,23 +485,23 @@ class Fund(Base):
             return created_events  # Skip years with no TaxStatement
         
         # Calculate interest expense for this FY
-        fy_debt_interest_deduction_sum_of_daily_interest = self.calculate_fy_debt_interest_deduction_sum_of_daily_interest(fy, session=session)
+        eofy_debt_interest_deduction_sum_of_daily_interest = self.calculate_eofy_debt_interest_deduction_sum_of_daily_interest(fy, session=session)
         
         # Set the interest expense on the tax statement
-        tax_statement.fy_debt_interest_deduction_sum_of_daily_interest = fy_debt_interest_deduction_sum_of_daily_interest
+        tax_statement.eofy_debt_interest_deduction_sum_of_daily_interest = eofy_debt_interest_deduction_sum_of_daily_interest
         
         # Calculate tax benefit and create event
-        fy_debt_interest_deduction_total_deduction = tax_statement.calculate_fy_debt_interest_deduction_total_deduction()
-        if fy_debt_interest_deduction_total_deduction > 0:
+        eofy_debt_interest_deduction_total_deduction = tax_statement.calculate_eofy_debt_interest_deduction_total_deduction()
+        if eofy_debt_interest_deduction_total_deduction > 0:
             from src.tax.events import TaxEventFactory
-            event = TaxEventFactory.create_fy_debt_cost_event(tax_statement, session=session)
+            event = TaxEventFactory.create_eofy_debt_cost_event(tax_statement, session=session)
             if event:
                 created_events.append(event)
         
         return created_events
     
     @with_session
-    def create_fy_debt_cost_events(self, session=None):
+    def create_eofy_debt_cost_events(self, session=None):
         """Create financial year debt cost events for the fund for real IRR calculations.
         Commits new events to the database.
         Returns a list of created events.
@@ -541,14 +541,14 @@ class Fund(Base):
         Returns a tuple of (deleted_daily_count, deleted_fy_count).
         No database operations.
         """
-        # Delete all DAILY_RISK_FREE_INTEREST_CHARGE and FY_DEBT_COST events for this fund
+        # Delete all DAILY_RISK_FREE_INTEREST_CHARGE and EOFY_DEBT_COST events for this fund
         deleted_daily = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
             FundEvent.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE
         ).delete()
         deleted_fy = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.FY_DEBT_COST
+            FundEvent.event_type == EventType.EOFY_DEBT_COST
         ).delete()
         return deleted_daily, deleted_fy
     
@@ -565,7 +565,7 @@ class Fund(Base):
         # Recreate daily risk-free interest charges
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
         # Recreate FY debt cost events
-        self.create_fy_debt_cost_events(session)
+        self.create_eofy_debt_cost_events(session)
         session.commit()
         print(f"Recalculated debt costs for fund '{self.name}': deleted {deleted_daily} daily interest charges, {deleted_fy} FY debt cost events, and recreated them.")
     
@@ -846,6 +846,49 @@ class Fund(Base):
         )
     
     
+    def _calculate_nav_change_fields(self, nav_per_share, date, session):
+        """
+        Calculate NAV change fields for a NAV_UPDATE event.
+        Returns (previous_nav_per_share, nav_change_absolute, nav_change_percentage)
+        """
+        # Find the most recent NAV_UPDATE event before this date
+        previous_nav_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.NAV_UPDATE,
+            FundEvent.event_date < date
+        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+        
+        previous_nav_per_share = previous_nav_event.nav_per_share if previous_nav_event else None
+        
+        if previous_nav_per_share is not None:
+            nav_change_absolute = nav_per_share - previous_nav_per_share
+            nav_change_percentage = (nav_change_absolute / previous_nav_per_share) * 100
+        else:
+            nav_change_absolute = None
+            nav_change_percentage = None
+            
+        return previous_nav_per_share, nav_change_absolute, nav_change_percentage
+
+    def _update_subsequent_nav_change_fields(self, new_nav_event, session):
+        """
+        Update NAV change fields for the next NAV_UPDATE event after the new one.
+        """
+        # Find the next NAV_UPDATE event after this one
+        next_nav_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.NAV_UPDATE,
+            FundEvent.event_date > new_nav_event.event_date
+        ).order_by(FundEvent.event_date, FundEvent.id).first()
+        
+        if next_nav_event:
+            # Recalculate the next event's NAV change fields
+            prev_nav, abs_change, pct_change = self._calculate_nav_change_fields(
+                next_nav_event.nav_per_share, next_nav_event.event_date, session
+            )
+            next_nav_event.previous_nav_per_share = prev_nav
+            next_nav_event.nav_change_absolute = abs_change
+            next_nav_event.nav_change_percentage = pct_change
+
     @with_session
     def add_nav_update(self, nav_per_share, date, description=None, reference_number=None, session=None):
         """
@@ -853,16 +896,29 @@ class Fund(Base):
         """
         if self.tracking_type != FundType.NAV_BASED:
             raise ValueError("NAV updates are only applicable for NAV-based funds")
+        
+        # Calculate NAV change fields
+        previous_nav_per_share, nav_change_absolute, nav_change_percentage = self._calculate_nav_change_fields(
+            nav_per_share, date, session
+        )
+        
         event = FundEvent(
             fund_id=self.id,
             event_type=EventType.NAV_UPDATE,
             event_date=date,
             nav_per_share=nav_per_share,
+            previous_nav_per_share=previous_nav_per_share,
+            nav_change_absolute=nav_change_absolute,
+            nav_change_percentage=nav_change_percentage,
             description=description or f"NAV update: ${nav_per_share:.4f}",
             reference_number=reference_number
         )
         session.add(event)
         session.flush()
+        
+        # Update the next NAV_UPDATE event's change fields if it exists
+        self._update_subsequent_nav_change_fields(event, session)
+        
         # Check if this is the latest NAV_UPDATE event
         latest_event = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
@@ -887,6 +943,11 @@ class Fund(Base):
         ).first()
         if not event:
             raise ValueError("NAV update event not found")
+        
+        # Store original values for recalculation
+        original_date = event.event_date
+        original_nav = event.nav_per_share
+        
         if nav_per_share is not None:
             event.nav_per_share = nav_per_share
         if date is not None:
@@ -895,7 +956,22 @@ class Fund(Base):
             event.description = description
         if reference_number is not None:
             event.reference_number = reference_number
+        
+        # Recalculate NAV change fields if NAV or date changed
+        if nav_per_share is not None or date is not None:
+            new_nav = nav_per_share if nav_per_share is not None else original_nav
+            new_date = date if date is not None else original_date
+            prev_nav, abs_change, pct_change = self._calculate_nav_change_fields(new_nav, new_date, session)
+            event.previous_nav_per_share = prev_nav
+            event.nav_change_absolute = abs_change
+            event.nav_change_percentage = pct_change
+        
         session.flush()
+        
+        # Update subsequent NAV_UPDATE events if this event's date or NAV changed
+        if nav_per_share is not None or date is not None:
+            self._update_subsequent_nav_change_fields(event, session)
+        
         # Check if this is the latest NAV_UPDATE event
         latest_event = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
@@ -1072,7 +1148,7 @@ class Fund(Base):
         return None
 
     @with_session
-    def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, session=None, return_cashflows=False):
+    def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=None, return_cashflows=False):
         """Base IRR calculation method for the fund.
         Delegates to orchestrate_irr_base in calculations.py.
         """
@@ -1100,7 +1176,7 @@ class Fund(Base):
             start_date,
             include_tax_payments=include_tax_payments,
             include_risk_free_charges=include_risk_free_charges,
-            include_fy_debt_cost=include_fy_debt_cost,
+            include_eofy_debt_cost=include_eofy_debt_cost,
             return_cashflows=return_cashflows
         )
         return result
@@ -1109,20 +1185,20 @@ class Fund(Base):
         """Calculate the pre-tax IRR for the fund using all relevant cash flows.
         Returns a float (IRR) or None if not computable.
         """
-        return self._calculate_irr_base(include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, session=session)
+        return self._calculate_irr_base(include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=session)
 
     def calculate_after_tax_irr(self, session=None):
         """Calculate the after-tax IRR for the fund, including tax payment events.
         Returns a float (IRR) or None if not computable.
         """
-        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=False, include_fy_debt_cost=False, session=session)
+        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=False, include_eofy_debt_cost=False, session=session)
 
     def calculate_real_irr(self, session=None, risk_free_rate_currency=None):
         """Calculate the real IRR for the fund, including debt cost and tax effects.
         Returns a float (IRR) or None if not computable.
         """
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
-        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, session=session)
+        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_eofy_debt_cost=True, session=session)
 
     @with_session
     def recalculate_all_equity_balances(self, session=None):
@@ -1637,9 +1713,13 @@ class FundEvent(Base):
     event_date = Column(Date, nullable=False, index=True)  # (MANUAL) date of the event
     amount = Column(Float)  # (HYBRID) cash flow amount, can be manual or calculated based on event type
     nav_per_share = Column(Float)  # (MANUAL) NAV per share for NAV_UPDATE events
+    previous_nav_per_share = Column(Float)  # (CALCULATED) previous NAV per share for NAV_UPDATE events
+    nav_change_absolute = Column(Float)  # (CALCULATED) absolute change in NAV for NAV_UPDATE events
+    nav_change_percentage = Column(Float)  # (CALCULATED) percentage change in NAV for NAV_UPDATE events
     units_owned = Column(Float)  # (CALCULATED) cumulative units owned after this event
     distribution_type = Column(Enum(DistributionType))  # (MANUAL) type of distribution (DIVIDEND, INTEREST, etc.)
     tax_payment_type = Column(Enum(TaxPaymentType))  # (MANUAL) type of tax payment (INTEREST, CAPITAL_GAINS, etc.)
+    tax_statement_id = Column(Integer, ForeignKey('tax_statements.id'), nullable=True, index=True)  # (MANUAL) foreign key to tax statement for TAX_PAYMENT events
     units_purchased = Column(Float)  # (MANUAL) units purchased in this event
     units_sold = Column(Float)  # (MANUAL) units sold in this event
     unit_price = Column(Float)  # (MANUAL) unit price for this transaction
@@ -1651,6 +1731,7 @@ class FundEvent(Base):
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
+    tax_statement = relationship("TaxStatement", lazy='selectin')  # Eager load for tax statement data
     
     def __repr__(self):
         """Return a string representation of the FundEvent instance for debugging/logging."""
