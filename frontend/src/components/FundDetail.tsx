@@ -16,10 +16,12 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Switch
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import { ArrowBack, TrendingUp, AccountBalance, Event } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter, ScatterChart } from 'recharts';
 
 interface FundEvent {
   id: number;
@@ -38,6 +40,15 @@ interface FundEvent {
   nav_change_absolute: number | null;
   nav_change_percentage: number | null;
   brokerage_fee: number | null;
+  // Tax statement fields for TAX_PAYMENT events
+  interest_income_amount?: number | null;
+  interest_income_tax_rate?: number | null;
+  dividend_franked_income_amount?: number | null;
+  dividend_franked_income_tax_rate?: number | null;
+  dividend_unfranked_income_amount?: number | null;
+  dividend_unfranked_income_tax_rate?: number | null;
+  capital_gain_income_amount?: number | null;
+  capital_gain_income_tax_rate?: number | null;
 }
 
 interface FundStatistics {
@@ -796,7 +807,57 @@ const FundDetail: React.FC = () => {
                         </TableCell>
                         {/* Other Section */}
                         <TableCell align="right">
-                          {isOtherEvent && event.amount ? formatCurrency(event.amount, fund.currency) : ''}
+                          {isOtherEvent && event.amount ? (
+                            event.event_type === 'TAX_PAYMENT' ? (
+                              <Box>
+                                <Typography variant="body2">
+                                  {formatCurrency(event.amount, fund.currency)}
+                                </Typography>
+                                {(() => {
+                                  // Get income and tax rate based on tax payment type
+                                  let incomeAmount: number | null = null;
+                                  let taxRate: number | null = null;
+                                  
+
+                                  
+                                  switch (event.tax_payment_type) {
+                                    case 'EOFY_INTEREST_TAX':
+                                      incomeAmount = event.interest_income_amount ?? null;
+                                      taxRate = event.interest_income_tax_rate ?? null;
+                                      break;
+                                    case 'DIVIDENDS_FRANKED_TAX':
+                                      incomeAmount = event.dividend_franked_income_amount ?? null;
+                                      taxRate = event.dividend_franked_income_tax_rate ?? null;
+                                      break;
+                                    case 'DIVIDENDS_UNFRANKED_TAX':
+                                      incomeAmount = event.dividend_unfranked_income_amount ?? null;
+                                      taxRate = event.dividend_unfranked_income_tax_rate ?? null;
+                                      break;
+                                    case 'CAPITAL_GAINS_TAX':
+                                      incomeAmount = event.capital_gain_income_amount ?? null;
+                                      taxRate = event.capital_gain_income_tax_rate ?? null;
+                                      break;
+                                  }
+                                  
+                                  if (incomeAmount && taxRate) {
+                                    return (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {formatCurrency(incomeAmount, fund.currency)} @ {taxRate}%
+                                      </Typography>
+                                    );
+                                  } else if (event.description) {
+                                    // Fallback to description if income/tax rate not available
+                                    return (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {event.description}
+                                      </Typography>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </Box>
+                            ) : formatCurrency(event.amount, fund.currency)
+                          ) : ''}
                         </TableCell>
                       </TableRow>
                     );
@@ -807,6 +868,213 @@ const FundDetail: React.FC = () => {
           </Table>
         </TableContainer>
       </Paper>
+
+      {/* Unit Price Chart - Only for NAV-based funds */}
+      {fund.tracking_type === 'NAV_BASED' && (
+        <Paper sx={{ width: '100%', overflow: 'hidden', mt: 3 }}>
+          <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="h6">
+              Unit Price Performance
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              NAV per share over time
+            </Typography>
+          </Box>
+          <Box sx={{ p: 3, height: 400, position: 'relative' }}>
+            {(() => {
+              try {
+                const events = fundData.events;
+                
+                // Prepare NAV data - separate for continuous line
+                const navData = events
+                  .filter(event => event.event_type === 'NAV_UPDATE' && event.nav_per_share)
+                  .map(event => ({
+                    date: new Date(event.event_date).getTime(),
+                    displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }),
+                    nav: event.nav_per_share,
+                    timestamp: new Date(event.event_date).getTime()
+                  }))
+                  .sort((a, b) => a.timestamp - b.timestamp);
+
+                // Prepare purchase/sale data - separate for markers
+                const purchaseData = events
+                  .filter(event => (event.event_type === 'UNIT_PURCHASE' || event.description?.includes('purchase')) && event.amount && event.units_purchased)
+                  .map(event => ({
+                    date: new Date(event.event_date).getTime(), // Use same timestamp format as NAV
+                    displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }),
+                    purchase: (event.amount || 0) / (event.units_purchased || 1), // Use 'purchase' as dataKey
+                    timestamp: new Date(event.event_date).getTime(),
+                    type: 'Purchase',
+                    units: event.units_purchased || 0,
+                    amount: event.amount || 0,
+                    description: event.description
+                  }));
+
+                const saleData = events
+                  .filter(event => (event.event_type === 'UNIT_SALE' || event.description?.includes('sale')) && event.amount && event.units_sold)
+                  .map(event => ({
+                    date: new Date(event.event_date).getTime(), // Use same timestamp format as NAV
+                    displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }),
+                    sale: (event.amount || 0) / (event.units_sold || 1), // Use 'sale' as dataKey
+                    timestamp: new Date(event.event_date).getTime(),
+                    type: 'Sale',
+                    units: event.units_sold || 0,
+                    amount: event.amount || 0,
+                    description: event.description
+                  }));
+
+                console.log('NAV data count:', navData.length);
+                console.log('Purchase data count:', purchaseData.length);
+                console.log('Sale data count:', saleData.length);
+
+                // Calculate shared domain from ALL data
+                const allValues = [
+                  ...navData.map(d => d.nav),
+                  ...purchaseData.map(d => d.purchase),
+                  ...saleData.map(d => d.sale)
+                ].filter((v): v is number => v !== null && v !== undefined);
+
+                const allDates = [
+                  ...navData.map(d => d.timestamp),
+                  ...purchaseData.map(d => d.timestamp),
+                  ...saleData.map(d => d.timestamp)
+                ];
+
+                if (allValues.length === 0) {
+                  return <Typography>No chart data available</Typography>;
+                }
+
+                const minValue = Math.min(...allValues);
+                const maxValue = Math.max(...allValues);
+                const padding = (maxValue - minValue) * 0.1;
+
+                const minDate = Math.min(...allDates);
+                const maxDate = Math.max(...allDates);
+                const datePadding = (maxDate - minDate) * 0.05;
+
+                const yDomain = [minValue - padding, maxValue + padding];
+                const xDomain = [minDate - datePadding, maxDate + datePadding];
+
+                console.log('Shared domains:', { xDomain, yDomain });
+                console.log('Date range:', { min: new Date(minDate), max: new Date(maxDate) });
+
+                return (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={navData}>
+                      <CartesianGrid 
+                        strokeDasharray="3 3" 
+                        vertical={true}
+                        horizontal={true}
+                        stroke="#f0f0f0"
+                      />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        domain={xDomain}
+                        type="number"
+                        scale="time"
+                        tickFormatter={(value) => new Date(value).toLocaleDateString('en-AU', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                        ticks={(() => {
+                          // Generate ticks at end of each month within the date range
+                          const ticks = [];
+                          const startDate = new Date(minDate);
+                          const endDate = new Date(maxDate);
+                          
+                          // Start from the first day of the month containing the start date
+                          let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+                          
+                          // Add safety check to prevent infinite loops
+                          let iterationCount = 0;
+                          const maxIterations = 50; // Safety limit
+                          
+                          while (currentDate <= endDate && iterationCount < maxIterations) {
+                            // Set to last day of current month
+                            const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                            ticks.push(lastDayOfMonth.getTime());
+                            
+                            // Move to first day of next month
+                            currentDate.setMonth(currentDate.getMonth() + 1);
+                            currentDate.setDate(1);
+                            iterationCount++;
+                          }
+                          
+                          console.log('Generated ticks:', ticks.length, 'iterations:', iterationCount);
+                          console.log('Tick dates:', ticks.map(t => new Date(t).toLocaleDateString('en-AU')));
+                          return ticks;
+                        })()}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => `$${value.toFixed(2)}`}
+                        domain={yDomain}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => {
+                          if (name === 'nav') return [`$${value}`, 'NAV'];
+                          if (name === 'purchase') return [`$${value}`, 'Purchase'];
+                          if (name === 'sale') return [`$${value}`, 'Sale'];
+                          return [value, name];
+                        }}
+                        labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString('en-AU', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}`}
+                      />
+                      <Line 
+                        type="linear" 
+                        dataKey="nav" 
+                        stroke="#1976d2" 
+                        strokeWidth={2}
+                        dot={{ fill: '#1976d2', strokeWidth: 2, r: 4, stroke: '#1976d2' }}
+                        activeDot={{ r: 6, fill: '#1976d2', stroke: '#1976d2', strokeWidth: 2 }}
+                        connectNulls={false}
+                        isAnimationActive={false}
+                      />
+                      <Scatter 
+                        dataKey="purchase" 
+                        fill="#4caf50" 
+                        stroke="#4caf50"
+                        shape="star"
+                        data={purchaseData}
+                      />
+                      <Scatter 
+                        dataKey="sale" 
+                        fill="#f44336" 
+                        stroke="#f44336"
+                        shape="star"
+                        data={saleData}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                );
+              } catch (error) {
+                console.error('Chart error:', error);
+                return <Typography color="error">Error loading chart: {error instanceof Error ? error.message : 'Unknown error'}</Typography>;
+              }
+            })()}
+          </Box>
+        </Paper>
+      )}
     </Container>
   );
 };

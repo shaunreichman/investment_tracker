@@ -57,7 +57,8 @@ class TaxEventFactory:
             amount=tax_statement.interest_tax_amount,
             description=f"Tax payment for FY {tax_statement.financial_year}",
             reference_number=f"TAX-{tax_statement.financial_year}",
-            tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX
+            tax_payment_type=TaxPaymentType.EOFY_INTEREST_TAX,
+            tax_statement_id=tax_statement.id
         )
         return event
 
@@ -99,7 +100,8 @@ class TaxEventFactory:
             amount=tax_amount,
             description=desc,
             reference_number=ref,
-            tax_payment_type=payment_type
+            tax_payment_type=payment_type,
+            tax_statement_id=tax_statement.id
         )
         return event
 
@@ -130,7 +132,8 @@ class TaxEventFactory:
             amount=tax_amount,
             description=f"Capital gain tax (rate: {tax_statement.capital_gain_income_tax_rate}%)",
             reference_number=f"CAPITAL_GAIN_TAX_{tax_statement.financial_year}",
-            tax_payment_type=TaxPaymentType.CAPITAL_GAINS_TAX
+            tax_payment_type=TaxPaymentType.CAPITAL_GAINS_TAX,
+            tax_statement_id=tax_statement.id
         )
         return event
 
@@ -218,20 +221,24 @@ class TaxEventManager:
                 FundEvent.fund_id == event.fund_id,
                 FundEvent.event_type == event.event_type,
                 FundEvent.event_date == event.event_date,
-                FundEvent.tax_payment_type == getattr(event, 'tax_payment_type', None)
+                FundEvent.tax_payment_type == getattr(event, 'tax_payment_type', None),
+                FundEvent.tax_statement_id == getattr(event, 'tax_statement_id', None)
             )
             existing = query.first()
             if not existing:
                 session.add(event)
                 created_or_updated_events.append(event)
             else:
-                # If amount or description has changed, update
+                # If amount, description, or tax_statement_id has changed, update
                 updated = False
                 if existing.amount != event.amount:
                     existing.amount = event.amount
                     updated = True
                 if hasattr(existing, 'description') and existing.description != event.description:
                     existing.description = event.description
+                    updated = True
+                if hasattr(existing, 'tax_statement_id') and existing.tax_statement_id != getattr(event, 'tax_statement_id', None):
+                    existing.tax_statement_id = getattr(event, 'tax_statement_id', None)
                     updated = True
                 if updated:
                     created_or_updated_events.append(existing)

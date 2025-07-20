@@ -1719,6 +1719,7 @@ class FundEvent(Base):
     units_owned = Column(Float)  # (CALCULATED) cumulative units owned after this event
     distribution_type = Column(Enum(DistributionType))  # (MANUAL) type of distribution (DIVIDEND, INTEREST, etc.)
     tax_payment_type = Column(Enum(TaxPaymentType))  # (MANUAL) type of tax payment (INTEREST, CAPITAL_GAINS, etc.)
+    tax_statement_id = Column(Integer, ForeignKey('tax_statements.id'), nullable=True, index=True)  # (MANUAL) foreign key to tax statement for TAX_PAYMENT events
     units_purchased = Column(Float)  # (MANUAL) units purchased in this event
     units_sold = Column(Float)  # (MANUAL) units sold in this event
     unit_price = Column(Float)  # (MANUAL) unit price for this transaction
@@ -1730,6 +1731,7 @@ class FundEvent(Base):
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
+    tax_statement = relationship("TaxStatement", lazy='selectin')  # Eager load for tax statement data
     
     def __repr__(self):
         """Return a string representation of the FundEvent instance for debugging/logging."""

@@ -221,16 +221,27 @@ def create_app():
                 if not fund_result:
                     return jsonify({"error": "Fund not found"}), 404
                 
-                # Get fund events (filter out system events and sort by date ascending)
+                # Get fund events with tax statement data for TAX_PAYMENT events
                 events_query = text("""
                     SELECT 
-                        id, event_type, event_date, amount, description, reference_number,
-                        distribution_type, tax_payment_type, units_purchased, units_sold,
-                        unit_price, nav_per_share, previous_nav_per_share, nav_change_absolute, nav_change_percentage, brokerage_fee
-                    FROM fund_events 
-                    WHERE fund_id = :fund_id 
-                    AND event_type != 'DAILY_RISK_FREE_INTEREST_CHARGE'
-                    ORDER BY event_date ASC, id ASC
+                        fe.id, fe.event_type, fe.event_date, fe.amount, fe.description, fe.reference_number,
+                        fe.distribution_type, fe.tax_payment_type, fe.units_purchased, fe.units_sold,
+                        fe.unit_price, fe.nav_per_share, fe.previous_nav_per_share, fe.nav_change_absolute, 
+                        fe.nav_change_percentage, fe.brokerage_fee,
+                        -- Tax statement fields for TAX_PAYMENT events
+                        ts.interest_income_amount,
+                        ts.interest_income_tax_rate,
+                        ts.dividend_franked_income_amount,
+                        ts.dividend_franked_income_tax_rate,
+                        ts.dividend_unfranked_income_amount,
+                        ts.dividend_unfranked_income_tax_rate,
+                        ts.capital_gain_income_amount,
+                        ts.capital_gain_income_tax_rate
+                    FROM fund_events fe
+                    LEFT JOIN tax_statements ts ON fe.tax_statement_id = ts.id
+                    WHERE fe.fund_id = :fund_id 
+                    AND fe.event_type != 'DAILY_RISK_FREE_INTEREST_CHARGE'
+                    ORDER BY fe.event_date ASC, fe.id ASC
                 """)
                 
                 events_result = session.execute(events_query, {"fund_id": fund_id}).fetchall()
@@ -279,7 +290,7 @@ def create_app():
                 # Format events data
                 events_data = []
                 for event in events_result:
-                    events_data.append({
+                    event_data = {
                         "id": event.id,
                         "event_type": event.event_type,
                         "event_date": event.event_date if isinstance(event.event_date, str) else event.event_date.isoformat() if event.event_date else None,
@@ -296,7 +307,22 @@ def create_app():
                         "nav_change_absolute": float(event.nav_change_absolute) if event.nav_change_absolute else None,
                         "nav_change_percentage": float(event.nav_change_percentage) if event.nav_change_percentage else None,
                         "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None
-                    })
+                    }
+                    
+                    # Add tax statement fields for TAX_PAYMENT events
+                    if event.event_type == 'TAX_PAYMENT':
+                        event_data.update({
+                            "interest_income_amount": float(event.interest_income_amount) if event.interest_income_amount else None,
+                            "interest_income_tax_rate": float(event.interest_income_tax_rate) if event.interest_income_tax_rate else None,
+                            "dividend_franked_income_amount": float(event.dividend_franked_income_amount) if event.dividend_franked_income_amount else None,
+                            "dividend_franked_income_tax_rate": float(event.dividend_franked_income_tax_rate) if event.dividend_franked_income_tax_rate else None,
+                            "dividend_unfranked_income_amount": float(event.dividend_unfranked_income_amount) if event.dividend_unfranked_income_amount else None,
+                            "dividend_unfranked_income_tax_rate": float(event.dividend_unfranked_income_tax_rate) if event.dividend_unfranked_income_tax_rate else None,
+                            "capital_gain_income_amount": float(event.capital_gain_income_amount) if event.capital_gain_income_amount else None,
+                            "capital_gain_income_tax_rate": float(event.capital_gain_income_tax_rate) if event.capital_gain_income_tax_rate else None
+                        })
+                    
+                    events_data.append(event_data)
                 
                 # Format statistics data
                 stats_data = {
