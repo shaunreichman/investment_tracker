@@ -86,6 +86,7 @@ const FundDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showTaxEvents, setShowTaxEvents] = useState(true);
+  const [showNavUpdates, setShowNavUpdates] = useState(true);
 
   useEffect(() => {
     const fetchFundDetail = async () => {
@@ -391,20 +392,37 @@ const FundDetail: React.FC = () => {
                   if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'FY_DEBT_COST')) {
                     return false;
                   }
+                  if (!showNavUpdates && event.event_type === 'NAV_UPDATE') {
+                    return false;
+                  }
                   return true;
                 });
                 return filteredEvents.length;
               })()})
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Show Tax & Debt Events
-              </Typography>
-              <Switch
-                checked={showTaxEvents}
-                onChange={(e) => setShowTaxEvents(e.target.checked)}
-                size="small"
-              />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Show Tax & Debt Events
+                </Typography>
+                <Switch
+                  checked={showTaxEvents}
+                  onChange={(e) => setShowTaxEvents(e.target.checked)}
+                  size="small"
+                />
+              </Box>
+              {fund.tracking_type === 'NAV_BASED' && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Show NAV Updates
+                  </Typography>
+                  <Switch
+                    checked={showNavUpdates}
+                    onChange={(e) => setShowNavUpdates(e.target.checked)}
+                    size="small"
+                  />
+                </Box>
+              )}
             </Box>
           </Box>
         </Box>
@@ -556,6 +574,11 @@ const FundDetail: React.FC = () => {
                             return null;
                           }
 
+                          // Skip NAV updates if toggle is off
+                          if (!showNavUpdates && event.event_type === 'NAV_UPDATE') {
+                            return null;
+                          }
+
                           return (
                             <TableRow key={event.id} hover>
                               <TableCell>{formatDate(event.event_date)}</TableCell>
@@ -672,6 +695,11 @@ const FundDetail: React.FC = () => {
 
                     // Skip tax and debt events if toggle is off
                     if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'FY_DEBT_COST')) {
+                      return null;
+                    }
+
+                    // Skip NAV updates if toggle is off
+                    if (!showNavUpdates && event.event_type === 'NAV_UPDATE') {
                       return null;
                     }
 
