@@ -525,9 +525,9 @@ const FundDetail: React.FC = () => {
                             <Typography variant="body2">
                               {interestEvent.description || '-'}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Withholding: {formatCurrency(withholdingEvent.amount, fund.currency)}
-                            </Typography>
+                                                          <Typography variant="caption" color="error.main">
+                                Withholding: {formatCurrency(-(withholdingEvent?.amount || 0), fund.currency)}
+                              </Typography>
                           </TableCell>
                         {/* EQUITY Section */}
                         <TableCell align="right"></TableCell>
@@ -851,8 +851,8 @@ const FundDetail: React.FC = () => {
                             {isOtherEvent && event.amount ? (
                             event.event_type === 'TAX_PAYMENT' ? (
                               <Box>
-                                <Typography variant="body2">
-                                  {formatCurrency(event.amount, fund.currency)}
+                                <Typography variant="body2" color="error.main">
+                                  {formatCurrency(-event.amount, fund.currency)}
                                 </Typography>
                                 {(() => {
                                   // Get income and tax rate based on tax payment type
