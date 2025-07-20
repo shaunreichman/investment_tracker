@@ -132,10 +132,15 @@ const FundDetail: React.FC = () => {
 
   const formatCurrency = (amount: number | null, currency: string = 'AUD') => {
     if (amount === null) return '-';
-    return new Intl.NumberFormat('en-AU', {
+    
+    // Excel accounting format: parentheses for negatives, no minus sign
+    const absAmount = Math.abs(amount);
+    const formatted = new Intl.NumberFormat('en-AU', {
       style: 'currency',
       currency: currency,
-    }).format(amount);
+    }).format(absAmount);
+    
+    return amount < 0 ? `(${formatted})` : formatted;
   };
 
   const formatBrokerageFee = (amount: number | null, currency: string = 'AUD') => {
@@ -448,36 +453,20 @@ const FundDetail: React.FC = () => {
                 <TableCell>Date</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Description</TableCell>
-                <TableCell colSpan={2} align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                  EQUITY
+                <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                  Equity
                 </TableCell>
                 {fund.tracking_type === 'NAV_BASED' && (
                   <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    NAV UPDATE
+                    Nav Update
                   </TableCell>
                 )}
                 <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                  DISTRIBUTIONS
+                  Distributions
                 </TableCell>
                 <TableCell align="right">Other</TableCell>
               </TableRow>
-              <TableRow>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell align="right" sx={{ borderBottom: 0 }}>
-                  {fund.tracking_type === 'NAV_BASED' ? 'Purchase' : 'Call'}
-                </TableCell>
-                <TableCell align="right" sx={{ borderBottom: 0 }}>
-                  {fund.tracking_type === 'NAV_BASED' ? 'Sale' : 'Return'}
-                </TableCell>
-                <TableCell align="right" sx={{ borderBottom: 0 }}>
-                  Amount
-                </TableCell>
-                <TableCell align="right" sx={{ borderBottom: 0 }}>
-                  Amount
-                </TableCell>
-              </TableRow>
+
             </TableHead>
             <TableBody>
               {(() => {
@@ -538,8 +527,7 @@ const FundDetail: React.FC = () => {
                               Withholding: {formatCurrency(withholdingEvent.amount, fund.currency)}
                             </Typography>
                           </TableCell>
-                                                  {/* EQUITY Section */}
-                        <TableCell align="right"></TableCell>
+                        {/* EQUITY Section */}
                         <TableCell align="right"></TableCell>
                         {/* NAV UPDATE Section (only for NAV-based funds) */}
                         {fund.tracking_type === 'NAV_BASED' && (
@@ -553,7 +541,7 @@ const FundDetail: React.FC = () => {
                                 {formatCurrency(interestEvent.amount, fund.currency)}
                               </Typography>
                               <Typography variant="caption" color="error.main">
-                                -{formatCurrency(withholdingEvent.amount, fund.currency)}
+                                {formatCurrency(-(withholdingEvent.amount || 0), fund.currency)}
                               </Typography>
                             </Box>
                           ) : ''}
@@ -617,38 +605,64 @@ const FundDetail: React.FC = () => {
                               {/* EQUITY Section */}
                               <TableCell align="right">
                                 {isEquityEvent && (
-                                  isNavBased 
-                                    ? (event.event_type === 'UNIT_PURCHASE' ? (
-                                        <Box>
+                                  (() => {
+                                    // Handle NAV-based funds
+                                    if (isNavBased) {
+                                      if (event.event_type === 'UNIT_PURCHASE') {
+                                        return (
+                                          <Box>
+                                            <Typography variant="body2" color="error.main">
+                                              ({formatCurrency(event.amount, fund.currency)})
+                                            </Typography>
+                                            {event.units_purchased && event.unit_price && (
+                                              <Typography variant="caption" color="text.secondary">
+                                                {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
+                                              </Typography>
+                                            )}
+                                            {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                              <Typography variant="caption" color="error.main">
+                                                - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                              </Typography>
+                                            )}
+                                          </Box>
+                                        );
+                                      } else if (event.event_type === 'UNIT_SALE') {
+                                        return (
+                                          <Box>
+                                            <Typography variant="body2">
+                                              {formatCurrency(event.amount, fund.currency)}
+                                            </Typography>
+                                            {event.units_sold && event.unit_price && (
+                                              <Typography variant="caption" color="text.secondary">
+                                                {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
+                                              </Typography>
+                                            )}
+                                            {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                              <Typography variant="caption" color="error.main">
+                                                - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                              </Typography>
+                                            )}
+                                          </Box>
+                                        );
+                                      }
+                                    } else {
+                                      // Handle cost-based funds
+                                      if (event.event_type === 'CAPITAL_CALL') {
+                                        return (
+                                          <Typography variant="body2" color="error.main">
+                                            ({formatCurrency(event.amount, fund.currency)})
+                                          </Typography>
+                                        );
+                                      } else if (event.event_type === 'RETURN_OF_CAPITAL') {
+                                        return (
                                           <Typography variant="body2">
                                             {formatCurrency(event.amount, fund.currency)}
                                           </Typography>
-                                          {event.units_purchased && event.unit_price && (
-                                            <Typography variant="caption" color="text.secondary">
-                                              {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
-                                            </Typography>
-                                          )}
-                                        </Box>
-                                      ) : '')
-                                    : (event.event_type === 'CAPITAL_CALL' ? formatCurrency(event.amount, fund.currency) : '')
-                                )}
-                              </TableCell>
-                              <TableCell align="right">
-                                {isEquityEvent && (
-                                  isNavBased 
-                                    ? (event.event_type === 'UNIT_SALE' ? (
-                                        <Box>
-                                          <Typography variant="body2">
-                                            {formatCurrency(event.amount, fund.currency)}
-                                          </Typography>
-                                          {event.units_sold && event.unit_price && (
-                                            <Typography variant="caption" color="text.secondary">
-                                              {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
-                                            </Typography>
-                                          )}
-                                        </Box>
-                                      ) : '')
-                                    : (event.event_type === 'RETURN_OF_CAPITAL' ? formatCurrency(event.amount, fund.currency) : '')
+                                        );
+                                      }
+                                    }
+                                    return '';
+                                  })()
                                 )}
                               </TableCell>
                               {/* NAV UPDATE Section (only for NAV-based funds) */}
@@ -703,7 +717,7 @@ const FundDetail: React.FC = () => {
 
 
 
-                    // Skip withholding tax events that are already combined
+                    // Skip standalone withholding tax events (they should only appear when combined with interest distributions)
                     if (event.event_type === 'TAX_PAYMENT' && event.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING') {
                       return null;
                     }
@@ -741,48 +755,64 @@ const FundDetail: React.FC = () => {
                         {/* EQUITY Section */}
                         <TableCell align="right">
                           {isEquityEvent && (
-                            isNavBased 
-                              ? (event.event_type === 'UNIT_PURCHASE' ? (
-                                  <Box>
+                            (() => {
+                              // Handle NAV-based funds
+                              if (isNavBased) {
+                                if (event.event_type === 'UNIT_PURCHASE') {
+                                  return (
+                                    <Box>
+                                      <Typography variant="body2" color="error.main">
+                                        ({formatCurrency(event.amount, fund.currency)})
+                                      </Typography>
+                                      {event.units_purchased && event.unit_price && (
+                                        <Typography variant="caption" color="text.secondary">
+                                          {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
+                                        </Typography>
+                                      )}
+                                      {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                        <Typography variant="caption" color="error.main">
+                                          - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  );
+                                } else if (event.event_type === 'UNIT_SALE') {
+                                  return (
+                                    <Box>
+                                      <Typography variant="body2">
+                                        {formatCurrency(event.amount, fund.currency)}
+                                      </Typography>
+                                      {event.units_sold && event.unit_price && (
+                                        <Typography variant="caption" color="text.secondary">
+                                          {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
+                                        </Typography>
+                                      )}
+                                      {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                        <Typography variant="caption" color="error.main">
+                                          - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  );
+                                }
+                              } else {
+                                // Handle cost-based funds
+                                if (event.event_type === 'CAPITAL_CALL') {
+                                  return (
+                                    <Typography variant="body2" color="error.main">
+                                      ({formatCurrency(event.amount, fund.currency)})
+                                    </Typography>
+                                  );
+                                } else if (event.event_type === 'RETURN_OF_CAPITAL') {
+                                  return (
                                     <Typography variant="body2">
                                       {formatCurrency(event.amount, fund.currency)}
                                     </Typography>
-                                    {event.units_purchased && event.unit_price && (
-                                      <Typography variant="caption" color="text.secondary">
-                                        {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
-                                      </Typography>
-                                    )}
-                                    {event.brokerage_fee && event.brokerage_fee > 0 && (
-                                      <Typography variant="caption" color="error.main">
-                                        - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
-                                      </Typography>
-                                    )}
-                                  </Box>
-                                ) : '')
-                              : (event.event_type === 'CAPITAL_CALL' ? formatCurrency(event.amount, fund.currency) : '')
-                          )}
-                        </TableCell>
-                        <TableCell align="right">
-                          {isEquityEvent && (
-                            isNavBased 
-                              ? (event.event_type === 'UNIT_SALE' ? (
-                                  <Box>
-                                    <Typography variant="body2">
-                                      {formatCurrency(event.amount, fund.currency)}
-                                    </Typography>
-                                    {event.units_sold && event.unit_price && (
-                                      <Typography variant="caption" color="text.secondary">
-                                        {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
-                                      </Typography>
-                                    )}
-                                    {event.brokerage_fee && event.brokerage_fee > 0 && (
-                                      <Typography variant="caption" color="error.main">
-                                        - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
-                                      </Typography>
-                                    )}
-                                  </Box>
-                                ) : '')
-                              : (event.event_type === 'RETURN_OF_CAPITAL' ? formatCurrency(event.amount, fund.currency) : '')
+                                  );
+                                }
+                              }
+                              return '';
+                            })()
                           )}
                         </TableCell>
                                                 {/* NAV UPDATE Section (only for NAV-based funds) */}
