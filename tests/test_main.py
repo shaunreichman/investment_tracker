@@ -34,22 +34,22 @@ def setup_test_data(session):
     
     # Create investment company using class method
     company = InvestmentCompany.create(
-        name="Test Company",
-        description="Test investment company",
+        name="Alceon",
+        description="Alceon Pty Ltd",
         session=session
     )
     
     # Create entity using class method
     entity = Entity.create(
-        name="Test Entity",
-        description="Test entity",
+        name="Shaun Reichman",
+        description="Personal entity",
         session=session
     )
     
     # Create investment company for shares using class method
     company_shares = InvestmentCompany.create(
-        name="Test Shares Company",
-        description="Test shares investment company",
+        name="Shares",
+        description="Share trading",
         session=session
     )
     

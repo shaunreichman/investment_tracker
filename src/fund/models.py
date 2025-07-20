@@ -199,19 +199,29 @@ class Fund(Base):
             raise ValueError("investment_company_id is required")
         if not entity_id:
             raise ValueError("entity_id is required")
-        if not name:
-            raise ValueError("name is required")
+        if not name or not name.strip():
+            raise ValueError("Fund name is required and cannot be empty")
         if not fund_type:
             raise ValueError("fund_type is required")
         if not tracking_type:
             raise ValueError("tracking_type is required")
         
-        # Validate tracking_type is a valid FundType enum
-        if isinstance(tracking_type, str):
+        name = name.strip()
+        
+        # Validate tracking type
+        if not isinstance(tracking_type, FundType):
             try:
                 tracking_type = FundType(tracking_type)
             except ValueError:
                 raise ValueError(f"Invalid tracking_type: {tracking_type}. Must be one of: {[t.value for t in FundType]}")
+        
+        # Check for existing fund with same name in the same investment company
+        existing = session.query(cls).filter(
+            cls.name == name,
+            cls.investment_company_id == investment_company_id
+        ).first()
+        if existing:
+            raise ValueError(f"Fund with name '{name}' already exists in this investment company")
         
         # Create the fund
         fund = cls(
@@ -231,6 +241,135 @@ class Fund(Base):
         session.flush()  # Get the ID without committing
         
         return fund
+    
+    @classmethod
+    def get_by_id(cls, fund_id, session=None):
+        """
+        Get a fund by ID.
+        
+        Args:
+            fund_id (int): Fund ID
+            session (Session): Database session
+        
+        Returns:
+            Fund or None: The fund if found, None otherwise
+        """
+        return session.query(cls).filter(cls.id == fund_id).first()
+    
+    @classmethod
+    def get_by_investment_company(cls, investment_company_id, session=None):
+        """
+        Get all funds for a specific investment company.
+        
+        Args:
+            investment_company_id (int): Investment company ID
+            session (Session): Database session
+        
+        Returns:
+            list: List of funds for the investment company
+        """
+        return session.query(cls).filter(cls.investment_company_id == investment_company_id).all()
+    
+    @classmethod
+    def get_all(cls, session=None):
+        """
+        Get all funds.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            list: List of all funds
+        """
+        return session.query(cls).all()
+    
+    @with_session
+    def get_recent_events(self, limit=10, exclude_system_events=True, session=None):
+        """
+        Get recent events for this fund.
+        
+        Args:
+            limit (int): Maximum number of events to return (default: 10)
+            exclude_system_events (bool): Whether to exclude system-generated events (default: True)
+            session (Session): Database session
+        
+        Returns:
+            list: List of recent FundEvent objects
+        """
+        query = session.query(FundEvent).filter(FundEvent.fund_id == self.id)
+        
+        if exclude_system_events:
+            # Exclude system-generated events
+            system_events = [
+                EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
+                EventType.EOFY_DEBT_COST
+            ]
+            query = query.filter(~FundEvent.event_type.in_(system_events))
+        
+        return query.order_by(FundEvent.event_date.desc()).limit(limit).all()
+    
+    @with_session
+    def get_all_fund_events(self, exclude_system_events=True, session=None):
+        """
+        Get all events for this fund (excluding system events by default).
+        
+        Args:
+            exclude_system_events (bool): Whether to exclude system-generated events (default: True)
+            session (Session): Database session
+        
+        Returns:
+            list: List of all FundEvent objects for this fund
+        """
+        query = session.query(FundEvent).filter(FundEvent.fund_id == self.id)
+        
+        if exclude_system_events:
+            # Exclude system-generated events
+            system_events = [
+                EventType.DAILY_RISK_FREE_INTEREST_CHARGE
+            ]
+            query = query.filter(~FundEvent.event_type.in_(system_events))
+        
+        return query.order_by(FundEvent.event_date.asc()).all()
+    
+    @with_session
+    def get_summary_data(self, session=None):
+        """
+        Get summary data for this fund.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            dict: Summary data including equity balances, event counts, etc.
+        """
+        # Get all events count (excluding system events)
+        all_events = self.get_all_fund_events(session=session)
+        total_events_count = len(all_events)
+        
+
+        
+        # Get last event date from all events
+        last_event = max(all_events, key=lambda x: x.event_date) if all_events else None
+        
+        return {
+            "id": self.id,
+            "name": self.name,
+            "fund_type": self.fund_type,
+            "tracking_type": self.tracking_type.value.upper() if self.tracking_type else None,
+            "currency": self.currency,
+            "current_equity_balance": float(self.current_equity_balance) if self.current_equity_balance else 0.0,
+            "average_equity_balance": float(self.average_equity_balance) if self.average_equity_balance else 0.0,
+            "is_active": self.is_active if self.is_active is not None else True,
+            "commitment_amount": float(self.commitment_amount) if self.commitment_amount else None,
+            "expected_irr": float(self.expected_irr) if self.expected_irr else None,
+            "expected_duration_months": self.expected_duration_months,
+            "description": self.description,
+            "investment_company": self.investment_company.name if self.investment_company else "Unknown",
+            "investment_company_id": self.investment_company_id,
+            "entity": self.entity.name if self.entity else "Unknown",
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
     
     def __repr__(self):
         """Return a string representation of the Fund instance for debugging/logging."""

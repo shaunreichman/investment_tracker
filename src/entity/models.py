@@ -101,6 +101,20 @@ class Entity(Base):
         """
         return session.query(cls).all()
     
+    @classmethod
+    def get_by_id(cls, entity_id, session=None):
+        """
+        Get an entity by ID.
+        
+        Args:
+            entity_id (int): Entity ID
+            session (Session): Database session
+        
+        Returns:
+            Entity or None: The entity if found, None otherwise
+        """
+        return session.query(cls).filter(cls.id == entity_id).first()
+    
     def get_financial_year(self, date):
         """Get the financial year for a given date based on the entity's tax jurisdiction."""
         if self.tax_jurisdiction == "AU":

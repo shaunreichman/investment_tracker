@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Dashboard from './components/Dashboard';
+import OverallDashboard from './components/OverallDashboard';
+import CompaniesPage from './components/CompaniesPage';
 import FundDetail from './components/FundDetail';
 import './App.css';
 
@@ -9,8 +10,9 @@ function App() {
     <BrowserRouter>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/fund/:fundId" element={<FundDetail />} />
+          <Route path="/" element={<OverallDashboard />} />
+          <Route path="/companies/:companyId" element={<CompaniesPage />} />
+          <Route path="/funds/:fundId" element={<FundDetail />} />
         </Routes>
       </div>
     </BrowserRouter>

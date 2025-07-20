@@ -17,9 +17,11 @@ import {
   CircularProgress,
   Alert,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Breadcrumbs,
+  Link
 } from '@mui/material';
-import { ArrowBack, TrendingUp, AccountBalance, Event } from '@mui/icons-material';
+import { TrendingUp, AccountBalance, Event } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter, ScatterChart } from 'recharts';
 
@@ -83,6 +85,7 @@ interface FundData {
   expected_duration_months: number | null;
   description: string | null;
   investment_company: string;
+  investment_company_id: number;
   entity: string;
   created_at: string | null;
   updated_at: string | null;
@@ -216,7 +219,6 @@ const FundDetail: React.FC = () => {
         </Alert>
         <Button
           variant="outlined"
-          startIcon={<ArrowBack />}
           onClick={() => navigate('/')}
         >
           Back to Dashboard
@@ -237,16 +239,29 @@ const FundDetail: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+        <Link
+          component="button"
+          variant="body2"
+          onClick={() => navigate('/')}
+          sx={{ textDecoration: 'none', cursor: 'pointer' }}
+        >
+          Investment Companies
+        </Link>
+        <Link
+          component="button"
+          variant="body2"
+          onClick={() => navigate(`/companies/${fund.investment_company_id}`)}
+          sx={{ textDecoration: 'none', cursor: 'pointer' }}
+        >
+          {fund.investment_company}
+        </Link>
+        <Typography color="text.primary">{fund.name}</Typography>
+      </Breadcrumbs>
+
       {/* Header */}
       <Box sx={{ mb: 3 }}>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBack />}
-          onClick={() => navigate('/')}
-          sx={{ mb: 2 }}
-        >
-          Back to Dashboard
-        </Button>
         <Typography variant="h4" component="h1" gutterBottom>
           {fund.name}
         </Typography>
