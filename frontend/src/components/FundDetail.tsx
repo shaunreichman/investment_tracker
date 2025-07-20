@@ -49,6 +49,10 @@ interface FundEvent {
   dividend_unfranked_income_tax_rate?: number | null;
   capital_gain_income_amount?: number | null;
   capital_gain_income_tax_rate?: number | null;
+  // Tax statement fields for FY_DEBT_COST events
+  fy_debt_interest_deduction_sum_of_daily_interest?: number | null;
+  fy_debt_interest_deduction_rate?: number | null;
+  fy_debt_interest_deduction_total_deduction?: number | null;
 }
 
 interface FundStatistics {
@@ -847,6 +851,33 @@ const FundDetail: React.FC = () => {
                                     );
                                   } else if (event.description) {
                                     // Fallback to description if income/tax rate not available
+                                    return (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {event.description}
+                                      </Typography>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </Box>
+                            ) : event.event_type === 'FY_DEBT_COST' ? (
+                              <Box>
+                                <Typography variant="body2">
+                                  {formatCurrency(event.amount, fund.currency)}
+                                </Typography>
+                                {(() => {
+                                  // Get total interest and deduction rate for FY debt cost events
+                                  const totalInterest = event.fy_debt_interest_deduction_sum_of_daily_interest ?? null;
+                                  const deductionRate = event.fy_debt_interest_deduction_rate ?? null;
+                                  
+                                  if (totalInterest && deductionRate) {
+                                    return (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {formatCurrency(totalInterest, fund.currency)} @ {deductionRate}%
+                                      </Typography>
+                                    );
+                                  } else if (event.description) {
+                                    // Fallback to description if data not available
                                     return (
                                       <Typography variant="caption" color="text.secondary">
                                         {event.description}

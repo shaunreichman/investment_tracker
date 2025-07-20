@@ -158,7 +158,8 @@ class TaxEventFactory:
             event_date=fy_end,
             amount=tax_benefit,
             description=f"FY {tax_statement.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
-            reference_number=f"FY_DEBT_COST_{tax_statement.financial_year}"
+            reference_number=f"FY_DEBT_COST_{tax_statement.financial_year}",
+            tax_statement_id=tax_statement.id
         )
         return event
 

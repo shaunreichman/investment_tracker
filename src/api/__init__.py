@@ -221,7 +221,7 @@ def create_app():
                 if not fund_result:
                     return jsonify({"error": "Fund not found"}), 404
                 
-                # Get fund events with tax statement data for TAX_PAYMENT events
+                # Get fund events with tax statement data for TAX_PAYMENT and FY_DEBT_COST events
                 events_query = text("""
                     SELECT 
                         fe.id, fe.event_type, fe.event_date, fe.amount, fe.description, fe.reference_number,
@@ -236,7 +236,11 @@ def create_app():
                         ts.dividend_unfranked_income_amount,
                         ts.dividend_unfranked_income_tax_rate,
                         ts.capital_gain_income_amount,
-                        ts.capital_gain_income_tax_rate
+                        ts.capital_gain_income_tax_rate,
+                        -- Tax statement fields for FY_DEBT_COST events
+                        ts.fy_debt_interest_deduction_sum_of_daily_interest,
+                        ts.fy_debt_interest_deduction_rate,
+                        ts.fy_debt_interest_deduction_total_deduction
                     FROM fund_events fe
                     LEFT JOIN tax_statements ts ON fe.tax_statement_id = ts.id
                     WHERE fe.fund_id = :fund_id 
@@ -320,6 +324,14 @@ def create_app():
                             "dividend_unfranked_income_tax_rate": float(event.dividend_unfranked_income_tax_rate) if event.dividend_unfranked_income_tax_rate else None,
                             "capital_gain_income_amount": float(event.capital_gain_income_amount) if event.capital_gain_income_amount else None,
                             "capital_gain_income_tax_rate": float(event.capital_gain_income_tax_rate) if event.capital_gain_income_tax_rate else None
+                        })
+                    
+                    # Add tax statement fields for FY_DEBT_COST events
+                    if event.event_type == 'FY_DEBT_COST':
+                        event_data.update({
+                            "fy_debt_interest_deduction_sum_of_daily_interest": float(event.fy_debt_interest_deduction_sum_of_daily_interest) if event.fy_debt_interest_deduction_sum_of_daily_interest else None,
+                            "fy_debt_interest_deduction_rate": float(event.fy_debt_interest_deduction_rate) if event.fy_debt_interest_deduction_rate else None,
+                            "fy_debt_interest_deduction_total_deduction": float(event.fy_debt_interest_deduction_total_deduction) if event.fy_debt_interest_deduction_total_deduction else None
                         })
                     
                     events_data.append(event_data)
