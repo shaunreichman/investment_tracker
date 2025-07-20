@@ -423,7 +423,7 @@ const FundDetail: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Show Tax & Debt Events
+                  Show Tax Events
                 </Typography>
                 <Switch
                   checked={showTaxEvents}
@@ -464,7 +464,9 @@ const FundDetail: React.FC = () => {
                 <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
                   Distributions
                 </TableCell>
-                <TableCell align="right">Other</TableCell>
+                {showTaxEvents && (
+                  <TableCell align="right">Tax</TableCell>
+                )}
               </TableRow>
 
             </TableHead>
@@ -546,8 +548,10 @@ const FundDetail: React.FC = () => {
                             </Box>
                           ) : ''}
                         </TableCell>
-                        {/* Other Section */}
-                        <TableCell align="right"></TableCell>
+                        {/* Tax Section */}
+                        {showTaxEvents && (
+                          <TableCell align="right"></TableCell>
+                        )}
                         </TableRow>
                         
                         {/* Process other events on the same date (like RETURN_OF_CAPITAL) */}
@@ -614,16 +618,16 @@ const FundDetail: React.FC = () => {
                                             <Typography variant="body2" color="error.main">
                                               ({formatCurrency(event.amount, fund.currency)})
                                             </Typography>
-                                            {event.units_purchased && event.unit_price && (
-                                              <Typography variant="caption" color="text.secondary">
-                                                {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
-                                              </Typography>
-                                            )}
-                                            {event.brokerage_fee && event.brokerage_fee > 0 && (
-                                              <Typography variant="caption" color="error.main">
-                                                - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
-                                              </Typography>
-                                            )}
+                                                                                  {event.units_purchased && event.unit_price && (
+                                        <Typography variant="caption" color="text.secondary">
+                                          {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
+                                          {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                            <span style={{ color: 'error.main' }}>
+                                              {' '}- {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                            </span>
+                                          )}
+                                        </Typography>
+                                      )}
                                           </Box>
                                         );
                                       } else if (event.event_type === 'UNIT_SALE') {
@@ -632,16 +636,16 @@ const FundDetail: React.FC = () => {
                                             <Typography variant="body2">
                                               {formatCurrency(event.amount, fund.currency)}
                                             </Typography>
-                                            {event.units_sold && event.unit_price && (
-                                              <Typography variant="caption" color="text.secondary">
-                                                {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
-                                              </Typography>
-                                            )}
-                                            {event.brokerage_fee && event.brokerage_fee > 0 && (
-                                              <Typography variant="caption" color="error.main">
-                                                - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
-                                              </Typography>
-                                            )}
+                                                                                  {event.units_sold && event.unit_price && (
+                                        <Typography variant="caption" color="text.secondary">
+                                          {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
+                                          {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                            <span style={{ color: 'error.main' }}>
+                                              {' '}- {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                            </span>
+                                          )}
+                                        </Typography>
+                                      )}
                                           </Box>
                                         );
                                       }
@@ -678,7 +682,7 @@ const FundDetail: React.FC = () => {
                                           variant="caption" 
                                           color={event.nav_change_absolute >= 0 ? 'success.main' : 'error.main'}
                                         >
-                                          ({event.nav_change_absolute >= 0 ? '+' : ''}{formatCurrency(event.nav_change_absolute, fund.currency)}, {event.nav_change_percentage >= 0 ? '+' : ''}{event.nav_change_percentage.toFixed(1)}%)
+                                          {event.nav_change_absolute >= 0 ? '+' : ''}{formatCurrency(event.nav_change_absolute, fund.currency)}, {event.nav_change_percentage >= 0 ? '+' : ''}{event.nav_change_percentage.toFixed(1)}%
                                         </Typography>
                                       )}
                                     </Box>
@@ -689,10 +693,12 @@ const FundDetail: React.FC = () => {
                               <TableCell align="right">
                                 {isDistributionEvent ? formatCurrency(event.amount, fund.currency) : ''}
                               </TableCell>
-                              {/* Other Section */}
-                              <TableCell align="right">
-                                {isOtherEvent && event.amount ? formatCurrency(event.amount, fund.currency) : ''}
-                              </TableCell>
+                              {/* Tax Section */}
+                              {showTaxEvents && (
+                                <TableCell align="right">
+                                  {isOtherEvent && event.amount ? formatCurrency(event.amount, fund.currency) : ''}
+                                </TableCell>
+                              )}
                             </TableRow>
                           );
                         }).filter(Boolean)}
@@ -767,11 +773,11 @@ const FundDetail: React.FC = () => {
                                       {event.units_purchased && event.unit_price && (
                                         <Typography variant="caption" color="text.secondary">
                                           {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
-                                        </Typography>
-                                      )}
-                                      {event.brokerage_fee && event.brokerage_fee > 0 && (
-                                        <Typography variant="caption" color="error.main">
-                                          - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                          {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                            <span style={{ color: 'error.main' }}>
+                                              {' '}- {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                            </span>
+                                          )}
                                         </Typography>
                                       )}
                                     </Box>
@@ -785,11 +791,11 @@ const FundDetail: React.FC = () => {
                                       {event.units_sold && event.unit_price && (
                                         <Typography variant="caption" color="text.secondary">
                                           {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
-                                        </Typography>
-                                      )}
-                                      {event.brokerage_fee && event.brokerage_fee > 0 && (
-                                        <Typography variant="caption" color="error.main">
-                                          - {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                          {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                            <span style={{ color: 'error.main' }}>
+                                              {' '}- {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                            </span>
+                                          )}
                                         </Typography>
                                       )}
                                     </Box>
@@ -828,7 +834,7 @@ const FundDetail: React.FC = () => {
                                     variant="caption" 
                                     color={event.nav_change_absolute >= 0 ? 'success.main' : 'error.main'}
                                   >
-                                    ({event.nav_change_absolute >= 0 ? '+' : ''}{formatCurrency(event.nav_change_absolute, fund.currency)}, {event.nav_change_percentage >= 0 ? '+' : ''}{event.nav_change_percentage.toFixed(1)}%)
+                                    {event.nav_change_absolute >= 0 ? '+' : ''}{formatCurrency(event.nav_change_absolute, fund.currency)}, {event.nav_change_percentage >= 0 ? '+' : ''}{event.nav_change_percentage.toFixed(1)}%
                                   </Typography>
                                 )}
                               </Box>
@@ -839,9 +845,10 @@ const FundDetail: React.FC = () => {
                         <TableCell align="right">
                           {isDistributionEvent ? formatCurrency(event.amount, fund.currency) : ''}
                         </TableCell>
-                        {/* Other Section */}
-                        <TableCell align="right">
-                          {isOtherEvent && event.amount ? (
+                        {/* Tax Section */}
+                        {showTaxEvents && (
+                          <TableCell align="right">
+                            {isOtherEvent && event.amount ? (
                             event.event_type === 'TAX_PAYMENT' ? (
                               <Box>
                                 <Typography variant="body2">
@@ -919,7 +926,8 @@ const FundDetail: React.FC = () => {
                               </Box>
                             ) : formatCurrency(event.amount, fund.currency)
                           ) : ''}
-                        </TableCell>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   }).filter(Boolean);
