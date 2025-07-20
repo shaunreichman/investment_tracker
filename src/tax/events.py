@@ -138,7 +138,7 @@ class TaxEventFactory:
         return event
 
     @staticmethod
-    def create_fy_debt_cost_event(tax_statement: TaxStatement, session: Optional[Session] = None) -> Optional[FundEvent]:
+    def create_eofy_debt_cost_event(tax_statement: TaxStatement, session: Optional[Session] = None) -> Optional[FundEvent]:
         """
         Create a financial year debt cost event object for the given tax statement.
         Returns the event object or None if not applicable.
@@ -146,7 +146,7 @@ class TaxEventFactory:
         """
         if not tax_statement:
             raise ValueError("tax_statement is required")
-        tax_benefit = tax_statement.calculate_fy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_fy_debt_interest_deduction_total_deduction') else (tax_statement.fy_debt_interest_deduction_total_deduction or 0.0)
+        tax_benefit = tax_statement.calculate_eofy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_eofy_debt_interest_deduction_total_deduction') else (tax_statement.eofy_debt_interest_deduction_total_deduction or 0.0)
         if tax_benefit is None or tax_benefit <= 0:
             return None
         fy_start, fy_end = tax_statement.get_financial_year_dates() if hasattr(tax_statement, 'get_financial_year_dates') else (None, None)
@@ -154,11 +154,11 @@ class TaxEventFactory:
             return None
         event = FundEvent(
             fund_id=tax_statement.fund_id,
-            event_type=EventType.FY_DEBT_COST,
+            event_type=EventType.EOFY_DEBT_COST,
             event_date=fy_end,
             amount=tax_benefit,
             description=f"FY {tax_statement.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
-            reference_number=f"FY_DEBT_COST_{tax_statement.financial_year}",
+            reference_number=f"EOFY_DEBT_COST_{tax_statement.financial_year}",
             tax_statement_id=tax_statement.id
         )
         return event
@@ -189,9 +189,9 @@ class TaxEventFactory:
         if capital_gain_event:
             events.append(capital_gain_event)
         # FY debt cost event
-        fy_debt_cost_event = TaxEventFactory.create_fy_debt_cost_event(tax_statement, session=session)
-        if fy_debt_cost_event:
-            events.append(fy_debt_cost_event)
+        eofy_debt_cost_event = TaxEventFactory.create_eofy_debt_cost_event(tax_statement, session=session)
+        if eofy_debt_cost_event:
+            events.append(eofy_debt_cost_event)
         return events
 
 class TaxEventManager:
@@ -287,7 +287,7 @@ class TaxEventManager:
                 (tax_statement.dividend_unfranked_income_amount or 0.0) > 0 and
                 (tax_statement.dividend_unfranked_income_tax_rate or 0.0) > 0
             )
-        elif event_type == EventType.FY_DEBT_COST:
-            benefit = tax_statement.calculate_fy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_fy_debt_interest_deduction_total_deduction') else (tax_statement.fy_debt_interest_deduction_total_deduction or 0.0)
+        elif event_type == EventType.EOFY_DEBT_COST:
+            benefit = tax_statement.calculate_eofy_debt_interest_deduction_total_deduction() if hasattr(tax_statement, 'calculate_eofy_debt_interest_deduction_total_deduction') else (tax_statement.eofy_debt_interest_deduction_total_deduction or 0.0)
             return benefit > 0
         return False 

@@ -274,11 +274,11 @@ class FundQueryMixin:
         
         return query.order_by(FundEvent.event_date).all()
     
-    def get_fy_debt_cost_events(self, session, start_date=None, end_date=None):
+    def get_eofy_debt_cost_events(self, session, start_date=None, end_date=None):
         """Get financial year debt cost events for real IRR calculations."""
         query = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.FY_DEBT_COST
+            FundEvent.event_type == EventType.EOFY_DEBT_COST
         )
         
         if start_date:

@@ -48,7 +48,7 @@ class EventType(enum.Enum):
     - DISTRIBUTION: Distribution (income, interest, etc.)
     - TAX_PAYMENT: Tax payment event
     - DAILY_RISK_FREE_INTEREST_CHARGE: Daily risk-free interest charge (for real IRR)
-    - FY_DEBT_COST: Financial year debt cost tax benefit (for real IRR)
+    - EOFY_DEBT_COST: End of financial year debt cost tax benefit (for real IRR)
     - NAV_UPDATE: NAV update (NAV-based funds)
     - UNIT_PURCHASE: Unit purchase (NAV-based funds)
     - UNIT_SALE: Unit sale (NAV-based funds)
@@ -61,7 +61,7 @@ class EventType(enum.Enum):
     DISTRIBUTION = "distribution"
     TAX_PAYMENT = "tax_payment"
     DAILY_RISK_FREE_INTEREST_CHARGE = "daily_risk_free_interest_charge"
-    FY_DEBT_COST = "fy_debt_cost"
+    EOFY_DEBT_COST = "eofy_debt_cost"
     NAV_UPDATE = "nav_update"
     UNIT_PURCHASE = "unit_purchase"
     UNIT_SALE = "unit_sale"
@@ -426,7 +426,7 @@ class Fund(Base):
         return created_events
     
     @with_session
-    def calculate_fy_debt_interest_deduction_sum_of_daily_interest(self, financial_year, session=None):
+    def calculate_eofy_debt_interest_deduction_sum_of_daily_interest(self, financial_year, session=None):
         """Calculate the total interest expense for a given financial year for the fund.
         Used for tax deduction calculations. Returns the total expense as a float.
         """
@@ -485,23 +485,23 @@ class Fund(Base):
             return created_events  # Skip years with no TaxStatement
         
         # Calculate interest expense for this FY
-        fy_debt_interest_deduction_sum_of_daily_interest = self.calculate_fy_debt_interest_deduction_sum_of_daily_interest(fy, session=session)
+        eofy_debt_interest_deduction_sum_of_daily_interest = self.calculate_eofy_debt_interest_deduction_sum_of_daily_interest(fy, session=session)
         
         # Set the interest expense on the tax statement
-        tax_statement.fy_debt_interest_deduction_sum_of_daily_interest = fy_debt_interest_deduction_sum_of_daily_interest
+        tax_statement.eofy_debt_interest_deduction_sum_of_daily_interest = eofy_debt_interest_deduction_sum_of_daily_interest
         
         # Calculate tax benefit and create event
-        fy_debt_interest_deduction_total_deduction = tax_statement.calculate_fy_debt_interest_deduction_total_deduction()
-        if fy_debt_interest_deduction_total_deduction > 0:
+        eofy_debt_interest_deduction_total_deduction = tax_statement.calculate_eofy_debt_interest_deduction_total_deduction()
+        if eofy_debt_interest_deduction_total_deduction > 0:
             from src.tax.events import TaxEventFactory
-            event = TaxEventFactory.create_fy_debt_cost_event(tax_statement, session=session)
+            event = TaxEventFactory.create_eofy_debt_cost_event(tax_statement, session=session)
             if event:
                 created_events.append(event)
         
         return created_events
     
     @with_session
-    def create_fy_debt_cost_events(self, session=None):
+    def create_eofy_debt_cost_events(self, session=None):
         """Create financial year debt cost events for the fund for real IRR calculations.
         Commits new events to the database.
         Returns a list of created events.
@@ -541,14 +541,14 @@ class Fund(Base):
         Returns a tuple of (deleted_daily_count, deleted_fy_count).
         No database operations.
         """
-        # Delete all DAILY_RISK_FREE_INTEREST_CHARGE and FY_DEBT_COST events for this fund
+        # Delete all DAILY_RISK_FREE_INTEREST_CHARGE and EOFY_DEBT_COST events for this fund
         deleted_daily = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
             FundEvent.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE
         ).delete()
         deleted_fy = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.FY_DEBT_COST
+            FundEvent.event_type == EventType.EOFY_DEBT_COST
         ).delete()
         return deleted_daily, deleted_fy
     
@@ -565,7 +565,7 @@ class Fund(Base):
         # Recreate daily risk-free interest charges
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
         # Recreate FY debt cost events
-        self.create_fy_debt_cost_events(session)
+        self.create_eofy_debt_cost_events(session)
         session.commit()
         print(f"Recalculated debt costs for fund '{self.name}': deleted {deleted_daily} daily interest charges, {deleted_fy} FY debt cost events, and recreated them.")
     
@@ -1148,7 +1148,7 @@ class Fund(Base):
         return None
 
     @with_session
-    def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, session=None, return_cashflows=False):
+    def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=None, return_cashflows=False):
         """Base IRR calculation method for the fund.
         Delegates to orchestrate_irr_base in calculations.py.
         """
@@ -1176,7 +1176,7 @@ class Fund(Base):
             start_date,
             include_tax_payments=include_tax_payments,
             include_risk_free_charges=include_risk_free_charges,
-            include_fy_debt_cost=include_fy_debt_cost,
+            include_eofy_debt_cost=include_eofy_debt_cost,
             return_cashflows=return_cashflows
         )
         return result
@@ -1185,20 +1185,20 @@ class Fund(Base):
         """Calculate the pre-tax IRR for the fund using all relevant cash flows.
         Returns a float (IRR) or None if not computable.
         """
-        return self._calculate_irr_base(include_tax_payments=False, include_risk_free_charges=False, include_fy_debt_cost=False, session=session)
+        return self._calculate_irr_base(include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=session)
 
     def calculate_after_tax_irr(self, session=None):
         """Calculate the after-tax IRR for the fund, including tax payment events.
         Returns a float (IRR) or None if not computable.
         """
-        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=False, include_fy_debt_cost=False, session=session)
+        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=False, include_eofy_debt_cost=False, session=session)
 
     def calculate_real_irr(self, session=None, risk_free_rate_currency=None):
         """Calculate the real IRR for the fund, including debt cost and tax effects.
         Returns a float (IRR) or None if not computable.
         """
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
-        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, session=session)
+        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_eofy_debt_cost=True, session=session)
 
     @with_session
     def recalculate_all_equity_balances(self, session=None):

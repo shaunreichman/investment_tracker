@@ -74,9 +74,9 @@ class TaxStatement(Base):
     capital_gain_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # (CALCULATED) true if amount comes from tax statement
 
     # Debt cost tracking for real IRR calculations
-    fy_debt_interest_deduction_sum_of_daily_interest = Column(Float, default=0.0)  # (CALCULATED) total interest expense for the FY
-    fy_debt_interest_deduction_rate = Column(Float, default=0.0)  # (MANUAL) tax deduction rate for interest (e.g., 30.0 for 30%)
-    fy_debt_interest_deduction_total_deduction = Column(Float, default=0.0)  # (CALCULATED) calculated tax benefit from interest deduction
+    eofy_debt_interest_deduction_sum_of_daily_interest = Column(Float, default=0.0)  # (CALCULATED) total interest expense for the EOFY
+    eofy_debt_interest_deduction_rate = Column(Float, default=0.0)  # (MANUAL) tax deduction rate for interest (e.g., 30.0 for 30%)
+    eofy_debt_interest_deduction_total_deduction = Column(Float, default=0.0)  # (CALCULATED) calculated tax benefit from interest deduction
     
     # Tax status
     non_resident = Column(Boolean, default=False)  # (MANUAL) whether entity was non-resident for tax purposes in this FY
@@ -121,18 +121,18 @@ class TaxStatement(Base):
             self.interest_tax_amount = 0.0
         return self.interest_tax_amount
 
-    def calculate_fy_debt_interest_deduction_total_deduction(self):
+    def calculate_eofy_debt_interest_deduction_total_deduction(self):
         """
         Calculate the interest tax benefit based on total interest expense and deduction rate.
-        Updates the fy_debt_interest_deduction_total_deduction field and returns the value.
+        Updates the eofy_debt_interest_deduction_total_deduction field and returns the value.
         """
-        if self.fy_debt_interest_deduction_sum_of_daily_interest and self.fy_debt_interest_deduction_rate:
-            self.fy_debt_interest_deduction_total_deduction = (
-                self.fy_debt_interest_deduction_sum_of_daily_interest * self.fy_debt_interest_deduction_rate
+        if self.eofy_debt_interest_deduction_sum_of_daily_interest and self.eofy_debt_interest_deduction_rate:
+            self.eofy_debt_interest_deduction_total_deduction = (
+                self.eofy_debt_interest_deduction_sum_of_daily_interest * self.eofy_debt_interest_deduction_rate
             ) / 100
         else:
-            self.fy_debt_interest_deduction_total_deduction = 0.0
-        return self.fy_debt_interest_deduction_total_deduction
+            self.eofy_debt_interest_deduction_total_deduction = 0.0
+        return self.eofy_debt_interest_deduction_total_deduction
 
     def get_financial_year_dates(self):
         """Get the start and end dates for this financial year based on entity jurisdiction.
@@ -451,9 +451,9 @@ class TaxStatement(Base):
     # Removed methods:
     # - _create_tax_payment_event_object
     # - _create_dividend_tax_payment_event_objects
-    # - _create_fy_debt_cost_event_object
+    # - _create_eofy_debt_cost_event_object
     # - create_tax_payment_event
-    # - create_fy_debt_cost_event
+    # - create_eofy_debt_cost_event
     # All event creation is now handled by TaxEventManager and TaxEventFactory.
     # If any usages remain, update them to use create_tax_payment_events or the new manager/factory methods.
     # (No code to insert here, just removing the old methods.)

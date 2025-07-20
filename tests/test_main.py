@@ -424,7 +424,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 24),
         interest_income_tax_rate=10.0,
-        fy_debt_interest_deduction_rate=32.5,
+        eofy_debt_interest_deduction_rate=32.5,
         session=session
     )
     senior_debt_fund.create_or_update_tax_statement(
@@ -436,7 +436,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 12),
         interest_income_tax_rate=10.0,
-        fy_debt_interest_deduction_rate=32.5,
+        eofy_debt_interest_deduction_rate=32.5,
         session=session
     )
     # 3PG Finance Tax Statements
@@ -448,7 +448,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 24),
         interest_income_tax_rate=10.0,
-        fy_debt_interest_deduction_rate=32.5,
+        eofy_debt_interest_deduction_rate=32.5,
         session=session
     )
     finance_fund.create_or_update_tax_statement(
@@ -460,7 +460,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 12),
         interest_income_tax_rate=10.0,
-        fy_debt_interest_deduction_rate=32.5,
+        eofy_debt_interest_deduction_rate=32.5,
         session=session
     )
     # ABC Ltd Tax Statements (NAV-based fund)
@@ -470,7 +470,7 @@ def setup_test_data(session):
         notes="FY13 tax statement from fund manager",
         accountant='Findex',
         statement_date=date(2024, 8, 24),
-        fy_debt_interest_deduction_rate=32.5,
+        eofy_debt_interest_deduction_rate=32.5,
         session=session
     )
     abc_tax_statement_2013_14 = abc_fund.create_or_update_tax_statement(
@@ -480,7 +480,7 @@ def setup_test_data(session):
         accountant='Findex',
         statement_date=date(2024, 8, 12),
         capital_gain_income_tax_rate=30,
-        fy_debt_interest_deduction_rate=32.5,
+        eofy_debt_interest_deduction_rate=32.5,
         session=session
     )
 
@@ -509,7 +509,7 @@ def get_irr_cashflows(fund, irr_type, session):
     elif irr_type == "after_tax_irr":
         return fund._calculate_irr_base(include_tax_payments=True, return_cashflows=True, session=session)
     elif irr_type == "real_irr":
-        return fund._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_fy_debt_cost=True, return_cashflows=True, session=session)
+        return fund._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_eofy_debt_cost=True, return_cashflows=True, session=session)
     else:
         raise ValueError(f"Unknown IRR type: {irr_type}")
 
@@ -549,9 +549,9 @@ def recalculate_everything(session, show_irr_cashflows=True):
         daily_events = fund.create_daily_risk_free_interest_charges(session=session)
         print(f"Created {len(daily_events)} daily risk-free interest charge events for {fund.name}")
         
-        # Create FY debt cost events using domain methods
-        fy_events = fund.create_fy_debt_cost_events(session=session)
-        print(f"Created {len(fy_events)} FY debt cost events for {fund.name}")
+        # Create EOFY debt cost events using domain methods
+        eofy_events = fund.create_eofy_debt_cost_events(session=session)
+        print(f"Created {len(eofy_events)} EOFY debt cost events for {fund.name}")
         
         # Calculate IRRs using domain methods
         irr = fund.calculate_irr(session=session)
@@ -638,11 +638,11 @@ def verify_results(session):
         
         # Count specific event types
         tax_events = [e for e in events if e.event_type == EventType.TAX_PAYMENT]
-        fy_events = [e for e in events if e.event_type == EventType.FY_DEBT_COST]
+        eofy_events = [e for e in events if e.event_type == EventType.EOFY_DEBT_COST]
         daily_events = [e for e in events if e.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE]
         
         print(f"  Tax payment events: {len(tax_events)}")
-        print(f"  FY debt cost events: {len(fy_events)}")
+        print(f"  EOFY debt cost events: {len(eofy_events)}")
         print(f"  Daily interest charges: {len(daily_events)}")
         
         if fund.tracking_type == FundType.NAV_BASED:
