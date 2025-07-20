@@ -16,7 +16,7 @@ def calculate_total_funds_under_management(investment_company, session):
     Returns:
         int: Total number of funds
     """
-    return session.query(investment_company.funds).count()
+    return len(investment_company.funds)
 
 
 def calculate_total_commitments(investment_company, session):

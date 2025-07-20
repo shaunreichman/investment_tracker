@@ -102,6 +102,36 @@ class InvestmentCompany(Base):
         """
         return session.query(cls).all()
     
+    @classmethod
+    def get_by_id(cls, company_id, session=None):
+        """
+        Get an investment company by ID.
+        
+        Args:
+            company_id (int): Company ID
+            session (Session): Database session
+        
+        Returns:
+            InvestmentCompany or None: The investment company if found, None otherwise
+        """
+        return session.query(cls).filter(cls.id == company_id).first()
+    
+    @with_session
+    def get_funds_with_summary(self, session=None):
+        """
+        Get all funds for this investment company with summary data.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            list: List of fund summary data dictionaries
+        """
+        funds_data = []
+        for fund in self.funds:
+            funds_data.append(fund.get_summary_data(session=session))
+        return funds_data
+    
     def get_total_funds_under_management(self, session):
         """Get the total number of funds managed by this investment company.
         
