@@ -34,6 +34,9 @@ interface FundEvent {
   units_sold: number | null;
   unit_price: number | null;
   nav_per_share: number | null;
+  previous_nav_per_share: number | null;
+  nav_change_absolute: number | null;
+  nav_change_percentage: number | null;
   brokerage_fee: number | null;
 }
 
@@ -414,6 +417,11 @@ const FundDetail: React.FC = () => {
                 <TableCell colSpan={2} align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
                   EQUITY
                 </TableCell>
+                {fund.tracking_type === 'NAV_BASED' && (
+                  <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    NAV UPDATE
+                  </TableCell>
+                )}
                 <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
                   DISTRIBUTIONS
                 </TableCell>
@@ -496,24 +504,28 @@ const FundDetail: React.FC = () => {
                               Withholding: {formatCurrency(withholdingEvent.amount, fund.currency)}
                             </Typography>
                           </TableCell>
-                          {/* EQUITY Section */}
+                                                  {/* EQUITY Section */}
+                        <TableCell align="right"></TableCell>
+                        <TableCell align="right"></TableCell>
+                        {/* NAV UPDATE Section (only for NAV-based funds) */}
+                        {fund.tracking_type === 'NAV_BASED' && (
                           <TableCell align="right"></TableCell>
-                          <TableCell align="right"></TableCell>
-                          {/* DISTRIBUTIONS Section */}
-                          <TableCell align="right">
-                            {isDistributionEvent ? (
-                              <Box>
-                                <Typography variant="body2">
-                                  {formatCurrency(interestEvent.amount, fund.currency)}
-                                </Typography>
-                                <Typography variant="caption" color="error.main">
-                                  -{formatCurrency(withholdingEvent.amount, fund.currency)}
-                                </Typography>
-                              </Box>
-                            ) : ''}
-                          </TableCell>
-                          {/* Other Section */}
-                          <TableCell align="right"></TableCell>
+                        )}
+                        {/* DISTRIBUTIONS Section */}
+                        <TableCell align="right">
+                          {isDistributionEvent ? (
+                            <Box>
+                              <Typography variant="body2">
+                                {formatCurrency(interestEvent.amount, fund.currency)}
+                              </Typography>
+                              <Typography variant="caption" color="error.main">
+                                -{formatCurrency(withholdingEvent.amount, fund.currency)}
+                              </Typography>
+                            </Box>
+                          ) : ''}
+                        </TableCell>
+                        {/* Other Section */}
+                        <TableCell align="right"></TableCell>
                         </TableRow>
                         
                         {/* Process other events on the same date (like RETURN_OF_CAPITAL) */}
@@ -600,6 +612,26 @@ const FundDetail: React.FC = () => {
                                     : (event.event_type === 'RETURN_OF_CAPITAL' ? formatCurrency(event.amount, fund.currency) : '')
                                 )}
                               </TableCell>
+                              {/* NAV UPDATE Section (only for NAV-based funds) */}
+                              {fund.tracking_type === 'NAV_BASED' && (
+                                <TableCell align="right">
+                                  {event.event_type === 'NAV_UPDATE' && event.nav_per_share ? (
+                                    <Box>
+                                      <Typography variant="body2">
+                                        {formatCurrency(event.nav_per_share, fund.currency)}
+                                      </Typography>
+                                      {event.nav_change_absolute != null && event.nav_change_percentage != null && (
+                                        <Typography 
+                                          variant="caption" 
+                                          color={event.nav_change_absolute >= 0 ? 'success.main' : 'error.main'}
+                                        >
+                                          ({event.nav_change_absolute >= 0 ? '+' : ''}{formatCurrency(event.nav_change_absolute, fund.currency)}, {event.nav_change_percentage >= 0 ? '+' : ''}{event.nav_change_percentage.toFixed(1)}%)
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  ) : ''}
+                                </TableCell>
+                              )}
                               {/* DISTRIBUTIONS Section */}
                               <TableCell align="right">
                                 {isDistributionEvent ? formatCurrency(event.amount, fund.currency) : ''}
@@ -709,6 +741,26 @@ const FundDetail: React.FC = () => {
                               : (event.event_type === 'RETURN_OF_CAPITAL' ? formatCurrency(event.amount, fund.currency) : '')
                           )}
                         </TableCell>
+                                                {/* NAV UPDATE Section (only for NAV-based funds) */}
+                        {fund.tracking_type === 'NAV_BASED' && (
+                          <TableCell align="right">
+                            {event.event_type === 'NAV_UPDATE' && event.nav_per_share ? (
+                              <Box>
+                                <Typography variant="body2">
+                                  {formatCurrency(event.nav_per_share, fund.currency)}
+                                </Typography>
+                                {event.nav_change_absolute != null && event.nav_change_percentage != null && (
+                                  <Typography 
+                                    variant="caption" 
+                                    color={event.nav_change_absolute >= 0 ? 'success.main' : 'error.main'}
+                                  >
+                                    ({event.nav_change_absolute >= 0 ? '+' : ''}{formatCurrency(event.nav_change_absolute, fund.currency)}, {event.nav_change_percentage >= 0 ? '+' : ''}{event.nav_change_percentage.toFixed(1)}%)
+                                  </Typography>
+                                )}
+                              </Box>
+                            ) : ''}
+                          </TableCell>
+                        )}
                         {/* DISTRIBUTIONS Section */}
                         <TableCell align="right">
                           {isDistributionEvent ? formatCurrency(event.amount, fund.currency) : ''}

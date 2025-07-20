@@ -846,6 +846,49 @@ class Fund(Base):
         )
     
     
+    def _calculate_nav_change_fields(self, nav_per_share, date, session):
+        """
+        Calculate NAV change fields for a NAV_UPDATE event.
+        Returns (previous_nav_per_share, nav_change_absolute, nav_change_percentage)
+        """
+        # Find the most recent NAV_UPDATE event before this date
+        previous_nav_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.NAV_UPDATE,
+            FundEvent.event_date < date
+        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+        
+        previous_nav_per_share = previous_nav_event.nav_per_share if previous_nav_event else None
+        
+        if previous_nav_per_share is not None:
+            nav_change_absolute = nav_per_share - previous_nav_per_share
+            nav_change_percentage = (nav_change_absolute / previous_nav_per_share) * 100
+        else:
+            nav_change_absolute = None
+            nav_change_percentage = None
+            
+        return previous_nav_per_share, nav_change_absolute, nav_change_percentage
+
+    def _update_subsequent_nav_change_fields(self, new_nav_event, session):
+        """
+        Update NAV change fields for the next NAV_UPDATE event after the new one.
+        """
+        # Find the next NAV_UPDATE event after this one
+        next_nav_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.NAV_UPDATE,
+            FundEvent.event_date > new_nav_event.event_date
+        ).order_by(FundEvent.event_date, FundEvent.id).first()
+        
+        if next_nav_event:
+            # Recalculate the next event's NAV change fields
+            prev_nav, abs_change, pct_change = self._calculate_nav_change_fields(
+                next_nav_event.nav_per_share, next_nav_event.event_date, session
+            )
+            next_nav_event.previous_nav_per_share = prev_nav
+            next_nav_event.nav_change_absolute = abs_change
+            next_nav_event.nav_change_percentage = pct_change
+
     @with_session
     def add_nav_update(self, nav_per_share, date, description=None, reference_number=None, session=None):
         """
@@ -853,16 +896,29 @@ class Fund(Base):
         """
         if self.tracking_type != FundType.NAV_BASED:
             raise ValueError("NAV updates are only applicable for NAV-based funds")
+        
+        # Calculate NAV change fields
+        previous_nav_per_share, nav_change_absolute, nav_change_percentage = self._calculate_nav_change_fields(
+            nav_per_share, date, session
+        )
+        
         event = FundEvent(
             fund_id=self.id,
             event_type=EventType.NAV_UPDATE,
             event_date=date,
             nav_per_share=nav_per_share,
+            previous_nav_per_share=previous_nav_per_share,
+            nav_change_absolute=nav_change_absolute,
+            nav_change_percentage=nav_change_percentage,
             description=description or f"NAV update: ${nav_per_share:.4f}",
             reference_number=reference_number
         )
         session.add(event)
         session.flush()
+        
+        # Update the next NAV_UPDATE event's change fields if it exists
+        self._update_subsequent_nav_change_fields(event, session)
+        
         # Check if this is the latest NAV_UPDATE event
         latest_event = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
@@ -887,6 +943,11 @@ class Fund(Base):
         ).first()
         if not event:
             raise ValueError("NAV update event not found")
+        
+        # Store original values for recalculation
+        original_date = event.event_date
+        original_nav = event.nav_per_share
+        
         if nav_per_share is not None:
             event.nav_per_share = nav_per_share
         if date is not None:
@@ -895,7 +956,22 @@ class Fund(Base):
             event.description = description
         if reference_number is not None:
             event.reference_number = reference_number
+        
+        # Recalculate NAV change fields if NAV or date changed
+        if nav_per_share is not None or date is not None:
+            new_nav = nav_per_share if nav_per_share is not None else original_nav
+            new_date = date if date is not None else original_date
+            prev_nav, abs_change, pct_change = self._calculate_nav_change_fields(new_nav, new_date, session)
+            event.previous_nav_per_share = prev_nav
+            event.nav_change_absolute = abs_change
+            event.nav_change_percentage = pct_change
+        
         session.flush()
+        
+        # Update subsequent NAV_UPDATE events if this event's date or NAV changed
+        if nav_per_share is not None or date is not None:
+            self._update_subsequent_nav_change_fields(event, session)
+        
         # Check if this is the latest NAV_UPDATE event
         latest_event = session.query(FundEvent).filter(
             FundEvent.fund_id == self.id,
@@ -1637,6 +1713,9 @@ class FundEvent(Base):
     event_date = Column(Date, nullable=False, index=True)  # (MANUAL) date of the event
     amount = Column(Float)  # (HYBRID) cash flow amount, can be manual or calculated based on event type
     nav_per_share = Column(Float)  # (MANUAL) NAV per share for NAV_UPDATE events
+    previous_nav_per_share = Column(Float)  # (CALCULATED) previous NAV per share for NAV_UPDATE events
+    nav_change_absolute = Column(Float)  # (CALCULATED) absolute change in NAV for NAV_UPDATE events
+    nav_change_percentage = Column(Float)  # (CALCULATED) percentage change in NAV for NAV_UPDATE events
     units_owned = Column(Float)  # (CALCULATED) cumulative units owned after this event
     distribution_type = Column(Enum(DistributionType))  # (MANUAL) type of distribution (DIVIDEND, INTEREST, etc.)
     tax_payment_type = Column(Enum(TaxPaymentType))  # (MANUAL) type of tax payment (INTEREST, CAPITAL_GAINS, etc.)
