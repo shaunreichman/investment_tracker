@@ -226,7 +226,7 @@ def create_app():
                     SELECT 
                         id, event_type, event_date, amount, description, reference_number,
                         distribution_type, tax_payment_type, units_purchased, units_sold,
-                        unit_price, nav_per_share, brokerage_fee
+                        unit_price, nav_per_share, previous_nav_per_share, nav_change_absolute, nav_change_percentage, brokerage_fee
                     FROM fund_events 
                     WHERE fund_id = :fund_id 
                     AND event_type != 'DAILY_RISK_FREE_INTEREST_CHARGE'
@@ -292,6 +292,9 @@ def create_app():
                         "units_sold": float(event.units_sold) if event.units_sold else None,
                         "unit_price": float(event.unit_price) if event.unit_price else None,
                         "nav_per_share": float(event.nav_per_share) if event.nav_per_share else None,
+                        "previous_nav_per_share": float(event.previous_nav_per_share) if event.previous_nav_per_share else None,
+                        "nav_change_absolute": float(event.nav_change_absolute) if event.nav_change_absolute else None,
+                        "nav_change_percentage": float(event.nav_change_percentage) if event.nav_change_percentage else None,
                         "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None
                     })
                 

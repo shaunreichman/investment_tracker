@@ -93,7 +93,8 @@ const FundDetail: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/funds/${fundId}`);
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+        const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

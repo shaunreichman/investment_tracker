@@ -20,24 +20,24 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import object_session
 
 # Import the Base from shared
-from shared.base import Base
+from ..shared.base import Base
 
 # Import utilities and calculations
-from shared.utils import with_session, with_class_session
+from ..shared.utils import with_session, with_class_session
 from .calculations import (
     calculate_irr,
     calculate_debt_cost
 )
-from shared.calculations import orchestrate_irr_base
+from ..shared.calculations import orchestrate_irr_base
 
 # Import models from other domains
-from rates.models import RiskFreeRate
-from entity.models import Entity
+from ..rates.models import RiskFreeRate
+from ..entity.models import Entity
 
 # Import shared calculations
-from shared.calculations import get_equity_change_for_event
-from entity.calculations import get_financial_years_for_fund_period
-from rates.calculations import get_risk_free_rate_for_date
+from ..shared.calculations import get_equity_change_for_event
+from ..entity.calculations import get_financial_years_for_fund_period
+from ..rates.calculations import get_risk_free_rate_for_date
 
 
 class EventType(enum.Enum):
