@@ -33,29 +33,41 @@
   - When introducing new patterns or conventions, update both code comments and relevant documentation to keep everything in sync.
 - **User Preferences First:**
   - When in doubt, defer to explicit user preferences or ask for clarification before proceeding with ambiguous tasks.
+- **Frontend Development:**
+  - Always use TypeScript for React components.
+  - Follow Material-UI patterns for consistent UI/UX.
+  - Implement proper loading states and error handling in all components.
+  - Use React hooks (useState, useEffect, useCallback) for state management.
+- **API Integration:**
+  - All frontend data fetching should go through the Flask API endpoints.
+  - Use consistent error handling patterns across all API calls.
+  - Implement proper loading states for all async operations.
 
 ---
 
 ## Table of Contents
 
-1. AI Agent Collaboration Guidelines
-2. Getting Started / Onboarding Checklist
-3. Quick Reference Table
-4. Overview
-5. Web UI Architecture
-6. Session Management
-7. Object/Event Creation
-8. Field Classification
-9. Architectural Rules
-10. API Design Patterns
-11. React Component Patterns
-12. Testing Strategy
-13. Validation
-14. Error Handling Policy
-15. Glossary / Definitions
-16. Examples
-17. FAQ
-18. Change History
+1. [AI Agent Collaboration Guidelines](#ai-agent-collaboration-guidelines)
+2. [Quick Start](#quick-start)
+3. [Architecture Principles](#architecture-principles)
+4. [Session Management](#session-management)
+5. [Object Creation Patterns](#object-creation-patterns)
+6. [Event Creation Patterns](#event-creation-patterns)
+7. [Capital Event Handling](#capital-event-handling)
+8. [Separation of Concerns](#separation-of-concerns)
+9. [Frontend Development Guidelines](#frontend-development-guidelines)
+10. [API Integration Patterns](#api-integration-patterns)
+11. [Environment Setup](#environment-setup)
+12. [Field Classification Principles](#field-classification-principles)
+13. [Field Reference](#field-reference)
+14. [Workflow Examples](#workflow-examples)
+15. [Testing Guidelines](#testing-guidelines)
+16. [Validation](#validation)
+17. [Error Handling Policy](#error-handling-policy)
+18. [Getting Started / Onboarding Checklist](#getting-started--onboarding-checklist)
+19. [Quick Reference Table](#quick-reference-table)
+20. [Glossary / Definitions](#glossary--definitions)
+21. [Change History](#change-history)
 
 ---
 
@@ -91,11 +103,29 @@ const fetchData = async () => {
   }
   return response.json();
 };
+
+// ✅ CORRECT: Material-UI component patterns
+const MyComponent = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    amount: ''
+  });
+
+  return (
+    <Box component="form" onSubmit={handleSubmit}>
+      <TextField
+        fullWidth
+        label="Fund Name"
+        value={formData.name}
+        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+        required
+      />
+    </Box>
+  );
+};
 ```
 
-### **Core Patterns (Everyone Needs to Know)**
-
-#### 1. **Session Management**
+#### **Backend Session Management**
 ```python
 # ✅ CORRECT: Outermost layer manages sessions
 engine, session_factory, scoped_session = get_database_session()
@@ -111,7 +141,7 @@ finally:
     session.close()
 ```
 
-#### 2. **Object Creation**
+#### **Object Creation Patterns**
 ```python
 # ✅ Use class methods for root objects
 company = InvestmentCompany.create(name="Test Company", session=session)
@@ -121,7 +151,7 @@ entity = Entity.create(name="Test Entity", session=session)
 fund = company.create_fund(entity, "My Fund", session=session)
 ```
 
-#### 3. **Event Creation**
+#### **Event Creation Patterns**
 ```python
 # ✅ Use domain methods for events
 fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
@@ -132,7 +162,7 @@ from src.tax.events import TaxEventManager
 TaxEventManager.create_or_update_tax_events(tax_statement, session)
 ```
 
-#### 4. **Field Classification**
+#### **Field Classification**
 - **Manual fields**: Set by user (name, amount, date, etc.)
 - **Calculated fields**: Never set manually (equity balances, totals, etc.)
 - **Properties**: Read-only, calculated on demand (start_date, end_date, etc.)
@@ -140,6 +170,26 @@ TaxEventManager.create_or_update_tax_events(tax_statement, session)
 ---
 
 ## Architecture Principles
+
+### **Core Architectural Rules**
+
+#### **1. API Layer Must Use Domain Methods**
+- **Never access database directly** from API endpoints
+- **Always delegate** to domain methods for all business logic
+- **API layer** is purely for HTTP request/response handling
+- **Session management** belongs in domain methods, not API layer
+
+#### **2. Backend Owns Sessions**
+- **Domain methods** accept session parameters from the outermost layer
+- **Domain methods** never create sessions internally
+- **Test scripts/API endpoints** manage session lifecycle
+- **External clients** are stateless
+
+#### **3. All Database Operations Through Core System**
+- **No direct database access** from clients or API layer
+- **All data access** goes through domain methods
+- **Business logic** belongs in domain layer, not API layer
+- **Validation** happens at domain method boundaries
 
 ### **Web UI Architecture**
 
@@ -149,7 +199,7 @@ TaxEventManager.create_or_update_tax_events(tax_statement, session)
 - **API-First Design**: All data flows through RESTful API endpoints
 - **Stateless Frontend**: React components remain stateless, all data comes from API
 
-#### **API Design Patterns**
+#### **RESTful API Endpoints**
 ```python
 # ✅ CORRECT: RESTful API endpoints with consistent naming
 GET /api/health                    # Health check
@@ -179,15 +229,17 @@ CORS(app)  # Allow cross-origin requests from React
 REACT_APP_API_BASE_URL=http://localhost:5001
 ```
 
-### **Session Management**
+---
 
-#### **Rule: Backend Owns Sessions**
+## Session Management
+
+### **Rule: Backend Owns Sessions**
 - **Domain methods** accept session parameters from the outermost layer
 - **Domain methods** never create sessions internally
 - **Test scripts/API endpoints** manage session lifecycle
 - **External clients** are stateless
 
-#### **Pattern: Session Parameter**
+### **Pattern: Session Parameter**
 ```python
 # ✅ CORRECT: Always use keyword argument
 fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
@@ -196,7 +248,7 @@ fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
 fund.add_capital_call(100000, date(2023, 1, 1), session)  # Error!
 ```
 
-#### **Decorator Usage**
+### **Decorator Usage**
 ```python
 @with_session
 def update_current_equity_balance(self, session=None):
@@ -204,9 +256,11 @@ def update_current_equity_balance(self, session=None):
     # Use session for database operations
 ```
 
-### **Object Creation Patterns**
+---
 
-#### **Root Objects (Class Methods)**
+## Object Creation Patterns
+
+### **Root Objects (Class Methods)**
 ```python
 # ✅ CORRECT: Use class methods
 company = InvestmentCompany.create(name="Test Company", session=session)
@@ -217,16 +271,18 @@ fund = Fund.create(investment_company_id=company.id, entity_id=entity.id, name="
 fund = Fund(investment_company_id=company.id, ...)  # No validation, no business logic
 ```
 
-#### **Related Objects (Direct Methods)**
+### **Related Objects (Direct Methods)**
 ```python
 # ✅ CORRECT: Use direct object methods
 fund = company.create_fund(entity, "My Fund", session=session)
 event = fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
 ```
 
-### **Event Creation Patterns**
+---
 
-#### **User Events (Direct Creation)**
+## Event Creation Patterns
+
+### **User Events (Direct Creation)**
 ```python
 # ✅ CORRECT: Direct FundEvent creation for user-entered events
 event = FundEvent(
@@ -239,7 +295,7 @@ event = FundEvent(
 session.add(event)
 ```
 
-#### **System Events (Manager/Factory)**
+### **System Events (Manager/Factory)**
 ```python
 # ✅ CORRECT: Use managers for system-generated events
 from src.tax.events import TaxEventManager
@@ -249,14 +305,16 @@ TaxEventManager.create_or_update_tax_events(tax_statement, session)
 event = FundEvent(event_type=EventType.TAX_PAYMENT, ...)  # System should create this
 ```
 
-### Capital Event Handling (Unified Flow)
+---
 
-#### Overview
+## Capital Event Handling (Unified Flow)
+
+### **Overview**
 - All capital events (unit purchases/sales for NAV-based funds, capital calls/returns for cost-based funds) now use standardized unified methods and a unified recalculation orchestrator.
 - This ensures consistency, maintainability, and efficient recalculation for edits/inserts anywhere in the event chain.
 - The recalculation flow is efficient (single-pass) and robust for both NAV-based and cost-based funds.
 
-#### Key Methods
+### **Key Methods**
 - For NAV-based funds:
   - `add_unit_purchase`, `update_unit_purchase`
   - `add_unit_sale`, `update_unit_sale`
@@ -265,20 +323,20 @@ event = FundEvent(event_type=EventType.TAX_PAYMENT, ...)  # System should create
   - `add_return_of_capital`, `update_return_of_capital`
 - All methods automatically call `recalculate_capital_chain_from(event, session=session)` after insert/update.
 
-#### Unified Recalculation Orchestrator
+### **Unified Recalculation Orchestrator**
 - `recalculate_capital_chain_from(event, session=None)` efficiently recalculates all capital-related fields for the given event and all subsequent capital events.
 - Delegates to fund-type-specific single-pass recalculators:
   - NAV-based: `_calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event`
   - Cost-based: `_calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event`
 - After recalculation, fund-level summary fields are updated via `update_fund_summary_fields_after_capital_event`.
 
-#### Architectural Rules
+### **Architectural Rules**
 - **Always use the unified methods** for adding/updating capital events. Legacy methods are removed.
 - **Never set calculated fields manually** (e.g., `current_equity_balance`, `units_owned`).
 - **All recalculation logic is centralized** in the orchestrator and single-pass methods for maintainability.
 - **Session management**: Unified methods require a session parameter, as with all domain methods.
 
-#### Example Usage
+### **Example Usage**
 ```python
 # NAV-based fund: add a unit purchase
 fund.add_unit_purchase(units=100, price=10.0, date=date(2024, 1, 1), session=session)
@@ -287,19 +345,21 @@ fund.add_unit_purchase(units=100, price=10.0, date=date(2024, 1, 1), session=ses
 fund.update_capital_call(event_id=123, amount=50000.0, date=date(2024, 2, 1), session=session)
 ```
 
-### **Separation of Concerns**
+---
 
-#### **Models (`models.py`)**
+## Separation of Concerns
+
+### **Models (`models.py`)**
 - ORM logic, database queries, orchestration
 - Session management and persistence
 - **No business calculations**
 
-#### **Calculations (`calculations.py`)**
+### **Calculations (`calculations.py`)**
 - Pure business logic and financial calculations
 - Stateless functions (no database operations)
 - Easy to test and reuse
 
-#### **Example Pattern**
+### **Example Pattern**
 ```python
 # In models.py
 def calculate_irr(self, session=None):
@@ -310,6 +370,379 @@ def calculate_irr(self, session=None):
 def calculate_irr(events, ...):
     # Pure calculation logic
     return irr_value
+```
+
+---
+
+## Frontend Development Guidelines
+
+### **React Component Patterns**
+
+#### **Functional Components with Hooks**
+```typescript
+// ✅ CORRECT: Use functional components with hooks
+const FundList = () => {
+  const [funds, setFunds] = useState<Fund[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchFunds()
+      .then(setFunds)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <CircularProgress />;
+  if (error) return <Alert severity="error">{error}</Alert>;
+  
+  return (
+    <Box>
+      {funds.map(fund => (
+        <FundCard key={fund.id} fund={fund} />
+      ))}
+    </Box>
+  );
+};
+```
+
+#### **Material-UI Integration**
+```typescript
+// ✅ CORRECT: Use Material-UI components consistently
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  TextField,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+
+const FundForm = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    amount: ''
+  });
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6">Create Fund</Typography>
+        <Box component="form" sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            label="Fund Name"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            required
+            sx={{ mb: 2 }}
+          />
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+```
+
+#### **Error Handling Patterns**
+```typescript
+// ✅ CORRECT: Consistent error handling
+const useApiCall = <T>(url: string) => {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url]);
+
+  return { data, loading, error };
+};
+```
+
+### **State Management**
+
+#### **Local State with useState**
+```typescript
+// ✅ CORRECT: Use useState for component-local state
+const [formData, setFormData] = useState({
+  name: '',
+  amount: '',
+  description: ''
+});
+
+const handleInputChange = (field: string, value: string) => {
+  setFormData(prev => ({ ...prev, [field]: value }));
+};
+```
+
+#### **Complex State with useReducer**
+```typescript
+// ✅ CORRECT: Use useReducer for complex state
+interface FormState {
+  data: Record<string, string>;
+  errors: Record<string, string>;
+  isSubmitting: boolean;
+}
+
+const formReducer = (state: FormState, action: any) => {
+  switch (action.type) {
+    case 'SET_FIELD':
+      return { ...state, data: { ...state.data, [action.field]: action.value } };
+    case 'SET_ERROR':
+      return { ...state, errors: { ...state.errors, [action.field]: action.error } };
+    case 'SET_SUBMITTING':
+      return { ...state, isSubmitting: action.isSubmitting };
+    default:
+      return state;
+  }
+};
+```
+
+### **API Integration Patterns**
+
+#### **Consistent API Calls**
+```typescript
+// ✅ CORRECT: Centralized API configuration
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+
+const apiCall = async (endpoint: string, options?: RequestInit) => {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+// Usage
+const createFund = async (fundData: any) => {
+  return apiCall('/api/funds', {
+    method: 'POST',
+    body: JSON.stringify(fundData)
+  });
+};
+```
+
+#### **Loading States**
+```typescript
+// ✅ CORRECT: Always show loading states
+const FundList = () => {
+  const { data: funds, loading, error } = useApiCall<Fund[]>('/api/funds');
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
+
+  return <FundGrid funds={funds || []} />;
+};
+```
+
+---
+
+## API Integration Patterns
+
+### **Backend API Structure**
+
+#### **Consistent Endpoint Patterns**
+```python
+# ✅ CORRECT: RESTful API structure
+@app.route('/api/funds', methods=['GET'])
+def get_funds():
+    """Get all funds with summary data"""
+    try:
+        session = get_db_session()
+        try:
+            funds = Fund.get_all(session=session)
+            return jsonify({
+                "funds": [fund.to_dict() for fund in funds],
+                "total": len(funds)
+            }), 200
+        finally:
+            session.close()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/funds', methods=['POST'])
+def create_fund():
+    """Create a new fund"""
+    try:
+        data = request.get_json()
+        session = get_db_session()
+        try:
+            fund = Fund.create(**data, session=session)
+            session.commit()
+            return jsonify(fund.to_dict()), 201
+        finally:
+            session.close()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+```
+
+#### **Error Handling**
+```python
+# ✅ CORRECT: Consistent error responses
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Resource not found"}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error"}), 500
+
+# ✅ CORRECT: Domain-specific error handling
+try:
+    fund = session.query(Fund).filter_by(id=fund_id).first()
+    if not fund:
+        return jsonify({"error": "Fund not found"}), 404
+except Exception as e:
+    return jsonify({"error": "Database error"}), 500
+```
+
+### **Frontend API Integration**
+
+#### **Custom Hooks for API Calls**
+```typescript
+// ✅ CORRECT: Reusable API hooks
+const useFunds = () => {
+  return useApiCall<Fund[]>('/api/funds');
+};
+
+const useFund = (id: number) => {
+  return useApiCall<Fund>(`/api/funds/${id}`);
+};
+
+const useCreateFund = () => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createFund = async (fundData: CreateFundData) => {
+    try {
+      setIsCreating(true);
+      setError(null);
+      
+      const response = await apiCall('/api/funds', {
+        method: 'POST',
+        body: JSON.stringify(fundData)
+      });
+      
+      return response;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create fund');
+      throw err;
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return { createFund, isCreating, error };
+};
+```
+
+---
+
+## Environment Setup
+
+### **Development Environment**
+
+#### **Backend Setup**
+```bash
+# ✅ CORRECT: Virtual environment setup
+python3 -m venv venv
+source venv/bin/activate  # On macOS/Linux
+# or
+venv\Scripts\activate  # On Windows
+
+pip install -r requirements.txt
+```
+
+#### **Frontend Setup**
+```bash
+# ✅ CORRECT: Frontend dependencies
+cd frontend
+npm install
+npm start  # Starts development server on port 3000
+```
+
+#### **Database Setup**
+```bash
+# ✅ CORRECT: Database initialization
+python scripts/init_database.py
+```
+
+### **Environment Variables**
+
+#### **Backend (.env)**
+```bash
+FLASK_APP=src/api.py
+FLASK_ENV=development
+DATABASE_URL=sqlite:///data/investment_tracker.db
+```
+
+#### **Frontend (.env)**
+```bash
+REACT_APP_API_BASE_URL=http://localhost:5001
+REACT_APP_ENVIRONMENT=development
+```
+
+### **Running the Application**
+
+#### **Development Mode**
+```bash
+# Terminal 1: Backend
+source venv/bin/activate
+FLASK_APP=src/api.py python -m flask run --host=0.0.0.0 --port=5001
+
+# Terminal 2: Frontend
+cd frontend
+npm start
+```
+
+#### **Production Mode**
+```bash
+# Build frontend
+cd frontend
+npm run build
+
+# Run backend with production server
+source venv/bin/activate
+gunicorn -w 4 -b 0.0.0.0:5001 "src.api:app"
 ```
 
 ---
@@ -539,8 +972,13 @@ statement.calculate_fy_debt_interest_deduction_total_deduction()
 ```
 
 #### **Step 3: Create Tax Payment Events**
-``` 
+```python
+# Create tax payment events using TaxEventManager
+from src.tax.events import TaxEventManager
+TaxEventManager.create_or_update_tax_events(statement, session)
 ```
+
+---
 
 ## Testing Guidelines
 
@@ -558,32 +996,80 @@ statement.calculate_fy_debt_interest_deduction_total_deduction()
 - Test loading states, error handling, and data formatting.
 - Use React Testing Library for component testing.
 
+#### **Component Testing Example**
+```typescript
+// ✅ CORRECT: Component test with React Testing Library
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { CreateFundModal } from './CreateFundModal';
+
+describe('CreateFundModal', () => {
+  it('should render template selection on open', () => {
+    render(
+      <CreateFundModal
+        open={true}
+        onClose={jest.fn()}
+        onFundCreated={jest.fn()}
+        companyId={1}
+        companyName="Test Company"
+      />
+    );
+
+    expect(screen.getByText('Select a Tracking Type Template')).toBeInTheDocument();
+    expect(screen.getByText('Cost-Based Fund')).toBeInTheDocument();
+    expect(screen.getByText('NAV-Based Fund')).toBeInTheDocument();
+  });
+
+  it('should apply template when selected', async () => {
+    render(
+      <CreateFundModal
+        open={true}
+        onClose={jest.fn()}
+        onFundCreated={jest.fn()}
+        companyId={1}
+        companyName="Test Company"
+      />
+    );
+
+    const costBasedCard = screen.getByText('Cost-Based Fund').closest('div');
+    fireEvent.click(costBasedCard!);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('cost_based')).toBeInTheDocument();
+    });
+  });
+});
+```
+
 ### **Integration Testing**
 - Test end-to-end data flow from database to frontend.
 - Validate API response formats and error handling.
 - Test CORS configuration and environment setup.
 - Ensure consistent data formatting between backend and frontend.
 
-# Getting Started / Onboarding Checklist
-- Read the "Overview" and "Architectural Rules" sections first.
-- Review the "Quick Reference" table below for common methods and usage.
-- Always use the `@with_session` decorator for DB methods.
-- Run `tests/test_main.py` after any major change.
-- Output test results to a new file (see Testing Guidelines).
-- See the Glossary for definitions of key terms.
+### **API Testing**
+```python
+# ✅ CORRECT: API endpoint testing
+def test_create_fund():
+    with app.test_client() as client:
+        response = client.post('/api/funds', json={
+            'name': 'Test Fund',
+            'fund_type': 'Private Equity',
+            'tracking_type': 'cost_based'
+        })
+        
+        assert response.status_code == 201
+        data = response.get_json()
+        assert data['name'] == 'Test Fund'
+```
 
-## Quick Reference Table
-| Method                | Purpose                                 | Usage Example                  |
-|-----------------------|-----------------------------------------|--------------------------------|
-| add_unit_purchase     | Add a unit purchase event (NAV fund)    | fund.add_unit_purchase(...)    |
-| update_unit_sale      | Update a unit sale event                | fund.update_unit_sale(...)     |
-| add_capital_call      | Add a capital call (cost-based fund)    | fund.add_capital_call(...)     |
-| add_return_of_capital | Add a return of capital                 | fund.add_return_of_capital(...)|
+---
 
 ## Validation
 - All input validation must occur at the domain method boundary (e.g., inside `add_unit_purchase`, not in the API layer).
 - Raise clear, domain-specific exceptions for invalid input (e.g., `InvalidEventError`).
 - Never silently ignore or coerce invalid data.
+
+---
 
 ## Error Handling Policy
 
@@ -633,6 +1119,32 @@ if (error) {
 }
 ```
 
+---
+
+## Getting Started / Onboarding Checklist
+- Read the "Quick Start" and "Architecture Principles" sections first.
+- Review the "Quick Reference" table below for common methods and usage.
+- Always use the `@with_session` decorator for DB methods.
+- Run `tests/test_main.py` after any major change.
+- Output test results to a new file (see Testing Guidelines).
+- See the Glossary for definitions of key terms.
+- Set up development environment (see Environment Setup section).
+- Familiarize yourself with React component patterns and Material-UI.
+
+---
+
+## Quick Reference Table
+| Method                | Purpose                                 | Usage Example                  |
+|-----------------------|-----------------------------------------|--------------------------------|
+| add_unit_purchase     | Add a unit purchase event (NAV fund)    | fund.add_unit_purchase(...)    |
+| update_unit_sale      | Update a unit sale event                | fund.update_unit_sale(...)     |
+| add_capital_call      | Add a capital call (cost-based fund)    | fund.add_capital_call(...)     |
+| add_return_of_capital | Add a return of capital                 | fund.add_return_of_capital(...)|
+| useApiCall            | React hook for API calls                | const { data, loading, error } = useApiCall('/api/funds') |
+| useFunds              | React hook for funds list               | const { data: funds } = useFunds() |
+
+---
+
 ## Glossary / Definitions
 - **NAV-based fund:** A fund where value is tracked by Net Asset Value per unit.
 - **Cost-based fund:** A fund where value is tracked by contributed/returned capital.
@@ -644,10 +1156,14 @@ if (error) {
 - **Stateless Frontend:** React components that don't maintain application state, relying on API data.
 - **CORS:** Cross-Origin Resource Sharing; allows frontend to make requests to backend API.
 - **Component Testing:** Testing React components in isolation with mocked dependencies.
+- **Material-UI:** React component library providing pre-built UI components.
+- **React Hooks:** Functions that allow functional components to use state and lifecycle features.
+- **TypeScript:** Typed superset of JavaScript for better development experience.
 
-[See also: Session Management](#session-management)
-[See also: Architectural Rules](#architectural-rules)
+---
 
 ## Change History
 - 2024-07-13: Major update—removed v2 method references, clarified legacy file removal, added explicit testing guidelines, onboarding checklist, error handling, validation, glossary, and quick reference table.
+- 2024-07-21: Added comprehensive frontend development guidelines, API integration patterns, environment setup, and updated testing guidelines with React component testing examples.
+- 2024-07-21: **STRUCTURAL AUDIT FIXES**: Fixed Table of Contents to match actual content, consolidated duplicated sections (session management, API rules, error handling), removed references to non-existent sections, improved organization and flow, eliminated duplications and ambiguities.
 

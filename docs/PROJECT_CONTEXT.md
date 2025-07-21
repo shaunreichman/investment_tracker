@@ -1,110 +1,263 @@
 # Project Context – Investment Tracker
 
-## Overview (2024)
+## Overview
 
-Investment Tracker is a Python-based system for managing investment funds, events, tax statements, and financial calculations. The project uses SQLAlchemy ORM, a domain-driven architecture, and explicit field classification for clarity and maintainability.
+This document provides **project-specific context** for developers working on the Investment Tracker. It focuses on the "why" behind decisions, project evolution, and developer-specific workflows.
+
+**For setup and usage:** See [README.md](../README.md)  
+**For development patterns:** See [DESIGN_GUIDELINES.md](DESIGN_GUIDELINES.md)
 
 ---
 
-## Project Structure
+## Project Evolution & Key Decisions
 
+### Domain-Driven Architecture Migration (2024)
+**Why:** The original monolithic structure (`src/models.py`, `src/calculations.py`) became difficult to maintain as the project grew.
+
+**What changed:**
+- Organized code by business domain (fund, tax, entity, rates, investment_company)
+- Each domain has its own `models.py`, `calculations.py`, and `queries.py`
+- Shared utilities moved to `src/shared/`
+- Clear separation between domain logic and infrastructure
+
+**Impact:** Better maintainability, clearer ownership, easier testing
+
+### Field Classification System
+**Why:** Financial calculations require precise understanding of which fields are user-input vs. system-calculated.
+
+**Implementation:**
+- Every field explicitly marked as (SYSTEM/MANUAL/CALCULATED/HYBRID)
+- Prevents bugs from manually setting calculated fields
+- Makes business logic more transparent
+- See [DESIGN_GUIDELINES.md](DESIGN_GUIDELINES.md) for full reference
+
+### Session Management Pattern
+**Why:** SQLAlchemy sessions need careful lifecycle management to prevent memory leaks and ensure data consistency.
+
+**Pattern:**
+- Backend owns all session lifecycle
+- Domain methods accept `session` parameter
+- `@with_session` decorator for database operations
+- Clients remain stateless
+
+---
+
+## Developer Workflows
+
+### Setting Up Development Environment
+
+1. **Clone and setup:**
+   ```bash
+   git clone <repository-url>
+   cd investment_tracker
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+2. **Initialize database:**
+   ```bash
+   python scripts/init_database.py
+   ```
+
+3. **Run tests to verify setup:**
+   ```bash
+   python tests/test_main.py
+   ```
+
+### Common Development Tasks
+
+#### Adding a New Domain
+1. Create domain directory: `src/new_domain/`
+2. Add `models.py`, `calculations.py`, `queries.py`
+3. Follow naming conventions from existing domains
+4. Add tests in `tests/test_new_domain.py`
+5. Update imports throughout codebase
+
+#### Adding a New Field
+1. Determine classification: (SYSTEM/MANUAL/CALCULATED/HYBRID)
+2. Add field to model with classification comment
+3. Update any calculation methods that depend on it
+4. Add migration if needed: `alembic revision --autogenerate -m "add new field"`
+5. Update tests to verify classification
+
+#### Debugging Database Issues
+```bash
+# Reset database completely
+python scripts/init_database.py
+
+# Check migration status
+alembic current
+alembic history
+
+# Run specific test
+python tests/test_main.py
 ```
-investment_tracker/
-├── src/                       # Core application code (domain-driven)
-│   ├── fund/                  # Fund models, calculations, queries
-│   ├── tax/                   # Tax models, events, calculations
-│   ├── entity/                # Entity models, calculations
-│   ├── investment_company/    # Investment company domain
-│   ├── rates/                 # Risk-free rates and related logic
-│   ├── shared/                # Shared utilities and base classes
-│   └── database.py            # Database setup and session management
-├── tests/                     # Test suite (unit, integration, system)
-│   └── output/                # Test output artifacts
-├── scripts/                   # Utility and migration scripts
-├── docs/                      # Documentation
-│   ├── DESIGN_GUIDELINES.md   # Core development/design patterns
-│   ├── PROJECT_CONTEXT.md     # This file
-│   └── refactor_plans/        # Refactoring and migration plans
-├── alembic/                   # Database migrations (Alembic)
-├── data/                      # Data files and backups
-├── requirements.txt           # Python dependencies
-├── pyproject.toml             # Project configuration
-├── README.md                  # User-facing documentation
-└── .gitignore
+
+#### Debugging Frontend Issues
+```bash
+# Check for unused imports (ESLint warnings)
+cd frontend
+npm run lint
+
+# Fix common issues
+npm run lint -- --fix
+
+# Check API connectivity
+curl http://localhost:5001/api/health
+```
+
+### Code Review Checklist
+
+- [ ] **Domain organization:** Code in correct domain directory?
+- [ ] **Field classification:** All fields properly marked?
+- [ ] **Session management:** Using `@with_session` decorator?
+- [ ] **Tests:** New functionality has test coverage?
+- [ ] **Documentation:** Updated relevant docs?
+- [ ] **Imports:** Using domain-specific imports?
+
+---
+
+## Technical Debt & Known Issues
+
+### Current Technical Debt
+- **ESLint warnings:** Unused imports in React components (see terminal output)
+- **Missing dependencies:** Some useEffect hooks missing dependencies
+- **Legacy code:** Some old patterns may still exist in edge cases
+
+### Planned Improvements
+- **Frontend cleanup:** Remove unused imports and fix dependency warnings
+- **Test coverage:** Expand unit tests for edge cases
+- **Performance:** Optimize database queries for large datasets
+- **Documentation:** Keep docs in sync with code changes
+
+---
+
+## Project-Specific Patterns
+
+### Financial Calculation Patterns
+- **IRR calculations:** Use domain-specific calculation methods
+- **Tax calculations:** Follow tax statement reconciliation patterns
+- **Unit tracking:** NAV-based funds use FIFO cost basis
+- **Date handling:** Inclusive start dates, exclusive end dates
+
+### Database Patterns
+- **Migrations:** Use Alembic for all schema changes
+- **Session management:** Always use `@with_session` decorator
+- **Field updates:** Never manually set calculated fields
+- **Query optimization:** Use domain-specific query methods
+
+### Testing Patterns
+- **System tests:** `tests/test_main.py` validates entire system
+- **Output comparison:** Test outputs saved to `tests/output/`
+- **Database state:** Tests reset database to known state
+- **Calculation validation:** IRR and cash flow are primary metrics
+
+---
+
+## Troubleshooting for Developers
+
+### Common Issues & Solutions
+
+**Import errors after domain migration:**
+```bash
+# Check you're using domain imports
+from src.fund.models import Fund  # ✅ Correct
+from src.models import Fund       # ❌ Old pattern
+```
+
+**Database session issues:**
+```python
+# Always use keyword arguments
+fund.add_capital_call(amount=100000, session=session)  # ✅ Correct
+fund.add_capital_call(100000, session)                 # ❌ Wrong
+```
+
+**Test failures:**
+```bash
+# Reset database and reinitialize
+python scripts/init_database.py
+python tests/test_main.py
+```
+
+**Frontend build issues:**
+```bash
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
+npm start
+```
+
+### Debugging Workflows
+
+**Database debugging:**
+```python
+# Add to your test/debug script
+from src.database import get_database_session
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
+
+try:
+    # Your debugging code here
+    funds = session.query(Fund).all()
+    print(f"Found {len(funds)} funds")
+finally:
+    session.close()
+```
+
+**Frontend debugging:**
+```typescript
+// Add to React components for debugging
+console.log('API Response:', data);
+console.log('Component State:', state);
 ```
 
 ---
 
-## Domain-Driven Architecture
+## Onboarding Checklist for New Developers
 
-- **Each domain (fund, tax, entity, etc.) has its own models, calculations, and logic.**
-- **No business logic in models.py:** All calculations are in calculations.py within each domain.
-- **Session management is handled at the outermost layer** (API, CLI, or test scripts), never inside domain methods.
-- **All database operations are performed via domain methods** that accept a session parameter.
+1. **Environment setup:**
+   - [ ] Python 3.8+ installed
+   - [ ] Node.js 18+ installed
+   - [ ] Virtual environment created
+   - [ ] Dependencies installed
+   - [ ] Database initialized
+   - [ ] Tests passing
 
----
+2. **Documentation review:**
+   - [ ] README.md (setup and usage)
+   - [ ] DESIGN_GUIDELINES.md (development patterns)
+   - [ ] PROJECT_CONTEXT.md (this file - project context)
 
-## Field Classification (SYSTEM / MANUAL / CALCULATED / HYBRID)
+3. **Codebase exploration:**
+   - [ ] Understand domain structure in `src/`
+   - [ ] Review field classification system
+   - [ ] Examine session management patterns
+   - [ ] Look at test structure
 
-Every model field is explicitly classified:
-- **(SYSTEM):** Set by the database/ORM (e.g., primary keys, timestamps)
-- **(MANUAL):** Set by the user/developer (e.g., business data, foreign keys)
-- **(CALCULATED):** Set by business logic only, never manually
-- **(HYBRID):** Can be set manually or calculated, with clear precedence
-
-See `docs/DESIGN_GUIDELINES.md` for full field reference and examples.
-
----
-
-## Core Patterns & Best Practices
-
-### Session Management
-- Use the `@with_session` decorator for methods that require a database session.
-- Always pass `session` as a keyword argument.
-- The backend (not clients) owns session lifecycle.
-
-### Object & Event Creation
-- Use class methods (e.g., `Fund.create()`, `Entity.create()`) for root objects.
-- Use domain methods for related objects and events (e.g., `fund.add_capital_call()`).
-- Use managers (e.g., `TaxEventManager`) for system-generated events.
-
-### Separation of Concerns
-- **Models:** ORM logic, session management, orchestration (no business calculations)
-- **Calculations:** Pure business logic, stateless, easy to test
-
----
-
-## Testing & Validation
-- Comprehensive system and unit tests in `tests/`
-- Test outputs stored in `tests/output/`
-- IRR and cash flow validation are primary success metrics
-- All major features have test coverage
-
----
-
-## Documentation
-- **DESIGN_GUIDELINES.md:** Core development patterns, field reference, workflow examples, and testing guidelines
-- **refactor_plans/:** Architectural and migration plans, technical debt tracking
-- **README.md:** User-facing setup and usage instructions
-
----
-
-## Onboarding for New Developers
-1. Read `README.md` for setup and usage
-2. Review `docs/DESIGN_GUIDELINES.md` for development patterns and field classifications
-3. Explore the domain structure in `src/`
-4. Run tests in `tests/` to verify setup
-5. Follow session and object creation patterns in all new code
+4. **First contribution:**
+   - [ ] Follow domain-driven organization
+   - [ ] Use proper field classification
+   - [ ] Implement session management correctly
+   - [ ] Add appropriate tests
+   - [ ] Update documentation
 
 ---
 
 ## Future Considerations
-- Streamlit dashboard for visualization
-- Additional financial metrics and calculations
-- Data import/export features
-- Real-time market data integration
-- Ongoing refactoring plans tracked in `docs/refactor_plans/`
+
+### Planned Features
+- **Streamlit dashboard:** Interactive visualization
+- **Real-time data:** Market data integration
+- **Import/export:** Data migration tools
+- **Performance optimization:** Large dataset handling
+
+### Architectural Evolution
+- **Microservices:** Potential future migration
+- **Real-time updates:** WebSocket integration
+- **Advanced analytics:** Machine learning integration
+- **Mobile app:** React Native consideration
 
 ---
 
-*This file should be updated as the project evolves to maintain a clear record of decisions, structure, and best practices.* 
+*This document should be updated as the project evolves to maintain clear context for developers joining the project.* 

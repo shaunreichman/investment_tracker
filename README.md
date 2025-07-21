@@ -23,6 +23,41 @@ The system follows a domain-driven design with clear separation of concerns:
 - **Rates Domain:** Market data and risk-free rates
 - **Web UI:** React frontend with Flask API backend
 
+### Domain-Driven Design
+
+The project uses a domain-driven architecture where:
+
+- **Each domain** (fund, tax, entity, rates, investment company) has its own models, calculations, and creation logic
+- **Shared logic** (utilities, base classes, pure calculations) lives in `src/shared/`
+- **All imports** should use the new domain modules:
+
+```python
+from src.fund.models import Fund, FundEvent, FundType
+from src.tax.models import TaxStatement
+from src.entity.models import Entity
+from src.rates.models import RiskFreeRate
+from src.investment_company.models import InvestmentCompany
+from src.shared.utils import with_session
+```
+
+### Field Classification
+
+All fields are explicitly classified as:
+- **(SYSTEM):** Set by the database/ORM (e.g., primary keys, timestamps)
+- **(MANUAL):** Set by the user/developer (e.g., business data, foreign keys)
+- **(CALCULATED):** Set by business logic only, never manually
+- **(HYBRID):** Can be set manually or calculated, with clear precedence
+
+See [`docs/DESIGN_GUIDELINES.md`](./docs/DESIGN_GUIDELINES.md) for a full field reference and examples.
+
+### Session Management
+
+All model methods that require a database session use the `@with_session` decorator:
+- **Always pass `session` as a keyword argument**
+- Only methods that perform database queries are decorated
+- The backend (not clients) owns session lifecycle
+- See [`docs/DESIGN_GUIDELINES.md`](./docs/DESIGN_GUIDELINES.md) for detailed patterns
+
 ## Quick Start
 
 ### Prerequisites
@@ -65,7 +100,7 @@ The system follows a domain-driven design with clear separation of concerns:
 Run the Flask API server:
 ```bash
 source venv/bin/activate
-python src/api.py
+FLASK_APP=src/api.py python -m flask run --host=0.0.0.0 --port=5001
 ```
 
 The API will be available at http://localhost:5001
@@ -86,7 +121,7 @@ You'll need to run both servers in separate terminals:
 **Terminal 1 (Backend):**
 ```bash
 source venv/bin/activate
-python src/api.py
+FLASK_APP=src/api.py python -m flask run --host=0.0.0.0 --port=5001
 ```
 
 **Terminal 2 (Frontend):**
@@ -95,50 +130,7 @@ cd frontend
 npm start
 ```
 
-### Web UI Features
-
-The web interface provides:
-
-- **Dashboard**: Overview of all funds with portfolio summary, fund table, and recent events
-- **Fund Details**: Detailed view of individual funds with events, statistics, and transaction history
-- **Real-time Data**: All data comes from the live database via Flask API
-- **Responsive Design**: Works on desktop and mobile devices
-- **Professional UI**: Material UI components with modern styling
-
-### API Endpoints
-
-The Flask API provides the following endpoints:
-
-- `GET /api/health` - Health check endpoint
-- `GET /api/dashboard/portfolio-summary` - Portfolio overview statistics
-- `GET /api/dashboard/funds` - List of all funds with key metrics
-- `GET /api/dashboard/recent-events` - Recent fund events
-- `GET /api/dashboard/performance` - Performance data for all funds
-- `GET /api/funds/<fund_id>` - Detailed fund information and events
-
-### Development
-
-#### Project Structure
-
-```
-investment_tracker/
-├── src/                    # Python backend
-│   ├── api/               # Flask API endpoints
-│   ├── entity/            # Entity domain
-│   ├── fund/              # Fund domain
-│   ├── investment_company/ # Investment company domain
-│   ├── tax/               # Tax domain
-│   ├── rates/             # Rates domain
-│   └── shared/            # Shared utilities
-├── frontend/              # React frontend
-│   ├── src/               # React source code
-│   └── public/            # Static assets
-├── tests/                 # Test files
-├── scripts/               # Utility scripts
-└── docs/                  # Documentation
-```
-
-#### Environment Variables
+### Environment Configuration
 
 The React frontend uses environment variables for configuration:
 
@@ -149,7 +141,17 @@ Create a `.env` file in the `frontend/` directory:
 REACT_APP_API_BASE_URL=http://localhost:5001
 ```
 
-#### API Endpoints
+## Web UI Features
+
+The web interface provides:
+
+- **Dashboard**: Overview of all funds with portfolio summary, fund table, and recent events
+- **Fund Details**: Detailed view of individual funds with events, statistics, and transaction history
+- **Real-time Data**: All data comes from the live database via Flask API
+- **Responsive Design**: Works on desktop and mobile devices
+- **Professional UI**: Material UI components with modern styling
+
+## API Endpoints
 
 The Flask API provides the following endpoints:
 
@@ -159,6 +161,36 @@ The Flask API provides the following endpoints:
 - `GET /api/dashboard/recent-events` - Recent fund events
 - `GET /api/dashboard/performance` - Performance data for all funds
 - `GET /api/funds/<fund_id>` - Detailed fund information and events
+
+## Project Structure
+
+```
+investment_tracker/
+├── src/                       # Core application code (domain-driven)
+│   ├── fund/                  # Fund models, calculations, queries
+│   ├── tax/                   # Tax models, events, calculations
+│   ├── entity/                # Entity models, calculations
+│   ├── investment_company/    # Investment company domain
+│   ├── rates/                 # Risk-free rates and related logic
+│   ├── shared/                # Shared utilities and base classes
+│   └── database.py            # Database setup and session management
+├── frontend/                  # React frontend
+│   ├── src/                   # React source code
+│   └── public/                # Static assets
+├── tests/                     # Test suite (unit, integration, system)
+│   └── output/                # Test output artifacts
+├── scripts/                   # Utility and migration scripts
+├── docs/                      # Documentation
+│   ├── DESIGN_GUIDELINES.md   # Core development/design patterns
+│   ├── PROJECT_CONTEXT.md     # Project context and onboarding
+│   └── refactor_plans/        # Refactoring and migration plans
+├── alembic/                   # Database migrations (Alembic)
+├── data/                      # Data files and backups
+├── requirements.txt           # Python dependencies
+├── pyproject.toml             # Project configuration
+├── README.md                  # User-facing documentation
+└── .gitignore
+```
 
 ## Testing
 
@@ -189,165 +221,6 @@ The system includes comprehensive tests for:
 - React component rendering and user interactions
 - End-to-end data flow from database to frontend
 - Error handling and loading states
-
-## Documentation
-
-- [Design Guidelines](docs/DESIGN_GUIDELINES.md) - Architecture and development guidelines
-- [Web UI Tasks](docs/web_app_summary_dashboard_tasks.md) - Web UI development roadmap and current status
-- [Project Context](docs/PROJECT_CONTEXT.md) - Project overview and context
-
-## Contributing
-
-Please read the [Design Guidelines](docs/DESIGN_GUIDELINES.md) before contributing to understand the project's architecture and development patterns.
-
-## License
-
-[Add your license information here]
-
----
-
-## ⚡️ Domain-Driven Architecture (2024 Migration)
-
-**This project uses a domain-driven architecture.**
-- All models, calculations, and creation logic are organized by domain (fund, tax, entity, rates, investment company, shared).
-- Old files (`src/models.py`, `src/calculations.py`, `src/utils.py`) have been removed or are fully deprecated.
-- All imports should use the new domain modules (see below).
-
----
-
-## Project Overview
-
-This app tracks investments, cash flows, and fund performance. It supports:
-
-### Fund Types
-- **NAV-Based Funds**: Track investments with regular NAV updates (shares, ETFs, unit trusts)
-- **Cost-Based Funds**: Track investments held at cost (private equity, venture capital, real estate)
-
-### Key Features
-- IRR and after-tax IRR calculation
-- Tax statement management and reconciliation
-- Automated event generation (tax payments, risk-free interest charges, etc.)
-- Automatic calculation of derived fields (equity balances, unit tracking, etc.)
-
-**Data is stored in SQLite via SQLAlchemy.**  
-**All business logic is tested with a comprehensive system test.**
-
-### Recent Improvements
-- **Standardized date conventions**: All calculations now use inclusive start dates and exclusive end dates for consistency
-- **Automatic event listeners**: NAV-based funds automatically update current units after unit purchase/sale events
-- **Enhanced FIFO tracking**: NAV-based funds use FIFO cost basis for accurate equity balance calculations
-- **Improved IRR calculations**: Complete support for NAV-based fund IRR with unit sales included
-- **2024: Domain-driven architecture migration**
-
----
-
-## Directory Structure (Domain-Driven)
-
-```
-investment_tracker/
-├── src/                       # Core application code (domain-driven)
-│   ├── fund/                  # Fund models, calculations, queries
-│   ├── tax/                   # Tax models, events, calculations
-│   ├── entity/                # Entity models, calculations
-│   ├── investment_company/    # Investment company domain
-│   ├── rates/                 # Risk-free rates and related logic
-│   ├── shared/                # Shared utilities and base classes
-│   └── database.py            # Database setup and session management
-├── tests/                     # Test suite (unit, integration, system)
-│   └── output/                # Test output artifacts
-├── scripts/                   # Utility and migration scripts
-├── docs/                      # Documentation
-│   ├── DESIGN_GUIDELINES.md   # Core development/design patterns
-│   ├── PROJECT_CONTEXT.md     # Project context and onboarding
-│   └── refactor_plans/        # Refactoring and migration plans
-├── alembic/                   # Database migrations (Alembic)
-├── data/                      # Data files and backups
-├── requirements.txt           # Python dependencies
-├── pyproject.toml             # Project configuration
-├── README.md                  # User-facing documentation
-└── .gitignore
-```
-
----
-
-## Domain-Driven Architecture
-
-- **Each domain (fund, tax, entity, rates, investment company) has its own models, calculations, and creation logic.**
-- **Shared logic** (utilities, base classes, pure calculations) lives in `src/shared/`.
-- **All imports** should use the new domain modules, e.g.:
-  ```python
-  from src.fund.models import Fund, FundEvent, FundType
-  from src.tax.models import TaxStatement
-  from src.entity.models import Entity
-  from src.rates.models import RiskFreeRate
-  from src.investment_company.models import InvestmentCompany
-  from src.shared.utils import with_session
-  ```
-
----
-
-## Field Classification: (SYSTEM / MANUAL / CALCULATED / HYBRID)
-
-- **(SYSTEM):** Set by the database/ORM (e.g., primary keys, timestamps)
-- **(MANUAL):** Set by the user/developer (e.g., business data, foreign keys)
-- **(CALCULATED):** Set by business logic only, never manually
-- **(HYBRID):** Can be set manually or calculated, with clear precedence
-
-See [`docs/DESIGN_GUIDELINES.md`](./docs/DESIGN_GUIDELINES.md) for a full field reference and examples.
-
----
-
-## Business Logic vs Database Operations
-
-All model methods are designed to **separate business logic from database operations** for clarity, testability, and maintainability:
-
-- **Pure business logic** (object creation, calculations, orchestration) is implemented in private methods (prefixed with `_`) or in domain `calculations.py` files. These methods do not perform any database operations and do not require a session.
-- **Database operations** (adding, deleting, committing, querying) are handled only in public model methods decorated with `@with_session`. These methods are responsible for session management and call the pure business logic methods as needed.
-
-**Pattern Example:**
-```python
-from src.fund.models import Fund
-from src.tax.models import TaxStatement
-from src.shared.utils import with_session
-
-class Fund(...):
-    ...
-    def _create_tax_payment_event_object(self, tax_statement):
-        # Pure business logic: create event object, no DB ops
-        ...
-        return event
-
-    @with_session
-    def create_tax_payment_events(self, session=None):
-        # DB operations: add event to session, commit
-        event = self._create_tax_payment_event_object(...)
-        session.add(event)
-        session.commit()
-```
-
-- **No business logic should be mixed with session.add, session.commit, or session.delete.**
-- This pattern is followed throughout all models (Fund, TaxStatement, etc.).
-- See `src/fund/models.py` and other domain modules for examples and [`docs/DESIGN_GUIDELINES.md`](./docs/DESIGN_GUIDELINES.md) for more details.
-
----
-
-## Session Handling
-
-All model methods that require a database session use the `@with_session` decorator (see `src/shared/utils.py`).
-- **Always pass `session` as a keyword argument.**
-- Only methods that perform database queries are decorated; orchestration/helper methods are not.
-- The backend (not clients) owns session lifecycle.
-
----
-
-## Quickstart
-
-```sh
-pip install -r requirements.txt
-PYTHONPATH=. python tests/test_main.py
-```
-
----
 
 ## Example Usage
 
@@ -413,51 +286,70 @@ fund.update_total_cost_basis()
 irr = fund.calculate_irr()
 ```
 
----
+## Troubleshooting
 
-## Design & Contribution
+### Common Issues
 
-- **Business logic** is separated from pure calculations (see `calculations.py`).
-- **Session handling** is centralized with `@with_session` for maintainability.
-- **Field classification**: All fields are explicitly marked as (SYSTEM), (MANUAL), (CALCULATED), or (HYBRID) in the codebase and documentation.
-- **See [`docs/DESIGN_GUIDELINES.md`](./docs/DESIGN_GUIDELINES.md)** for:
-  - Detailed field classification
-  - Event and tax statement modeling
-  - Calculation workflows
-  - Coding conventions and best practices
-- **See [`docs/refactor_plans/`](./docs/refactor_plans/)** for ongoing and historical refactoring plans.
+**Frontend won't connect to backend:**
+- Ensure the Flask API is running on port 5001
+- Check that `REACT_APP_API_BASE_URL` is set correctly in frontend/.env
+- Verify CORS is enabled in the Flask app
 
----
+**Database errors:**
+- Run `python scripts/init_database.py` to reset the database
+- Check that SQLite is working properly
+- Verify all migrations have been applied
 
-## Testing
+**Import errors:**
+- Ensure you're using the domain-driven imports (e.g., `from src.fund.models import Fund`)
+- Check that the virtual environment is activated
+- Verify all dependencies are installed with `pip install -r requirements.txt`
 
-Run the main test suite:
-```sh
-PYTHONPATH=. python tests/test_main.py
-```
-This will clear the database, set up test data, recalculate all derived values, and verify correctness.
+**Test failures:**
+- Clear the database and reinitialize: `python scripts/init_database.py`
+- Check that all test dependencies are installed
+- Verify the test database is not corrupted
 
-- All test scripts are located in the `tests/` directory for better organization.
-- Source code is under `src/`.
-- Database and Alembic migration files are under `alembic/`.
+## Contributing
 
-To run all tests with pytest (if desired):
-  ```
-  pytest tests/
-  ```
-- All new test scripts should be placed in the `tests/` directory.
-- **Calculated fields** (e.g., `tax_payable`, `interest_tax_benefit`, `total_interest_expense`) must never be set directly in tests or production code. Always use the appropriate calculation method to set these fields.
+### Before Contributing
 
----
+1. **Read the documentation:**
+   - [Design Guidelines](docs/DESIGN_GUIDELINES.md) - Architecture and development guidelines
+   - [Project Context](docs/PROJECT_CONTEXT.md) - Project overview and context
 
-## Cleanup Policy
+2. **Understand the architecture:**
+   - Domain-driven design principles
+   - Session management patterns
+   - Field classification system
 
-- Debug and temporary output files (e.g., `CashFlowDebug.txt`, `DividendTaxDebug.txt`) should not be committed to the repository.
-- Reference files (e.g., historical versions of modules) should be removed after they are no longer needed.
-- Utility scripts are now organized in the `scripts/` directory.
-- All documentation (including refactor plans) is in the `docs/` directory.
+3. **Set up development environment:**
+   - Follow the installation instructions above
+   - Run tests to ensure everything works
+   - Familiarize yourself with the codebase structure
 
----
+### Development Guidelines
+
+- **Follow domain-driven design** - organize code by domain (fund, tax, entity, etc.)
+- **Use the `@with_session` decorator** for database operations
+- **Never set calculated fields manually** - use appropriate calculation methods
+- **Write tests** for new features and changes
+- **Update documentation** when adding new patterns or conventions
+- **Follow the field classification system** - mark all fields as (SYSTEM), (MANUAL), (CALCULATED), or (HYBRID)
+
+### Code Style
+
+- Use Python 3.8+ features
+- Follow PEP 8 for Python code
+- Use TypeScript for React components
+- Implement proper error handling and loading states
+- Write clear, descriptive commit messages
+
+## Documentation
+
+- [Design Guidelines](docs/DESIGN_GUIDELINES.md) - Architecture and development guidelines
+- [Project Context](docs/PROJECT_CONTEXT.md) - Project overview and context
+- [Web UI Tasks](docs/web_app_summary_dashboard_tasks.md) - Web UI development roadmap and current status
 
 ## Roadmap
 
@@ -466,3 +358,17 @@ To run all tests with pytest (if desired):
 - Data import/export features
 - Real-time market data integration
 - Ongoing refactoring plans tracked in [`docs/refactor_plans/`](./docs/refactor_plans/)
+
+## License
+
+[Add your license information here]
+
+---
+
+## Recent Improvements
+
+- **Standardized date conventions**: All calculations now use inclusive start dates and exclusive end dates for consistency
+- **Automatic event listeners**: NAV-based funds automatically update current units after unit purchase/sale events
+- **Enhanced FIFO tracking**: NAV-based funds use FIFO cost basis for accurate equity balance calculations
+- **Improved IRR calculations**: Complete support for NAV-based fund IRR with unit sales included
+- **2024: Domain-driven architecture migration** - Complete reorganization into domain modules
