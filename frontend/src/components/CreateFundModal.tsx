@@ -22,6 +22,7 @@ import {
   Divider
 } from '@mui/material';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon } from '@mui/icons-material';
+import CreateEntityModal from './CreateEntityModal';
 
 interface Entity {
   id: number;
@@ -60,6 +61,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [showEntityModal, setShowEntityModal] = useState(false);
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -132,10 +134,18 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     const errors: ValidationErrors = {};
     
     // Required fields
-    if (!formData.entity_id) errors.entity_id = 'Entity is required';
-    if (!formData.name.trim()) errors.name = 'Fund name is required';
-    if (!formData.fund_type) errors.fund_type = 'Fund type is required';
-    if (!formData.tracking_type) errors.tracking_type = 'Tracking type is required';
+    if (!formData.entity_id) {
+      errors.entity_id = 'Entity is required';
+    }
+    if (!formData.name.trim()) {
+      errors.name = 'Fund name is required';
+    }
+    if (!formData.fund_type) {
+      errors.fund_type = 'Fund type is required';
+    }
+    if (!formData.tracking_type) {
+      errors.tracking_type = 'Tracking type is required';
+    }
     
     // Field-specific validation
     const nameError = validateField('name', formData.name);
@@ -185,6 +195,12 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       fetchEntities();
     }
   }, [open, fetchEntities]);
+
+  useEffect(() => {
+    if (open) {
+      validateForm(); // Trigger validation when modal opens
+    }
+  }, [open]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -270,7 +286,34 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       setError(null);
       setSuccess(false);
       setValidationErrors({});
+      // Clear form data when closing
+      setFormData({
+        entity_id: '',
+        name: '',
+        fund_type: '',
+        tracking_type: '',
+        currency: 'AUD',
+        commitment_amount: '',
+        expected_irr: '',
+        expected_duration_months: '',
+        description: ''
+      });
     }
+  };
+
+  const handleEntityCreated = (entity: { id: number; name: string }) => {
+    // Add the new entity to the list
+    setEntities(prev => [...prev, entity]);
+    // Select the new entity
+    setFormData(prev => ({
+      ...prev,
+      entity_id: entity.id.toString()
+    }));
+    // Clear entity validation error
+    setValidationErrors(prev => ({
+      ...prev,
+      entity_id: undefined
+    }));
   };
 
   const isFormValid = () => {
@@ -385,7 +428,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
             
             <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr' }}>
               {/* Entity Selection */}
-              <FormControl fullWidth error={!!validationErrors.entity_id}>
+              <FormControl fullWidth error={!!validationErrors.entity_id} required>
                 <InputLabel>Entity *</InputLabel>
                 <Select
                   value={formData.entity_id}
@@ -397,6 +440,18 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                       {entity.name}
                     </MenuItem>
                   ))}
+                  <Divider />
+                  <MenuItem 
+                    value="create_new" 
+                    onClick={() => setShowEntityModal(true)}
+                    sx={{ 
+                      color: 'primary.main',
+                      fontStyle: 'italic'
+                    }}
+                  >
+                    <AddIcon sx={{ mr: 1, fontSize: 16 }} />
+                    Create New Entity...
+                  </MenuItem>
                 </Select>
                 {validationErrors.entity_id && (
                   <FormHelperText error>{validationErrors.entity_id}</FormHelperText>
@@ -411,10 +466,11 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 error={!!validationErrors.name}
                 helperText={validationErrors.name || "Enter a unique fund name (2-255 characters)"}
+                required
               />
 
               {/* Fund Type */}
-              <FormControl fullWidth error={!!validationErrors.fund_type}>
+              <FormControl fullWidth error={!!validationErrors.fund_type} required>
                 <InputLabel>Fund Type *</InputLabel>
                 <Select
                   value={formData.fund_type}
@@ -438,7 +494,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               </FormControl>
 
               {/* Tracking Type */}
-              <FormControl fullWidth error={!!validationErrors.tracking_type}>
+              <FormControl fullWidth error={!!validationErrors.tracking_type} required>
                 <InputLabel>Tracking Type *</InputLabel>
                 <Select
                   value={formData.tracking_type}
@@ -536,6 +592,13 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
           {submitting ? 'Creating...' : 'Create Fund'}
         </Button>
       </DialogActions>
+
+      {/* Entity Creation Modal */}
+      <CreateEntityModal
+        open={showEntityModal}
+        onClose={() => setShowEntityModal(false)}
+        onEntityCreated={handleEntityCreated}
+      />
     </Dialog>
   );
 };

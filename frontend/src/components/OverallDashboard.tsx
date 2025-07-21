@@ -14,15 +14,22 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Link
+  Link,
+  Button,
+  Grid
 } from '@mui/material';
 import {
   Business,
   AccountBalance,
   TrendingUp,
-  Event
+  Event,
+  Add as AddIcon,
+  Person as PersonIcon,
+  Business as BusinessIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import CreateEntityModal from './CreateEntityModal';
+import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 
 interface InvestmentCompany {
   id: number;
@@ -42,6 +49,8 @@ const OverallDashboard: React.FC = () => {
   const [companies, setCompanies] = useState<InvestmentCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showEntityModal, setShowEntityModal] = useState(false);
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
 
@@ -87,6 +96,17 @@ const OverallDashboard: React.FC = () => {
     return `${day}-${month}-${year}`;
   };
 
+  const handleEntityCreated = (entity: { id: number; name: string }) => {
+    // Refresh the page or show a success message
+    // For now, we'll just close the modal
+    setShowEntityModal(false);
+  };
+
+  const handleCompanyCreated = (company: { id: number; name: string }) => {
+    // Refresh the companies list
+    window.location.reload();
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -112,6 +132,59 @@ const OverallDashboard: React.FC = () => {
       <Typography variant="body1" color="textSecondary" mb={3}>
         Overview of all investment companies and their managed funds
       </Typography>
+
+      {/* Data Management Section */}
+      <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr', mb: 3 }}>
+        {/* Entity Management Card */}
+        <Card>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box display="flex" alignItems="center">
+                <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="h6">
+                  Entity Management
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setShowEntityModal(true)}
+                size="small"
+              >
+                Create Entity
+              </Button>
+            </Box>
+            <Typography variant="body2" color="textSecondary">
+              Create and manage investing entities (persons or companies) that can hold funds
+            </Typography>
+          </CardContent>
+        </Card>
+
+        {/* Investment Company Management Card */}
+        <Card>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box display="flex" alignItems="center">
+                <BusinessIcon sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="h6">
+                  Company Management
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setShowCompanyModal(true)}
+                size="small"
+              >
+                Create Company
+              </Button>
+            </Box>
+            <Typography variant="body2" color="textSecondary">
+              Create and manage investment companies and fund managers
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
 
       <Card>
         <CardContent>
@@ -272,6 +345,20 @@ const OverallDashboard: React.FC = () => {
           </Card>
         </Box>
       )}
+
+      {/* Entity Creation Modal */}
+      <CreateEntityModal
+        open={showEntityModal}
+        onClose={() => setShowEntityModal(false)}
+        onEntityCreated={handleEntityCreated}
+      />
+
+      {/* Investment Company Creation Modal */}
+      <CreateInvestmentCompanyModal
+        open={showCompanyModal}
+        onClose={() => setShowCompanyModal(false)}
+        onCompanyCreated={handleCompanyCreated}
+      />
     </Box>
   );
 };
