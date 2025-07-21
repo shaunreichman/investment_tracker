@@ -20,8 +20,8 @@ Adding 3PG Finance events using domain methods...
 Adding 3PG Finance distributions with tax...
 ABC Ltd capital gain for 2013-14: 397.50 (discount: 196.35, tax: 119.25)
 Test data setup complete!
-Created 2 funds for Test Company
-Created 1 funds for Test Shares Company
+Created 2 funds for Alceon
+Created 1 funds for Shares
 Funds after setup: ['1: Senior Debt Fund No.24', '2: 3PG Finance', '3: ABC Ltd']
 
 Initial fund state:
@@ -40,7 +40,7 @@ Recalculating for Senior Debt Fund No.24:
 Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
 Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
 Created 2 FY debt cost events for Senior Debt Fund No.24
-Created 2 FY debt cost events for Senior Debt Fund No.24
+Created 2 EOFY debt cost events for Senior Debt Fund No.24
   IRR: 11.92%
   After-tax IRR: 10.69%
   Real IRR: 7.49%
@@ -82,7 +82,7 @@ Created 2 FY debt cost events for Senior Debt Fund No.24
       7:       -11.23  daily_risk_free_interest_charge | 2023-06-28 | 11.23 | Daily risk-free interest charge (4.10% p.a.)
       8:       -11.23  daily_risk_free_interest_charge | 2023-06-29 | 11.23 | Daily risk-free interest charge (4.10% p.a.)
       9:       -11.23  daily_risk_free_interest_charge | 2023-06-30 | 11.23 | Daily risk-free interest charge (4.10% p.a.)
-     10:        29.19  fy_debt_cost | 2023-06-30 | 29.19 | FY 2022-23 Interest Tax Benefit ($29.19)
+     10:        29.19  eofy_debt_cost | 2023-06-30 | 29.19 | FY 2022-23 Interest Tax Benefit ($29.19)
      11:       -11.23  daily_risk_free_interest_charge | 2023-07-01 | 11.23 | Daily risk-free interest charge (4.10% p.a.)
      12:       -11.23  daily_risk_free_interest_charge | 2023-07-02 | 11.23 | Daily risk-free interest charge (4.10% p.a.)
      13:       -11.23  daily_risk_free_interest_charge | 2023-07-03 | 11.23 | Daily risk-free interest charge (4.10% p.a.)
@@ -457,7 +457,7 @@ Created 2 FY debt cost events for Senior Debt Fund No.24
      382:        -5.72  daily_risk_free_interest_charge | 2024-06-28 | 5.72 | Daily risk-free interest charge (4.35% p.a.)
      383:        -5.72  daily_risk_free_interest_charge | 2024-06-29 | 5.72 | Daily risk-free interest charge (4.35% p.a.)
      384:        -5.72  daily_risk_free_interest_charge | 2024-06-30 | 5.72 | Daily risk-free interest charge (4.35% p.a.)
-     385:     1,162.97  fy_debt_cost | 2024-06-30 | 1,162.97 | FY 2023-24 Interest Tax Benefit ($1,162.97)
+     385:     1,162.97  eofy_debt_cost | 2024-06-30 | 1,162.97 | FY 2023-24 Interest Tax Benefit ($1,162.97)
      386:        -5.72  daily_risk_free_interest_charge | 2024-07-01 | 5.72 | Daily risk-free interest charge (4.35% p.a.)
      387:        -5.72  daily_risk_free_interest_charge | 2024-07-02 | 5.72 | Daily risk-free interest charge (4.35% p.a.)
      388:        -5.72  daily_risk_free_interest_charge | 2024-07-03 | 5.72 | Daily risk-free interest charge (4.35% p.a.)
@@ -503,7 +503,7 @@ Recalculating for 3PG Finance:
 Created 512 daily risk-free interest charge events for 3PG Finance
 Created 512 daily risk-free interest charge events for 3PG Finance
 Created 2 FY debt cost events for 3PG Finance
-Created 2 FY debt cost events for 3PG Finance
+Created 2 EOFY debt cost events for 3PG Finance
   IRR: 16.54%
   After-tax IRR: 14.86%
   Real IRR: 12.05%
@@ -773,7 +773,7 @@ Created 2 FY debt cost events for 3PG Finance
      221:       -10.40  daily_risk_free_interest_charge | 2023-06-29 | 10.40 | Daily risk-free interest charge (4.10% p.a.)
      222:      -307.56  tax_payment | 2023-06-30 | 307.56 | Tax payment for FY 2022-23
      223:       -10.40  daily_risk_free_interest_charge | 2023-06-30 | 10.40 | Daily risk-free interest charge (4.10% p.a.)
-     224:       652.47  fy_debt_cost | 2023-06-30 | 652.47 | FY 2022-23 Interest Tax Benefit ($652.47)
+     224:       652.47  eofy_debt_cost | 2023-06-30 | 652.47 | FY 2022-23 Interest Tax Benefit ($652.47)
      225:       -10.40  daily_risk_free_interest_charge | 2023-07-01 | 10.40 | Daily risk-free interest charge (4.10% p.a.)
      226:       -10.40  daily_risk_free_interest_charge | 2023-07-02 | 10.40 | Daily risk-free interest charge (4.10% p.a.)
      227:       -10.40  daily_risk_free_interest_charge | 2023-07-03 | 10.40 | Daily risk-free interest charge (4.10% p.a.)
@@ -1085,7 +1085,7 @@ Created 2 FY debt cost events for 3PG Finance
      533:    32,233.41  return_of_capital | 2024-04-19 | 32,233.41 | Final return of capital
      534:     4,399.27  distribution | 2024-04-19 | 4,399.27 | Interest distribution
      535:      -439.93  tax_payment | 2024-04-19 | 439.93 | Tax withheld on distribution (rate: 10.0%)
-     536:       473.03  fy_debt_cost | 2024-06-30 | 473.03 | FY 2023-24 Interest Tax Benefit ($473.03)
+     536:       473.03  eofy_debt_cost | 2024-06-30 | 473.03 | FY 2023-24 Interest Tax Benefit ($473.03)
 
 Recalculating for ABC Ltd:
   Current equity: $0.00
@@ -1096,7 +1096,7 @@ Recalculating for ABC Ltd:
 Created 411 daily risk-free interest charge events for ABC Ltd
 Created 411 daily risk-free interest charge events for ABC Ltd
 Created 2 FY debt cost events for ABC Ltd
-Created 2 FY debt cost events for ABC Ltd
+Created 2 EOFY debt cost events for ABC Ltd
   IRR: 11.43%
   After-tax IRR: 8.63%
   Real IRR: 6.73%
@@ -1213,7 +1213,7 @@ Created 2 FY debt cost events for ABC Ltd
      94:        -0.37  daily_risk_free_interest_charge | 2013-06-28 | 0.37 | Daily risk-free interest charge (2.75% p.a.)
      95:        -0.37  daily_risk_free_interest_charge | 2013-06-29 | 0.37 | Daily risk-free interest charge (2.75% p.a.)
      96:        -0.37  daily_risk_free_interest_charge | 2013-06-30 | 0.37 | Daily risk-free interest charge (2.75% p.a.)
-     97:        11.91  fy_debt_cost | 2013-06-30 | 11.91 | FY 2012-13 Interest Tax Benefit ($11.91)
+     97:        11.91  eofy_debt_cost | 2013-06-30 | 11.91 | FY 2012-13 Interest Tax Benefit ($11.91)
      98:        -0.37  daily_risk_free_interest_charge | 2013-07-01 | 0.37 | Daily risk-free interest charge (2.75% p.a.)
      99:        -0.37  daily_risk_free_interest_charge | 2013-07-02 | 0.37 | Daily risk-free interest charge (2.75% p.a.)
      100:        -0.37  daily_risk_free_interest_charge | 2013-07-03 | 0.37 | Daily risk-free interest charge (2.75% p.a.)
@@ -1535,7 +1535,7 @@ Created 2 FY debt cost events for ABC Ltd
      416:        -0.68  daily_risk_free_interest_charge | 2014-05-12 | 0.68 | Daily risk-free interest charge (2.50% p.a.)
      417:    10,312.35  unit_sale | 2014-05-13 | 10,312.35 | Full unit sale
      418:      -119.25  tax_payment | 2014-06-30 | 119.25 | Capital gain tax (rate: 30.0%)
-     419:        24.24  fy_debt_cost | 2014-06-30 | 24.24 | FY 2013-14 Interest Tax Benefit ($24.24)
+     419:        24.24  eofy_debt_cost | 2014-06-30 | 24.24 | FY 2013-14 Interest Tax Benefit ($24.24)
 Completed recalculation loop. Iterations: 3
 
 All recalculations completed!
@@ -1551,27 +1551,27 @@ Senior Debt Fund No.24:
   Type: cost_based
   Current equity: $0.00
   Average equity: $81,598.52
-  Events: {'capital_call': 1, 'return_of_capital': 3, 'distribution': 5, 'tax_payment': 5, 'daily_risk_free_interest_charge': 406, 'fy_debt_cost': 2}
+  Events: {'capital_call': 1, 'return_of_capital': 3, 'distribution': 5, 'tax_payment': 5, 'daily_risk_free_interest_charge': 406, 'eofy_debt_cost': 2}
   Tax payment events: 5
-  FY debt cost events: 2
+  EOFY debt cost events: 2
   Daily interest charges: 406
 
 3PG Finance:
   Type: cost_based
   Current equity: $0.00
   Average equity: $66,045.18
-  Events: {'capital_call': 1, 'return_of_capital': 7, 'distribution': 7, 'tax_payment': 7, 'daily_risk_free_interest_charge': 512, 'fy_debt_cost': 2}
+  Events: {'capital_call': 1, 'return_of_capital': 7, 'distribution': 7, 'tax_payment': 7, 'daily_risk_free_interest_charge': 512, 'eofy_debt_cost': 2}
   Tax payment events: 7
-  FY debt cost events: 2
+  EOFY debt cost events: 2
   Daily interest charges: 512
 
 ABC Ltd:
   Type: nav_based
   Current equity: $0.00
   Average equity: $3,746.21
-  Events: {'unit_purchase': 2, 'nav_update': 14, 'unit_sale': 2, 'distribution': 1, 'tax_payment': 1, 'daily_risk_free_interest_charge': 411, 'fy_debt_cost': 2}
+  Events: {'unit_purchase': 2, 'nav_update': 14, 'unit_sale': 2, 'distribution': 1, 'tax_payment': 1, 'daily_risk_free_interest_charge': 411, 'eofy_debt_cost': 2}
   Tax payment events: 1
-  FY debt cost events: 2
+  EOFY debt cost events: 2
   Daily interest charges: 411
   Current units: 0.00
   Current unit price: $62.6200

@@ -29,7 +29,7 @@ const mockFunds = [
     id: 1,
     name: 'Senior Debt Fund No.24',
     fund_type: 'Private Debt',
-    tracking_type: 'COST_BASED',
+    tracking_type: 'cost_based',
     currency: 'AUD',
     current_equity_balance: 0.0,
     average_equity_balance: 81598.52,
@@ -43,7 +43,7 @@ const mockFunds = [
     id: 2,
     name: '3PG Finance',
     fund_type: 'Private Debt',
-    tracking_type: 'COST_BASED',
+    tracking_type: 'cost_based',
     currency: 'AUD',
     current_equity_balance: 0.0,
     average_equity_balance: 66045.18,
@@ -199,7 +199,7 @@ describe('Dashboard Component', () => {
       expect(screen.getByText('Senior Debt Fund No.24')).toBeInTheDocument();
       expect(screen.getByText('3PG Finance')).toBeInTheDocument();
       expect(screen.getByText('Private Debt')).toBeInTheDocument();
-      expect(screen.getByText('COST_BASED')).toBeInTheDocument();
+      expect(screen.getByText('cost_based')).toBeInTheDocument();
     });
   });
 

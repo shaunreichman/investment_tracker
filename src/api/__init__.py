@@ -235,6 +235,65 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+    @app.route('/api/investment-companies', methods=['POST'])
+    def create_investment_company():
+        """Create a new investment company using domain methods"""
+        try:
+            session = get_db_session()
+            
+            try:
+                data = request.get_json()
+                
+                # Validate required fields
+                required_fields = ['name']
+                for field in required_fields:
+                    if not data.get(field):
+                        return jsonify({"error": f"Missing required field: {field}"}), 400
+                
+                # Validate name length
+                if len(data['name'].strip()) < 2:
+                    return jsonify({"error": "Company name must be at least 2 characters"}), 400
+                
+                if len(data['name'].strip()) > 255:
+                    return jsonify({"error": "Company name must be less than 255 characters"}), 400
+                
+                # Check for duplicate names
+                existing_company = session.query(InvestmentCompany).filter(InvestmentCompany.name == data['name'].strip()).first()
+                if existing_company:
+                    return jsonify({"error": "Investment company with this name already exists"}), 400
+                
+                # Create company using domain method
+                company = InvestmentCompany.create(
+                    name=data['name'].strip(),
+                    description=data.get('description', ''),
+                    website=data.get('website', ''),
+                    contact_email=data.get('contact_email', ''),
+                    contact_phone=data.get('contact_phone', ''),
+                    session=session
+                )
+                
+                session.commit()
+                
+                # Return company data
+                company_data = {
+                    "id": company.id,
+                    "name": company.name,
+                    "description": company.description,
+                    "website": company.website,
+                    "contact_email": company.contact_email,
+                    "contact_phone": company.contact_phone,
+                    "created_at": company.created_at.isoformat() if company.created_at else None,
+                    "updated_at": company.updated_at.isoformat() if company.updated_at else None
+                }
+                
+                return jsonify(company_data), 201
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
     @app.route('/api/companies/<int:company_id>/funds', methods=['GET'])
     def company_funds(company_id):
         """Get list of funds for a specific investment company"""
@@ -389,6 +448,61 @@ def create_app():
                     })
                 
                 return jsonify({"entities": entities_data}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/entities', methods=['POST'])
+    def create_entity():
+        """Create a new entity using domain methods"""
+        try:
+            session = get_db_session()
+            
+            try:
+                data = request.get_json()
+                
+                # Validate required fields
+                required_fields = ['name']
+                for field in required_fields:
+                    if not data.get(field):
+                        return jsonify({"error": f"Missing required field: {field}"}), 400
+                
+                # Validate name length
+                if len(data['name'].strip()) < 2:
+                    return jsonify({"error": "Entity name must be at least 2 characters"}), 400
+                
+                if len(data['name'].strip()) > 255:
+                    return jsonify({"error": "Entity name must be less than 255 characters"}), 400
+                
+                # Check for duplicate names
+                existing_entity = session.query(Entity).filter(Entity.name == data['name'].strip()).first()
+                if existing_entity:
+                    return jsonify({"error": "Entity with this name already exists"}), 400
+                
+                # Create entity using domain method
+                entity = Entity.create(
+                    name=data['name'].strip(),
+                    description=data.get('description', ''),
+                    tax_jurisdiction=data.get('tax_jurisdiction', 'AU'),
+                    session=session
+                )
+                
+                session.commit()
+                
+                # Return entity data
+                entity_data = {
+                    "id": entity.id,
+                    "name": entity.name,
+                    "description": entity.description,
+                    "tax_jurisdiction": entity.tax_jurisdiction,
+                    "created_at": entity.created_at.isoformat() if entity.created_at else None,
+                    "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
+                }
+                
+                return jsonify(entity_data), 201
                 
             finally:
                 session.close()
