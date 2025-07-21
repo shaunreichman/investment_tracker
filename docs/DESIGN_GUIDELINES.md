@@ -73,6 +73,19 @@
 
 ## Quick Start
 
+### **🚀 Quick Server Commands**
+```bash
+# Backend: http://localhost:5001
+source venv/bin/activate && FLASK_APP=src/api.py python -m flask run --host=0.0.0.0 --port=5001
+
+# Frontend: http://localhost:3000
+cd frontend && npm start
+
+# Health checks
+curl http://localhost:5001/api/health  # Backend
+curl http://localhost:3000              # Frontend
+```
+
 ### **Core Patterns (Everyone Needs to Know)**
 
 #### **React Component Patterns**
@@ -725,13 +738,26 @@ REACT_APP_ENVIRONMENT=development
 
 #### **Development Mode**
 ```bash
-# Terminal 1: Backend
+# Backend: http://localhost:5001
 source venv/bin/activate
 FLASK_APP=src/api.py python -m flask run --host=0.0.0.0 --port=5001
 
-# Terminal 2: Frontend
+# Frontend: http://localhost:3000
 cd frontend
 npm start
+```
+
+#### **Troubleshooting**
+```bash
+# Port conflicts
+lsof -i :5001  # Check backend port
+lsof -i :3000  # Check frontend port
+pkill -f "flask run"      # Kill backend
+pkill -f "react-scripts"  # Kill frontend
+
+# Health checks
+curl http://localhost:5001/api/health  # Backend
+curl http://localhost:3000              # Frontend
 ```
 
 #### **Production Mode**
@@ -743,6 +769,16 @@ npm run build
 # Run backend with production server
 source venv/bin/activate
 gunicorn -w 4 -b 0.0.0.0:5001 "src.api:app"
+```
+
+#### **Common Issues**
+```bash
+# Database issues
+python scripts/init_database.py
+
+# Dependency issues  
+pip install -r requirements.txt  # Backend
+cd frontend && npm install      # Frontend
 ```
 
 ---
