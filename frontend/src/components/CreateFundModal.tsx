@@ -19,9 +19,10 @@ import {
   Step,
   StepLabel,
   Paper,
-  Divider
+  Divider,
+  InputAdornment
 } from '@mui/material';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon } from '@mui/icons-material';
+import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, AccountBalance as AccountBalanceIcon, TrendingUp as TrendingUpIcon } from '@mui/icons-material';
 import CreateEntityModal from './CreateEntityModal';
 
 interface Entity {
@@ -48,6 +49,44 @@ interface ValidationErrors {
   description?: string;
 }
 
+// Fund type templates with predefined values
+interface FundTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  fund_type: string;
+  tracking_type: 'nav_based' | 'cost_based';
+  currency: string;
+  commitment_amount?: number;
+  expected_irr?: number;
+  expected_duration_months?: number;
+  description_template: string;
+}
+
+const FUND_TEMPLATES: FundTemplate[] = [
+  {
+    id: 'cost-based',
+    name: 'Cost-Based Fund',
+    description: 'Track investments using capital calls and returns',
+    icon: <AccountBalanceIcon />,
+    fund_type: '',
+    tracking_type: 'cost_based',
+    currency: 'AUD',
+    description_template: ''
+  },
+  {
+    id: 'nav-based',
+    name: 'NAV-Based Fund',
+    description: 'Track investments using units and NAV per share',
+    icon: <TrendingUpIcon />,
+    fund_type: '',
+    tracking_type: 'nav_based',
+    currency: 'AUD',
+    description_template: ''
+  }
+];
+
 const CreateFundModal: React.FC<CreateFundModalProps> = ({
   open,
   onClose,
@@ -62,6 +101,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [showEntityModal, setShowEntityModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<FundTemplate | null>(null);
+  const [showTemplateSelection, setShowTemplateSelection] = useState(true);
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -77,6 +118,66 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   });
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+
+  // Number formatting helpers
+  const formatNumber = (value: string): string => {
+    if (!value) return '';
+    const num = parseFloat(value.replace(/,/g, ''));
+    if (isNaN(num)) return value;
+    return num.toLocaleString('en-US');
+  };
+
+  const parseNumber = (value: string): string => {
+    if (!value) return '';
+    return value.replace(/,/g, '');
+  };
+
+  // Apply template to form data
+  const applyTemplate = (template: FundTemplate) => {
+    setFormData({
+      entity_id: '',
+      name: '',
+      fund_type: template.fund_type,
+      tracking_type: template.tracking_type,
+      currency: template.currency,
+      commitment_amount: template.commitment_amount?.toString() || '',
+      expected_irr: template.expected_irr?.toString() || '',
+      expected_duration_months: template.expected_duration_months?.toString() || '',
+      description: template.description_template
+    });
+    setSelectedTemplate(template);
+    setShowTemplateSelection(false);
+    
+    // Clear validation errors only for fields that are filled by the template
+    setValidationErrors(prev => ({
+      ...prev,
+      tracking_type: undefined,
+      currency: undefined,
+      fund_type: template.fund_type ? undefined : prev.fund_type,
+      commitment_amount: template.commitment_amount ? undefined : prev.commitment_amount,
+      expected_irr: template.expected_irr ? undefined : prev.expected_irr,
+      expected_duration_months: template.expected_duration_months ? undefined : prev.expected_duration_months,
+      description: template.description_template ? undefined : prev.description
+    }));
+  };
+
+  // Reset to template selection
+  const resetToTemplateSelection = () => {
+    setSelectedTemplate(null);
+    setShowTemplateSelection(true);
+    setFormData({
+      entity_id: '',
+      name: '',
+      fund_type: '',
+      tracking_type: '',
+      currency: 'AUD',
+      commitment_amount: '',
+      expected_irr: '',
+      expected_duration_months: '',
+      description: ''
+    });
+    setValidationErrors({});
+  };
 
   // Validation rules
   const validateField = (field: string, value: string): string | undefined => {
@@ -298,6 +399,9 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         expected_duration_months: '',
         description: ''
       });
+      // Reset template selection state
+      setSelectedTemplate(null);
+      setShowTemplateSelection(true);
     }
   };
 
@@ -426,7 +530,87 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               Fund Details
             </Typography>
             
-            <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr' }}>
+            {showTemplateSelection ? (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+                  Select a Tracking Type Template
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Choose how you want to track your fund investments.
+                </Typography>
+                <Box display="grid" gap={2} sx={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+                  {FUND_TEMPLATES.map((template) => (
+                    <Paper key={template.id} sx={{ cursor: 'pointer', p: 2, '&:hover': { bgcolor: 'primary.light' } }}>
+                      <Box onClick={() => applyTemplate(template)}>
+                        <Box display="flex" alignItems="center" gap={2} sx={{ mb: 1 }}>
+                          {template.icon}
+                          <Typography variant="h6">{template.name}</Typography>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          {template.description}
+                        </Typography>
+                        <Box display="flex" gap={1} flexWrap="wrap">
+                          <Typography variant="caption" sx={{ 
+                            bgcolor: 'primary.main', 
+                            color: 'white', 
+                            px: 1, 
+                            py: 0.5, 
+                            borderRadius: 1,
+                            fontSize: '0.75rem'
+                          }}>
+                            {template.tracking_type}
+                          </Typography>
+                          <Typography variant="caption" sx={{ 
+                            bgcolor: 'grey.300', 
+                            px: 1, 
+                            py: 0.5, 
+                            borderRadius: 1,
+                            fontSize: '0.75rem'
+                          }}>
+                            {template.currency}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            ) : (
+              <Box>
+                {selectedTemplate && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      {selectedTemplate.icon}
+                      <Typography variant="h6">
+                        Using Template: {selectedTemplate.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ 
+                        bgcolor: 'primary.main', 
+                        color: 'white', 
+                        px: 1, 
+                        py: 0.5, 
+                        borderRadius: 1,
+                        fontSize: '0.75rem'
+                      }}>
+                        {selectedTemplate.tracking_type}
+                      </Typography>
+                      <Typography variant="caption" sx={{ 
+                        bgcolor: 'grey.300', 
+                        px: 1, 
+                        py: 0.5, 
+                        borderRadius: 1,
+                        fontSize: '0.75rem'
+                      }}>
+                        {selectedTemplate.currency}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      {selectedTemplate.description}
+                    </Typography>
+                  </Box>
+                )}
+              
+              <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr' }}>
               {/* Entity Selection */}
               <FormControl fullWidth error={!!validationErrors.entity_id} required>
                 <InputLabel>Entity *</InputLabel>
@@ -528,11 +712,13 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               <TextField
                 fullWidth
                 label="Commitment Amount"
-                type="number"
-                value={formData.commitment_amount}
-                onChange={(e) => handleInputChange('commitment_amount', e.target.value)}
+                value={formatNumber(formData.commitment_amount)}
+                onChange={(e) => handleInputChange('commitment_amount', parseNumber(e.target.value))}
                 error={!!validationErrors.commitment_amount}
-                helperText={validationErrors.commitment_amount || "Total commitment amount in AUD (optional)"}
+                helperText={validationErrors.commitment_amount || "Total commitment amount (optional)"}
+                inputProps={{
+                  style: { textAlign: 'left' }
+                }}
               />
 
               {/* Expected IRR */}
@@ -544,6 +730,15 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                 onChange={(e) => handleInputChange('expected_irr', e.target.value)}
                 error={!!validationErrors.expected_irr}
                 helperText={validationErrors.expected_irr || "Expected annual return 0-100% (optional)"}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Typography variant="body2" color="text.secondary">
+                        %
+                      </Typography>
+                    </InputAdornment>
+                  ),
+                }}
               />
 
               {/* Expected Duration */}
@@ -562,19 +757,33 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                 fullWidth
                 label="Description"
                 multiline
-                rows={3}
+                minRows={3}
+                maxRows={6}
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 error={!!validationErrors.description}
                 helperText={validationErrors.description || "Optional fund description (max 1000 characters)"}
                 sx={{ gridColumn: '1 / -1' }}
+                variant="outlined"
               />
             </Box>
+              </Box>
+            )}
           </Paper>
         )}
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
+        {!showTemplateSelection && selectedTemplate && (
+          <Button 
+            onClick={() => setShowTemplateSelection(true)}
+            variant="outlined"
+            disabled={submitting}
+            startIcon={<AddIcon />}
+          >
+            Back to Templates
+          </Button>
+        )}
         <Button 
           onClick={handleClose} 
           disabled={submitting}
@@ -582,15 +791,17 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         >
           Cancel
         </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={submitting || !isFormValid()}
-          startIcon={submitting ? <CircularProgress size={20} /> : <AddIcon />}
-          sx={{ minWidth: 120 }}
-        >
-          {submitting ? 'Creating...' : 'Create Fund'}
-        </Button>
+        {!showTemplateSelection && (
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={submitting || !isFormValid()}
+            startIcon={submitting ? <CircularProgress size={20} /> : <AddIcon />}
+            sx={{ minWidth: 120 }}
+          >
+            {submitting ? 'Creating...' : 'Create Fund'}
+          </Button>
+        )}
       </DialogActions>
 
       {/* Entity Creation Modal */}

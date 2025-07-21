@@ -446,7 +446,7 @@ const FundDetail: React.FC = () => {
                   size="small"
                 />
               </Box>
-              {fund.tracking_type === 'NAV_BASED' && (
+              {fund.tracking_type === 'nav_based' && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography variant="body2" color="text.secondary">
                     Show NAV Updates
@@ -471,7 +471,7 @@ const FundDetail: React.FC = () => {
                 <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
                   Equity
                 </TableCell>
-                {fund.tracking_type === 'NAV_BASED' && (
+                {fund.tracking_type === 'nav_based' && (
                   <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     Nav Update
                   </TableCell>
@@ -517,7 +517,7 @@ const FundDetail: React.FC = () => {
 
                   // If we have both interest and withholding on the same date, combine them
                   if (interestEvent && withholdingEvent) {
-                    const isNavBased = fund.tracking_type === 'NAV_BASED';
+                    const isNavBased = fund.tracking_type === 'nav_based';
                     const isEquityEvent = isNavBased 
                       ? (interestEvent.event_type === 'UNIT_PURCHASE' || interestEvent.event_type === 'UNIT_SALE')
                       : (interestEvent.event_type === 'CAPITAL_CALL' || interestEvent.event_type === 'RETURN_OF_CAPITAL');
@@ -547,7 +547,7 @@ const FundDetail: React.FC = () => {
                         {/* EQUITY Section */}
                         <TableCell align="right"></TableCell>
                         {/* NAV UPDATE Section (only for NAV-based funds) */}
-                        {fund.tracking_type === 'NAV_BASED' && (
+                        {fund.tracking_type === 'nav_based' && (
                           <TableCell align="right"></TableCell>
                         )}
                         {/* DISTRIBUTIONS Section */}
@@ -579,7 +579,7 @@ const FundDetail: React.FC = () => {
                             console.log('Processing RETURN_OF_CAPITAL event (after combined):', event);
                           }
                           
-                          const isNavBased = fund.tracking_type === 'NAV_BASED';
+                          const isNavBased = fund.tracking_type === 'nav_based';
                           const isEquityEvent = isNavBased 
                             ? (event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE')
                             : (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL');
@@ -685,7 +685,7 @@ const FundDetail: React.FC = () => {
                                 )}
                               </TableCell>
                               {/* NAV UPDATE Section (only for NAV-based funds) */}
-                              {fund.tracking_type === 'NAV_BASED' && (
+                              {fund.tracking_type === 'nav_based' && (
                                 <TableCell align="right">
                                   {event.event_type === 'NAV_UPDATE' && event.nav_per_share ? (
                                     <Box>
@@ -729,7 +729,7 @@ const FundDetail: React.FC = () => {
                       console.log('Date events for this date:', dateEvents);
                     }
                     
-                    const isNavBased = fund.tracking_type === 'NAV_BASED';
+                    const isNavBased = fund.tracking_type === 'nav_based';
                     const isEquityEvent = isNavBased 
                       ? (event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE')
                       : (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL');
@@ -837,7 +837,7 @@ const FundDetail: React.FC = () => {
                           )}
                         </TableCell>
                                                 {/* NAV UPDATE Section (only for NAV-based funds) */}
-                        {fund.tracking_type === 'NAV_BASED' && (
+                        {fund.tracking_type === 'nav_based' && (
                           <TableCell align="right">
                             {event.event_type === 'NAV_UPDATE' && event.nav_per_share ? (
                               <Box>
@@ -954,7 +954,7 @@ const FundDetail: React.FC = () => {
       </Paper>
 
       {/* Unit Price Chart - Only for NAV-based funds */}
-      {fund.tracking_type === 'NAV_BASED' && (
+      {fund.tracking_type === 'nav_based' && (
         <Paper sx={{ width: '100%', overflow: 'hidden', mt: 3 }}>
           <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
             <Typography variant="h6">

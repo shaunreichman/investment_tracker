@@ -20,7 +20,7 @@ const mockFundData = {
     id: 1,
     name: 'Senior Debt Fund No.24',
     fund_type: 'Private Debt',
-    tracking_type: 'COST_BASED',
+    tracking_type: 'cost_based',
     currency: 'AUD',
     current_equity_balance: 0.0,
     average_equity_balance: 81598.52,
@@ -148,7 +148,7 @@ describe('FundDetail Component', () => {
       expect(screen.getByText('Fund Type')).toBeInTheDocument();
       expect(screen.getByText('Private Debt')).toBeInTheDocument();
       expect(screen.getByText('Tracking Type')).toBeInTheDocument();
-      expect(screen.getByText('COST_BASED')).toBeInTheDocument();
+      expect(screen.getByText('cost_based')).toBeInTheDocument();
       expect(screen.getByText('Investment Company')).toBeInTheDocument();
       expect(screen.getByText('Test Company')).toBeInTheDocument();
       expect(screen.getByText('Entity')).toBeInTheDocument();
