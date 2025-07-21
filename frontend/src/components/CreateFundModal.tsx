@@ -13,7 +13,8 @@ import {
   Box,
   CircularProgress,
   Alert,
-  Typography
+  Typography,
+  FormHelperText
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 
@@ -30,6 +31,17 @@ interface CreateFundModalProps {
   companyName: string;
 }
 
+interface ValidationErrors {
+  entity_id?: string;
+  name?: string;
+  fund_type?: string;
+  tracking_type?: string;
+  commitment_amount?: string;
+  expected_irr?: string;
+  expected_duration_months?: string;
+  description?: string;
+}
+
 const CreateFundModal: React.FC<CreateFundModalProps> = ({
   open,
   onClose,
@@ -42,6 +54,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -57,6 +70,90 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   });
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+
+  // Validation rules
+  const validateField = (field: string, value: string): string | undefined => {
+    switch (field) {
+      case 'name':
+        if (!value.trim()) return 'Fund name is required';
+        if (value.trim().length < 2) return 'Fund name must be at least 2 characters';
+        if (value.trim().length > 255) return 'Fund name must be less than 255 characters';
+        if (!/^[a-zA-Z0-9\s\-_()]+$/.test(value.trim())) {
+          return 'Fund name can only contain letters, numbers, spaces, hyphens, underscores, and parentheses';
+        }
+        break;
+      
+      case 'fund_type':
+        if (!value.trim()) return 'Fund type is required';
+        if (value.trim().length < 2) return 'Fund type must be at least 2 characters';
+        if (value.trim().length > 100) return 'Fund type must be less than 100 characters';
+        break;
+      
+      case 'commitment_amount':
+        if (value && value.trim() !== '') {
+          const num = parseFloat(value);
+          if (isNaN(num)) return 'Commitment amount must be a valid number';
+          if (num <= 0) return 'Commitment amount must be positive';
+          if (num > 999999999) return 'Commitment amount must be less than 1 billion';
+        }
+        break;
+      
+      case 'expected_irr':
+        if (value && value.trim() !== '') {
+          const num = parseFloat(value);
+          if (isNaN(num)) return 'Expected IRR must be a valid number';
+          if (num < 0 || num > 100) return 'Expected IRR must be between 0 and 100';
+        }
+        break;
+      
+      case 'expected_duration_months':
+        if (value && value.trim() !== '') {
+          const num = parseInt(value);
+          if (isNaN(num)) return 'Expected duration must be a valid number';
+          if (num < 1 || num > 1200) return 'Expected duration must be between 1 and 1200 months';
+        }
+        break;
+      
+      case 'description':
+        if (value && value.trim().length > 1000) {
+          return 'Description must be less than 1000 characters';
+        }
+        break;
+    }
+    return undefined;
+  };
+
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+    
+    // Required fields
+    if (!formData.entity_id) errors.entity_id = 'Entity is required';
+    if (!formData.name.trim()) errors.name = 'Fund name is required';
+    if (!formData.fund_type) errors.fund_type = 'Fund type is required';
+    if (!formData.tracking_type) errors.tracking_type = 'Tracking type is required';
+    
+    // Field-specific validation
+    const nameError = validateField('name', formData.name);
+    if (nameError) errors.name = nameError;
+    
+    const fundTypeError = validateField('fund_type', formData.fund_type);
+    if (fundTypeError) errors.fund_type = fundTypeError;
+    
+    const commitmentError = validateField('commitment_amount', formData.commitment_amount);
+    if (commitmentError) errors.commitment_amount = commitmentError;
+    
+    const irrError = validateField('expected_irr', formData.expected_irr);
+    if (irrError) errors.expected_irr = irrError;
+    
+    const durationError = validateField('expected_duration_months', formData.expected_duration_months);
+    if (durationError) errors.expected_duration_months = durationError;
+    
+    const descriptionError = validateField('description', formData.description);
+    if (descriptionError) errors.description = descriptionError;
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const fetchEntities = useCallback(async () => {
     try {
@@ -89,12 +186,22 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       ...prev,
       [field]: value
     }));
+    
+    // Real-time validation
+    const error = validateField(field, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
   };
 
   const handleSubmit = async () => {
-    // Validation
-    if (!formData.entity_id || !formData.name || !formData.fund_type || !formData.tracking_type) {
-      setError('Please fill in all required fields');
+    // Clear any previous errors
+    setError(null);
+    
+    // Validate form
+    if (!validateForm()) {
+      setError('Please fix the validation errors before submitting');
       return;
     }
 
@@ -110,14 +217,14 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         body: JSON.stringify({
           investment_company_id: companyId,
           entity_id: parseInt(formData.entity_id),
-          name: formData.name,
+          name: formData.name.trim(),
           fund_type: formData.fund_type,
           tracking_type: formData.tracking_type,
           currency: formData.currency,
           commitment_amount: formData.commitment_amount ? parseFloat(formData.commitment_amount) : null,
           expected_irr: formData.expected_irr ? parseFloat(formData.expected_irr) : null,
           expected_duration_months: formData.expected_duration_months ? parseInt(formData.expected_duration_months) : null,
-          description: formData.description || null
+          description: formData.description.trim() || null
         })
       });
 
@@ -142,6 +249,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
           expected_duration_months: '',
           description: ''
         });
+        setValidationErrors({});
       }, 1500);
 
     } catch (err) {
@@ -156,7 +264,16 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       onClose();
       setError(null);
       setSuccess(false);
+      setValidationErrors({});
     }
+  };
+
+  const isFormValid = () => {
+    return formData.entity_id && 
+           formData.name.trim() && 
+           formData.fund_type && 
+           formData.tracking_type &&
+           Object.keys(validationErrors).length === 0;
   };
 
   return (
@@ -191,7 +308,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         ) : (
           <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr' }}>
             {/* Entity Selection */}
-            <FormControl fullWidth>
+            <FormControl fullWidth error={!!validationErrors.entity_id}>
               <InputLabel>Entity *</InputLabel>
               <Select
                 value={formData.entity_id}
@@ -204,6 +321,9 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                   </MenuItem>
                 ))}
               </Select>
+              {validationErrors.entity_id && (
+                <FormHelperText error>{validationErrors.entity_id}</FormHelperText>
+              )}
             </FormControl>
 
             {/* Fund Name */}
@@ -212,10 +332,12 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               label="Fund Name *"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
+              error={!!validationErrors.name}
+              helperText={validationErrors.name || "Enter a unique fund name (2-255 characters)"}
             />
 
             {/* Fund Type */}
-            <FormControl fullWidth>
+            <FormControl fullWidth error={!!validationErrors.fund_type}>
               <InputLabel>Fund Type *</InputLabel>
               <Select
                 value={formData.fund_type}
@@ -233,10 +355,13 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                 <MenuItem value="Equity - Financial">Equity - Financial</MenuItem>
                 <MenuItem value="Other">Other</MenuItem>
               </Select>
+              {validationErrors.fund_type && (
+                <FormHelperText error>{validationErrors.fund_type}</FormHelperText>
+              )}
             </FormControl>
 
             {/* Tracking Type */}
-            <FormControl fullWidth>
+            <FormControl fullWidth error={!!validationErrors.tracking_type}>
               <InputLabel>Tracking Type *</InputLabel>
               <Select
                 value={formData.tracking_type}
@@ -246,6 +371,9 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                 <MenuItem value="nav_based">NAV-Based (Units & NAV)</MenuItem>
                 <MenuItem value="cost_based">Cost-Based (Capital Calls)</MenuItem>
               </Select>
+              {validationErrors.tracking_type && (
+                <FormHelperText error>{validationErrors.tracking_type}</FormHelperText>
+              )}
             </FormControl>
 
             {/* Currency */}
@@ -270,7 +398,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               type="number"
               value={formData.commitment_amount}
               onChange={(e) => handleInputChange('commitment_amount', e.target.value)}
-              helperText="Total commitment amount (optional)"
+              error={!!validationErrors.commitment_amount}
+              helperText={validationErrors.commitment_amount || "Total commitment amount in AUD (optional)"}
             />
 
             {/* Expected IRR */}
@@ -280,7 +409,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               type="number"
               value={formData.expected_irr}
               onChange={(e) => handleInputChange('expected_irr', e.target.value)}
-              helperText="Expected annual return (optional)"
+              error={!!validationErrors.expected_irr}
+              helperText={validationErrors.expected_irr || "Expected annual return 0-100% (optional)"}
             />
 
             {/* Expected Duration */}
@@ -290,7 +420,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               type="number"
               value={formData.expected_duration_months}
               onChange={(e) => handleInputChange('expected_duration_months', e.target.value)}
-              helperText="Expected fund duration in months (optional)"
+              error={!!validationErrors.expected_duration_months}
+              helperText={validationErrors.expected_duration_months || "Expected fund duration 1-1200 months (optional)"}
             />
 
             {/* Description */}
@@ -301,6 +432,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               rows={3}
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
+              error={!!validationErrors.description}
+              helperText={validationErrors.description || "Optional fund description (max 1000 characters)"}
               sx={{ gridColumn: '1 / -1' }}
             />
           </Box>
@@ -314,7 +447,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={submitting || !formData.entity_id || !formData.name || !formData.fund_type || !formData.tracking_type}
+          disabled={submitting || !isFormValid()}
           startIcon={submitting ? <CircularProgress size={20} /> : <AddIcon />}
         >
           {submitting ? 'Creating...' : 'Create Fund'}
