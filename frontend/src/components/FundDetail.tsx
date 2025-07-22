@@ -24,6 +24,7 @@ import {
 import { TrendingUp, AccountBalance, Event } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter, ScatterChart } from 'recharts';
+import CreateFundEventModal from './CreateFundEventModal';
 
 interface FundEvent {
   id: number;
@@ -105,6 +106,7 @@ const FundDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showTaxEvents, setShowTaxEvents] = useState(true);
   const [showNavUpdates, setShowNavUpdates] = useState(true);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchFundDetail = async () => {
@@ -199,6 +201,21 @@ const FundDetail: React.FC = () => {
     
     // For events without subtypes, show the main type
     return event.event_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Add this function to refresh events after event creation
+  const handleEventCreated = () => {
+    // Re-fetch fund details (including events)
+    if (fundId) {
+      setLoading(true);
+      setError(null);
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+      fetch(`${API_BASE_URL}/api/funds/${fundId}`)
+        .then(res => res.json())
+        .then(data => setFundData(data))
+        .catch(err => setError(err.message || 'Failed to fetch fund details'))
+        .finally(() => setLoading(false));
+    }
   };
 
   if (loading) {
@@ -1158,6 +1175,15 @@ const FundDetail: React.FC = () => {
             })()}
           </Box>
         </Paper>
+      )}
+      {fundData && (
+        <CreateFundEventModal
+          open={eventModalOpen}
+          onClose={() => setEventModalOpen(false)}
+          onEventCreated={handleEventCreated}
+          fundId={fundData.fund.id}
+          fundTrackingType={fundData.fund.tracking_type === 'NAV_BASED' ? 'nav_based' : 'cost_based'}
+        />
       )}
     </Container>
   );
