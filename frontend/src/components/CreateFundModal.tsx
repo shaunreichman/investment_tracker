@@ -303,6 +303,13 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     }
   }, [open]);
 
+  // Trigger validation when form data changes
+  useEffect(() => {
+    if (open && !showTemplateSelection) {
+      validateForm();
+    }
+  }, [formData, open, showTemplateSelection]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -313,7 +320,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     const error = validateField(field, value);
     setValidationErrors(prev => ({
       ...prev,
-      [field]: error
+      [field]: error || undefined // Ensure undefined instead of empty string
     }));
   };
 
@@ -421,11 +428,16 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   };
 
   const isFormValid = () => {
-    return formData.entity_id && 
-           formData.name.trim() && 
-           formData.fund_type && 
-           formData.tracking_type &&
-           Object.keys(validationErrors).length === 0;
+    // Check required fields are filled
+    const requiredFieldsValid = formData.entity_id && 
+                               formData.name.trim() && 
+                               formData.fund_type && 
+                               formData.tracking_type;
+    
+    // Check there are no validation errors (only count actual error messages)
+    const noValidationErrors = Object.values(validationErrors).every(error => !error);
+    
+    return requiredFieldsValid && noValidationErrors;
   };
 
   const getFormProgress = () => {
@@ -435,6 +447,23 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       return value && value.toString().trim() !== '';
     });
     return (completedFields.length / requiredFields.length) * 100;
+  };
+
+  const getValidationStatus = () => {
+    const requiredFields = ['entity_id', 'name', 'fund_type', 'tracking_type'];
+    const missingFields = requiredFields.filter(field => {
+      const value = formData[field as keyof typeof formData];
+      return !value || value.toString().trim() === '';
+    });
+    
+    const errorFields = Object.keys(validationErrors).filter(key => validationErrors[key as keyof ValidationErrors]);
+    
+    return {
+      missingFields,
+      errorFields,
+      hasErrors: errorFields.length > 0,
+      isComplete: missingFields.length === 0 && errorFields.length === 0
+    };
   };
 
   return (
@@ -481,6 +510,32 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               }} 
             />
           </Box>
+          {!showTemplateSelection && (
+            <Box sx={{ mt: 1 }}>
+              {(() => {
+                const status = getValidationStatus();
+                if (status.missingFields.length > 0) {
+                  return (
+                    <Typography variant="caption" color="warning.main">
+                      Missing required fields: {status.missingFields.join(', ')}
+                    </Typography>
+                  );
+                } else if (status.hasErrors) {
+                  return (
+                    <Typography variant="caption" color="error.main">
+                      Please fix validation errors
+                    </Typography>
+                  );
+                } else {
+                  return (
+                    <Typography variant="caption" color="success.main">
+                      ✓ All required fields completed
+                    </Typography>
+                  );
+                }
+              })()}
+            </Box>
+          )}
         </Box>
 
         {/* Success State */}
@@ -798,6 +853,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
             disabled={submitting || !isFormValid()}
             startIcon={submitting ? <CircularProgress size={20} /> : <AddIcon />}
             sx={{ minWidth: 120 }}
+            title={!isFormValid() ? 'Please fill in all required fields and fix any validation errors' : ''}
           >
             {submitting ? 'Creating...' : 'Create Fund'}
           </Button>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -10,8 +10,10 @@ import {
   Box,
   Alert,
   CircularProgress,
+  Paper,
   Typography
 } from '@mui/material';
+import { TrendingUp, AccountBalance, Add as AddIcon, MonetizationOn } from '@mui/icons-material';
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -23,24 +25,74 @@ interface CreateFundEventModalProps {
 
 type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE';
 
-const EVENT_TEMPLATES: { label: string; value: EventType; description: string; trackingType: 'nav_based' | 'cost_based' | 'both' }[] = [
-  { label: 'Capital Call', value: 'CAPITAL_CALL', description: 'Add a capital call (cost-based funds)', trackingType: 'cost_based' },
-  { label: 'Distribution', value: 'DISTRIBUTION', description: 'Add a distribution (all funds)', trackingType: 'both' },
-  { label: 'Unit Purchase', value: 'UNIT_PURCHASE', description: 'Buy units (NAV-based funds)', trackingType: 'nav_based' },
-  { label: 'Unit Sale', value: 'UNIT_SALE', description: 'Sell units (NAV-based funds)', trackingType: 'nav_based' },
+const EVENT_TEMPLATES: { label: string; value: EventType | 'RETURN_OF_CAPITAL'; description: string; icon: React.ReactNode; trackingType: 'nav_based' | 'cost_based' | 'both' }[] = [
+  { label: 'Capital Call', value: 'CAPITAL_CALL', description: 'Add a capital call (cost-based funds)', icon: <AccountBalance color="primary" />, trackingType: 'cost_based' },
+  { label: 'Capital Return', value: 'RETURN_OF_CAPITAL', description: 'Return capital to investors (cost-based funds)', icon: <AccountBalance color="warning" />, trackingType: 'cost_based' },
+  { label: 'Distribution', value: 'DISTRIBUTION', description: 'Add a distribution (all funds)', icon: <MonetizationOn color="success" />, trackingType: 'both' },
+  { label: 'Unit Purchase', value: 'UNIT_PURCHASE', description: 'Buy units (NAV-based funds)', icon: <AddIcon color="primary" />, trackingType: 'nav_based' },
+  { label: 'Unit Sale', value: 'UNIT_SALE', description: 'Sell units (NAV-based funds)', icon: <TrendingUp color="warning" />, trackingType: 'nav_based' },
 ];
 
+const DISTRIBUTION_TEMPLATES = [
+  { label: 'Interest', value: 'INTEREST', description: 'Interest distribution', icon: <MonetizationOn color="primary" /> },
+  { label: 'Dividend', value: 'DIVIDEND', description: 'Dividend distribution', icon: <MonetizationOn color="success" /> },
+  { label: 'Other', value: 'OTHER', description: 'Other distribution', icon: <MonetizationOn color="warning" /> },
+];
+
+interface ValidationErrors {
+  event_date?: string;
+  amount?: string;
+  distribution_type?: string;
+  units_purchased?: string;
+  units_sold?: string;
+  unit_price?: string;
+}
+
 const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClose, onEventCreated, fundId, fundTrackingType }) => {
-  const [eventType, setEventType] = useState<EventType | ''>('');
+  const [eventType, setEventType] = useState<EventType | 'RETURN_OF_CAPITAL' | ''>('');
+  const [distributionType, setDistributionType] = useState<string>('');
   const [formData, setFormData] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
 
+  useEffect(() => {
+    if (open) {
+      setEventType('');
+      setDistributionType('');
+      setFormData({ event_date: new Date().toISOString().slice(0, 10) });
+      setError(null);
+      setSuccess(false);
+      setSubmitting(false);
+      setValidationErrors({});
+    }
+  }, [open]);
+
+  // Validate formData.event_date after it is set on modal open
+  useEffect(() => {
+    if (open && formData.event_date) {
+      validateForm();
+    }
+  }, [open, formData.event_date]);
+
+  // Number formatting helpers
+  const formatNumber = (value: string): string => {
+    if (!value) return '';
+    const num = parseFloat(value.replace(/,/g, ''));
+    if (isNaN(num)) return value;
+    return num.toLocaleString('en-US');
+  };
+  const parseNumber = (value: string): string => {
+    if (!value) return '';
+    return value.replace(/,/g, '');
+  };
+
   const resetForm = () => {
     setEventType('');
+    setDistributionType('');
     setFormData({});
     setError(null);
     setSuccess(false);
@@ -53,34 +105,143 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     }
   };
 
-  const handleEventTypeChange = (value: EventType) => {
+  const handleTemplateSelect = (value: EventType | 'RETURN_OF_CAPITAL') => {
     setEventType(value);
-    setFormData({});
+    setDistributionType('');
     setError(null);
+    // Validate all required fields after template selection
+    setTimeout(() => validateForm(), 0);
   };
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  const handleDistributionTypeSelect = (distType: string) => {
+    setDistributionType(distType);
   };
 
-  const validate = () => {
-    if (!eventType) return false;
-    if (!formData.event_date) return false;
-    if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION') {
-      if (!formData.amount) return false;
+  const handleBack = () => {
+    if (distributionType) {
+      setDistributionType('');
+      setFormData((prev: any) => ({ ...prev, distribution_type: '' }));
+    } else {
+      setEventType('');
+    }
+  };
+
+  // Field-level validation
+  const validateField = (field: string, value: string): string | undefined => {
+    switch (field) {
+      case 'event_date':
+        if (!value) return 'Event date is required';
+        break;
+      case 'amount':
+        if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
+          const amt = parseFloat(value);
+          if (!value) return 'Amount is required';
+          if (isNaN(amt) || amt <= 0) return 'Enter a valid positive amount';
+        }
+        break;
+      case 'distribution_type':
+        if (eventType === 'DISTRIBUTION' && !distributionType) return 'Distribution type is required';
+        break;
+      case 'units_purchased':
+        if (eventType === 'UNIT_PURCHASE') {
+          const units = parseFloat(value);
+          if (!value) return 'Units purchased is required';
+          if (isNaN(units) || units <= 0) return 'Enter a valid positive number';
+        }
+        break;
+      case 'units_sold':
+        if (eventType === 'UNIT_SALE') {
+          const units = parseFloat(value);
+          if (!value) return 'Units sold is required';
+          if (isNaN(units) || units <= 0) return 'Enter a valid positive number';
+        }
+        break;
+      case 'unit_price':
+        if ((eventType === 'UNIT_PURCHASE' || eventType === 'UNIT_SALE')) {
+          const price = parseFloat(value);
+          if (!value) return 'Unit price is required';
+          if (isNaN(price) || price <= 0) return 'Enter a valid positive price';
+        }
+        break;
+      default:
+        return undefined;
+    }
+    return undefined;
+  };
+
+  // Form-level validation
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+    if (!formData.event_date) {
+      errors.event_date = 'Event date is required';
+    }
+    if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
+      const amt = parseFloat(formData.amount);
+      if (!formData.amount) {
+        errors.amount = 'Amount is required';
+      } else if (isNaN(amt) || amt <= 0) {
+        errors.amount = 'Enter a valid positive amount';
+      }
+      if (eventType === 'DISTRIBUTION' && !distributionType) {
+        errors.distribution_type = 'Distribution type is required';
+      }
     }
     if (eventType === 'UNIT_PURCHASE') {
-      if (!formData.units_purchased || !formData.unit_price) return false;
+      const units = parseFloat(formData.units_purchased);
+      const price = parseFloat(formData.unit_price);
+      if (!formData.units_purchased) {
+        errors.units_purchased = 'Units purchased is required';
+      } else if (isNaN(units) || units <= 0) {
+        errors.units_purchased = 'Enter a valid positive number';
+      }
+      if (!formData.unit_price) {
+        errors.unit_price = 'Unit price is required';
+      } else if (isNaN(price) || price <= 0) {
+        errors.unit_price = 'Enter a valid positive price';
+      }
     }
     if (eventType === 'UNIT_SALE') {
-      if (!formData.units_sold || !formData.unit_price) return false;
+      const units = parseFloat(formData.units_sold);
+      const price = parseFloat(formData.unit_price);
+      if (!formData.units_sold) {
+        errors.units_sold = 'Units sold is required';
+      } else if (isNaN(units) || units <= 0) {
+        errors.units_sold = 'Enter a valid positive number';
+      }
+      if (!formData.unit_price) {
+        errors.unit_price = 'Unit price is required';
+      } else if (isNaN(price) || price <= 0) {
+        errors.unit_price = 'Enter a valid positive price';
+      }
     }
-    return true;
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Only validate form on modal open
+  useEffect(() => {
+    if (open) {
+      validateForm();
+    }
+  }, [open]);
+
+  // Handle input change
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev: typeof formData) => ({
+      ...prev,
+      [field]: value
+    }));
+    // Real-time validation for the field
+    const error = validateField(field, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error || undefined
+    }));
   };
 
   const handleSubmit = async () => {
     setError(null);
-    if (!validate()) {
+    if (!validateForm()) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -92,10 +253,10 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         description: formData.description,
         reference_number: formData.reference_number,
       };
-      if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION') {
+      if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
         payload.amount = parseFloat(formData.amount);
-        if (eventType === 'DISTRIBUTION' && formData.distribution_type) {
-          payload.distribution_type = formData.distribution_type;
+        if (eventType === 'DISTRIBUTION' && distributionType) {
+          payload.distribution_type = distributionType;
         }
       }
       if (eventType === 'UNIT_PURCHASE') {
@@ -130,131 +291,198 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     }
   };
 
-  // Filter templates by fund type
-  const availableTemplates = EVENT_TEMPLATES.filter(t => t.trackingType === fundTrackingType || t.trackingType === 'both');
-
+  // UI rendering
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Add Cash Flow Event</DialogTitle>
       <DialogContent>
         {success && <Alert severity="success">Event created successfully!</Alert>}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ mb: 2 }}>
-          <TextField
-            select
-            label="Event Type"
-            value={eventType}
-            onChange={e => handleEventTypeChange(e.target.value as EventType)}
-            fullWidth
-            required
-            sx={{ mb: 2 }}
-          >
-            {availableTemplates.map(t => (
-              <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
-            ))}
-          </TextField>
-        </Box>
-        {eventType && (
-          <Box display="flex" flexDirection="column" gap={2}>
-            <TextField
-              label="Event Date"
-              type="date"
-              value={formData.event_date || ''}
-              onChange={e => handleInputChange('event_date', e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              required
-            />
-            {(eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION') && (
-              <TextField
-                label="Amount"
-                type="number"
-                value={formData.amount || ''}
-                onChange={e => handleInputChange('amount', e.target.value)}
-                required
-              />
-            )}
-            {eventType === 'DISTRIBUTION' && (
-              <TextField
-                label="Distribution Type"
-                value={formData.distribution_type || ''}
-                onChange={e => handleInputChange('distribution_type', e.target.value)}
-                select
+        {/* Event Type Cards */}
+        <Box display="flex" gap={2} mb={2}>
+          {EVENT_TEMPLATES.filter(t => t.trackingType === fundTrackingType || t.trackingType === 'both').map(template => {
+            const isSelected = eventType === template.value;
+            const isDisabled = eventType && eventType !== template.value && !(eventType === 'DISTRIBUTION' && template.value === 'DISTRIBUTION');
+            return (
+              <Paper
+                key={template.value}
+                elevation={isSelected ? 6 : 1}
+                sx={{
+                  p: 2,
+                  minWidth: 120,
+                  border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
+                  background: isSelected ? '#e3f2fd' : '#fff',
+                  opacity: isDisabled ? 0.5 : 1,
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                  position: 'relative',
+                }}
+                onClick={() => {
+                  if (isDisabled) return;
+                  if (isSelected) {
+                    setEventType('');
+                    setDistributionType('');
+                  } else {
+                    setEventType(template.value as EventType | 'RETURN_OF_CAPITAL');
+                    setDistributionType('');
+                  }
+                }}
               >
-                <MenuItem value="INTEREST">Interest</MenuItem>
-                <MenuItem value="DIVIDEND">Dividend</MenuItem>
-                <MenuItem value="OTHER">Other</MenuItem>
-              </TextField>
-            )}
-            {eventType === 'UNIT_PURCHASE' && (
-              <>
+                <Box display="flex" flexDirection="column" alignItems="center">
+                  {template.icon}
+                  <Typography variant="subtitle1" fontWeight={isSelected ? 'bold' : 'normal'}>
+                    {template.label}
+                  </Typography>
+                </Box>
+                {/* Expand indicator for Distribution */}
+                {template.value === 'DISTRIBUTION' && isSelected && (
+                  <Box position="absolute" top={8} right={8}>
+                    <AddIcon color="primary" />
+                  </Box>
+                )}
+              </Paper>
+            );
+          })}
+        </Box>
+
+        {/* Distribution Type Options (inline, below cards, always visible when Distribution is selected) */}
+        {eventType === 'DISTRIBUTION' && (
+          <Box mb={2}>
+            <Typography variant="subtitle1" mb={1} color="primary">Select Distribution Type</Typography>
+            <Box display="flex" gap={2}>
+              {DISTRIBUTION_TEMPLATES.map(dt => {
+                const isSelected = distributionType === dt.value;
+                return (
+                  <Paper
+                    key={dt.value}
+                    elevation={isSelected ? 6 : 2}
+                    sx={{
+                      p: 2,
+                      minWidth: 120,
+                      border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
+                      background: isSelected ? '#e3f2fd' : '#f3f6fa',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onClick={() => {
+                      if (isSelected) {
+                        setDistributionType('');
+                      } else {
+                        setDistributionType(dt.value);
+                      }
+                    }}
+                  >
+                    <Box display="flex" flexDirection="column" alignItems="center">
+                      {dt.icon}
+                      <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>{dt.label}</Typography>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Box>
+          </Box>
+        )}
+
+        {/* Form appears below all cards (after event type or distribution type selected) */}
+        {((eventType && eventType !== 'DISTRIBUTION') || (eventType === 'DISTRIBUTION' && distributionType)) && (
+          <Box mt={2}>
+            <Typography variant="body2" color="text.secondary" mb={2}>
+              Fields marked with <span style={{ color: '#d32f2f' }}>*</span> are required.
+            </Typography>
+            <Box component="form" noValidate autoComplete="off">
+              <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
                 <TextField
-                  label="Units Purchased"
-                  type="number"
-                  value={formData.units_purchased || ''}
-                  onChange={e => handleInputChange('units_purchased', e.target.value)}
-                  required
+                  label={<span>Event Date <span style={{ color: '#d32f2f' }}>*</span></span>}
+                  type="date"
+                  value={formData.event_date || ''}
+                  onChange={e => handleInputChange('event_date', e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                  error={!!validationErrors.event_date}
+                  helperText={validationErrors.event_date}
+                />
+                {(eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') && (
+                  <TextField
+                    label={<span>{eventType === 'RETURN_OF_CAPITAL' ? 'Return Amount' : 'Amount'} <span style={{ color: '#d32f2f' }}>*</span></span>}
+                    type="text"
+                    value={formatNumber(formData.amount || '')}
+                    onChange={e => handleInputChange('amount', parseNumber(e.target.value))}
+                    fullWidth
+                    error={!!validationErrors.amount}
+                    helperText={validationErrors.amount}
+                  />
+                )}
+                {eventType === 'DISTRIBUTION' && (
+                  <TextField
+                    label={<span>Distribution Type <span style={{ color: '#d32f2f' }}>*</span></span>}
+                    value={distributionType}
+                    disabled
+                    fullWidth
+                    error={!!validationErrors.distribution_type}
+                    helperText={validationErrors.distribution_type}
+                  />
+                )}
+                <TextField
+                  label="Description"
+                  value={formData.description || ''}
+                  onChange={e => handleInputChange('description', e.target.value)}
+                  fullWidth
                 />
                 <TextField
-                  label="Unit Price"
-                  type="number"
-                  value={formData.unit_price || ''}
-                  onChange={e => handleInputChange('unit_price', e.target.value)}
-                  required
+                  label="Reference Number"
+                  value={formData.reference_number || ''}
+                  onChange={e => handleInputChange('reference_number', e.target.value)}
+                  fullWidth
                 />
-                <TextField
-                  label="Brokerage Fee"
-                  type="number"
-                  value={formData.brokerage_fee || ''}
-                  onChange={e => handleInputChange('brokerage_fee', e.target.value)}
-                />
-              </>
-            )}
-            {eventType === 'UNIT_SALE' && (
-              <>
-                <TextField
-                  label="Units Sold"
-                  type="number"
-                  value={formData.units_sold || ''}
-                  onChange={e => handleInputChange('units_sold', e.target.value)}
-                  required
-                />
-                <TextField
-                  label="Unit Price"
-                  type="number"
-                  value={formData.unit_price || ''}
-                  onChange={e => handleInputChange('unit_price', e.target.value)}
-                  required
-                />
-                <TextField
-                  label="Brokerage Fee"
-                  type="number"
-                  value={formData.brokerage_fee || ''}
-                  onChange={e => handleInputChange('brokerage_fee', e.target.value)}
-                />
-              </>
-            )}
-            <TextField
-              label="Description"
-              value={formData.description || ''}
-              onChange={e => handleInputChange('description', e.target.value)}
-              multiline
-              minRows={2}
-              maxRows={4}
-            />
-            <TextField
-              label="Reference Number"
-              value={formData.reference_number || ''}
-              onChange={e => handleInputChange('reference_number', e.target.value)}
-            />
+                {eventType === 'UNIT_PURCHASE' && (
+                  <>
+                    <TextField
+                      label={<span>Units Purchased <span style={{ color: '#d32f2f' }}>*</span></span>}
+                      type="number"
+                      value={formData.units_purchased || ''}
+                      onChange={e => handleInputChange('units_purchased', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.units_purchased}
+                      helperText={validationErrors.units_purchased}
+                    />
+                    <TextField
+                      label={<span>Unit Price <span style={{ color: '#d32f2f' }}>*</span></span>}
+                      type="number"
+                      value={formData.unit_price || ''}
+                      onChange={e => handleInputChange('unit_price', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.unit_price}
+                      helperText={validationErrors.unit_price}
+                    />
+                  </>
+                )}
+                {eventType === 'UNIT_SALE' && (
+                  <>
+                    <TextField
+                      label={<span>Units Sold <span style={{ color: '#d32f2f' }}>*</span></span>}
+                      type="number"
+                      value={formData.units_sold || ''}
+                      onChange={e => handleInputChange('units_sold', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.units_sold}
+                      helperText={validationErrors.units_sold}
+                    />
+                    <TextField
+                      label={<span>Unit Price <span style={{ color: '#d32f2f' }}>*</span></span>}
+                      type="number"
+                      value={formData.unit_price || ''}
+                      onChange={e => handleInputChange('unit_price', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.unit_price}
+                      helperText={validationErrors.unit_price}
+                    />
+                  </>
+                )}
+              </Box>
+            </Box>
           </Box>
         )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={submitting}>Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={submitting || !validate()}>
-          {submitting ? <CircularProgress size={20} /> : 'Add Event'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 };
