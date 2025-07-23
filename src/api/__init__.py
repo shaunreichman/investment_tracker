@@ -619,19 +619,47 @@ def create_app():
                         session=session
                     )
                 elif event_type.upper() == 'DISTRIBUTION':
-                    amount = data.get('amount')
-                    if amount is None:
-                        return jsonify({"error": "Missing required field: amount for distribution"}), 400
-                    # Optional: distribution_type
                     distribution_type = data.get('distribution_type')
-                    created_event = fund.add_distribution(
-                        amount=amount,
-                        date=event_date,
-                        distribution_type=distribution_type,
-                        description=data.get('description'),
-                        reference_number=data.get('reference_number'),
-                        session=session
-                    )
+                    sub_distribution_type = data.get('sub_distribution_type')
+
+                    if distribution_type == 'INTEREST':
+                        gross_interest = data.get('gross_interest')
+                        net_interest = data.get('net_interest')
+                        withholding_amount = data.get('withholding_amount')
+                        withholding_rate = data.get('withholding_rate')
+                        from src.fund.models import DistributionType
+                        if (withholding_amount is not None) or (withholding_rate is not None):
+                            created_event, _ = fund.add_interest_distribution_with_withholding_tax(
+                                event_date=event_date,
+                                gross_interest=gross_interest if gross_interest is not None else None,
+                                net_interest=net_interest if net_interest is not None else None,
+                                withholding_amount=withholding_amount if withholding_amount is not None else None,
+                                withholding_rate=withholding_rate if withholding_rate is not None else None,
+                                description=data.get('description'),
+                                reference_number=data.get('reference_number'),
+                                session=session
+                            )
+                        else:
+                            # No withholding tax: use new method
+                            created_event = fund.add_interest_distribution_without_withholding_tax(
+                                event_date=event_date,
+                                gross_interest=gross_interest if gross_interest is not None else data.get('amount'),
+                                description=data.get('description'),
+                                reference_number=data.get('reference_number'),
+                                session=session
+                            )
+                    else:
+                        amount = data.get('amount')
+                        if amount is None:
+                            return jsonify({"error": "Missing required field: amount for distribution"}), 400
+                        created_event = fund.add_distribution(
+                            amount=amount,
+                            date=event_date,
+                            distribution_type=distribution_type,
+                            description=data.get('description'),
+                            reference_number=data.get('reference_number'),
+                            session=session
+                        )
                 elif event_type.upper() == 'UNIT_PURCHASE' and fund.tracking_type.value == 'nav_based':
                     units = data.get('units_purchased')
                     price = data.get('unit_price')
@@ -656,6 +684,17 @@ def create_app():
                         price=price,
                         date=event_date,
                         brokerage_fee=data.get('brokerage_fee', 0.0),
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type.upper() == 'RETURN_OF_CAPITAL' and fund.tracking_type.value == 'cost_based':
+                    amount = data.get('amount')
+                    if amount is None:
+                        return jsonify({"error": "Missing required field: amount for return of capital"}), 400
+                    created_event = fund.add_return_of_capital(
+                        amount=amount,
+                        date=event_date,
                         description=data.get('description'),
                         reference_number=data.get('reference_number'),
                         session=session

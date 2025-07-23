@@ -39,23 +39,42 @@ const DISTRIBUTION_TEMPLATES = [
   { label: 'Other', value: 'OTHER', description: 'Other distribution', icon: <MonetizationOn color="warning" /> },
 ];
 
+const DIVIDEND_SUB_TEMPLATES = [
+  { label: 'Franked', value: 'FRANKED', description: 'Franked dividend', icon: <MonetizationOn color="success" /> },
+  { label: 'Unfranked', value: 'UNFRANKED', description: 'Unfranked dividend', icon: <MonetizationOn color="warning" /> },
+];
+
+const INTEREST_SUB_TEMPLATES = [
+  { label: 'Regular', value: 'REGULAR', description: 'Regular interest', icon: <MonetizationOn color="primary" /> },
+  { label: 'Withholding Tax', value: 'WITHHOLDING_TAX', description: 'Interest with withholding tax', icon: <MonetizationOn color="warning" /> },
+];
+
 interface ValidationErrors {
   event_date?: string;
   amount?: string;
   distribution_type?: string;
+  sub_distribution_type?: string;
   units_purchased?: string;
   units_sold?: string;
   unit_price?: string;
+  gross_amount?: string;
+  net_amount?: string;
+  withholding_tax_amount?: string;
+  withholding_tax_rate?: string;
 }
 
 const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClose, onEventCreated, fundId, fundTrackingType }) => {
   const [eventType, setEventType] = useState<EventType | 'RETURN_OF_CAPITAL' | ''>('');
   const [distributionType, setDistributionType] = useState<string>('');
+  const [subDistributionType, setSubDistributionType] = useState<string>('');
   const [formData, setFormData] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
+  const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
 
@@ -63,6 +82,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     if (open) {
       setEventType('');
       setDistributionType('');
+      setSubDistributionType('');
+      setWithholdingAmountType('');
+      setWithholdingTaxType('');
       setFormData({ event_date: new Date().toISOString().slice(0, 10) });
       setError(null);
       setSuccess(false);
@@ -90,9 +112,56 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     return value.replace(/,/g, '');
   };
 
+  // Simple withholding tax calculation
+  const calculateWithholdingTax = () => {
+    if (!withholdingAmountType || !withholdingTaxType) return;
+
+    const amountValue = withholdingAmountType === 'gross' ? 
+      parseFloat(formData.gross_amount || '0') : 
+      parseFloat(formData.net_amount || '0');
+    const taxValue = withholdingTaxType === 'rate' ? 
+      parseFloat(formData.withholding_tax_rate || '0') : 
+      parseFloat(formData.withholding_tax_amount || '0');
+
+    if (amountValue <= 0 || taxValue <= 0) return;
+
+    let newFormData = { ...formData };
+
+    if (withholdingAmountType === 'gross' && withholdingTaxType === 'rate') {
+      // Gross + Tax Rate → Calculate Net and Tax Amount
+      const taxAmount = (amountValue * taxValue) / 100;
+      const netAmount = amountValue - taxAmount;
+      newFormData.net_amount = netAmount.toFixed(2);
+      newFormData.withholding_tax_amount = taxAmount.toFixed(2);
+    } else if (withholdingAmountType === 'net' && withholdingTaxType === 'rate') {
+      // Net + Tax Rate → Calculate Gross and Tax Amount
+      const grossAmount = (amountValue * 100) / (100 - taxValue);
+      const taxAmount = grossAmount - amountValue;
+      newFormData.gross_amount = grossAmount.toFixed(2);
+      newFormData.withholding_tax_amount = taxAmount.toFixed(2);
+    } else if (withholdingAmountType === 'gross' && withholdingTaxType === 'amount') {
+      // Gross + Tax Amount → Calculate Net and Tax Rate
+      const netAmount = amountValue - taxValue;
+      const taxRate = (taxValue / amountValue) * 100;
+      newFormData.net_amount = netAmount.toFixed(2);
+      newFormData.withholding_tax_rate = taxRate.toFixed(2);
+    } else if (withholdingAmountType === 'net' && withholdingTaxType === 'amount') {
+      // Net + Tax Amount → Calculate Gross and Tax Rate
+      const grossAmount = amountValue + taxValue;
+      const taxRate = (taxValue / grossAmount) * 100;
+      newFormData.gross_amount = grossAmount.toFixed(2);
+      newFormData.withholding_tax_rate = taxRate.toFixed(2);
+    }
+
+    setFormData(newFormData);
+  };
+
   const resetForm = () => {
     setEventType('');
     setDistributionType('');
+    setSubDistributionType('');
+    setWithholdingAmountType('');
+    setWithholdingTaxType('');
     setFormData({});
     setError(null);
     setSuccess(false);
@@ -108,6 +177,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   const handleTemplateSelect = (value: EventType | 'RETURN_OF_CAPITAL') => {
     setEventType(value);
     setDistributionType('');
+    setSubDistributionType('');
     setError(null);
     // Validate all required fields after template selection
     setTimeout(() => validateForm(), 0);
@@ -117,9 +187,14 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     setDistributionType(distType);
   };
 
+  const handleSubDistributionTypeSelect = (subDistType: string) => {
+    setSubDistributionType(subDistType);
+  };
+
   const handleBack = () => {
     if (distributionType) {
       setDistributionType('');
+      setSubDistributionType('');
       setFormData((prev: any) => ({ ...prev, distribution_type: '' }));
     } else {
       setEventType('');
@@ -142,6 +217,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       case 'distribution_type':
         if (eventType === 'DISTRIBUTION' && !distributionType) return 'Distribution type is required';
         break;
+              case 'sub_distribution_type':
+          if (distributionType === 'DIVIDEND' && !subDistributionType) return 'Sub-distribution type is required';
+          break;
       case 'units_purchased':
         if (eventType === 'UNIT_PURCHASE') {
           const units = parseFloat(value);
@@ -163,6 +241,20 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
           if (isNaN(price) || price <= 0) return 'Enter a valid positive price';
         }
         break;
+      case 'gross_amount':
+      case 'net_amount':
+      case 'withholding_tax_amount':
+        if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
+          const num = parseFloat(value);
+          if (value && (isNaN(num) || num <= 0)) return 'Enter a valid positive amount';
+        }
+        break;
+      case 'withholding_tax_rate':
+        if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
+          const rate = parseFloat(value);
+          if (value && (isNaN(rate) || rate <= 0 || rate >= 100)) return 'Enter a valid tax rate between 0 and 100';
+        }
+        break;
       default:
         return undefined;
     }
@@ -176,16 +268,49 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       errors.event_date = 'Event date is required';
     }
     if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
-      const amt = parseFloat(formData.amount);
-      if (!formData.amount) {
-        errors.amount = 'Amount is required';
-      } else if (isNaN(amt) || amt <= 0) {
-        errors.amount = 'Enter a valid positive amount';
+      // Skip amount validation for withholding tax scenarios
+      if (!(distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX')) {
+        const amt = parseFloat(formData.amount);
+        if (!formData.amount) {
+          errors.amount = 'Amount is required';
+        } else if (isNaN(amt) || amt <= 0) {
+          errors.amount = 'Enter a valid positive amount';
+        }
       }
       if (eventType === 'DISTRIBUTION' && !distributionType) {
         errors.distribution_type = 'Distribution type is required';
       }
     }
+          if (distributionType === 'DIVIDEND' && !subDistributionType) {
+        errors.sub_distribution_type = 'Sub-distribution type is required';
+      }
+      if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
+        // For withholding tax, require both amount type and tax type to be selected
+        if (!withholdingAmountType) {
+          errors.gross_amount = 'Select amount type (Gross or Net)';
+        }
+        if (!withholdingTaxType) {
+          errors.withholding_tax_rate = 'Select tax type (Amount or Rate)';
+        }
+        // Also require the actual values to be entered
+        const amountValue = withholdingAmountType === 'gross' ? formData.gross_amount : formData.net_amount;
+        const taxValue = withholdingTaxType === 'rate' ? formData.withholding_tax_rate : formData.withholding_tax_amount;
+        
+        if (!amountValue) {
+          if (withholdingAmountType === 'gross') {
+            errors.gross_amount = 'Enter the gross amount';
+          } else if (withholdingAmountType === 'net') {
+            errors.net_amount = 'Enter the net amount';
+          }
+        }
+        if (!taxValue) {
+          if (withholdingTaxType === 'amount') {
+            errors.withholding_tax_amount = 'Enter the tax amount';
+          } else if (withholdingTaxType === 'rate') {
+            errors.withholding_tax_rate = 'Enter the tax rate';
+          }
+        }
+      }
     if (eventType === 'UNIT_PURCHASE') {
       const units = parseFloat(formData.units_purchased);
       const price = parseFloat(formData.unit_price);
@@ -215,15 +340,17 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       }
     }
     setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    const isValid = Object.keys(errors).length === 0;
+    setIsFormValid(isValid);
+    return isValid;
   };
 
-  // Only validate form on modal open
+  // Update form validity when relevant state changes
   useEffect(() => {
     if (open) {
       validateForm();
     }
-  }, [open]);
+  }, [open, eventType, distributionType, subDistributionType, withholdingAmountType, withholdingTaxType, formData]);
 
   // Handle input change
   const handleInputChange = (field: string, value: string) => {
@@ -254,10 +381,32 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         reference_number: formData.reference_number,
       };
       if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
-        payload.amount = parseFloat(formData.amount);
-        if (eventType === 'DISTRIBUTION' && distributionType) {
+        // Handle withholding tax distributions differently
+        if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
+          // For withholding tax, send only the relevant fields
+          if (withholdingAmountType === 'gross') {
+            payload.gross_interest = parseFloat(formData.gross_amount);
+          } else if (withholdingAmountType === 'net') {
+            payload.net_interest = parseFloat(formData.net_amount);
+          }
+          if (withholdingTaxType === 'amount') {
+            payload.withholding_amount = parseFloat(formData.withholding_tax_amount);
+          } else if (withholdingTaxType === 'rate') {
+            payload.withholding_rate = parseFloat(formData.withholding_tax_rate);
+          }
           payload.distribution_type = distributionType;
+          payload.sub_distribution_type = subDistributionType;
+        } else {
+          // For regular distributions, send the amount field
+          payload.amount = parseFloat(formData.amount);
+          if (eventType === 'DISTRIBUTION' && distributionType) {
+            payload.distribution_type = distributionType;
+          }
         }
+      }
+      if (distributionType === 'DIVIDEND') {
+        payload.distribution_type = 'DIVIDEND';
+        payload.sub_distribution_type = subDistributionType;
       }
       if (eventType === 'UNIT_PURCHASE') {
         payload.units_purchased = parseFloat(formData.units_purchased);
@@ -269,6 +418,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         payload.unit_price = parseFloat(formData.unit_price);
         payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
       }
+      // Debug: Log the payload being sent
+      console.log('DEBUG: Sending payload:', payload);
+      
       const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -322,9 +474,11 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                   if (isSelected) {
                     setEventType('');
                     setDistributionType('');
+                    setSubDistributionType('');
                   } else {
                     setEventType(template.value as EventType | 'RETURN_OF_CAPITAL');
                     setDistributionType('');
+                    setSubDistributionType('');
                   }
                 }}
               >
@@ -367,8 +521,10 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                     onClick={() => {
                       if (isSelected) {
                         setDistributionType('');
+                        setSubDistributionType('');
                       } else {
                         setDistributionType(dt.value);
+                        setSubDistributionType('');
                       }
                     }}
                   >
@@ -383,8 +539,84 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
           </Box>
         )}
 
+                 {/* Sub-Distribution Type Options (inline, below Distribution Type, only visible when Dividend is selected) */}
+         {distributionType === 'DIVIDEND' && (
+          <Box mb={2}>
+            <Typography variant="subtitle1" mb={1} color="primary">Select Sub-Distribution Type</Typography>
+            <Box display="flex" gap={2}>
+              {DIVIDEND_SUB_TEMPLATES.map(subDt => {
+                const isSelected = subDistributionType === subDt.value;
+                return (
+                  <Paper
+                    key={subDt.value}
+                    elevation={isSelected ? 6 : 2}
+                    sx={{
+                      p: 2,
+                      minWidth: 120,
+                      border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
+                      background: isSelected ? '#e3f2fd' : '#f3f6fa',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSubDistributionType('');
+                      } else {
+                        setSubDistributionType(subDt.value);
+                      }
+                    }}
+                  >
+                    <Box display="flex" flexDirection="column" alignItems="center">
+                      {subDt.icon}
+                      <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>{subDt.label}</Typography>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Box>
+          </Box>
+        )}
+
+                 {/* Interest Sub-Distribution Type Options (inline, below Distribution Type, only visible when Interest is selected) */}
+         {distributionType === 'INTEREST' && (
+          <Box mb={2}>
+            <Typography variant="subtitle1" mb={1} color="primary">Select Interest Sub-Distribution Type</Typography>
+            <Box display="flex" gap={2}>
+              {INTEREST_SUB_TEMPLATES.map(subDt => {
+                const isSelected = subDistributionType === subDt.value;
+                return (
+                  <Paper
+                    key={subDt.value}
+                    elevation={isSelected ? 6 : 2}
+                    sx={{
+                      p: 2,
+                      minWidth: 120,
+                      border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
+                      background: isSelected ? '#e3f2fd' : '#f3f6fa',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSubDistributionType('');
+                      } else {
+                        setSubDistributionType(subDt.value);
+                      }
+                    }}
+                  >
+                    <Box display="flex" flexDirection="column" alignItems="center">
+                      {subDt.icon}
+                      <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>{subDt.label}</Typography>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Box>
+          </Box>
+        )}
+
         {/* Form appears below all cards (after event type or distribution type selected) */}
-        {((eventType && eventType !== 'DISTRIBUTION') || (eventType === 'DISTRIBUTION' && distributionType)) && (
+                 {((eventType && eventType !== 'DISTRIBUTION') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType)))) && (
           <Box mt={2}>
             <Typography variant="body2" color="text.secondary" mb={2}>
               Fields marked with <span style={{ color: '#d32f2f' }}>*</span> are required.
@@ -401,7 +633,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                   error={!!validationErrors.event_date}
                   helperText={validationErrors.event_date}
                 />
-                {(eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') && (
+                {(eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') && !(distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') && (
                   <TextField
                     label={<span>{eventType === 'RETURN_OF_CAPITAL' ? 'Return Amount' : 'Amount'} <span style={{ color: '#d32f2f' }}>*</span></span>}
                     type="text"
@@ -420,6 +652,26 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                     fullWidth
                     error={!!validationErrors.distribution_type}
                     helperText={validationErrors.distribution_type}
+                  />
+                )}
+                                 {distributionType === 'DIVIDEND' && (
+                  <TextField
+                    label={<span>Sub-Distribution Type <span style={{ color: '#d32f2f' }}>*</span></span>}
+                    value={subDistributionType}
+                    disabled
+                    fullWidth
+                    error={!!validationErrors.sub_distribution_type}
+                    helperText={validationErrors.sub_distribution_type}
+                  />
+                )}
+                                 {distributionType === 'INTEREST' && (
+                  <TextField
+                    label={<span>Sub-Distribution Type <span style={{ color: '#d32f2f' }}>*</span></span>}
+                    value={subDistributionType}
+                    disabled
+                    fullWidth
+                    error={!!validationErrors.sub_distribution_type}
+                    helperText={validationErrors.sub_distribution_type}
                   />
                 )}
                 <TextField
@@ -478,11 +730,100 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                     />
                   </>
                 )}
+                
+                {/* Withholding Tax Selection Buttons - Inline within form grid */}
+                {distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX' && (
+                  <>
+                    {/* Amount Type Selection */}
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" mb={1}>
+                        Amount Type:
+                      </Typography>
+                      <Box display="flex" gap={1}>
+                        <Button
+                          size="small"
+                          variant={withholdingAmountType === 'gross' ? 'contained' : 'outlined'}
+                          onClick={() => setWithholdingAmountType('gross')}
+                        >
+                          Gross
+                        </Button>
+                        <Button
+                          size="small"
+                          variant={withholdingAmountType === 'net' ? 'contained' : 'outlined'}
+                          onClick={() => setWithholdingAmountType('net')}
+                        >
+                          Net
+                        </Button>
+                      </Box>
+                    </Box>
+
+                    {/* Tax Type Selection */}
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" mb={1}>
+                        Tax Type:
+                      </Typography>
+                      <Box display="flex" gap={1}>
+                        <Button
+                          size="small"
+                          variant={withholdingTaxType === 'amount' ? 'contained' : 'outlined'}
+                          onClick={() => setWithholdingTaxType('amount')}
+                        >
+                          Tax Amount
+                        </Button>
+                        <Button
+                          size="small"
+                          variant={withholdingTaxType === 'rate' ? 'contained' : 'outlined'}
+                          onClick={() => setWithholdingTaxType('rate')}
+                        >
+                          Tax Rate (%)
+                        </Button>
+                      </Box>
+                    </Box>
+
+                    {/* Withholding Tax Input Fields */}
+                    {withholdingAmountType && (
+                      <TextField
+                        label={`${withholdingAmountType === 'gross' ? 'Gross' : 'Net'} Amount`}
+                        type="text"
+                        value={formatNumber(formData[withholdingAmountType === 'gross' ? 'gross_amount' : 'net_amount'] || '')}
+                        onChange={e => handleInputChange(withholdingAmountType === 'gross' ? 'gross_amount' : 'net_amount', parseNumber(e.target.value))}
+                        fullWidth
+                        error={!!validationErrors[withholdingAmountType === 'gross' ? 'gross_amount' : 'net_amount']}
+                        helperText={validationErrors[withholdingAmountType === 'gross' ? 'gross_amount' : 'net_amount']}
+                      />
+                    )}
+
+                    {withholdingTaxType && (
+                      <TextField
+                        label={withholdingTaxType === 'amount' ? 'Tax Amount' : 'Tax Rate (%)'}
+                        type="text"
+                        value={formatNumber(formData[withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate'] || '')}
+                        onChange={e => handleInputChange(withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate', parseNumber(e.target.value))}
+                        fullWidth
+                        error={!!validationErrors[withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate']}
+                        helperText={validationErrors[withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate']}
+                      />
+                    )}
+                  </>
+                )}
               </Box>
             </Box>
           </Box>
         )}
       </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={submitting}>
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained" 
+          disabled={submitting || !isFormValid}
+          startIcon={submitting ? <CircularProgress size={20} /> : null}
+        >
+          {submitting ? 'Adding Event...' : 'Add Event'}
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 };

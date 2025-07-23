@@ -860,7 +860,7 @@ class Fund(Base):
         return distributions_by_type
     
     @with_session
-    def add_distribution(self, amount, date, distribution_type=DistributionType.INTEREST, description=None, reference_number=None, session=None):
+    def add_distribution(self, amount, event_date, distribution_type=DistributionType.INTEREST, description=None, reference_number=None, session=None):
         """Add a distribution event.
         
         Args:
@@ -877,7 +877,7 @@ class Fund(Base):
         event = FundEvent(
             fund_id=self.id,
             event_type=EventType.DISTRIBUTION,
-            event_date=date,
+            event_date=event_date,
             amount=amount,
             distribution_type=distribution_type,
             description=description or f"Distribution: ${amount:,.2f}",
@@ -888,102 +888,93 @@ class Fund(Base):
         
         return event
     
-    def _create_distribution_with_tax_objects(self, gross_amount, date, tax_withheld=0.0, distribution_type=DistributionType.INTEREST, description=None, reference_number=None):
-        """Create distribution and tax payment event objects.
-        Returns a tuple of (distribution_event, tax_event) objects. No database operations.
+    def add_interest_distribution_with_withholding_tax(self, event_date, gross_interest=None, net_interest=None, withholding_amount=None, withholding_rate=None, description=None, reference_number=None, session=None):
         """
-        # Create distribution event object
+        Add an INTEREST distribution event with associated withholding tax.
+        Accepts either gross_interest or net_interest, and either withholding_amount or withholding_rate.
+        Calculates missing values and creates both distribution and tax payment events.
+        """
+        # Validate input
+        if (gross_interest is not None and net_interest is not None) or (gross_interest is None and net_interest is None):
+            raise ValueError("Must provide exactly one of gross_interest or net_interest amount.")
+        if (withholding_amount is not None and withholding_rate is not None) or (withholding_amount is None and withholding_rate is None):
+            raise ValueError("Must provide exactly one of withholding_amount or withholding_rate.")
+
+        # Calculate missing values
+        if gross_interest is not None:
+            gross_amount = float(gross_interest)
+            if withholding_amount is not None:
+                tax_withheld = float(withholding_amount)
+                net_amount = gross_amount - tax_withheld
+                tax_rate = (tax_withheld / gross_amount) * 100 if gross_amount else 0.0
+            else:
+                tax_rate = float(withholding_rate)
+                tax_withheld = (gross_amount * tax_rate) / 100
+                net_amount = gross_amount - tax_withheld
+        else:
+            net_amount = float(net_interest)
+            if withholding_amount is not None:
+                tax_withheld = float(withholding_amount)
+                gross_amount = net_amount + tax_withheld
+                tax_rate = (tax_withheld / gross_amount) * 100 if gross_amount else 0.0
+            else:
+                tax_rate = float(withholding_rate)
+                gross_amount = (net_amount * 100) / (100 - tax_rate) if tax_rate != 100 else 0.0
+                tax_withheld = gross_amount - net_amount
+
+        # Always use DistributionType.INTEREST
+        from .models import DistributionType
+        dist_type = DistributionType.INTEREST
+
+        # Create distribution event
         distribution_event = FundEvent(
             fund_id=self.id,
             event_type=EventType.DISTRIBUTION,
-            event_date=date,
+            event_date=event_date,
             amount=gross_amount,
-            distribution_type=distribution_type,
+            distribution_type=dist_type,
             description=description or f"Distribution: ${gross_amount:,.2f}",
             reference_number=reference_number
         )
-        
-        # Create tax payment event object if there's tax withheld
+        session.add(distribution_event)
+
+        # Create tax payment event if there's tax withheld
         tax_event = None
         if tax_withheld > 0:
+            from .models import TaxPaymentType
             tax_event = FundEvent(
                 fund_id=self.id,
                 event_type=EventType.TAX_PAYMENT,
-                event_date=date,
+                event_date=event_date,
                 amount=tax_withheld,
                 description=f"Tax withheld on distribution: ${tax_withheld:,.2f}",
                 reference_number=f"{reference_number}_TAX" if reference_number else None,
                 tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
             )
-        
-        return distribution_event, tax_event
-    
-    @with_session
-    def add_distribution_with_tax_direct(self, gross_amount, date, tax_withheld=0.0, distribution_type=DistributionType.INTEREST, description=None, reference_number=None, session=None):
-        """Add a distribution event with associated tax payment using direct model methods.
-        
-        Args:
-            gross_amount (float): Gross distribution amount
-            date (date): Distribution date
-            tax_withheld (float): Tax withheld from distribution
-            distribution_type (DistributionType): Type of distribution
-            description (str): Event description
-            reference_number (str): External reference number
-            
-        Returns:
-            tuple: (distribution_event, tax_event)
-        """
-        # Create event objects using business logic method
-        distribution_event, tax_event = self._create_distribution_with_tax_objects(
-            gross_amount, date, tax_withheld, distribution_type, description, reference_number
-        )
-        
-        # Add events to session
-        session.add(distribution_event)
-        if tax_event:
             session.add(tax_event)
-        
+
+        session.commit()
         return distribution_event, tax_event
-    
-    @with_session
-    def add_distribution_with_tax(self, event_date, gross_amount, tax_withheld=0.0, tax_rate=None, distribution_type=None, description=None, reference_number=None, session=None):
-        """Add a distribution event with an associated tax payment event.
-        Uses a static helper to create both events and updates the fund's equity balance.
-        Returns a tuple: (distribution_event, tax_event).
+
+    def add_interest_distribution_without_withholding_tax(self, event_date, gross_interest, description=None, reference_number=None, session=None):
         """
-        # Use the static method to create both events
-        distribution_event, tax_event = FundEvent.create_distribution_with_tax_static(
+        Add an INTEREST distribution event with no withholding tax.
+        Creates a single distribution event with the given gross_interest amount.
+        """
+        from .models import DistributionType
+        distribution_event = FundEvent(
             fund_id=self.id,
+            event_type=EventType.DISTRIBUTION,
             event_date=event_date,
-            gross_amount=gross_amount,
-            tax_withheld=tax_withheld,
-            tax_rate=tax_rate,
-            distribution_type=distribution_type,
-            description=description,
-            reference_number=reference_number,
-            session=session
+            amount=float(gross_interest),
+            distribution_type=DistributionType.INTEREST,
+            description=description or f"Interest distribution: ${gross_interest:,.2f}",
+            reference_number=reference_number
         )
-        
-        # (Removed call to self.update_current_equity_balance(session=session))
-        
-        return distribution_event, tax_event
-    
-    def add_distribution_with_tax_rate(self, event_date, gross_amount, tax_rate, distribution_type=None, description=None, reference_number=None, session=None):
-        """Add a distribution event with tax withheld calculated from a given rate.
-        Returns a tuple: (distribution_event, tax_event).
-        """
-        tax_withheld = (gross_amount * tax_rate) / 100
-        return self.add_distribution_with_tax(
-            event_date=event_date,
-            gross_amount=gross_amount,
-            tax_withheld=tax_withheld,
-            tax_rate=tax_rate,
-            distribution_type=distribution_type,
-            description=description,
-            reference_number=reference_number,
-            session=session
-        )
-    
+        session.add(distribution_event)
+        session.commit()
+        return distribution_event
+
     
     def _calculate_nav_change_fields(self, nav_per_share, date, session):
         """
