@@ -16,7 +16,7 @@ if project_root not in sys.path:
 from src.database import get_database_session
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
-from src.fund.models import Fund, FundType
+from src.fund.models import Fund, FundType, FundEvent
 
 def create_app():
     app = Flask(__name__)
@@ -729,6 +729,159 @@ def create_app():
                     "created_at": created_event.created_at.isoformat() if created_event.created_at else None
                 }
                 return jsonify(event_response), 201
+            finally:
+                session.close()
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>', methods=['DELETE'])
+    def delete_fund_event(fund_id, event_id):
+        """Delete a specific fund event."""
+        try:
+            session = get_db_session()
+            try:
+                fund = Fund.get_by_id(fund_id, session=session)
+                if not fund:
+                    return jsonify({"error": "Fund not found"}), 404
+                # Correct event lookup
+                event = session.query(FundEvent).filter_by(id=event_id, fund_id=fund_id).first()
+                if not event:
+                    return jsonify({"error": "Event not found"}), 404
+                # Only allow deleting user-editable events
+                if event.event_type.value.upper() in [
+                    'TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER']:
+                    return jsonify({"error": "Cannot delete system or tax events from the UI"}), 400
+                fund.delete_event(event_id, session=session)
+                session.commit()
+                return '', 204
+            finally:
+                session.close()
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>', methods=['PUT'])
+    def update_fund_event(fund_id, event_id):
+        """Update a specific fund event."""
+        try:
+            session = get_db_session()
+            try:
+                data = request.get_json()
+                fund = Fund.get_by_id(fund_id, session=session)
+                if not fund:
+                    return jsonify({"error": "Fund not found"}), 404
+                # Correct event lookup
+                event = session.query(FundEvent).filter_by(id=event_id, fund_id=fund_id).first()
+                if not event:
+                    return jsonify({"error": "Event not found"}), 404
+                event_type = event.event_type.value.upper() if event.event_type else None
+                updated_event = None
+                # Parse event_date if present
+                event_date = data.get('event_date')
+                if event_date:
+                    from datetime import datetime
+                    try:
+                        event_date = datetime.fromisoformat(event_date).date()
+                    except Exception:
+                        return jsonify({"error": "Invalid event_date format. Use ISO format (YYYY-MM-DD)."}), 400
+                else:
+                    event_date = None
+                # Route to correct domain method
+                if event_type == 'CAPITAL_CALL' and fund.tracking_type.value == 'cost_based':
+                    updated_event = fund.update_capital_call(
+                        event_id=event_id,
+                        amount=data.get('amount'),
+                        date=event_date,
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type == 'RETURN_OF_CAPITAL' and fund.tracking_type.value == 'cost_based':
+                    updated_event = fund.update_return_of_capital(
+                        event_id=event_id,
+                        amount=data.get('amount'),
+                        date=event_date,
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type == 'UNIT_PURCHASE' and fund.tracking_type.value == 'nav_based':
+                    updated_event = fund.update_unit_purchase(
+                        event_id=event_id,
+                        units=data.get('units_purchased'),
+                        price=data.get('unit_price'),
+                        date=event_date,
+                        brokerage_fee=data.get('brokerage_fee'),
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type == 'UNIT_SALE' and fund.tracking_type.value == 'nav_based':
+                    updated_event = fund.update_unit_sale(
+                        event_id=event_id,
+                        units=data.get('units_sold'),
+                        price=data.get('unit_price'),
+                        date=event_date,
+                        brokerage_fee=data.get('brokerage_fee'),
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type == 'NAV_UPDATE' and fund.tracking_type.value == 'nav_based':
+                    updated_event = fund.update_nav_update(
+                        event_id=event_id,
+                        nav_per_share=data.get('nav_per_share'),
+                        date=event_date,
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type == 'DISTRIBUTION':
+                    # Interest distribution with withholding tax
+                    if event.distribution_type and event.distribution_type.value.upper() == 'INTEREST' and (
+                        data.get('withholding_amount') is not None or data.get('withholding_rate') is not None):
+                        updated_event = fund.update_interest_distribution_with_withholding_tax(
+                            event_id=event_id,
+                            gross_interest=data.get('gross_interest'),
+                            net_interest=data.get('net_interest'),
+                            withholding_amount=data.get('withholding_amount'),
+                            withholding_rate=data.get('withholding_rate'),
+                            description=data.get('description'),
+                            reference_number=data.get('reference_number'),
+                            session=session
+                        )
+                    else:
+                        updated_event = fund.update_distribution(
+                            event_id=event_id,
+                            amount=data.get('amount'),
+                            distribution_type=data.get('distribution_type'),
+                            description=data.get('description'),
+                            reference_number=data.get('reference_number'),
+                            session=session
+                        )
+                else:
+                    return jsonify({"error": f"Editing this event type is not supported."}), 400
+                session.commit()
+                # Serialize updated event for response
+                event_response = {
+                    "id": updated_event.id,
+                    "event_type": updated_event.event_type.value.upper() if updated_event.event_type else None,
+                    "event_date": updated_event.event_date.isoformat() if updated_event.event_date else None,
+                    "amount": float(updated_event.amount) if updated_event.amount is not None else None,
+                    "description": updated_event.description,
+                    "reference_number": updated_event.reference_number,
+                    "distribution_type": updated_event.distribution_type.value.upper() if updated_event.distribution_type else None,
+                    "units_purchased": float(getattr(updated_event, 'units_purchased', 0.0)) if hasattr(updated_event, 'units_purchased') and updated_event.units_purchased is not None else None,
+                    "units_sold": float(getattr(updated_event, 'units_sold', 0.0)) if hasattr(updated_event, 'units_sold') and updated_event.units_sold is not None else None,
+                    "unit_price": float(getattr(updated_event, 'unit_price', 0.0)) if hasattr(updated_event, 'unit_price') and updated_event.unit_price is not None else None,
+                    "brokerage_fee": float(getattr(updated_event, 'brokerage_fee', 0.0)) if hasattr(updated_event, 'brokerage_fee') and updated_event.brokerage_fee is not None else None,
+                    "nav_per_share": float(getattr(updated_event, 'nav_per_share', 0.0)) if hasattr(updated_event, 'nav_per_share') and updated_event.nav_per_share is not None else None,
+                    "created_at": updated_event.created_at.isoformat() if updated_event.created_at else None
+                }
+                return jsonify(event_response), 200
             finally:
                 session.close()
         except ValueError as e:

@@ -17,14 +17,20 @@ import {
   CircularProgress,
   Alert,
   Switch,
-  FormControlLabel,
   Breadcrumbs,
-  Link
+  Link,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText
 } from '@mui/material';
-import { TrendingUp, AccountBalance, Event } from '@mui/icons-material';
+import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter, ScatterChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
 import CreateFundEventModal from './CreateFundEventModal';
+import EditFundEventModal from './EditFundEventModal';
 
 interface FundEvent {
   id: number;
@@ -56,6 +62,11 @@ interface FundEvent {
   eofy_debt_interest_deduction_sum_of_daily_interest?: number | null;
   eofy_debt_interest_deduction_rate?: number | null;
   eofy_debt_interest_deduction_total_deduction?: number | null;
+  // Withholding tax context (added by handleEditEvent)
+  has_withholding_tax?: boolean;
+  withholding_amount?: number | null;
+  withholding_rate?: number | null;
+  net_interest?: number | null;
 }
 
 interface FundStatistics {
@@ -107,6 +118,10 @@ const FundDetail: React.FC = () => {
   const [showTaxEvents, setShowTaxEvents] = useState(true);
   const [showNavUpdates, setShowNavUpdates] = useState(true);
   const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<FundEvent | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState(false);
 
   useEffect(() => {
     const fetchFundDetail = async () => {
@@ -193,7 +208,8 @@ const FundDetail: React.FC = () => {
   const getEventTypeLabel = (event: FundEvent) => {
     // Show only subtype if available, otherwise show the main type
     if (event.distribution_type) {
-      return event.distribution_type;
+      // Format distribution type to be consistent (uppercase)
+      return event.distribution_type.toUpperCase();
     }
     if (event.tax_payment_type) {
       return event.tax_payment_type;
@@ -215,6 +231,79 @@ const FundDetail: React.FC = () => {
         .then(data => setFundData(data))
         .catch(err => setError(err.message || 'Failed to fetch fund details'))
         .finally(() => setLoading(false));
+    }
+  };
+
+  const handleEventUpdated = () => {
+    // Re-fetch fund details (including events)
+    if (fundId) {
+      setLoading(true);
+      setError(null);
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+      fetch(`${API_BASE_URL}/api/funds/${fundId}`)
+        .then(res => res.json())
+        .then(data => setFundData(data))
+        .catch(err => setError(err.message || 'Failed to fetch fund details'))
+        .finally(() => setLoading(false));
+    }
+  };
+
+  const handleEditEvent = (event: FundEvent) => {
+    // Check if there's a withholding tax event on the same date
+    const sameDateEvents = fundData?.events.filter((e: FundEvent) => e.event_date === event.event_date) || [];
+    const withholdingEvent = sameDateEvents.find((e: FundEvent) => 
+      e.event_type === 'TAX_PAYMENT' && e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING'
+    );
+    
+    // Add withholding context to the event
+    const eventWithContext = {
+      ...event,
+      has_withholding_tax: !!withholdingEvent,
+      withholding_amount: withholdingEvent?.amount || null,
+      withholding_rate: withholdingEvent ? 10 : null, // Default rate
+      net_interest: withholdingEvent ? (event.amount || 0) - (withholdingEvent.amount || 0) : null
+    };
+    
+    setSelectedEvent(eventWithContext);
+    setEditModalOpen(true);
+  };
+
+  const handleDeleteEvent = (event: FundEvent) => {
+    setSelectedEvent(event);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!selectedEvent || !fundId) return;
+
+    setDeletingEvent(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+      const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}/events/${selectedEvent.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Refresh the fund data
+      if (fundId) {
+        setLoading(true);
+        setError(null);
+        fetch(`${API_BASE_URL}/api/funds/${fundId}`)
+          .then(res => res.json())
+          .then(data => setFundData(data))
+          .catch(err => setError(err.message || 'Failed to fetch fund details'))
+          .finally(() => setLoading(false));
+      }
+      setDeleteDialogOpen(false);
+      setSelectedEvent(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete event');
+    } finally {
+      setDeletingEvent(false);
     }
   };
 
@@ -508,6 +597,7 @@ const FundDetail: React.FC = () => {
                 {showTaxEvents && (
                   <TableCell align="right">Tax</TableCell>
                 )}
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
 
             </TableHead>
@@ -543,12 +633,12 @@ const FundDetail: React.FC = () => {
 
                   // If we have both interest and withholding on the same date, combine them
                   if (interestEvent && withholdingEvent) {
-                    const isNavBased = fund.tracking_type === 'nav_based';
-                    const isEquityEvent = isNavBased 
-                      ? (interestEvent.event_type === 'UNIT_PURCHASE' || interestEvent.event_type === 'UNIT_SALE')
-                      : (interestEvent.event_type === 'CAPITAL_CALL' || interestEvent.event_type === 'RETURN_OF_CAPITAL');
-                    const isDistributionEvent = interestEvent.event_type === 'DISTRIBUTION';
-                    const isOtherEvent = !isEquityEvent && !isDistributionEvent;
+                                              const isNavBased = fund.tracking_type === 'nav_based';
+                          const isEquityEvent = isNavBased 
+                            ? (interestEvent.event_type === 'UNIT_PURCHASE' || interestEvent.event_type === 'UNIT_SALE')
+                            : (interestEvent.event_type === 'CAPITAL_CALL' || interestEvent.event_type === 'RETURN_OF_CAPITAL');
+                          const isDistributionEvent = interestEvent.event_type === 'DISTRIBUTION';
+                          // Note: isEquityEvent is used in the JSX below
 
                     return (
                       <React.Fragment key={`${date}-combined`}>
@@ -557,7 +647,7 @@ const FundDetail: React.FC = () => {
                           <TableCell>{formatDate(date)}</TableCell>
                           <TableCell>
                             <Chip
-                              label="Interest"
+                              label="INTEREST"
                               color={getEventTypeColor('DISTRIBUTION') as any}
                               size="small"
                             />
@@ -593,6 +683,32 @@ const FundDetail: React.FC = () => {
                         {showTaxEvents && (
                           <TableCell align="right"></TableCell>
                         )}
+                        {/* Actions Column */}
+                        <TableCell align="right">
+                          <Box display="flex" gap={1} justifyContent="flex-end">
+                            {/* Only show edit/delete for user-editable events */}
+                            {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(interestEvent.event_type) && (
+                              <>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditEvent(interestEvent)}
+                                  color="primary"
+                                  title="Edit event"
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteEvent(interestEvent)}
+                                  color="error"
+                                  title="Delete event"
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </>
+                            )}
+                          </Box>
+                        </TableCell>
                         </TableRow>
                         
                         {/* Process other events on the same date (like RETURN_OF_CAPITAL) */}
@@ -969,6 +1085,32 @@ const FundDetail: React.FC = () => {
                           ) : ''}
                           </TableCell>
                         )}
+                        {/* Actions Column */}
+                        <TableCell align="right">
+                          <Box display="flex" gap={1} justifyContent="flex-end">
+                            {/* Only show edit/delete for user-editable events */}
+                            {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(event.event_type) && (
+                              <>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditEvent(event)}
+                                  color="primary"
+                                  title="Edit event"
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteEvent(event)}
+                                  color="error"
+                                  title="Delete event"
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </>
+                            )}
+                          </Box>
+                        </TableCell>
                       </TableRow>
                     );
                   }).filter(Boolean);
@@ -1193,6 +1335,41 @@ const FundDetail: React.FC = () => {
         fundId={fund.id}
         fundTrackingType={fund.tracking_type === 'nav_based' ? 'nav_based' : 'cost_based'}
       />
+      
+      {/* Edit Event Modal */}
+      <EditFundEventModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onEventUpdated={handleEventUpdated}
+        fundId={fund.id}
+        event={selectedEvent}
+      />
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this event? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deletingEvent}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmDeleteEvent} 
+            color="error" 
+            variant="contained"
+            disabled={deletingEvent}
+          >
+            {deletingEvent ? <CircularProgress size={20} /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
