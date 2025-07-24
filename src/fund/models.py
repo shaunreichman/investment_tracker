@@ -1162,7 +1162,22 @@ class Fund(Base):
         # Store event type for recalculation
         event_type = event.event_type
         
-        # Delete the event
+        # For withholding interest distributions, also delete the related tax payment event
+        if (event.event_type == EventType.DISTRIBUTION and 
+            event.distribution_type == DistributionType.INTEREST):
+            
+            # Find and delete the corresponding tax payment event
+            tax_event = session.query(FundEvent).filter(
+                FundEvent.fund_id == self.id,
+                FundEvent.event_date == event.event_date,
+                FundEvent.event_type == EventType.TAX_PAYMENT,
+                FundEvent.tax_payment_type == TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
+            ).first()
+            
+            if tax_event:
+                session.delete(tax_event)
+        
+        # Delete the main event
         session.delete(event)
         
         # No recalculation methods needed; handled by unified flow
@@ -1848,14 +1863,45 @@ class Fund(Base):
         event = session.query(FundEvent).filter_by(id=event_id, fund_id=self.id).first()
         if not event or event.event_type != EventType.DISTRIBUTION or event.distribution_type != DistributionType.INTEREST:
             raise ValueError("Interest distribution event not found")
+        
+        # Validate input - must provide exactly one of gross_interest or net_interest
+        if (gross_interest is not None and net_interest is not None) or (gross_interest is None and net_interest is None):
+            raise ValueError("Must provide exactly one of gross_interest or net_interest amount.")
+        
+        # Validate input - must provide exactly one of withholding_amount or withholding_rate
+        if (withholding_amount is not None and withholding_rate is not None) or (withholding_amount is None and withholding_rate is None):
+            raise ValueError("Must provide exactly one of withholding_amount or withholding_rate.")
+        
+        # Calculate missing values based on what's provided
+        calculated_gross_amount = None
+        calculated_net_amount = None
+        calculated_tax_withheld = None
+        calculated_tax_rate = None
+        
         if gross_interest is not None:
-            event.amount = gross_interest
-        if net_interest is not None:
-            event.net_interest = net_interest
-        if withholding_amount is not None:
-            event.withholding_amount = withholding_amount
-        if withholding_rate is not None:
-            event.withholding_rate = withholding_rate
+            calculated_gross_amount = float(gross_interest)
+            if withholding_amount is not None:
+                calculated_tax_withheld = float(withholding_amount)
+                calculated_net_amount = calculated_gross_amount - calculated_tax_withheld
+                calculated_tax_rate = (calculated_tax_withheld / calculated_gross_amount) * 100 if calculated_gross_amount else 0.0
+            elif withholding_rate is not None:
+                calculated_tax_rate = float(withholding_rate)
+                calculated_tax_withheld = (calculated_gross_amount * calculated_tax_rate) / 100
+                calculated_net_amount = calculated_gross_amount - calculated_tax_withheld
+        elif net_interest is not None:
+            calculated_net_amount = float(net_interest)
+            if withholding_amount is not None:
+                calculated_tax_withheld = float(withholding_amount)
+                calculated_gross_amount = calculated_net_amount + calculated_tax_withheld
+                calculated_tax_rate = (calculated_tax_withheld / calculated_gross_amount) * 100 if calculated_gross_amount else 0.0
+            elif withholding_rate is not None:
+                calculated_tax_rate = float(withholding_rate)
+                calculated_gross_amount = (calculated_net_amount * 100) / (100 - calculated_tax_rate) if calculated_tax_rate != 100 else 0.0
+                calculated_tax_withheld = calculated_gross_amount - calculated_net_amount
+        
+        # Update the event with calculated values (only fields that exist in the database)
+        if calculated_gross_amount is not None:
+            event.amount = calculated_gross_amount
         if description is not None:
             event.description = description
         if reference_number is not None:
@@ -1867,9 +1913,13 @@ class Fund(Base):
             event_type=EventType.TAX_PAYMENT,
             tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
         ).first()
-        if (withholding_amount is not None and withholding_amount > 0):
+        
+        # Use calculated tax amount if available, otherwise use provided withholding_amount
+        tax_amount_to_use = calculated_tax_withheld if calculated_tax_withheld is not None else withholding_amount
+        
+        if tax_amount_to_use is not None and tax_amount_to_use > 0:
             if tax_event:
-                tax_event.amount = withholding_amount
+                tax_event.amount = tax_amount_to_use
                 if description is not None:
                     tax_event.description = f"Withholding tax for interest distribution: {description}"
                 if reference_number is not None:
@@ -1879,7 +1929,7 @@ class Fund(Base):
                     fund_id=self.id,
                     event_type=EventType.TAX_PAYMENT,
                     event_date=event.event_date,
-                    amount=withholding_amount,
+                    amount=tax_amount_to_use,
                     tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING,
                     description=f"Withholding tax for interest distribution: {description or ''}",
                     reference_number=reference_number
