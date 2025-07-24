@@ -355,7 +355,7 @@ class Fund(Base):
             "id": self.id,
             "name": self.name,
             "fund_type": self.fund_type,
-            "tracking_type": self.tracking_type.value.upper() if self.tracking_type else None,
+            "tracking_type": self.tracking_type.value if self.tracking_type else None,
             "currency": self.currency,
             "current_equity_balance": float(self.current_equity_balance) if self.current_equity_balance else 0.0,
             "average_equity_balance": float(self.average_equity_balance) if self.average_equity_balance else 0.0,

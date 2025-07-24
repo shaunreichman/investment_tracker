@@ -688,6 +688,17 @@ def create_app():
                         reference_number=data.get('reference_number'),
                         session=session
                     )
+                elif event_type.upper() == 'NAV_UPDATE' and fund.tracking_type.value == 'nav_based':
+                    nav_per_share = data.get('nav_per_share')
+                    if nav_per_share is None:
+                        return jsonify({"error": "Missing required field: nav_per_share for NAV update"}), 400
+                    created_event = fund.add_nav_update(
+                        nav_per_share=nav_per_share,
+                        date=event_date,
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
                 elif event_type.upper() == 'RETURN_OF_CAPITAL' and fund.tracking_type.value == 'cost_based':
                     amount = data.get('amount')
                     if amount is None:

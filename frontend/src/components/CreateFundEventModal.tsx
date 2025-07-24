@@ -23,14 +23,15 @@ interface CreateFundEventModalProps {
   fundTrackingType: 'nav_based' | 'cost_based';
 }
 
-type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE';
+type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE' | 'NAV_UPDATE';
 
 const EVENT_TEMPLATES: { label: string; value: EventType | 'RETURN_OF_CAPITAL'; description: string; icon: React.ReactNode; trackingType: 'nav_based' | 'cost_based' | 'both' }[] = [
   { label: 'Capital Call', value: 'CAPITAL_CALL', description: 'Add a capital call (cost-based funds)', icon: <AccountBalance color="primary" />, trackingType: 'cost_based' },
   { label: 'Capital Return', value: 'RETURN_OF_CAPITAL', description: 'Return capital to investors (cost-based funds)', icon: <AccountBalance color="warning" />, trackingType: 'cost_based' },
-  { label: 'Distribution', value: 'DISTRIBUTION', description: 'Add a distribution (all funds)', icon: <MonetizationOn color="success" />, trackingType: 'both' },
   { label: 'Unit Purchase', value: 'UNIT_PURCHASE', description: 'Buy units (NAV-based funds)', icon: <AddIcon color="primary" />, trackingType: 'nav_based' },
   { label: 'Unit Sale', value: 'UNIT_SALE', description: 'Sell units (NAV-based funds)', icon: <TrendingUp color="warning" />, trackingType: 'nav_based' },
+  { label: 'NAV Update', value: 'NAV_UPDATE', description: 'Update NAV per share (NAV-based funds)', icon: <TrendingUp color="info" />, trackingType: 'nav_based' },
+  { label: 'Distribution', value: 'DISTRIBUTION', description: 'Add a distribution (all funds)', icon: <MonetizationOn color="success" />, trackingType: 'both' },
 ];
 
 const DISTRIBUTION_TEMPLATES = [
@@ -57,6 +58,8 @@ interface ValidationErrors {
   units_purchased?: string;
   units_sold?: string;
   unit_price?: string;
+  brokerage_fee?: string;
+  nav_per_share?: string;
   gross_amount?: string;
   net_amount?: string;
   withholding_tax_amount?: string;
@@ -235,7 +238,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         }
         break;
       case 'unit_price':
-        if ((eventType === 'UNIT_PURCHASE' || eventType === 'UNIT_SALE')) {
+        if ((eventType === 'UNIT_PURCHASE' || eventType === 'UNIT_SALE' || eventType === 'NAV_UPDATE')) {
           const price = parseFloat(value);
           if (!value) return 'Unit price is required';
           if (isNaN(price) || price <= 0) return 'Enter a valid positive price';
@@ -339,6 +342,14 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         errors.unit_price = 'Enter a valid positive price';
       }
     }
+    if (eventType === 'NAV_UPDATE') {
+      const nav = parseFloat(formData.nav_per_share);
+      if (!formData.nav_per_share) {
+        errors.nav_per_share = 'NAV per share is required';
+      } else if (isNaN(nav) || nav <= 0) {
+        errors.nav_per_share = 'Enter a valid positive number';
+      }
+    }
     setValidationErrors(errors);
     const isValid = Object.keys(errors).length === 0;
     setIsFormValid(isValid);
@@ -418,6 +429,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         payload.unit_price = parseFloat(formData.unit_price);
         payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
       }
+      if (eventType === 'NAV_UPDATE') {
+        payload.nav_per_share = parseFloat(formData.nav_per_share);
+      }
       // Debug: Log the payload being sent
       console.log('DEBUG: Sending payload:', payload);
       
@@ -445,7 +459,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
 
   // UI rendering
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Add Cash Flow Event</DialogTitle>
       <DialogContent>
         {success && <Alert severity="success">Event created successfully!</Alert>}
@@ -675,13 +689,13 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                   />
                 )}
                 <TextField
-                  label="Description"
+                  label="Description (Optional)"
                   value={formData.description || ''}
                   onChange={e => handleInputChange('description', e.target.value)}
                   fullWidth
                 />
                 <TextField
-                  label="Reference Number"
+                  label="Reference Number (Optional)"
                   value={formData.reference_number || ''}
                   onChange={e => handleInputChange('reference_number', e.target.value)}
                   fullWidth
@@ -706,6 +720,15 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       error={!!validationErrors.unit_price}
                       helperText={validationErrors.unit_price}
                     />
+                    <TextField
+                      label="Brokerage Fee (Optional)"
+                      type="number"
+                      value={formData.brokerage_fee || ''}
+                      onChange={e => handleInputChange('brokerage_fee', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.brokerage_fee}
+                      helperText={validationErrors.brokerage_fee}
+                    />
                   </>
                 )}
                 {eventType === 'UNIT_SALE' && (
@@ -727,6 +750,28 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       fullWidth
                       error={!!validationErrors.unit_price}
                       helperText={validationErrors.unit_price}
+                    />
+                    <TextField
+                      label="Brokerage Fee (Optional)"
+                      type="number"
+                      value={formData.brokerage_fee || ''}
+                      onChange={e => handleInputChange('brokerage_fee', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.brokerage_fee}
+                      helperText={validationErrors.brokerage_fee}
+                    />
+                  </>
+                )}
+                {eventType === 'NAV_UPDATE' && (
+                  <>
+                    <TextField
+                      label={<span>NAV Per Share <span style={{ color: '#d32f2f' }}>*</span></span>}
+                      type="number"
+                      value={formData.nav_per_share || ''}
+                      onChange={e => handleInputChange('nav_per_share', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.nav_per_share}
+                      helperText={validationErrors.nav_per_share}
                     />
                   </>
                 )}
