@@ -581,4 +581,159 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+    @app.route('/api/funds/<int:fund_id>/events', methods=['POST'])
+    def create_fund_event(fund_id):
+        """Create a new cash flow event (capital call, distribution, unit purchase, unit sale) for a fund."""
+        try:
+            session = get_db_session()
+            try:
+                data = request.get_json()
+                # Validate event_type
+                event_type = data.get('event_type')
+                if not event_type:
+                    return jsonify({"error": "Missing required field: event_type"}), 400
+                # Get fund
+                fund = Fund.get_by_id(fund_id, session=session)
+                if not fund:
+                    return jsonify({"error": "Fund not found"}), 404
+                # Parse event_date
+                event_date = data.get('event_date')
+                if not event_date:
+                    return jsonify({"error": "Missing required field: event_date"}), 400
+                from datetime import datetime
+                try:
+                    event_date = datetime.fromisoformat(event_date).date()
+                except Exception:
+                    return jsonify({"error": "Invalid event_date format. Use ISO format (YYYY-MM-DD)."}), 400
+                # Route to correct domain method
+                created_event = None
+                if event_type.upper() == 'CAPITAL_CALL' and fund.tracking_type.value == 'cost_based':
+                    amount = data.get('amount')
+                    if amount is None:
+                        return jsonify({"error": "Missing required field: amount for capital call"}), 400
+                    created_event = fund.add_capital_call(
+                        amount=amount,
+                        date=event_date,
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type.upper() == 'DISTRIBUTION':
+                    distribution_type = data.get('distribution_type')
+                    sub_distribution_type = data.get('sub_distribution_type')
+
+                    if distribution_type == 'INTEREST':
+                        gross_interest = data.get('gross_interest')
+                        net_interest = data.get('net_interest')
+                        withholding_amount = data.get('withholding_amount')
+                        withholding_rate = data.get('withholding_rate')
+                        from src.fund.models import DistributionType
+                        if (withholding_amount is not None) or (withholding_rate is not None):
+                            created_event, _ = fund.add_interest_distribution_with_withholding_tax(
+                                event_date=event_date,
+                                gross_interest=gross_interest if gross_interest is not None else None,
+                                net_interest=net_interest if net_interest is not None else None,
+                                withholding_amount=withholding_amount if withholding_amount is not None else None,
+                                withholding_rate=withholding_rate if withholding_rate is not None else None,
+                                description=data.get('description'),
+                                reference_number=data.get('reference_number'),
+                                session=session
+                            )
+                        else:
+                            # No withholding tax: use new method
+                            created_event = fund.add_interest_distribution_without_withholding_tax(
+                                event_date=event_date,
+                                gross_interest=gross_interest if gross_interest is not None else data.get('amount'),
+                                description=data.get('description'),
+                                reference_number=data.get('reference_number'),
+                                session=session
+                            )
+                    else:
+                        amount = data.get('amount')
+                        if amount is None:
+                            return jsonify({"error": "Missing required field: amount for distribution"}), 400
+                        created_event = fund.add_distribution(
+                            amount=amount,
+                            date=event_date,
+                            distribution_type=distribution_type,
+                            description=data.get('description'),
+                            reference_number=data.get('reference_number'),
+                            session=session
+                        )
+                elif event_type.upper() == 'UNIT_PURCHASE' and fund.tracking_type.value == 'nav_based':
+                    units = data.get('units_purchased')
+                    price = data.get('unit_price')
+                    if units is None or price is None:
+                        return jsonify({"error": "Missing required fields: units_purchased and unit_price for unit purchase"}), 400
+                    created_event = fund.add_unit_purchase(
+                        units=units,
+                        price=price,
+                        date=event_date,
+                        brokerage_fee=data.get('brokerage_fee', 0.0),
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type.upper() == 'UNIT_SALE' and fund.tracking_type.value == 'nav_based':
+                    units = data.get('units_sold')
+                    price = data.get('unit_price')
+                    if units is None or price is None:
+                        return jsonify({"error": "Missing required fields: units_sold and unit_price for unit sale"}), 400
+                    created_event = fund.add_unit_sale(
+                        units=units,
+                        price=price,
+                        date=event_date,
+                        brokerage_fee=data.get('brokerage_fee', 0.0),
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type.upper() == 'NAV_UPDATE' and fund.tracking_type.value == 'nav_based':
+                    nav_per_share = data.get('nav_per_share')
+                    if nav_per_share is None:
+                        return jsonify({"error": "Missing required field: nav_per_share for NAV update"}), 400
+                    created_event = fund.add_nav_update(
+                        nav_per_share=nav_per_share,
+                        date=event_date,
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                elif event_type.upper() == 'RETURN_OF_CAPITAL' and fund.tracking_type.value == 'cost_based':
+                    amount = data.get('amount')
+                    if amount is None:
+                        return jsonify({"error": "Missing required field: amount for return of capital"}), 400
+                    created_event = fund.add_return_of_capital(
+                        amount=amount,
+                        date=event_date,
+                        description=data.get('description'),
+                        reference_number=data.get('reference_number'),
+                        session=session
+                    )
+                else:
+                    return jsonify({"error": f"Unsupported event_type '{event_type}' for fund tracking type '{fund.tracking_type.value}'"}), 400
+                session.commit()
+                # Serialize event for response
+                event_response = {
+                    "id": created_event.id,
+                    "event_type": created_event.event_type.value.upper() if created_event.event_type else None,
+                    "event_date": created_event.event_date.isoformat() if created_event.event_date else None,
+                    "amount": float(created_event.amount) if created_event.amount is not None else None,
+                    "description": created_event.description,
+                    "reference_number": created_event.reference_number,
+                    "distribution_type": created_event.distribution_type.value.upper() if created_event.distribution_type else None,
+                    "units_purchased": float(getattr(created_event, 'units_purchased', 0.0)) if hasattr(created_event, 'units_purchased') and created_event.units_purchased is not None else None,
+                    "units_sold": float(getattr(created_event, 'units_sold', 0.0)) if hasattr(created_event, 'units_sold') and created_event.units_sold is not None else None,
+                    "unit_price": float(getattr(created_event, 'unit_price', 0.0)) if hasattr(created_event, 'unit_price') and created_event.unit_price is not None else None,
+                    "brokerage_fee": float(getattr(created_event, 'brokerage_fee', 0.0)) if hasattr(created_event, 'brokerage_fee') and created_event.brokerage_fee is not None else None,
+                    "created_at": created_event.created_at.isoformat() if created_event.created_at else None
+                }
+                return jsonify(event_response), 201
+            finally:
+                session.close()
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
     return app 

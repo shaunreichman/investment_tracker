@@ -24,6 +24,7 @@ import {
 import { TrendingUp, AccountBalance, Event } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter, ScatterChart } from 'recharts';
+import CreateFundEventModal from './CreateFundEventModal';
 
 interface FundEvent {
   id: number;
@@ -105,6 +106,7 @@ const FundDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showTaxEvents, setShowTaxEvents] = useState(true);
   const [showNavUpdates, setShowNavUpdates] = useState(true);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchFundDetail = async () => {
@@ -199,6 +201,21 @@ const FundDetail: React.FC = () => {
     
     // For events without subtypes, show the main type
     return event.event_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Add this function to refresh events after event creation
+  const handleEventCreated = () => {
+    // Re-fetch fund details (including events)
+    if (fundId) {
+      setLoading(true);
+      setError(null);
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+      fetch(`${API_BASE_URL}/api/funds/${fundId}`)
+        .then(res => res.json())
+        .then(data => setFundData(data))
+        .catch(err => setError(err.message || 'Failed to fetch fund details'))
+        .finally(() => setLoading(false));
+    }
   };
 
   if (loading) {
@@ -417,8 +434,8 @@ const FundDetail: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Events Table */}
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+      {/* Events Table Header with Add Cash Flow Button */}
+      <Paper sx={{ width: '100%', overflow: 'hidden', mb: 3 }}>
         <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h6">
@@ -436,6 +453,14 @@ const FundDetail: React.FC = () => {
               })()})
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setEventModalOpen(true)}
+                sx={{ minWidth: 160 }}
+              >
+                Add Cash Flow
+              </Button>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   Show Tax Events
@@ -461,6 +486,7 @@ const FundDetail: React.FC = () => {
             </Box>
           </Box>
         </Box>
+        {/* Events Table */}
         <TableContainer sx={{ maxHeight: 600 }}>
           <Table stickyHeader>
             <TableHead>
@@ -1159,6 +1185,14 @@ const FundDetail: React.FC = () => {
           </Box>
         </Paper>
       )}
+      {/* Modal rendered at root */}
+      <CreateFundEventModal
+        open={eventModalOpen}
+        onClose={() => setEventModalOpen(false)}
+        onEventCreated={handleEventCreated}
+        fundId={fund.id}
+        fundTrackingType={fund.tracking_type === 'nav_based' ? 'nav_based' : 'cost_based'}
+      />
     </Container>
   );
 };

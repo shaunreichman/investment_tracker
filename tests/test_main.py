@@ -125,43 +125,38 @@ def setup_test_data(session):
     
     # Add distribution events with tax using domain methods
     print("Adding Senior Debt Fund distributions with tax...")
-    senior_debt_fund.add_distribution_with_tax_rate(
+    senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2023, 10, 20),
-        gross_amount=3030.62,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=3030.62,
+        withholding_rate=10.0,
         description="Interest distribution",
         session=session
     )
-    senior_debt_fund.add_distribution_with_tax_rate(
+    senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 1, 16),
-        gross_amount=2836.98,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=2836.98,
+        withholding_rate=10.0,
         description="Interest distribution",
         session=session
     )
-    senior_debt_fund.add_distribution_with_tax_rate(
+    senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 3, 26),
-        gross_amount=2630.16,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=2630.16,
+        withholding_rate=10.0,
         description="Interest distribution",
         session=session
     )
-    senior_debt_fund.add_distribution_with_tax_rate(
+    senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 7, 9),
-        gross_amount=1392.19,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=1392.19,
+        withholding_amount=139.22,
         description="Interest distribution",
         session=session
     )
-    senior_debt_fund.add_distribution_with_tax_rate(
+    senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 8, 2),
-        gross_amount=509.84,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=509.84,
+        withholding_rate=10.0,
         description="Interest distribution",
         session=session
     )
@@ -224,60 +219,52 @@ def setup_test_data(session):
     # Add distribution events with tax using domain methods
     print("Adding 3PG Finance distributions with tax...")
     # First distribution (no tax)
-    finance_fund.add_distribution_with_tax(
+    finance_fund.add_interest_distribution_without_withholding_tax(
         event_date=date(2023, 3, 24),
-        gross_amount=3075.58,
-        tax_withheld=0.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=3075.58,
         description="Interest distribution",
         session=session
     )
     # Remaining distributions (with 10% tax)
-    finance_fund.add_distribution_with_tax_rate(
+    finance_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2023, 7, 7),
-        gross_amount=4472.36,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=4472.36,
+        withholding_rate=10.0,
         description="Interest distribution",
         session=session
     )
-    finance_fund.add_distribution_with_tax_rate(
+    finance_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2023, 8, 4),
-        gross_amount=871.63,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=871.63,
+        withholding_rate=10.0,
         description="Interest distribution",
         session=session
     )
-    finance_fund.add_distribution_with_tax_rate(
+    finance_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2023, 9, 22),
-        gross_amount=794.21,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=794.21,
+        withholding_amount=79.42,
         description="Interest distribution",
         session=session
     )
-    finance_fund.add_distribution_with_tax_rate(
+    finance_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2023, 10, 13),
-        gross_amount=684.73,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=684.73,
+        withholding_rate=10.0,
         description="Interest distribution",
         session=session
     )
-    finance_fund.add_distribution_with_tax_rate(
+    finance_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2023, 11, 21),
-        gross_amount=531.32,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=531.32,
+        withholding_amount=53.13,
         description="Interest distribution",
         session=session
     )
-    finance_fund.add_distribution_with_tax_rate(
+    finance_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 4, 19),
-        gross_amount=4399.27,
-        tax_rate=10.0,
-        distribution_type=DistributionType.INTEREST,
+        gross_interest=4399.27,
+        withholding_rate=10.0,
         description="Interest distribution",
         session=session
     )
@@ -341,7 +328,7 @@ def setup_test_data(session):
     # Distribution
     abc_fund.add_distribution(
         amount=79.05,
-        date=date(2013, 9, 12),
+        event_date=date(2013, 9, 12),
         distribution_type=DistributionType.DIVIDEND_FRANKED,
         description="Fully Franked Dividend",
         session=session
