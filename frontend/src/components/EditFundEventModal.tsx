@@ -79,6 +79,8 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   const [interestType, setInterestType] = useState<'regular' | 'withholding'>('regular');
   const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
   const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
+  // Add state to track focus for Amount field
+  const [amountFocused, setAmountFocused] = useState(false);
 
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
@@ -163,10 +165,24 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
     }
   }, [open, event]);
 
-  const formatNumber = (value: string): string => {
-    return value.replace(/[^0-9.-]/g, '');
+  const formatNumber = (value: string | number): string => {
+    if (value === null || value === undefined || value === '') return '';
+    const num = typeof value === 'number' ? value : parseFloat(value.toString().replace(/,/g, ''));
+    if (isNaN(num)) return '';
+    return num.toLocaleString('en-US');
+  };
+  const parseNumber = (value: string): string => {
+    if (!value) return '';
+    return value.replace(/,/g, '');
   };
 
+  // Add a helper function for formatting numbers with thousand separators
+  const formatWithThousandSeparator = (value: string | number): string => {
+    if (value === null || value === undefined || value === '') return '';
+    const num = typeof value === 'number' ? value : parseFloat(value.replace(/,/g, ''));
+    if (isNaN(num)) return '';
+    return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  };
 
 
   const validateField = useCallback((field: string, value: string): string | undefined => {
@@ -389,7 +405,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
 
       // Add fields based on event type
       if (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL') {
-        if (formData.amount) payload.amount = parseFloat(formData.amount);
+        if (formData.amount) payload.amount = parseFloat(parseNumber(formData.amount));
         if (formData.event_date) payload.event_date = formData.event_date;
         if (formData.description !== undefined) payload.description = formData.description;
         if (formData.reference_number !== undefined) payload.reference_number = formData.reference_number;
@@ -575,9 +591,9 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
             <TextField
               fullWidth
               label="Amount"
-              type="number"
-              value={formData.amount || ''}
-              onChange={(e) => handleInputChange('amount', e.target.value)}
+              type="text"
+              value={formatNumber(formData.amount || '')}
+              onChange={e => handleInputChange('amount', parseNumber(e.target.value))}
               error={!!validationErrors.amount}
               helperText={validationErrors.amount}
               sx={{ mb: 2 }}
