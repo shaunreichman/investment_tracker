@@ -1179,6 +1179,15 @@ class Fund(Base):
         # Delete the main event
         session.delete(event)
         
+        # Trigger recalculation for capital events
+        if event.event_type in [
+            EventType.CAPITAL_CALL,
+            EventType.RETURN_OF_CAPITAL,
+            EventType.UNIT_PURCHASE,
+            EventType.UNIT_SALE,
+        ]:
+            self.recalculate_capital_chain_from(event, session=session)
+        
         # No recalculation methods needed; handled by unified flow
         return True
 
