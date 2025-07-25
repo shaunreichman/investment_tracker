@@ -41,8 +41,8 @@ const DISTRIBUTION_TEMPLATES = [
 ];
 
 const DIVIDEND_SUB_TEMPLATES = [
-  { label: 'Franked', value: 'FRANKED', description: 'Franked dividend', icon: <MonetizationOn color="success" /> },
-  { label: 'Unfranked', value: 'UNFRANKED', description: 'Unfranked dividend', icon: <MonetizationOn color="warning" /> },
+  { label: 'Franked', value: 'DIVIDEND_FRANKED', description: 'Franked dividend', icon: <MonetizationOn color="success" /> },
+  { label: 'Unfranked', value: 'DIVIDEND_UNFRANKED', description: 'Unfranked dividend', icon: <MonetizationOn color="warning" /> },
 ];
 
 const INTEREST_SUB_TEMPLATES = [
@@ -221,7 +221,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         if (eventType === 'DISTRIBUTION' && !distributionType) return 'Distribution type is required';
         break;
               case 'sub_distribution_type':
-          if (distributionType === 'DIVIDEND' && !subDistributionType) return 'Sub-distribution type is required';
+          if ((distributionType === 'DIVIDEND_FRANKED' || distributionType === 'DIVIDEND_UNFRANKED') && !subDistributionType) return 'Sub-distribution type is required';
           break;
       case 'units_purchased':
         if (eventType === 'UNIT_PURCHASE') {
@@ -284,7 +284,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         errors.distribution_type = 'Distribution type is required';
       }
     }
-          if (distributionType === 'DIVIDEND' && !subDistributionType) {
+          if ((distributionType === 'DIVIDEND_FRANKED' || distributionType === 'DIVIDEND_UNFRANKED') && !subDistributionType) {
         errors.sub_distribution_type = 'Sub-distribution type is required';
       }
       if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
@@ -416,8 +416,13 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         }
       }
       if (distributionType === 'DIVIDEND') {
-        payload.distribution_type = 'DIVIDEND';
-        payload.sub_distribution_type = subDistributionType;
+        if (!subDistributionType) {
+          validationErrors.sub_distribution_type = 'Please select Franked or Unfranked';
+        } else {
+          payload.distribution_type = subDistributionType;
+        }
+      } else {
+        payload.distribution_type = distributionType;
       }
       if (eventType === 'UNIT_PURCHASE') {
         payload.units_purchased = parseFloat(formData.units_purchased);
@@ -556,37 +561,19 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                  {/* Sub-Distribution Type Options (inline, below Distribution Type, only visible when Dividend is selected) */}
          {distributionType === 'DIVIDEND' && (
           <Box mb={2}>
-            <Typography variant="subtitle1" mb={1} color="primary">Select Sub-Distribution Type</Typography>
+            <Typography variant="subtitle1" mb={1} color="primary">Select Dividend Type</Typography>
             <Box display="flex" gap={2}>
-              {DIVIDEND_SUB_TEMPLATES.map(subDt => {
-                const isSelected = subDistributionType === subDt.value;
-                return (
-                  <Paper
-                    key={subDt.value}
-                    elevation={isSelected ? 6 : 2}
-                    sx={{
-                      p: 2,
-                      minWidth: 120,
-                      border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
-                      background: isSelected ? '#e3f2fd' : '#f3f6fa',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSubDistributionType('');
-                      } else {
-                        setSubDistributionType(subDt.value);
-                      }
-                    }}
-                  >
-                    <Box display="flex" flexDirection="column" alignItems="center">
-                      {subDt.icon}
-                      <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>{subDt.label}</Typography>
-                    </Box>
-                  </Paper>
-                );
-              })}
+              {DIVIDEND_SUB_TEMPLATES.map(sub => (
+                <Button
+                  key={sub.value}
+                  variant={subDistributionType === sub.value ? 'contained' : 'outlined'}
+                  color={sub.value === 'DIVIDEND_FRANKED' ? 'success' : 'warning'}
+                  onClick={() => setSubDistributionType(sub.value)}
+                  startIcon={sub.icon}
+                >
+                  {sub.label}
+                </Button>
+              ))}
             </Box>
           </Box>
         )}

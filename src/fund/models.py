@@ -86,7 +86,6 @@ class DistributionType(enum.Enum):
     - CAPITAL_GAIN: Capital gains (may have CGT discount)
     """
     INCOME = "income"  # Ordinary income
-    DIVIDEND = "dividend"  # Generic dividend income (legacy)
     DIVIDEND_FRANKED = "dividend_franked"  # Dividend with franking credits
     DIVIDEND_UNFRANKED = "dividend_unfranked"  # Dividend without franking credits
     INTEREST = "interest"  # Interest income
@@ -2013,8 +2012,8 @@ class FundEvent(Base):
             elif 'unfranked' in desc_lower:
                 return DistributionType.DIVIDEND_UNFRANKED
             else:
-                # Generic dividend (legacy) - could be either franked or unfranked
-                return DistributionType.DIVIDEND
+                # No franking info: treat as OTHER (enforce explicit type)
+                return DistributionType.OTHER
         
         # Check for other distribution types
         if 'interest' in desc_lower:
