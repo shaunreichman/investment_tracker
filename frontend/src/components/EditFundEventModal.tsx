@@ -269,11 +269,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
           const hasGrossInterest = formData.gross_interest && formData.gross_interest.trim() !== '';
           const hasNetInterest = formData.net_interest && formData.net_interest.trim() !== '';
           
-          if (hasGrossInterest && hasNetInterest) {
-            errors.gross_interest = 'Cannot provide both gross and net interest amounts.';
-            errors.net_interest = 'Cannot provide both gross and net interest amounts.';
-            isValid = false;
-          } else if (!hasGrossInterest && !hasNetInterest) {
+          if (!hasGrossInterest && !hasNetInterest) {
             errors.gross_interest = 'Must provide either gross or net interest amount.';
             errors.net_interest = 'Must provide either gross or net interest amount.';
             isValid = false;
@@ -298,11 +294,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
           const hasWithholdingAmount = formData.withholding_amount && formData.withholding_amount.trim() !== '';
           const hasWithholdingRate = formData.withholding_rate && formData.withholding_rate.trim() !== '';
           
-          if (hasWithholdingAmount && hasWithholdingRate) {
-            errors.withholding_amount = 'Cannot provide both tax amount and tax rate.';
-            errors.withholding_rate = 'Cannot provide both tax amount and tax rate.';
-            isValid = false;
-          } else if (!hasWithholdingAmount && !hasWithholdingRate) {
+          if (!hasWithholdingAmount && !hasWithholdingRate) {
             errors.withholding_amount = 'Must provide either tax amount or tax rate.';
             errors.withholding_rate = 'Must provide either tax amount or tax rate.';
             isValid = false;
