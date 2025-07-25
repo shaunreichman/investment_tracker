@@ -652,9 +652,13 @@ def create_app():
                         amount = data.get('amount')
                         if amount is None:
                             return jsonify({"error": "Missing required field: amount for distribution"}), 400
+                        # Enforce explicit franked/unfranked for dividends
+                        if distribution_type and distribution_type.upper().startswith('DIVIDEND'):
+                            if distribution_type not in ("DIVIDEND_FRANKED", "DIVIDEND_UNFRANKED"):
+                                return jsonify({"error": "Dividend distributions must be either DIVIDEND_FRANKED or DIVIDEND_UNFRANKED."}), 400
                         created_event = fund.add_distribution(
                             amount=amount,
-                            date=event_date,
+                            event_date=event_date,
                             distribution_type=distribution_type,
                             description=data.get('description'),
                             reference_number=data.get('reference_number'),

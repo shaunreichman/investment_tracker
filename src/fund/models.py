@@ -86,7 +86,6 @@ class DistributionType(enum.Enum):
     - CAPITAL_GAIN: Capital gains (may have CGT discount)
     """
     INCOME = "income"  # Ordinary income
-    DIVIDEND = "dividend"  # Generic dividend income (legacy)
     DIVIDEND_FRANKED = "dividend_franked"  # Dividend with franking credits
     DIVIDEND_UNFRANKED = "dividend_unfranked"  # Dividend without franking credits
     INTEREST = "interest"  # Interest income
@@ -1179,6 +1178,53 @@ class Fund(Base):
         
         # Delete the main event
         session.delete(event)
+        session.flush()  # Ensure deletion is reflected in queries
+
+        # For capital events, trigger recalculation from the previous event
+        if event.event_type in [
+            EventType.CAPITAL_CALL,
+            EventType.RETURN_OF_CAPITAL,
+            EventType.UNIT_PURCHASE,
+            EventType.UNIT_SALE
+        ]:
+            # Find the previous capital event (by date and id)
+            prev_event = (
+                session.query(FundEvent)
+                .filter(
+                    FundEvent.fund_id == self.id,
+                    FundEvent.event_type.in_([
+                        EventType.CAPITAL_CALL,
+                        EventType.RETURN_OF_CAPITAL,
+                        EventType.UNIT_PURCHASE,
+                        EventType.UNIT_SALE
+                    ]),
+                    (FundEvent.event_date < event.event_date) |
+                    ((FundEvent.event_date == event.event_date) & (FundEvent.id < event.id))
+                )
+                .order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
+                .first()
+            )
+            if prev_event:
+                self.recalculate_capital_chain_from(prev_event, session=session)
+            else:
+                # No previous event, recalculate from the first capital event
+                first_event = (
+                    session.query(FundEvent)
+                    .filter(
+                        FundEvent.fund_id == self.id,
+                        FundEvent.event_type.in_([
+                            EventType.CAPITAL_CALL,
+                            EventType.RETURN_OF_CAPITAL,
+                            EventType.UNIT_PURCHASE,
+                            EventType.UNIT_SALE
+                        ])
+                    )
+                    .order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
+                    .first()
+                )
+                if first_event:
+                    self.recalculate_capital_chain_from(first_event, session=session)
+                # else: no capital events left, nothing to recalculate
         
         # No recalculation methods needed; handled by unified flow
         return True
@@ -2013,8 +2059,8 @@ class FundEvent(Base):
             elif 'unfranked' in desc_lower:
                 return DistributionType.DIVIDEND_UNFRANKED
             else:
-                # Generic dividend (legacy) - could be either franked or unfranked
-                return DistributionType.DIVIDEND
+                # No franking info: treat as OTHER (enforce explicit type)
+                return DistributionType.OTHER
         
         # Check for other distribution types
         if 'interest' in desc_lower:

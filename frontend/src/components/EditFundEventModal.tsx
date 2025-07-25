@@ -16,6 +16,7 @@ import {
   Radio
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
+import { MonetizationOn } from '@mui/icons-material';
 
 interface FundEvent {
   id: number;
@@ -78,6 +79,8 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   const [interestType, setInterestType] = useState<'regular' | 'withholding'>('regular');
   const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
   const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
+  // Add state to track focus for Amount field
+  const [amountFocused, setAmountFocused] = useState(false);
 
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
@@ -162,10 +165,24 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
     }
   }, [open, event]);
 
-  const formatNumber = (value: string): string => {
-    return value.replace(/[^0-9.-]/g, '');
+  const formatNumber = (value: string | number): string => {
+    if (value === null || value === undefined || value === '') return '';
+    const num = typeof value === 'number' ? value : parseFloat(value.toString().replace(/,/g, ''));
+    if (isNaN(num)) return '';
+    return num.toLocaleString('en-US');
+  };
+  const parseNumber = (value: string): string => {
+    if (!value) return '';
+    return value.replace(/,/g, '');
   };
 
+  // Add a helper function for formatting numbers with thousand separators
+  const formatWithThousandSeparator = (value: string | number): string => {
+    if (value === null || value === undefined || value === '') return '';
+    const num = typeof value === 'number' ? value : parseFloat(value.replace(/,/g, ''));
+    if (isNaN(num)) return '';
+    return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  };
 
 
   const validateField = useCallback((field: string, value: string): string | undefined => {
@@ -254,7 +271,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
     }
 
     if (event?.event_type === 'DISTRIBUTION') {
-      if (event.distribution_type === 'interest') {
+      if (formData.distribution_type === 'interest') {
         // Validate gross interest for interest distributions
         const grossInterestError = validateField('gross_interest', formData.gross_interest || '');
         if (grossInterestError) {
@@ -268,11 +285,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
           const hasGrossInterest = formData.gross_interest && formData.gross_interest.trim() !== '';
           const hasNetInterest = formData.net_interest && formData.net_interest.trim() !== '';
           
-          if (hasGrossInterest && hasNetInterest) {
-            errors.gross_interest = 'Cannot provide both gross and net interest amounts.';
-            errors.net_interest = 'Cannot provide both gross and net interest amounts.';
-            isValid = false;
-          } else if (!hasGrossInterest && !hasNetInterest) {
+          if (!hasGrossInterest && !hasNetInterest) {
             errors.gross_interest = 'Must provide either gross or net interest amount.';
             errors.net_interest = 'Must provide either gross or net interest amount.';
             isValid = false;
@@ -297,11 +310,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
           const hasWithholdingAmount = formData.withholding_amount && formData.withholding_amount.trim() !== '';
           const hasWithholdingRate = formData.withholding_rate && formData.withholding_rate.trim() !== '';
           
-          if (hasWithholdingAmount && hasWithholdingRate) {
-            errors.withholding_amount = 'Cannot provide both tax amount and tax rate.';
-            errors.withholding_rate = 'Cannot provide both tax amount and tax rate.';
-            isValid = false;
-          } else if (!hasWithholdingAmount && !hasWithholdingRate) {
+          if (!hasWithholdingAmount && !hasWithholdingRate) {
             errors.withholding_amount = 'Must provide either tax amount or tax rate.';
             errors.withholding_rate = 'Must provide either tax amount or tax rate.';
             isValid = false;
@@ -396,7 +405,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
 
       // Add fields based on event type
       if (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL') {
-        if (formData.amount) payload.amount = parseFloat(formData.amount);
+        if (formData.amount) payload.amount = parseFloat(parseNumber(formData.amount));
         if (formData.event_date) payload.event_date = formData.event_date;
         if (formData.description !== undefined) payload.description = formData.description;
         if (formData.reference_number !== undefined) payload.reference_number = formData.reference_number;
@@ -502,6 +511,11 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
 
   if (!event) return null;
 
+  const DIVIDEND_SUB_TEMPLATES = [
+    { label: 'Franked', value: 'dividend_franked', icon: <MonetizationOn color="success" /> },
+    { label: 'Unfranked', value: 'dividend_unfranked', icon: <MonetizationOn color="warning" /> },
+  ];
+
   return (
     <Dialog 
       open={open} 
@@ -577,9 +591,9 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
             <TextField
               fullWidth
               label="Amount"
-              type="number"
-              value={formData.amount || ''}
-              onChange={(e) => handleInputChange('amount', e.target.value)}
+              type="text"
+              value={formatNumber(formData.amount || '')}
+              onChange={e => handleInputChange('amount', parseNumber(e.target.value))}
               error={!!validationErrors.amount}
               helperText={validationErrors.amount}
               sx={{ mb: 2 }}
@@ -657,22 +671,39 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
           )}
 
           {/* Distribution Type (for Distribution) */}
-          {event.event_type === 'DISTRIBUTION' && (
-                          <TextField
-                fullWidth
-                label="Distribution Type"
-                select
-                value={formData.distribution_type || ''}
-                onChange={(e) => handleInputChange('distribution_type', e.target.value)}
-                error={!!validationErrors.distribution_type}
-                helperText={validationErrors.distribution_type}
-                sx={{ mb: 2 }}
-              >
-                <option value="">Select type</option>
-                <option value="interest">Interest</option>
-                <option value="dividend">Dividend</option>
-                <option value="other">Other</option>
-              </TextField>
+          {event?.event_type === 'DISTRIBUTION' && (formData.distribution_type === 'dividend_franked' || formData.distribution_type === 'dividend_unfranked') ? (
+            <Box mb={2}>
+              <Typography variant="subtitle1" mb={1} color="primary">Dividend Type</Typography>
+              <Box display="flex" gap={2}>
+                {DIVIDEND_SUB_TEMPLATES.map(sub => (
+                  <Button
+                    key={sub.value}
+                    variant={formData.distribution_type === sub.value ? 'contained' : 'outlined'}
+                    color={sub.value === 'dividend_franked' ? 'success' : 'warning'}
+                    onClick={() => handleInputChange('distribution_type', sub.value)}
+                    startIcon={sub.icon}
+                  >
+                    {sub.label}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+          ) : (
+            <TextField
+              fullWidth
+              label="Distribution Type"
+              select
+              value={formData.distribution_type || ''}
+              onChange={(e) => handleInputChange('distribution_type', e.target.value)}
+              error={!!validationErrors.distribution_type}
+              helperText={validationErrors.distribution_type}
+              sx={{ mb: 2 }}
+            >
+              <option value="">Select type</option>
+              <option value="interest">Interest</option>
+              <option value="dividend">Dividend</option>
+              <option value="other">Other</option>
+            </TextField>
           )}
 
           {/* Interest Distribution Fields */}

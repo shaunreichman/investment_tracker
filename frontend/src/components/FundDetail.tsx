@@ -775,16 +775,16 @@ const FundDetail: React.FC = () => {
                                             <Typography variant="body2" color="error.main">
                                               ({formatCurrency(event.amount, fund.currency)})
                                             </Typography>
-                                                                                  {event.units_purchased && event.unit_price && (
-                                        <Typography variant="caption" color="text.secondary">
-                                          {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
-                                          {event.brokerage_fee && event.brokerage_fee > 0 && (
-                                            <span style={{ color: 'error.main' }}>
-                                              {' '}- {formatBrokerageFee(event.brokerage_fee, fund.currency)}
-                                            </span>
-                                          )}
-                                        </Typography>
-                                      )}
+                                            {event.units_purchased && event.unit_price && (
+                                              <Typography variant="caption" color="text.secondary">
+                                                {event.units_purchased} × {formatCurrency(event.unit_price, fund.currency)}
+                                                {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                                  <span style={{ color: 'error.main' }}>
+                                                    {' '}- {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                                  </span>
+                                                )}
+                                              </Typography>
+                                            )}
                                           </Box>
                                         );
                                       } else if (event.event_type === 'UNIT_SALE') {
@@ -793,16 +793,16 @@ const FundDetail: React.FC = () => {
                                             <Typography variant="body2">
                                               {formatCurrency(event.amount, fund.currency)}
                                             </Typography>
-                                                                                  {event.units_sold && event.unit_price && (
-                                        <Typography variant="caption" color="text.secondary">
-                                          {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
-                                          {event.brokerage_fee && event.brokerage_fee > 0 && (
-                                            <span style={{ color: 'error.main' }}>
-                                              {' '}- {formatBrokerageFee(event.brokerage_fee, fund.currency)}
-                                            </span>
-                                          )}
-                                        </Typography>
-                                      )}
+                                            {event.units_sold && event.unit_price && (
+                                              <Typography variant="caption" color="text.secondary">
+                                                {event.units_sold} × {formatCurrency(event.unit_price, fund.currency)}
+                                                {event.brokerage_fee && event.brokerage_fee > 0 && (
+                                                  <span style={{ color: 'error.main' }}>
+                                                    {' '}- {formatBrokerageFee(event.brokerage_fee, fund.currency)}
+                                                  </span>
+                                                )}
+                                              </Typography>
+                                            )}
                                           </Box>
                                         );
                                       }
@@ -853,12 +853,115 @@ const FundDetail: React.FC = () => {
                               {/* Tax Section */}
                               {showTaxEvents && (
                                 <TableCell align="right">
-                                  {isOtherEvent && event.amount ? formatCurrency(event.amount, fund.currency) : ''}
-                                </TableCell>
-                              )}
-                            </TableRow>
-                          );
-                        }).filter(Boolean)}
+                                  {isOtherEvent && event.amount ? (
+                            event.event_type === 'TAX_PAYMENT' ? (
+                              <Box>
+                                <Typography variant="body2" color="error.main">
+                                  {formatCurrency(-event.amount, fund.currency)}
+                                </Typography>
+                                {(() => {
+                                  // Get income and tax rate based on tax payment type
+                                  let incomeAmount: number | null = null;
+                                  let taxRate: number | null = null;
+                                  
+
+                                  
+                                  switch (event.tax_payment_type) {
+                                    case 'EOFY_INTEREST_TAX':
+                                      incomeAmount = event.interest_income_amount ?? null;
+                                      taxRate = event.interest_income_tax_rate ?? null;
+                                      break;
+                                    case 'DIVIDENDS_FRANKED_TAX':
+                                      incomeAmount = event.dividend_franked_income_amount ?? null;
+                                      taxRate = event.dividend_franked_income_tax_rate ?? null;
+                                      break;
+                                    case 'DIVIDENDS_UNFRANKED_TAX':
+                                      incomeAmount = event.dividend_unfranked_income_amount ?? null;
+                                      taxRate = event.dividend_unfranked_income_tax_rate ?? null;
+                                      break;
+                                    case 'CAPITAL_GAINS_TAX':
+                                      incomeAmount = event.capital_gain_income_amount ?? null;
+                                      taxRate = event.capital_gain_income_tax_rate ?? null;
+                                      break;
+                                  }
+                                  
+                                  if (incomeAmount && taxRate) {
+                                    return (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {formatCurrency(incomeAmount, fund.currency)} @ {taxRate}%
+                                      </Typography>
+                                    );
+                                  } else if (event.description) {
+                                    // Fallback to description if income/tax rate not available
+                                    return (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {event.description}
+                                      </Typography>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </Box>
+                            ) : event.event_type === 'EOFY_DEBT_COST' ? (
+                              <Box>
+                                <Typography variant="body2">
+                                  {formatCurrency(event.amount, fund.currency)}
+                                </Typography>
+                                {(() => {
+                                  // Get total interest and deduction rate for EOFY debt cost events
+                                  const totalInterest = event.eofy_debt_interest_deduction_sum_of_daily_interest ?? null;
+                                  const deductionRate = event.eofy_debt_interest_deduction_rate ?? null;
+                                  
+                                  if (totalInterest && deductionRate) {
+                                    return (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {formatCurrency(totalInterest, fund.currency)} @ {deductionRate}%
+                                      </Typography>
+                                    );
+                                  } else if (event.description) {
+                                    // Fallback to description if data not available
+                                    return (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {event.description}
+                                      </Typography>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </Box>
+                            ) : formatCurrency(event.amount, fund.currency)
+                          ) : ''}
+                          </TableCell>
+                        )}
+                        {/* Actions Column */}
+                        <TableCell align="right">
+                          <Box display="flex" gap={1} justifyContent="flex-end">
+                            {/* Only show edit/delete for user-editable events */}
+                            {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(event.event_type) && (
+                              <>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditEvent(event)}
+                                  color="primary"
+                                  title="Edit event"
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteEvent(event)}
+                                  color="error"
+                                  title="Delete event"
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </>
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }).filter(Boolean)}
                       </React.Fragment>
                     );
                   }
