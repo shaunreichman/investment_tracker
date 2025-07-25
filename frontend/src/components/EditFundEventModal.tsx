@@ -16,6 +16,7 @@ import {
   Radio
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
+import { MonetizationOn } from '@mui/icons-material';
 
 interface FundEvent {
   id: number;
@@ -254,7 +255,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
     }
 
     if (event?.event_type === 'DISTRIBUTION') {
-      if (event.distribution_type === 'interest') {
+      if (formData.distribution_type === 'interest') {
         // Validate gross interest for interest distributions
         const grossInterestError = validateField('gross_interest', formData.gross_interest || '');
         if (grossInterestError) {
@@ -502,6 +503,11 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
 
   if (!event) return null;
 
+  const DIVIDEND_SUB_TEMPLATES = [
+    { label: 'Franked', value: 'dividend_franked', icon: <MonetizationOn color="success" /> },
+    { label: 'Unfranked', value: 'dividend_unfranked', icon: <MonetizationOn color="warning" /> },
+  ];
+
   return (
     <Dialog 
       open={open} 
@@ -657,22 +663,39 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
           )}
 
           {/* Distribution Type (for Distribution) */}
-          {event.event_type === 'DISTRIBUTION' && (
-                          <TextField
-                fullWidth
-                label="Distribution Type"
-                select
-                value={formData.distribution_type || ''}
-                onChange={(e) => handleInputChange('distribution_type', e.target.value)}
-                error={!!validationErrors.distribution_type}
-                helperText={validationErrors.distribution_type}
-                sx={{ mb: 2 }}
-              >
-                <option value="">Select type</option>
-                <option value="interest">Interest</option>
-                <option value="dividend">Dividend</option>
-                <option value="other">Other</option>
-              </TextField>
+          {event?.event_type === 'DISTRIBUTION' && (formData.distribution_type === 'dividend_franked' || formData.distribution_type === 'dividend_unfranked') ? (
+            <Box mb={2}>
+              <Typography variant="subtitle1" mb={1} color="primary">Dividend Type</Typography>
+              <Box display="flex" gap={2}>
+                {DIVIDEND_SUB_TEMPLATES.map(sub => (
+                  <Button
+                    key={sub.value}
+                    variant={formData.distribution_type === sub.value ? 'contained' : 'outlined'}
+                    color={sub.value === 'dividend_franked' ? 'success' : 'warning'}
+                    onClick={() => handleInputChange('distribution_type', sub.value)}
+                    startIcon={sub.icon}
+                  >
+                    {sub.label}
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+          ) : (
+            <TextField
+              fullWidth
+              label="Distribution Type"
+              select
+              value={formData.distribution_type || ''}
+              onChange={(e) => handleInputChange('distribution_type', e.target.value)}
+              error={!!validationErrors.distribution_type}
+              helperText={validationErrors.distribution_type}
+              sx={{ mb: 2 }}
+            >
+              <option value="">Select type</option>
+              <option value="interest">Interest</option>
+              <option value="dividend">Dividend</option>
+              <option value="other">Other</option>
+            </TextField>
           )}
 
           {/* Interest Distribution Fields */}
