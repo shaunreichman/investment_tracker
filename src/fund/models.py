@@ -1178,15 +1178,53 @@ class Fund(Base):
         
         # Delete the main event
         session.delete(event)
-        
-        # Trigger recalculation for capital events
+        session.flush()  # Ensure deletion is reflected in queries
+
+        # For capital events, trigger recalculation from the previous event
         if event.event_type in [
             EventType.CAPITAL_CALL,
             EventType.RETURN_OF_CAPITAL,
             EventType.UNIT_PURCHASE,
-            EventType.UNIT_SALE,
+            EventType.UNIT_SALE
         ]:
-            self.recalculate_capital_chain_from(event, session=session)
+            # Find the previous capital event (by date and id)
+            prev_event = (
+                session.query(FundEvent)
+                .filter(
+                    FundEvent.fund_id == self.id,
+                    FundEvent.event_type.in_([
+                        EventType.CAPITAL_CALL,
+                        EventType.RETURN_OF_CAPITAL,
+                        EventType.UNIT_PURCHASE,
+                        EventType.UNIT_SALE
+                    ]),
+                    (FundEvent.event_date < event.event_date) |
+                    ((FundEvent.event_date == event.event_date) & (FundEvent.id < event.id))
+                )
+                .order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
+                .first()
+            )
+            if prev_event:
+                self.recalculate_capital_chain_from(prev_event, session=session)
+            else:
+                # No previous event, recalculate from the first capital event
+                first_event = (
+                    session.query(FundEvent)
+                    .filter(
+                        FundEvent.fund_id == self.id,
+                        FundEvent.event_type.in_([
+                            EventType.CAPITAL_CALL,
+                            EventType.RETURN_OF_CAPITAL,
+                            EventType.UNIT_PURCHASE,
+                            EventType.UNIT_SALE
+                        ])
+                    )
+                    .order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
+                    .first()
+                )
+                if first_event:
+                    self.recalculate_capital_chain_from(first_event, session=session)
+                # else: no capital events left, nothing to recalculate
         
         # No recalculation methods needed; handled by unified flow
         return True
