@@ -8,7 +8,7 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 
 **Note**: As we implement each feature, we will update this guide by checking off completed tasks (`[ ]` → `[x]`) and adding any new insights or requirements discovered during implementation. This ensures the guide remains accurate and serves as a living document of our progress.
 
-**Latest Update**: Step 1 (Backend API Enhancement) completed. Added new tax statement endpoints with comprehensive validation and updated fund detail endpoint to include tax statements.
+**Latest Update**: Step 1 (Backend API Enhancement) completed. Added new tax statement endpoints with comprehensive validation and updated fund detail endpoint to include tax statements. Step 2 split into 2A (Core Template Addition) and 2B (Advanced Form Features) for incremental progress.
 
 ### Current Status
 - **Phase 1**: In Progress (Step 1 completed ✅)
@@ -49,21 +49,23 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 - [x] Implement jurisdiction-aware financial year handling
 - [x] **API Pattern**: Use dedicated tax statement endpoint (not extend existing events endpoint)
 
-### Step 2: Extend CreateFundEventModal
+### Step 2A: Core Template Addition
 - [ ] Add "Tax Statement" template option to existing templates array
-- [ ] Create tax statement form section with single long form layout
+- [ ] Create basic tax statement form section with single long form layout
 - [ ] Implement entity auto-population from fund's associated entity
 - [ ] Add financial year dropdown with jurisdiction-aware formatting
-- [ ] Add hybrid field override toggles for calculated values
 - [ ] Update form validation and submission logic
 - [ ] **Template Selection**: Tax Statement goes directly to form (no sub-selection)
 - [ ] **Form Reset**: Clear all data on close (follow existing pattern)
 - [ ] **API Endpoint**: Use new dedicated endpoint `/api/funds/{fundId}/tax-statements`
+- [ ] **Template Card**: Use appropriate Material-UI icon (e.g., Receipt, Description, Assessment)
+- [ ] **Financial Years**: Show all years from fund start to current (no filtering)
+
+### Step 2B: Advanced Form Features
+- [ ] Add hybrid field override toggles for calculated values
 - [ ] **Validation Timing**: On blur + submit only (follow existing pattern)
 - [ ] **Required Fields**: Use red asterisks (follow existing pattern)
 - [ ] **Form Layout**: Template cards first, then form fields below (follow existing pattern)
-- [ ] **Template Card**: Use appropriate Material-UI icon (e.g., Receipt, Description, Assessment)
-- [ ] **Financial Years**: Show all years from fund start to current (no filtering)
 - [ ] **Hybrid Toggles**: OFF by default (show calculated values, user can override)
 - [ ] **Field Ordering**: Basic Info → Debt Rate → Interest → Dividend → Capital Gains → Additional
 - [ ] **Error Messages**: Use specific field names (e.g., "Interest received in cash is required")
@@ -162,19 +164,24 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 
 ## Implementation Order
 
-1. **Backend API Enhancement** (Step 1)
+1. **Backend API Enhancement** (Step 1) ✅
    - Add tax statement creation endpoint
    - Update fund detail endpoint
    - Implement jurisdiction-aware financial year handling
    - Test API functionality
 
-2. **Extend CreateFundEventModal** (Steps 2-3)
+2. **Core Template Addition** (Step 2A)
    - Add tax statement template option
-   - Create single long form layout with all fields visible
+   - Create basic form layout with essential fields
    - Implement entity auto-population and financial year dropdown
-   - Add hybrid field override toggles
    - Update validation and submission
-   - Test template selection and form behavior
+   - Test template selection and basic form behavior
+
+3. **Advanced Form Features** (Step 2B)
+   - Add hybrid field override toggles
+   - Implement comprehensive validation rules
+   - Enhance form layout and styling
+   - Test advanced form features and user experience
 
 3. **Update Fund Detail Display** (Step 4)
    - Add tax statements section
