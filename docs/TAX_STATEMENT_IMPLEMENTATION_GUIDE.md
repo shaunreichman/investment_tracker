@@ -8,10 +8,10 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 
 **Note**: As we implement each feature, we will update this guide by checking off completed tasks (`[ ]` → `[x]`) and adding any new insights or requirements discovered during implementation. This ensures the guide remains accurate and serves as a living document of our progress.
 
-**Latest Update**: Step 1 (Backend API Enhancement) completed. Step 2A (Core Template Addition) completed. Added Tax Statement template to CreateFundEventModal with comprehensive form fields, validation, and API integration. Ready to proceed with Step 2B (Advanced Form Features).
+**Latest Update**: Step 1 (Backend API Enhancement) completed. Step 2A (Core Template Addition) completed. Step 2B (Advanced Form Features) completed. Added hybrid field override toggles, auto-calculated tax payment date, and enhanced form layout with visual grouping. Ready to proceed with Step 3 (Form Layout - Phase 1).
 
 ### Current Status
-- **Phase 1**: In Progress (Step 1 completed ✅, Step 2A completed ✅)
+- **Phase 1**: In Progress (Step 1 completed ✅, Step 2A completed ✅, Step 2B completed ✅)
 - **Phase 2**: Future Enhancement (not started)
 
 ## Implementation Strategy: Two-Phase Approach
@@ -62,14 +62,14 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 - [x] **Financial Years**: Show all years from fund start to current (no filtering)
 
 ### Step 2B: Advanced Form Features
-- [ ] Add hybrid field override toggles for calculated values
-- [ ] **Validation Timing**: On blur + submit only (follow existing pattern)
-- [ ] **Required Fields**: Use red asterisks (follow existing pattern)
-- [ ] **Form Layout**: Template cards first, then form fields below (follow existing pattern)
-- [ ] **Hybrid Toggles**: OFF by default (show calculated values, user can override)
-- [ ] **Field Ordering**: Basic Info → Debt Rate → Interest → Dividend → Capital Gains → Additional
-- [ ] **Error Messages**: Use specific field names (e.g., "Interest received in cash is required")
-- [ ] **Success Feedback**: Show success message and auto-close after 1 second (follow existing pattern)
+- [x] Add hybrid field override toggles for calculated values
+- [x] **Validation Timing**: On blur + submit only (follow existing pattern)
+- [x] **Required Fields**: Use red asterisks (follow existing pattern)
+- [x] **Form Layout**: Template cards first, then form fields below (follow existing pattern)
+- [x] **Hybrid Toggles**: OFF by default (show calculated values, user can override)
+- [x] **Field Ordering**: Basic Info → Debt Rate → Interest → Dividend → Capital Gains → Additional
+- [x] **Error Messages**: Use specific field names (e.g., "Interest received in cash is required")
+- [x] **Success Feedback**: Show success message and auto-close after 1 second (follow existing pattern)
 
 ### Step 3: Form Layout (Phase 1 - Single Long Form)
 - [ ] Create single long form with clear visual grouping:
@@ -170,14 +170,14 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
    - Implement jurisdiction-aware financial year handling
    - Test API functionality
 
-2. **Core Template Addition** (Step 2A)
+2. **Core Template Addition** (Step 2A) ✅
    - Add tax statement template option
    - Create basic form layout with essential fields
    - Implement entity auto-population and financial year dropdown
    - Update validation and submission
    - Test template selection and basic form behavior
 
-3. **Advanced Form Features** (Step 2B)
+3. **Advanced Form Features** (Step 2B) ✅
    - Add hybrid field override toggles
    - Implement comprehensive validation rules
    - Enhance form layout and styling
