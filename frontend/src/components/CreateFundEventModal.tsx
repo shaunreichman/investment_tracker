@@ -98,6 +98,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
   const [fundEntity, setFundEntity] = useState<any>(null);
   const [financialYears, setFinancialYears] = useState<string[]>([]);
+  const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
 
@@ -149,6 +150,14 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       fetchFundDetails();
     }
   }, [open, fundId, API_BASE_URL]);
+
+  // Calculate tax payment date (last day of financial year)
+  const calculateTaxPaymentDate = (financialYear: string): string => {
+    if (!financialYear) return '';
+    const [startYear] = financialYear.split('-');
+    const endYear = parseInt(startYear) + 1;
+    return `${endYear}-06-30`; // Last day of financial year (June 30)
+  };
 
   // Number formatting helpers
   const formatNumber = (value: string): string => {
@@ -213,6 +222,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     setWithholdingAmountType('');
     setWithholdingTaxType('');
     setFormData({});
+    setHybridFieldOverrides({});
     setError(null);
     setSuccess(false);
   };
@@ -447,15 +457,30 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
 
   // Handle input change
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev: typeof formData) => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData((prev: typeof formData) => {
+      const newFormData = { ...prev, [field]: value };
+      
+      // Auto-calculate tax payment date when financial year changes
+      if (field === 'financial_year' && eventType === 'TAX_STATEMENT') {
+        newFormData.tax_payment_date = calculateTaxPaymentDate(value);
+      }
+      
+      return newFormData;
+    });
+    
     // Real-time validation for the field
     const error = validateField(field, value);
     setValidationErrors(prev => ({
       ...prev,
       [field]: error || undefined
+    }));
+  };
+
+  // Handle hybrid field toggle changes
+  const handleHybridFieldToggle = (field: string) => {
+    setHybridFieldOverrides(prev => ({
+      ...prev,
+      [field]: !prev[field]
     }));
   };
 
@@ -1003,6 +1028,13 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       InputLabelProps={{ shrink: true }}
                     />
                     <TextField
+                      label="Tax Payment Date"
+                      value={formData.tax_payment_date || ''}
+                      disabled
+                      fullWidth
+                      helperText="Auto-calculated as last day of financial year"
+                    />
+                    <TextField
                       label={<span>End of Financial Year Debt Interest Deduction Rate (%) <span style={{ color: '#d32f2f' }}>*</span></span>}
                       type="number"
                       value={formData.eofy_debt_interest_deduction_rate || ''}
@@ -1013,6 +1045,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                     />
                     
                     {/* Interest Income */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography variant="subtitle2" color="primary">Interest Income</Typography>
+                    </Box>
                     <TextField
                       label="Interest Received in Cash"
                       type="number"
@@ -1060,6 +1095,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                     />
                     
                     {/* Dividend Income */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography variant="subtitle2" color="primary">Dividend Income</Typography>
+                    </Box>
                     <TextField
                       label="Dividend Franked Income Amount"
                       type="number"
@@ -1068,6 +1106,18 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       fullWidth
                       error={!!validationErrors.dividend_franked_income_amount}
                       helperText={validationErrors.dividend_franked_income_amount}
+                      InputProps={{
+                        endAdornment: (
+                          <Button
+                            size="small"
+                            variant={hybridFieldOverrides.dividend_franked_income_amount ? 'contained' : 'outlined'}
+                            onClick={() => handleHybridFieldToggle('dividend_franked_income_amount')}
+                            sx={{ minWidth: 'auto', px: 1 }}
+                          >
+                            {hybridFieldOverrides.dividend_franked_income_amount ? 'Manual' : 'Auto'}
+                          </Button>
+                        )
+                      }}
                     />
                     <TextField
                       label="Dividend Unfranked Income Amount"
@@ -1077,6 +1127,18 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       fullWidth
                       error={!!validationErrors.dividend_unfranked_income_amount}
                       helperText={validationErrors.dividend_unfranked_income_amount}
+                      InputProps={{
+                        endAdornment: (
+                          <Button
+                            size="small"
+                            variant={hybridFieldOverrides.dividend_unfranked_income_amount ? 'contained' : 'outlined'}
+                            onClick={() => handleHybridFieldToggle('dividend_unfranked_income_amount')}
+                            sx={{ minWidth: 'auto', px: 1 }}
+                          >
+                            {hybridFieldOverrides.dividend_unfranked_income_amount ? 'Manual' : 'Auto'}
+                          </Button>
+                        )
+                      }}
                     />
                     <TextField
                       label="Dividend Franked Income Tax Rate (%)"
@@ -1098,6 +1160,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                     />
                     
                     {/* Capital Gains */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography variant="subtitle2" color="primary">Capital Gains</Typography>
+                    </Box>
                     <TextField
                       label="Capital Gain Income Amount"
                       type="number"
@@ -1106,6 +1171,18 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       fullWidth
                       error={!!validationErrors.capital_gain_income_amount}
                       helperText={validationErrors.capital_gain_income_amount}
+                      InputProps={{
+                        endAdornment: (
+                          <Button
+                            size="small"
+                            variant={hybridFieldOverrides.capital_gain_income_amount ? 'contained' : 'outlined'}
+                            onClick={() => handleHybridFieldToggle('capital_gain_income_amount')}
+                            sx={{ minWidth: 'auto', px: 1 }}
+                          >
+                            {hybridFieldOverrides.capital_gain_income_amount ? 'Manual' : 'Auto'}
+                          </Button>
+                        )
+                      }}
                     />
                     <TextField
                       label="Capital Gain Income Tax Rate (%)"
@@ -1118,6 +1195,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                     />
                     
                     {/* Additional Information */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography variant="subtitle2" color="primary">Additional Information</Typography>
+                    </Box>
                     <TextField
                       label="Accountant"
                       value={formData.accountant || ''}
