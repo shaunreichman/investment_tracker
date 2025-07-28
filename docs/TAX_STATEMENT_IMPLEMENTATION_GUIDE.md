@@ -8,10 +8,10 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 
 **Note**: As we implement each feature, we will update this guide by checking off completed tasks (`[ ]` → `[x]`) and adding any new insights or requirements discovered during implementation. This ensures the guide remains accurate and serves as a living document of our progress.
 
-**Latest Update**: Step 1 (Backend API Enhancement) completed. Added new tax statement endpoints with comprehensive validation and updated fund detail endpoint to include tax statements. Step 2 split into 2A (Core Template Addition) and 2B (Advanced Form Features) for incremental progress.
+**Latest Update**: Step 1 (Backend API Enhancement) completed. Step 2A (Core Template Addition) completed. Added Tax Statement template to CreateFundEventModal with comprehensive form fields, validation, and API integration. Ready to proceed with Step 2B (Advanced Form Features).
 
 ### Current Status
-- **Phase 1**: In Progress (Step 1 completed ✅)
+- **Phase 1**: In Progress (Step 1 completed ✅, Step 2A completed ✅)
 - **Phase 2**: Future Enhancement (not started)
 
 ## Implementation Strategy: Two-Phase Approach
@@ -50,16 +50,16 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 - [x] **API Pattern**: Use dedicated tax statement endpoint (not extend existing events endpoint)
 
 ### Step 2A: Core Template Addition
-- [ ] Add "Tax Statement" template option to existing templates array
-- [ ] Create basic tax statement form section with single long form layout
-- [ ] Implement entity auto-population from fund's associated entity
-- [ ] Add financial year dropdown with jurisdiction-aware formatting
-- [ ] Update form validation and submission logic
-- [ ] **Template Selection**: Tax Statement goes directly to form (no sub-selection)
-- [ ] **Form Reset**: Clear all data on close (follow existing pattern)
-- [ ] **API Endpoint**: Use new dedicated endpoint `/api/funds/{fundId}/tax-statements`
-- [ ] **Template Card**: Use appropriate Material-UI icon (e.g., Receipt, Description, Assessment)
-- [ ] **Financial Years**: Show all years from fund start to current (no filtering)
+- [x] Add "Tax Statement" template option to existing templates array
+- [x] Create basic tax statement form section with single long form layout
+- [x] Implement entity auto-population from fund's associated entity
+- [x] Add financial year dropdown with jurisdiction-aware formatting
+- [x] Update form validation and submission logic
+- [x] **Template Selection**: Tax Statement goes directly to form (no sub-selection)
+- [x] **Form Reset**: Clear all data on close (follow existing pattern)
+- [x] **API Endpoint**: Use new dedicated endpoint `/api/funds/{fundId}/tax-statements`
+- [x] **Template Card**: Use appropriate Material-UI icon (e.g., Receipt, Description, Assessment)
+- [x] **Financial Years**: Show all years from fund start to current (no filtering)
 
 ### Step 2B: Advanced Form Features
 - [ ] Add hybrid field override toggles for calculated values
