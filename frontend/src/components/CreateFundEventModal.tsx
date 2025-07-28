@@ -11,7 +11,10 @@ import {
   Alert,
   CircularProgress,
   Paper,
-  Typography
+  Typography,
+  Divider,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import { TrendingUp, AccountBalance, Add as AddIcon, MonetizationOn, Receipt } from '@mui/icons-material';
 
@@ -996,6 +999,9 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                 {eventType === 'TAX_STATEMENT' && (
                   <>
                     {/* Basic Information */}
+                    <Typography variant="h6" color="primary" sx={{ mt: 2, mb: 1 }}>
+                      Basic Information
+                    </Typography>
                     <TextField
                       label="Entity"
                       value={fundEntity?.name || 'Loading...'}
@@ -1044,10 +1050,14 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       helperText={validationErrors.eofy_debt_interest_deduction_rate}
                     />
                     
+                    <Divider sx={{ my: 2 }} />
+                    
                     {/* Interest Income */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <Typography variant="subtitle2" color="primary">Interest Income</Typography>
-                    </Box>
+                    <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
+                      Interest Income
+                    </Typography>
+                    
+
                     <TextField
                       label="Interest Received in Cash"
                       type="number"
@@ -1094,10 +1104,12 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       helperText={validationErrors.interest_income_tax_rate}
                     />
                     
+                    <Divider sx={{ my: 2 }} />
+                    
                     {/* Dividend Income */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <Typography variant="subtitle2" color="primary">Dividend Income</Typography>
-                    </Box>
+                    <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
+                      Dividend Income
+                    </Typography>
                     <TextField
                       label="Dividend Franked Income Amount"
                       type="number"
@@ -1159,10 +1171,12 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       helperText={validationErrors.dividend_unfranked_income_tax_rate}
                     />
                     
+                    <Divider sx={{ my: 2 }} />
+                    
                     {/* Capital Gains */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <Typography variant="subtitle2" color="primary">Capital Gains</Typography>
-                    </Box>
+                    <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
+                      Capital Gains
+                    </Typography>
                     <TextField
                       label="Capital Gain Income Amount"
                       type="number"
@@ -1194,10 +1208,12 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       helperText={validationErrors.capital_gain_income_tax_rate}
                     />
                     
+                    <Divider sx={{ my: 2 }} />
+                    
                     {/* Additional Information */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <Typography variant="subtitle2" color="primary">Additional Information</Typography>
-                    </Box>
+                    <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
+                      Additional Information
+                    </Typography>
                     <TextField
                       label="Accountant"
                       value={formData.accountant || ''}
@@ -1215,6 +1231,15 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                       fullWidth
                       error={!!validationErrors.notes}
                       helperText={validationErrors.notes}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.non_resident || false}
+                          onChange={e => handleInputChange('non_resident', e.target.checked.toString())}
+                        />
+                      }
+                      label="Non-Resident"
                     />
                   </>
                 )}
