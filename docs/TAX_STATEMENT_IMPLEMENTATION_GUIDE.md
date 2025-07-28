@@ -8,7 +8,7 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 
 **Note**: As we implement each feature, we will update this guide by checking off completed tasks (`[ ]` → `[x]`) and adding any new insights or requirements discovered during implementation. This ensures the guide remains accurate and serves as a living document of our progress.
 
-**Latest Update**: Step 1 (Backend API Enhancement) completed. Step 2A (Core Template Addition) completed. Step 2B (Advanced Form Features) completed. Step 3 (Form Layout - Phase 1) completed. Added Material-UI dividers, professional section headers, and enhanced visual organization. Ready to proceed with Step 4 (Update Fund Detail Display).
+**Latest Update**: Step 1 (Backend API Enhancement) completed. Step 2A (Core Template Addition) completed. Step 2B (Advanced Form Features) completed. Step 3 (Form Layout - Phase 1) completed. Added Material-UI dividers, professional section headers, and enhanced visual organization. Step 4 moved to Future Enhancements. Ready to proceed with Step 4 (Testing and Validation).
 
 ### Current Status
 - **Phase 1**: In Progress (Step 1 completed ✅, Step 2A completed ✅, Step 2B completed ✅, Step 3 completed ✅)
@@ -82,13 +82,7 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 - [x] Use Material-UI dividers and spacing for visual separation
 - [x] Implement all validation rules (positive amounts, 0-100% rates)
 
-### Step 4: Update Fund Detail Display
-- [ ] Add tax statements section to fund detail view
-- [ ] Display tax statements in chronological order
-- [ ] Show key summary information for each statement
-- [ ] Add edit/delete functionality for tax statements
-
-### Step 5: Testing and Validation
+### Step 4: Testing and Validation
 - [ ] Test template selection and form display
 - [ ] Test form validation for all field types
 - [ ] Test entity auto-population and financial year dropdown
@@ -101,6 +95,13 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 - [ ] Test integration with existing fund event flow
 
 ## Phase 2 Implementation Steps (Future Enhancement)
+
+### Step 5: Improve Fund Detail Display
+- [ ] Add tax statements section to fund detail view
+- [ ] Display tax statements in chronological order
+- [ ] Show key summary information for each statement
+- [ ] Add edit/delete functionality for tax statements
+- [ ] Improve display of existing tax payment cash flows
 
 ### Step 6: Convert to Hybrid Approach
 - [ ] Replace single long form with accordion-style sections
@@ -189,15 +190,15 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
    - Implement professional section headers and organization
    - Add non-resident checkbox and complete field set
 
-3. **Update Fund Detail Display** (Step 4)
-   - Add tax statements section
-   - Implement display and management functionality
-   - Test integration with fund detail view
-
-4. **Comprehensive Testing** (Step 5)
+5. **Testing and Validation** (Step 4)
    - Test all form scenarios and edge cases
    - Validate API integration
    - Test user workflows end-to-end
+
+6. **Future Enhancement** (Steps 6-8)
+   - Improve fund detail display
+   - Convert to accordion-style interface
+   - Optimize based on usage patterns
 
 5. **Future Enhancement** (Steps 6-7)
    - Convert to accordion-style interface
