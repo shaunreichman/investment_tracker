@@ -97,11 +97,7 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 ## Phase 2 Implementation Steps (Future Enhancement)
 
 ### Step 5: Improve Fund Detail Display
-- [ ] Add tax statements section to fund detail view
-- [ ] Display tax statements in chronological order
-- [ ] Show key summary information for each statement
-- [ ] Add edit/delete functionality for tax statements
-- [ ] Improve display of existing tax payment cash flows
+- [ ] TBD - To be discussed and planned after Phase 1 completion
 
 ### Step 6: Convert to Hybrid Approach
 - [ ] Replace single long form with accordion-style sections
