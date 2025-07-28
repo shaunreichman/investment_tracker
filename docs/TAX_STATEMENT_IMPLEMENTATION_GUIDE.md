@@ -4,6 +4,14 @@
 
 This guide provides a step-by-step approach to add Tax Statement functionality to the existing "Add Event" modal. When users click "Add Event" on a fund page, they will see a new "Tax Statement" template option alongside the existing event types.
 
+## Implementation Progress Tracking
+
+**Note**: As we implement each feature, we will update this guide by checking off completed tasks (`[ ]` → `[x]`) and adding any new insights or requirements discovered during implementation. This ensures the guide remains accurate and serves as a living document of our progress.
+
+### Current Status
+- **Phase 1**: In Progress
+- **Phase 2**: Future Enhancement (not started)
+
 ## Implementation Strategy: Two-Phase Approach
 
 ### **Phase 1: Single Long Form (Option 3)**
@@ -33,83 +41,76 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 ## Phase 1 Implementation Steps
 
 ### Step 1: Backend API Enhancement
-**Actions**:
-- Add new API endpoint for tax statement creation: `POST /api/funds/{fundId}/tax-statements`
-- Update existing fund detail endpoint to include tax statements in response
-- Add validation for tax statement fields
-- Implement jurisdiction-aware financial year handling
-- **API Pattern**: Use dedicated tax statement endpoint (not extend existing events endpoint)
+- [ ] Add new API endpoint for tax statement creation: `POST /api/funds/{fundId}/tax-statements`
+- [ ] Update existing fund detail endpoint to include tax statements in response
+- [ ] Add validation for tax statement fields
+- [ ] Implement jurisdiction-aware financial year handling
+- [ ] **API Pattern**: Use dedicated tax statement endpoint (not extend existing events endpoint)
 
 ### Step 2: Extend CreateFundEventModal
-**Actions**:
-- Add "Tax Statement" template option to existing templates array
-- Create tax statement form section with single long form layout
-- Implement entity auto-population from fund's associated entity
-- Add financial year dropdown with jurisdiction-aware formatting
-- Add hybrid field override toggles for calculated values
-- Update form validation and submission logic
-- **Template Selection**: Tax Statement goes directly to form (no sub-selection)
-- **Form Reset**: Clear all data on close (follow existing pattern)
-- **API Endpoint**: Use new dedicated endpoint `/api/funds/{fundId}/tax-statements`
-- **Validation Timing**: On blur + submit only (follow existing pattern)
-- **Required Fields**: Use red asterisks (follow existing pattern)
-- **Form Layout**: Template cards first, then form fields below (follow existing pattern)
-- **Template Card**: Use appropriate Material-UI icon (e.g., Receipt, Description, Assessment)
-- **Financial Years**: Show all years from fund start to current (no filtering)
-- **Hybrid Toggles**: OFF by default (show calculated values, user can override)
-- **Field Ordering**: Basic Info → Debt Rate → Interest → Dividend → Capital Gains → Additional
-- **Error Messages**: Use specific field names (e.g., "Interest received in cash is required")
-- **Success Feedback**: Show success message and auto-close after 1 second (follow existing pattern)
+- [ ] Add "Tax Statement" template option to existing templates array
+- [ ] Create tax statement form section with single long form layout
+- [ ] Implement entity auto-population from fund's associated entity
+- [ ] Add financial year dropdown with jurisdiction-aware formatting
+- [ ] Add hybrid field override toggles for calculated values
+- [ ] Update form validation and submission logic
+- [ ] **Template Selection**: Tax Statement goes directly to form (no sub-selection)
+- [ ] **Form Reset**: Clear all data on close (follow existing pattern)
+- [ ] **API Endpoint**: Use new dedicated endpoint `/api/funds/{fundId}/tax-statements`
+- [ ] **Validation Timing**: On blur + submit only (follow existing pattern)
+- [ ] **Required Fields**: Use red asterisks (follow existing pattern)
+- [ ] **Form Layout**: Template cards first, then form fields below (follow existing pattern)
+- [ ] **Template Card**: Use appropriate Material-UI icon (e.g., Receipt, Description, Assessment)
+- [ ] **Financial Years**: Show all years from fund start to current (no filtering)
+- [ ] **Hybrid Toggles**: OFF by default (show calculated values, user can override)
+- [ ] **Field Ordering**: Basic Info → Debt Rate → Interest → Dividend → Capital Gains → Additional
+- [ ] **Error Messages**: Use specific field names (e.g., "Interest received in cash is required")
+- [ ] **Success Feedback**: Show success message and auto-close after 1 second (follow existing pattern)
 
 ### Step 3: Form Layout (Phase 1 - Single Long Form)
-**Actions**:
-- Create single long form with clear visual grouping:
-  - **Basic Information**: Entity (auto), Financial Year (dropdown), Statement Date (required), Tax Payment Date (read-only, auto-calculated)
-  - **Debt Interest Deduction Rate**: Required field prominently positioned at top
-  - **Interest Income**: 5 fields with override toggle
-  - **Dividend Income**: 4 fields with override toggle  
-  - **Capital Gains**: 2 fields with override toggle
-  - **Additional Information**: Accountant, Non-Resident, Notes
-- Use Material-UI dividers and spacing for visual separation
-- Implement all validation rules (positive amounts, 0-100% rates)
+- [ ] Create single long form with clear visual grouping:
+  - [ ] **Basic Information**: Entity (auto), Financial Year (dropdown), Statement Date (required), Tax Payment Date (read-only, auto-calculated)
+  - [ ] **Debt Interest Deduction Rate**: Required field prominently positioned at top
+  - [ ] **Interest Income**: 5 fields with override toggle
+  - [ ] **Dividend Income**: 4 fields with override toggle  
+  - [ ] **Capital Gains**: 2 fields with override toggle
+  - [ ] **Additional Information**: Accountant, Non-Resident, Notes
+- [ ] Use Material-UI dividers and spacing for visual separation
+- [ ] Implement all validation rules (positive amounts, 0-100% rates)
 
 ### Step 4: Update Fund Detail Display
-**Actions**:
-- Add tax statements section to fund detail view
-- Display tax statements in chronological order
-- Show key summary information for each statement
-- Add edit/delete functionality for tax statements
+- [ ] Add tax statements section to fund detail view
+- [ ] Display tax statements in chronological order
+- [ ] Show key summary information for each statement
+- [ ] Add edit/delete functionality for tax statements
 
 ### Step 5: Testing and Validation
-**Actions**:
-- Test template selection and form display
-- Test form validation for all field types
-- Test entity auto-population and financial year dropdown
-- Test hybrid field override toggles (OFF by default)
-- Test auto-calculated tax payment date updates when financial year changes
-- Test form submission to new dedicated API endpoint
-- Test form reset behavior on close
-- Test specific error messages with field names
-- Test success feedback and auto-close behavior
-- Test integration with existing fund event flow
+- [ ] Test template selection and form display
+- [ ] Test form validation for all field types
+- [ ] Test entity auto-population and financial year dropdown
+- [ ] Test hybrid field override toggles (OFF by default)
+- [ ] Test auto-calculated tax payment date updates when financial year changes
+- [ ] Test form submission to new dedicated API endpoint
+- [ ] Test form reset behavior on close
+- [ ] Test specific error messages with field names
+- [ ] Test success feedback and auto-close behavior
+- [ ] Test integration with existing fund event flow
 
 ## Phase 2 Implementation Steps (Future Enhancement)
 
 ### Step 6: Convert to Hybrid Approach
-**Actions**:
-- Replace single long form with accordion-style sections
-- Implement expand/collapse state management
-- Add section summaries showing field counts
-- Add "Expand All" / "Collapse All" functionality
-- Optimize default collapsed state based on usage patterns
+- [ ] Replace single long form with accordion-style sections
+- [ ] Implement expand/collapse state management
+- [ ] Add section summaries showing field counts
+- [ ] Add "Expand All" / "Collapse All" functionality
+- [ ] Optimize default collapsed state based on usage patterns
 
 ### Step 7: UX Optimization
-**Actions**:
-- Analyze user interaction patterns
-- Optimize section defaults based on usage data
-- Add keyboard navigation support
-- Implement accessibility improvements
-- Add visual indicators for section states
+- [ ] Analyze user interaction patterns
+- [ ] Optimize section defaults based on usage data
+- [ ] Add keyboard navigation support
+- [ ] Implement accessibility improvements
+- [ ] Add visual indicators for section states
 
 ## Field Classification and Validation
 
