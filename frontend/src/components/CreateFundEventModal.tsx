@@ -13,7 +13,7 @@ import {
   Paper,
   Typography
 } from '@mui/material';
-import { TrendingUp, AccountBalance, Add as AddIcon, MonetizationOn } from '@mui/icons-material';
+import { TrendingUp, AccountBalance, Add as AddIcon, MonetizationOn, Receipt } from '@mui/icons-material';
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -23,7 +23,7 @@ interface CreateFundEventModalProps {
   fundTrackingType: 'nav_based' | 'cost_based';
 }
 
-type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE' | 'NAV_UPDATE';
+type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE' | 'NAV_UPDATE' | 'TAX_STATEMENT';
 
 const EVENT_TEMPLATES: { label: string; value: EventType | 'RETURN_OF_CAPITAL'; description: string; icon: React.ReactNode; trackingType: 'nav_based' | 'cost_based' | 'both' }[] = [
   { label: 'Capital Call', value: 'CAPITAL_CALL', description: 'Add a capital call (cost-based funds)', icon: <AccountBalance color="primary" />, trackingType: 'cost_based' },
@@ -32,6 +32,7 @@ const EVENT_TEMPLATES: { label: string; value: EventType | 'RETURN_OF_CAPITAL'; 
   { label: 'Unit Sale', value: 'UNIT_SALE', description: 'Sell units (NAV-based funds)', icon: <TrendingUp color="warning" />, trackingType: 'nav_based' },
   { label: 'NAV Update', value: 'NAV_UPDATE', description: 'Update NAV per share (NAV-based funds)', icon: <TrendingUp color="info" />, trackingType: 'nav_based' },
   { label: 'Distribution', value: 'DISTRIBUTION', description: 'Add a distribution (all funds)', icon: <MonetizationOn color="success" />, trackingType: 'both' },
+  { label: 'Tax Statement', value: 'TAX_STATEMENT', description: 'Add a tax statement (all funds)', icon: <Receipt color="secondary" />, trackingType: 'both' },
 ];
 
 const DISTRIBUTION_TEMPLATES = [
@@ -64,6 +65,23 @@ interface ValidationErrors {
   net_amount?: string;
   withholding_tax_amount?: string;
   withholding_tax_rate?: string;
+  // Tax Statement fields
+  financial_year?: string;
+  statement_date?: string;
+  eofy_debt_interest_deduction_rate?: string;
+  interest_received_in_cash?: string;
+  interest_receivable_this_fy?: string;
+  interest_receivable_prev_fy?: string;
+  interest_non_resident_withholding_tax_from_statement?: string;
+  interest_income_tax_rate?: string;
+  dividend_franked_income_amount?: string;
+  dividend_unfranked_income_amount?: string;
+  dividend_franked_income_tax_rate?: string;
+  dividend_unfranked_income_tax_rate?: string;
+  capital_gain_income_amount?: string;
+  capital_gain_income_tax_rate?: string;
+  accountant?: string;
+  notes?: string;
 }
 
 const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClose, onEventCreated, fundId, fundTrackingType }) => {
@@ -78,6 +96,8 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   const [isFormValid, setIsFormValid] = useState(false);
   const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
   const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
+  const [fundEntity, setFundEntity] = useState<any>(null);
+  const [financialYears, setFinancialYears] = useState<string[]>([]);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
 
@@ -102,6 +122,33 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       validateForm();
     }
   }, [open, formData.event_date]);
+
+  // Fetch fund details when modal opens
+  useEffect(() => {
+    if (open && fundId) {
+      const fetchFundDetails = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}`);
+          if (response.ok) {
+            const fundData = await response.json();
+            setFundEntity(fundData.fund.entity);
+            
+            // Generate financial years from fund start to current year
+            const currentYear = new Date().getFullYear();
+            const fundStartYear = fundData.fund.start_date ? new Date(fundData.fund.start_date).getFullYear() : currentYear - 5;
+            const years = [];
+            for (let year = fundStartYear; year <= currentYear; year++) {
+              years.push(`${year}-${(year + 1).toString().slice(-2)}`);
+            }
+            setFinancialYears(years);
+          }
+        } catch (error) {
+          console.error('Error fetching fund details:', error);
+        }
+      };
+      fetchFundDetails();
+    }
+  }, [open, fundId, API_BASE_URL]);
 
   // Number formatting helpers
   const formatNumber = (value: string): string => {
@@ -256,6 +303,41 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
           const rate = parseFloat(value);
           if (value && (isNaN(rate) || rate <= 0 || rate >= 100)) return 'Enter a valid tax rate between 0 and 100';
+        }
+        break;
+      // Tax Statement validation
+      case 'financial_year':
+        if (eventType === 'TAX_STATEMENT' && !value) return 'Financial year is required';
+        break;
+      case 'statement_date':
+        if (eventType === 'TAX_STATEMENT' && !value) return 'Statement date is required';
+        break;
+      case 'eofy_debt_interest_deduction_rate':
+        if (eventType === 'TAX_STATEMENT') {
+          if (!value) return 'End of financial year debt interest deduction rate is required';
+          const rate = parseFloat(value);
+          if (isNaN(rate) || rate < 0 || rate > 100) return 'Enter a valid rate between 0 and 100';
+        }
+        break;
+      case 'interest_received_in_cash':
+      case 'interest_receivable_this_fy':
+      case 'interest_receivable_prev_fy':
+      case 'interest_non_resident_withholding_tax_from_statement':
+      case 'dividend_franked_income_amount':
+      case 'dividend_unfranked_income_amount':
+      case 'capital_gain_income_amount':
+        if (eventType === 'TAX_STATEMENT' && value) {
+          const num = parseFloat(value);
+          if (isNaN(num) || num < 0) return 'Enter a valid non-negative amount';
+        }
+        break;
+      case 'interest_income_tax_rate':
+      case 'dividend_franked_income_tax_rate':
+      case 'dividend_unfranked_income_tax_rate':
+      case 'capital_gain_income_tax_rate':
+        if (eventType === 'TAX_STATEMENT' && value) {
+          const rate = parseFloat(value);
+          if (isNaN(rate) || rate < 0 || rate > 100) return 'Enter a valid rate between 0 and 100';
         }
         break;
       default:
@@ -437,6 +519,52 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       if (eventType === 'NAV_UPDATE') {
         payload.nav_per_share = parseFloat(formData.nav_per_share);
       }
+      
+      // Handle Tax Statement submission
+      if (eventType === 'TAX_STATEMENT') {
+        const taxStatementPayload = {
+          entity_id: fundEntity?.id,
+          financial_year: formData.financial_year,
+          statement_date: formData.statement_date,
+          eofy_debt_interest_deduction_rate: parseFloat(formData.eofy_debt_interest_deduction_rate || '0'),
+          interest_received_in_cash: parseFloat(formData.interest_received_in_cash || '0'),
+          interest_receivable_this_fy: parseFloat(formData.interest_receivable_this_fy || '0'),
+          interest_receivable_prev_fy: parseFloat(formData.interest_receivable_prev_fy || '0'),
+          interest_non_resident_withholding_tax_from_statement: parseFloat(formData.interest_non_resident_withholding_tax_from_statement || '0'),
+          interest_income_tax_rate: parseFloat(formData.interest_income_tax_rate || '0'),
+          dividend_franked_income_amount: parseFloat(formData.dividend_franked_income_amount || '0'),
+          dividend_unfranked_income_amount: parseFloat(formData.dividend_unfranked_income_amount || '0'),
+          dividend_franked_income_tax_rate: parseFloat(formData.dividend_franked_income_tax_rate || '0'),
+          dividend_unfranked_income_tax_rate: parseFloat(formData.dividend_unfranked_income_tax_rate || '0'),
+          capital_gain_income_amount: parseFloat(formData.capital_gain_income_amount || '0'),
+          capital_gain_income_tax_rate: parseFloat(formData.capital_gain_income_tax_rate || '0'),
+          accountant: formData.accountant || '',
+          notes: formData.notes || '',
+          non_resident: formData.non_resident || false
+        };
+        
+        console.log('DEBUG: Sending tax statement payload:', taxStatementPayload);
+        
+        const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}/tax-statements`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(taxStatementPayload),
+        });
+        
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Failed to create tax statement');
+        }
+        
+        setSuccess(true);
+        setTimeout(() => {
+          resetForm();
+          onEventCreated();
+          onClose();
+        }, 1000);
+        return;
+      }
+      
       // Debug: Log the payload being sent
       console.log('DEBUG: Sending payload:', payload);
       
@@ -617,7 +745,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         )}
 
         {/* Form appears below all cards (after event type or distribution type selected) */}
-                 {((eventType && eventType !== 'DISTRIBUTION') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType)))) && (
+                 {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType))) || eventType === 'TAX_STATEMENT') && (
           <Box mt={2}>
             <Typography variant="body2" color="text.secondary" mb={2}>
               Fields marked with <span style={{ color: '#d32f2f' }}>*</span> are required.
@@ -836,6 +964,178 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                         helperText={validationErrors[withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate']}
                       />
                     )}
+                  </>
+                )}
+                
+                {/* Tax Statement Form Fields */}
+                {eventType === 'TAX_STATEMENT' && (
+                  <>
+                    {/* Basic Information */}
+                    <TextField
+                      label="Entity"
+                      value={fundEntity?.name || 'Loading...'}
+                      disabled
+                      fullWidth
+                    />
+                    <TextField
+                      select
+                      label={<span>Financial Year <span style={{ color: '#d32f2f' }}>*</span></span>}
+                      value={formData.financial_year || ''}
+                      onChange={e => handleInputChange('financial_year', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.financial_year}
+                      helperText={validationErrors.financial_year}
+                    >
+                      {financialYears.map((year) => (
+                        <MenuItem key={year} value={year}>
+                          {year}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <TextField
+                      label={<span>Statement Date <span style={{ color: '#d32f2f' }}>*</span></span>}
+                      type="date"
+                      value={formData.statement_date || ''}
+                      onChange={e => handleInputChange('statement_date', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.statement_date}
+                      helperText={validationErrors.statement_date}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                    <TextField
+                      label={<span>End of Financial Year Debt Interest Deduction Rate (%) <span style={{ color: '#d32f2f' }}>*</span></span>}
+                      type="number"
+                      value={formData.eofy_debt_interest_deduction_rate || ''}
+                      onChange={e => handleInputChange('eofy_debt_interest_deduction_rate', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.eofy_debt_interest_deduction_rate}
+                      helperText={validationErrors.eofy_debt_interest_deduction_rate}
+                    />
+                    
+                    {/* Interest Income */}
+                    <TextField
+                      label="Interest Received in Cash"
+                      type="number"
+                      value={formData.interest_received_in_cash || ''}
+                      onChange={e => handleInputChange('interest_received_in_cash', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.interest_received_in_cash}
+                      helperText={validationErrors.interest_received_in_cash}
+                    />
+                    <TextField
+                      label="Interest Receivable This FY"
+                      type="number"
+                      value={formData.interest_receivable_this_fy || ''}
+                      onChange={e => handleInputChange('interest_receivable_this_fy', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.interest_receivable_this_fy}
+                      helperText={validationErrors.interest_receivable_this_fy}
+                    />
+                    <TextField
+                      label="Interest Receivable Previous FY"
+                      type="number"
+                      value={formData.interest_receivable_prev_fy || ''}
+                      onChange={e => handleInputChange('interest_receivable_prev_fy', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.interest_receivable_prev_fy}
+                      helperText={validationErrors.interest_receivable_prev_fy}
+                    />
+                    <TextField
+                      label="Interest Non-Resident Withholding Tax from Statement"
+                      type="number"
+                      value={formData.interest_non_resident_withholding_tax_from_statement || ''}
+                      onChange={e => handleInputChange('interest_non_resident_withholding_tax_from_statement', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.interest_non_resident_withholding_tax_from_statement}
+                      helperText={validationErrors.interest_non_resident_withholding_tax_from_statement}
+                    />
+                    <TextField
+                      label="Interest Income Tax Rate (%)"
+                      type="number"
+                      value={formData.interest_income_tax_rate || ''}
+                      onChange={e => handleInputChange('interest_income_tax_rate', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.interest_income_tax_rate}
+                      helperText={validationErrors.interest_income_tax_rate}
+                    />
+                    
+                    {/* Dividend Income */}
+                    <TextField
+                      label="Dividend Franked Income Amount"
+                      type="number"
+                      value={formData.dividend_franked_income_amount || ''}
+                      onChange={e => handleInputChange('dividend_franked_income_amount', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.dividend_franked_income_amount}
+                      helperText={validationErrors.dividend_franked_income_amount}
+                    />
+                    <TextField
+                      label="Dividend Unfranked Income Amount"
+                      type="number"
+                      value={formData.dividend_unfranked_income_amount || ''}
+                      onChange={e => handleInputChange('dividend_unfranked_income_amount', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.dividend_unfranked_income_amount}
+                      helperText={validationErrors.dividend_unfranked_income_amount}
+                    />
+                    <TextField
+                      label="Dividend Franked Income Tax Rate (%)"
+                      type="number"
+                      value={formData.dividend_franked_income_tax_rate || ''}
+                      onChange={e => handleInputChange('dividend_franked_income_tax_rate', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.dividend_franked_income_tax_rate}
+                      helperText={validationErrors.dividend_franked_income_tax_rate}
+                    />
+                    <TextField
+                      label="Dividend Unfranked Income Tax Rate (%)"
+                      type="number"
+                      value={formData.dividend_unfranked_income_tax_rate || ''}
+                      onChange={e => handleInputChange('dividend_unfranked_income_tax_rate', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.dividend_unfranked_income_tax_rate}
+                      helperText={validationErrors.dividend_unfranked_income_tax_rate}
+                    />
+                    
+                    {/* Capital Gains */}
+                    <TextField
+                      label="Capital Gain Income Amount"
+                      type="number"
+                      value={formData.capital_gain_income_amount || ''}
+                      onChange={e => handleInputChange('capital_gain_income_amount', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.capital_gain_income_amount}
+                      helperText={validationErrors.capital_gain_income_amount}
+                    />
+                    <TextField
+                      label="Capital Gain Income Tax Rate (%)"
+                      type="number"
+                      value={formData.capital_gain_income_tax_rate || ''}
+                      onChange={e => handleInputChange('capital_gain_income_tax_rate', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.capital_gain_income_tax_rate}
+                      helperText={validationErrors.capital_gain_income_tax_rate}
+                    />
+                    
+                    {/* Additional Information */}
+                    <TextField
+                      label="Accountant"
+                      value={formData.accountant || ''}
+                      onChange={e => handleInputChange('accountant', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.accountant}
+                      helperText={validationErrors.accountant}
+                    />
+                    <TextField
+                      label="Notes"
+                      multiline
+                      rows={3}
+                      value={formData.notes || ''}
+                      onChange={e => handleInputChange('notes', e.target.value)}
+                      fullWidth
+                      error={!!validationErrors.notes}
+                      helperText={validationErrors.notes}
+                    />
                   </>
                 )}
               </Box>
