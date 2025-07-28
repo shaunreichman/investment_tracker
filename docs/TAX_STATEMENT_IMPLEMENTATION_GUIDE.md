@@ -8,8 +8,10 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 
 **Note**: As we implement each feature, we will update this guide by checking off completed tasks (`[ ]` → `[x]`) and adding any new insights or requirements discovered during implementation. This ensures the guide remains accurate and serves as a living document of our progress.
 
+**Latest Update**: Step 1 (Backend API Enhancement) completed. Added new tax statement endpoints with comprehensive validation and updated fund detail endpoint to include tax statements.
+
 ### Current Status
-- **Phase 1**: In Progress
+- **Phase 1**: In Progress (Step 1 completed ✅)
 - **Phase 2**: Future Enhancement (not started)
 
 ## Implementation Strategy: Two-Phase Approach
@@ -41,11 +43,11 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 ## Phase 1 Implementation Steps
 
 ### Step 1: Backend API Enhancement
-- [ ] Add new API endpoint for tax statement creation: `POST /api/funds/{fundId}/tax-statements`
-- [ ] Update existing fund detail endpoint to include tax statements in response
-- [ ] Add validation for tax statement fields
-- [ ] Implement jurisdiction-aware financial year handling
-- [ ] **API Pattern**: Use dedicated tax statement endpoint (not extend existing events endpoint)
+- [x] Add new API endpoint for tax statement creation: `POST /api/funds/{fundId}/tax-statements`
+- [x] Update existing fund detail endpoint to include tax statements in response
+- [x] Add validation for tax statement fields
+- [x] Implement jurisdiction-aware financial year handling
+- [x] **API Pattern**: Use dedicated tax statement endpoint (not extend existing events endpoint)
 
 ### Step 2: Extend CreateFundEventModal
 - [ ] Add "Tax Statement" template option to existing templates array
