@@ -118,6 +118,29 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   const { data: entities, loading, error } = useEntities({ refetchOnWindowFocus: true });
   const { mutate: createFund, loading: isCreating, error: createError } = useCreateFund();
 
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      // Reset all form state when modal opens
+      setFormData({
+        entity_id: '',
+        name: '',
+        fund_type: '',
+        tracking_type: '',
+        currency: 'AUD',
+        commitment_amount: '',
+        expected_irr: '',
+        expected_duration_months: '',
+        description: ''
+      });
+      setSelectedTemplate(null);
+      setShowTemplateSelection(true);
+      setValidationErrors({});
+      setSuccess(false);
+      setSubmitting(false);
+    }
+  }, [open]);
+
   // Number formatting helpers
   const formatNumber = (value: string): string => {
     if (!value) return '';
