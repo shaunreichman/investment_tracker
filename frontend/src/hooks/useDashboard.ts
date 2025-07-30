@@ -8,6 +8,7 @@ import {
   DashboardData,
   FundEventListResponse,
 } from '../types/api';
+import { useCallback } from 'react';
 
 // ============================================================================
 // DASHBOARD HOOKS
@@ -17,8 +18,10 @@ import {
  * Hook to get portfolio summary
  */
 export function usePortfolioSummary(options?: { refetchOnWindowFocus?: boolean }) {
+  const getPortfolioSummary = useCallback(() => apiClient.getPortfolioSummary(), []);
+  
   return useApiCall(
-    () => apiClient.getPortfolioSummary(),
+    getPortfolioSummary,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
 }
@@ -27,8 +30,10 @@ export function usePortfolioSummary(options?: { refetchOnWindowFocus?: boolean }
  * Hook to get recent events
  */
 export function useRecentEvents(options?: { refetchOnWindowFocus?: boolean }) {
+  const getRecentEvents = useCallback(() => apiClient.getRecentEvents(), []);
+  
   return useApiCall(
-    () => apiClient.getRecentEvents(),
+    getRecentEvents,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
 }
@@ -37,8 +42,10 @@ export function useRecentEvents(options?: { refetchOnWindowFocus?: boolean }) {
  * Hook to get dashboard performance data
  */
 export function useDashboardPerformance(options?: { refetchOnWindowFocus?: boolean }) {
+  const getDashboardPerformance = useCallback(() => apiClient.getDashboardPerformance(), []);
+  
   return useApiCall(
-    () => apiClient.getDashboardPerformance(),
+    getDashboardPerformance,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
 }
@@ -47,8 +54,10 @@ export function useDashboardPerformance(options?: { refetchOnWindowFocus?: boole
  * Hook to get all dashboard data (portfolio summary, funds, recent events, performance)
  */
 export function useDashboardData(options?: { refetchOnWindowFocus?: boolean }) {
+  const getDashboardData = useCallback(() => apiClient.getDashboardData(), []);
+  
   return useApiCall(
-    () => apiClient.getDashboardData(),
+    getDashboardData,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
 } 

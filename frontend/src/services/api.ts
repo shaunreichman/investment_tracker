@@ -2,28 +2,24 @@
 // This file provides a centralized, type-safe API client for all backend communication
 
 import {
-  // Core entities
+  // Core types
   Fund,
   FundEvent,
+  TaxStatement,
   InvestmentCompany,
   Entity,
-  TaxStatement,
-  
-  // Dashboard and summaries
   PortfolioSummary,
-  FundStatistics,
   DashboardData,
   
-  // API requests
-  CreateInvestmentCompanyData,
-  CreateEntityData,
+  // Request/response data types
   CreateFundData,
   CreateFundEventData,
   UpdateFundEventData,
   CreateTaxStatementData,
+  CreateInvestmentCompanyData,
+  CreateEntityData,
   
   // API responses
-  ApiResponse,
   ApiError as ApiErrorType,
   
   // List responses
@@ -127,7 +123,7 @@ class ApiClient {
   }
 
   async getFund(id: number): Promise<Fund> {
-    const response = await this.request<{ fund: Fund; events: FundEvent[]; tax_statements: TaxStatement[]; statistics: FundStatistics }>(`/api/funds/${id}`);
+    const response = await this.request<{ fund: Fund; events: FundEvent[]; tax_statements: TaxStatement[]; statistics: any }>(`/api/funds/${id}`);
     return response.fund;
   }
 
@@ -207,7 +203,8 @@ class ApiClient {
   // ============================================================================
 
   async getEntities(): Promise<EntityListResponse> {
-    return this.request<EntityListResponse>('/api/entities');
+    const response = await this.request<{ entities: Entity[] }>('/api/entities');
+    return response.entities;
   }
 
   async createEntity(data: CreateEntityData): Promise<Entity> {

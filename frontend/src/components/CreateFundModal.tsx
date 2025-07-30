@@ -24,11 +24,11 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, AccountBalance as AccountBalanceIcon, TrendingUp as TrendingUpIcon } from '@mui/icons-material';
 import CreateEntityModal from './CreateEntityModal';
+import { useEntities } from '../hooks/useEntities';
+import { useCreateFund } from '../hooks/useFunds';
+import { Entity, FundType } from '../types/api';
 
-interface Entity {
-  id: number;
-  name: string;
-}
+
 
 interface CreateFundModalProps {
   open: boolean;
@@ -94,10 +94,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   companyId,
   companyName
 }) => {
-  const [entities, setEntities] = useState<Entity[]>([]);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [showEntityModal, setShowEntityModal] = useState(false);
@@ -117,7 +114,9 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     description: ''
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+  // Use our centralized API hooks
+  const { data: entities, loading, error } = useEntities({ refetchOnWindowFocus: true });
+  const { mutate: createFund, loading: isCreating, error: createError } = useCreateFund();
 
   // Number formatting helpers
   const formatNumber = (value: string): string => {
@@ -271,31 +270,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     return Object.keys(errors).length === 0;
   };
 
-  const fetchEntities = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/entities`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch entities');
-      }
-
-      const data = await response.json();
-      setEntities(data.entities);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  }, [API_BASE_URL]);
-
-  useEffect(() => {
-    if (open) {
-      fetchEntities();
-    }
-  }, [open, fetchEntities]);
 
   useEffect(() => {
     if (open) {
@@ -325,42 +300,28 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    // Clear any previous errors
-    setError(null);
-    
     // Validate form
     if (!validateForm()) {
-      setError('Please fix the validation errors before submitting');
       return;
     }
 
     try {
       setSubmitting(true);
-      setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/funds`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          investment_company_id: companyId,
-          entity_id: parseInt(formData.entity_id),
-          name: formData.name.trim(),
-          fund_type: formData.fund_type,
-          tracking_type: formData.tracking_type,
-          currency: formData.currency,
-          commitment_amount: formData.commitment_amount ? parseFloat(formData.commitment_amount) : null,
-          expected_irr: formData.expected_irr ? parseFloat(formData.expected_irr) : null,
-          expected_duration_months: formData.expected_duration_months ? parseInt(formData.expected_duration_months) : null,
-          description: formData.description.trim() || null
-        })
-      });
+      const fundData = {
+        investment_company_id: companyId,
+        entity_id: parseInt(formData.entity_id),
+        name: formData.name.trim(),
+        fund_type: formData.fund_type,
+        tracking_type: formData.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED,
+        currency: formData.currency,
+        commitment_amount: formData.commitment_amount ? parseFloat(formData.commitment_amount) : undefined,
+        expected_irr: formData.expected_irr ? parseFloat(formData.expected_irr) : undefined,
+        expected_duration_months: formData.expected_duration_months ? parseInt(formData.expected_duration_months) : undefined,
+        description: formData.description.trim() || undefined
+      };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create fund');
-      }
+      await createFund(fundData);
 
       setSuccess(true);
       setTimeout(() => {
@@ -382,7 +343,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       }, 2000);
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      // Error handling is managed by the hook
+      console.error('Failed to create fund:', err);
     } finally {
       setSubmitting(false);
     }
@@ -391,7 +353,6 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   const handleClose = () => {
     if (!submitting) {
       onClose();
-      setError(null);
       setSuccess(false);
       setValidationErrors({});
       // Clear form data when closing
@@ -413,9 +374,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   };
 
   const handleEntityCreated = (entity: { id: number; name: string }) => {
-    // Add the new entity to the list
-    setEntities(prev => [...prev, entity]);
-    // Select the new entity
+    // Select the new entity (the hook will automatically refetch entities)
     setFormData(prev => ({
       ...prev,
       entity_id: entity.id.toString()
@@ -674,7 +633,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                   onChange={(e) => handleInputChange('entity_id', e.target.value)}
                   label="Entity *"
                 >
-                  {entities.map((entity) => (
+                  {entities?.map((entity) => (
                     <MenuItem key={entity.id} value={entity.id}>
                       {entity.name}
                     </MenuItem>

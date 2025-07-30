@@ -138,18 +138,24 @@ This guide provides a step-by-step approach to implement professional-grade cent
 - [x] Test all functionality works correctly
 
 ### Step 8: Migrate Fund Detail Component
+- [ ] **COMPLEX - Requires Type Alignment**
 - [ ] Update `frontend/src/components/FundDetail.tsx`
 - [ ] Replace direct `fetch()` calls with custom hooks
 - [ ] Remove local `API_BASE_URL` definition
 - [ ] Update error handling to use centralized patterns
-- [ ] Test all functionality works correctly
+- [ ] **Challenge**: Component has complex local TypeScript interfaces that don't align with centralized API types
+- [ ] **Challenge**: Extended fields (e.g., `previous_nav_per_share`, `nav_change_absolute`) not in base API types
+- [ ] **Challenge**: Data structure differences between local `FundDetailData` and API `Fund` object
+- [ ] **Recommendation**: Defer to later after gaining more migration experience
+- [ ] **Status**: Pending - Will return after simpler components are migrated
 
 ### Step 9: Migrate Create Fund Modal
-- [ ] Update `frontend/src/components/CreateFundModal.tsx`
-- [ ] Replace direct `fetch()` calls with custom hooks
-- [ ] Remove local `API_BASE_URL` definition
-- [ ] Update error handling to use centralized patterns
-- [ ] Test all functionality works correctly
+- [x] Update `frontend/src/components/CreateFundModal.tsx`
+- [x] Replace direct `fetch()` calls with custom hooks
+- [x] Remove local `API_BASE_URL` definition
+- [x] Update error handling to use centralized patterns
+- [x] Test all functionality works correctly
+- [x] **Migration Complete**: CreateFundModal now uses centralized API integration
 
 ### Step 10: Migrate Create Fund Event Modal
 - [ ] Update `frontend/src/components/CreateFundEventModal.tsx`

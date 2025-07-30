@@ -6,7 +6,6 @@ import { apiClient } from '../services/api';
 import { useApiCall, useMutation, useApiCallWithDeps, useConditionalApiCall } from './useApiCall';
 import {
   Fund,
-  FundListResponse,
   CreateFundData,
   UpdateFundEventData,
   CreateFundEventData,
@@ -23,8 +22,10 @@ import {
  * Hook to get all funds
  */
 export function useFunds(options?: { refetchOnWindowFocus?: boolean }) {
+  const getFunds = useCallback(() => apiClient.getFunds(), []);
+  
   return useApiCall(
-    () => apiClient.getFunds(),
+    getFunds,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
 }
@@ -123,8 +124,10 @@ export function useFundTaxStatements(fundId: number, options?: { refetchOnWindow
  * Hook to get fund with conditional loading
  */
 export function useFundConditional(id: number | null, options?: { refetchOnWindowFocus?: boolean }) {
+  const getFund = useCallback(() => apiClient.getFund(id!), [id]);
+  
   return useConditionalApiCall(
-    () => apiClient.getFund(id!),
+    getFund,
     id !== null,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
@@ -134,8 +137,10 @@ export function useFundConditional(id: number | null, options?: { refetchOnWindo
  * Hook to get fund events with conditional loading
  */
 export function useFundEventsConditional(fundId: number | null, options?: { refetchOnWindowFocus?: boolean }) {
+  const getFundEvents = useCallback(() => apiClient.getFundEvents(fundId!), [fundId]);
+  
   return useConditionalApiCall(
-    () => apiClient.getFundEvents(fundId!),
+    getFundEvents,
     fundId !== null,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );

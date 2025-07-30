@@ -9,6 +9,7 @@ import {
   CreateInvestmentCompanyData,
   FundListResponse,
 } from '../types/api';
+import { useCallback } from 'react';
 
 // ============================================================================
 // INVESTMENT COMPANIES HOOKS
@@ -18,8 +19,10 @@ import {
  * Hook to get all investment companies
  */
 export function useInvestmentCompanies(options?: { refetchOnWindowFocus?: boolean }) {
+  const getInvestmentCompanies = useCallback(() => apiClient.getInvestmentCompanies(), []);
+  
   return useApiCall(
-    () => apiClient.getInvestmentCompanies(),
+    getInvestmentCompanies,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
 }

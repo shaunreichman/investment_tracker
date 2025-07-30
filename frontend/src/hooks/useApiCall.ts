@@ -37,6 +37,12 @@ export function useApiCall<T>(
   const { enabled = true, refetchOnWindowFocus = false, refetchInterval } = options;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
+  const apiCallRef = useRef(apiCall);
+
+  // Update the ref when apiCall changes
+  useEffect(() => {
+    apiCallRef.current = apiCall;
+  }, [apiCall]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -57,21 +63,17 @@ export function useApiCall<T>(
 
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
-      const data = await apiCall();
+      const data = await apiCallRef.current();
       
-      if (mountedRef.current) {
-        setState({ data, loading: false, error: null });
-      }
+      setState({ data, loading: false, error: null });
     } catch (error) {
-      if (mountedRef.current) {
-        setState({
-          data: null,
-          loading: false,
-          error: error instanceof Error ? error.message : 'An error occurred',
-        });
-      }
+      setState({
+        data: null,
+        loading: false,
+        error: error instanceof Error ? error.message : 'An error occurred',
+      });
     }
-  }, [apiCall, enabled]);
+  }, [enabled]);
 
   // Initial API call
   useEffect(() => {

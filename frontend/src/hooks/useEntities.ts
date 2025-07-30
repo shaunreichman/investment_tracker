@@ -5,9 +5,9 @@ import { apiClient } from '../services/api';
 import { useApiCall, useMutation } from './useApiCall';
 import {
   Entity,
-  EntityListResponse,
   CreateEntityData,
 } from '../types/api';
+import { useCallback } from 'react';
 
 // ============================================================================
 // ENTITIES HOOKS
@@ -17,8 +17,13 @@ import {
  * Hook to get all entities
  */
 export function useEntities(options?: { refetchOnWindowFocus?: boolean }) {
+  const getEntities = useCallback(async () => {
+    const result = await apiClient.getEntities();
+    return result;
+  }, []);
+  
   return useApiCall(
-    () => apiClient.getEntities(),
+    getEntities,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
 }
