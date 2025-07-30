@@ -8,7 +8,7 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 
 **Note**: As we implement each feature, we will update this guide by checking off completed tasks (`[ ]` → `[x]`) and adding any new insights or requirements discovered during implementation. This ensures the guide remains accurate and serves as a living document of our progress.
 
-**Latest Update**: Step 1 (Backend API Enhancement) completed. Step 2A (Core Template Addition) completed. Step 2B (Advanced Form Features) completed. Step 3 (Form Layout - Phase 1) completed. Step 4 (Testing and Validation) completed. All core functionality tested and working. Phase 1 implementation complete. Ready for Phase 2 enhancements when needed.
+**Latest Update**: Step 1 (Backend API Enhancement) completed. Step 2A (Core Template Addition) completed. Step 2B (Advanced Form Features) completed. Step 3 (Form Layout - Phase 1) completed. Step 4 (Testing and Validation) completed. All core functionality tested and working. Phase 1 implementation complete. Phase 2 tasks parked for later implementation.
 
 ### Current Status
 - **Phase 1**: Complete ✅ (All steps completed)
@@ -95,6 +95,8 @@ This guide provides a step-by-step approach to add Tax Statement functionality t
 - [x] Test integration with existing fund event flow
 
 ## Phase 2 Implementation Steps (Future Enhancement)
+
+**Note**: Phase 2 tasks have been parked for later implementation. We'll return to these enhancements when needed.
 
 ### Step 5: Improve Fund Detail Display
 - [ ] TBD - To be discussed and planned after Phase 1 completion
