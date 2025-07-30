@@ -122,11 +122,13 @@ class ApiClient {
   // ============================================================================
 
   async getFunds(): Promise<FundListResponse> {
-    return this.request<FundListResponse>('/api/dashboard/funds');
+    const response = await this.request<{ funds: Fund[] }>('/api/dashboard/funds');
+    return response.funds;
   }
 
   async getFund(id: number): Promise<Fund> {
-    return this.request<Fund>(`/api/funds/${id}`);
+    const response = await this.request<{ fund: Fund; events: FundEvent[]; tax_statements: TaxStatement[]; statistics: FundStatistics }>(`/api/funds/${id}`);
+    return response.fund;
   }
 
   async createFund(data: CreateFundData): Promise<Fund> {
@@ -184,7 +186,8 @@ class ApiClient {
   // ============================================================================
 
   async getInvestmentCompanies(): Promise<InvestmentCompanyListResponse> {
-    return this.request<InvestmentCompanyListResponse>('/api/investment-companies');
+    const response = await this.request<{ companies: InvestmentCompany[] }>('/api/investment-companies');
+    return response.companies;
   }
 
   async createInvestmentCompany(data: CreateInvestmentCompanyData): Promise<InvestmentCompany> {
@@ -195,7 +198,8 @@ class ApiClient {
   }
 
   async getCompanyFunds(companyId: number): Promise<FundListResponse> {
-    return this.request<FundListResponse>(`/api/companies/${companyId}/funds`);
+    const response = await this.request<{ funds: Fund[] }>(`/api/companies/${companyId}/funds`);
+    return response.funds;
   }
 
   // ============================================================================
