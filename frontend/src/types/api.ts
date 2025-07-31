@@ -40,6 +40,13 @@ export interface InvestmentCompany {
   id: number;
   name: string;
   description?: string;
+  website?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  fund_count?: number;
+  active_funds?: number;
+  total_commitments?: number;
+  total_equity_balance?: number;
   created_at: string;
   updated_at: string;
   funds_count?: number;
