@@ -1463,10 +1463,49 @@ class Fund(Base):
 
     def add_unit_purchase(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
         """
-        [NEW FLOW] Add a unit purchase event and update all relevant calculated fields using the unified capital recalculation flow.
+        Add a unit purchase event and update all relevant calculated fields using the unified capital recalculation flow.
+        
+        This method is part of the unified capital event handling system for NAV-based funds. It creates a unit purchase
+        event and automatically recalculates all subsequent capital events to maintain data consistency.
+        
+        Args:
+            units (float): Number of units to purchase (must be positive)
+            price (float): Price per unit (must be positive)
+            date (date): Date of the unit purchase
+            brokerage_fee (float, optional): Brokerage fee for the transaction (default: 0.0)
+            description (str, optional): Description of the purchase (auto-generated if not provided)
+            reference_number (str, optional): External reference number for the transaction
+            session (Session): Database session (required - managed by outermost backend layer)
+        
+        Returns:
+            FundEvent: The created unit purchase event
+            
+        Raises:
+            ValueError: If fund is not NAV-based, or if units/price are invalid
+            TypeError: If required parameters are missing or of wrong type
+            
+        Example:
+            >>> fund = Fund.get_by_id(1, session=session)
+            >>> event = fund.add_unit_purchase(
+            ...     units=100.0,
+            ...     price=10.50,
+            ...     date=date(2024, 1, 15),
+            ...     brokerage_fee=25.0,
+            ...     description="Initial unit purchase",
+            ...     session=session
+            ... )
+            >>> print(f"Created event: {event.id}, Amount: ${event.amount}")
         """
         if self.tracking_type != FundType.NAV_BASED:
             raise ValueError("Unit purchases are only applicable for NAV-based funds")
+        
+        if not units or units <= 0:
+            raise ValueError("Units must be a positive number")
+        if not price or price <= 0:
+            raise ValueError("Price must be a positive number")
+        if not date:
+            raise ValueError("Date is required")
+        
         amount = (units * price) + brokerage_fee
         event = FundEvent(
             fund_id=self.id,
@@ -1574,10 +1613,43 @@ class Fund(Base):
 
     def add_capital_call(self, amount, date, description=None, reference_number=None, session=None):
         """
-        [NEW FLOW] Add a capital call event and update all relevant calculated fields using the unified capital recalculation flow.
+        Add a capital call event and update all relevant calculated fields using the unified capital recalculation flow.
+        
+        This method is part of the unified capital event handling system for cost-based funds. It creates a capital call
+        event and automatically recalculates all subsequent capital events to maintain data consistency.
+        
+        Args:
+            amount (float): Capital call amount (must be positive)
+            date (date): Date of the capital call
+            description (str, optional): Description of the capital call (auto-generated if not provided)
+            reference_number (str, optional): External reference number for the transaction
+            session (Session): Database session (required - managed by outermost backend layer)
+        
+        Returns:
+            FundEvent: The created capital call event
+            
+        Raises:
+            ValueError: If fund is not cost-based, or if amount is invalid
+            TypeError: If required parameters are missing or of wrong type
+            
+        Example:
+            >>> fund = Fund.get_by_id(1, session=session)
+            >>> event = fund.add_capital_call(
+            ...     amount=100000.0,
+            ...     date=date(2024, 1, 15),
+            ...     description="Initial capital call for new investment",
+            ...     session=session
+            ... )
+            >>> print(f"Created capital call: ${event.amount:,.2f}")
         """
         if self.tracking_type != FundType.COST_BASED:
             raise ValueError("Capital calls are only applicable for cost-based funds")
+        
+        if not amount or amount <= 0:
+            raise ValueError("Capital call amount must be a positive number")
+        if not date:
+            raise ValueError("Date is required")
+        
         event = FundEvent(
             fund_id=self.id,
             event_type=EventType.CAPITAL_CALL,

@@ -1,0 +1,118 @@
+name: Run tests after non-trivial changes
+scope: python
+language: python
+severity: error
+if: Making changes without running tests afterward
+then: Run tests immediately after any non-trivial change, especially to domain methods or API endpoints
+why: Frequent testing catches regressions early and ensures code quality.
+globs: ["src/**/*.py", "tests/**/*.py"]
+
+---
+name: Save test_main.py output with descriptive names
+scope: python
+language: python
+severity: error
+if: Running test_main.py without saving output to tests/output/
+then: Save output to tests/output/test_main_output_new.txt and compare with baseline
+why: Enables regression testing and identifies unexpected changes in system behavior.
+globs: ["tests/test_main.py"]
+
+---
+name: Compare test outputs with baseline
+scope: python
+language: python
+severity: warning
+if: Not comparing new test output with test_main_output1.txt baseline
+then: Compare new output with baseline and report any differences immediately
+why: Output differences likely indicate a problem that needs investigation.
+globs: ["tests/test_main.py"]
+
+---
+name: Test domain methods with session management
+scope: python
+language: python
+severity: error
+if: Testing domain methods without proper session setup/teardown
+then: Include session management in tests to match production usage patterns
+why: Tests must accurately reflect how code runs in production.
+globs: ["tests/**/*.py"]
+
+---
+name: Test both success and error scenarios
+scope: python
+language: python
+severity: warning
+if: Only testing happy path scenarios
+then: Test error conditions, edge cases, and invalid inputs
+why: Comprehensive testing ensures robust error handling and edge case coverage.
+globs: ["tests/**/*.py"]
+
+---
+name: Test API endpoints with proper HTTP status codes
+scope: python
+language: python
+severity: warning
+if: API tests without checking HTTP status codes
+then: Verify correct status codes (200, 201, 400, 404, 500) in API tests
+why: Proper HTTP status codes are critical for frontend integration.
+globs: ["tests/test_api_endpoints.py"]
+
+---
+name: Test calculated field computations
+scope: python
+language: python
+severity: warning
+if: Not testing calculated fields like equity balances, totals, or tax amounts
+then: Add specific tests for calculated field accuracy
+why: Calculated fields are critical for financial accuracy and user trust.
+globs: ["tests/**/*.py"]
+
+---
+name: Use descriptive test names
+scope: python
+language: python
+severity: info
+if: Test function names that don't describe what they test
+then: Use descriptive names like test_add_capital_call_updates_equity_balance
+why: Clear test names make debugging easier and serve as documentation.
+globs: ["tests/**/*.py"]
+
+---
+name: Test component rendering and interactions
+scope: typescript
+language: typescript
+severity: warning
+if: React components without tests
+then: Write tests using React Testing Library for component rendering and user interactions
+why: Component tests ensure UI behavior matches requirements and catches regressions.
+globs: ["frontend/src/**/*.test.tsx", "frontend/src/**/*.spec.tsx"]
+
+---
+name: Mock external dependencies in tests
+scope: typescript
+language: typescript
+severity: warning
+if: Tests that make real API calls or use real dependencies
+then: Mock fetch API, React Router hooks, and other external dependencies
+why: Isolated tests are faster, more reliable, and don't depend on external services.
+globs: ["frontend/src/**/*.test.tsx", "frontend/src/**/*.spec.tsx"]
+
+---
+name: Test loading states and error handling
+scope: typescript
+language: typescript
+severity: warning
+if: Components without tests for loading and error states
+then: Test loading indicators, error messages, and error recovery
+why: Loading and error states are critical for user experience.
+globs: ["frontend/src/**/*.test.tsx", "frontend/src/**/*.spec.tsx"]
+
+---
+name: Commit only after tests pass
+scope: python
+language: python
+severity: error
+if: Attempting to commit changes without running tests
+then: Run all relevant tests and ensure they pass before committing
+why: Prevents broken code from being committed and maintains code quality.
+globs: ["**/*"]
