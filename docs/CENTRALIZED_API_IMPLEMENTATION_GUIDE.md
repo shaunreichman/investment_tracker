@@ -137,19 +137,7 @@ This guide provides a step-by-step approach to implement professional-grade cent
 - [x] Update error handling to use centralized patterns
 - [x] Test all functionality works correctly
 
-### Step 8: Migrate Fund Detail Component
-- [ ] **Status**: COMPLEX - Requires Type Alignment (deferred)
-- [ ] **Challenges Identified**:
-  - [ ] Complex local interfaces (`FundEvent`, `FundStatistics`, `FundData`, `FundDetailData`) have fields not in centralized API types
-  - [ ] Extended fields not present in base API types (e.g., calculated fields, display-specific data)
-  - [ ] Type mismatches between existing local interfaces and imported centralized types
-  - [ ] Component has complex state management that may conflict with centralized patterns
-- [ ] **Recommended Approach**:
-  - [ ] Create extended interfaces that extend base API types with component-specific fields
-  - [ ] Implement type adapters to transform API data to component expectations
-  - [ ] Consider breaking down the component into smaller, more focused components
-  - [ ] Defer until simpler components are migrated and patterns are established
-- [ ] **Alternative**: Consider refactoring the component to use simpler data structures first
+
 
 ## Implementation Learnings from Step 9
 
@@ -258,6 +246,87 @@ This guide provides a step-by-step approach to implement professional-grade cent
 - [x] **Migration Complete**: CreateEntityModal now uses centralized API integration
 - [x] **Migration Complete**: OverallDashboard now uses centralized API integration
 - [x] **Quality Assessment**: EXCELLENT - Professional implementation with proper type safety and error handling
+
+### Step 13: Migrate Complex FundDetail Component
+**Complexity Assessment:**
+- Size: 1,480 lines (largest component)
+- API Calls: 4 fetch calls (fund details, refresh after create/update, delete event)
+- Local State: Multiple complex state variables
+- Custom Interfaces: 4 local interfaces (FundEvent, FundStatistics, FundData, FundDetailData)
+- Complex Logic: Event handling, formatting, charting, modal management
+
+**Challenges Identified:**
+- Complex local interfaces have fields not in centralized API types
+- Extended fields not present in base API types (e.g., calculated fields, display-specific data)
+- Type mismatches between existing local interfaces and imported centralized types
+- Component has complex state management that may conflict with centralized patterns
+
+**Available Hooks:**
+- `useFund(id)` - Get fund details
+- `useFundEvents(fundId)` - Get fund events  
+- `useCreateFundEvent(fundId)` - Create fund event
+- `useUpdateFundEvent(fundId, eventId)` - Update fund event
+- `useDeleteFundEvent(fundId, eventId)` - Delete fund event
+
+#### Phase 1: Interface Alignment & Type Safety
+- [ ] Audit local interfaces vs centralized types
+- [ ] Update centralized interfaces if needed to match backend response
+- [ ] Create extended interfaces that extend base API types with component-specific fields
+- [ ] Implement type adapters to transform API data to component expectations
+- [ ] Remove local interfaces and use centralized ones
+- [ ] Handle type mismatches and optional field processing
+
+#### Phase 2: Core Data Migration
+- [ ] Replace fund details fetch with `useFund(id)` hook
+- [ ] Replace fund events fetch with `useFundEvents(fundId)` hook
+- [ ] Update state management to use hook states (loading, error, data)
+- [ ] Remove local API_BASE_URL definition
+- [ ] Implement proper TypeScript type coercion for API data
+
+#### Phase 3: Event Operations Migration
+- [ ] Replace create event with `useCreateFundEvent(fundId)` hook
+- [ ] Replace update event with `useUpdateFundEvent(fundId, eventId)` hook
+- [ ] Replace delete event with `useDeleteFundEvent(fundId, eventId)` hook
+- [ ] Update success/error handling to use centralized patterns
+- [ ] Implement proper form data transformation for API requests
+
+#### Phase 4: UI State Management & Error Handling
+- [ ] Update loading states to use hook loading states
+- [ ] Update error handling to use centralized patterns
+- [ ] Update success callbacks to use refetch() instead of manual fetches
+- [ ] Maintain all existing functionality (modals, charts, formatting)
+- [ ] Implement proper form reset logic with useEffect for modal state management
+
+#### Phase 5: Testing & Validation
+- [ ] TypeScript compilation check
+- [ ] Functionality testing (all CRUD operations)
+- [ ] UI behavior validation (loading states, error handling)
+- [ ] Performance validation (no regressions)
+- [ ] Test data transformation and type safety
+
+**Migration Patterns (Based on Previous Learnings):**
+1. **Type Coercion Strategy**: Handle string-to-enum conversions and optional field processing
+2. **State Management Migration**: Replace local useState with centralized hook states
+3. **Form Reset Patterns**: Add useEffect with proper dependencies for modal state management
+4. **Error Handling**: Let centralized hooks handle errors, component focuses on UI display
+5. **Data Transformation**: Transform API data to component format in handleSubmit
+
+**Risk Mitigation:**
+- Incremental approach - migrate one operation at a time
+- Preserve existing behavior - maintain all current functionality
+- Comprehensive testing - validate each step before proceeding
+- Rollback capability - commit after each successful phase
+- Use learnings from previous migrations (Steps 9-12)
+
+**Success Criteria:**
+- ✅ All fetch() calls replaced with centralized hooks
+- ✅ No local API_BASE_URL definitions
+- ✅ Consistent error handling across the app
+- ✅ Proper loading states and user feedback
+- ✅ All existing functionality preserved
+- ✅ TypeScript compilation passes
+- ✅ No performance regressions
+- ✅ Type safety enforced with proper interfaces
 
 ## Testing Strategy
 
