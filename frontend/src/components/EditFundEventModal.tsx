@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { MonetizationOn } from '@mui/icons-material';
+import { useUpdateFundEvent } from '../hooks/useFunds';
 
 interface FundEvent {
   id: number;
@@ -71,7 +72,6 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   event 
 }) => {
   const [formData, setFormData] = useState<any>({});
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -82,8 +82,25 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   // Add state to track focus for Amount field
   const [amountFocused, setAmountFocused] = useState(false);
 
+  // Centralized API hook
+  const updateFundEvent = useUpdateFundEvent(fundId, event?.id || 0);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+  // Handle errors and success from hooks
+  useEffect(() => {
+    if (updateFundEvent.error) {
+      setError(updateFundEvent.error);
+    }
+  }, [updateFundEvent.error]);
+
+  useEffect(() => {
+    if (updateFundEvent.data) {
+      setSuccess(true);
+      setTimeout(() => {
+        onEventUpdated();
+        onClose();
+      }, 1000);
+    }
+  }, [updateFundEvent.data, onEventUpdated, onClose]);
 
   useEffect(() => {
     if (open && event) {
@@ -160,7 +177,6 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       
       setError(null);
       setSuccess(false);
-      setSubmitting(false);
       setValidationErrors({});
     }
   }, [open, event]);
@@ -397,11 +413,9 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   const handleSubmit = async () => {
     if (!validateForm() || !event) return;
 
-    setSubmitting(true);
     setError(null);
 
-    try {
-      const payload: any = {};
+    const payload: any = {};
 
       // Add fields based on event type
       if (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL') {
@@ -471,30 +485,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
         }
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}/events/${event.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      setSuccess(true);
-      setTimeout(() => {
-        onEventUpdated();
-        onClose();
-      }, 1000);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setSubmitting(false);
-    }
+      await updateFundEvent.mutate(payload);
   };
 
   const getEventTypeLabel = (eventType: string): string => {
@@ -837,15 +828,15 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
+        <Button onClick={onClose} disabled={updateFundEvent.loading}>
           Cancel
         </Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
-          disabled={!isFormValid || submitting}
+          disabled={!isFormValid || updateFundEvent.loading}
         >
-          {submitting ? <CircularProgress size={20} /> : 'Update Event'}
+          {updateFundEvent.loading ? <CircularProgress size={20} /> : 'Update Event'}
         </Button>
       </DialogActions>
     </Dialog>
