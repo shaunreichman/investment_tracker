@@ -27,10 +27,15 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import CreateFundModal from './CreateFundModal';
+import { useCompanyFunds } from '../hooks/useInvestmentCompanies';
 
 interface Company {
   id: number;
   name: string;
+  description?: string;
+  website?: string;
+  contact_email?: string;
+  contact_phone?: string;
 }
 
 interface Fund {
@@ -47,56 +52,35 @@ interface Fund {
   created_at: string;
 }
 
+interface CompanyFundsResponse {
+  company: Company;
+  funds: Fund[];
+}
+
 const CompaniesPage: React.FC = () => {
   const navigate = useNavigate();
   const { companyId } = useParams<{ companyId: string }>();
   const [company, setCompany] = useState<Company | null>(null);
-  const [funds, setFunds] = useState<Fund[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+  // Centralized API hook
+  const { data: fundsData, loading, error, refetch } = useCompanyFunds(parseInt(companyId || '0')) as {
+    data: CompanyFundsResponse | null;
+    loading: boolean;
+    error: string | null;
+    refetch: () => Promise<void>;
+  };
 
+  // Process company data when it loads
   useEffect(() => {
-    const fetchCompanyFunds = async () => {
-      if (!companyId) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}/funds`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch company funds');
-        }
-
-        const data = await response.json();
-        setCompany(data.company);
-        setFunds(data.funds);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCompanyFunds();
-  }, [companyId, API_BASE_URL]);
+    if (fundsData && fundsData.company) {
+      setCompany(fundsData.company);
+    }
+  }, [fundsData]);
 
   const handleFundCreated = () => {
-    // Refresh the funds list
-    if (companyId) {
-      fetch(`${API_BASE_URL}/api/companies/${companyId}/funds`)
-        .then(response => response.json())
-        .then(data => {
-          setFunds(data.funds);
-        })
-        .catch(err => {
-          console.error('Failed to refresh funds:', err);
-        });
-    }
+    // Refresh the funds list using the centralized hook
+    refetch();
   };
 
   const formatCurrency = (amount: number) => {
@@ -198,7 +182,7 @@ const CompaniesPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {funds.map((fund) => (
+                {fundsData?.funds?.map((fund) => (
                   <TableRow key={fund.id}>
                     <TableCell>
                       <Link
@@ -238,7 +222,7 @@ const CompaniesPage: React.FC = () => {
       </Card>
 
       {/* Summary Cards */}
-      {funds.length > 0 && (
+              {fundsData?.funds && fundsData.funds.length > 0 && (
         <Box 
           display="flex" 
           flexWrap="wrap" 
@@ -260,7 +244,7 @@ const CompaniesPage: React.FC = () => {
                     Total Funds
                   </Typography>
                   <Typography variant="h5">
-                    {funds.length}
+                    {fundsData?.funds?.length || 0}
                   </Typography>
                 </Box>
               </Box>
@@ -276,7 +260,7 @@ const CompaniesPage: React.FC = () => {
                     Active Funds
                   </Typography>
                   <Typography variant="h5">
-                    {funds.filter(fund => fund.is_active).length}
+                    {fundsData?.funds?.filter(fund => fund.is_active).length || 0}
                   </Typography>
                 </Box>
               </Box>
@@ -292,7 +276,7 @@ const CompaniesPage: React.FC = () => {
                     Total Equity
                   </Typography>
                   <Typography variant="h5">
-                    {formatCurrency(funds.reduce((sum, fund) => sum + fund.current_equity_balance, 0))}
+                    {formatCurrency(fundsData?.funds?.reduce((sum, fund) => sum + fund.current_equity_balance, 0) || 0)}
                   </Typography>
                 </Box>
               </Box>
@@ -308,7 +292,7 @@ const CompaniesPage: React.FC = () => {
                     Average Equity
                   </Typography>
                   <Typography variant="h5">
-                    {formatCurrency(funds.reduce((sum, fund) => sum + fund.average_equity_balance, 0))}
+                    {formatCurrency(fundsData?.funds?.reduce((sum, fund) => sum + fund.average_equity_balance, 0) || 0)}
                   </Typography>
                 </Box>
               </Box>
@@ -318,7 +302,7 @@ const CompaniesPage: React.FC = () => {
       )}
 
       {/* Empty State */}
-      {funds.length === 0 && (
+              {(!fundsData?.funds || fundsData.funds.length === 0) && (
         <Card sx={{ mt: 3 }}>
           <CardContent>
             <Box textAlign="center" py={4}>

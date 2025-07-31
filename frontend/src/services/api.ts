@@ -193,9 +193,8 @@ class ApiClient {
     });
   }
 
-  async getCompanyFunds(companyId: number): Promise<FundListResponse> {
-    const response = await this.request<{ funds: Fund[] }>(`/api/companies/${companyId}/funds`);
-    return response.funds;
+  async getCompanyFunds(companyId: number): Promise<{ company: InvestmentCompany; funds: Fund[] }> {
+    return this.request<{ company: InvestmentCompany; funds: Fund[] }>(`/api/companies/${companyId}/funds`);
   }
 
   // ============================================================================
