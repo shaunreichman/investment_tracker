@@ -18,35 +18,14 @@ import {
 import { Close as CloseIcon } from '@mui/icons-material';
 import { MonetizationOn } from '@mui/icons-material';
 import { useUpdateFundEvent } from '../hooks/useFunds';
-
-interface FundEvent {
-  id: number;
-  event_type: string;
-  event_date: string;
-  amount: number | null;
-  description: string | null;
-  reference_number: string | null;
-  distribution_type: string | null;
-  tax_payment_type: string | null;
-  units_purchased: number | null;
-  units_sold: number | null;
-  unit_price: number | null;
-  nav_per_share: number | null;
-  brokerage_fee: number | null;
-  // Interest distribution fields
-  net_interest?: number | null;
-  withholding_amount?: number | null;
-  withholding_rate?: number | null;
-  // Withholding tax context (added by parent component)
-  has_withholding_tax?: boolean;
-}
+import { ExtendedFundEvent } from '../types/api';
 
 interface EditFundEventModalProps {
   open: boolean;
   onClose: () => void;
   onEventUpdated: () => void;
   fundId: number;
-  event: FundEvent | null;
+  event: ExtendedFundEvent | null;
 }
 
 interface ValidationErrors {
@@ -111,7 +90,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
         withholding_rate: event.withholding_rate?.toString() || '',
       };
       
-      if (event.event_type === 'DISTRIBUTION' && (event.distribution_type === 'interest' || event.distribution_type === 'INTEREST')) {
+      if (event.event_type === 'DISTRIBUTION' && event.distribution_type === 'INTEREST') {
         // Check if there's a NON_RESIDENT_INTEREST_WITHHOLDING tax event on the same date
         const hasWithholdingTax = event.has_withholding_tax || false;
         
@@ -145,7 +124,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       });
       
               // Set interest type based on whether withholding fields are populated
-        if (event.event_type === 'DISTRIBUTION' && (event.distribution_type === 'interest' || event.distribution_type === 'INTEREST')) {
+        if (event.event_type === 'DISTRIBUTION' && event.distribution_type === 'INTEREST') {
           if (withholdingData.withholding_amount || withholdingData.withholding_rate || withholdingData.net_interest) {
             setInterestType('withholding');
             
@@ -387,7 +366,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       const newData = { ...prev, [field]: processedValue };
       
       // For withholding interest events, clear calculated fields when user changes input fields
-      if (event?.event_type === 'DISTRIBUTION' && (event?.distribution_type === 'interest' || event?.distribution_type === 'INTEREST') && interestType === 'withholding') {
+      if (event?.event_type === 'DISTRIBUTION' && event?.distribution_type === 'INTEREST' && interestType === 'withholding') {
         // If user changes gross_interest, clear net_interest
         if (field === 'gross_interest') {
           newData.net_interest = '';
@@ -540,7 +519,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
 
         <Box sx={{ mt: 2 }}>
           {/* Interest Type Selection (for Interest Distribution events) */}
-          {event?.event_type === 'DISTRIBUTION' && (event?.distribution_type === 'interest' || event?.distribution_type === 'INTEREST') && (
+          {event?.event_type === 'DISTRIBUTION' && event?.distribution_type === 'INTEREST' && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 Interest Type

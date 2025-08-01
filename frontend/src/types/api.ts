@@ -17,7 +17,12 @@ export enum EventType {
   UNIT_SALE = 'UNIT_SALE',
   NAV_UPDATE = 'NAV_UPDATE',
   DISTRIBUTION = 'DISTRIBUTION',
-  TAX_PAYMENT = 'TAX_PAYMENT'
+  TAX_PAYMENT = 'TAX_PAYMENT',
+  EOFY_DEBT_COST = 'EOFY_DEBT_COST',
+  DAILY_RISK_FREE_INTEREST_CHARGE = 'DAILY_RISK_FREE_INTEREST_CHARGE',
+  MANAGEMENT_FEE = 'MANAGEMENT_FEE',
+  CARRIED_INTEREST = 'CARRIED_INTEREST',
+  OTHER = 'OTHER'
 }
 
 export enum DistributionType {
@@ -29,7 +34,11 @@ export enum DistributionType {
 export enum TaxPaymentType {
   INTEREST_TAX = 'INTEREST_TAX',
   DIVIDEND_TAX = 'DIVIDEND_TAX',
-  CAPITAL_GAINS_TAX = 'CAPITAL_GAINS_TAX'
+  CAPITAL_GAINS_TAX = 'CAPITAL_GAINS_TAX',
+  NON_RESIDENT_INTEREST_WITHHOLDING = 'NON_RESIDENT_INTEREST_WITHHOLDING',
+  EOFY_INTEREST_TAX = 'EOFY_INTEREST_TAX',
+  DIVIDENDS_FRANKED_TAX = 'DIVIDENDS_FRANKED_TAX',
+  DIVIDENDS_UNFRANKED_TAX = 'DIVIDENDS_UNFRANKED_TAX'
 }
 
 // ============================================================================
@@ -282,6 +291,81 @@ export type FundEventListResponse = FundEvent[];
 export type TaxStatementListResponse = TaxStatement[];
 export type InvestmentCompanyListResponse = InvestmentCompany[];
 export type EntityListResponse = Entity[];
+
+// ============================================================================
+// EXTENDED INTERFACES FOR COMPONENT-SPECIFIC FIELDS
+// ============================================================================
+
+/**
+ * Extended FundEvent interface for FundDetail component
+ * Includes tax statement fields and withholding tax context
+ */
+export interface ExtendedFundEvent extends Omit<FundEvent, 'amount'> {
+  // Override amount to be nullable instead of optional
+  amount: number | null;
+  
+  // NAV-specific fields
+  previous_nav_per_share?: number | null;
+  nav_change_absolute?: number | null;
+  nav_change_percentage?: number | null;
+  
+  // Tax statement fields for TAX_PAYMENT events
+  interest_income_amount?: number | null;
+  interest_income_tax_rate?: number | null;
+  dividend_franked_income_amount?: number | null;
+  dividend_franked_income_tax_rate?: number | null;
+  dividend_unfranked_income_amount?: number | null;
+  dividend_unfranked_income_tax_rate?: number | null;
+  capital_gain_income_amount?: number | null;
+  capital_gain_income_tax_rate?: number | null;
+  
+  // Tax statement fields for EOFY_DEBT_COST events
+  eofy_debt_interest_deduction_sum_of_daily_interest?: number | null;
+  eofy_debt_interest_deduction_rate?: number | null;
+  eofy_debt_interest_deduction_total_deduction?: number | null;
+  
+  // Withholding tax context (added by handleEditEvent)
+  has_withholding_tax?: boolean;
+  withholding_amount?: number | null;
+  withholding_rate?: number | null;
+  net_interest?: number | null;
+}
+
+/**
+ * Extended FundStatistics interface for FundDetail component
+ * Includes detailed event counts and date ranges
+ */
+export interface ExtendedFundStatistics extends FundStatistics {
+  capital_calls: number;
+  distributions: number;
+  nav_updates: number;
+  unit_purchases: number;
+  unit_sales: number;
+  total_capital_called: number;
+  total_capital_returned: number;
+  total_distributions: number;
+  first_event_date: string | null;
+  last_event_date: string | null;
+}
+
+/**
+ * Extended Fund interface for FundDetail component
+ * Includes display-specific fields
+ */
+export interface ExtendedFund extends Omit<Fund, 'investment_company' | 'entity'> {
+  // Display-specific fields (strings instead of objects)
+  investment_company: string;  // Company name as string
+  entity: string;              // Entity name as string
+}
+
+/**
+ * FundDetailData interface for the complete fund detail response
+ */
+export interface FundDetailData {
+  fund: ExtendedFund;
+  events: ExtendedFundEvent[];
+  statistics: ExtendedFundStatistics;
+}
 
 // ============================================================================
 // EXPORTS

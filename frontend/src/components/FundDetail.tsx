@@ -31,83 +31,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
 import CreateFundEventModal from './CreateFundEventModal';
 import EditFundEventModal from './EditFundEventModal';
-
-interface FundEvent {
-  id: number;
-  event_type: string;
-  event_date: string;
-  amount: number | null;
-  description: string | null;
-  reference_number: string | null;
-  distribution_type: string | null;
-  tax_payment_type: string | null;
-  units_purchased: number | null;
-  units_sold: number | null;
-  unit_price: number | null;
-  nav_per_share: number | null;
-  previous_nav_per_share: number | null;
-  nav_change_absolute: number | null;
-  nav_change_percentage: number | null;
-  brokerage_fee: number | null;
-  // Tax statement fields for TAX_PAYMENT events
-  interest_income_amount?: number | null;
-  interest_income_tax_rate?: number | null;
-  dividend_franked_income_amount?: number | null;
-  dividend_franked_income_tax_rate?: number | null;
-  dividend_unfranked_income_amount?: number | null;
-  dividend_unfranked_income_tax_rate?: number | null;
-  capital_gain_income_amount?: number | null;
-  capital_gain_income_tax_rate?: number | null;
-  // Tax statement fields for EOFY_DEBT_COST events
-  eofy_debt_interest_deduction_sum_of_daily_interest?: number | null;
-  eofy_debt_interest_deduction_rate?: number | null;
-  eofy_debt_interest_deduction_total_deduction?: number | null;
-  // Withholding tax context (added by handleEditEvent)
-  has_withholding_tax?: boolean;
-  withholding_amount?: number | null;
-  withholding_rate?: number | null;
-  net_interest?: number | null;
-}
-
-interface FundStatistics {
-  total_events: number;
-  capital_calls: number;
-  distributions: number;
-  nav_updates: number;
-  unit_purchases: number;
-  unit_sales: number;
-  total_capital_called: number;
-  total_capital_returned: number;
-  total_distributions: number;
-  first_event_date: string | null;
-  last_event_date: string | null;
-}
-
-interface FundData {
-  id: number;
-  name: string;
-  fund_type: string | null;
-  tracking_type: string;
-  currency: string;
-  current_equity_balance: number;
-  average_equity_balance: number;
-  is_active: boolean;
-  commitment_amount: number | null;
-  expected_irr: number | null;
-  expected_duration_months: number | null;
-  description: string | null;
-  investment_company: string;
-  investment_company_id: number;
-  entity: string;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-interface FundDetailData {
-  fund: FundData;
-  events: FundEvent[];
-  statistics: FundStatistics;
-}
+import { 
+  FundDetailData, 
+  ExtendedFundEvent, 
+  ExtendedFund, 
+  ExtendedFundStatistics,
+  EventType,
+  FundType
+} from '../types/api';
 
 const FundDetail: React.FC = () => {
   const { fundId } = useParams<{ fundId: string }>();
@@ -120,7 +51,7 @@ const FundDetail: React.FC = () => {
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<FundEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<ExtendedFundEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
 
   useEffect(() => {
@@ -205,7 +136,7 @@ const FundDetail: React.FC = () => {
     }
   };
 
-  const getEventTypeLabel = (event: FundEvent) => {
+  const getEventTypeLabel = (event: ExtendedFundEvent) => {
     // Show only subtype if available, otherwise show the main type
     if (event.distribution_type) {
       // Format distribution type to be consistent (uppercase)
@@ -248,10 +179,10 @@ const FundDetail: React.FC = () => {
     }
   };
 
-  const handleEditEvent = (event: FundEvent) => {
+  const handleEditEvent = (event: ExtendedFundEvent) => {
     // Check if there's a withholding tax event on the same date
-    const sameDateEvents = fundData?.events.filter((e: FundEvent) => e.event_date === event.event_date) || [];
-    const withholdingEvent = sameDateEvents.find((e: FundEvent) => 
+    const sameDateEvents = fundData?.events.filter((e: ExtendedFundEvent) => e.event_date === event.event_date) || [];
+    const withholdingEvent = sameDateEvents.find((e: ExtendedFundEvent) => 
       e.event_type === 'TAX_PAYMENT' && e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING'
     );
     
@@ -268,7 +199,7 @@ const FundDetail: React.FC = () => {
     setEditModalOpen(true);
   };
 
-  const handleDeleteEvent = (event: FundEvent) => {
+  const handleDeleteEvent = (event: ExtendedFundEvent) => {
     setSelectedEvent(event);
     setDeleteDialogOpen(true);
   };
@@ -436,7 +367,7 @@ const FundDetail: React.FC = () => {
                 Commitment
               </Typography>
               <Typography variant="h4" color="primary">
-                {formatCurrency(fund.commitment_amount, fund.currency)}
+                {formatCurrency(fund.commitment_amount || null, fund.currency)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {fund.tracking_type.replace('_', ' ')}
@@ -609,7 +540,7 @@ const FundDetail: React.FC = () => {
                 console.log('Event types:', events.map(e => ({ id: e.id, type: e.event_type, description: e.description, amount: e.amount })));
                 
                 // Group events by date and type to combine interest distributions with withholding tax
-                const groupedEvents: { [key: string]: FundEvent[] } = {};
+                const groupedEvents: { [key: string]: ExtendedFundEvent[] } = {};
                 
                 events.forEach(event => {
                   const dateKey = event.event_date;
