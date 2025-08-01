@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Container,
   Typography,
@@ -32,14 +32,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import CreateFundEventModal from './CreateFundEventModal';
 import EditFundEventModal from './EditFundEventModal';
 import { 
-  FundDetailData, 
-  ExtendedFundEvent, 
-  ExtendedFund, 
-  ExtendedFundStatistics,
-  EventType,
-  FundType
+  ExtendedFundEvent
 } from '../types/api';
-import { useFundDetail, useDeleteFundEvent, useCreateFundEvent, useUpdateFundEvent } from '../hooks/useFunds';
+import { useFundDetail, useDeleteFundEvent } from '../hooks/useFunds';
 
 const FundDetail: React.FC = () => {
   const { fundId } = useParams<{ fundId: string }>();
@@ -55,8 +50,6 @@ const FundDetail: React.FC = () => {
   // Centralized API hooks
   const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
-  const createFundEvent = useCreateFundEvent(Number(fundId));
-  const updateFundEvent = useUpdateFundEvent(Number(fundId), selectedEvent?.id || 0);
 
   const formatCurrency = (amount: number | null, currency: string = 'AUD') => {
     if (amount === null) return '-';
