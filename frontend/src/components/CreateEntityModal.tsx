@@ -12,11 +12,12 @@ import {
   MenuItem,
   Box,
   CircularProgress,
-  Alert,
   Typography,
   FormHelperText,
   Paper
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon } from '@mui/icons-material';
 import { useCreateEntity } from '../hooks/useEntities';
 
@@ -37,7 +38,6 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   onClose,
   onEntityCreated
 }) => {
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
@@ -51,12 +51,15 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   // Centralized API hook
   const createEntity = useCreateEntity();
 
+  // Centralized error handler
+  const { error, setError, clearError } = useErrorHandler();
+
   // Handle errors and success from hooks
   useEffect(() => {
     if (createEntity.error) {
       setError(createEntity.error);
     }
-  }, [createEntity.error]);
+  }, [createEntity.error, setError]);
 
   useEffect(() => {
     if (createEntity.data) {
@@ -134,7 +137,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
 
   const handleSubmit = async () => {
     // Clear any previous errors
-    setError(null);
+    clearError();
     
     // Validate form
     if (!validateForm()) {
@@ -154,7 +157,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   const handleClose = () => {
     if (!createEntity.loading) {
       onClose();
-      setError(null);
+      clearError();
       setSuccess(false);
       setValidationErrors({});
       // Clear form data when closing
@@ -201,34 +204,28 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       <DialogContent sx={{ pb: 2 }}>
         {/* Success State */}
         {success && (
-          <Alert 
-            severity="success" 
-            sx={{ mb: 2 }}
-            icon={<CheckCircleIcon />}
-          >
-            <Typography variant="body1" fontWeight="medium">
-              Entity created successfully!
-            </Typography>
-            <Typography variant="body2">
-              Redirecting to fund creation...
-            </Typography>
-          </Alert>
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
+            <CheckCircleIcon sx={{ mr: 1, color: 'success.main' }} />
+            <Box>
+              <Typography variant="body1" fontWeight="medium" color="success.main">
+                Entity created successfully!
+              </Typography>
+              <Typography variant="body2" color="success.main">
+                Redirecting to fund creation...
+              </Typography>
+            </Box>
+          </Box>
         )}
 
         {/* Error State */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ mb: 2 }}
-            icon={<ErrorIcon />}
-          >
-            <Typography variant="body1" fontWeight="medium">
-              Error creating entity
-            </Typography>
-            <Typography variant="body2">
-              {error}
-            </Typography>
-          </Alert>
+          <ErrorDisplay
+            error={error}
+            canRetry={error.retryable}
+            onRetry={() => createEntity.mutate(formData)}
+            onDismiss={clearError}
+            variant="inline"
+          />
         )}
         
         <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
