@@ -17,6 +17,8 @@ import {
   FormControlLabel
 } from '@mui/material';
 import { TrendingUp, AccountBalance, Add as AddIcon, MonetizationOn, Receipt } from '@mui/icons-material';
+import { useFund } from '../hooks/useFunds';
+import { useCreateFundEvent, useCreateTaxStatement } from '../hooks/useFunds';
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -92,7 +94,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   const [distributionType, setDistributionType] = useState<string>('');
   const [subDistributionType, setSubDistributionType] = useState<string>('');
   const [formData, setFormData] = useState<any>({});
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -103,7 +104,45 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   const [financialYears, setFinancialYears] = useState<string[]>([]);
   const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+  // Centralized API hooks
+  const { data: fundData, loading: fundLoading, error: fundError } = useFund(fundId);
+  const createFundEvent = useCreateFundEvent(fundId);
+  const createTaxStatement = useCreateTaxStatement(fundId);
+
+  // Handle errors and success from hooks
+  useEffect(() => {
+    if (createFundEvent.error) {
+      setError(createFundEvent.error);
+    }
+  }, [createFundEvent.error]);
+
+  useEffect(() => {
+    if (createTaxStatement.error) {
+      setError(createTaxStatement.error);
+    }
+  }, [createTaxStatement.error]);
+
+  useEffect(() => {
+    if (createFundEvent.data) {
+      setSuccess(true);
+      setTimeout(() => {
+        resetForm();
+        onEventCreated();
+        onClose();
+      }, 1000);
+    }
+  }, [createFundEvent.data, onEventCreated, onClose]);
+
+  useEffect(() => {
+    if (createTaxStatement.data) {
+      setSuccess(true);
+      setTimeout(() => {
+        resetForm();
+        onEventCreated();
+        onClose();
+      }, 1000);
+    }
+  }, [createTaxStatement.data, onEventCreated, onClose]);
 
   useEffect(() => {
     if (open) {
@@ -115,7 +154,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       setFormData({ event_date: new Date().toISOString().slice(0, 10) });
       setError(null);
       setSuccess(false);
-      setSubmitting(false);
       setValidationErrors({});
     }
   }, [open]);
@@ -127,32 +165,21 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     }
   }, [open, formData.event_date]);
 
-  // Fetch fund details when modal opens
+  // Process fund data when it loads
   useEffect(() => {
-    if (open && fundId) {
-      const fetchFundDetails = async () => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}`);
-          if (response.ok) {
-            const fundData = await response.json();
-            setFundEntity(fundData.fund.entity);
-            
-            // Generate financial years from fund start to current year
-            const currentYear = new Date().getFullYear();
-            const fundStartYear = fundData.fund.start_date ? new Date(fundData.fund.start_date).getFullYear() : currentYear - 5;
-            const years = [];
-            for (let year = fundStartYear; year <= currentYear; year++) {
-              years.push(`${year}-${(year + 1).toString().slice(-2)}`);
-            }
-            setFinancialYears(years);
-          }
-        } catch (error) {
-          console.error('Error fetching fund details:', error);
-        }
-      };
-      fetchFundDetails();
+    if (fundData && open) {
+      setFundEntity(fundData.entity);
+      
+      // Generate financial years from fund creation to current year
+      const currentYear = new Date().getFullYear();
+      const fundStartYear = fundData.created_at ? new Date(fundData.created_at).getFullYear() : currentYear - 5;
+      const years = [];
+      for (let year = fundStartYear; year <= currentYear; year++) {
+        years.push(`${year}-${(year + 1).toString().slice(-2)}`);
+      }
+      setFinancialYears(years);
     }
-  }, [open, fundId, API_BASE_URL]);
+  }, [fundData, open]);
 
   // Calculate tax payment date (last day of financial year)
   const calculateTaxPaymentDate = (financialYear: string): string => {
@@ -231,7 +258,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   };
 
   const handleClose = () => {
-    if (!submitting) {
+    if (!createFundEvent.loading && !createTaxStatement.loading) {
       resetForm();
       onClose();
     }
@@ -493,9 +520,8 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       setError('Please fill in all required fields.');
       return;
     }
-    setSubmitting(true);
-    try {
-      const payload: any = {
+    
+    const payload: any = {
         event_type: eventType,
         event_date: formData.event_date,
         description: formData.description,
@@ -573,49 +599,14 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         
         console.log('DEBUG: Sending tax statement payload:', taxStatementPayload);
         
-        const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}/tax-statements`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(taxStatementPayload),
-        });
-        
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Failed to create tax statement');
-        }
-        
-        setSuccess(true);
-        setTimeout(() => {
-          resetForm();
-          onEventCreated();
-          onClose();
-        }, 1000);
-        return;
-      }
-      
-      // Debug: Log the payload being sent
-      console.log('DEBUG: Sending payload:', payload);
-      
-      const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Failed to create event');
-      }
-      setSuccess(true);
-      setTimeout(() => {
-        resetForm();
-        onEventCreated();
-        onClose();
-      }, 1000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create event');
-    } finally {
-      setSubmitting(false);
+              await createTaxStatement.mutate(taxStatementPayload);
+      return;
     }
+    
+    // Debug: Log the payload being sent
+    console.log('DEBUG: Sending payload:', payload);
+    
+    await createFundEvent.mutate(payload);
   };
 
   // UI rendering
@@ -1249,16 +1240,16 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
+        <Button onClick={onClose} disabled={createFundEvent.loading || createTaxStatement.loading}>
           Cancel
         </Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
-          disabled={submitting || !isFormValid}
-          startIcon={submitting ? <CircularProgress size={20} /> : null}
+          disabled={createFundEvent.loading || createTaxStatement.loading || !isFormValid}
+          startIcon={(createFundEvent.loading || createTaxStatement.loading) ? <CircularProgress size={20} /> : null}
         >
-          {submitting ? 'Adding Event...' : 'Add Event'}
+          {(createFundEvent.loading || createTaxStatement.loading) ? 'Adding Event...' : 'Add Event'}
         </Button>
       </DialogActions>
     </Dialog>

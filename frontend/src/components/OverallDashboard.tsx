@@ -30,53 +30,19 @@ import {
 import { useNavigate } from 'react-router-dom';
 import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
+import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
 
-interface InvestmentCompany {
-  id: number;
-  name: string;
-  description: string;
-  website: string;
-  contact_email: string;
-  fund_count: number;
-  active_funds: number;
-  total_equity_balance: number;
-  created_at: string;
-  updated_at: string;
-}
+
 
 const OverallDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [companies, setCompanies] = useState<InvestmentCompany[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showEntityModal, setShowEntityModal] = useState(false);
   const [showCompanyModal, setShowCompanyModal] = useState(false);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+  // Centralized API hook
+  const { data: companies, loading, error, refetch } = useInvestmentCompanies();
 
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        setLoading(true);
-        setError(null);
 
-        const response = await fetch(`${API_BASE_URL}/api/investment-companies`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch investment companies');
-        }
-
-        const data = await response.json();
-        setCompanies(data.companies);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCompanies();
-  }, [API_BASE_URL]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AU', {
@@ -103,8 +69,8 @@ const OverallDashboard: React.FC = () => {
   };
 
   const handleCompanyCreated = (company: { id: number; name: string }) => {
-    // Refresh the companies list
-    window.location.reload();
+    // Refresh the companies list using the centralized hook
+    refetch();
   };
 
   if (loading) {
@@ -206,7 +172,7 @@ const OverallDashboard: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {companies.map((company) => (
+                {companies?.map((company) => (
                   <TableRow key={company.id}>
                     <TableCell>
                       <Box>
@@ -241,14 +207,14 @@ const OverallDashboard: React.FC = () => {
                     </TableCell>
                     <TableCell align="right">
                       <Chip
-                        label={`${company.active_funds} active`}
+                        label={`${company.active_funds || 0} active`}
                         size="small"
-                        color={company.active_funds > 0 ? 'success' : 'default'}
+                        color={(company.active_funds || 0) > 0 ? 'success' : 'default'}
                       />
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" fontWeight="bold">
-                        {formatCurrency(company.total_equity_balance)}
+                        {formatCurrency(company.total_equity_balance || 0)}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
@@ -267,7 +233,7 @@ const OverallDashboard: React.FC = () => {
       </Card>
 
       {/* Summary Cards */}
-      {companies.length > 0 && (
+      {companies && companies.length > 0 && (
         <Box 
           display="flex" 
           flexWrap="wrap" 
@@ -305,7 +271,7 @@ const OverallDashboard: React.FC = () => {
                     Total Funds
                   </Typography>
                   <Typography variant="h5">
-                    {companies.reduce((sum, company) => sum + company.fund_count, 0)}
+                    {companies?.reduce((sum, company) => sum + (company.fund_count || 0), 0) || 0}
                   </Typography>
                 </Box>
               </Box>
@@ -321,7 +287,7 @@ const OverallDashboard: React.FC = () => {
                     Active Funds
                   </Typography>
                   <Typography variant="h5">
-                    {companies.reduce((sum, company) => sum + company.active_funds, 0)}
+                    {companies?.reduce((sum, company) => sum + (company.active_funds || 0), 0) || 0}
                   </Typography>
                 </Box>
               </Box>
@@ -337,7 +303,7 @@ const OverallDashboard: React.FC = () => {
                     Total Equity
                   </Typography>
                   <Typography variant="h5">
-                    {formatCurrency(companies.reduce((sum, company) => sum + company.total_equity_balance, 0))}
+                    {formatCurrency(companies?.reduce((sum, company) => sum + (company.total_equity_balance || 0), 0) || 0)}
                   </Typography>
                 </Box>
               </Box>

@@ -18,6 +18,7 @@ import {
   Paper
 } from '@mui/material';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon } from '@mui/icons-material';
+import { useCreateEntity } from '../hooks/useEntities';
 
 interface CreateEntityModalProps {
   open: boolean;
@@ -36,7 +37,6 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   onClose,
   onEntityCreated
 }) => {
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -48,7 +48,35 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     tax_jurisdiction: 'AU'
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+  // Centralized API hook
+  const createEntity = useCreateEntity();
+
+  // Handle errors and success from hooks
+  useEffect(() => {
+    if (createEntity.error) {
+      setError(createEntity.error);
+    }
+  }, [createEntity.error]);
+
+  useEffect(() => {
+    if (createEntity.data) {
+      setSuccess(true);
+      setTimeout(() => {
+        onEntityCreated({
+          id: createEntity.data!.id,
+          name: createEntity.data!.name
+        });
+        onClose();
+        setSuccess(false);
+        setFormData({
+          name: '',
+          description: '',
+          tax_jurisdiction: 'AU'
+        });
+        setValidationErrors({});
+      }, 2000);
+    }
+  }, [createEntity.data, onEntityCreated, onClose]);
 
   // Validation rules
   const validateField = (field: string, value: string): string | undefined => {
@@ -114,54 +142,17 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       return;
     }
 
-    try {
-      setSubmitting(true);
-      setError(null);
+    const payload = {
+      name: formData.name.trim(),
+      description: formData.description.trim() || '',
+      tax_jurisdiction: formData.tax_jurisdiction
+    };
 
-      const response = await fetch(`${API_BASE_URL}/api/entities`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          description: formData.description.trim() || '',
-          tax_jurisdiction: formData.tax_jurisdiction
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create entity');
-      }
-
-      const entityData = await response.json();
-      
-      setSuccess(true);
-      setTimeout(() => {
-        onEntityCreated({
-          id: entityData.id,
-          name: entityData.name
-        });
-        onClose();
-        setSuccess(false);
-        setFormData({
-          name: '',
-          description: '',
-          tax_jurisdiction: 'AU'
-        });
-        setValidationErrors({});
-      }, 2000);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setSubmitting(false);
-    }
+    await createEntity.mutate(payload);
   };
 
   const handleClose = () => {
-    if (!submitting) {
+    if (!createEntity.loading) {
       onClose();
       setError(null);
       setSuccess(false);
@@ -193,7 +184,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
             <AddIcon sx={{ mr: 1, color: 'primary.main' }} />
             <Typography variant="h6">Create New Entity</Typography>
           </Box>
-          {submitting && (
+          {createEntity.loading && (
             <Box display="flex" alignItems="center">
               <CircularProgress size={20} sx={{ mr: 1 }} />
               <Typography variant="body2" color="text.secondary">
@@ -290,7 +281,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button 
           onClick={handleClose} 
-          disabled={submitting}
+          disabled={createEntity.loading}
           variant="outlined"
         >
           Cancel
@@ -298,11 +289,11 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={submitting || !isFormValid()}
-          startIcon={submitting ? <CircularProgress size={20} /> : <AddIcon />}
+          disabled={createEntity.loading || !isFormValid()}
+          startIcon={createEntity.loading ? <CircularProgress size={20} /> : <AddIcon />}
           sx={{ minWidth: 120 }}
         >
-          {submitting ? 'Creating...' : 'Create Entity'}
+          {createEntity.loading ? 'Creating...' : 'Create Entity'}
         </Button>
       </DialogActions>
     </Dialog>

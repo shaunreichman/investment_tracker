@@ -18,6 +18,7 @@ import {
   Paper
 } from '@mui/material';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, Business as BusinessIcon } from '@mui/icons-material';
+import { useCreateInvestmentCompany } from '../hooks/useInvestmentCompanies';
 
 interface CreateInvestmentCompanyModalProps {
   open: boolean;
@@ -38,7 +39,6 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
   onClose,
   onCompanyCreated
 }) => {
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -52,7 +52,37 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
     contact_phone: ''
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+  // Centralized API hook
+  const createInvestmentCompany = useCreateInvestmentCompany();
+
+  // Handle errors and success from hooks
+  useEffect(() => {
+    if (createInvestmentCompany.error) {
+      setError(createInvestmentCompany.error);
+    }
+  }, [createInvestmentCompany.error]);
+
+  useEffect(() => {
+    if (createInvestmentCompany.data) {
+      setSuccess(true);
+      setTimeout(() => {
+        onCompanyCreated({
+          id: createInvestmentCompany.data!.id,
+          name: createInvestmentCompany.data!.name
+        });
+        onClose();
+        setSuccess(false);
+        setFormData({
+          name: '',
+          description: '',
+          website: '',
+          contact_email: '',
+          contact_phone: ''
+        });
+        setValidationErrors({});
+      }, 2000);
+    }
+  }, [createInvestmentCompany.data, onCompanyCreated, onClose]);
 
   // Validation rules
   const validateField = (field: string, value: string): string | undefined => {
@@ -154,58 +184,19 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
       return;
     }
 
-    try {
-      setSubmitting(true);
-      setError(null);
+    const payload = {
+      name: formData.name.trim(),
+      description: formData.description.trim() || '',
+      website: formData.website.trim() || '',
+      contact_email: formData.contact_email.trim() || '',
+      contact_phone: formData.contact_phone.trim() || ''
+    };
 
-      const response = await fetch(`${API_BASE_URL}/api/investment-companies`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          description: formData.description.trim() || '',
-          website: formData.website.trim() || '',
-          contact_email: formData.contact_email.trim() || '',
-          contact_phone: formData.contact_phone.trim() || ''
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create investment company');
-      }
-
-      const companyData = await response.json();
-      
-      setSuccess(true);
-      setTimeout(() => {
-        onCompanyCreated({
-          id: companyData.id,
-          name: companyData.name
-        });
-        onClose();
-        setSuccess(false);
-        setFormData({
-          name: '',
-          description: '',
-          website: '',
-          contact_email: '',
-          contact_phone: ''
-        });
-        setValidationErrors({});
-      }, 2000);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setSubmitting(false);
-    }
+    await createInvestmentCompany.mutate(payload);
   };
 
   const handleClose = () => {
-    if (!submitting) {
+    if (!createInvestmentCompany.loading) {
       onClose();
       setError(null);
       setSuccess(false);
@@ -240,7 +231,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
             <BusinessIcon sx={{ mr: 1, color: 'primary.main' }} />
             <Typography variant="h6">Create New Investment Company</Typography>
           </Box>
-          {submitting && (
+          {createInvestmentCompany.loading && (
             <Box display="flex" alignItems="center">
               <CircularProgress size={20} sx={{ mr: 1 }} />
               <Typography variant="body2" color="text.secondary">
@@ -357,7 +348,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button 
           onClick={handleClose} 
-          disabled={submitting}
+          disabled={createInvestmentCompany.loading}
           variant="outlined"
         >
           Cancel
@@ -365,11 +356,11 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={submitting || !isFormValid()}
-          startIcon={submitting ? <CircularProgress size={20} /> : <AddIcon />}
+          disabled={createInvestmentCompany.loading || !isFormValid()}
+          startIcon={createInvestmentCompany.loading ? <CircularProgress size={20} /> : <AddIcon />}
           sx={{ minWidth: 120 }}
         >
-          {submitting ? 'Creating...' : 'Create Company'}
+          {createInvestmentCompany.loading ? 'Creating...' : 'Create Company'}
         </Button>
       </DialogActions>
     </Dialog>

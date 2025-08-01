@@ -19,6 +19,8 @@ from src.entity.models import Entity
 from src.fund.models import Fund, FundEvent, FundType, EventType
 from src.tax.models import TaxStatement
 from src.shared.base import Base
+from src.fund.models import DistributionType
+from datetime import date, timedelta
 
 
 def init_database():
@@ -71,315 +73,177 @@ def main():
 
 
 def add_sample_data_to_database():
-    """Add sample data to the database for testing."""
-    from database import get_database_session
-    from datetime import datetime, date, timedelta
-    
-    print("\nAdding sample data...")
+    """Add sample data to the database using domain methods."""
+    print("Adding sample data to database...")
     
     # Get database session
+    from database import get_database_session
     engine, session_factory, scoped_session = get_database_session()
     session = scoped_session()
     
     try:
-        # Create sample entities
-        entity1 = Entity(name="Shaun Reichman", description="Individual investor")
-        entity2 = Entity(name="ShaRei Investments", description="Family investment company")
-        session.add_all([entity1, entity2])
-        session.commit()
+        # Create sample entities using domain methods
+        entity1 = Entity.create(
+            name="Shaun Reichman", 
+            description="Individual investor",
+            session=session
+        )
+        entity2 = Entity.create(
+            name="ShaRei Investments", 
+            description="Family investment company",
+            session=session
+        )
         
-        # Create sample investment companies
-        company1 = InvestmentCompany(
+        # Create sample investment companies using domain methods
+        company1 = InvestmentCompany.create(
             name="Blackstone Group",
             description="Global alternative asset manager",
             website="https://www.blackstone.com",
-            contact_email="investor.relations@blackstone.com"
+            contact_email="investor.relations@blackstone.com",
+            session=session
         )
-        company2 = InvestmentCompany(
+        company2 = InvestmentCompany.create(
             name="KKR & Co.",
             description="Global investment firm",
             website="https://www.kkr.com",
-            contact_email="investor.relations@kkr.com"
+            contact_email="investor.relations@kkr.com",
+            session=session
         )
-        company3 = InvestmentCompany(
+        company3 = InvestmentCompany.create(
             name="Apollo Global Management",
             description="Alternative investment manager",
             website="https://www.apollo.com",
-            contact_email="investor.relations@apollo.com"
+            contact_email="investor.relations@apollo.com",
+            session=session
         )
-        session.add_all([company1, company2, company3])
-        session.commit()
         
-        # Create sample funds, alternating entities and fund types
-        fund1 = Fund(
-            investment_company_id=company1.id,
-            entity_id=entity1.id,
+        # Create sample funds using domain methods
+        fund1 = company1.create_fund(
+            entity=entity1,
             name="Blackstone Real Estate Partners X",
             fund_type="Real Estate",
-            tracking_type=FundType.NAV_BASED,  # NAV-based fund
-            current_equity_balance=750000.0,
-            average_equity_balance=800000.0,
-            current_units=869565.22,  # NAV-based tracking
-            current_unit_price=0.86,
+            tracking_type=FundType.NAV_BASED,
             expected_irr=15.5,
             expected_duration_months=120,
-            is_active=True,
             currency="USD",
-            description="Real estate private equity fund with NAV tracking"
+            description="Real estate private equity fund with NAV tracking",
+            session=session
         )
-        fund2 = Fund(
-            investment_company_id=company1.id,
-            entity_id=entity2.id,
+        
+        fund2 = company1.create_fund(
+            entity=entity2,
             name="Blackstone Private Equity Fund VIII",
             fund_type="Private Equity",
-            tracking_type=FundType.COST_BASED,  # Cost-based fund
-            current_equity_balance=1800000.0,
-            average_equity_balance=1900000.0,
-            total_cost_basis=1800000.0,  # Cost-based tracking
+            tracking_type=FundType.COST_BASED,
             expected_irr=18.0,
             expected_duration_months=96,
-            is_active=True,
             currency="USD",
-            description="Private equity buyout fund held at cost"
+            description="Private equity buyout fund held at cost",
+            session=session
         )
-        fund3 = Fund(
-            investment_company_id=company2.id,
-            entity_id=entity1.id,
+        
+        fund3 = company2.create_fund(
+            entity=entity1,
             name="KKR Americas XII Fund",
             fund_type="Private Equity",
-            tracking_type=FundType.NAV_BASED,  # NAV-based fund
-            current_equity_balance=1200000.0,
-            average_equity_balance=1300000.0,
-            current_units=277777.78,  # NAV-based tracking
-            current_unit_price=4.32,
+            tracking_type=FundType.NAV_BASED,
             expected_irr=16.5,
             expected_duration_months=108,
-            is_active=True,
             currency="USD",
-            description="North American private equity fund with NAV tracking"
+            description="North American private equity fund with NAV tracking",
+            session=session
         )
-        fund4 = Fund(
-            investment_company_id=company3.id,
-            entity_id=entity2.id,
+        
+        fund4 = company3.create_fund(
+            entity=entity2,
             name="Apollo Investment Fund IX",
             fund_type="Private Equity",
-            tracking_type=FundType.COST_BASED,  # Cost-based fund
-            current_equity_balance=0.0,
-            average_equity_balance=2900000.0,
-            total_cost_basis=3000000.0,  # Cost-based tracking
+            tracking_type=FundType.COST_BASED,
             expected_irr=17.0,
             expected_duration_months=84,
-            is_active=False,  # Fund has been exited
             currency="USD",
-            description="Global private equity fund held at cost (exited)"
+            description="Global private equity fund held at cost (exited)",
+            session=session
         )
-        session.add_all([fund1, fund2, fund3, fund4])
+        
+        # Add sample fund events using domain methods
+        # Note: Calculated fields will be set by the domain methods
+        # We'll add some sample events to demonstrate the system
+        
+        # Add capital call to fund1 (NAV-based)
+        fund1.add_capital_call(
+            amount=1000000.0,
+            date=date(2023, 1, 15),
+            description="Initial capital call",
+            session=session
+        )
+        
+        # Add NAV update to fund1
+        fund1.add_nav_update(
+            nav_per_share=0.86,
+            date=date(2023, 6, 30),
+            description="Q2 NAV update",
+            session=session
+        )
+        
+        # Add capital call to fund2 (cost-based)
+        fund2.add_capital_call(
+            amount=2000000.0,
+            date=date(2023, 2, 1),
+            description="Initial capital call",
+            session=session
+        )
+        
+        # Add distribution to fund2
+        fund2.add_distribution(
+            amount=200000.0,
+            event_date=date(2023, 12, 31),
+            distribution_type=DistributionType.INTEREST,
+            description="Annual interest distribution",
+            session=session
+        )
+        
+        # Add capital call to fund3 (NAV-based)
+        fund3.add_capital_call(
+            amount=1500000.0,
+            date=date(2023, 3, 1),
+            description="Initial capital call",
+            session=session
+        )
+        
+        # Add NAV update to fund3
+        fund3.add_nav_update(
+            nav_per_share=4.32,
+            date=date(2023, 9, 30),
+            description="Q3 NAV update",
+            session=session
+        )
+        
+        # Add capital call to fund4 (cost-based, exited fund)
+        fund4.add_capital_call(
+            amount=3000000.0,
+            date=date(2022, 1, 1),
+            description="Initial capital call",
+            session=session
+        )
+        
+        # Add return of capital to fund4 (exited)
+        fund4.add_return_of_capital(
+            amount=3000000.0,
+            date=date(2023, 12, 31),
+            description="Fund exit - return of all capital",
+            session=session
+        )
+        
         session.commit()
-        
-        # Create sample fund events
-        today = date.today()
-        
-        # Fund 1 events (Blackstone Real Estate - NAV-based)
-        events1 = [
-            FundEvent(
-                fund_id=fund1.id,
-                event_type=EventType.UNIT_PURCHASE,  # NAV-based funds use unit purchases
-                event_date=today - timedelta(days=90),
-                amount=200000.0,
-                units_purchased=232558.14,  # Units purchased
-                unit_price=0.86,
-                description="Initial unit purchase"
-            ),
-            FundEvent(
-                fund_id=fund1.id,
-                event_type=EventType.UNIT_PURCHASE,  # Second purchase
-                event_date=today - timedelta(days=60),
-                amount=150000.0,
-                units_purchased=174418.60,  # Units purchased
-                unit_price=0.86,
-                description="Additional unit purchase"
-            ),
-            FundEvent(
-                fund_id=fund1.id,
-                event_type=EventType.UNIT_SALE,  # Partial sale using FIFO
-                event_date=today - timedelta(days=45),
-                amount=100000.0,
-                units_sold=116279.07,  # Units sold (from first purchase)
-                unit_price=0.86,
-                description="Partial unit sale"
-            ),
-            FundEvent(
-                fund_id=fund1.id,
-                event_type=EventType.NAV_UPDATE,
-                event_date=today - timedelta(days=60),
-                nav_per_share=0.86,
-                shares_owned=869565.22,
-                unit_price=0.86,
-                description="Q3 NAV update"
-            ),
-            FundEvent(
-                fund_id=fund1.id,
-                event_type=EventType.DIVIDEND,
-                event_date=today - timedelta(days=30),
-                amount=25000.0,
-                distribution_type=DistributionType.DIVIDEND,
-                description="Quarterly dividend distribution"
-            ),
-            FundEvent(
-                fund_id=fund1.id,
-                event_type=EventType.INCOME_DISTRIBUTION,
-                event_date=today - timedelta(days=15),
-                amount=15000.0,
-                distribution_type=DistributionType.RENT,
-                description="Rental income distribution"
-            ),
-            FundEvent(
-                fund_id=fund1.id,
-                event_type=EventType.NAV_UPDATE,
-                event_date=today,
-                nav_per_share=0.86,
-                shares_owned=869565.22,
-                unit_price=0.86,
-                description="Q4 NAV update"
-            )
-        ]
-        
-        # Fund 2 events (Blackstone Private Equity - Cost-based)
-        events2 = [
-            FundEvent(
-                fund_id=fund2.id,
-                event_type=EventType.CAPITAL_CALL,  # Cost-based funds use capital calls
-                event_date=today - timedelta(days=120),
-                amount=400000.0,
-                description="Capital call for new investment"
-            ),
-            FundEvent(
-                fund_id=fund2.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=today - timedelta(days=45),
-                amount=150000.0,
-                description="Partial exit from portfolio company"
-            ),
-            FundEvent(
-                fund_id=fund2.id,
-                event_type=EventType.CAPITAL_GAIN_INCOME,
-                event_date=today - timedelta(days=45),
-                amount=50000.0,
-                description="Capital gains income from exit"
-            ),
-            FundEvent(
-                fund_id=fund2.id,
-                event_type=EventType.MANAGEMENT_FEE,
-                event_date=today - timedelta(days=30),
-                amount=-20000.0,
-                description="Annual management fee"
-            )
-        ]
-        
-        # Fund 3 events (KKR - NAV-based)
-        events3 = [
-            FundEvent(
-                fund_id=fund3.id,
-                event_type=EventType.UNIT_PURCHASE,  # NAV-based funds use unit purchases
-                event_date=today - timedelta(days=75),
-                amount=300000.0,
-                units_purchased=69444.44,  # Units purchased
-                unit_price=4.32,
-                description="Initial unit purchase"
-            ),
-            FundEvent(
-                fund_id=fund3.id,
-                event_type=EventType.UNIT_PURCHASE,  # Second purchase
-                event_date=today - timedelta(days=50),
-                amount=200000.0,
-                units_purchased=46296.30,  # Units purchased
-                unit_price=4.32,
-                description="Additional unit purchase"
-            ),
-            FundEvent(
-                fund_id=fund3.id,
-                event_type=EventType.UNIT_SALE,  # Partial sale using FIFO
-                event_date=today - timedelta(days=25),
-                amount=150000.0,
-                units_sold=34722.22,  # Units sold (from first purchase)
-                unit_price=4.32,
-                description="Partial unit sale"
-            ),
-            FundEvent(
-                fund_id=fund3.id,
-                event_type=EventType.INCOME_DISTRIBUTION,
-                event_date=today - timedelta(days=45),
-                amount=20000.0,
-                distribution_type=DistributionType.INTEREST,
-                description="Interest income distribution"
-            ),
-            FundEvent(
-                fund_id=fund3.id,
-                event_type=EventType.MANAGEMENT_FEE,
-                event_date=today - timedelta(days=30),
-                amount=-15000.0,
-                description="Annual management fee"
-            ),
-            FundEvent(
-                fund_id=fund3.id,
-                event_type=EventType.NAV_UPDATE,
-                event_date=today,
-                nav_per_share=4.32,
-                shares_owned=277777.78,
-                unit_price=4.32,
-                description="First NAV update"
-            )
-        ]
-        
-        # Fund 4 events (Apollo - Cost-based, exited)
-        events4 = [
-            FundEvent(
-                fund_id=fund4.id,
-                event_type=EventType.CAPITAL_GAIN_INCOME,
-                event_date=today - timedelta(days=60),
-                amount=200000.0,
-                description="Capital gains income from exit"
-            ),
-            FundEvent(
-                fund_id=fund4.id,
-                event_type=EventType.CARRIED_INTEREST,
-                event_date=today - timedelta(days=60),
-                amount=-40000.0,
-                description="Carried interest on distribution"
-            ),
-            FundEvent(
-                fund_id=fund4.id,
-                event_type=EventType.RETURN_OF_CAPITAL,
-                event_date=today - timedelta(days=30),
-                amount=2760000.0,  # Final capital return
-                description="Final exit - remaining capital returned"
-            )
-        ]
-        
-        all_events = events1 + events2 + events3 + events4
-        session.add_all(all_events)
-        session.commit()
-        
         print("Sample data added successfully!")
-        print(f"- Created {session.query(InvestmentCompany).count()} investment companies")
-        print(f"- Created {session.query(Fund).count()} funds")
-        print(f"- Created {session.query(FundEvent).count()} fund events")
-        
-        # Show summary
-        print("\nSample data summary:")
-        for company in session.query(InvestmentCompany).all():
-            print(f"\n{company.name}:")
-            for fund in company.funds:
-                print(f"  - {fund.name} (${fund.commitment_amount:,.0f} commitment)")
-                event_count = len(fund.fund_events)
-                print(f"    {event_count} events, Current NAV: ${fund.current_equity_balance:,.0f}")
         
     except Exception as e:
-        print(f"Error adding sample data: {e}")
         session.rollback()
+        print(f"Error adding sample data: {e}")
+        raise
     finally:
         session.close()
-        scoped_session.remove()
 
 
 if __name__ == "__main__":

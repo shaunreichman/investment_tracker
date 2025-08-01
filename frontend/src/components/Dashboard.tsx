@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Card,
@@ -26,41 +26,8 @@ import {
   Business
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-
-interface PortfolioSummary {
-  total_funds: number;
-  active_funds: number;
-  total_equity_balance: number;
-  total_average_equity_balance: number;
-  recent_events_count: number;
-  total_tax_statements: number;
-  last_updated: string;
-}
-
-interface Fund {
-  id: number;
-  name: string;
-  fund_type: string;
-  tracking_type: string;
-  currency: string;
-  current_equity_balance: number;
-  average_equity_balance: number;
-  is_active: boolean;
-  investment_company: string;
-  entity: string;
-  recent_events_count: number;
-  created_at: string;
-}
-
-interface FundEvent {
-  id: number;
-  fund_name: string;
-  event_type: string;
-  event_date: string;
-  amount: number | null;
-  description: string;
-  reference_number: string;
-}
+import { useDashboardData } from '../hooks/useDashboard';
+import { PortfolioSummary, Fund, FundEvent } from '../types/api';
 
 interface PerformanceData {
   fund_id: number;
@@ -73,53 +40,7 @@ interface PerformanceData {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
-  const [funds, setFunds] = useState<Fund[]>([]);
-  const [recentEvents, setRecentEvents] = useState<FundEvent[]>([]);
-  const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch all dashboard data in parallel
-        const [summaryRes, fundsRes, eventsRes, performanceRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/dashboard/portfolio-summary`),
-          fetch(`${API_BASE_URL}/api/dashboard/funds`),
-          fetch(`${API_BASE_URL}/api/dashboard/recent-events`),
-          fetch(`${API_BASE_URL}/api/dashboard/performance`)
-        ]);
-
-        if (!summaryRes.ok || !fundsRes.ok || !eventsRes.ok || !performanceRes.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-
-        const [summary, fundsData, eventsData, performanceData] = await Promise.all([
-          summaryRes.json(),
-          fundsRes.json(),
-          eventsRes.json(),
-          performanceRes.json()
-        ]);
-
-        setPortfolioSummary(summary);
-        setFunds(fundsData.funds);
-        setRecentEvents(eventsData.events);
-        setPerformanceData(performanceData.performance);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [API_BASE_URL]);
+  const { data: dashboardData, loading, error } = useDashboardData();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AU', {
@@ -170,6 +91,12 @@ const Dashboard: React.FC = () => {
       </Box>
     );
   }
+
+  // Extract data from dashboardData
+  const portfolioSummary = dashboardData?.portfolio_summary;
+  const funds = dashboardData?.funds || [];
+  const recentEvents = dashboardData?.recent_events || [];
+  const performanceData = dashboardData?.performance || [];
 
   return (
     <Box p={3}>
@@ -291,7 +218,7 @@ const Dashboard: React.FC = () => {
                               {fund.name}
                             </Link>
                             <Typography variant="caption" color="textSecondary">
-                              {fund.investment_company}
+                              {String(fund.investment_company) || 'Unknown Company'}
                             </Typography>
                           </Box>
                         </TableCell>
@@ -334,7 +261,7 @@ const Dashboard: React.FC = () => {
                 {recentEvents.map((event) => (
                   <Box key={event.id} mb={2}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="subtitle2">{event.fund_name}</Typography>
+                      <Typography variant="subtitle2">Fund Event</Typography>
                       <Chip
                         label={event.event_type}
                         size="small"
@@ -372,7 +299,7 @@ const Dashboard: React.FC = () => {
               Performance Summary
             </Typography>
             <Box display="flex" gap={2} flexWrap="wrap">
-              {performanceData.map((fund) => (
+              {performanceData.map((fund: PerformanceData) => (
                 <Card key={fund.fund_name} variant="outlined" sx={{ flex: '1 1 300px', minWidth: '300px' }}>
                   <CardContent>
                     <Link

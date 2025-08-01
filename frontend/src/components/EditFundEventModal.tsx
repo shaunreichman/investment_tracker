@@ -17,35 +17,15 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { MonetizationOn } from '@mui/icons-material';
-
-interface FundEvent {
-  id: number;
-  event_type: string;
-  event_date: string;
-  amount: number | null;
-  description: string | null;
-  reference_number: string | null;
-  distribution_type: string | null;
-  tax_payment_type: string | null;
-  units_purchased: number | null;
-  units_sold: number | null;
-  unit_price: number | null;
-  nav_per_share: number | null;
-  brokerage_fee: number | null;
-  // Interest distribution fields
-  net_interest?: number | null;
-  withholding_amount?: number | null;
-  withholding_rate?: number | null;
-  // Withholding tax context (added by parent component)
-  has_withholding_tax?: boolean;
-}
+import { useUpdateFundEvent } from '../hooks/useFunds';
+import { ExtendedFundEvent } from '../types/api';
 
 interface EditFundEventModalProps {
   open: boolean;
   onClose: () => void;
   onEventUpdated: () => void;
   fundId: number;
-  event: FundEvent | null;
+  event: ExtendedFundEvent | null;
 }
 
 interface ValidationErrors {
@@ -71,7 +51,6 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   event 
 }) => {
   const [formData, setFormData] = useState<any>({});
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -82,8 +61,25 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   // Add state to track focus for Amount field
   const [amountFocused, setAmountFocused] = useState(false);
 
+  // Centralized API hook
+  const updateFundEvent = useUpdateFundEvent(fundId, event?.id || 0);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+  // Handle errors and success from hooks
+  useEffect(() => {
+    if (updateFundEvent.error) {
+      setError(updateFundEvent.error);
+    }
+  }, [updateFundEvent.error]);
+
+  useEffect(() => {
+    if (updateFundEvent.data) {
+      setSuccess(true);
+      setTimeout(() => {
+        onEventUpdated();
+        onClose();
+      }, 1000);
+    }
+  }, [updateFundEvent.data, onEventUpdated, onClose]);
 
   useEffect(() => {
     if (open && event) {
@@ -94,7 +90,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
         withholding_rate: event.withholding_rate?.toString() || '',
       };
       
-      if (event.event_type === 'DISTRIBUTION' && (event.distribution_type === 'interest' || event.distribution_type === 'INTEREST')) {
+      if (event.event_type === 'DISTRIBUTION' && event.distribution_type === 'INTEREST') {
         // Check if there's a NON_RESIDENT_INTEREST_WITHHOLDING tax event on the same date
         const hasWithholdingTax = event.has_withholding_tax || false;
         
@@ -128,7 +124,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       });
       
               // Set interest type based on whether withholding fields are populated
-        if (event.event_type === 'DISTRIBUTION' && (event.distribution_type === 'interest' || event.distribution_type === 'INTEREST')) {
+        if (event.event_type === 'DISTRIBUTION' && event.distribution_type === 'INTEREST') {
           if (withholdingData.withholding_amount || withholdingData.withholding_rate || withholdingData.net_interest) {
             setInterestType('withholding');
             
@@ -160,7 +156,6 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       
       setError(null);
       setSuccess(false);
-      setSubmitting(false);
       setValidationErrors({});
     }
   }, [open, event]);
@@ -371,7 +366,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       const newData = { ...prev, [field]: processedValue };
       
       // For withholding interest events, clear calculated fields when user changes input fields
-      if (event?.event_type === 'DISTRIBUTION' && (event?.distribution_type === 'interest' || event?.distribution_type === 'INTEREST') && interestType === 'withholding') {
+      if (event?.event_type === 'DISTRIBUTION' && event?.distribution_type === 'INTEREST' && interestType === 'withholding') {
         // If user changes gross_interest, clear net_interest
         if (field === 'gross_interest') {
           newData.net_interest = '';
@@ -397,11 +392,9 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   const handleSubmit = async () => {
     if (!validateForm() || !event) return;
 
-    setSubmitting(true);
     setError(null);
 
-    try {
-      const payload: any = {};
+    const payload: any = {};
 
       // Add fields based on event type
       if (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL') {
@@ -471,30 +464,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
         }
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}/events/${event.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      setSuccess(true);
-      setTimeout(() => {
-        onEventUpdated();
-        onClose();
-      }, 1000);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setSubmitting(false);
-    }
+      await updateFundEvent.mutate(payload);
   };
 
   const getEventTypeLabel = (eventType: string): string => {
@@ -549,7 +519,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
 
         <Box sx={{ mt: 2 }}>
           {/* Interest Type Selection (for Interest Distribution events) */}
-          {event?.event_type === 'DISTRIBUTION' && (event?.distribution_type === 'interest' || event?.distribution_type === 'INTEREST') && (
+          {event?.event_type === 'DISTRIBUTION' && event?.distribution_type === 'INTEREST' && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 Interest Type
@@ -837,15 +807,15 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
+        <Button onClick={onClose} disabled={updateFundEvent.loading}>
           Cancel
         </Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
-          disabled={!isFormValid || submitting}
+          disabled={!isFormValid || updateFundEvent.loading}
         >
-          {submitting ? <CircularProgress size={20} /> : 'Update Event'}
+          {updateFundEvent.loading ? <CircularProgress size={20} /> : 'Update Event'}
         </Button>
       </DialogActions>
     </Dialog>
