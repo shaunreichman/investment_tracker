@@ -3,6 +3,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../services/api';
+import { useErrorHandler } from './useErrorHandler';
+import { ErrorInfo } from '../types/errors';
 
 // ============================================================================
 // TYPES
@@ -11,7 +13,7 @@ import { apiClient } from '../services/api';
 export interface ApiCallState<T> {
   data: T | null;
   loading: boolean;
-  error: string | null;
+  error: ErrorInfo | null;
 }
 
 export interface ApiCallOptions {
@@ -28,11 +30,11 @@ export function useApiCall<T>(
   apiCall: () => Promise<T>,
   options: ApiCallOptions = {}
 ): ApiCallState<T> & { refetch: () => Promise<void> } {
-  const [state, setState] = useState<ApiCallState<T>>({
-    data: null,
-    loading: true,
-    error: null,
-  });
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Use centralized error handler
+  const { error, setError, clearError, withErrorHandling } = useErrorHandler();
 
   const { enabled = true, refetchOnWindowFocus = false, refetchInterval } = options;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,23 +59,19 @@ export function useApiCall<T>(
   // Main API call function
   const executeApiCall = useCallback(async () => {
     if (!enabled) {
-      setState(prev => ({ ...prev, loading: false }));
+      setLoading(false);
       return;
     }
 
-    try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
+    const result = await withErrorHandling(async () => {
+      setLoading(true);
       const data = await apiCallRef.current();
-      
-      setState({ data, loading: false, error: null });
-    } catch (error) {
-      setState({
-        data: null,
-        loading: false,
-        error: error instanceof Error ? error.message : 'An error occurred',
-      });
-    }
-  }, [enabled]);
+      setData(data);
+      return data;
+    });
+
+    setLoading(false);
+  }, [enabled, withErrorHandling]);
 
   // Initial API call
   useEffect(() => {
@@ -113,7 +111,9 @@ export function useApiCall<T>(
   }, [executeApiCall]);
 
   return {
-    ...state,
+    data,
+    loading,
+    error,
     refetch,
   };
 }
@@ -125,42 +125,41 @@ export function useApiCall<T>(
 export interface MutationState<T> {
   data: T | null;
   loading: boolean;
-  error: string | null;
+  error: ErrorInfo | null;
 }
 
 export function useMutation<T, R>(
   mutationFn: (data: T) => Promise<R>,
   options: {
     onSuccess?: (data: R) => void;
-    onError?: (error: string) => void;
+    onError?: (error: ErrorInfo) => void;
   } = {}
 ): MutationState<R> & { mutate: (data: T) => Promise<R | undefined> } {
-  const [state, setState] = useState<MutationState<R>>({
-    data: null,
-    loading: false,
-    error: null,
-  });
+  const [data, setData] = useState<R | null>(null);
+  const [loading, setLoading] = useState(false);
+  
+  // Use centralized error handler
+  const { error, setError, clearError, withErrorHandling } = useErrorHandler();
 
   const { onSuccess, onError } = options;
 
   const mutate = useCallback(async (data: T): Promise<R | undefined> => {
-    try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
+    const result = await withErrorHandling(async () => {
+      setLoading(true);
       const result = await mutationFn(data);
-      
-      setState({ data: result, loading: false, error: null });
+      setData(result);
       onSuccess?.(result);
       return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-      setState({ data: null, loading: false, error: errorMessage });
-      onError?.(errorMessage);
-      throw error;
-    }
-  }, [mutationFn, onSuccess, onError]);
+    }, { clearOnStart: true });
+
+    setLoading(false);
+    return result || undefined;
+  }, [mutationFn, onSuccess, withErrorHandling]);
 
   return {
-    ...state,
+    data,
+    loading,
+    error,
     mutate,
   };
 }
@@ -188,4 +187,5 @@ export function useApiCallWithDeps<T, D extends readonly any[]>(
   return useApiCall(memoizedApiCall, options);
 }
 
+// All types are already exported above 
 // All types are already exported above 
