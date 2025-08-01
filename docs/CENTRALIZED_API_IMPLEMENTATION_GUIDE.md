@@ -284,11 +284,11 @@ This guide provides a step-by-step approach to implement professional-grade cent
 - [x] Implement proper TypeScript type coercion for API data
 
 #### Phase 3: Event Operations Migration
-- [ ] Replace create event with `useCreateFundEvent(fundId)` hook
-- [ ] Replace update event with `useUpdateFundEvent(fundId, eventId)` hook
-- [ ] Replace delete event with `useDeleteFundEvent(fundId, eventId)` hook
-- [ ] Update success/error handling to use centralized patterns
-- [ ] Implement proper form data transformation for API requests
+- [x] Replace create event with `useCreateFundEvent(fundId)` hook
+- [x] Replace update event with `useUpdateFundEvent(fundId, eventId)` hook
+- [x] Replace delete event with `useDeleteFundEvent(fundId, eventId)` hook
+- [x] Update success/error handling to use centralized patterns
+- [x] Implement proper form data transformation for API requests
 
 #### Phase 4: UI State Management & Error Handling
 - [ ] Update loading states to use hook loading states

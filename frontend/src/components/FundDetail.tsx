@@ -39,7 +39,7 @@ import {
   EventType,
   FundType
 } from '../types/api';
-import { useFundDetail } from '../hooks/useFunds';
+import { useFundDetail, useDeleteFundEvent, useCreateFundEvent, useUpdateFundEvent } from '../hooks/useFunds';
 
 const FundDetail: React.FC = () => {
   const { fundId } = useParams<{ fundId: string }>();
@@ -54,6 +54,9 @@ const FundDetail: React.FC = () => {
 
   // Centralized API hooks
   const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
+  const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
+  const createFundEvent = useCreateFundEvent(Number(fundId));
+  const updateFundEvent = useUpdateFundEvent(Number(fundId), selectedEvent?.id || 0);
 
   const formatCurrency = (amount: number | null, currency: string = 'AUD') => {
     if (amount === null) return '-';
@@ -165,16 +168,8 @@ const FundDetail: React.FC = () => {
 
     setDeletingEvent(true);
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
-      const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}/events/${selectedEvent.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
+      await deleteFundEvent.mutate();
+      
       // Refresh the fund data using centralized hook
       refetch();
       setDeleteDialogOpen(false);
