@@ -10,6 +10,7 @@ import {
   Entity,
   PortfolioSummary,
   DashboardData,
+  FundDetailData,
   
   // Request/response data types
   CreateFundData,
@@ -125,6 +126,10 @@ class ApiClient {
   async getFund(id: number): Promise<Fund> {
     const response = await this.request<{ fund: Fund; events: FundEvent[]; tax_statements: TaxStatement[]; statistics: any }>(`/api/funds/${id}`);
     return response.fund;
+  }
+
+  async getFundDetail(id: number): Promise<FundDetailData> {
+    return this.request<FundDetailData>(`/api/funds/${id}`);
   }
 
   async createFund(data: CreateFundData): Promise<Fund> {

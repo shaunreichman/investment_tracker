@@ -39,13 +39,11 @@ import {
   EventType,
   FundType
 } from '../types/api';
+import { useFundDetail } from '../hooks/useFunds';
 
 const FundDetail: React.FC = () => {
   const { fundId } = useParams<{ fundId: string }>();
   const navigate = useNavigate();
-  const [fundData, setFundData] = useState<FundDetailData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showTaxEvents, setShowTaxEvents] = useState(true);
   const [showNavUpdates, setShowNavUpdates] = useState(true);
   const [eventModalOpen, setEventModalOpen] = useState(false);
@@ -54,32 +52,8 @@ const FundDetail: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<ExtendedFundEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
 
-  useEffect(() => {
-    const fetchFundDetail = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
-        const response = await fetch(`${API_BASE_URL}/api/funds/${fundId}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setFundData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch fund details');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (fundId) {
-      fetchFundDetail();
-    }
-  }, [fundId]);
+  // Centralized API hooks
+  const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
 
   const formatCurrency = (amount: number | null, currency: string = 'AUD') => {
     if (amount === null) return '-';
@@ -152,31 +126,13 @@ const FundDetail: React.FC = () => {
 
   // Add this function to refresh events after event creation
   const handleEventCreated = () => {
-    // Re-fetch fund details (including events)
-    if (fundId) {
-      setLoading(true);
-      setError(null);
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
-      fetch(`${API_BASE_URL}/api/funds/${fundId}`)
-        .then(res => res.json())
-        .then(data => setFundData(data))
-        .catch(err => setError(err.message || 'Failed to fetch fund details'))
-        .finally(() => setLoading(false));
-    }
+    // Re-fetch fund details using centralized hook
+    refetch();
   };
 
   const handleEventUpdated = () => {
-    // Re-fetch fund details (including events)
-    if (fundId) {
-      setLoading(true);
-      setError(null);
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
-      fetch(`${API_BASE_URL}/api/funds/${fundId}`)
-        .then(res => res.json())
-        .then(data => setFundData(data))
-        .catch(err => setError(err.message || 'Failed to fetch fund details'))
-        .finally(() => setLoading(false));
-    }
+    // Re-fetch fund details using centralized hook
+    refetch();
   };
 
   const handleEditEvent = (event: ExtendedFundEvent) => {
@@ -219,20 +175,13 @@ const FundDetail: React.FC = () => {
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Refresh the fund data
-      if (fundId) {
-        setLoading(true);
-        setError(null);
-        fetch(`${API_BASE_URL}/api/funds/${fundId}`)
-          .then(res => res.json())
-          .then(data => setFundData(data))
-          .catch(err => setError(err.message || 'Failed to fetch fund details'))
-          .finally(() => setLoading(false));
-      }
+      // Refresh the fund data using centralized hook
+      refetch();
       setDeleteDialogOpen(false);
       setSelectedEvent(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete event');
+      // Error handling will be done by the centralized hook
+      console.error('Failed to delete event:', err);
     } finally {
       setDeletingEvent(false);
     }

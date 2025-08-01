@@ -42,6 +42,17 @@ export function useFund(id: number, options?: { refetchOnWindowFocus?: boolean }
 }
 
 /**
+ * Hook to get fund detail data (fund + events + statistics)
+ */
+export function useFundDetail(id: number, options?: { refetchOnWindowFocus?: boolean }) {
+  return useApiCallWithDeps(
+    (fundId: number) => apiClient.getFundDetail(fundId),
+    [id],
+    { refetchOnWindowFocus: options?.refetchOnWindowFocus }
+  );
+}
+
+/**
  * Hook to create a new fund
  */
 export function useCreateFund() {

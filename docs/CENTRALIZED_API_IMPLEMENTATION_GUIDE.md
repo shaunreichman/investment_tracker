@@ -277,11 +277,11 @@ This guide provides a step-by-step approach to implement professional-grade cent
 - [x] Handle type mismatches and optional field processing
 
 #### Phase 2: Core Data Migration
-- [ ] Replace fund details fetch with `useFund(id)` hook
-- [ ] Replace fund events fetch with `useFundEvents(fundId)` hook
-- [ ] Update state management to use hook states (loading, error, data)
-- [ ] Remove local API_BASE_URL definition
-- [ ] Implement proper TypeScript type coercion for API data
+- [x] Replace fund details fetch with `useFundDetail(id)` hook
+- [x] Replace fund events fetch with `useFundEvents(fundId)` hook
+- [x] Update state management to use hook states (loading, error, data)
+- [x] Remove local API_BASE_URL definition
+- [x] Implement proper TypeScript type coercion for API data
 
 #### Phase 3: Event Operations Migration
 - [ ] Replace create event with `useCreateFundEvent(fundId)` hook
