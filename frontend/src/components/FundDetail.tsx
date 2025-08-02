@@ -100,7 +100,7 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
         <Typography variant="h6" sx={{ fontSize: 16 }}>Equity Position</Typography>
       </Box>
       
-      {/* Phase 3.2: Enhanced card layout with better visual hierarchy */}
+      {/* Phase 3B: Enhanced card layout with consistent styling */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {equityMetrics.map((metric, index) => (
           <Box 
@@ -112,8 +112,8 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               p: 0.5,
               borderRadius: 1,
               backgroundColor: index === 0 ? 'primary.50' : 'transparent',
-              border: index === 0 ? '1px solid' : 'none',
-              borderColor: index === 0 ? 'primary.200' : 'transparent'
+              border: '1px solid',
+              borderColor: index === 0 ? 'primary.200' : 'grey.200'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
