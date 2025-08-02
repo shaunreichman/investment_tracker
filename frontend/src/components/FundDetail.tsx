@@ -506,17 +506,15 @@ const FundDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
-        </Box>
-      </Container>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box p={3}>
         <ErrorDisplay
           error={error}
           canRetry={error.retryable}
@@ -531,26 +529,26 @@ const FundDetail: React.FC = () => {
         >
           Back to Dashboard
         </Button>
-      </Container>
+      </Box>
     );
   }
 
   if (!fundData) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box p={3}>
         <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
           <Typography variant="body1" fontWeight="medium" color="warning.main">
             No fund data available
           </Typography>
         </Box>
-      </Container>
+      </Box>
     );
   }
 
   const { fund, events, statistics } = fundData;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Box p={3}>
       {/* Breadcrumb Navigation */}
       <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
         <Link
@@ -1634,7 +1632,7 @@ const FundDetail: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 
