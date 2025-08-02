@@ -46,6 +46,7 @@ interface SectionProps {
   fund: ExtendedFund;
   formatCurrency: (amount: number | null, currency?: string) => string;
   formatDate: (dateString: string | null) => string;
+  events?: ExtendedFundEvent[];
 }
 
 /**
@@ -89,10 +90,12 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -113,7 +116,14 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               borderRadius: 1,
               backgroundColor: index === 0 ? 'primary.50' : 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: index === 0 ? 'primary.100' : 'grey.50',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -173,10 +183,12 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -197,7 +209,14 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
               borderRadius: 1,
               backgroundColor: 'success.50',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'success.100',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -260,15 +279,21 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
     }
   ].filter(metric => metric.value !== null && metric.value !== undefined);
 
+  if (performanceMetrics.length === 0) {
+    return null;
+  }
+
   return (
     <Paper sx={{ 
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -289,7 +314,14 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
               borderRadius: 1,
               backgroundColor: 'info.50',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'info.100',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -306,7 +338,7 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
                 fontWeight: 600
               }}
             >
-              {metric.value?.toFixed(2)}{metric.unit}
+              {metric.value}{metric.unit}
             </Typography>
           </Box>
         ))}
@@ -316,47 +348,13 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
 };
 
 /**
- * Fund Details Section - Metadata and status information
+ * Fund Details Section - Basic fund information
  */
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Phase 3B: Enhanced data organization for fund details
   const fundDetails = [
-    {
-      label: 'Status',
-      value: fund.is_active ? 'Active' : 'Inactive',
-      color: fund.is_active ? 'success.main' : 'text.secondary',
-      icon: fund.is_active ? '🟢' : '⚪',
-      priority: 1,
-      isStatus: true
-    },
-    {
-      label: 'Currency',
-      value: fund.currency,
-      color: 'text.primary',
-      icon: '💱',
-      priority: 2
-    },
-    {
-      label: 'Start Date',
-      value: formatDate(fund.start_date || null),
-      color: 'text.primary',
-      icon: '📅',
-      priority: 3
-    },
-    ...(fund.end_date ? [{
-      label: 'End Date',
-      value: formatDate(fund.end_date),
-      color: 'text.primary',
-      icon: '📅',
-      priority: 4
-    }] : []),
-    ...(fund.actual_duration_months ? [{
-      label: 'Actual Duration',
-      value: `${fund.actual_duration_months} months`,
-      color: 'text.primary',
-      icon: '⏱️',
-      priority: 5
-    }] : [])
+    { label: 'Status', value: fund.is_active ? 'Active' : 'Inactive', color: fund.is_active ? 'success.main' : 'text.secondary', icon: fund.is_active ? '🟢' : '⚪', priority: 1, isStatus: true },
+    { label: 'Currency', value: fund.currency, color: 'text.primary', icon: '💱', priority: 2 },
+    ...(fund.actual_duration_months ? [{ label: 'Actual Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
   ];
 
   return (
@@ -364,10 +362,12 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -388,7 +388,14 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
               borderRadius: 1,
               backgroundColor: detail.priority === 1 ? 'success.50' : 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: detail.priority === 1 ? 'success.100' : 'grey.50',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -399,24 +406,17 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               {detail.isStatus && (
-                <Box
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    bgcolor: fund.is_active ? 'success.main' : 'grey.400',
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                />
+                <Box sx={{ 
+                  width: 8, 
+                  height: 8, 
+                  borderRadius: '50%', 
+                  bgcolor: fund.is_active ? 'success.main' : 'grey.400',
+                  // Phase 4: Enhanced status indicator
+                  transition: 'all 0.2s ease-in-out',
+                  boxShadow: fund.is_active ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
+                }} />
               )}
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: detail.color,
-                  fontSize: 12,
-                  fontWeight: detail.priority === 1 ? 600 : 500
-                }}
-              >
+              <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
                 {detail.value}
               </Typography>
             </Box>
@@ -428,60 +428,24 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
 };
 
 /**
- * Transaction Summary Section - Activity breakdown and totals
+ * Transaction Summary Section - Summary of all transaction types
  */
 const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Phase 3.1: Create transaction summary data for tables
   const transactionData = [
     // Capital transactions (cost-based funds)
     ...(fund.tracking_type === 'cost_based' ? [
-      {
-        type: 'Capital Calls',
-        amount: fund.total_capital_calls ?? null,
-        color: 'primary.main',
-        icon: '📈'
-      },
-      {
-        type: 'Capital Returns',
-        amount: fund.total_capital_returns ?? null,
-        color: 'warning.main',
-        icon: '📉'
-      }
+      { type: 'Capital Calls', amount: fund.total_capital_calls ?? null, color: 'error.main', icon: '📤' },
+      { type: 'Returns of Capital', amount: fund.total_capital_returns ?? null, color: 'success.main', icon: '📥' }
     ] : []),
     // Unit transactions (NAV-based funds)
     ...(fund.tracking_type === 'nav_based' ? [
-      {
-        type: 'Unit Purchases',
-        amount: fund.total_unit_purchases ?? null,
-        color: 'primary.main',
-        icon: '📈'
-      },
-      {
-        type: 'Unit Sales',
-        amount: fund.total_unit_sales ?? null,
-        color: 'warning.main',
-        icon: '📉'
-      }
+      { type: 'Unit Purchases', amount: fund.total_unit_purchases ?? null, color: 'primary.main', icon: '📈' },
+      { type: 'Unit Sales', amount: fund.total_unit_sales ?? null, color: 'secondary.main', icon: '📉' }
     ] : []),
     // Income transactions (all funds)
-    {
-      type: 'Distributions',
-      amount: fund.total_distributions ?? null,
-      color: 'success.main',
-      icon: '💰'
-    },
-    {
-      type: 'Tax Payments',
-      amount: fund.total_tax_payments ?? null,
-      color: 'error.main',
-      icon: '🏛️'
-    },
-    {
-      type: 'Interest Charges',
-      amount: fund.total_daily_interest_charges ?? null,
-      color: 'info.main',
-      icon: '📊'
-    }
+    { type: 'Distributions', amount: fund.total_distributions ?? null, color: 'info.main', icon: '💰' },
+    { type: 'Tax Payments', amount: fund.total_tax_payments ?? null, color: 'warning.main', icon: '🏛️' },
+    { type: 'Total Cost of Capital Interest', amount: fund.total_daily_interest_charges ?? null, color: 'info.main', icon: '📊' }
   ].filter(item => item.amount !== null);
 
   return (
@@ -489,10 +453,12 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -513,7 +479,14 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
               borderRadius: 1,
               backgroundColor: 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'grey.50',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -522,18 +495,239 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
                 {item.type}
               </Typography>
             </Box>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: item.color,
-                fontSize: 12,
-                fontWeight: 600
-              }}
-            >
+            <Typography variant="body2" sx={{ color: item.color, fontSize: 12, fontWeight: 600 }}>
               {formatCurrency(item.amount, fund.currency)}
             </Typography>
           </Box>
         ))}
+      </Box>
+    </Paper>
+  );
+};
+
+/**
+ * Unit Price Chart Section - NAV performance chart for NAV-based funds
+ */
+const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events }) => {
+  // Only show for NAV-based funds
+  if (fund.tracking_type !== 'nav_based') {
+    return null;
+  }
+
+  return (
+    <Paper sx={{ 
+      p: 0.75, 
+      mb: 1, 
+      borderRadius: 2,
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      '&:hover': {
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
+      }
+    }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <TrendingUp color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>Unit Price Performance</Typography>
+      </Box>
+      
+      <Box sx={{ height: 200, position: 'relative' }}>
+        {(() => {
+          try {
+            // Use events passed as prop, fallback to empty array
+            const chartEvents = events || [];
+            
+            // Prepare NAV data - separate for continuous line
+            const navData = chartEvents
+              .filter((event: any) => event.event_type === 'NAV_UPDATE' && event.nav_per_share)
+              .map((event: any) => ({
+                date: new Date(event.event_date).getTime(),
+                displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                }),
+                nav: event.nav_per_share,
+                timestamp: new Date(event.event_date).getTime()
+              }))
+              .sort((a: any, b: any) => a.timestamp - b.timestamp);
+
+            // Prepare purchase/sale data - separate for markers
+            const purchaseData = chartEvents
+              .filter((event: any) => (event.event_type === 'UNIT_PURCHASE' || event.description?.includes('purchase')) && event.amount && event.units_purchased)
+              .map((event: any) => ({
+                date: new Date(event.event_date).getTime(),
+                displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                }),
+                purchase: (event.amount || 0) / (event.units_purchased || 1),
+                timestamp: new Date(event.event_date).getTime(),
+                type: 'Purchase',
+                units: event.units_purchased || 0,
+                amount: event.amount || 0,
+                description: event.description
+              }));
+
+            const saleData = chartEvents
+              .filter((event: any) => (event.event_type === 'UNIT_SALE' || event.description?.includes('sale')) && event.amount && event.units_sold)
+              .map((event: any) => ({
+                date: new Date(event.event_date).getTime(),
+                displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                }),
+                sale: (event.amount || 0) / (event.units_sold || 1),
+                timestamp: new Date(event.event_date).getTime(),
+                type: 'Sale',
+                units: event.units_sold || 0,
+                amount: event.amount || 0,
+                description: event.description
+              }));
+
+            // Calculate shared domain from ALL data
+            const allValues = [
+              ...navData.map((d: any) => d.nav),
+              ...purchaseData.map((d: any) => d.purchase),
+              ...saleData.map((d: any) => d.sale)
+            ].filter((v): v is number => v !== null && v !== undefined);
+
+            const allDates = [
+              ...navData.map((d: any) => d.timestamp),
+              ...purchaseData.map((d: any) => d.timestamp),
+              ...saleData.map((d: any) => d.timestamp)
+            ];
+
+            if (allValues.length === 0) {
+              return (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No chart data available
+                  </Typography>
+                </Box>
+              );
+            }
+
+            const minValue = Math.min(...allValues);
+            const maxValue = Math.max(...allValues);
+            const padding = (maxValue - minValue) * 0.1;
+
+            const minDate = Math.min(...allDates);
+            const maxDate = Math.max(...allDates);
+            const datePadding = (maxDate - minDate) * 0.05;
+
+            const yDomain = [minValue - padding, maxValue + padding];
+            const xDomain = [minDate - datePadding, maxDate + datePadding];
+
+            return (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={navData}>
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    vertical={true}
+                    horizontal={true}
+                    stroke="#f0f0f0"
+                  />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 10 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    domain={xDomain}
+                    type="number"
+                    scale="time"
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-AU', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                    ticks={(() => {
+                      // Generate ticks at end of each month within the date range
+                      const ticks = [];
+                      const startDate = new Date(minDate);
+                      const endDate = new Date(maxDate);
+                      
+                      // Start from the first day of the month containing the start date
+                      let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+                      
+                      // Add safety check to prevent infinite loops
+                      let iterationCount = 0;
+                      const maxIterations = 50; // Safety limit
+                      
+                      while (currentDate <= endDate && iterationCount < maxIterations) {
+                        // Set to last day of current month
+                        const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                        ticks.push(lastDayOfMonth.getTime());
+                        
+                        // Move to first day of next month
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                        currentDate.setDate(1);
+                        iterationCount++;
+                      }
+                      
+                      return ticks;
+                    })()}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(value) => `$${value.toFixed(2)}`}
+                    domain={yDomain}
+                  />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === 'nav') return [`$${value}`, 'NAV'];
+                      if (name === 'purchase') return [`$${value}`, 'Purchase'];
+                      if (name === 'sale') return [`$${value}`, 'Sale'];
+                      return [value, name];
+                    }}
+                    labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString('en-AU', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })}`}
+                  />
+                  <Line 
+                    type="linear" 
+                    dataKey="nav" 
+                    stroke="#1976d2" 
+                    strokeWidth={2}
+                    dot={{ fill: '#1976d2', strokeWidth: 2, r: 3, stroke: '#1976d2' }}
+                    activeDot={{ r: 5, fill: '#1976d2', stroke: '#1976d2', strokeWidth: 2 }}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                  <Scatter 
+                    dataKey="purchase" 
+                    fill="#4caf50" 
+                    stroke="#4caf50"
+                    shape="star"
+                    data={purchaseData}
+                  />
+                  <Scatter 
+                    dataKey="sale" 
+                    fill="#f44336" 
+                    stroke="#f44336"
+                    shape="star"
+                    data={saleData}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            );
+          } catch (error) {
+            console.error('Chart error:', error);
+            return (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <Typography variant="body2" color="error">
+                  Error loading chart
+                </Typography>
+              </Box>
+            );
+          }
+        })()}
       </Box>
     </Paper>
   );
@@ -700,8 +894,17 @@ const FundDetail: React.FC = () => {
     return (
       <Box p={3}>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px" flexDirection="column" gap={2}>
-          <CircularProgress size={40} />
-          <Typography variant="body2" color="text.secondary">
+          {/* Phase 4: Enhanced loading state */}
+          <CircularProgress 
+            size={40} 
+            sx={{ 
+              color: 'primary.main',
+              '& .MuiCircularProgress-circle': {
+                strokeLinecap: 'round',
+              }
+            }} 
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
             Loading fund details...
           </Typography>
         </Box>
@@ -802,13 +1005,14 @@ const FundDetail: React.FC = () => {
             top: 0,
             zIndex: 1,
             bgcolor: 'background.paper',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-            borderRadius: 1,
-            transition: 'all 0.2s ease-in-out',
+            // Phase 4: Enhanced visual polish
+            boxShadow: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)',
+            borderRadius: 2,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
               bgcolor: 'action.hover',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.12), 0 3px 8px rgba(0,0,0,0.16)'
             }
           }}
         >
@@ -834,7 +1038,7 @@ const FundDetail: React.FC = () => {
       }}>
         {/* Left Sidebar - Summary Sections */}
         <Box sx={{ 
-          width: sidebarVisible ? { xs: '100%', sm: '280px', md: '320px', lg: '360px' } : 0,
+          width: sidebarVisible ? { xs: '100%', sm: '322px', md: '368px', lg: '414px' } : 0,
           flexShrink: 0,
           position: { xs: 'static', sm: 'relative' },
           height: { xs: 'auto', sm: '100%' },
@@ -844,10 +1048,10 @@ const FundDetail: React.FC = () => {
           // Responsive optimization: Better mobile experience
           order: { xs: 1, sm: 0 },
           mb: { xs: 2, sm: 0 },
-          // Visual polish: Add subtle depth and professional appearance
+          // Phase 4: Enhanced visual polish
           bgcolor: 'background.paper',
-          borderRadius: { sm: 1 },
-          boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
+          borderRadius: { sm: 2 },
+          boxShadow: { sm: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)' },
           display: 'flex',
           flexDirection: 'column',
           // Hide completely when not visible
@@ -879,6 +1083,7 @@ const FundDetail: React.FC = () => {
           <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
           <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
           <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
         </Box>
 
         {/* Right Main Area - Events Table */}
@@ -890,10 +1095,10 @@ const FundDetail: React.FC = () => {
           // Responsive optimization: Better mobile experience
           order: { xs: 2, sm: 1 },
           width: { xs: '100%', sm: 'auto' },
-          // Visual polish: Add subtle depth and professional appearance
+          // Phase 4: Enhanced visual polish
           bgcolor: 'background.paper',
-          borderRadius: { sm: 1 },
-          boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
+          borderRadius: { sm: 2 },
+          boxShadow: { sm: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)' },
           pl: { sm: 2 },
           display: 'flex',
           flexDirection: 'column'
@@ -906,9 +1111,13 @@ const FundDetail: React.FC = () => {
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        // Visual polish: Enhanced paper styling
-        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-        borderRadius: 1
+        // Phase 4: Enhanced visual polish
+        boxShadow: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)',
+        borderRadius: 2,
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          boxShadow: '0 6px 20px rgba(0,0,0,0.12), 0 3px 8px rgba(0,0,0,0.16)'
+        }
       }}>
         <Box sx={{ 
           p: 3, 
@@ -926,7 +1135,7 @@ const FundDetail: React.FC = () => {
               }}
             >
               Fund Events ({(() => {
-                const filteredEvents = events.filter(event => {
+                const filteredEvents = (events || []).filter(event => {
                   if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'EOFY_DEBT_COST')) {
                     return false;
                   }
@@ -1016,9 +1225,10 @@ const FundDetail: React.FC = () => {
         </Box>
         {/* Events Table */}
         <TableContainer sx={{ 
-                      flex: 1,
-            maxHeight: { xs: 300, sm: 'none' },
+          flex: 1,
+          maxHeight: { xs: 300, sm: 'none' },
           scrollBehavior: 'smooth',
+          // Phase 4: Enhanced scrollbar styling
           '&::-webkit-scrollbar': {
             width: '8px',
             height: '8px'
@@ -1030,6 +1240,7 @@ const FundDetail: React.FC = () => {
           '&::-webkit-scrollbar-thumb': {
             backgroundColor: 'grey.400',
             borderRadius: '4px',
+            transition: 'background-color 0.2s ease-in-out',
             '&:hover': {
               backgroundColor: 'grey.500'
             }
@@ -1169,12 +1380,14 @@ const FundDetail: React.FC = () => {
                 px: { xs: 1, sm: 2 }, 
                 fontSize: { xs: 12, sm: 13 } 
               },
+              // Phase 4: Enhanced table row styling
               '& .MuiTableRow-root': {
-                transition: 'all 0.2s ease-in-out',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                borderRadius: 1,
                 '&:hover': {
                   backgroundColor: 'action.hover',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)',
                   '& .MuiTableCell-root': {
                     borderBottom: '1px solid',
                     borderColor: 'divider'
@@ -1874,212 +2087,7 @@ const FundDetail: React.FC = () => {
         </TableContainer>
       </Paper>
 
-      {/* Unit Price Chart - Only for NAV-based funds */}
-      {fund.tracking_type === 'nav_based' && (
-        <Paper sx={{ width: '100%', overflow: 'hidden', mt: 3 }}>
-          <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
-            <Typography variant="h6">
-              Unit Price Performance
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              NAV per share over time
-            </Typography>
-          </Box>
-          <Box sx={{ p: 3, height: 400, position: 'relative' }}>
-            {(() => {
-              try {
-                const events = fundData.events;
-                
-                // Prepare NAV data - separate for continuous line
-                const navData = events
-                  .filter(event => event.event_type === 'NAV_UPDATE' && event.nav_per_share)
-                  .map(event => ({
-                    date: new Date(event.event_date).getTime(),
-                    displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric'
-                    }),
-                    nav: event.nav_per_share,
-                    timestamp: new Date(event.event_date).getTime()
-                  }))
-                  .sort((a, b) => a.timestamp - b.timestamp);
 
-                // Prepare purchase/sale data - separate for markers
-                const purchaseData = events
-                  .filter(event => (event.event_type === 'UNIT_PURCHASE' || event.description?.includes('purchase')) && event.amount && event.units_purchased)
-                  .map(event => ({
-                    date: new Date(event.event_date).getTime(), // Use same timestamp format as NAV
-                    displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric'
-                    }),
-                    purchase: (event.amount || 0) / (event.units_purchased || 1), // Use 'purchase' as dataKey
-                    timestamp: new Date(event.event_date).getTime(),
-                    type: 'Purchase',
-                    units: event.units_purchased || 0,
-                    amount: event.amount || 0,
-                    description: event.description
-                  }));
-
-                const saleData = events
-                  .filter(event => (event.event_type === 'UNIT_SALE' || event.description?.includes('sale')) && event.amount && event.units_sold)
-                  .map(event => ({
-                    date: new Date(event.event_date).getTime(), // Use same timestamp format as NAV
-                    displayDate: new Date(event.event_date).toLocaleDateString('en-AU', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric'
-                    }),
-                    sale: (event.amount || 0) / (event.units_sold || 1), // Use 'sale' as dataKey
-                    timestamp: new Date(event.event_date).getTime(),
-                    type: 'Sale',
-                    units: event.units_sold || 0,
-                    amount: event.amount || 0,
-                    description: event.description
-                  }));
-
-                console.log('NAV data count:', navData.length);
-                console.log('Purchase data count:', purchaseData.length);
-                console.log('Sale data count:', saleData.length);
-
-                // Calculate shared domain from ALL data
-                const allValues = [
-                  ...navData.map(d => d.nav),
-                  ...purchaseData.map(d => d.purchase),
-                  ...saleData.map(d => d.sale)
-                ].filter((v): v is number => v !== null && v !== undefined);
-
-                const allDates = [
-                  ...navData.map(d => d.timestamp),
-                  ...purchaseData.map(d => d.timestamp),
-                  ...saleData.map(d => d.timestamp)
-                ];
-
-                if (allValues.length === 0) {
-                  return <Typography>No chart data available</Typography>;
-                }
-
-                const minValue = Math.min(...allValues);
-                const maxValue = Math.max(...allValues);
-                const padding = (maxValue - minValue) * 0.1;
-
-                const minDate = Math.min(...allDates);
-                const maxDate = Math.max(...allDates);
-                const datePadding = (maxDate - minDate) * 0.05;
-
-                const yDomain = [minValue - padding, maxValue + padding];
-                const xDomain = [minDate - datePadding, maxDate + datePadding];
-
-                console.log('Shared domains:', { xDomain, yDomain });
-                console.log('Date range:', { min: new Date(minDate), max: new Date(maxDate) });
-
-                return (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={navData}>
-                      <CartesianGrid 
-                        strokeDasharray="3 3" 
-                        vertical={true}
-                        horizontal={true}
-                        stroke="#f0f0f0"
-                      />
-                      <XAxis 
-                        dataKey="date" 
-                        tick={{ fontSize: 12 }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                        domain={xDomain}
-                        type="number"
-                        scale="time"
-                        tickFormatter={(value) => new Date(value).toLocaleDateString('en-AU', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric'
-                        })}
-                        ticks={(() => {
-                          // Generate ticks at end of each month within the date range
-                          const ticks = [];
-                          const startDate = new Date(minDate);
-                          const endDate = new Date(maxDate);
-                          
-                          // Start from the first day of the month containing the start date
-                          let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-                          
-                          // Add safety check to prevent infinite loops
-                          let iterationCount = 0;
-                          const maxIterations = 50; // Safety limit
-                          
-                          while (currentDate <= endDate && iterationCount < maxIterations) {
-                            // Set to last day of current month
-                            const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-                            ticks.push(lastDayOfMonth.getTime());
-                            
-                            // Move to first day of next month
-                            currentDate.setMonth(currentDate.getMonth() + 1);
-                            currentDate.setDate(1);
-                            iterationCount++;
-                          }
-                          
-                          console.log('Generated ticks:', ticks.length, 'iterations:', iterationCount);
-                          console.log('Tick dates:', ticks.map(t => new Date(t).toLocaleDateString('en-AU')));
-                          return ticks;
-                        })()}
-                      />
-                      <YAxis 
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => `$${value.toFixed(2)}`}
-                        domain={yDomain}
-                      />
-                      <Tooltip 
-                        formatter={(value, name) => {
-                          if (name === 'nav') return [`$${value}`, 'NAV'];
-                          if (name === 'purchase') return [`$${value}`, 'Purchase'];
-                          if (name === 'sale') return [`$${value}`, 'Sale'];
-                          return [value, name];
-                        }}
-                        labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString('en-AU', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric'
-                        })}`}
-                      />
-                      <Line 
-                        type="linear" 
-                        dataKey="nav" 
-                        stroke="#1976d2" 
-                        strokeWidth={2}
-                        dot={{ fill: '#1976d2', strokeWidth: 2, r: 4, stroke: '#1976d2' }}
-                        activeDot={{ r: 6, fill: '#1976d2', stroke: '#1976d2', strokeWidth: 2 }}
-                        connectNulls={false}
-                        isAnimationActive={false}
-                      />
-                      <Scatter 
-                        dataKey="purchase" 
-                        fill="#4caf50" 
-                        stroke="#4caf50"
-                        shape="star"
-                        data={purchaseData}
-                      />
-                      <Scatter 
-                        dataKey="sale" 
-                        fill="#f44336" 
-                        stroke="#f44336"
-                        shape="star"
-                        data={saleData}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                );
-              } catch (error) {
-                console.error('Chart error:', error);
-                return <Typography color="error">Error loading chart: {error instanceof Error ? error.message : 'Unknown error'}</Typography>;
-              }
-            })()}
-          </Box>
-        </Paper>
-      )}
         </Box>
       </Box>
       {/* Modal rendered at root */}

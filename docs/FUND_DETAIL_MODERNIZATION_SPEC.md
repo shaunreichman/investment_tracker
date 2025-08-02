@@ -290,22 +290,67 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - Use consistent minimal grey borders across all sections
 - Avoid prominent colored borders for cleaner appearance
 
-### Phase 4: Visual Polish (Future)
+### Phase 4: Visual Polish ✅ (COMPLETED)
 **Goal**: Add modern visual touches and micro-interactions
 
 **Tasks**:
-- [ ] **Visual Effects**
-  - [ ] Implement subtle shadows and depth
-  - [ ] Add rounded corners (4-8px) for modern feel
-  - [ ] Create hover effects for interactive elements
-- [ ] **Color and Contrast**
-  - [ ] Improve color usage with muted backgrounds and better contrast
-  - [ ] Add loading states and transitions
+- [x] **Visual Effects**
+  - [x] Implement subtle shadows and depth
+  - [x] Add rounded corners (4-8px) for modern feel
+  - [x] Create hover effects for interactive elements
+- [x] **Color and Contrast**
+  - [x] Improve color usage with muted backgrounds and better contrast
+  - [x] Add loading states and transitions
+
+**Key Improvements**:
+- **Enhanced Shadows**: Refined shadow system with layered depth using `0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)`
+- **Consistent Rounded Corners**: Applied 6-8px border radius across all components for modern feel
+- **Smooth Hover Effects**: Enhanced interactive elements with `translateY(-2px)` and refined shadows
+- **Improved Loading States**: Enhanced CircularProgress with rounded stroke caps and better opacity
+- **Refined Transitions**: Used `cubic-bezier(0.4, 0, 0.2, 1)` for smooth, professional animations
+- **Enhanced Table Interactions**: Improved table row hover effects with subtle elevation and shadow
+- **Status Indicators**: Added subtle glow effects to active status indicators
 
 **Design Principles**:
-- Shadows should create depth, not heaviness
-- Colors should support hierarchy, not compete for attention
-- Interactions should feel smooth and responsive
+- Shadows create depth without heaviness
+- Colors support hierarchy without competing for attention
+- Interactions feel smooth and responsive with refined timing functions
+
+### Phase 4B: Unit Price Chart Integration ✅ (COMPLETED)
+**Goal**: Move Unit Price Performance chart to Summary Section for NAV-based funds
+
+**Tasks**:
+- [x] **Chart Relocation**
+  - [x] Move Unit Price Performance chart from main area to Summary Section
+  - [x] Position chart at bottom of Summary Section (after Transaction Summary)
+  - [x] Only show chart for NAV-based funds (`fund.tracking_type === 'nav_based'`)
+  - [x] Hide chart in main area when moved to Summary Section
+- [x] **Layout Optimization**
+  - [x] Adjust Summary Section height to accommodate chart
+  - [x] Ensure chart fits within sidebar constraints
+  - [x] Maintain responsive behavior for chart in sidebar
+  - [x] Optimize chart size for sidebar width (280-360px)
+- [x] **Visual Integration**
+  - [x] Apply consistent styling to chart container (Paper component)
+  - [x] Match chart styling with other Summary Section components
+  - [x] Ensure chart borders and shadows match Phase 4 visual polish
+  - [x] Add proper spacing and margins around chart
+- [x] **Performance Considerations**
+  - [x] Ensure chart renders efficiently in sidebar context
+  - [x] Maintain chart interactivity and tooltips
+  - [x] Optimize chart data loading for sidebar display
+
+**Key Benefits**:
+- **Better Information Hierarchy**: Unit price performance visible alongside other summary metrics
+- **Space Efficiency**: Frees up main area for more detailed event data
+- **Contextual Relevance**: Chart appears with related NAV-based metrics
+- **Improved UX**: Users can see price performance without scrolling
+
+**Design Principles**:
+- Chart should feel integrated with Summary Section styling
+- Maintain chart functionality while adapting to sidebar constraints
+- Ensure responsive behavior across different screen sizes
+- Keep chart interactive and informative in sidebar context
 
 ### Phase 5: Inline Editing (Future)
 **Goal**: Enable inline editing of fund events for faster workflow
