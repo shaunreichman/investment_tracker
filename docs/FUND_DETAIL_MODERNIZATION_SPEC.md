@@ -280,12 +280,15 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - **Scalable Design**: Easy to add new fields without breaking the layout
 - **Professional Appearance**: More polished and intentional visual language
 - **Enhanced Scanning**: Clear visual boundaries help with quick data scanning
+- **Clean Minimal Design**: Consistent minimal grey borders across all sections
+- **Subtle Priority Highlighting**: Background colors only, no prominent border highlighting
 
 **Design Principles**:
 - Apply Expected Performance style (bordered individual fields) to all sections
 - Keep icons for visual personality and quick recognition
 - Use subtle background colors to indicate priority/importance
-- Maintain table format only for detailed data (transaction summaries)
+- Use consistent minimal grey borders across all sections
+- Avoid prominent colored borders for cleaner appearance
 
 ### Phase 4: Visual Polish (Future)
 **Goal**: Add modern visual touches and micro-interactions
