@@ -54,8 +54,8 @@ interface SectionProps {
 const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
     <Paper sx={{ 
-      p: 1, 
-      mb: 1.5, 
+      p: 0.75, 
+      mb: 1, 
       borderRadius: 2,
       boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
       transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
@@ -67,29 +67,29 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
         <AccountBalance color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Equity Position</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Current Balance</Typography>
-          <Typography variant="body1" color="primary" sx={{ fontSize: 14, fontWeight: 600 }}>
+          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
             {formatCurrency(fund.current_equity_balance, fund.currency)}
           </Typography>
         </Box>
-        <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Average Balance</Typography>
-          <Typography variant="body1" color="primary" sx={{ fontSize: 14, fontWeight: 600 }}>
+          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
             {formatCurrency(fund.average_equity_balance, fund.currency)}
           </Typography>
         </Box>
-        <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Commitment</Typography>
-          <Typography variant="body1" color="primary" sx={{ fontSize: 14, fontWeight: 600 }}>
+          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
             {formatCurrency(fund.commitment_amount || null, fund.currency)}
           </Typography>
         </Box>
         {fund.tracking_type === 'nav_based' && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Current NAV Fund Value</Typography>
-            <Typography variant="body1" color="primary" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.current_nav_fund_value || null, fund.currency)}
             </Typography>
           </Box>
@@ -110,8 +110,8 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
 
   return (
     <Paper sx={{ 
-      p: 1, 
-      mb: 1.5, 
+      p: 0.75, 
+      mb: 1, 
       borderRadius: 2,
       boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
       transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
@@ -123,19 +123,19 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
         <TrendingUp color="success" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Expected Performance</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
         {fund.expected_irr && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Expected IRR</Typography>
-            <Typography variant="body1" color="success.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.expected_irr}%
             </Typography>
           </Box>
         )}
         {fund.expected_duration_months && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Expected Duration</Typography>
-            <Typography variant="body1" color="success.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.expected_duration_months} months
             </Typography>
           </Box>
@@ -156,8 +156,8 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
 
   return (
     <Paper sx={{ 
-      p: 1, 
-      mb: 1.5, 
+      p: 0.75, 
+      mb: 1, 
       borderRadius: 2,
       boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
       transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
@@ -169,27 +169,27 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
         <Assessment color="info" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Completed Performance</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
         {fund.completed_irr && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>IRR</Typography>
-            <Typography variant="body1" color="info.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.completed_irr.toFixed(2)}%
             </Typography>
           </Box>
         )}
         {fund.completed_after_tax_irr && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Net-tax IRR</Typography>
-            <Typography variant="body1" color="info.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.completed_after_tax_irr.toFixed(2)}%
             </Typography>
           </Box>
         )}
         {fund.completed_real_irr && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Gross IRR</Typography>
-            <Typography variant="body1" color="info.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.completed_real_irr.toFixed(2)}%
             </Typography>
           </Box>
@@ -205,8 +205,8 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
     <Paper sx={{ 
-      p: 1, 
-      mb: 1.5, 
+      p: 0.75, 
+      mb: 1, 
       borderRadius: 2,
       boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
       transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
@@ -218,10 +218,10 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
         <Info color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Fund Details</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Status</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mt: 0.5 }}>
             <Box
               sx={{
                 width: 8,
@@ -243,22 +243,22 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
             </Typography>
           </Box>
         </Box>
-        <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Currency</Typography>
           <Typography variant="body1" sx={{ fontSize: 13 }}>{fund.currency}</Typography>
         </Box>
-        <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Start Date</Typography>
           <Typography variant="body1" sx={{ fontSize: 13 }}>{formatDate(fund.start_date || null)}</Typography>
         </Box>
         {fund.end_date && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>End Date</Typography>
             <Typography variant="body1" sx={{ fontSize: 13 }}>{formatDate(fund.end_date)}</Typography>
           </Box>
         )}
         {fund.actual_duration_months && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Actual Duration</Typography>
             <Typography variant="body1" sx={{ fontSize: 13 }}>{fund.actual_duration_months} months</Typography>
           </Box>
@@ -274,8 +274,8 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
 const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
     <Paper sx={{ 
-      p: 1, 
-      mb: 1.5, 
+      p: 0.75, 
+      mb: 1, 
       borderRadius: 2,
       boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
       transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
@@ -287,59 +287,59 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
         <Receipt color="secondary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Transaction Summary</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
         {fund.tracking_type === 'cost_based' && fund.total_capital_calls !== null && fund.total_capital_calls !== undefined && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Capital Calls</Typography>
-            <Typography variant="body1" color="primary" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_capital_calls, fund.currency)}
             </Typography>
           </Box>
         )}
         {fund.tracking_type === 'cost_based' && fund.total_capital_returns !== null && fund.total_capital_returns !== undefined && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Capital Returns</Typography>
-            <Typography variant="body1" color="warning.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="warning.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_capital_returns, fund.currency)}
             </Typography>
           </Box>
         )}
         {fund.total_distributions !== null && fund.total_distributions !== undefined && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Distributions</Typography>
-            <Typography variant="body1" color="success.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_distributions, fund.currency)}
             </Typography>
           </Box>
         )}
         {fund.total_tax_payments !== null && fund.total_tax_payments !== undefined && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Tax Payments</Typography>
-            <Typography variant="body1" color="error.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="error.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_tax_payments, fund.currency)}
             </Typography>
           </Box>
         )}
         {fund.total_daily_interest_charges !== null && fund.total_daily_interest_charges !== undefined && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Daily Interest Charges</Typography>
-            <Typography variant="body1" color="info.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_daily_interest_charges, fund.currency)}
             </Typography>
           </Box>
         )}
         {fund.tracking_type === 'nav_based' && fund.total_unit_purchases !== null && fund.total_unit_purchases !== undefined && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Unit Purchases</Typography>
-            <Typography variant="body1" color="primary" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_unit_purchases, fund.currency)}
             </Typography>
           </Box>
         )}
         {fund.tracking_type === 'nav_based' && fund.total_unit_sales !== null && fund.total_unit_sales !== undefined && (
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Unit Sales</Typography>
-            <Typography variant="body1" color="warning.main" sx={{ fontSize: 14, fontWeight: 600 }}>
+            <Typography variant="body1" color="warning.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_unit_sales, fund.currency)}
             </Typography>
           </Box>
