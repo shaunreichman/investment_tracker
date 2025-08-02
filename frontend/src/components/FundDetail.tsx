@@ -1038,7 +1038,7 @@ const FundDetail: React.FC = () => {
       }}>
         {/* Left Sidebar - Summary Sections */}
         <Box sx={{ 
-          width: sidebarVisible ? { xs: '100%', sm: '280px', md: '320px', lg: '360px' } : 0,
+          width: sidebarVisible ? { xs: '100%', sm: '322px', md: '368px', lg: '414px' } : 0,
           flexShrink: 0,
           position: { xs: 'static', sm: 'relative' },
           height: { xs: 'auto', sm: '100%' },
