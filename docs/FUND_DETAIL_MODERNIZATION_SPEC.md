@@ -305,18 +305,6 @@ const toggleSidebar = () => {
   - [x] Maintain readability while saving space
   - [x] Consistent sizing across all sections
 
-- [ ] **Field Layout Adjustments**
-  - [ ] Optimize field grid for narrower container (150px min-width → 120px)
-  - [ ] Implement responsive field sizing based on sidebar width
-  - [ ] Add multi-row support for sections with many fields
-  - [ ] Maintain readability with smaller text sizes in compact space
-
-- [ ] **Content Prioritization**
-  - [ ] Review field importance for sidebar display
-  - [ ] Consider collapsing less critical fields into expandable sections
-  - [ ] Ensure most important metrics are always visible
-  - [ ] Maintain contextual display logic (NAV vs cost-based fields)
-
 **Design Principles**:
 - Prioritize the most important metrics for quick scanning
 - Use vertical space efficiently with compact layouts
