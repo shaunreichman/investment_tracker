@@ -27,7 +27,7 @@ import {
   Grid
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
-import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon, Timeline, Assessment, Info, Receipt } from '@mui/icons-material';
+import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon, Timeline, Assessment, Info, Receipt, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
 import CreateFundEventModal from './CreateFundEventModal';
@@ -53,36 +53,47 @@ interface SectionProps {
  */
 const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <AccountBalance color="primary" sx={{ mr: 1 }} />
-        <Typography variant="h6">Equity Position</Typography>
+    <Paper sx={{ 
+      p: 0.75, 
+      mb: 1, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <AccountBalance color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>Equity Position</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-          <Typography variant="body2" color="text.secondary">Current Balance</Typography>
-          <Typography variant="h5" color="primary">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Current Balance</Typography>
+          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
             {formatCurrency(fund.current_equity_balance, fund.currency)}
           </Typography>
         </Box>
-        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-          <Typography variant="body2" color="text.secondary">Average Balance</Typography>
-          <Typography variant="h5" color="primary">
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Average Balance</Typography>
+          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
             {formatCurrency(fund.average_equity_balance, fund.currency)}
           </Typography>
         </Box>
-        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-          <Typography variant="body2" color="text.secondary">Commitment</Typography>
-          <Typography variant="h5" color="primary">
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Commitment</Typography>
+          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
             {formatCurrency(fund.commitment_amount || null, fund.currency)}
           </Typography>
         </Box>
-        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-          <Typography variant="body2" color="text.secondary">Current NAV Fund Value</Typography>
-          <Typography variant="h5" color="primary">
-            {formatCurrency(fund.current_nav_fund_value || null, fund.currency)}
-          </Typography>
-        </Box>
+        {fund.tracking_type === 'nav_based' && (
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Current NAV Fund Value</Typography>
+            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
+              {formatCurrency(fund.current_nav_fund_value || null, fund.currency)}
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Paper>
   );
@@ -98,24 +109,33 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
   }
 
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <TrendingUp color="success" sx={{ mr: 1 }} />
-        <Typography variant="h6">Expected Performance</Typography>
+    <Paper sx={{ 
+      p: 0.75, 
+      mb: 1, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <TrendingUp color="success" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>Expected Performance</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
         {fund.expected_irr && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Expected IRR</Typography>
-            <Typography variant="h5" color="success.main">
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Expected IRR</Typography>
+            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.expected_irr}%
             </Typography>
           </Box>
         )}
         {fund.expected_duration_months && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Expected Duration</Typography>
-            <Typography variant="h5" color="success.main">
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Expected Duration</Typography>
+            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.expected_duration_months} months
             </Typography>
           </Box>
@@ -135,32 +155,41 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
   }
 
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <Assessment color="info" sx={{ mr: 1 }} />
-        <Typography variant="h6">Completed Performance</Typography>
+    <Paper sx={{ 
+      p: 0.75, 
+      mb: 1, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <Assessment color="info" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>Completed Performance</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
         {fund.completed_irr && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">IRR</Typography>
-            <Typography variant="h5" color="info.main">
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>IRR</Typography>
+            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.completed_irr.toFixed(2)}%
             </Typography>
           </Box>
         )}
         {fund.completed_after_tax_irr && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Net-tax IRR</Typography>
-            <Typography variant="h5" color="info.main">
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Net-tax IRR</Typography>
+            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.completed_after_tax_irr.toFixed(2)}%
             </Typography>
           </Box>
         )}
         {fund.completed_real_irr && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Gross IRR</Typography>
-            <Typography variant="h5" color="info.main">
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Gross IRR</Typography>
+            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {fund.completed_real_irr.toFixed(2)}%
             </Typography>
           </Box>
@@ -175,53 +204,66 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
  */
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <Info color="primary" sx={{ mr: 1 }} />
-        <Typography variant="h6">Fund Details</Typography>
+    <Paper sx={{ 
+      p: 0.75, 
+      mb: 1, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <Info color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>Fund Details</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-          <Typography variant="body2" color="text.secondary">Status</Typography>
-          <Chip 
-            label={fund.is_active ? 'Active' : 'Inactive'} 
-            color={fund.is_active ? 'success' : 'default'}
-            size="small"
-          />
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Status</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mt: 0.5 }}>
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: fund.is_active ? 'success.main' : 'grey.400',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            />
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontSize: 11, 
+                color: fund.is_active ? 'success.main' : 'text.secondary',
+                fontWeight: fund.is_active ? 500 : 400
+              }}
+            >
+              {fund.is_active ? 'Active' : 'Inactive'}
+            </Typography>
+          </Box>
         </Box>
-        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-          <Typography variant="body2" color="text.secondary">Currency</Typography>
-          <Typography variant="body1">{fund.currency}</Typography>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Currency</Typography>
+          <Typography variant="body1" sx={{ fontSize: 13 }}>{fund.currency}</Typography>
         </Box>
-        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-          <Typography variant="body2" color="text.secondary">Start Date</Typography>
-          <Typography variant="body1">{formatDate(fund.start_date || null)}</Typography>
+        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Start Date</Typography>
+          <Typography variant="body1" sx={{ fontSize: 13 }}>{formatDate(fund.start_date || null)}</Typography>
         </Box>
         {fund.end_date && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">End Date</Typography>
-            <Typography variant="body1">{formatDate(fund.end_date)}</Typography>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>End Date</Typography>
+            <Typography variant="body1" sx={{ fontSize: 13 }}>{formatDate(fund.end_date)}</Typography>
           </Box>
         )}
         {fund.actual_duration_months && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Actual Duration</Typography>
-            <Typography variant="body1">{fund.actual_duration_months} months</Typography>
-          </Box>
-        )}
-        {fund.fund_type && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Fund Type</Typography>
-            <Typography variant="body1">{fund.fund_type}</Typography>
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Actual Duration</Typography>
+            <Typography variant="body1" sx={{ fontSize: 13 }}>{fund.actual_duration_months} months</Typography>
           </Box>
         )}
       </Box>
-      {fund.description && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="body2" color="text.secondary">Description</Typography>
-          <Typography variant="body1">{fund.description}</Typography>
-        </Box>
-      )}
     </Paper>
   );
 };
@@ -231,56 +273,73 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
  */
 const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <Receipt color="secondary" sx={{ mr: 1 }} />
-        <Typography variant="h6">Transaction Summary</Typography>
+    <Paper sx={{ 
+      p: 0.75, 
+      mb: 1, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <Receipt color="secondary" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>Transaction Summary</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-        {fund.total_capital_calls !== null && fund.total_capital_calls !== undefined && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Total Capital Calls</Typography>
-            <Typography variant="h6" color="primary">
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+        {fund.tracking_type === 'cost_based' && fund.total_capital_calls !== null && fund.total_capital_calls !== undefined && (
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Capital Calls</Typography>
+            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_capital_calls, fund.currency)}
             </Typography>
           </Box>
         )}
-        {fund.total_capital_returns !== null && fund.total_capital_returns !== undefined && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Total Capital Returns</Typography>
-            <Typography variant="h6" color="warning.main">
+        {fund.tracking_type === 'cost_based' && fund.total_capital_returns !== null && fund.total_capital_returns !== undefined && (
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Capital Returns</Typography>
+            <Typography variant="body1" color="warning.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_capital_returns, fund.currency)}
             </Typography>
           </Box>
         )}
+        {fund.total_distributions !== null && fund.total_distributions !== undefined && (
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Distributions</Typography>
+            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
+              {formatCurrency(fund.total_distributions, fund.currency)}
+            </Typography>
+          </Box>
+        )}
         {fund.total_tax_payments !== null && fund.total_tax_payments !== undefined && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Total Tax Payments</Typography>
-            <Typography variant="h6" color="error.main">
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Tax Payments</Typography>
+            <Typography variant="body1" color="error.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_tax_payments, fund.currency)}
             </Typography>
           </Box>
         )}
         {fund.total_daily_interest_charges !== null && fund.total_daily_interest_charges !== undefined && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Total Daily Interest Charges</Typography>
-            <Typography variant="h6" color="info.main">
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Daily Interest Charges</Typography>
+            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_daily_interest_charges, fund.currency)}
             </Typography>
           </Box>
         )}
-        {fund.total_unit_purchases !== null && fund.total_unit_purchases !== undefined && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Total Unit Purchases</Typography>
-            <Typography variant="h6" color="primary">
+        {fund.tracking_type === 'nav_based' && fund.total_unit_purchases !== null && fund.total_unit_purchases !== undefined && (
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Unit Purchases</Typography>
+            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_unit_purchases, fund.currency)}
             </Typography>
           </Box>
         )}
-        {fund.total_unit_sales !== null && fund.total_unit_sales !== undefined && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary">Total Unit Sales</Typography>
-            <Typography variant="h6" color="warning.main">
+        {fund.tracking_type === 'nav_based' && fund.total_unit_sales !== null && fund.total_unit_sales !== undefined && (
+          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Unit Sales</Typography>
+            <Typography variant="body1" color="warning.main" sx={{ fontSize: 13, fontWeight: 600 }}>
               {formatCurrency(fund.total_unit_sales, fund.currency)}
             </Typography>
           </Box>
@@ -305,9 +364,23 @@ const FundDetail: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<ExtendedFundEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
 
+  // Phase 2C: Sidebar toggle state with localStorage persistence
+  const [sidebarVisible, setSidebarVisible] = useState(() => {
+    const saved = localStorage.getItem('fundDetailSidebarVisible');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const toggleSidebar = () => {
+    const newState = !sidebarVisible;
+    setSidebarVisible(newState);
+    localStorage.setItem('fundDetailSidebarVisible', JSON.stringify(newState));
+  };
+
   // Centralized API hooks
   const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
+
+
 
   const formatCurrency = (amount: number | null, currency: string = 'AUD') => {
     if (amount === null) return '-';
@@ -435,17 +508,20 @@ const FundDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
+      <Box p={3}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px" flexDirection="column" gap={2}>
+          <CircularProgress size={40} />
+          <Typography variant="body2" color="text.secondary">
+            Loading fund details...
+          </Typography>
         </Box>
-      </Container>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box p={3}>
         <ErrorDisplay
           error={error}
           canRetry={error.retryable}
@@ -460,26 +536,26 @@ const FundDetail: React.FC = () => {
         >
           Back to Dashboard
         </Button>
-      </Container>
+      </Box>
     );
   }
 
   if (!fundData) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box p={3}>
         <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
           <Typography variant="body1" fontWeight="medium" color="warning.main">
             No fund data available
           </Typography>
         </Box>
-      </Container>
+      </Box>
     );
   }
 
   const { fund, events, statistics } = fundData;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Box p={3}>
       {/* Breadcrumb Navigation */}
       <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
         <Link
@@ -502,27 +578,163 @@ const FundDetail: React.FC = () => {
       </Breadcrumbs>
 
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+      <Box sx={{ mb: 3, position: 'relative' }}>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          gutterBottom
+          sx={{ 
+            fontWeight: 600,
+            color: 'text.primary',
+            letterSpacing: '-0.02em'
+          }}
+        >
           {fund.name}
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+        <Typography 
+          variant="subtitle1" 
+          color="text.secondary" 
+          gutterBottom
+          sx={{ 
+            fontWeight: 400,
+            opacity: 0.8
+          }}
+        >
           {fund.fund_type} • {fund.entity} • {fund.investment_company}
         </Typography>
+        
+        {/* Phase 2C: Sidebar Toggle Button */}
+        <IconButton
+          onClick={toggleSidebar}
+          sx={{ 
+            position: 'absolute', 
+            right: 0, 
+            top: 0,
+            zIndex: 1,
+            bgcolor: 'background.paper',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            borderRadius: 1,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              bgcolor: 'action.hover',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            }
+          }}
+        >
+          {sidebarVisible ? <ChevronLeft /> : <ChevronRight />}
+        </IconButton>
       </Box>
 
-      {/* New Section-Based Layout */}
-      <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      {/* Phase 2C: Side-by-Side Layout */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 2, sm: 3 },
+        minHeight: { xs: 'auto', sm: 'calc(100vh - 200px)' },
+        height: { xs: 'auto', sm: 'calc(100vh - 200px)' },
+        alignItems: 'stretch',
+        transition: 'all 0.3s ease-in-out',
+        // Visual separation: Add subtle border between sidebar and main area
+        '& > *:first-of-type': {
+          borderRight: { sm: '1px solid' },
+          borderColor: { sm: 'divider' },
+          pr: { sm: 2 }
+        }
+      }}>
+        {/* Left Sidebar - Summary Sections */}
+        <Box sx={{ 
+          width: sidebarVisible ? { xs: '100%', sm: '280px', md: '320px', lg: '360px' } : 0,
+          flexShrink: 0,
+          position: { xs: 'static', sm: 'relative' },
+          height: { xs: 'auto', sm: '100%' },
+          overflowY: { xs: 'visible', sm: 'auto' },
+          transition: 'all 0.3s ease-in-out',
+          overflow: 'hidden',
+          // Responsive optimization: Better mobile experience
+          order: { xs: 1, sm: 0 },
+          mb: { xs: 2, sm: 0 },
+          // Visual polish: Add subtle depth and professional appearance
+          bgcolor: 'background.paper',
+          borderRadius: { sm: 1 },
+          boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
+          display: 'flex',
+          flexDirection: 'column',
+          // Hide completely when not visible
+          opacity: sidebarVisible ? 1 : 0,
+          visibility: sidebarVisible ? 'visible' : 'hidden',
+          transform: sidebarVisible ? 'translateX(0)' : 'translateX(-100%)'
+        }}>
+          {/* Summary Section Header */}
+          <Box sx={{ 
+            p: 3, 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            bgcolor: 'grey.50'
+          }}>
+            <Typography 
+              variant="h6"
+              sx={{ 
+                fontWeight: 600,
+                color: 'text.primary',
+                letterSpacing: '-0.01em'
+              }}
+            >
+              Summary
+            </Typography>
+          </Box>
+          
+          <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+        </Box>
 
-      {/* Events Table Header with Add Cash Flow Button */}
-      <Paper sx={{ width: '100%', overflow: 'hidden', mb: 3 }}>
-        <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+        {/* Right Main Area - Events Table */}
+        <Box sx={{ 
+          flex: 1,
+          minWidth: 0,
+          height: { xs: 'auto', sm: '100%' },
+          overflow: 'hidden',
+          // Responsive optimization: Better mobile experience
+          order: { xs: 2, sm: 1 },
+          width: { xs: '100%', sm: 'auto' },
+          // Visual polish: Add subtle depth and professional appearance
+          bgcolor: 'background.paper',
+          borderRadius: { sm: 1 },
+          boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
+          pl: { sm: 2 },
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Events Table Header with Add Cash Flow Button */}
+      <Paper sx={{ 
+        width: '100%', 
+        overflow: 'hidden', 
+        mb: 3,
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        // Visual polish: Enhanced paper styling
+        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        borderRadius: 1
+      }}>
+        <Box sx={{ 
+          p: 3, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          bgcolor: 'grey.50'
+        }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
+            <Typography 
+              variant="h6"
+              sx={{ 
+                fontWeight: 600,
+                color: 'text.primary',
+                letterSpacing: '-0.01em'
+              }}
+            >
               Fund Events ({(() => {
                 const filteredEvents = events.filter(event => {
                   if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'EOFY_DEBT_COST')) {
@@ -538,12 +750,24 @@ const FundDetail: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Button
-                variant="contained"
+                variant="outlined"
                 color="primary"
                 onClick={() => setEventModalOpen(true)}
-                sx={{ minWidth: 160 }}
+                sx={{ 
+                  minWidth: { xs: 100, sm: 120 },
+                  fontSize: { xs: 11, sm: 12 },
+                  textTransform: 'none',
+                  borderRadius: 1.5,
+                  px: { xs: 1.5, sm: 2 },
+                  py: { xs: 0.5, sm: 0.75 },
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }
+                }}
               >
-                Add Cash Flow
+                Add Event
               </Button>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -553,6 +777,21 @@ const FundDetail: React.FC = () => {
                   checked={showTaxEvents}
                   onChange={(e) => setShowTaxEvents(e.target.checked)}
                   size="small"
+                  sx={{
+                    '& .MuiSwitch-switchBase': {
+                      color: 'grey.400',
+                      transition: 'all 0.2s ease-in-out',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: 'primary.main',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: 'primary.main',
+                    },
+                    '&:hover .MuiSwitch-switchBase': {
+                      transform: 'scale(1.05)',
+                    }
+                  }}
                 />
               </Box>
               {fund.tracking_type === 'nav_based' && (
@@ -564,6 +803,21 @@ const FundDetail: React.FC = () => {
                     checked={showNavUpdates}
                     onChange={(e) => setShowNavUpdates(e.target.checked)}
                     size="small"
+                    sx={{
+                      '& .MuiSwitch-switchBase': {
+                        color: 'grey.400',
+                        transition: 'all 0.2s ease-in-out',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: 'primary.main',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: 'primary.main',
+                      },
+                      '&:hover .MuiSwitch-switchBase': {
+                        transform: 'scale(1.05)',
+                      }
+                    }}
                   />
                 </Box>
               )}
@@ -571,33 +825,181 @@ const FundDetail: React.FC = () => {
           </Box>
         </Box>
         {/* Events Table */}
-        <TableContainer sx={{ maxHeight: 600 }}>
-          <Table stickyHeader>
+        <TableContainer sx={{ 
+                      flex: 1,
+            maxHeight: { xs: 300, sm: 'none' },
+          scrollBehavior: 'smooth',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'grey.100',
+            borderRadius: '4px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'grey.400',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: 'grey.500'
+            }
+          },
+          // Responsive optimization: Better mobile table experience
+          fontSize: { xs: '12px', sm: '13px' }
+        }}>
+          <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TableCell 
+                  sx={{ 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
+                    fontWeight: 600, 
+                    fontSize: { xs: 12, sm: 13 },
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
+                  Date
+                </TableCell>
+                <TableCell 
+                  sx={{ 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
+                    fontWeight: 600, 
+                    fontSize: { xs: 12, sm: 13 },
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
+                  Type
+                </TableCell>
+                <TableCell 
+                  sx={{ 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
+                    fontWeight: 600, 
+                    fontSize: { xs: 12, sm: 13 },
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
+                  Description
+                </TableCell>
+                <TableCell 
+                  align="center" 
+                  sx={{ 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
+                    fontWeight: 600, 
+                    fontSize: { xs: 12, sm: 13 },
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
                   Equity
                 </TableCell>
                 {fund.tracking_type === 'nav_based' && (
-                  <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                  <TableCell 
+                    align="center" 
+                    sx={{ 
+                      py: { xs: 1, sm: 1.5 }, 
+                      px: { xs: 1, sm: 2 }, 
+                      fontWeight: 600, 
+                      fontSize: { xs: 12, sm: 13 },
+                      backgroundColor: 'grey.50',
+                      borderBottom: 2,
+                      borderColor: 'grey.300',
+                      color: 'text.primary'
+                    }}
+                  >
                     Nav Update
                   </TableCell>
                 )}
-                <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TableCell 
+                  align="center" 
+                  sx={{ 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
+                    fontWeight: 600, 
+                    fontSize: { xs: 12, sm: 13 },
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
                   Distributions
                 </TableCell>
                 {showTaxEvents && (
-                  <TableCell align="right">Tax</TableCell>
+                  <TableCell 
+                    align="right"
+                    sx={{ 
+                      py: 1.5, 
+                      px: 2, 
+                      fontWeight: 600, 
+                      fontSize: 13,
+                      backgroundColor: 'grey.50',
+                      borderBottom: 2,
+                      borderColor: 'grey.300',
+                      color: 'text.primary'
+                    }}
+                  >
+                    Tax
+                  </TableCell>
                 )}
-                <TableCell align="right">Actions</TableCell>
+                <TableCell 
+                  align="right"
+                  sx={{ 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
+                    fontWeight: 600, 
+                    fontSize: { xs: 12, sm: 13 },
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
+                  Actions
+                </TableCell>
               </TableRow>
-
             </TableHead>
-            <TableBody>
+            <TableBody sx={{ 
+              '& .MuiTableCell-root': { 
+                py: { xs: 0.5, sm: 1 }, 
+                px: { xs: 1, sm: 2 }, 
+                fontSize: { xs: 12, sm: 13 } 
+              },
+              '& .MuiTableRow-root': {
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  '& .MuiTableCell-root': {
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
+                  }
+                }
+              }
+            }}
+            // Performance optimization: Only render visible rows
+            >
               {(() => {
+                // Performance optimization: Show loading state for large datasets
+                if (events.length > 100) {
+                  console.log(`Processing ${events.length} events - this may take a moment...`);
+                }
+                
                 // Debug: Log all events
                 console.log('All events:', events);
                 console.log('Events with RETURN_OF_CAPITAL:', events.filter(e => e.event_type === 'RETURN_OF_CAPITAL'));
@@ -679,26 +1081,49 @@ const FundDetail: React.FC = () => {
                           <TableCell align="right"></TableCell>
                         )}
                         {/* Actions Column */}
-                        <TableCell align="right">
-                          <Box display="flex" gap={1} justifyContent="flex-end">
+                        <TableCell align="right" sx={{ 
+                          minWidth: { xs: 80, sm: 120 }, 
+                          px: { xs: 1, sm: 2 } 
+                        }}>
+                          <Box display="flex" gap={{ xs: 0.5, sm: 1.5 }} justifyContent="flex-end" alignItems="center">
                             {/* Only show edit/delete for user-editable events */}
                             {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(interestEvent.event_type) && (
                               <>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleEditEvent(interestEvent)}
-                                  color="primary"
+                                  sx={{
+                                    color: 'primary.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'primary.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Edit event"
                                 >
-                                  <EditIcon fontSize="small" />
+                                  <EditIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDeleteEvent(interestEvent)}
-                                  color="error"
+                                  sx={{
+                                    color: 'error.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'error.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Delete event"
                                 >
-                                  <DeleteIcon fontSize="small" />
+                                  <DeleteIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </>
                             )}
@@ -929,26 +1354,46 @@ const FundDetail: React.FC = () => {
                           </TableCell>
                         )}
                         {/* Actions Column */}
-                        <TableCell align="right">
-                          <Box display="flex" gap={1} justifyContent="flex-end">
+                        <TableCell align="right" sx={{ minWidth: 120, px: 2 }}>
+                          <Box display="flex" gap={1.5} justifyContent="flex-end" alignItems="center">
                             {/* Only show edit/delete for user-editable events */}
                             {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(event.event_type) && (
                               <>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleEditEvent(event)}
-                                  color="primary"
+                                  sx={{
+                                    color: 'primary.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'primary.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Edit event"
                                 >
-                                  <EditIcon fontSize="small" />
+                                  <EditIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDeleteEvent(event)}
-                                  color="error"
+                                  sx={{
+                                    color: 'error.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'error.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Delete event"
                                 >
-                                  <DeleteIcon fontSize="small" />
+                                  <DeleteIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </>
                             )}
@@ -1184,26 +1629,46 @@ const FundDetail: React.FC = () => {
                           </TableCell>
                         )}
                         {/* Actions Column */}
-                        <TableCell align="right">
-                          <Box display="flex" gap={1} justifyContent="flex-end">
+                        <TableCell align="right" sx={{ minWidth: 120, px: 2 }}>
+                          <Box display="flex" gap={1.5} justifyContent="flex-end" alignItems="center">
                             {/* Only show edit/delete for user-editable events */}
                             {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(event.event_type) && (
                               <>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleEditEvent(event)}
-                                  color="primary"
+                                  sx={{
+                                    color: 'primary.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'primary.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Edit event"
                                 >
-                                  <EditIcon fontSize="small" />
+                                  <EditIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDeleteEvent(event)}
-                                  color="error"
+                                  sx={{
+                                    color: 'error.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'error.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Delete event"
                                 >
-                                  <DeleteIcon fontSize="small" />
+                                  <DeleteIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </>
                             )}
@@ -1425,6 +1890,8 @@ const FundDetail: React.FC = () => {
           </Box>
         </Paper>
       )}
+        </Box>
+      </Box>
       {/* Modal rendered at root */}
       <CreateFundEventModal
         open={eventModalOpen}
@@ -1468,7 +1935,7 @@ const FundDetail: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 

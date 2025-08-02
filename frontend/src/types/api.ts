@@ -365,6 +365,7 @@ export interface ExtendedFund extends Omit<Fund, 'investment_company' | 'entity'
   total_unit_sales?: number | null;              // Total unit sales (NAV-based funds)
   total_capital_calls?: number | null;           // Total capital calls (cost-based funds)
   total_capital_returns?: number | null;         // Total capital returns (cost-based funds)
+  total_distributions?: number | null;           // Total distributions
   actual_duration_months?: number | null;        // Calculated fund duration
   completed_irr?: number | null;                 // IRR for completed funds
   completed_after_tax_irr?: number | null;      // After-tax IRR for completed funds

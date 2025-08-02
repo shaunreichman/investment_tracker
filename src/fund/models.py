@@ -358,6 +358,7 @@ class Fund(Base):
         total_unit_sales = self.get_total_unit_sales(session=session)
         total_capital_calls = self.get_total_capital_calls(session=session)
         total_capital_returns = self.get_total_capital_returns(session=session)
+        total_distributions = self.get_total_distributions(session=session)
         actual_duration_months = self.calculate_actual_duration_months(session=session)
         completed_irr = self.calculate_completed_irr(session=session)
         completed_after_tax_irr = self.calculate_completed_after_tax_irr(session=session)
@@ -389,6 +390,7 @@ class Fund(Base):
             "total_unit_sales": total_unit_sales,
             "total_capital_calls": total_capital_calls,
             "total_capital_returns": total_capital_returns,
+            "total_distributions": total_distributions,
             "actual_duration_months": actual_duration_months,
             "completed_irr": completed_irr,
             "completed_after_tax_irr": completed_after_tax_irr,
