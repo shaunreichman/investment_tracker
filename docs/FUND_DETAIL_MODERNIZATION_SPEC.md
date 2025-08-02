@@ -80,6 +80,21 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - Cards should feel lightweight, not heavy containers
 - Actions should be discoverable but not distracting
 
+### Phase 2B: Compact Layout - Information Density ✅
+**Goal**: Make section groupings smaller and more compact for better information density
+
+**Tasks**:
+- [x] **Reduce section padding** from 16px to 8px for tighter layout
+- [x] **Make data items smaller** with reduced min-width and spacing
+- [x] **Use inline layouts** where possible instead of full-width rows
+- [x] **Optimize typography spacing** for more compact display
+- [x] **Group related data** in smaller, focused containers
+
+**Design Principles**:
+- Maximize information density without sacrificing readability
+- Use smaller, focused containers instead of large section cards
+- Maintain visual hierarchy while reducing visual weight
+
 ### Phase 3: Information Architecture
 **Goal**: Implement better data presentation and modern layout
 
@@ -196,6 +211,12 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - [x] Modernize status indicators
 - [x] Update card components
 - [x] Implement new button styles
+
+### Phase 2B: Compact Layout (Week 2) ✅
+- [x] Reduce section padding and spacing
+- [x] Optimize data item sizing
+- [x] Implement inline layouts
+- [x] Group related data more efficiently
 
 ### Phase 3: Layout (Week 3)
 - [ ] Implement data tables for transactions
