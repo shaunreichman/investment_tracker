@@ -354,9 +354,7 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
   const fundDetails = [
     { label: 'Status', value: fund.is_active ? 'Active' : 'Inactive', color: fund.is_active ? 'success.main' : 'text.secondary', icon: fund.is_active ? '🟢' : '⚪', priority: 1, isStatus: true },
     { label: 'Currency', value: fund.currency, color: 'text.primary', icon: '💱', priority: 2 },
-    { label: 'Start Date', value: formatDate(fund.start_date || null), color: 'text.primary', icon: '📅', priority: 3 },
-    ...(fund.end_date ? [{ label: 'End Date', value: formatDate(fund.end_date), color: 'text.primary', icon: '📅', priority: 4 }] : []),
-    ...(fund.actual_duration_months ? [{ label: 'Actual Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 5 }] : [])
+    ...(fund.actual_duration_months ? [{ label: 'Actual Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
   ];
 
   return (
