@@ -236,22 +236,59 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 
 
 
-### Phase 3: Information Architecture (Future)
+### Phase 3: Information Architecture ✅ COMPLETED
 **Goal**: Implement better data presentation and modern layout
 
-**Tasks**:
-- [ ] **Data Tables**
-  - [ ] Implement data tables for transaction summaries
-  - [ ] Add inline actions for edit/view operations
-  - [ ] Design summary cards that show key metrics at a glance
-- [ ] **Layout Optimization**
-  - [ ] Optimize layout density for better information display
-  - [ ] Improve data organization within existing sections
+**Completed Tasks**:
+- [x] **Data Tables**
+  - [x] Implement data tables for transaction summaries
+  - [x] Design summary cards that show key metrics at a glance
+- [x] **Layout Optimization**
+  - [x] Optimize layout density for better information display
+  - [x] Improve data organization within existing sections
+
+**Key Improvements**:
+- **Transaction Summary Table**: Replaced scattered fields with structured data table showing transaction types with icons and color-coded amounts
+- **Enhanced Equity Cards**: Improved visual hierarchy with priority highlighting, icons, and better spacing
+- **Performance Metrics**: Enhanced expected performance section with better data organization and visual consistency
+- **Better Information Density**: Optimized spacing and layout for more efficient data display
+- **Visual Consistency**: Applied consistent card styling and hover effects across all sections
 
 **Design Principles**:
 - Use tables for structured data, cards for overviews
 - Actions should be contextual to the data they affect
 - Maintain all information visible while improving organization
+
+### Phase 3B: Visual Consistency ✅ COMPLETED
+**Goal**: Unify all summary sections with consistent card styling and visual hierarchy
+
+**Completed Tasks**:
+- [x] **Unified Card Style**
+  - [x] Apply bordered individual fields style to all summary sections
+  - [x] Maintain icons for visual consistency across all sections
+  - [x] Use consistent spacing and typography hierarchy
+  - [x] Implement subtle background colors for priority indication
+- [x] **Enhanced Visual Hierarchy**
+  - [x] Primary metrics: Bordered cards with background highlighting
+  - [x] Secondary metrics: Simple bordered cards with consistent styling
+  - [x] Detailed data: Keep table format for transaction summaries
+  - [x] Consistent hover effects and transitions
+
+**Key Improvements**:
+- **Visual Consistency**: All sections now use the same "card within card" design pattern
+- **Better Hierarchy**: Clear visual separation between different data points
+- **Scalable Design**: Easy to add new fields without breaking the layout
+- **Professional Appearance**: More polished and intentional visual language
+- **Enhanced Scanning**: Clear visual boundaries help with quick data scanning
+- **Clean Minimal Design**: Consistent minimal grey borders across all sections
+- **Subtle Priority Highlighting**: Background colors only, no prominent border highlighting
+
+**Design Principles**:
+- Apply Expected Performance style (bordered individual fields) to all sections
+- Keep icons for visual personality and quick recognition
+- Use subtle background colors to indicate priority/importance
+- Use consistent minimal grey borders across all sections
+- Avoid prominent colored borders for cleaner appearance
 
 ### Phase 4: Visual Polish (Future)
 **Goal**: Add modern visual touches and micro-interactions

@@ -52,6 +52,38 @@ interface SectionProps {
  * Equity Section - Current investment position and value
  */
 const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Phase 3.2: Enhanced data organization for equity metrics
+  const equityMetrics = [
+    {
+      label: 'Current Balance',
+      value: fund.current_equity_balance ?? null,
+      color: 'primary.main',
+      icon: '💰',
+      priority: 1
+    },
+    {
+      label: 'Average Balance',
+      value: fund.average_equity_balance ?? null,
+      color: 'primary.main',
+      icon: '📊',
+      priority: 2
+    },
+    {
+      label: 'Commitment',
+      value: fund.commitment_amount ?? null,
+      color: 'info.main',
+      icon: '📋',
+      priority: 3
+    },
+    ...(fund.tracking_type === 'nav_based' ? [{
+      label: 'NAV Fund Value',
+      value: fund.current_nav_fund_value ?? null,
+      color: 'success.main',
+      icon: '📈',
+      priority: 4
+    }] : [])
+  ].filter(metric => metric.value !== null);
+
   return (
     <Paper sx={{ 
       p: 0.75, 
@@ -67,33 +99,41 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
         <AccountBalance color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Equity Position</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Current Balance</Typography>
-          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
-            {formatCurrency(fund.current_equity_balance, fund.currency)}
-          </Typography>
-        </Box>
-        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Average Balance</Typography>
-          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
-            {formatCurrency(fund.average_equity_balance, fund.currency)}
-          </Typography>
-        </Box>
-        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Commitment</Typography>
-          <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
-            {formatCurrency(fund.commitment_amount || null, fund.currency)}
-          </Typography>
-        </Box>
-        {fund.tracking_type === 'nav_based' && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Current NAV Fund Value</Typography>
-            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {formatCurrency(fund.current_nav_fund_value || null, fund.currency)}
+      
+      {/* Phase 3B: Enhanced card layout with consistent styling */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {equityMetrics.map((metric, index) => (
+          <Box 
+            key={index}
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 0.5,
+              borderRadius: 1,
+              backgroundColor: index === 0 ? 'primary.50' : 'transparent',
+              border: '1px solid',
+              borderColor: 'grey.200'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <span style={{ fontSize: '12px' }}>{metric.icon}</span>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                {metric.label}
+              </Typography>
+            </Box>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: metric.color,
+                fontSize: 12,
+                fontWeight: index === 0 ? 700 : 600
+              }}
+            >
+              {formatCurrency(metric.value, fund.currency)}
             </Typography>
           </Box>
-        )}
+        ))}
       </Box>
     </Paper>
   );
@@ -103,8 +143,28 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
  * Expected Performance Section - Planned/expected fund metrics
  */
 const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Only show if either expected IRR or duration exists
-  if (!fund.expected_irr && !fund.expected_duration_months) {
+  // Phase 3.3: Enhanced data organization for performance metrics
+  const performanceMetrics = [
+    {
+      label: 'Expected IRR',
+      value: fund.expected_irr,
+      unit: '%',
+      color: 'success.main',
+      icon: '📈',
+      priority: 1
+    },
+    {
+      label: 'Expected Duration',
+      value: fund.expected_duration_months,
+      unit: ' months',
+      color: 'success.main',
+      icon: '⏱️',
+      priority: 2
+    }
+  ].filter(metric => metric.value !== null && metric.value !== undefined);
+
+  // Only show if metrics exist
+  if (performanceMetrics.length === 0) {
     return null;
   }
 
@@ -123,23 +183,41 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
         <TrendingUp color="success" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Expected Performance</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-        {fund.expected_irr && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Expected IRR</Typography>
-            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {fund.expected_irr}%
+      
+      {/* Phase 3.3: Enhanced card layout with better density */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {performanceMetrics.map((metric, index) => (
+          <Box 
+            key={index}
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 0.5,
+              borderRadius: 1,
+              backgroundColor: 'success.50',
+              border: '1px solid',
+              borderColor: 'grey.200'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <span style={{ fontSize: '12px' }}>{metric.icon}</span>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                {metric.label}
+              </Typography>
+            </Box>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: metric.color,
+                fontSize: 12,
+                fontWeight: 600
+              }}
+            >
+              {metric.value}{metric.unit}
             </Typography>
           </Box>
-        )}
-        {fund.expected_duration_months && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Expected Duration</Typography>
-            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {fund.expected_duration_months} months
-            </Typography>
-          </Box>
-        )}
+        ))}
       </Box>
     </Paper>
   );
@@ -153,6 +231,34 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
   if (fund.is_active) {
     return null;
   }
+
+  // Phase 3B: Enhanced data organization for completed performance
+  const performanceMetrics = [
+    {
+      label: 'IRR',
+      value: fund.completed_irr,
+      unit: '%',
+      color: 'info.main',
+      icon: '📊',
+      priority: 1
+    },
+    {
+      label: 'Net-tax IRR',
+      value: fund.completed_after_tax_irr,
+      unit: '%',
+      color: 'info.main',
+      icon: '💰',
+      priority: 2
+    },
+    {
+      label: 'Gross IRR',
+      value: fund.completed_real_irr,
+      unit: '%',
+      color: 'info.main',
+      icon: '📈',
+      priority: 3
+    }
+  ].filter(metric => metric.value !== null && metric.value !== undefined);
 
   return (
     <Paper sx={{ 
@@ -169,31 +275,41 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
         <Assessment color="info" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Completed Performance</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-        {fund.completed_irr && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>IRR</Typography>
-            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {fund.completed_irr.toFixed(2)}%
+      
+      {/* Phase 3B: Enhanced card layout with consistent styling */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {performanceMetrics.map((metric, index) => (
+          <Box 
+            key={index}
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 0.5,
+              borderRadius: 1,
+              backgroundColor: 'info.50',
+              border: '1px solid',
+              borderColor: 'grey.200'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <span style={{ fontSize: '12px' }}>{metric.icon}</span>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                {metric.label}
+              </Typography>
+            </Box>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: metric.color,
+                fontSize: 12,
+                fontWeight: 600
+              }}
+            >
+              {metric.value?.toFixed(2)}{metric.unit}
             </Typography>
           </Box>
-        )}
-        {fund.completed_after_tax_irr && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Net-tax IRR</Typography>
-            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {fund.completed_after_tax_irr.toFixed(2)}%
-            </Typography>
-          </Box>
-        )}
-        {fund.completed_real_irr && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Gross IRR</Typography>
-            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {fund.completed_real_irr.toFixed(2)}%
-            </Typography>
-          </Box>
-        )}
+        ))}
       </Box>
     </Paper>
   );
@@ -203,6 +319,46 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
  * Fund Details Section - Metadata and status information
  */
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Phase 3B: Enhanced data organization for fund details
+  const fundDetails = [
+    {
+      label: 'Status',
+      value: fund.is_active ? 'Active' : 'Inactive',
+      color: fund.is_active ? 'success.main' : 'text.secondary',
+      icon: fund.is_active ? '🟢' : '⚪',
+      priority: 1,
+      isStatus: true
+    },
+    {
+      label: 'Currency',
+      value: fund.currency,
+      color: 'text.primary',
+      icon: '💱',
+      priority: 2
+    },
+    {
+      label: 'Start Date',
+      value: formatDate(fund.start_date || null),
+      color: 'text.primary',
+      icon: '📅',
+      priority: 3
+    },
+    ...(fund.end_date ? [{
+      label: 'End Date',
+      value: formatDate(fund.end_date),
+      color: 'text.primary',
+      icon: '📅',
+      priority: 4
+    }] : []),
+    ...(fund.actual_duration_months ? [{
+      label: 'Actual Duration',
+      value: `${fund.actual_duration_months} months`,
+      color: 'text.primary',
+      icon: '⏱️',
+      priority: 5
+    }] : [])
+  ];
+
   return (
     <Paper sx={{ 
       p: 0.75, 
@@ -218,51 +374,54 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
         <Info color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Fund Details</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Status</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mt: 0.5 }}>
-            <Box
-              sx={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                bgcolor: fund.is_active ? 'success.main' : 'grey.400',
-                transition: 'all 0.2s ease-in-out'
-              }}
-            />
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontSize: 11, 
-                color: fund.is_active ? 'success.main' : 'text.secondary',
-                fontWeight: fund.is_active ? 500 : 400
-              }}
-            >
-              {fund.is_active ? 'Active' : 'Inactive'}
-            </Typography>
+      
+      {/* Phase 3B: Enhanced card layout with consistent styling */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {fundDetails.map((detail, index) => (
+          <Box 
+            key={index}
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 0.5,
+              borderRadius: 1,
+              backgroundColor: detail.priority === 1 ? 'success.50' : 'transparent',
+              border: '1px solid',
+              borderColor: 'grey.200'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <span style={{ fontSize: '12px' }}>{detail.icon}</span>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                {detail.label}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {detail.isStatus && (
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: fund.is_active ? 'success.main' : 'grey.400',
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                />
+              )}
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: detail.color,
+                  fontSize: 12,
+                  fontWeight: detail.priority === 1 ? 600 : 500
+                }}
+              >
+                {detail.value}
+              </Typography>
+            </Box>
           </Box>
-        </Box>
-        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Currency</Typography>
-          <Typography variant="body1" sx={{ fontSize: 13 }}>{fund.currency}</Typography>
-        </Box>
-        <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Start Date</Typography>
-          <Typography variant="body1" sx={{ fontSize: 13 }}>{formatDate(fund.start_date || null)}</Typography>
-        </Box>
-        {fund.end_date && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>End Date</Typography>
-            <Typography variant="body1" sx={{ fontSize: 13 }}>{formatDate(fund.end_date)}</Typography>
-          </Box>
-        )}
-        {fund.actual_duration_months && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Actual Duration</Typography>
-            <Typography variant="body1" sx={{ fontSize: 13 }}>{fund.actual_duration_months} months</Typography>
-          </Box>
-        )}
+        ))}
       </Box>
     </Paper>
   );
@@ -272,6 +431,59 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
  * Transaction Summary Section - Activity breakdown and totals
  */
 const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Phase 3.1: Create transaction summary data for tables
+  const transactionData = [
+    // Capital transactions (cost-based funds)
+    ...(fund.tracking_type === 'cost_based' ? [
+      {
+        type: 'Capital Calls',
+        amount: fund.total_capital_calls ?? null,
+        color: 'primary.main',
+        icon: '📈'
+      },
+      {
+        type: 'Capital Returns',
+        amount: fund.total_capital_returns ?? null,
+        color: 'warning.main',
+        icon: '📉'
+      }
+    ] : []),
+    // Unit transactions (NAV-based funds)
+    ...(fund.tracking_type === 'nav_based' ? [
+      {
+        type: 'Unit Purchases',
+        amount: fund.total_unit_purchases ?? null,
+        color: 'primary.main',
+        icon: '📈'
+      },
+      {
+        type: 'Unit Sales',
+        amount: fund.total_unit_sales ?? null,
+        color: 'warning.main',
+        icon: '📉'
+      }
+    ] : []),
+    // Income transactions (all funds)
+    {
+      type: 'Distributions',
+      amount: fund.total_distributions ?? null,
+      color: 'success.main',
+      icon: '💰'
+    },
+    {
+      type: 'Tax Payments',
+      amount: fund.total_tax_payments ?? null,
+      color: 'error.main',
+      icon: '🏛️'
+    },
+    {
+      type: 'Interest Charges',
+      amount: fund.total_daily_interest_charges ?? null,
+      color: 'info.main',
+      icon: '📊'
+    }
+  ].filter(item => item.amount !== null);
+
   return (
     <Paper sx={{ 
       p: 0.75, 
@@ -287,63 +499,41 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
         <Receipt color="secondary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Transaction Summary</Typography>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-        {fund.tracking_type === 'cost_based' && fund.total_capital_calls !== null && fund.total_capital_calls !== undefined && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Capital Calls</Typography>
-            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {formatCurrency(fund.total_capital_calls, fund.currency)}
+      
+      {/* Phase 3B: Enhanced card layout with consistent styling */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {transactionData.map((item, index) => (
+          <Box 
+            key={index}
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 0.5,
+              borderRadius: 1,
+              backgroundColor: 'transparent',
+              border: '1px solid',
+              borderColor: 'grey.200'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <span style={{ fontSize: '12px' }}>{item.icon}</span>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                {item.type}
+              </Typography>
+            </Box>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: item.color,
+                fontSize: 12,
+                fontWeight: 600
+              }}
+            >
+              {formatCurrency(item.amount, fund.currency)}
             </Typography>
           </Box>
-        )}
-        {fund.tracking_type === 'cost_based' && fund.total_capital_returns !== null && fund.total_capital_returns !== undefined && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Capital Returns</Typography>
-            <Typography variant="body1" color="warning.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {formatCurrency(fund.total_capital_returns, fund.currency)}
-            </Typography>
-          </Box>
-        )}
-        {fund.total_distributions !== null && fund.total_distributions !== undefined && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Distributions</Typography>
-            <Typography variant="body1" color="success.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {formatCurrency(fund.total_distributions, fund.currency)}
-            </Typography>
-          </Box>
-        )}
-        {fund.total_tax_payments !== null && fund.total_tax_payments !== undefined && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Tax Payments</Typography>
-            <Typography variant="body1" color="error.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {formatCurrency(fund.total_tax_payments, fund.currency)}
-            </Typography>
-          </Box>
-        )}
-        {fund.total_daily_interest_charges !== null && fund.total_daily_interest_charges !== undefined && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Daily Interest Charges</Typography>
-            <Typography variant="body1" color="info.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {formatCurrency(fund.total_daily_interest_charges, fund.currency)}
-            </Typography>
-          </Box>
-        )}
-        {fund.tracking_type === 'nav_based' && fund.total_unit_purchases !== null && fund.total_unit_purchases !== undefined && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Unit Purchases</Typography>
-            <Typography variant="body1" color="primary" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {formatCurrency(fund.total_unit_purchases, fund.currency)}
-            </Typography>
-          </Box>
-        )}
-        {fund.tracking_type === 'nav_based' && fund.total_unit_sales !== null && fund.total_unit_sales !== undefined && (
-          <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Total Unit Sales</Typography>
-            <Typography variant="body1" color="warning.main" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {formatCurrency(fund.total_unit_sales, fund.currency)}
-            </Typography>
-          </Box>
-        )}
+        ))}
       </Box>
     </Paper>
   );
