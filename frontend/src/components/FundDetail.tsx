@@ -89,10 +89,12 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -113,7 +115,14 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               borderRadius: 1,
               backgroundColor: index === 0 ? 'primary.50' : 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: index === 0 ? 'primary.100' : 'grey.50',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -173,10 +182,12 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -197,7 +208,14 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
               borderRadius: 1,
               backgroundColor: 'success.50',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'success.100',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -260,15 +278,21 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
     }
   ].filter(metric => metric.value !== null && metric.value !== undefined);
 
+  if (performanceMetrics.length === 0) {
+    return null;
+  }
+
   return (
     <Paper sx={{ 
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -289,7 +313,14 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
               borderRadius: 1,
               backgroundColor: 'info.50',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'info.100',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -306,7 +337,7 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
                 fontWeight: 600
               }}
             >
-              {metric.value?.toFixed(2)}{metric.unit}
+              {metric.value}{metric.unit}
             </Typography>
           </Box>
         ))}
@@ -316,47 +347,15 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
 };
 
 /**
- * Fund Details Section - Metadata and status information
+ * Fund Details Section - Basic fund information
  */
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Phase 3B: Enhanced data organization for fund details
   const fundDetails = [
-    {
-      label: 'Status',
-      value: fund.is_active ? 'Active' : 'Inactive',
-      color: fund.is_active ? 'success.main' : 'text.secondary',
-      icon: fund.is_active ? '🟢' : '⚪',
-      priority: 1,
-      isStatus: true
-    },
-    {
-      label: 'Currency',
-      value: fund.currency,
-      color: 'text.primary',
-      icon: '💱',
-      priority: 2
-    },
-    {
-      label: 'Start Date',
-      value: formatDate(fund.start_date || null),
-      color: 'text.primary',
-      icon: '📅',
-      priority: 3
-    },
-    ...(fund.end_date ? [{
-      label: 'End Date',
-      value: formatDate(fund.end_date),
-      color: 'text.primary',
-      icon: '📅',
-      priority: 4
-    }] : []),
-    ...(fund.actual_duration_months ? [{
-      label: 'Actual Duration',
-      value: `${fund.actual_duration_months} months`,
-      color: 'text.primary',
-      icon: '⏱️',
-      priority: 5
-    }] : [])
+    { label: 'Status', value: fund.is_active ? 'Active' : 'Inactive', color: fund.is_active ? 'success.main' : 'text.secondary', icon: fund.is_active ? '🟢' : '⚪', priority: 1, isStatus: true },
+    { label: 'Currency', value: fund.currency, color: 'text.primary', icon: '💱', priority: 2 },
+    { label: 'Start Date', value: formatDate(fund.start_date || null), color: 'text.primary', icon: '📅', priority: 3 },
+    ...(fund.end_date ? [{ label: 'End Date', value: formatDate(fund.end_date), color: 'text.primary', icon: '📅', priority: 4 }] : []),
+    ...(fund.actual_duration_months ? [{ label: 'Actual Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 5 }] : [])
   ];
 
   return (
@@ -364,10 +363,12 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -388,7 +389,14 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
               borderRadius: 1,
               backgroundColor: detail.priority === 1 ? 'success.50' : 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: detail.priority === 1 ? 'success.100' : 'grey.50',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -399,24 +407,17 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               {detail.isStatus && (
-                <Box
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    bgcolor: fund.is_active ? 'success.main' : 'grey.400',
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                />
+                <Box sx={{ 
+                  width: 8, 
+                  height: 8, 
+                  borderRadius: '50%', 
+                  bgcolor: fund.is_active ? 'success.main' : 'grey.400',
+                  // Phase 4: Enhanced status indicator
+                  transition: 'all 0.2s ease-in-out',
+                  boxShadow: fund.is_active ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
+                }} />
               )}
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: detail.color,
-                  fontSize: 12,
-                  fontWeight: detail.priority === 1 ? 600 : 500
-                }}
-              >
+              <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
                 {detail.value}
               </Typography>
             </Box>
@@ -428,60 +429,24 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
 };
 
 /**
- * Transaction Summary Section - Activity breakdown and totals
+ * Transaction Summary Section - Summary of all transaction types
  */
 const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Phase 3.1: Create transaction summary data for tables
   const transactionData = [
     // Capital transactions (cost-based funds)
     ...(fund.tracking_type === 'cost_based' ? [
-      {
-        type: 'Capital Calls',
-        amount: fund.total_capital_calls ?? null,
-        color: 'primary.main',
-        icon: '📈'
-      },
-      {
-        type: 'Capital Returns',
-        amount: fund.total_capital_returns ?? null,
-        color: 'warning.main',
-        icon: '📉'
-      }
+      { type: 'Capital Calls', amount: fund.total_capital_calls ?? null, color: 'error.main', icon: '📤' },
+      { type: 'Returns of Capital', amount: fund.total_capital_returns ?? null, color: 'success.main', icon: '📥' }
     ] : []),
     // Unit transactions (NAV-based funds)
     ...(fund.tracking_type === 'nav_based' ? [
-      {
-        type: 'Unit Purchases',
-        amount: fund.total_unit_purchases ?? null,
-        color: 'primary.main',
-        icon: '📈'
-      },
-      {
-        type: 'Unit Sales',
-        amount: fund.total_unit_sales ?? null,
-        color: 'warning.main',
-        icon: '📉'
-      }
+      { type: 'Unit Purchases', amount: fund.total_unit_purchases ?? null, color: 'primary.main', icon: '📈' },
+      { type: 'Unit Sales', amount: fund.total_unit_sales ?? null, color: 'secondary.main', icon: '📉' }
     ] : []),
     // Income transactions (all funds)
-    {
-      type: 'Distributions',
-      amount: fund.total_distributions ?? null,
-      color: 'success.main',
-      icon: '💰'
-    },
-    {
-      type: 'Tax Payments',
-      amount: fund.total_tax_payments ?? null,
-      color: 'error.main',
-      icon: '🏛️'
-    },
-    {
-      type: 'Interest Charges',
-      amount: fund.total_daily_interest_charges ?? null,
-      color: 'info.main',
-      icon: '📊'
-    }
+    { type: 'Distributions', amount: fund.total_distributions ?? null, color: 'info.main', icon: '💰' },
+    { type: 'Tax Payments', amount: fund.total_tax_payments ?? null, color: 'warning.main', icon: '🏛️' },
+    { type: 'Total Cost of Capital Interest', amount: fund.total_daily_interest_charges ?? null, color: 'info.main', icon: '📊' }
   ].filter(item => item.amount !== null);
 
   return (
@@ -489,10 +454,12 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
       p: 0.75, 
       mb: 1, 
       borderRadius: 2,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
-        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
       }
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
@@ -513,7 +480,14 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
               borderRadius: 1,
               backgroundColor: 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200'
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'grey.50',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -522,14 +496,7 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
                 {item.type}
               </Typography>
             </Box>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: item.color,
-                fontSize: 12,
-                fontWeight: 600
-              }}
-            >
+            <Typography variant="body2" sx={{ color: item.color, fontSize: 12, fontWeight: 600 }}>
               {formatCurrency(item.amount, fund.currency)}
             </Typography>
           </Box>
@@ -700,8 +667,17 @@ const FundDetail: React.FC = () => {
     return (
       <Box p={3}>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px" flexDirection="column" gap={2}>
-          <CircularProgress size={40} />
-          <Typography variant="body2" color="text.secondary">
+          {/* Phase 4: Enhanced loading state */}
+          <CircularProgress 
+            size={40} 
+            sx={{ 
+              color: 'primary.main',
+              '& .MuiCircularProgress-circle': {
+                strokeLinecap: 'round',
+              }
+            }} 
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
             Loading fund details...
           </Typography>
         </Box>
@@ -802,13 +778,14 @@ const FundDetail: React.FC = () => {
             top: 0,
             zIndex: 1,
             bgcolor: 'background.paper',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-            borderRadius: 1,
-            transition: 'all 0.2s ease-in-out',
+            // Phase 4: Enhanced visual polish
+            boxShadow: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)',
+            borderRadius: 2,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
               bgcolor: 'action.hover',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.12), 0 3px 8px rgba(0,0,0,0.16)'
             }
           }}
         >
@@ -844,10 +821,10 @@ const FundDetail: React.FC = () => {
           // Responsive optimization: Better mobile experience
           order: { xs: 1, sm: 0 },
           mb: { xs: 2, sm: 0 },
-          // Visual polish: Add subtle depth and professional appearance
+          // Phase 4: Enhanced visual polish
           bgcolor: 'background.paper',
-          borderRadius: { sm: 1 },
-          boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
+          borderRadius: { sm: 2 },
+          boxShadow: { sm: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)' },
           display: 'flex',
           flexDirection: 'column',
           // Hide completely when not visible
@@ -890,10 +867,10 @@ const FundDetail: React.FC = () => {
           // Responsive optimization: Better mobile experience
           order: { xs: 2, sm: 1 },
           width: { xs: '100%', sm: 'auto' },
-          // Visual polish: Add subtle depth and professional appearance
+          // Phase 4: Enhanced visual polish
           bgcolor: 'background.paper',
-          borderRadius: { sm: 1 },
-          boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
+          borderRadius: { sm: 2 },
+          boxShadow: { sm: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)' },
           pl: { sm: 2 },
           display: 'flex',
           flexDirection: 'column'
@@ -906,9 +883,13 @@ const FundDetail: React.FC = () => {
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        // Visual polish: Enhanced paper styling
-        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-        borderRadius: 1
+        // Phase 4: Enhanced visual polish
+        boxShadow: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)',
+        borderRadius: 2,
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          boxShadow: '0 6px 20px rgba(0,0,0,0.12), 0 3px 8px rgba(0,0,0,0.16)'
+        }
       }}>
         <Box sx={{ 
           p: 3, 
@@ -1016,9 +997,10 @@ const FundDetail: React.FC = () => {
         </Box>
         {/* Events Table */}
         <TableContainer sx={{ 
-                      flex: 1,
-            maxHeight: { xs: 300, sm: 'none' },
+          flex: 1,
+          maxHeight: { xs: 300, sm: 'none' },
           scrollBehavior: 'smooth',
+          // Phase 4: Enhanced scrollbar styling
           '&::-webkit-scrollbar': {
             width: '8px',
             height: '8px'
@@ -1030,6 +1012,7 @@ const FundDetail: React.FC = () => {
           '&::-webkit-scrollbar-thumb': {
             backgroundColor: 'grey.400',
             borderRadius: '4px',
+            transition: 'background-color 0.2s ease-in-out',
             '&:hover': {
               backgroundColor: 'grey.500'
             }
@@ -1169,12 +1152,14 @@ const FundDetail: React.FC = () => {
                 px: { xs: 1, sm: 2 }, 
                 fontSize: { xs: 12, sm: 13 } 
               },
+              // Phase 4: Enhanced table row styling
               '& .MuiTableRow-root': {
-                transition: 'all 0.2s ease-in-out',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                borderRadius: 1,
                 '&:hover': {
                   backgroundColor: 'action.hover',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)',
                   '& .MuiTableCell-root': {
                     borderBottom: '1px solid',
                     borderColor: 'divider'
