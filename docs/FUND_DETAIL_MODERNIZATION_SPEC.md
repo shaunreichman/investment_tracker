@@ -128,33 +128,31 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 ### Phase 2C: Side-by-Side Layout - Summary & Details Split ✅
 **Goal**: Implement a professional dashboard layout with summary metrics in a left sidebar and detailed events in the main area
 
-**Tasks**:
-- [ ] **2C.1: Foundation Layout Structure**
-  - [ ] Create responsive flex container with sidebar and main area
-  - [ ] Implement sidebar width system (280px-360px based on screen size)
-  - [ ] Add gap spacing between sidebar and main area (24px)
-  - [ ] Ensure main area takes remaining space with proper overflow handling
+**Current Status**:
+- [x] **2C.1: Foundation Layout Structure** ✅ **COMPLETED**
+  - [x] Create responsive flex container with sidebar and main area
+  - [x] Implement sidebar width system (280px-360px based on screen size)
+  - [x] Add gap spacing between sidebar and main area (24px)
+  - [x] Ensure main area takes remaining space with proper overflow handling
+  - [x] Implement sidebar toggle functionality with local storage
+  - [x] Fix page layout consistency with other pages
 
-- [ ] **2C.2: Sidebar Summary Sections**
-  - [ ] Move all existing summary sections to sidebar container
+- [ ] **2C.2: Sidebar Summary Sections** (Next)
   - [ ] Optimize section spacing for vertical layout (8px gaps)
   - [ ] Implement dynamic sizing based on content (multi-row support)
   - [ ] Add subtle scroll for sidebar if content exceeds viewport height
   - [ ] Maintain existing compact styling and hover effects
 
-- [ ] **2C.3: Main Area Events Table**
-  - [ ] Move events table to main area with full width
+- [ ] **2C.3: Main Area Events Table** (Future)
   - [ ] Optimize table layout for increased horizontal space
   - [ ] Ensure proper responsive behavior within main container
   - [ ] Maintain all existing table functionality and interactions
 
-- [ ] **2C.4: Responsive Breakpoints**
-  - [ ] Implement sidebar width scaling: xs=100%, sm=280px, md=320px, lg=360px
-  - [ ] Add container max-width constraints for ultra-wide screens
-  - [ ] Ensure proper spacing adjustments at each breakpoint
+- [ ] **2C.4: Responsive Breakpoints** (Future)
   - [ ] Test layout stability across different screen sizes
+  - [ ] Fine-tune responsive behavior if needed
 
-- [ ] **2C.5: Visual Polish & Interactions**
+- [ ] **2C.5: Visual Polish & Interactions** (Future)
   - [ ] Add subtle border or shadow separation between sidebar and main area
   - [ ] Implement smooth transitions for layout changes
   - [ ] Ensure consistent spacing and typography across both areas
