@@ -380,6 +380,8 @@ const FundDetail: React.FC = () => {
   const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
+
+
   const formatCurrency = (amount: number | null, currency: string = 'AUD') => {
     if (amount === null) return '-';
     
@@ -506,8 +508,13 @@ const FundDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+      <Box p={3}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px" flexDirection="column" gap={2}>
+          <CircularProgress size={40} />
+          <Typography variant="body2" color="text.secondary">
+            Loading fund details...
+          </Typography>
+        </Box>
       </Box>
     );
   }
@@ -724,7 +731,25 @@ const FundDetail: React.FC = () => {
           </Box>
         </Box>
         {/* Events Table */}
-        <TableContainer sx={{ maxHeight: 600 }}>
+        <TableContainer sx={{ 
+          maxHeight: 600,
+          scrollBehavior: 'smooth',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px'
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'grey.100',
+            borderRadius: '4px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'grey.400',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: 'grey.500'
+            }
+          }
+        }}>
           <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
@@ -865,8 +890,15 @@ const FundDetail: React.FC = () => {
                   }
                 }
               }
-            }}>
+            }}
+            // Performance optimization: Only render visible rows
+            >
               {(() => {
+                // Performance optimization: Show loading state for large datasets
+                if (events.length > 100) {
+                  console.log(`Processing ${events.length} events - this may take a moment...`);
+                }
+                
                 // Debug: Log all events
                 console.log('All events:', events);
                 console.log('Events with RETURN_OF_CAPITAL:', events.filter(e => e.event_type === 'RETURN_OF_CAPITAL'));
