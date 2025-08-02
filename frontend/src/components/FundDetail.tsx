@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import {
-  Container,
   Typography,
   Paper,
   Box,
-  Card,
-  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -23,11 +20,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText,
-  Grid
+  DialogContentText
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
-import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon, Timeline, Assessment, Info, Receipt, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { TrendingUp, AccountBalance, Edit as EditIcon, Delete as DeleteIcon, Assessment, Info, Receipt, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
 import CreateFundEventModal from './CreateFundEventModal';
@@ -945,7 +941,7 @@ const FundDetail: React.FC = () => {
     );
   }
 
-  const { fund, events, statistics } = fundData;
+  const { fund, events } = fundData;
 
   return (
     <Box p={3}>
@@ -1434,11 +1430,7 @@ const FundDetail: React.FC = () => {
                   // If we have both interest and withholding on the same date, combine them
                   if (interestEvent && withholdingEvent) {
                                               const isNavBased = fund.tracking_type === 'nav_based';
-                          const isEquityEvent = isNavBased 
-                            ? (interestEvent.event_type === 'UNIT_PURCHASE' || interestEvent.event_type === 'UNIT_SALE')
-                            : (interestEvent.event_type === 'CAPITAL_CALL' || interestEvent.event_type === 'RETURN_OF_CAPITAL');
                           const isDistributionEvent = interestEvent.event_type === 'DISTRIBUTION';
-                          // Note: isEquityEvent is used in the JSX below
 
                     return (
                       <React.Fragment key={`${date}-combined`}>
