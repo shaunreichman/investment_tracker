@@ -187,6 +187,7 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - **Optimized Padding**: Section padding reduced from 16px to 12px
 - **Better Information Density**: More content fits without scrolling
 - **Status Alignment Fix**: Dot and text properly centered under "Status" heading
+- **Summary Header**: Added "Summary" heading to match "Fund Events" heading alignment
 
 **Completed Tasks**:
 - [x] **Section Container Optimization**
@@ -203,6 +204,10 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
   - [x] Reduce value font sizes from 14px to 13px
   - [x] Maintain readability while saving space
   - [x] Consistent sizing across all sections
+- [x] **Visual Hierarchy Enhancement**
+  - [x] Add "Summary" heading to sidebar for better section identification
+  - [x] Standardize header styling to match main area "Fund Events" heading
+  - [x] Create perfect visual alignment between left and right sections
 
 **Design Principles**:
 - Prioritize the most important metrics for quick scanning
