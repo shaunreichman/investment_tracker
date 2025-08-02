@@ -611,7 +611,8 @@ const FundDetail: React.FC = () => {
         flexDirection: { xs: 'column', sm: 'row' },
         gap: { xs: 2, sm: 3 },
         minHeight: { xs: 'auto', sm: 'calc(100vh - 200px)' },
-        alignItems: 'flex-start'
+        alignItems: 'flex-start',
+        transition: 'all 0.3s ease-in-out'
       }}>
         {/* Left Sidebar - Summary Sections */}
         <Box sx={{ 
@@ -621,8 +622,11 @@ const FundDetail: React.FC = () => {
           top: { sm: 24 },
           maxHeight: { xs: 'auto', sm: 'calc(100vh - 250px)' },
           overflowY: { xs: 'visible', sm: 'auto' },
-          transition: 'width 0.3s ease-in-out',
-          overflow: 'hidden'
+          transition: 'all 0.3s ease-in-out',
+          overflow: 'hidden',
+          // Responsive optimization: Better mobile experience
+          order: { xs: 1, sm: 0 },
+          mb: { xs: 2, sm: 0 }
         }}>
           {/* Summary Section Header */}
           <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
@@ -642,7 +646,10 @@ const FundDetail: React.FC = () => {
         <Box sx={{ 
           flex: 1,
           minWidth: 0,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          // Responsive optimization: Better mobile experience
+          order: { xs: 2, sm: 1 },
+          width: { xs: '100%', sm: 'auto' }
         }}>
           {/* Events Table Header with Add Cash Flow Button */}
       <Paper sx={{ width: '100%', overflow: 'hidden', mb: 3 }}>
@@ -668,12 +675,12 @@ const FundDetail: React.FC = () => {
                 color="primary"
                 onClick={() => setEventModalOpen(true)}
                 sx={{ 
-                  minWidth: 120,
-                  fontSize: 12,
+                  minWidth: { xs: 100, sm: 120 },
+                  fontSize: { xs: 11, sm: 12 },
                   textTransform: 'none',
                   borderRadius: 1.5,
-                  px: 2,
-                  py: 0.75,
+                  px: { xs: 1.5, sm: 2 },
+                  py: { xs: 0.5, sm: 0.75 },
                   transition: 'all 0.2s ease-in-out',
                   '&:hover': {
                     transform: 'translateY(-1px)',
@@ -732,7 +739,7 @@ const FundDetail: React.FC = () => {
         </Box>
         {/* Events Table */}
         <TableContainer sx={{ 
-          maxHeight: 600,
+          maxHeight: { xs: 400, sm: 500, md: 600 },
           scrollBehavior: 'smooth',
           '&::-webkit-scrollbar': {
             width: '8px',
@@ -748,17 +755,19 @@ const FundDetail: React.FC = () => {
             '&:hover': {
               backgroundColor: 'grey.500'
             }
-          }
+          },
+          // Responsive optimization: Better mobile table experience
+          fontSize: { xs: '12px', sm: '13px' }
         }}>
           <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
                 <TableCell 
                   sx={{ 
-                    py: 1.5, 
-                    px: 2, 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
                     fontWeight: 600, 
-                    fontSize: 13,
+                    fontSize: { xs: 12, sm: 13 },
                     backgroundColor: 'grey.50',
                     borderBottom: 2,
                     borderColor: 'grey.300',
@@ -769,10 +778,10 @@ const FundDetail: React.FC = () => {
                 </TableCell>
                 <TableCell 
                   sx={{ 
-                    py: 1.5, 
-                    px: 2, 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
                     fontWeight: 600, 
-                    fontSize: 13,
+                    fontSize: { xs: 12, sm: 13 },
                     backgroundColor: 'grey.50',
                     borderBottom: 2,
                     borderColor: 'grey.300',
@@ -783,10 +792,10 @@ const FundDetail: React.FC = () => {
                 </TableCell>
                 <TableCell 
                   sx={{ 
-                    py: 1.5, 
-                    px: 2, 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
                     fontWeight: 600, 
-                    fontSize: 13,
+                    fontSize: { xs: 12, sm: 13 },
                     backgroundColor: 'grey.50',
                     borderBottom: 2,
                     borderColor: 'grey.300',
@@ -798,10 +807,10 @@ const FundDetail: React.FC = () => {
                 <TableCell 
                   align="center" 
                   sx={{ 
-                    py: 1.5, 
-                    px: 2, 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
                     fontWeight: 600, 
-                    fontSize: 13,
+                    fontSize: { xs: 12, sm: 13 },
                     backgroundColor: 'grey.50',
                     borderBottom: 2,
                     borderColor: 'grey.300',
@@ -814,10 +823,10 @@ const FundDetail: React.FC = () => {
                   <TableCell 
                     align="center" 
                     sx={{ 
-                      py: 1.5, 
-                      px: 2, 
+                      py: { xs: 1, sm: 1.5 }, 
+                      px: { xs: 1, sm: 2 }, 
                       fontWeight: 600, 
-                      fontSize: 13,
+                      fontSize: { xs: 12, sm: 13 },
                       backgroundColor: 'grey.50',
                       borderBottom: 2,
                       borderColor: 'grey.300',
@@ -830,10 +839,10 @@ const FundDetail: React.FC = () => {
                 <TableCell 
                   align="center" 
                   sx={{ 
-                    py: 1.5, 
-                    px: 2, 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
                     fontWeight: 600, 
-                    fontSize: 13,
+                    fontSize: { xs: 12, sm: 13 },
                     backgroundColor: 'grey.50',
                     borderBottom: 2,
                     borderColor: 'grey.300',
@@ -862,10 +871,10 @@ const FundDetail: React.FC = () => {
                 <TableCell 
                   align="right"
                   sx={{ 
-                    py: 1.5, 
-                    px: 2, 
+                    py: { xs: 1, sm: 1.5 }, 
+                    px: { xs: 1, sm: 2 }, 
                     fontWeight: 600, 
-                    fontSize: 13,
+                    fontSize: { xs: 12, sm: 13 },
                     backgroundColor: 'grey.50',
                     borderBottom: 2,
                     borderColor: 'grey.300',
@@ -877,7 +886,11 @@ const FundDetail: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody sx={{ 
-              '& .MuiTableCell-root': { py: 1, px: 2, fontSize: 13 },
+              '& .MuiTableCell-root': { 
+                py: { xs: 0.5, sm: 1 }, 
+                px: { xs: 1, sm: 2 }, 
+                fontSize: { xs: 12, sm: 13 } 
+              },
               '& .MuiTableRow-root': {
                 transition: 'all 0.2s ease-in-out',
                 '&:hover': {
@@ -980,8 +993,11 @@ const FundDetail: React.FC = () => {
                           <TableCell align="right"></TableCell>
                         )}
                         {/* Actions Column */}
-                        <TableCell align="right" sx={{ minWidth: 120, px: 2 }}>
-                          <Box display="flex" gap={1.5} justifyContent="flex-end" alignItems="center">
+                        <TableCell align="right" sx={{ 
+                          minWidth: { xs: 80, sm: 120 }, 
+                          px: { xs: 1, sm: 2 } 
+                        }}>
+                          <Box display="flex" gap={{ xs: 0.5, sm: 1.5 }} justifyContent="flex-end" alignItems="center">
                             {/* Only show edit/delete for user-editable events */}
                             {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(interestEvent.event_type) && (
                               <>
