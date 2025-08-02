@@ -114,56 +114,56 @@ Redesign the Fund Detail page to organize information into logical, scannable se
 
 ## Implementation Steps
 
-### Phase 1: Backend Foundation
+### Phase 1: Backend Foundation ✅
 **Goal**: Add missing calculated fields to domain model
 
 **Tasks**:
-- [ ] **Add Domain Methods**: Create methods for calculating missing fields
-  - [ ] `get_current_nav_fund_value()` - NAV fund value calculation
-  - [ ] `get_total_tax_payments()` - Sum of tax payment events
-  - [ ] `get_total_daily_interest_charges()` - Sum of daily charge events
-  - [ ] `get_start_date()` - First event date
-  - [ ] `get_end_date()` - Last event date (if completed)
-  - [ ] `calculate_actual_duration_months()` - Duration calculation
-  - [ ] `calculate_completed_irr()` - IRR for completed funds
+- [x] **Add Domain Methods**: Create methods for calculating missing fields
+  - [x] `get_current_nav_fund_value()` - NAV fund value calculation
+  - [x] `get_total_tax_payments()` - Sum of tax payment events
+  - [x] `get_total_daily_interest_charges()` - Sum of daily charge events
+  - [x] `get_start_date()` - First event date
+  - [x] `get_end_date()` - Last event date (if completed)
+  - [x] `calculate_actual_duration_months()` - Duration calculation
+  - [x] `calculate_completed_irr()` - IRR for completed funds
 
-- [ ] **Update Summary Data**: Extend `get_summary_data()` method to include new fields
+- [x] **Update Summary Data**: Extend `get_summary_data()` method to include new fields
 
-- [ ] **Testing**: Create unit tests for new domain methods
+- [x] **Testing**: Create unit tests for new domain methods
 
-### Phase 2: API Enhancement
+### Phase 2: API Enhancement ✅
 **Goal**: Expose new calculated fields through API
 
 **Tasks**:
-- [ ] **Update API Response**: Include new calculated fields in fund detail endpoint
-- [ ] **Error Handling**: Ensure graceful handling of missing data
-- [ ] **Performance**: Optimize queries to maintain response speed
-- [ ] **Testing**: Verify API responses include all new fields
+- [x] **Update API Response**: Include new calculated fields in fund detail endpoint
+- [x] **Error Handling**: Ensure graceful handling of missing data
+- [x] **Performance**: Optimize queries to maintain response speed
+- [x] **Testing**: Verify API responses include all new fields
 
-### Phase 3: Frontend Type Updates
+### Phase 3: Frontend Type Updates ✅
 **Goal**: Update TypeScript interfaces to support new fields
 
 **Tasks**:
-- [ ] **Extend Interfaces**: Add new fields to `ExtendedFund` interface
-- [ ] **Type Safety**: Ensure proper null handling in types
-- [ ] **Documentation**: Update interface documentation
+- [x] **Extend Interfaces**: Add new fields to `ExtendedFund` interface
+- [x] **Type Safety**: Ensure proper null handling in types
+- [x] **Documentation**: Update interface documentation
 
-### Phase 4: Frontend Component Redesign
+### Phase 4: Frontend Component Redesign ✅
 **Goal**: Implement new section-based layout
 
 **Tasks**:
-- [ ] **Create Section Components**: Build reusable components for each section
-  - [ ] `EquitySection` - Equity position display
-  - [ ] `ExpectedPerformanceSection` - Expected metrics
-  - [ ] `CompletedPerformanceSection` - Historical performance
-  - [ ] `FundDetailsSection` - Fund metadata
-  - [ ] `TransactionSummarySection` - Activity breakdown
+- [x] **Create Section Components**: Build reusable components for each section
+  - [x] `EquitySection` - Equity position display
+  - [x] `ExpectedPerformanceSection` - Expected metrics
+  - [x] `CompletedPerformanceSection` - Historical performance
+  - [x] `FundDetailsSection` - Fund metadata
+  - [x] `TransactionSummarySection` - Activity breakdown
 
-- [ ] **Conditional Logic**: Implement proper show/hide logic for sections
+- [x] **Conditional Logic**: Implement proper show/hide logic for sections
 
-- [ ] **Responsive Design**: Ensure layout works on all screen sizes
+- [x] **Responsive Design**: Ensure layout works on all screen sizes
 
-- [ ] **Integration**: Replace existing overview cards with new sections
+- [x] **Integration**: Replace existing overview cards with new sections
 
 ## Testing Strategy
 

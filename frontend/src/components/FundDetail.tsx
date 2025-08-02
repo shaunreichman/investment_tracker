@@ -23,18 +23,276 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText
+  DialogContentText,
+  Grid
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
-import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon, Timeline, Assessment, Info, Receipt } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
 import CreateFundEventModal from './CreateFundEventModal';
 import EditFundEventModal from './EditFundEventModal';
 import { 
-  ExtendedFundEvent
+  ExtendedFundEvent,
+  ExtendedFund
 } from '../types/api';
 import { useFundDetail, useDeleteFundEvent } from '../hooks/useFunds';
+
+// ============================================================================
+// SECTION COMPONENTS FOR FUND DETAIL REDESIGN
+// ============================================================================
+
+interface SectionProps {
+  fund: ExtendedFund;
+  formatCurrency: (amount: number | null, currency?: string) => string;
+  formatDate: (dateString: string | null) => string;
+}
+
+/**
+ * Equity Section - Current investment position and value
+ */
+const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  return (
+    <Paper sx={{ p: 3, mb: 3 }}>
+      <Box display="flex" alignItems="center" mb={2}>
+        <AccountBalance color="primary" sx={{ mr: 1 }} />
+        <Typography variant="h6">Equity Position</Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+          <Typography variant="body2" color="text.secondary">Current Balance</Typography>
+          <Typography variant="h5" color="primary">
+            {formatCurrency(fund.current_equity_balance, fund.currency)}
+          </Typography>
+        </Box>
+        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+          <Typography variant="body2" color="text.secondary">Average Balance</Typography>
+          <Typography variant="h5" color="primary">
+            {formatCurrency(fund.average_equity_balance, fund.currency)}
+          </Typography>
+        </Box>
+        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+          <Typography variant="body2" color="text.secondary">Commitment</Typography>
+          <Typography variant="h5" color="primary">
+            {formatCurrency(fund.commitment_amount || null, fund.currency)}
+          </Typography>
+        </Box>
+        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+          <Typography variant="body2" color="text.secondary">Current NAV Fund Value</Typography>
+          <Typography variant="h5" color="primary">
+            {formatCurrency(fund.current_nav_fund_value || null, fund.currency)}
+          </Typography>
+        </Box>
+      </Box>
+    </Paper>
+  );
+};
+
+/**
+ * Expected Performance Section - Planned/expected fund metrics
+ */
+const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Only show if either expected IRR or duration exists
+  if (!fund.expected_irr && !fund.expected_duration_months) {
+    return null;
+  }
+
+  return (
+    <Paper sx={{ p: 3, mb: 3 }}>
+      <Box display="flex" alignItems="center" mb={2}>
+        <TrendingUp color="success" sx={{ mr: 1 }} />
+        <Typography variant="h6">Expected Performance</Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        {fund.expected_irr && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Expected IRR</Typography>
+            <Typography variant="h5" color="success.main">
+              {fund.expected_irr}%
+            </Typography>
+          </Box>
+        )}
+        {fund.expected_duration_months && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Expected Duration</Typography>
+            <Typography variant="h5" color="success.main">
+              {fund.expected_duration_months} months
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </Paper>
+  );
+};
+
+/**
+ * Completed Performance Section - Historical performance for finished funds
+ */
+const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Only show if fund is not active (completed)
+  if (fund.is_active) {
+    return null;
+  }
+
+  return (
+    <Paper sx={{ p: 3, mb: 3 }}>
+      <Box display="flex" alignItems="center" mb={2}>
+        <Assessment color="info" sx={{ mr: 1 }} />
+        <Typography variant="h6">Completed Performance</Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        {fund.completed_irr && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">IRR</Typography>
+            <Typography variant="h5" color="info.main">
+              {fund.completed_irr.toFixed(2)}%
+            </Typography>
+          </Box>
+        )}
+        {fund.completed_after_tax_irr && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Net-tax IRR</Typography>
+            <Typography variant="h5" color="info.main">
+              {fund.completed_after_tax_irr.toFixed(2)}%
+            </Typography>
+          </Box>
+        )}
+        {fund.completed_real_irr && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Gross IRR</Typography>
+            <Typography variant="h5" color="info.main">
+              {fund.completed_real_irr.toFixed(2)}%
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </Paper>
+  );
+};
+
+/**
+ * Fund Details Section - Metadata and status information
+ */
+const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  return (
+    <Paper sx={{ p: 3, mb: 3 }}>
+      <Box display="flex" alignItems="center" mb={2}>
+        <Info color="primary" sx={{ mr: 1 }} />
+        <Typography variant="h6">Fund Details</Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+          <Typography variant="body2" color="text.secondary">Status</Typography>
+          <Chip 
+            label={fund.is_active ? 'Active' : 'Inactive'} 
+            color={fund.is_active ? 'success' : 'default'}
+            size="small"
+          />
+        </Box>
+        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+          <Typography variant="body2" color="text.secondary">Currency</Typography>
+          <Typography variant="body1">{fund.currency}</Typography>
+        </Box>
+        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+          <Typography variant="body2" color="text.secondary">Start Date</Typography>
+          <Typography variant="body1">{formatDate(fund.start_date || null)}</Typography>
+        </Box>
+        {fund.end_date && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">End Date</Typography>
+            <Typography variant="body1">{formatDate(fund.end_date)}</Typography>
+          </Box>
+        )}
+        {fund.actual_duration_months && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Actual Duration</Typography>
+            <Typography variant="body1">{fund.actual_duration_months} months</Typography>
+          </Box>
+        )}
+        {fund.fund_type && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Fund Type</Typography>
+            <Typography variant="body1">{fund.fund_type}</Typography>
+          </Box>
+        )}
+      </Box>
+      {fund.description && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary">Description</Typography>
+          <Typography variant="body1">{fund.description}</Typography>
+        </Box>
+      )}
+    </Paper>
+  );
+};
+
+/**
+ * Transaction Summary Section - Activity breakdown and totals
+ */
+const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  return (
+    <Paper sx={{ p: 3, mb: 3 }}>
+      <Box display="flex" alignItems="center" mb={2}>
+        <Receipt color="secondary" sx={{ mr: 1 }} />
+        <Typography variant="h6">Transaction Summary</Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        {fund.total_capital_calls !== null && fund.total_capital_calls !== undefined && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Total Capital Calls</Typography>
+            <Typography variant="h6" color="primary">
+              {formatCurrency(fund.total_capital_calls, fund.currency)}
+            </Typography>
+          </Box>
+        )}
+        {fund.total_capital_returns !== null && fund.total_capital_returns !== undefined && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Total Capital Returns</Typography>
+            <Typography variant="h6" color="warning.main">
+              {formatCurrency(fund.total_capital_returns, fund.currency)}
+            </Typography>
+          </Box>
+        )}
+        {fund.total_tax_payments !== null && fund.total_tax_payments !== undefined && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Total Tax Payments</Typography>
+            <Typography variant="h6" color="error.main">
+              {formatCurrency(fund.total_tax_payments, fund.currency)}
+            </Typography>
+          </Box>
+        )}
+        {fund.total_daily_interest_charges !== null && fund.total_daily_interest_charges !== undefined && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Total Daily Interest Charges</Typography>
+            <Typography variant="h6" color="info.main">
+              {formatCurrency(fund.total_daily_interest_charges, fund.currency)}
+            </Typography>
+          </Box>
+        )}
+        {fund.total_unit_purchases !== null && fund.total_unit_purchases !== undefined && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Total Unit Purchases</Typography>
+            <Typography variant="h6" color="primary">
+              {formatCurrency(fund.total_unit_purchases, fund.currency)}
+            </Typography>
+          </Box>
+        )}
+        {fund.total_unit_sales !== null && fund.total_unit_sales !== undefined && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary">Total Unit Sales</Typography>
+            <Typography variant="h6" color="warning.main">
+              {formatCurrency(fund.total_unit_sales, fund.currency)}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </Paper>
+  );
+};
+
+// ============================================================================
+// MAIN FUND DETAIL COMPONENT
+// ============================================================================
 
 const FundDetail: React.FC = () => {
   const { fundId } = useParams<{ fundId: string }>();
@@ -253,152 +511,12 @@ const FundDetail: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Fund Overview Cards */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <AccountBalance color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Current Balance</Typography>
-              </Box>
-              <Typography variant="h4" color="primary">
-                {formatCurrency(fund.current_equity_balance, fund.currency)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Average: {formatCurrency(fund.average_equity_balance, fund.currency)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <TrendingUp color="success" sx={{ mr: 1 }} />
-                <Typography variant="h6">Expected IRR</Typography>
-              </Box>
-              <Typography variant="h4" color="success.main">
-                {fund.expected_irr ? `${fund.expected_irr}%` : 'N/A'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Duration: {fund.expected_duration_months || 'N/A'} months
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <Event color="info" sx={{ mr: 1 }} />
-                <Typography variant="h6">Total Events</Typography>
-              </Box>
-              <Typography variant="h4" color="info.main">
-                {statistics.total_events}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {statistics.capital_calls} calls • {statistics.distributions} distributions
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Commitment
-              </Typography>
-              <Typography variant="h4" color="primary">
-                {formatCurrency(fund.commitment_amount || null, fund.currency)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {fund.tracking_type.replace('_', ' ')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
-
-      {/* Fund Details */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-        <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Fund Details
-            </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Fund Type</Typography>
-                  <Typography variant="body1">{fund.fund_type || 'N/A'}</Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Currency</Typography>
-                  <Typography variant="body1">{fund.currency}</Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Status</Typography>
-                  <Chip 
-                    label={fund.is_active ? 'Active' : 'Inactive'} 
-                    color={fund.is_active ? 'success' : 'default'}
-                    size="small"
-                  />
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Entity</Typography>
-                  <Typography variant="body1">{fund.entity}</Typography>
-                </Box>
-              </Box>
-              {fund.description && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Description</Typography>
-                  <Typography variant="body1">{fund.description}</Typography>
-                </Box>
-              )}
-            </Box>
-          </Paper>
-        </Box>
-
-        <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Transaction Summary
-            </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Capital Called</Typography>
-                  <Typography variant="body1" color="primary">
-                    {formatCurrency(statistics.total_capital_called, fund.currency)}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Capital Returned</Typography>
-                  <Typography variant="body1" color="warning.main">
-                    {formatCurrency(statistics.total_capital_returned, fund.currency)}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Total Distributions</Typography>
-                  <Typography variant="body1" color="success.main">
-                    {formatCurrency(statistics.total_distributions, fund.currency)}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Typography variant="body2" color="text.secondary">Period</Typography>
-                  <Typography variant="body1">
-                    {formatDate(statistics.first_event_date)} - {formatDate(statistics.last_event_date)}
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-          </Paper>
-        </Box>
-      </Box>
+      {/* New Section-Based Layout */}
+      <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
 
       {/* Events Table Header with Add Cash Flow Button */}
       <Paper sx={{ width: '100%', overflow: 'hidden', mb: 3 }}>

@@ -350,12 +350,27 @@ export interface ExtendedFundStatistics extends FundStatistics {
 
 /**
  * Extended Fund interface for FundDetail component
- * Includes display-specific fields
+ * Includes display-specific fields and new calculated fields for fund detail redesign
  */
 export interface ExtendedFund extends Omit<Fund, 'investment_company' | 'entity'> {
   // Display-specific fields (strings instead of objects)
   investment_company: string;  // Company name as string
   entity: string;              // Entity name as string
+  
+  // New calculated fields for fund detail redesign
+  current_nav_fund_value?: number | null;        // NAV fund value calculation
+  total_tax_payments?: number | null;            // Sum of tax payment events
+  total_daily_interest_charges?: number | null;  // Sum of daily charge events
+  total_unit_purchases?: number | null;          // Total unit purchases (NAV-based funds)
+  total_unit_sales?: number | null;              // Total unit sales (NAV-based funds)
+  total_capital_calls?: number | null;           // Total capital calls (cost-based funds)
+  total_capital_returns?: number | null;         // Total capital returns (cost-based funds)
+  actual_duration_months?: number | null;        // Calculated fund duration
+  completed_irr?: number | null;                 // IRR for completed funds
+  completed_after_tax_irr?: number | null;      // After-tax IRR for completed funds
+  completed_real_irr?: number | null;            // Real IRR for completed funds
+  start_date?: string | null;                    // First event date
+  end_date?: string | null;                      // Last event date (if completed)
 }
 
 /**
