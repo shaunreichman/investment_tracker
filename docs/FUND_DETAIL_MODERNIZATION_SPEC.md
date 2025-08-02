@@ -65,15 +65,15 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - Reduce visual noise by removing redundant fields
 - Maintain clear distinction between NAV and cost-based fund displays
 
-### Phase 2: Component Modernization
+### Phase 2: Component Modernization ✅
 **Goal**: Replace outdated components with modern alternatives
 
 **Tasks**:
-- [ ] **Replace large chips** with subtle status indicators (dots, small badges)
-- [ ] **Modernize cards** with subtle shadows and rounded corners
-- [ ] **Update buttons** to be more contextual and less prominent
-- [ ] **Implement hover states** for interactive elements
-- [ ] **Add subtle animations** for state transitions
+- [x] **Replace large chips** with subtle status indicators (dots, small badges)
+- [x] **Modernize cards** with subtle shadows and rounded corners
+- [x] **Update buttons** to be more contextual and less prominent
+- [x] **Implement hover states** for interactive elements
+- [x] **Add subtle animations** for state transitions
 
 **Design Principles**:
 - Status indicators should be informative but not prominent
@@ -192,10 +192,10 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - [x] Implement contextual display logic
 - [x] Clean up redundant information
 
-### Phase 2: Components (Week 2)
-- [ ] Modernize status indicators
-- [ ] Update card components
-- [ ] Implement new button styles
+### Phase 2: Components (Week 2) ✅
+- [x] Modernize status indicators
+- [x] Update card components
+- [x] Implement new button styles
 
 ### Phase 3: Layout (Week 3)
 - [ ] Implement data tables for transactions

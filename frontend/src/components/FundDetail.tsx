@@ -53,7 +53,16 @@ interface SectionProps {
  */
 const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
-    <Paper sx={{ p: 2, mb: 2 }}>
+    <Paper sx={{ 
+      p: 2, 
+      mb: 2, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
       <Box display="flex" alignItems="center" mb={1}>
         <AccountBalance color="primary" sx={{ mr: 1, fontSize: 20 }} />
         <Typography variant="h6" sx={{ fontSize: 18 }}>Equity Position</Typography>
@@ -100,7 +109,16 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
   }
 
   return (
-    <Paper sx={{ p: 2, mb: 2 }}>
+    <Paper sx={{ 
+      p: 2, 
+      mb: 2, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
       <Box display="flex" alignItems="center" mb={1}>
         <TrendingUp color="success" sx={{ mr: 1, fontSize: 20 }} />
         <Typography variant="h6" sx={{ fontSize: 18 }}>Expected Performance</Typography>
@@ -137,7 +155,16 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
   }
 
   return (
-    <Paper sx={{ p: 2, mb: 2 }}>
+    <Paper sx={{ 
+      p: 2, 
+      mb: 2, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
       <Box display="flex" alignItems="center" mb={1}>
         <Assessment color="info" sx={{ mr: 1, fontSize: 20 }} />
         <Typography variant="h6" sx={{ fontSize: 18 }}>Completed Performance</Typography>
@@ -177,7 +204,16 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
  */
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
-    <Paper sx={{ p: 2, mb: 2 }}>
+    <Paper sx={{ 
+      p: 2, 
+      mb: 2, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
       <Box display="flex" alignItems="center" mb={1}>
         <Info color="primary" sx={{ mr: 1, fontSize: 20 }} />
         <Typography variant="h6" sx={{ fontSize: 18 }}>Fund Details</Typography>
@@ -185,12 +221,27 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Status</Typography>
-          <Chip 
-            label={fund.is_active ? 'Active' : 'Inactive'} 
-            color={fund.is_active ? 'success' : 'default'}
-            size="small"
-            sx={{ fontSize: 11, height: 20 }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: fund.is_active ? 'success.main' : 'grey.400',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            />
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontSize: 12, 
+                color: fund.is_active ? 'success.main' : 'text.secondary',
+                fontWeight: fund.is_active ? 500 : 400
+              }}
+            >
+              {fund.is_active ? 'Active' : 'Inactive'}
+            </Typography>
+          </Box>
         </Box>
         <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Currency</Typography>
@@ -222,7 +273,16 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
  */
 const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   return (
-    <Paper sx={{ p: 2, mb: 2 }}>
+    <Paper sx={{ 
+      p: 2, 
+      mb: 2, 
+      borderRadius: 2,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+      transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
+      '&:hover': {
+        boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
+      }
+    }}>
       <Box display="flex" alignItems="center" mb={1}>
         <Receipt color="secondary" sx={{ mr: 1, fontSize: 20 }} />
         <Typography variant="h6" sx={{ fontSize: 18 }}>Transaction Summary</Typography>
@@ -537,12 +597,24 @@ const FundDetail: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Button
-                variant="contained"
+                variant="outlined"
                 color="primary"
                 onClick={() => setEventModalOpen(true)}
-                sx={{ minWidth: 160 }}
+                sx={{ 
+                  minWidth: 120,
+                  fontSize: 12,
+                  textTransform: 'none',
+                  borderRadius: 1.5,
+                  px: 2,
+                  py: 0.75,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }
+                }}
               >
-                Add Cash Flow
+                Add Event
               </Button>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -552,6 +624,17 @@ const FundDetail: React.FC = () => {
                   checked={showTaxEvents}
                   onChange={(e) => setShowTaxEvents(e.target.checked)}
                   size="small"
+                  sx={{
+                    '& .MuiSwitch-switchBase': {
+                      color: 'grey.400',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: 'primary.main',
+                    },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: 'primary.main',
+                    },
+                  }}
                 />
               </Box>
               {fund.tracking_type === 'nav_based' && (
@@ -563,6 +646,17 @@ const FundDetail: React.FC = () => {
                     checked={showNavUpdates}
                     onChange={(e) => setShowNavUpdates(e.target.checked)}
                     size="small"
+                    sx={{
+                      '& .MuiSwitch-switchBase': {
+                        color: 'grey.400',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: 'primary.main',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: 'primary.main',
+                      },
+                    }}
                   />
                 </Box>
               )}
@@ -686,18 +780,34 @@ const FundDetail: React.FC = () => {
                                 <IconButton
                                   size="small"
                                   onClick={() => handleEditEvent(interestEvent)}
-                                  color="primary"
+                                  sx={{
+                                    color: 'primary.main',
+                                    p: 0.5,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'primary.light',
+                                      transform: 'scale(1.1)'
+                                    }
+                                  }}
                                   title="Edit event"
                                 >
-                                  <EditIcon fontSize="small" />
+                                  <EditIcon sx={{ fontSize: 16 }} />
                                 </IconButton>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDeleteEvent(interestEvent)}
-                                  color="error"
+                                  sx={{
+                                    color: 'error.main',
+                                    p: 0.5,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'error.light',
+                                      transform: 'scale(1.1)'
+                                    }
+                                  }}
                                   title="Delete event"
                                 >
-                                  <DeleteIcon fontSize="small" />
+                                  <DeleteIcon sx={{ fontSize: 16 }} />
                                 </IconButton>
                               </>
                             )}
