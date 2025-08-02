@@ -15,7 +15,6 @@ import {
   Chip,
   Button,
   CircularProgress,
-  Alert,
   Switch,
   Breadcrumbs,
   Link,
@@ -26,6 +25,7 @@ import {
   DialogActions,
   DialogContentText
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
 import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
@@ -188,12 +188,17 @@ const FundDetail: React.FC = () => {
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <ErrorDisplay
+          error={error}
+          canRetry={error.retryable}
+          onRetry={() => refetch()}
+          onDismiss={() => navigate('/')}
+          variant="inline"
+        />
         <Button
           variant="outlined"
           onClick={() => navigate('/')}
+          sx={{ mt: 2 }}
         >
           Back to Dashboard
         </Button>
@@ -204,7 +209,11 @@ const FundDetail: React.FC = () => {
   if (!fundData) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="warning">No fund data available</Alert>
+        <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body1" fontWeight="medium" color="warning.main">
+            No fund data available
+          </Typography>
+        </Box>
       </Container>
     );
   }
