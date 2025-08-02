@@ -617,6 +617,13 @@ const FundDetail: React.FC = () => {
           transition: 'width 0.3s ease-in-out',
           overflow: 'hidden'
         }}>
+          {/* Summary Section Header */}
+          <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="h6">
+              Summary
+            </Typography>
+          </Box>
+          
           <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
           <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
           <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
