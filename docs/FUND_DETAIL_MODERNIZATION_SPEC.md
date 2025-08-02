@@ -95,78 +95,28 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - Use smaller, focused containers instead of large section cards
 - Maintain visual hierarchy while reducing visual weight
 
-### Phase 3: Information Architecture
-**Goal**: Implement better data presentation and modern layout
-
-**Tasks**:
-- [ ] **Implement data tables** for transaction summaries
-- [ ] **Add inline actions** for edit/view operations
-- [ ] **Design summary cards** that show key metrics at a glance
-- [ ] **Optimize layout density** for better information display
-- [ ] **Improve data organization** within existing sections
-
-**Design Principles**:
-- Use tables for structured data, cards for overviews
-- Actions should be contextual to the data they affect
-- Maintain all information visible while improving organization
-
-### Phase 4: Visual Polish
-**Goal**: Add modern visual touches and micro-interactions
-
-**Tasks**:
-- [ ] **Implement subtle shadows** and depth
-- [ ] **Add rounded corners** (4-8px) for modern feel
-- [ ] **Create hover effects** for interactive elements
-- [ ] **Improve color usage** with muted backgrounds and better contrast
-- [ ] **Add loading states** and transitions
-
-**Design Principles**:
-- Shadows should create depth, not heaviness
-- Colors should support hierarchy, not compete for attention
-- Interactions should feel smooth and responsive
-
-### Phase 2C: Side-by-Side Layout - Summary & Details Split ✅
+### Phase 2C: Side-by-Side Layout - Summary & Details Split 🔄
 **Goal**: Implement a professional dashboard layout with summary metrics in a left sidebar and detailed events in the main area
 
-**Current Status**:
-- [x] **2C.1: Foundation Layout Structure** ✅ **COMPLETED**
+**Phase 2C.1: Foundation Layout Structure ✅**
+**Goal**: Establish the basic side-by-side layout framework
+
+**Tasks**:
+- [x] **Layout Structure**
   - [x] Create responsive flex container with sidebar and main area
   - [x] Implement sidebar width system (280px-360px based on screen size)
   - [x] Add gap spacing between sidebar and main area (24px)
   - [x] Ensure main area takes remaining space with proper overflow handling
+- [x] **Sidebar Toggle**
   - [x] Implement sidebar toggle functionality with local storage
+  - [x] Add toggle button in header area to show/hide sidebar
+  - [x] Implement smooth slide animation for sidebar collapse/expand
+  - [x] Store sidebar state in local storage for user preference
+  - [x] Ensure main area expands to full width when sidebar is hidden
+- [x] **Page Consistency**
   - [x] Fix page layout consistency with other pages
-
-- [ ] **2C.2: Sidebar Summary Sections** (Next)
-  - [ ] Optimize section spacing for vertical layout (8px gaps)
-  - [ ] Implement dynamic sizing based on content (multi-row support)
-  - [ ] Add subtle scroll for sidebar if content exceeds viewport height
-  - [ ] Maintain existing compact styling and hover effects
-
-- [ ] **2C.3: Main Area Events Table** (Future)
-  - [ ] Optimize table layout for increased horizontal space
-  - [ ] Ensure proper responsive behavior within main container
-  - [ ] Maintain all existing table functionality and interactions
-
-- [ ] **2C.4: Responsive Breakpoints** (Future)
-  - [ ] Test layout stability across different screen sizes
-  - [ ] Fine-tune responsive behavior if needed
-
-- [ ] **2C.5: Visual Polish & Interactions** (Future)
-  - [ ] Add subtle border or shadow separation between sidebar and main area
-  - [ ] Implement smooth transitions for layout changes
-  - [ ] Ensure consistent spacing and typography across both areas
-  - [ ] Add hover states for sidebar sections (if not already present)
-
-**Design Principles**:
-- Sidebar should feel like a professional dashboard panel
-- Main area should have maximum space for detailed data
-- Maintain visual hierarchy with sidebar as secondary, main area as primary
-- Use existing compact styling to maximize information density in sidebar
-
-### Phase 2C.1: Foundation Layout Structure ✅
-
-**Goal**: Establish the basic side-by-side layout framework
+  - [x] Use same `Box p={3}` pattern as other pages
+  - [x] Remove max-width constraints, use full screen width
 
 **Key Features**:
 - **Sticky Sidebar**: Summary metrics remain visible while scrolling through events
@@ -176,9 +126,22 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - **Page Layout Consistency**: Uses same `Box p={3}` pattern as other pages
 - **Full Viewport Usage**: No max-width constraints, uses full screen width
 
-### Phase 2C.2: Sidebar Summary Sections ✅
-
+**Phase 2C.2: Sidebar Summary Sections ✅**
 **Goal**: Optimize existing summary sections for vertical sidebar layout
+
+**Tasks**:
+- [x] **Field Layout Optimization**
+  - [x] Reduce field min-width from 150px to 120px for better sidebar fit
+  - [x] Optimize gap spacing from 1 to 0.75, margins from 1.5 to 1
+  - [x] Reduce typography sizes from 14px to 13px for values
+  - [x] Reduce section padding from 16px to 12px for tighter fit
+- [x] **Status Alignment**
+  - [x] Fix status indicator alignment (dot next to text, centered)
+  - [x] Ensure proper centering under "Status" heading
+- [x] **Visual Hierarchy**
+  - [x] Add "Summary" heading to match "Fund Events" heading alignment
+  - [x] Implement consistent vertical spacing (8px between sections)
+  - [x] Maintain existing visual separation (shadows and hover effects)
 
 **Key Optimizations**:
 - **Reduced Field Width**: Min-width from 150px to 120px for better sidebar fit
@@ -189,35 +152,27 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - **Status Alignment Fix**: Dot and text properly centered under "Status" heading
 - **Summary Header**: Added "Summary" heading to match "Fund Events" heading alignment
 
-**Completed Tasks**:
-- [x] **Section Container Optimization**
-  - [x] Reduce horizontal padding from 16px to 12px for tighter fit
-  - [x] Implement consistent vertical spacing (8px between sections)
-  - [x] Maintain existing visual separation (shadows and hover effects)
-  - [x] Ensure sections can wrap to multiple rows when needed
-- [x] **Field Layout Optimization**
-  - [x] Reduce field min-width from 150px to 120px
-  - [x] Optimize gap spacing from 1 to 0.75
-  - [x] Reduce typography sizes for better density
-  - [x] Fix status indicator alignment (dot next to text, centered)
-- [x] **Typography Optimization**
-  - [x] Reduce value font sizes from 14px to 13px
-  - [x] Maintain readability while saving space
-  - [x] Consistent sizing across all sections
-- [x] **Visual Hierarchy Enhancement**
-  - [x] Add "Summary" heading to sidebar for better section identification
-  - [x] Standardize header styling to match main area "Fund Events" heading
-  - [x] Create perfect visual alignment between left and right sections
-
-**Design Principles**:
-- Prioritize the most important metrics for quick scanning
-- Use vertical space efficiently with compact layouts
-- Maintain visual hierarchy within the sidebar
-- Ensure all information remains accessible
-
-### Phase 2C.3: Main Area Events Table ✅
-
+**Phase 2C.3: Main Area Events Table 🔄**
 **Goal**: Optimize the events table for the wider main area with compact, spreadsheet-like appearance
+
+**Completed Tasks**:
+- [x] **Table Layout Optimization**
+  - [x] Improve table header styling for better visual separation
+  - [x] Make table more compact with `size="small"` prop
+  - [x] Create spreadsheet-like appearance with tighter spacing
+  - [x] Better visual separation with grey headers and stronger borders
+
+**Remaining Tasks**:
+- [ ] **Enhanced Table Features**
+  - [ ] Add sticky header for better navigation of long event lists
+  - [ ] Implement better row hover states for improved UX
+  - [ ] Optimize action buttons layout with more space
+  - [ ] Consider adding inline editing capabilities where appropriate
+- [ ] **Performance Optimization**
+  - [ ] Implement virtual scrolling for very long event lists
+  - [ ] Optimize table rendering for better performance
+  - [ ] Add loading states for large datasets
+  - [ ] Ensure smooth scrolling and interactions
 
 **Key Optimizations**:
 - **Compact Table Size**: Added `size="small"` prop for tighter row spacing
@@ -226,35 +181,14 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - **Better Visual Separation**: Header cells with grey background and stronger borders
 - **Professional Appearance**: Consistent styling across all header cells with proper contrast
 
-**Completed Tasks**:
-- [x] **Table Layout Optimization**
-  - [x] Improve table header styling for better visual separation ✅
-  - [x] Make table more compact with `size="small"` prop ✅
-  - [x] Create spreadsheet-like appearance with tighter spacing ✅
-  - [x] Better visual separation with grey headers and stronger borders ✅
-
-**Remaining Tasks**:
-- [ ] **Enhanced Table Features**
-  - [ ] Add sticky header for better navigation of long event lists
-  - [ ] Implement better row hover states for improved UX
-  - [ ] Optimize action buttons layout with more space
-  - [ ] Consider adding inline editing capabilities where appropriate
-
-- [ ] **Performance Optimization**
-  - [ ] Implement virtual scrolling for very long event lists
-  - [ ] Optimize table rendering for better performance
-  - [ ] Add loading states for large datasets
-  - [ ] Ensure smooth scrolling and interactions
-
-**Design Principles**:
-- ✅ Use compact styling to show more data in the same space
-- ✅ Maintain table readability with proper header separation
-- ✅ Create spreadsheet-like appearance for professional feel
-- ✅ Keep the table as the primary focus of the main area
-
-### Phase 2C.4: Responsive Breakpoints
-
+**Phase 2C.4: Responsive Breakpoints (Future)**
 **Goal**: Ensure the layout works well across all screen sizes
+
+**Tasks**:
+- [ ] **Breakpoint Testing**
+  - [ ] Test all breakpoints thoroughly
+  - [ ] Optimize for different screen sizes
+  - [ ] Fix any layout issues
 
 **Breakpoint Strategy**:
 - **xs (0-600px)**: Stack vertically (sidebar on top, main area below)
@@ -262,10 +196,7 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - **md (960-1280px)**: Side-by-side with 320px sidebar  
 - **lg (1280px+)**: Side-by-side with 360px sidebar
 
-
-
-### Phase 2C.5: Visual Polish & Interactions
-
+**Phase 2C.5: Visual Polish & Interactions (Future)**
 **Goal**: Add professional polish and smooth interactions
 
 **Tasks**:
@@ -274,34 +205,81 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
   - [ ] Implement consistent spacing and alignment
   - [ ] Ensure proper contrast and readability
   - [ ] Add subtle hover effects for interactive elements
-
-- [x] **Sidebar Toggle Functionality**
-  - [x] Add toggle button in header area to show/hide sidebar
-  - [x] Implement smooth slide animation for sidebar collapse/expand
-  - [x] Store sidebar state in local storage for user preference
-  - [x] Ensure main area expands to full width when sidebar is hidden
-  - [x] Add visual indicator (icon) to show current sidebar state
-
 - [ ] **Smooth Transitions**
   - [ ] Implement smooth layout transitions when resizing window
   - [ ] Add fade effects for content loading states
   - [ ] Ensure smooth scrolling in sidebar
   - [ ] Add subtle animations for state changes
-  - [ ] Implement smooth slide animation for sidebar toggle
-
 - [ ] **Professional Polish**
   - [ ] Refine typography hierarchy for better scanning
   - [ ] Optimize color usage for better visual balance
   - [ ] Add subtle depth with shadows and borders
   - [ ] Ensure consistent spacing throughout layout
 
-**Design Principles**:
-- Create a professional dashboard feel
-- Maintain visual hierarchy with sidebar as secondary
-- Use subtle effects to enhance usability
-- Ensure smooth, responsive interactions
+**Note**: Sidebar toggle functionality is already completed in Phase 2C.1
 
-## Success Metrics for Phase 2C
+### Phase 3: Information Architecture (Future)
+**Goal**: Implement better data presentation and modern layout
+
+**Tasks**:
+- [ ] **Data Tables**
+  - [ ] Implement data tables for transaction summaries
+  - [ ] Add inline actions for edit/view operations
+  - [ ] Design summary cards that show key metrics at a glance
+- [ ] **Layout Optimization**
+  - [ ] Optimize layout density for better information display
+  - [ ] Improve data organization within existing sections
+
+**Design Principles**:
+- Use tables for structured data, cards for overviews
+- Actions should be contextual to the data they affect
+- Maintain all information visible while improving organization
+
+### Phase 4: Visual Polish (Future)
+**Goal**: Add modern visual touches and micro-interactions
+
+**Tasks**:
+- [ ] **Visual Effects**
+  - [ ] Implement subtle shadows and depth
+  - [ ] Add rounded corners (4-8px) for modern feel
+  - [ ] Create hover effects for interactive elements
+- [ ] **Color and Contrast**
+  - [ ] Improve color usage with muted backgrounds and better contrast
+  - [ ] Add loading states and transitions
+
+**Design Principles**:
+- Shadows should create depth, not heaviness
+- Colors should support hierarchy, not compete for attention
+- Interactions should feel smooth and responsive
+
+## Design Principles
+
+### Layout Philosophy
+- **Information Density**: Maximize data visibility while maintaining readability
+- **Visual Hierarchy**: Sidebar as secondary, main area as primary focus
+- **Professional Aesthetics**: Modern dashboard feel with clean, organized layout
+- **Progressive Disclosure**: Show key metrics always, details on demand
+- **Contextual Actions**: Place actions near relevant content
+
+### Visual Design
+- **Consistent Spacing**: Use Material-UI spacing system throughout
+- **Typography Hierarchy**: Clear distinction between headings, labels, and values
+- **Color Usage**: Colors should support hierarchy, not compete for attention
+- **Interactions**: Should feel smooth and responsive
+
+### Sidebar Design
+- **Professional Dashboard Panel**: Sidebar should feel like a professional dashboard panel
+- **Compact Layout**: Use existing compact styling to maximize information density
+- **Sticky Positioning**: Summary metrics remain visible while scrolling through events
+- **Visual Hierarchy**: Maintain clear hierarchy within the sidebar
+
+### Main Area Design
+- **Maximum Space**: Main area should have maximum space for detailed data
+- **Table Focus**: Keep the table as the primary focus of the main area
+- **Spreadsheet-like**: Create spreadsheet-like appearance for professional feel
+- **Responsive Behavior**: Ensure proper responsive behavior within main container
+
+## Success Metrics
 
 ### Visual Improvements ✅ (Achieved)
 - **Better Information Hierarchy**: Summary metrics always visible while browsing events
@@ -323,82 +301,6 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - **Accessibility**: Maintained or improved accessibility standards
 - **Maintainability**: Clean, well-structured layout code
 - **Layout Consistency**: Uses same patterns as other pages in the app
-
-## Implementation Timeline
-
-### Phase 2C.1: Foundation ✅ (Completed)
-- [x] Implement basic flex layout structure
-- [x] Add responsive breakpoints
-- [x] Test layout behavior across screen sizes
-- [x] Implement sidebar toggle functionality
-- [x] Ensure page layout consistency with other pages
-
-### Phase 2C.2: Sidebar Optimization ✅ (Completed)
-- [x] Move and optimize summary sections
-- [x] Adjust field layouts for sidebar
-- [x] Implement sticky positioning
-- [x] Optimize field widths and spacing
-- [x] Fix status indicator alignment
-
-### Phase 2C.3: Main Area Enhancement 🔄 (Partially Complete)
-- [x] Optimize events table for wider space
-- [x] Implement compact, spreadsheet-like styling
-- [x] Improve table header visual separation
-- [ ] Enhance table features and interactions
-- [ ] Test performance with large datasets
-
-### Phase 2C.4: Responsive Testing (Future)
-- [ ] Test all breakpoints thoroughly
-- [ ] Optimize for different screen sizes
-- [ ] Fix any layout issues
-
-### Phase 2C.5: Polish & Testing (Future)
-- [ ] Add visual polish and transitions
-- [ ] Comprehensive testing across browsers
-- [ ] Performance optimization
-- [ ] Final refinements
-
-## Risk Mitigation
-
-### Potential Issues
-- **Sidebar Content Overflow**: Sections with many fields might not fit well
-- **Performance Impact**: Sticky positioning and scroll handling
-- **Visual Balance**: Ensuring sidebar doesn't feel cramped
-- **User Adaptation**: Users accustomed to vertical layout
-
-### Contingency Plans
-- **Content Overflow**: Implement collapsible sections or scrollable sidebar
-- **Performance**: Monitor and optimize scroll performance
-- **Visual Issues**: Iterate on spacing and sizing
-- **User Feedback**: Collect feedback and iterate based on usage patterns
-
-## Definition of Done for Phase 2C
-
-### Functional Criteria
-- [ ] Side-by-side layout works across all target screen sizes
-- [ ] All summary sections display properly in sidebar
-- [ ] Events table utilizes full main area width effectively
-- [ ] Sticky sidebar positioning works correctly
-- [ ] All existing functionality preserved
-
-### Visual Criteria
-- [ ] Layout feels professional and modern
-- [ ] Visual hierarchy is clear and effective
-- [ ] Spacing and typography are consistent
-- [ ] Hover states and interactions are smooth
-- [ ] No visual glitches or layout issues
-
-### Performance Criteria
-- [ ] Layout renders smoothly without lag
-- [ ] Scrolling performance is acceptable
-- [ ] No memory leaks or performance degradation
-- [ ] Responsive behavior is smooth and immediate
-
-### User Experience Criteria
-- [ ] Users can quickly access both summary and details
-- [ ] Information hierarchy supports efficient scanning
-- [ ] Layout feels intuitive and professional
-- [ ] No user confusion or resistance to new layout
 
 ---
 
