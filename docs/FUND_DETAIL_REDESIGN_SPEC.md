@@ -114,22 +114,22 @@ Redesign the Fund Detail page to organize information into logical, scannable se
 
 ## Implementation Steps
 
-### Phase 1: Backend Foundation
+### Phase 1: Backend Foundation ✅
 **Goal**: Add missing calculated fields to domain model
 
 **Tasks**:
-- [ ] **Add Domain Methods**: Create methods for calculating missing fields
-  - [ ] `get_current_nav_fund_value()` - NAV fund value calculation
-  - [ ] `get_total_tax_payments()` - Sum of tax payment events
-  - [ ] `get_total_daily_interest_charges()` - Sum of daily charge events
-  - [ ] `get_start_date()` - First event date
-  - [ ] `get_end_date()` - Last event date (if completed)
-  - [ ] `calculate_actual_duration_months()` - Duration calculation
-  - [ ] `calculate_completed_irr()` - IRR for completed funds
+- [x] **Add Domain Methods**: Create methods for calculating missing fields
+  - [x] `get_current_nav_fund_value()` - NAV fund value calculation
+  - [x] `get_total_tax_payments()` - Sum of tax payment events
+  - [x] `get_total_daily_interest_charges()` - Sum of daily charge events
+  - [x] `get_start_date()` - First event date
+  - [x] `get_end_date()` - Last event date (if completed)
+  - [x] `calculate_actual_duration_months()` - Duration calculation
+  - [x] `calculate_completed_irr()` - IRR for completed funds
 
-- [ ] **Update Summary Data**: Extend `get_summary_data()` method to include new fields
+- [x] **Update Summary Data**: Extend `get_summary_data()` method to include new fields
 
-- [ ] **Testing**: Create unit tests for new domain methods
+- [x] **Testing**: Create unit tests for new domain methods
 
 ### Phase 2: API Enhancement
 **Goal**: Expose new calculated fields through API

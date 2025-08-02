@@ -350,6 +350,19 @@ class Fund(Base):
         # Get last event date from all events
         last_event = max(all_events, key=lambda x: x.event_date) if all_events else None
         
+        # Calculate new fields for fund detail redesign
+        current_nav_fund_value = self.get_current_nav_fund_value(session=session)
+        total_tax_payments = self.get_total_tax_payments(session=session)
+        total_daily_interest_charges = self.get_total_daily_interest_charges(session=session)
+        total_unit_purchases = self.get_total_unit_purchases(session=session)
+        total_unit_sales = self.get_total_unit_sales(session=session)
+        total_capital_calls = self.get_total_capital_calls(session=session)
+        total_capital_returns = self.get_total_capital_returns(session=session)
+        actual_duration_months = self.calculate_actual_duration_months(session=session)
+        completed_irr = self.calculate_completed_irr(session=session)
+        completed_after_tax_irr = self.calculate_completed_after_tax_irr(session=session)
+        completed_real_irr = self.calculate_completed_real_irr(session=session)
+        
         return {
             "id": self.id,
             "name": self.name,
@@ -367,7 +380,21 @@ class Fund(Base):
             "investment_company_id": self.investment_company_id,
             "entity": self.entity.name if self.entity else "Unknown",
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            # New fields for fund detail redesign
+            "current_nav_fund_value": current_nav_fund_value,
+            "total_tax_payments": total_tax_payments,
+            "total_daily_interest_charges": total_daily_interest_charges,
+            "total_unit_purchases": total_unit_purchases,
+            "total_unit_sales": total_unit_sales,
+            "total_capital_calls": total_capital_calls,
+            "total_capital_returns": total_capital_returns,
+            "actual_duration_months": actual_duration_months,
+            "completed_irr": completed_irr,
+            "completed_after_tax_irr": completed_after_tax_irr,
+            "completed_real_irr": completed_real_irr,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
+            "end_date": self.end_date.isoformat() if self.end_date else None
         }
     
     def __repr__(self):
@@ -2061,6 +2088,223 @@ class Fund(Base):
         self.recalculate_all_equity_balances(session=session)
         return event
 
+    @with_session
+    def get_current_nav_fund_value(self, session=None):
+        """
+        Get the current NAV fund value (same as current_nav_total).
+        For NAV-based funds, this is units * unit price.
+        For cost-based funds, this is the current equity balance.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: Current NAV fund value
+        """
+        if self.tracking_type == FundType.NAV_BASED:
+            return float(self.current_nav_total) if self.current_nav_total else 0.0
+        else:
+            # For cost-based funds, use current equity balance
+            return float(self.current_equity_balance) if self.current_equity_balance else 0.0
+
+    @with_session
+    def get_total_tax_payments(self, session=None):
+        """
+        Get the total amount of tax payments for this fund.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: Total tax payments amount
+        """
+        tax_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.TAX_PAYMENT
+        ).all()
+        
+        return sum(event.amount for event in tax_events if event.amount)
+
+    @with_session
+    def get_total_daily_interest_charges(self, session=None):
+        """
+        Get the total amount of daily interest charges for this fund.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: Total daily interest charges amount
+        """
+        interest_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE
+        ).all()
+        
+        return sum(event.amount for event in interest_events if event.amount)
+
+    @with_session
+    def get_total_unit_purchases(self, session=None):
+        """
+        Get the total amount of unit purchases for NAV-based funds.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: Total unit purchases amount
+        """
+        if self.tracking_type != FundType.NAV_BASED:
+            return 0.0
+            
+        purchase_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.UNIT_PURCHASE
+        ).all()
+        
+        return sum(event.amount for event in purchase_events if event.amount)
+
+    @with_session
+    def get_total_unit_sales(self, session=None):
+        """
+        Get the total amount of unit sales for NAV-based funds.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: Total unit sales amount
+        """
+        if self.tracking_type != FundType.NAV_BASED:
+            return 0.0
+            
+        sale_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.UNIT_SALE
+        ).all()
+        
+        return sum(event.amount for event in sale_events if event.amount)
+
+    @with_session
+    def get_total_capital_calls(self, session=None):
+        """
+        Get the total amount of capital calls for cost-based funds.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: Total capital calls amount
+        """
+        if self.tracking_type != FundType.COST_BASED:
+            return 0.0
+            
+        call_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.CAPITAL_CALL
+        ).all()
+        
+        return sum(event.amount for event in call_events if event.amount)
+
+    @with_session
+    def get_total_capital_returns(self, session=None):
+        """
+        Get the total amount of capital returns for cost-based funds.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: Total capital returns amount
+        """
+        if self.tracking_type != FundType.COST_BASED:
+            return 0.0
+            
+        return_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.RETURN_OF_CAPITAL
+        ).all()
+        
+        return sum(event.amount for event in return_events if event.amount)
+
+    @with_session
+    def calculate_actual_duration_months(self, session=None):
+        """
+        Calculate the actual duration of the fund in months.
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            int: Duration in months, or None if not calculable
+        """
+        start_date = self.start_date
+        end_date = self.end_date
+        
+        if not start_date:
+            return None
+            
+        # If fund is still active, use current date
+        if not end_date:
+            from datetime import date
+            end_date = date.today()
+        
+        # Calculate months difference
+        months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
+        
+        # Adjust for day of month
+        if end_date.day < start_date.day:
+            months -= 1
+            
+        return max(0, months)
+
+    @with_session
+    def calculate_completed_irr(self, session=None):
+        """
+        Calculate IRR for completed funds (is_active = False).
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: IRR percentage, or None if not calculable
+        """
+        if self.is_active:
+            return None
+            
+        return self.calculate_irr(session=session)
+
+    @with_session
+    def calculate_completed_after_tax_irr(self, session=None):
+        """
+        Calculate after-tax IRR for completed funds (is_active = False).
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: After-tax IRR percentage, or None if not calculable
+        """
+        if self.is_active:
+            return None
+            
+        return self.calculate_after_tax_irr(session=session)
+
+    @with_session
+    def calculate_completed_real_irr(self, session=None):
+        """
+        Calculate real IRR for completed funds (is_active = False).
+        
+        Args:
+            session (Session): Database session
+        
+        Returns:
+            float: Real IRR percentage, or None if not calculable
+        """
+        if self.is_active:
+            return None
+            
+        return self.calculate_real_irr(session=session)
 
 
 class FundEvent(Base):
