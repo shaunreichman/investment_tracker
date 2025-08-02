@@ -168,76 +168,6 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 
 **Goal**: Establish the basic side-by-side layout framework
 
-**Implementation Details**:
-```typescript
-// Layout container structure with toggle functionality
-const [sidebarVisible, setSidebarVisible] = useState(() => {
-  const saved = localStorage.getItem('fundDetailSidebarVisible');
-  return saved !== null ? JSON.parse(saved) : true;
-});
-
-const toggleSidebar = () => {
-  const newState = !sidebarVisible;
-  setSidebarVisible(newState);
-  localStorage.setItem('fundDetailSidebarVisible', JSON.stringify(newState));
-};
-
-// Main page container (consistent with other pages)
-<Box p={3}>
-  {/* Breadcrumb and header */}
-  
-  {/* Side-by-side layout container */}
-  <Box sx={{ 
-    display: 'flex', 
-    flexDirection: { xs: 'column', sm: 'row' },
-    gap: { xs: 2, sm: 3 },
-    minHeight: { xs: 'auto', sm: 'calc(100vh - 200px)' },
-    alignItems: 'flex-start'
-  }}>
-    {/* Left Sidebar */}
-    <Box sx={{ 
-      width: sidebarVisible ? { xs: '100%', sm: '280px', md: '320px', lg: '360px' } : 0,
-      flexShrink: 0,
-      position: { xs: 'static', sm: 'sticky' },
-      top: { sm: 24 },
-      maxHeight: { xs: 'auto', sm: 'calc(100vh - 250px)' },
-      overflowY: { xs: 'visible', sm: 'auto' },
-      transition: 'width 0.3s ease-in-out',
-      overflow: 'hidden'
-    }}>
-      {/* Summary sections */}
-    </Box>
-
-    {/* Right Main Area */}
-    <Box sx={{ 
-      flex: 1,
-      minWidth: 0,
-      overflow: 'hidden'
-    }}>
-      {/* Events table and other detailed content */}
-    </Box>
-  </Box>
-</Box>
-
-{/* Toggle Button in Header */}
-<IconButton
-  onClick={toggleSidebar}
-  sx={{ 
-    position: 'absolute', 
-    right: 0, 
-    top: 0,
-    zIndex: 1,
-    bgcolor: 'background.paper',
-    boxShadow: 1,
-    '&:hover': {
-      bgcolor: 'action.hover'
-    }
-  }}
->
-  {sidebarVisible ? <ChevronLeft /> : <ChevronRight />}
-</IconButton>
-```
-
 **Key Features**:
 - **Sticky Sidebar**: Summary metrics remain visible while scrolling through events
 - **Responsive Widths**: Sidebar adapts to screen size for optimal space usage
@@ -249,37 +179,6 @@ const toggleSidebar = () => {
 ### Phase 2C.2: Sidebar Summary Sections ✅
 
 **Goal**: Optimize existing summary sections for vertical sidebar layout
-
-**Implementation Details**:
-```typescript
-// Optimized section styling for compact sidebar
-<Paper sx={{ 
-  p: 0.75,  // Reduced from p: 1 (16px to 12px)
-  mb: 1,    // Reduced from mb: 1.5 (24px to 8px)
-  borderRadius: 2,
-  boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-  transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
-  '&:hover': {
-    boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)'
-  }
-}}>
-  {/* Section header */}
-  <Box display="flex" alignItems="center" mb={0.5}>
-    <Icon color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
-    <Typography variant="h6" sx={{ fontSize: 16 }}>Section Title</Typography>
-  </Box>
-  
-  {/* Optimized field layout */}
-  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-    <Box sx={{ flex: '1 1 120px', minWidth: '120px' }}>
-      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Field Label</Typography>
-      <Typography variant="body1" sx={{ fontSize: 13, fontWeight: 600 }}>
-        Field Value
-      </Typography>
-    </Box>
-  </Box>
-</Paper>
-```
 
 **Key Optimizations**:
 - **Reduced Field Width**: Min-width from 150px to 120px for better sidebar fit
@@ -311,17 +210,25 @@ const toggleSidebar = () => {
 - Maintain visual hierarchy within the sidebar
 - Ensure all information remains accessible
 
-### Phase 2C.3: Main Area Events Table
+### Phase 2C.3: Main Area Events Table ✅
 
-**Goal**: Optimize the events table for the wider main area
+**Goal**: Optimize the events table for the wider main area with compact, spreadsheet-like appearance
 
-**Tasks**:
-- [ ] **Table Layout Optimization**
-  - [ ] Expand table to use full available width
-  - [ ] Optimize column widths for better data display
-  - [ ] Add more detailed information in table cells where space allows
-  - [ ] Improve table header styling for better visual separation
+**Key Optimizations**:
+- **Compact Table Size**: Added `size="small"` prop for tighter row spacing
+- **Improved Header Styling**: Grey background, stronger borders, consistent typography
+- **Spreadsheet-like Rows**: Reduced padding and smaller font for better density
+- **Better Visual Separation**: Header cells with grey background and stronger borders
+- **Professional Appearance**: Consistent styling across all header cells with proper contrast
 
+**Completed Tasks**:
+- [x] **Table Layout Optimization**
+  - [x] Improve table header styling for better visual separation ✅
+  - [x] Make table more compact with `size="small"` prop ✅
+  - [x] Create spreadsheet-like appearance with tighter spacing ✅
+  - [x] Better visual separation with grey headers and stronger borders ✅
+
+**Remaining Tasks**:
 - [ ] **Enhanced Table Features**
   - [ ] Add sticky header for better navigation of long event lists
   - [ ] Implement better row hover states for improved UX
@@ -335,10 +242,10 @@ const toggleSidebar = () => {
   - [ ] Ensure smooth scrolling and interactions
 
 **Design Principles**:
-- Use the increased space to show more detailed information
-- Maintain table readability and scanability
-- Improve interaction patterns with more space
-- Keep the table as the primary focus of the main area
+- ✅ Use compact styling to show more data in the same space
+- ✅ Maintain table readability with proper header separation
+- ✅ Create spreadsheet-like appearance for professional feel
+- ✅ Keep the table as the primary focus of the main area
 
 ### Phase 2C.4: Responsive Breakpoints
 
@@ -350,37 +257,7 @@ const toggleSidebar = () => {
 - **md (960-1280px)**: Side-by-side with 320px sidebar  
 - **lg (1280px+)**: Side-by-side with 360px sidebar
 
-**Implementation Details**:
-```typescript
-// Responsive container structure
-<Box sx={{ 
-  display: 'flex', 
-  flexDirection: { xs: 'column', sm: 'row' },
-  gap: { xs: 2, sm: 3 },
-  minHeight: { xs: 'auto', sm: 'calc(100vh - 200px)' }
-}}>
-  {/* Sidebar with responsive width */}
-  <Box sx={{ 
-    width: { xs: '100%', sm: '280px', md: '320px', lg: '360px' },
-    flexShrink: 0,
-    position: { xs: 'static', sm: 'sticky' },
-    top: { sm: 24 },
-    maxHeight: { xs: 'auto', sm: 'calc(100vh - 250px)' },
-    overflowY: { xs: 'visible', sm: 'auto' }
-  }}>
-    {/* Summary sections */}
-  </Box>
 
-  {/* Main area with responsive behavior */}
-  <Box sx={{ 
-    flex: 1,
-    minWidth: 0,
-    overflow: 'hidden'
-  }}>
-    {/* Events table */}
-  </Box>
-</Box>
-```
 
 ### Phase 2C.5: Visual Polish & Interactions
 
@@ -458,8 +335,10 @@ const toggleSidebar = () => {
 - [x] Optimize field widths and spacing
 - [x] Fix status indicator alignment
 
-### Phase 2C.3: Main Area Enhancement (Future)
-- [ ] Optimize events table for wider space
+### Phase 2C.3: Main Area Enhancement 🔄 (Partially Complete)
+- [x] Optimize events table for wider space
+- [x] Implement compact, spreadsheet-like styling
+- [x] Improve table header visual separation
 - [ ] Enhance table features and interactions
 - [ ] Test performance with large datasets
 

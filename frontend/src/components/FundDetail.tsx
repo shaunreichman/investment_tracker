@@ -725,31 +725,133 @@ const FundDetail: React.FC = () => {
         </Box>
         {/* Events Table */}
         <TableContainer sx={{ maxHeight: 600 }}>
-          <Table stickyHeader>
+          <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TableCell 
+                  sx={{ 
+                    py: 1.5, 
+                    px: 2, 
+                    fontWeight: 600, 
+                    fontSize: 13,
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
+                  Date
+                </TableCell>
+                <TableCell 
+                  sx={{ 
+                    py: 1.5, 
+                    px: 2, 
+                    fontWeight: 600, 
+                    fontSize: 13,
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
+                  Type
+                </TableCell>
+                <TableCell 
+                  sx={{ 
+                    py: 1.5, 
+                    px: 2, 
+                    fontWeight: 600, 
+                    fontSize: 13,
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
+                  Description
+                </TableCell>
+                <TableCell 
+                  align="center" 
+                  sx={{ 
+                    py: 1.5, 
+                    px: 2, 
+                    fontWeight: 600, 
+                    fontSize: 13,
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
                   Equity
                 </TableCell>
                 {fund.tracking_type === 'nav_based' && (
-                  <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                  <TableCell 
+                    align="center" 
+                    sx={{ 
+                      py: 1.5, 
+                      px: 2, 
+                      fontWeight: 600, 
+                      fontSize: 13,
+                      backgroundColor: 'grey.50',
+                      borderBottom: 2,
+                      borderColor: 'grey.300',
+                      color: 'text.primary'
+                    }}
+                  >
                     Nav Update
                   </TableCell>
                 )}
-                <TableCell align="center" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TableCell 
+                  align="center" 
+                  sx={{ 
+                    py: 1.5, 
+                    px: 2, 
+                    fontWeight: 600, 
+                    fontSize: 13,
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
                   Distributions
                 </TableCell>
                 {showTaxEvents && (
-                  <TableCell align="right">Tax</TableCell>
+                  <TableCell 
+                    align="right"
+                    sx={{ 
+                      py: 1.5, 
+                      px: 2, 
+                      fontWeight: 600, 
+                      fontSize: 13,
+                      backgroundColor: 'grey.50',
+                      borderBottom: 2,
+                      borderColor: 'grey.300',
+                      color: 'text.primary'
+                    }}
+                  >
+                    Tax
+                  </TableCell>
                 )}
-                <TableCell align="right">Actions</TableCell>
+                <TableCell 
+                  align="right"
+                  sx={{ 
+                    py: 1.5, 
+                    px: 2, 
+                    fontWeight: 600, 
+                    fontSize: 13,
+                    backgroundColor: 'grey.50',
+                    borderBottom: 2,
+                    borderColor: 'grey.300',
+                    color: 'text.primary'
+                  }}
+                >
+                  Actions
+                </TableCell>
               </TableRow>
-
             </TableHead>
-            <TableBody>
+            <TableBody sx={{ '& .MuiTableCell-root': { py: 1, px: 2, fontSize: 13 } }}>
               {(() => {
                 // Debug: Log all events
                 console.log('All events:', events);
