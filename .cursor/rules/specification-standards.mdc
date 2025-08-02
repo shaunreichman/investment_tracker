@@ -1,0 +1,62 @@
+name: Create detailed specifications before major development
+scope: markdown
+language: markdown
+severity: error
+if: Starting major feature development without detailed specification
+then: Create comprehensive specification with phases, tasks, design principles, and success metrics
+why: Detailed specifications prevent scope creep, ensure clear goals, and improve development efficiency.
+globs: ["docs/**/*.md"]
+
+---
+name: Keep specifications code-free
+scope: markdown
+language: markdown
+severity: warning
+if: Specification contains implementation code
+then: Remove code and focus on goals, tasks, and design principles
+why: Specifications should focus on what to build, not how to build it.
+globs: ["docs/**/*.md"]
+
+---
+name: Include success metrics in specifications
+scope: markdown
+language: markdown
+severity: warning
+if: Specification without measurable success criteria
+then: Add specific, measurable success metrics
+why: Success metrics ensure clear completion criteria and enable validation.
+globs: ["docs/**/*.md"]
+
+---
+name: Use phase-based development structure
+scope: markdown
+language: markdown
+severity: warning
+if: Specification without clear phases
+then: Structure specification with logical phases (Foundation, Feature, Polish, Integration, Optimization)
+why: Phase-based development ensures logical progression and clear milestones.
+globs: ["docs/**/*.md"]
+
+---
+name: Include design principles in specifications
+scope: markdown
+language: markdown
+severity: warning
+if: Specification without design principles section
+then: Add design principles that guide implementation decisions
+why: Design principles ensure consistent decision-making during implementation.
+globs: ["docs/**/*.md"]
+
+---
+name: Reference existing patterns in specifications
+scope: markdown
+language: markdown
+severity: info
+if: Specification doesn't reference existing patterns
+then: Reference existing patterns from Design Guidelines where appropriate
+why: Leveraging existing patterns improves consistency and reduces reinvention.
+globs: ["docs/**/*.md"]
+description:
+globs:
+alwaysApply: false
+---

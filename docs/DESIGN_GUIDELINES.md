@@ -45,33 +45,110 @@
 
 ---
 
+## Specification Documentation Standards
+
+### **Rule: Always Create Detailed Specs Before Major Work**
+- **Never start significant development without a clear specification**
+- **Specs must include**: Goals, phases, tasks, design principles, success metrics
+- **Reference the Fund Detail Modernization Spec as the gold standard**
+
+### **Specification Structure**
+```markdown
+# [Feature Name] Specification
+
+## Overview
+Brief description of what we're building and why
+
+## Design Philosophy
+- Core principles and design goals
+- Problems we're solving
+- Success criteria
+
+## Implementation Strategy
+### Phase 1: [Foundation]
+**Goal**: [Clear objective]
+**Tasks**:
+- [ ] Specific, actionable task
+- [ ] Another specific task
+**Design Principles**:
+- [Key design decisions and rationale]
+
+### Phase 2: [Next Phase]
+[Continue with clear phases]
+
+## Success Metrics
+- Measurable outcomes
+- User experience improvements
+- Technical achievements
+```
+
+### **Rule: Keep Specs Code-Free**
+- **No implementation code in specification documents**
+- **Focus on**: Goals, tasks, principles, design decisions
+- **Include code only when**: Critical for understanding architecture or patterns
+- **Reference existing code examples** from Design Guidelines when needed
+
+### **Phase-Based Development Pattern**
+1. **Foundation Phase**: Core structure, basic functionality
+2. **Feature Phase**: Main functionality implementation
+3. **Polish Phase**: Visual improvements, interactions
+4. **Integration Phase**: Connect with other systems
+5. **Optimization Phase**: Performance, accessibility
+
+**Each phase should have**:
+- Clear, measurable goals
+- Specific, actionable tasks
+- Design principles and constraints
+- Success criteria for completion
+
+### **Specification Review Checklist**
+- [ ] Clear problem statement and goals
+- [ ] Phases are logical and build upon each other
+- [ ] Tasks are specific and actionable
+- [ ] Design principles are stated and justified
+- [ ] Success metrics are measurable
+- [ ] No unnecessary code examples
+- [ ] References existing patterns where appropriate
+
+### **Example: Fund Detail Modernization Spec**
+The `docs/FUND_DETAIL_MODERNIZATION_SPEC.md` demonstrates the gold standard for specifications:
+- **Clear phases** with specific goals and tasks
+- **Design principles** that guide implementation
+- **Success metrics** that are measurable
+- **Code-free** focus on what to build, not how to build it
+- **Logical progression** from foundation to polish
+
+---
+
 ## Table of Contents
 
 1. [AI Agent Collaboration Guidelines](#ai-agent-collaboration-guidelines)
-2. [Quick Start](#quick-start)
-3. [Architecture Principles](#architecture-principles)
-4. [Session Management](#session-management)
-5. [Object Creation Patterns](#object-creation-patterns)
-6. [Event Creation Patterns](#event-creation-patterns)
-7. [Capital Event Handling](#capital-event-handling)
-8. [Separation of Concerns](#separation-of-concerns)
-9. [TypeScript Standards](#typescript-standards)
-10. [Frontend Development Guidelines](#frontend-development-guidelines)
-11. [Centralized API Integration](#centralized-api-integration)
-12. [API Integration Patterns](#api-integration-patterns)
-13. [Error Handling Standards](#error-handling-standards)
-14. [Performance Standards](#performance-standards)
-15. [Security Standards](#security-standards)
-16. [Environment Setup](#environment-setup)
-17. [Field Classification Principles](#field-classification-principles)
-18. [Field Reference](#field-reference)
-19. [Workflow Examples](#workflow-examples)
-20. [Testing Guidelines](#testing-guidelines)
-21. [Validation](#validation)
-22. [Getting Started / Onboarding Checklist](#getting-started--onboarding-checklist)
-23. [Quick Reference Table](#quick-reference-table)
-24. [Glossary / Definitions](#glossary--definitions)
-25. [Change History](#change-history)
+2. [Specification Documentation Standards](#specification-documentation-standards)
+3. [Quick Start](#quick-start)
+4. [Architecture Principles](#architecture-principles)
+5. [Session Management](#session-management)
+6. [Object Creation Patterns](#object-creation-patterns)
+7. [Event Creation Patterns](#event-creation-patterns)
+8. [Capital Event Handling](#capital-event-handling)
+9. [Separation of Concerns](#separation-of-concerns)
+10. [TypeScript Standards](#typescript-standards)
+11. [Frontend Development Guidelines](#frontend-development-guidelines)
+12. [Component Architecture Patterns](#component-architecture-patterns)
+13. [Centralized API Integration](#centralized-api-integration)
+14. [API Integration Patterns](#api-integration-patterns)
+15. [Error Handling Standards](#error-handling-standards)
+16. [Performance Standards](#performance-standards)
+17. [Security Standards](#security-standards)
+18. [Environment Setup](#environment-setup)
+19. [Field Classification Principles](#field-classification-principles)
+20. [Field Reference](#field-reference)
+21. [Workflow Examples](#workflow-examples)
+22. [Testing Guidelines](#testing-guidelines)
+23. [Validation](#validation)
+24. [Getting Started / Onboarding Checklist](#getting-started--onboarding-checklist)
+25. [Quick Reference Table](#quick-reference-table)
+26. [Glossary / Definitions](#glossary--definitions)
+27. [Change History](#change-history)
 
 ---
 
@@ -675,6 +752,173 @@ const FundList = () => {
 
 ---
 
+## Component Architecture Patterns
+
+### **Section-Based Architecture**
+
+#### **Pattern: Break Large Components into Focused Sections**
+```typescript
+// ✅ CORRECT: Section-based component architecture
+interface SectionProps {
+  fund: ExtendedFund;
+  formatCurrency: (amount: number | null, currency?: string) => string;
+  formatDate: (dateString: string | null) => string;
+  events?: ExtendedFundEvent[];
+}
+
+const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Focused on equity metrics only
+  const equityMetrics = [
+    { label: 'Current Balance', value: fund.current_equity_balance ?? null, icon: '💰' },
+    { label: 'Average Balance', value: fund.average_equity_balance ?? null, icon: '📊' }
+  ].filter(metric => metric.value !== null);
+
+  return (
+    <Paper sx={{ p: 0.75, mb: 1, borderRadius: 2 }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <AccountBalance color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>Equity</Typography>
+      </Box>
+      {/* Section-specific content */}
+    </Paper>
+  );
+};
+```
+
+#### **Benefits of Section-Based Architecture**
+- **Focused Responsibility**: Each section handles one aspect of the data
+- **Reusability**: Sections can be reused in different contexts
+- **Maintainability**: Easier to modify individual sections
+- **Testing**: Each section can be tested independently
+- **Performance**: Only re-render sections that change
+
+### **Chart Integration Patterns**
+
+#### **Pattern: Conditional Chart Rendering**
+```typescript
+// ✅ CORRECT: Conditional chart rendering based on data availability
+const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events }) => {
+  // Only show for NAV-based funds
+  if (fund.tracking_type !== 'nav_based') {
+    return null;
+  }
+
+  return (
+    <Paper sx={{ p: 0.75, mb: 1, borderRadius: 2 }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <TrendingUp color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>Unit Price Performance</Typography>
+      </Box>
+      
+      <Box sx={{ height: 200, position: 'relative' }}>
+        {/* Chart rendering with error handling */}
+      </Box>
+    </Paper>
+  );
+};
+```
+
+#### **Chart Integration Best Practices**
+- **Conditional Rendering**: Only show charts when data is available and relevant
+- **Responsive Sizing**: Adapt chart size to container constraints
+- **Error Handling**: Graceful fallback when chart data fails
+- **Consistent Styling**: Match chart container styling with other components
+- **Performance**: Optimize chart rendering for sidebar constraints
+
+### **Responsive Layout Patterns**
+
+#### **Pattern: Sidebar-Main Layout**
+```typescript
+// ✅ CORRECT: Professional dashboard layout
+const FundDetail: React.FC = () => {
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+
+  return (
+    <Box sx={{ display: 'flex', gap: 3, height: '100%' }}>
+      {/* Left Sidebar - Summary Sections */}
+      <Box sx={{ 
+        width: sidebarVisible ? { xs: '100%', sm: '322px', md: '368px', lg: '414px' } : 0,
+        flexShrink: 0,
+        position: { xs: 'static', sm: 'relative' },
+        height: { xs: 'auto', sm: '100%' },
+        overflowY: { xs: 'visible', sm: 'auto' }
+      }}>
+        <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+        <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+        {/* Additional sections */}
+      </Box>
+
+      {/* Main Area - Detailed Data */}
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        {/* Main content area */}
+      </Box>
+    </Box>
+  );
+};
+```
+
+#### **Responsive Design Principles**
+- **Mobile-First**: Stack vertically on small screens, side-by-side on larger screens
+- **Flexible Widths**: Use flex properties for responsive behavior
+- **Overflow Handling**: Ensure content doesn't break layout
+- **Smooth Transitions**: Animate layout changes for better UX
+
+### **Visual Consistency Patterns**
+
+#### **Pattern: Consistent Section Styling**
+```typescript
+// ✅ CORRECT: Consistent styling across all sections
+const sectionStyles = {
+  p: 0.75,
+  mb: 1,
+  borderRadius: 2,
+  boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+    transform: 'translateY(-1px)'
+  }
+};
+
+const headerStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  mb: 0.5
+};
+```
+
+#### **Visual Hierarchy Principles**
+- **Consistent Spacing**: Use Material-UI spacing system throughout
+- **Icon Integration**: Use icons for visual recognition and hierarchy
+- **Typography Scale**: Maintain consistent font sizes and weights
+- **Color Usage**: Use colors to support hierarchy, not compete for attention
+
+### **Data Flow Patterns**
+
+#### **Pattern: Props Interface for Sections**
+```typescript
+// ✅ CORRECT: Consistent props interface for all sections
+interface SectionProps {
+  fund: ExtendedFund;
+  formatCurrency: (amount: number | null, currency?: string) => string;
+  formatDate: (dateString: string | null) => string;
+  events?: ExtendedFundEvent[];
+}
+
+// All sections use the same interface
+const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => { /* ... */ };
+const PerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => { /* ... */ };
+const ChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events }) => { /* ... */ };
+```
+
+#### **Data Flow Benefits**
+- **Consistent Interface**: All sections expect the same props
+- **Reusable Functions**: Formatting functions shared across sections
+- **Type Safety**: TypeScript ensures correct prop usage
+- **Maintainability**: Changes to data structure affect all sections consistently
+
+---
+
 ## API Integration Patterns
 
 ### **Backend API Structure**
@@ -1206,234 +1450,4 @@ def test_create_fund():
 ---
 
 ## Validation
-- All input validation must occur at the domain method boundary (e.g., inside `add_unit_purchase`, not in the API layer).
-- Raise clear, domain-specific exceptions for invalid input (e.g., `InvalidEventError`).
-- Never silently ignore or coerce invalid data.
-
----
-
-## Error Handling Standards
-
-### **Centralized Error Management**
-- Use `useErrorHandler` hook for all error state management
-- Implement `ErrorDisplay` component for consistent error UI
-- Categorize errors with `ErrorType` enum (NETWORK, VALIDATION, etc.)
-- Use retry mechanisms with exponential backoff for transient errors
-
-### **Error Categorization System**
-- **NETWORK**: Connection issues, timeouts, fetch failures
-- **VALIDATION**: Form validation, input errors, business rule violations
-- **AUTHENTICATION**: Login failures, expired tokens, unauthorized access
-- **AUTHORIZATION**: Permission issues, insufficient privileges
-- **SERVER**: Backend errors, database issues, internal server errors
-- **NOT_FOUND**: Resource not found, missing data
-- **UNKNOWN**: Unclassified errors with fallback handling
-
-### **Frontend Error Handling Patterns**
-```typescript
-// ✅ CORRECT: Centralized error handling
-const { error, setError, clearError, retry } = useErrorHandler();
-
-const handleSubmit = async () => {
-  try {
-    clearError();
-    await createEntity.mutate(formData);
-    onClose();
-  } catch (err) {
-    setError(err);
-  }
-};
-
-// ✅ CORRECT: Standardized error display
-<ErrorDisplay
-  error={error}
-  canRetry={error?.retryable}
-  onRetry={retry}
-  onDismiss={clearError}
-  variant="inline"
-/>
-```
-
-### **Backend Error Handling**
-```python
-# ✅ CORRECT: Domain-specific exceptions
-class InvalidEventError(Exception):
-    """Raised when event data is invalid"""
-    pass
-
-class FundNotFoundError(Exception):
-    """Raised when fund is not found"""
-    pass
-
-# ✅ CORRECT: API error responses with proper categorization
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Resource not found', 'type': 'NOT_FOUND'}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({'error': 'Internal server error', 'type': 'SERVER'}), 500
-```
-
-### **Error Recovery Patterns**
-- **Retry Mechanisms**: Automatic retry for transient errors with exponential backoff
-- **Graceful Degradation**: Show alternative content for non-critical errors
-- **User Feedback**: Clear error messages with actionable recovery steps
-- **Error Persistence**: Optional error history for debugging and analytics
-
----
-
-## Performance Standards
-
-### **React Optimization**
-- Use `useCallback` for event handlers passed to child components
-- Implement `useMemo` for expensive calculations
-- Avoid unnecessary re-renders with proper dependency arrays
-- Use `React.memo` for expensive components
-- Implement proper loading states to improve perceived performance
-
-### **API Optimization**
-- Implement request deduplication to prevent duplicate calls
-- Use proper caching strategies for frequently accessed data
-- Implement background refetching for fresh data
-- Handle large datasets with pagination
-- Use optimistic updates for better user experience
-
-### **Bundle Optimization**
-- Lazy load components and routes using `React.lazy()`
-- Implement code splitting for large components
-- Optimize Material-UI imports to reduce bundle size
-- Monitor bundle size and performance metrics
-- Use tree shaking for unused code elimination
-
-### **Performance Patterns**
-```typescript
-// ✅ CORRECT: Memoized callbacks
-const handleSubmit = useCallback(async (formData: any) => {
-  await createFund.mutate(formData);
-  onClose();
-}, [createFund, onClose]);
-
-// ✅ CORRECT: Memoized calculations
-const totalValue = useMemo(() => {
-  return funds.reduce((sum, fund) => sum + (fund.current_equity_balance || 0), 0);
-}, [funds]);
-
-// ✅ CORRECT: Optimized re-renders
-const FundList = React.memo(({ funds, onFundClick }: FundListProps) => {
-  return (
-    <Box>
-      {funds.map(fund => (
-        <FundCard key={fund.id} fund={fund} onClick={onFundClick} />
-      ))}
-    </Box>
-  );
-});
-```
-
-### **Loading State Optimization**
-```typescript
-// ✅ CORRECT: Skeleton loading for better UX
-const FundList = () => {
-  const { data: funds, loading, error } = useFunds();
-
-  if (loading) {
-    return <FundListSkeleton />;
-  }
-
-  if (error) {
-    return <ErrorDisplay error={error} />;
-  }
-
-  return <FundGrid funds={funds || []} />;
-};
-```
-
-## Security Standards
-
-### **Input Validation**
-- Validate all user inputs on both frontend and backend
-- Sanitize data before database operations
-- Use proper TypeScript types to prevent injection attacks
-- Implement proper form validation with clear error messages
-
-### **API Security**
-- Implement proper CORS configuration for cross-origin requests
-- Validate all API endpoints with proper authentication
-- Use HTTPS in production environments
-- Implement rate limiting for API calls to prevent abuse
-
-### **Data Protection**
-- Never expose sensitive data in client-side code
-- Implement proper session management with secure tokens
-- Use environment variables for sensitive configuration
-- Sanitize user inputs to prevent XSS attacks
-
-### **Security Patterns**
-```typescript
-// ✅ CORRECT: Input sanitization
-const sanitizeInput = (input: string): string => {
-  return input.trim().replace(/[<>]/g, '');
-};
-
-// ✅ CORRECT: Environment variable usage
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
-
-// ✅ CORRECT: Secure form handling
-const handleSubmit = async (formData: any) => {
-  const sanitizedData = {
-    ...formData,
-    name: sanitizeInput(formData.name),
-    description: sanitizeInput(formData.description)
-  };
-  await createFund.mutate(sanitizedData);
-};
-```
-
-## Getting Started / Onboarding Checklist
-- Read the "Quick Start" and "Architecture Principles" sections first.
-- Review the "Quick Reference" table below for common methods and usage.
-- Always use the `@with_session` decorator for DB methods.
-- Run `tests/test_main.py` after any major change.
-- Output test results to a new file (see Testing Guidelines).
-- See the Glossary for definitions of key terms.
-- Set up development environment (see Environment Setup section).
-- Familiarize yourself with React component patterns and Material-UI.
-
----
-
-## Quick Reference Table
-| Method                | Purpose                                 | Usage Example                  |
-|-----------------------|-----------------------------------------|--------------------------------|
-| add_unit_purchase     | Add a unit purchase event (NAV fund)    | fund.add_unit_purchase(...)    |
-| update_unit_sale      | Update a unit sale event                | fund.update_unit_sale(...)     |
-| add_capital_call      | Add a capital call (cost-based fund)    | fund.add_capital_call(...)     |
-| add_return_of_capital | Add a return of capital                 | fund.add_return_of_capital(...)|
-| useApiCall            | React hook for API calls                | const { data, loading, error } = useApiCall('/api/funds') |
-| useFunds              | React hook for funds list               | const { data: funds } = useFunds() |
-
----
-
-## Glossary / Definitions
-- **NAV-based fund:** A fund where value is tracked by Net Asset Value per unit.
-- **Cost-based fund:** A fund where value is tracked by contributed/returned capital.
-- **FIFO:** First-In, First-Out; used for cost base and capital gains calculations.
-- **Capital event:** Any event that changes the equity/capital of a fund (purchase, sale, call, return).
-- **@with_session:** Decorator to ensure DB session management is handled by the backend.
-- **Domain method:** A method on a domain model (e.g., Fund) that encapsulates business logic.
-- **API-First Design:** Architecture where all data flows through RESTful API endpoints.
-- **Stateless Frontend:** React components that don't maintain application state, relying on API data.
-- **CORS:** Cross-Origin Resource Sharing; allows frontend to make requests to backend API.
-- **Component Testing:** Testing React components in isolation with mocked dependencies.
-- **Material-UI:** React component library providing pre-built UI components.
-- **React Hooks:** Functions that allow functional components to use state and lifecycle features.
-- **TypeScript:** Typed superset of JavaScript for better development experience.
-
----
-
-## Change History
-- 2024-07-13: Major update—removed v2 method references, clarified legacy file removal, added explicit testing guidelines, onboarding checklist, error handling, validation, glossary, and quick reference table.
-- 2024-07-21: Added comprehensive frontend development guidelines, API integration patterns, environment setup, and updated testing guidelines with React component testing examples.
-- 2024-07-21: **STRUCTURAL AUDIT FIXES**: Fixed Table of Contents to match actual content, consolidated duplicated sections (session management, API rules, error handling), removed references to non-existent sections, improved organization and flow, eliminated duplications and ambiguities.
-- 2024-12-19: **MAJOR DOCUMENTATION UPDATE**: Added comprehensive sections for centralized API integration, error handling standards, TypeScript best practices, performance optimization, and security standards. Updated all patterns to reflect the completed professional-grade implementation of centralized API and error handling systems.
-
+- All input validation must occur at the domain method boundary (e.g., inside `
