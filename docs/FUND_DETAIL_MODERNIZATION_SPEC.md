@@ -316,29 +316,29 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - Colors support hierarchy without competing for attention
 - Interactions feel smooth and responsive with refined timing functions
 
-### Phase 4B: Unit Price Chart Integration ✅ (PLANNED)
+### Phase 4B: Unit Price Chart Integration ✅ (COMPLETED)
 **Goal**: Move Unit Price Performance chart to Summary Section for NAV-based funds
 
 **Tasks**:
-- [ ] **Chart Relocation**
-  - [ ] Move Unit Price Performance chart from main area to Summary Section
-  - [ ] Position chart at bottom of Summary Section (after Transaction Summary)
-  - [ ] Only show chart for NAV-based funds (`fund.tracking_type === 'nav_based'`)
-  - [ ] Hide chart in main area when moved to Summary Section
-- [ ] **Layout Optimization**
-  - [ ] Adjust Summary Section height to accommodate chart
-  - [ ] Ensure chart fits within sidebar constraints
-  - [ ] Maintain responsive behavior for chart in sidebar
-  - [ ] Optimize chart size for sidebar width (280-360px)
-- [ ] **Visual Integration**
-  - [ ] Apply consistent styling to chart container (Paper component)
-  - [ ] Match chart styling with other Summary Section components
-  - [ ] Ensure chart borders and shadows match Phase 4 visual polish
-  - [ ] Add proper spacing and margins around chart
-- [ ] **Performance Considerations**
-  - [ ] Ensure chart renders efficiently in sidebar context
-  - [ ] Maintain chart interactivity and tooltips
-  - [ ] Optimize chart data loading for sidebar display
+- [x] **Chart Relocation**
+  - [x] Move Unit Price Performance chart from main area to Summary Section
+  - [x] Position chart at bottom of Summary Section (after Transaction Summary)
+  - [x] Only show chart for NAV-based funds (`fund.tracking_type === 'nav_based'`)
+  - [x] Hide chart in main area when moved to Summary Section
+- [x] **Layout Optimization**
+  - [x] Adjust Summary Section height to accommodate chart
+  - [x] Ensure chart fits within sidebar constraints
+  - [x] Maintain responsive behavior for chart in sidebar
+  - [x] Optimize chart size for sidebar width (280-360px)
+- [x] **Visual Integration**
+  - [x] Apply consistent styling to chart container (Paper component)
+  - [x] Match chart styling with other Summary Section components
+  - [x] Ensure chart borders and shadows match Phase 4 visual polish
+  - [x] Add proper spacing and margins around chart
+- [x] **Performance Considerations**
+  - [x] Ensure chart renders efficiently in sidebar context
+  - [x] Maintain chart interactivity and tooltips
+  - [x] Optimize chart data loading for sidebar display
 
 **Key Benefits**:
 - **Better Information Hierarchy**: Unit price performance visible alongside other summary metrics
