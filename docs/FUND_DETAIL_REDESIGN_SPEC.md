@@ -131,14 +131,14 @@ Redesign the Fund Detail page to organize information into logical, scannable se
 
 - [x] **Testing**: Create unit tests for new domain methods
 
-### Phase 2: API Enhancement
+### Phase 2: API Enhancement ✅
 **Goal**: Expose new calculated fields through API
 
 **Tasks**:
-- [ ] **Update API Response**: Include new calculated fields in fund detail endpoint
-- [ ] **Error Handling**: Ensure graceful handling of missing data
-- [ ] **Performance**: Optimize queries to maintain response speed
-- [ ] **Testing**: Verify API responses include all new fields
+- [x] **Update API Response**: Include new calculated fields in fund detail endpoint
+- [x] **Error Handling**: Ensure graceful handling of missing data
+- [x] **Performance**: Optimize queries to maintain response speed
+- [x] **Testing**: Verify API responses include all new fields
 
 ### Phase 3: Frontend Type Updates
 **Goal**: Update TypeScript interfaces to support new fields
