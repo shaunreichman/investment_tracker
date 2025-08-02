@@ -579,10 +579,27 @@ const FundDetail: React.FC = () => {
 
       {/* Header */}
       <Box sx={{ mb: 3, position: 'relative' }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          gutterBottom
+          sx={{ 
+            fontWeight: 600,
+            color: 'text.primary',
+            letterSpacing: '-0.02em'
+          }}
+        >
           {fund.name}
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+        <Typography 
+          variant="subtitle1" 
+          color="text.secondary" 
+          gutterBottom
+          sx={{ 
+            fontWeight: 400,
+            opacity: 0.8
+          }}
+        >
           {fund.fund_type} • {fund.entity} • {fund.investment_company}
         </Typography>
         
@@ -595,9 +612,13 @@ const FundDetail: React.FC = () => {
             top: 0,
             zIndex: 1,
             bgcolor: 'background.paper',
-            boxShadow: 1,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            borderRadius: 1,
+            transition: 'all 0.2s ease-in-out',
             '&:hover': {
-              bgcolor: 'action.hover'
+              bgcolor: 'action.hover',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
             }
           }}
         >
@@ -611,26 +632,50 @@ const FundDetail: React.FC = () => {
         flexDirection: { xs: 'column', sm: 'row' },
         gap: { xs: 2, sm: 3 },
         minHeight: { xs: 'auto', sm: 'calc(100vh - 200px)' },
-        alignItems: 'flex-start',
-        transition: 'all 0.3s ease-in-out'
+        height: { xs: 'auto', sm: 'calc(100vh - 200px)' },
+        alignItems: 'stretch',
+        transition: 'all 0.3s ease-in-out',
+        // Visual separation: Add subtle border between sidebar and main area
+        '& > *:first-of-type': {
+          borderRight: { sm: '1px solid' },
+          borderColor: { sm: 'divider' },
+          pr: { sm: 2 }
+        }
       }}>
         {/* Left Sidebar - Summary Sections */}
         <Box sx={{ 
           width: sidebarVisible ? { xs: '100%', sm: '280px', md: '320px', lg: '360px' } : 0,
           flexShrink: 0,
-          position: { xs: 'static', sm: 'sticky' },
-          top: { sm: 24 },
-          maxHeight: { xs: 'auto', sm: 'calc(100vh - 250px)' },
+          position: { xs: 'static', sm: 'relative' },
+          height: { xs: 'auto', sm: '100%' },
           overflowY: { xs: 'visible', sm: 'auto' },
           transition: 'all 0.3s ease-in-out',
           overflow: 'hidden',
           // Responsive optimization: Better mobile experience
           order: { xs: 1, sm: 0 },
-          mb: { xs: 2, sm: 0 }
+          mb: { xs: 2, sm: 0 },
+          // Visual polish: Add subtle depth and professional appearance
+          bgcolor: 'background.paper',
+          borderRadius: { sm: 1 },
+          boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
+          display: 'flex',
+          flexDirection: 'column'
         }}>
           {/* Summary Section Header */}
-          <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
-            <Typography variant="h6">
+          <Box sx={{ 
+            p: 3, 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            bgcolor: 'grey.50'
+          }}>
+            <Typography 
+              variant="h6"
+              sx={{ 
+                fontWeight: 600,
+                color: 'text.primary',
+                letterSpacing: '-0.01em'
+              }}
+            >
               Summary
             </Typography>
           </Box>
@@ -646,16 +691,46 @@ const FundDetail: React.FC = () => {
         <Box sx={{ 
           flex: 1,
           minWidth: 0,
+          height: { xs: 'auto', sm: '100%' },
           overflow: 'hidden',
           // Responsive optimization: Better mobile experience
           order: { xs: 2, sm: 1 },
-          width: { xs: '100%', sm: 'auto' }
+          width: { xs: '100%', sm: 'auto' },
+          // Visual polish: Add subtle depth and professional appearance
+          bgcolor: 'background.paper',
+          borderRadius: { sm: 1 },
+          boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
+          pl: { sm: 2 },
+          display: 'flex',
+          flexDirection: 'column'
         }}>
           {/* Events Table Header with Add Cash Flow Button */}
-      <Paper sx={{ width: '100%', overflow: 'hidden', mb: 3 }}>
-        <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+      <Paper sx={{ 
+        width: '100%', 
+        overflow: 'hidden', 
+        mb: 3,
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        // Visual polish: Enhanced paper styling
+        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        borderRadius: 1
+      }}>
+        <Box sx={{ 
+          p: 3, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          bgcolor: 'grey.50'
+        }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
+            <Typography 
+              variant="h6"
+              sx={{ 
+                fontWeight: 600,
+                color: 'text.primary',
+                letterSpacing: '-0.01em'
+              }}
+            >
               Fund Events ({(() => {
                 const filteredEvents = events.filter(event => {
                   if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'EOFY_DEBT_COST')) {
@@ -701,6 +776,7 @@ const FundDetail: React.FC = () => {
                   sx={{
                     '& .MuiSwitch-switchBase': {
                       color: 'grey.400',
+                      transition: 'all 0.2s ease-in-out',
                     },
                     '& .MuiSwitch-switchBase.Mui-checked': {
                       color: 'primary.main',
@@ -708,6 +784,9 @@ const FundDetail: React.FC = () => {
                     '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
                       backgroundColor: 'primary.main',
                     },
+                    '&:hover .MuiSwitch-switchBase': {
+                      transform: 'scale(1.05)',
+                    }
                   }}
                 />
               </Box>
@@ -723,6 +802,7 @@ const FundDetail: React.FC = () => {
                     sx={{
                       '& .MuiSwitch-switchBase': {
                         color: 'grey.400',
+                        transition: 'all 0.2s ease-in-out',
                       },
                       '& .MuiSwitch-switchBase.Mui-checked': {
                         color: 'primary.main',
@@ -730,6 +810,9 @@ const FundDetail: React.FC = () => {
                       '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
                         backgroundColor: 'primary.main',
                       },
+                      '&:hover .MuiSwitch-switchBase': {
+                        transform: 'scale(1.05)',
+                      }
                     }}
                   />
                 </Box>
@@ -739,7 +822,8 @@ const FundDetail: React.FC = () => {
         </Box>
         {/* Events Table */}
         <TableContainer sx={{ 
-          maxHeight: { xs: 400, sm: 500, md: 600 },
+                      flex: 1,
+            maxHeight: { xs: 300, sm: 'none' },
           scrollBehavior: 'smooth',
           '&::-webkit-scrollbar': {
             width: '8px',
