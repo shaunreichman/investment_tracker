@@ -851,7 +851,21 @@ const FundDetail: React.FC = () => {
                 </TableCell>
               </TableRow>
             </TableHead>
-            <TableBody sx={{ '& .MuiTableCell-root': { py: 1, px: 2, fontSize: 13 } }}>
+            <TableBody sx={{ 
+              '& .MuiTableCell-root': { py: 1, px: 2, fontSize: 13 },
+              '& .MuiTableRow-root': {
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  '& .MuiTableCell-root': {
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
+                  }
+                }
+              }
+            }}>
               {(() => {
                 // Debug: Log all events
                 console.log('All events:', events);
@@ -934,8 +948,8 @@ const FundDetail: React.FC = () => {
                           <TableCell align="right"></TableCell>
                         )}
                         {/* Actions Column */}
-                        <TableCell align="right">
-                          <Box display="flex" gap={1} justifyContent="flex-end">
+                        <TableCell align="right" sx={{ minWidth: 120, px: 2 }}>
+                          <Box display="flex" gap={1.5} justifyContent="flex-end" alignItems="center">
                             {/* Only show edit/delete for user-editable events */}
                             {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(interestEvent.event_type) && (
                               <>
@@ -944,32 +958,36 @@ const FundDetail: React.FC = () => {
                                   onClick={() => handleEditEvent(interestEvent)}
                                   sx={{
                                     color: 'primary.main',
-                                    p: 0.5,
+                                    p: 1,
+                                    borderRadius: 1,
                                     transition: 'all 0.2s ease-in-out',
                                     '&:hover': {
                                       bgcolor: 'primary.light',
-                                      transform: 'scale(1.1)'
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                     }
                                   }}
                                   title="Edit event"
                                 >
-                                  <EditIcon sx={{ fontSize: 16 }} />
+                                  <EditIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDeleteEvent(interestEvent)}
                                   sx={{
                                     color: 'error.main',
-                                    p: 0.5,
+                                    p: 1,
+                                    borderRadius: 1,
                                     transition: 'all 0.2s ease-in-out',
                                     '&:hover': {
                                       bgcolor: 'error.light',
-                                      transform: 'scale(1.1)'
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                     }
                                   }}
                                   title="Delete event"
                                 >
-                                  <DeleteIcon sx={{ fontSize: 16 }} />
+                                  <DeleteIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </>
                             )}
@@ -1200,26 +1218,46 @@ const FundDetail: React.FC = () => {
                           </TableCell>
                         )}
                         {/* Actions Column */}
-                        <TableCell align="right">
-                          <Box display="flex" gap={1} justifyContent="flex-end">
+                        <TableCell align="right" sx={{ minWidth: 120, px: 2 }}>
+                          <Box display="flex" gap={1.5} justifyContent="flex-end" alignItems="center">
                             {/* Only show edit/delete for user-editable events */}
                             {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(event.event_type) && (
                               <>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleEditEvent(event)}
-                                  color="primary"
+                                  sx={{
+                                    color: 'primary.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'primary.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Edit event"
                                 >
-                                  <EditIcon fontSize="small" />
+                                  <EditIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDeleteEvent(event)}
-                                  color="error"
+                                  sx={{
+                                    color: 'error.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'error.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Delete event"
                                 >
-                                  <DeleteIcon fontSize="small" />
+                                  <DeleteIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </>
                             )}
@@ -1455,26 +1493,46 @@ const FundDetail: React.FC = () => {
                           </TableCell>
                         )}
                         {/* Actions Column */}
-                        <TableCell align="right">
-                          <Box display="flex" gap={1} justifyContent="flex-end">
+                        <TableCell align="right" sx={{ minWidth: 120, px: 2 }}>
+                          <Box display="flex" gap={1.5} justifyContent="flex-end" alignItems="center">
                             {/* Only show edit/delete for user-editable events */}
                             {!['TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER'].includes(event.event_type) && (
                               <>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleEditEvent(event)}
-                                  color="primary"
+                                  sx={{
+                                    color: 'primary.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'primary.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Edit event"
                                 >
-                                  <EditIcon fontSize="small" />
+                                  <EditIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDeleteEvent(event)}
-                                  color="error"
+                                  sx={{
+                                    color: 'error.main',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                      bgcolor: 'error.light',
+                                      transform: 'scale(1.05)',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }
+                                  }}
                                   title="Delete event"
                                 >
-                                  <DeleteIcon fontSize="small" />
+                                  <DeleteIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </>
                             )}
