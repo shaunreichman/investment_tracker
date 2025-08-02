@@ -259,6 +259,34 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - Actions should be contextual to the data they affect
 - Maintain all information visible while improving organization
 
+### Phase 3B: Visual Consistency ✅ COMPLETED
+**Goal**: Unify all summary sections with consistent card styling and visual hierarchy
+
+**Completed Tasks**:
+- [x] **Unified Card Style**
+  - [x] Apply bordered individual fields style to all summary sections
+  - [x] Maintain icons for visual consistency across all sections
+  - [x] Use consistent spacing and typography hierarchy
+  - [x] Implement subtle background colors for priority indication
+- [x] **Enhanced Visual Hierarchy**
+  - [x] Primary metrics: Bordered cards with background highlighting
+  - [x] Secondary metrics: Simple bordered cards with consistent styling
+  - [x] Detailed data: Keep table format for transaction summaries
+  - [x] Consistent hover effects and transitions
+
+**Key Improvements**:
+- **Visual Consistency**: All sections now use the same "card within card" design pattern
+- **Better Hierarchy**: Clear visual separation between different data points
+- **Scalable Design**: Easy to add new fields without breaking the layout
+- **Professional Appearance**: More polished and intentional visual language
+- **Enhanced Scanning**: Clear visual boundaries help with quick data scanning
+
+**Design Principles**:
+- Apply Expected Performance style (bordered individual fields) to all sections
+- Keep icons for visual personality and quick recognition
+- Use subtle background colors to indicate priority/importance
+- Maintain table format only for detailed data (transaction summaries)
+
 ### Phase 4: Visual Polish (Future)
 **Goal**: Add modern visual touches and micro-interactions
 
