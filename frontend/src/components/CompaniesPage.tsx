@@ -13,11 +13,12 @@ import {
   Paper,
   Chip,
   CircularProgress,
-  Alert,
   Link,
   Breadcrumbs,
   Button
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
+import { ErrorType, ErrorSeverity, createErrorInfo } from '../types/errors';
 import {
   Business,
   AccountBalance,
@@ -112,9 +113,15 @@ const CompaniesPage: React.FC = () => {
   }
 
   if (error) {
+    const errorInfo = createErrorInfo(error);
     return (
       <Box p={3}>
-        <Alert severity="error">{error}</Alert>
+        <ErrorDisplay
+          error={errorInfo}
+          canRetry={errorInfo.retryable}
+          onRetry={refetch}
+          onDismiss={() => navigate('/')}
+        />
       </Box>
     );
   }
@@ -122,7 +129,18 @@ const CompaniesPage: React.FC = () => {
   if (!company) {
     return (
       <Box p={3}>
-        <Alert severity="warning">Company not found</Alert>
+        <ErrorDisplay
+          error={{
+            message: 'Company not found',
+            type: ErrorType.NOT_FOUND,
+            severity: ErrorSeverity.MEDIUM,
+            retryable: false,
+            userMessage: 'The requested company could not be found.',
+            timestamp: new Date()
+          }}
+          canRetry={false}
+          onDismiss={() => navigate('/')}
+        />
       </Box>
     );
   }

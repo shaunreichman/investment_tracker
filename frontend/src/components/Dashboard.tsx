@@ -13,10 +13,10 @@ import {
   Paper,
   Chip,
   CircularProgress,
-  Alert,
   Divider,
   Link
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
 import {
   TrendingUp,
   AccountBalance,
@@ -87,7 +87,12 @@ const Dashboard: React.FC = () => {
   if (error) {
     return (
       <Box p={3}>
-        <Alert severity="error">{error}</Alert>
+        <ErrorDisplay
+          error={error}
+          canRetry={error.retryable}
+          onRetry={() => window.location.reload()}
+          onDismiss={() => window.location.reload()}
+        />
       </Box>
     );
   }

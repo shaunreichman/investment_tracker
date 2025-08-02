@@ -12,7 +12,6 @@ import {
   MenuItem,
   Box,
   CircularProgress,
-  Alert,
   Typography,
   FormHelperText,
   Stepper,
@@ -22,6 +21,8 @@ import {
   Divider,
   InputAdornment
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, AccountBalance as AccountBalanceIcon, TrendingUp as TrendingUpIcon } from '@mui/icons-material';
 import CreateEntityModal from './CreateEntityModal';
 import { useEntities } from '../hooks/useEntities';
@@ -522,34 +523,28 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 
         {/* Success State */}
         {success && (
-          <Alert 
-            severity="success" 
-            sx={{ mb: 2 }}
-            icon={<CheckCircleIcon />}
-          >
-            <Typography variant="body1" fontWeight="medium">
-              Fund created successfully!
-            </Typography>
-            <Typography variant="body2">
-              Redirecting to fund details...
-            </Typography>
-          </Alert>
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
+            <CheckCircleIcon color="success" sx={{ mr: 1 }} />
+            <Box>
+              <Typography variant="body1" fontWeight="medium" color="success.main">
+                Fund created successfully!
+              </Typography>
+              <Typography variant="body2" color="success.main">
+                Redirecting to fund details...
+              </Typography>
+            </Box>
+          </Box>
         )}
 
         {/* Error State */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ mb: 2 }}
-            icon={<ErrorIcon />}
-          >
-            <Typography variant="body1" fontWeight="medium">
-              Error creating fund
-            </Typography>
-            <Typography variant="body2">
-              {error}
-            </Typography>
-          </Alert>
+          <ErrorDisplay
+            error={error}
+            canRetry={error.retryable}
+            onRetry={() => handleSubmit()}
+            onDismiss={() => {}}
+            variant="inline"
+          />
         )}
         
         {loading ? (

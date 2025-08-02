@@ -12,11 +12,12 @@ import {
   MenuItem,
   Box,
   CircularProgress,
-  Alert,
   Typography,
   FormHelperText,
   Paper
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, Business as BusinessIcon } from '@mui/icons-material';
 import { useCreateInvestmentCompany } from '../hooks/useInvestmentCompanies';
 
@@ -39,7 +40,6 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
   onClose,
   onCompanyCreated
 }) => {
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
@@ -55,12 +55,15 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
   // Centralized API hook
   const createInvestmentCompany = useCreateInvestmentCompany();
 
+  // Centralized error handler
+  const { error, setError, clearError } = useErrorHandler();
+
   // Handle errors and success from hooks
   useEffect(() => {
     if (createInvestmentCompany.error) {
       setError(createInvestmentCompany.error);
     }
-  }, [createInvestmentCompany.error]);
+  }, [createInvestmentCompany.error, setError]);
 
   useEffect(() => {
     if (createInvestmentCompany.data) {
@@ -176,7 +179,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
 
   const handleSubmit = async () => {
     // Clear any previous errors
-    setError(null);
+    clearError();
     
     // Validate form
     if (!validateForm()) {
@@ -198,7 +201,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
   const handleClose = () => {
     if (!createInvestmentCompany.loading) {
       onClose();
-      setError(null);
+      clearError();
       setSuccess(false);
       setValidationErrors({});
       // Clear form data when closing
@@ -248,34 +251,28 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
       <DialogContent sx={{ pb: 2 }}>
         {/* Success State */}
         {success && (
-          <Alert 
-            severity="success" 
-            sx={{ mb: 2 }}
-            icon={<CheckCircleIcon />}
-          >
-            <Typography variant="body1" fontWeight="medium">
-              Investment company created successfully!
-            </Typography>
-            <Typography variant="body2">
-              Redirecting to dashboard...
-            </Typography>
-          </Alert>
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
+            <CheckCircleIcon sx={{ mr: 1, color: 'success.main' }} />
+            <Box>
+              <Typography variant="body1" fontWeight="medium" color="success.main">
+                Investment company created successfully!
+              </Typography>
+              <Typography variant="body2" color="success.main">
+                Redirecting to dashboard...
+              </Typography>
+            </Box>
+          </Box>
         )}
 
         {/* Error State */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ mb: 2 }}
-            icon={<ErrorIcon />}
-          >
-            <Typography variant="body1" fontWeight="medium">
-              Error creating investment company
-            </Typography>
-            <Typography variant="body2">
-              {error}
-            </Typography>
-          </Alert>
+          <ErrorDisplay
+            error={error}
+            canRetry={error.retryable}
+            onRetry={() => createInvestmentCompany.mutate(formData)}
+            onDismiss={clearError}
+            variant="inline"
+          />
         )}
         
         <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>

@@ -32,6 +32,7 @@ import {
 } from '../types/api';
 
 import { getApiBaseUrl } from '../config/environment';
+import { ErrorType, createErrorInfo } from '../types/errors';
 
 // ============================================================================
 // CONFIGURATION
@@ -56,6 +57,63 @@ class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+/**
+ * Maps HTTP status codes to error types
+ */
+function mapStatusToErrorType(status: number): ErrorType {
+  switch (status) {
+    case 400:
+      return ErrorType.VALIDATION;
+    case 401:
+      return ErrorType.AUTHENTICATION;
+    case 403:
+      return ErrorType.AUTHORIZATION;
+    case 404:
+      return ErrorType.NOT_FOUND;
+    case 500:
+    case 502:
+    case 503:
+    case 504:
+      return ErrorType.SERVER;
+    default:
+      return ErrorType.UNKNOWN;
+  }
+}
+
+/**
+ * Determines if an error is a network error
+ */
+function isNetworkError(error: any): boolean {
+  return (
+    error instanceof TypeError ||
+    error.message?.includes('fetch') ||
+    error.message?.includes('network') ||
+    error.message?.includes('connection') ||
+    error.message?.includes('timeout')
+  );
+}
+
+/**
+ * Creates a comprehensive error info object from API errors
+ */
+function createApiErrorInfo(error: any, status?: number): any {
+  let errorType: ErrorType;
+  let message: string;
+  
+  if (isNetworkError(error)) {
+    errorType = ErrorType.NETWORK;
+    message = 'Network connection failed. Please check your internet connection.';
+  } else if (error instanceof ApiError) {
+    errorType = mapStatusToErrorType(error.status);
+    message = error.message;
+  } else {
+    errorType = ErrorType.UNKNOWN;
+    message = error instanceof Error ? error.message : String(error);
+  }
+  
+  return createErrorInfo(error, errorType);
 }
 
 // ============================================================================
@@ -89,11 +147,15 @@ class ApiClient {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new ApiError(
+        const apiError = new ApiError(
           errorData.error || `HTTP ${response.status}: ${response.statusText}`,
           response.status,
           errorData
         );
+        
+        // Create comprehensive error info
+        const errorInfo = createApiErrorInfo(apiError, response.status);
+        throw errorInfo;
       }
 
       // Handle empty responses (e.g., DELETE requests)
@@ -104,13 +166,14 @@ class ApiClient {
       return await response.json();
     } catch (error) {
       if (error instanceof ApiError) {
-        throw error;
+        // Create comprehensive error info
+        const errorInfo = createApiErrorInfo(error, error.status);
+        throw errorInfo;
       }
-      throw new ApiError(
-        error instanceof Error ? error.message : 'Network error',
-        0,
-        error
-      );
+      
+      // Handle network and other errors
+      const errorInfo = createApiErrorInfo(error);
+      throw errorInfo;
     }
   }
 

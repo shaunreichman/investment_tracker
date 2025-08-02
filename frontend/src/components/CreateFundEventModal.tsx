@@ -8,7 +8,6 @@ import {
   TextField,
   MenuItem,
   Box,
-  Alert,
   CircularProgress,
   Paper,
   Typography,
@@ -16,6 +15,8 @@ import {
   Checkbox,
   FormControlLabel
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 import { TrendingUp, AccountBalance, Add as AddIcon, MonetizationOn, Receipt } from '@mui/icons-material';
 import { useFund } from '../hooks/useFunds';
 import { useCreateFundEvent, useCreateTaxStatement } from '../hooks/useFunds';
@@ -94,10 +95,12 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   const [distributionType, setDistributionType] = useState<string>('');
   const [subDistributionType, setSubDistributionType] = useState<string>('');
   const [formData, setFormData] = useState<any>({});
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
+
+  // Centralized error handler
+  const { error, setError, clearError } = useErrorHandler();
   const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
   const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
   const [fundEntity, setFundEntity] = useState<any>(null);
@@ -152,7 +155,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       setWithholdingAmountType('');
       setWithholdingTaxType('');
       setFormData({ event_date: new Date().toISOString().slice(0, 10) });
-      setError(null);
+      clearError();
       setSuccess(false);
       setValidationErrors({});
     }
@@ -253,7 +256,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     setWithholdingTaxType('');
     setFormData({});
     setHybridFieldOverrides({});
-    setError(null);
+    clearError();
     setSuccess(false);
   };
 
@@ -268,7 +271,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     setEventType(value);
     setDistributionType('');
     setSubDistributionType('');
-    setError(null);
+    clearError();
     // Validate all required fields after template selection
     setTimeout(() => validateForm(), 0);
   };
@@ -515,7 +518,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   };
 
   const handleSubmit = async () => {
-    setError(null);
+    clearError();
     if (!validateForm()) {
       setError('Please fill in all required fields.');
       return;
@@ -614,8 +617,22 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Add Cash Flow Event</DialogTitle>
       <DialogContent>
-        {success && <Alert severity="success">Event created successfully!</Alert>}
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {success && (
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
+            <Typography variant="body1" fontWeight="medium" color="success.main">
+              Event created successfully!
+            </Typography>
+          </Box>
+        )}
+        {error && (
+          <ErrorDisplay
+            error={error}
+            canRetry={error.retryable}
+            onRetry={() => handleSubmit()}
+            onDismiss={clearError}
+            variant="inline"
+          />
+        )}
         {/* Event Type Cards */}
         <Box display="flex" gap={2} mb={2}>
           {EVENT_TEMPLATES.filter(t => t.trackingType === fundTrackingType || t.trackingType === 'both').map(template => {

@@ -13,11 +13,12 @@ import {
   Paper,
   Chip,
   CircularProgress,
-  Alert,
   Link,
   Button,
   Grid
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
+import { createErrorInfo } from '../types/errors';
 import {
   Business,
   AccountBalance,
@@ -82,9 +83,16 @@ const OverallDashboard: React.FC = () => {
   }
 
   if (error) {
+    // Handle both string and ErrorInfo error types
+    const errorInfo = typeof error === 'string' ? createErrorInfo(error) : error;
     return (
       <Box p={3}>
-        <Alert severity="error">{error}</Alert>
+        <ErrorDisplay
+          error={errorInfo}
+          canRetry={errorInfo.retryable}
+          onRetry={refetch}
+          onDismiss={() => window.location.reload()}
+        />
       </Box>
     );
   }
