@@ -7,7 +7,6 @@ import {
   Button,
   TextField,
   Box,
-  Alert,
   CircularProgress,
   Typography,
   IconButton,
@@ -15,6 +14,8 @@ import {
   FormControlLabel,
   Radio
 } from '@mui/material';
+import { ErrorDisplay } from './ErrorDisplay';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { MonetizationOn } from '@mui/icons-material';
 import { useUpdateFundEvent } from '../hooks/useFunds';
@@ -51,15 +52,15 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   event 
 }) => {
   const [formData, setFormData] = useState<any>({});
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
   const [interestType, setInterestType] = useState<'regular' | 'withholding'>('regular');
   const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
   const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
-  // Add state to track focus for Amount field
-  const [amountFocused, setAmountFocused] = useState(false);
+
+  // Centralized error handler
+  const { error, setError, clearError } = useErrorHandler();
 
   // Centralized API hook
   const updateFundEvent = useUpdateFundEvent(fundId, event?.id || 0);
@@ -69,7 +70,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
     if (updateFundEvent.error) {
       setError(updateFundEvent.error);
     }
-  }, [updateFundEvent.error]);
+  }, [updateFundEvent.error, setError]);
 
   useEffect(() => {
     if (updateFundEvent.data) {
@@ -154,7 +155,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
           }
         }
       
-      setError(null);
+      clearError();
       setSuccess(false);
       setValidationErrors({});
     }
@@ -392,7 +393,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
   const handleSubmit = async () => {
     if (!validateForm() || !event) return;
 
-    setError(null);
+    clearError();
 
     const payload: any = {};
 
@@ -506,15 +507,21 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       
       <DialogContent>
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
+          <ErrorDisplay
+            error={error}
+            canRetry={error.retryable}
+            onRetry={() => handleSubmit()}
+            onDismiss={clearError}
+            variant="inline"
+          />
         )}
         
         {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Event updated successfully!
-          </Alert>
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
+            <Typography variant="body1" fontWeight="medium" color="success.main">
+              Event updated successfully!
+            </Typography>
+          </Box>
         )}
 
         <Box sx={{ mt: 2 }}>

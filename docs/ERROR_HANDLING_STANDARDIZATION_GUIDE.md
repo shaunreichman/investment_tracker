@@ -94,8 +94,8 @@ This guide provides a step-by-step approach to implement professional-grade erro
 #### **Step 7: Migrate Complex Components**
 - [x] Update `CreateEntityModal.tsx`
 - [x] Update `CreateInvestmentCompanyModal.tsx`
-- [ ] Update `CreateFundEventModal.tsx`
-- [ ] Update `EditFundEventModal.tsx`
+- [x] Update `CreateFundEventModal.tsx`
+- [x] Update `EditFundEventModal.tsx`
 - [ ] Update `FundDetail.tsx`
 - [x] Replace manual error state with centralized error handler
 
