@@ -55,19 +55,23 @@
 6. [Event Creation Patterns](#event-creation-patterns)
 7. [Capital Event Handling](#capital-event-handling)
 8. [Separation of Concerns](#separation-of-concerns)
-9. [Frontend Development Guidelines](#frontend-development-guidelines)
-10. [API Integration Patterns](#api-integration-patterns)
-11. [Environment Setup](#environment-setup)
-12. [Field Classification Principles](#field-classification-principles)
-13. [Field Reference](#field-reference)
-14. [Workflow Examples](#workflow-examples)
-15. [Testing Guidelines](#testing-guidelines)
-16. [Validation](#validation)
-17. [Error Handling Policy](#error-handling-policy)
-18. [Getting Started / Onboarding Checklist](#getting-started--onboarding-checklist)
-19. [Quick Reference Table](#quick-reference-table)
-20. [Glossary / Definitions](#glossary--definitions)
-21. [Change History](#change-history)
+9. [TypeScript Standards](#typescript-standards)
+10. [Frontend Development Guidelines](#frontend-development-guidelines)
+11. [Centralized API Integration](#centralized-api-integration)
+12. [API Integration Patterns](#api-integration-patterns)
+13. [Error Handling Standards](#error-handling-standards)
+14. [Performance Standards](#performance-standards)
+15. [Security Standards](#security-standards)
+16. [Environment Setup](#environment-setup)
+17. [Field Classification Principles](#field-classification-principles)
+18. [Field Reference](#field-reference)
+19. [Workflow Examples](#workflow-examples)
+20. [Testing Guidelines](#testing-guidelines)
+21. [Validation](#validation)
+22. [Getting Started / Onboarding Checklist](#getting-started--onboarding-checklist)
+23. [Quick Reference Table](#quick-reference-table)
+24. [Glossary / Definitions](#glossary--definitions)
+25. [Change History](#change-history)
 
 ---
 
@@ -387,6 +391,88 @@ def calculate_irr(events, ...):
 
 ---
 
+## TypeScript Standards
+
+### **Interface Design Principles**
+- Create interfaces that extend base API types for component-specific fields
+- Use proper type coercion for form data (string → enum)
+- Handle optional fields with `null` vs `undefined` correctly
+- Implement generic interfaces for reusable components
+
+### **Type Safety Patterns**
+```typescript
+// ✅ CORRECT: Extended interfaces for component data
+interface ExtendedFundEvent extends Omit<FundEvent, 'amount'> {
+  amount: number | null;
+  displayAmount?: string;
+  formattedDate?: string;
+  isEditable?: boolean;
+}
+
+// ✅ CORRECT: Type coercion for form data
+const handleSubmit = async (formData: any) => {
+  const apiData = {
+    ...formData,
+    tracking_type: formData.tracking_type === 'nav_based' 
+      ? FundType.NAV_BASED 
+      : FundType.COST_BASED,
+    amount: formData.amount ? parseFloat(formData.amount) : null,
+    event_date: formData.event_date ? new Date(formData.event_date) : undefined
+  };
+  await createFund.mutate(apiData);
+};
+
+// ✅ CORRECT: Generic hooks with proper typing
+const useApiCall = <T>(url: string) => {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<ErrorInfo | null>(null);
+  // ... implementation
+};
+```
+
+### **Component Type Patterns**
+```typescript
+// ✅ CORRECT: Proper prop interfaces
+interface FundDetailProps {
+  fundId: number;
+  onEventCreated?: (event: FundEvent) => void;
+  onEventUpdated?: (event: FundEvent) => void;
+  onEventDeleted?: (eventId: number) => void;
+}
+
+// ✅ CORRECT: Event handler types
+const handleEventCreated = useCallback((event: FundEvent) => {
+  onEventCreated?.(event);
+  refetch();
+}, [onEventCreated, refetch]);
+
+// ✅ CORRECT: Form data interfaces
+interface CreateFundFormData {
+  name: string;
+  tracking_type: 'nav_based' | 'cost_based';
+  fund_type?: string;
+  description?: string;
+  currency?: string;
+}
+```
+
+### **Type Guards and Validation**
+```typescript
+// ✅ CORRECT: Type guards for runtime validation
+const isFundEvent = (obj: any): obj is FundEvent => {
+  return obj && typeof obj.id === 'number' && typeof obj.event_type === 'string';
+};
+
+// ✅ CORRECT: Validation with TypeScript
+const validateFundData = (data: any): data is CreateFundData => {
+  return data && 
+         typeof data.name === 'string' && 
+         data.name.length > 0 &&
+         ['nav_based', 'cost_based'].includes(data.tracking_type);
+};
+```
+
 ## Frontend Development Guidelines
 
 ### **React Component Patterns**
@@ -648,43 +734,62 @@ except Exception as e:
     return jsonify({"error": "Database error"}), 500
 ```
 
-### **Frontend API Integration**
+### **Centralized API Integration**
+
+#### **Core Principles**
+- Use centralized `apiClient` from `services/api.ts` for all API calls
+- Implement custom hooks for all data fetching and mutations
+- Maintain type safety with TypeScript interfaces
+- Handle loading states and error handling consistently
+- Never use direct `fetch()` calls in components
 
 #### **Custom Hooks for API Calls**
 ```typescript
-// ✅ CORRECT: Reusable API hooks
-const useFunds = () => {
-  return useApiCall<Fund[]>('/api/funds');
-};
+// ✅ CORRECT: Domain-specific hooks
+const { data: funds, loading, error } = useFunds();
+const { data: entities } = useEntities();
+const { mutate: createFund, isCreating } = useCreateFund();
 
-const useFund = (id: number) => {
-  return useApiCall<Fund>(`/api/funds/${id}`);
-};
+// ✅ CORRECT: Error handling with centralized system
+const { error, setError, clearError } = useErrorHandler();
 
-const useCreateFund = () => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// ✅ CORRECT: Mutation hooks with optimistic updates
+const { mutate: createEvent, isCreating } = useCreateFundEvent(fundId);
+const { mutate: updateEvent, isUpdating } = useUpdateFundEvent(fundId, eventId);
+const { mutate: deleteEvent, isDeleting } = useDeleteFundEvent(fundId, eventId);
+```
 
-  const createFund = async (fundData: CreateFundData) => {
-    try {
-      setIsCreating(true);
-      setError(null);
-      
-      const response = await apiCall('/api/funds', {
-        method: 'POST',
-        body: JSON.stringify(fundData)
-      });
-      
-      return response;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create fund');
-      throw err;
-    } finally {
-      setIsCreating(false);
-    }
+#### **Migration Patterns**
+```typescript
+// ❌ INCORRECT: Direct fetch calls
+const [funds, setFunds] = useState([]);
+useEffect(() => {
+  fetch('/api/funds').then(res => res.json()).then(setFunds);
+}, []);
+
+// ✅ CORRECT: Centralized hooks
+const { data: funds, loading, error } = useFunds();
+```
+
+#### **Type Safety Patterns**
+```typescript
+// ✅ CORRECT: Extended interfaces for component-specific data
+interface ExtendedFundEvent extends Omit<FundEvent, 'amount'> {
+  amount: number | null;
+  displayAmount?: string;
+  formattedDate?: string;
+}
+
+// ✅ CORRECT: Type coercion for form data
+const handleSubmit = async (formData: any) => {
+  const apiData = {
+    ...formData,
+    tracking_type: formData.tracking_type === 'nav_based' 
+      ? FundType.NAV_BASED 
+      : FundType.COST_BASED,
+    amount: formData.amount ? parseFloat(formData.amount) : null
   };
-
-  return { createFund, isCreating, error };
+  await createFund.mutate(apiData);
 };
 ```
 
@@ -1107,55 +1212,183 @@ def test_create_fund():
 
 ---
 
-## Error Handling Policy
+## Error Handling Standards
+
+### **Centralized Error Management**
+- Use `useErrorHandler` hook for all error state management
+- Implement `ErrorDisplay` component for consistent error UI
+- Categorize errors with `ErrorType` enum (NETWORK, VALIDATION, etc.)
+- Use retry mechanisms with exponential backoff for transient errors
+
+### **Error Categorization System**
+- **NETWORK**: Connection issues, timeouts, fetch failures
+- **VALIDATION**: Form validation, input errors, business rule violations
+- **AUTHENTICATION**: Login failures, expired tokens, unauthorized access
+- **AUTHORIZATION**: Permission issues, insufficient privileges
+- **SERVER**: Backend errors, database issues, internal server errors
+- **NOT_FOUND**: Resource not found, missing data
+- **UNKNOWN**: Unclassified errors with fallback handling
+
+### **Frontend Error Handling Patterns**
+```typescript
+// ✅ CORRECT: Centralized error handling
+const { error, setError, clearError, retry } = useErrorHandler();
+
+const handleSubmit = async () => {
+  try {
+    clearError();
+    await createEntity.mutate(formData);
+    onClose();
+  } catch (err) {
+    setError(err);
+  }
+};
+
+// ✅ CORRECT: Standardized error display
+<ErrorDisplay
+  error={error}
+  canRetry={error?.retryable}
+  onRetry={retry}
+  onDismiss={clearError}
+  variant="inline"
+/>
+```
 
 ### **Backend Error Handling**
-- Always raise explicit exceptions for error conditions; never return None or ambiguous values.
-- Use domain-specific exception classes where possible.
-- Log unexpected exceptions with enough context for debugging.
-- Do not leak raw DB or system errors to the API layer—wrap in domain errors.
-
-### **API Error Handling**
 ```python
-# ✅ CORRECT: Consistent API error responses
+# ✅ CORRECT: Domain-specific exceptions
+class InvalidEventError(Exception):
+    """Raised when event data is invalid"""
+    pass
+
+class FundNotFoundError(Exception):
+    """Raised when fund is not found"""
+    pass
+
+# ✅ CORRECT: API error responses with proper categorization
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({'error': 'Resource not found'}), 404
+    return jsonify({'error': 'Resource not found', 'type': 'NOT_FOUND'}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({'error': 'Internal server error'}), 500
-
-# ✅ CORRECT: Domain-specific error handling
-try:
-    fund = session.query(Fund).filter_by(id=fund_id).first()
-    if not fund:
-        return jsonify({'error': 'Fund not found'}), 404
-except Exception as e:
-    return jsonify({'error': 'Database error'}), 500
+    return jsonify({'error': 'Internal server error', 'type': 'SERVER'}), 500
 ```
 
-### **Frontend Error Handling**
-```typescript
-// ✅ CORRECT: Graceful error handling in components
-const [error, setError] = useState<string | null>(null);
-
-const handleError = (error: Error) => {
-  setError(error.message);
-  console.error('API Error:', error);
-};
-
-// ✅ CORRECT: User-friendly error messages
-if (error) {
-  return (
-    <Alert severity="error">
-      {error.includes('not found') ? 'Fund not found' : 'An error occurred'}
-    </Alert>
-  );
-}
-```
+### **Error Recovery Patterns**
+- **Retry Mechanisms**: Automatic retry for transient errors with exponential backoff
+- **Graceful Degradation**: Show alternative content for non-critical errors
+- **User Feedback**: Clear error messages with actionable recovery steps
+- **Error Persistence**: Optional error history for debugging and analytics
 
 ---
+
+## Performance Standards
+
+### **React Optimization**
+- Use `useCallback` for event handlers passed to child components
+- Implement `useMemo` for expensive calculations
+- Avoid unnecessary re-renders with proper dependency arrays
+- Use `React.memo` for expensive components
+- Implement proper loading states to improve perceived performance
+
+### **API Optimization**
+- Implement request deduplication to prevent duplicate calls
+- Use proper caching strategies for frequently accessed data
+- Implement background refetching for fresh data
+- Handle large datasets with pagination
+- Use optimistic updates for better user experience
+
+### **Bundle Optimization**
+- Lazy load components and routes using `React.lazy()`
+- Implement code splitting for large components
+- Optimize Material-UI imports to reduce bundle size
+- Monitor bundle size and performance metrics
+- Use tree shaking for unused code elimination
+
+### **Performance Patterns**
+```typescript
+// ✅ CORRECT: Memoized callbacks
+const handleSubmit = useCallback(async (formData: any) => {
+  await createFund.mutate(formData);
+  onClose();
+}, [createFund, onClose]);
+
+// ✅ CORRECT: Memoized calculations
+const totalValue = useMemo(() => {
+  return funds.reduce((sum, fund) => sum + (fund.current_equity_balance || 0), 0);
+}, [funds]);
+
+// ✅ CORRECT: Optimized re-renders
+const FundList = React.memo(({ funds, onFundClick }: FundListProps) => {
+  return (
+    <Box>
+      {funds.map(fund => (
+        <FundCard key={fund.id} fund={fund} onClick={onFundClick} />
+      ))}
+    </Box>
+  );
+});
+```
+
+### **Loading State Optimization**
+```typescript
+// ✅ CORRECT: Skeleton loading for better UX
+const FundList = () => {
+  const { data: funds, loading, error } = useFunds();
+
+  if (loading) {
+    return <FundListSkeleton />;
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
+  return <FundGrid funds={funds || []} />;
+};
+```
+
+## Security Standards
+
+### **Input Validation**
+- Validate all user inputs on both frontend and backend
+- Sanitize data before database operations
+- Use proper TypeScript types to prevent injection attacks
+- Implement proper form validation with clear error messages
+
+### **API Security**
+- Implement proper CORS configuration for cross-origin requests
+- Validate all API endpoints with proper authentication
+- Use HTTPS in production environments
+- Implement rate limiting for API calls to prevent abuse
+
+### **Data Protection**
+- Never expose sensitive data in client-side code
+- Implement proper session management with secure tokens
+- Use environment variables for sensitive configuration
+- Sanitize user inputs to prevent XSS attacks
+
+### **Security Patterns**
+```typescript
+// ✅ CORRECT: Input sanitization
+const sanitizeInput = (input: string): string => {
+  return input.trim().replace(/[<>]/g, '');
+};
+
+// ✅ CORRECT: Environment variable usage
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+
+// ✅ CORRECT: Secure form handling
+const handleSubmit = async (formData: any) => {
+  const sanitizedData = {
+    ...formData,
+    name: sanitizeInput(formData.name),
+    description: sanitizeInput(formData.description)
+  };
+  await createFund.mutate(sanitizedData);
+};
+```
 
 ## Getting Started / Onboarding Checklist
 - Read the "Quick Start" and "Architecture Principles" sections first.
@@ -1202,4 +1435,5 @@ if (error) {
 - 2024-07-13: Major update—removed v2 method references, clarified legacy file removal, added explicit testing guidelines, onboarding checklist, error handling, validation, glossary, and quick reference table.
 - 2024-07-21: Added comprehensive frontend development guidelines, API integration patterns, environment setup, and updated testing guidelines with React component testing examples.
 - 2024-07-21: **STRUCTURAL AUDIT FIXES**: Fixed Table of Contents to match actual content, consolidated duplicated sections (session management, API rules, error handling), removed references to non-existent sections, improved organization and flow, eliminated duplications and ambiguities.
+- 2024-12-19: **MAJOR DOCUMENTATION UPDATE**: Added comprehensive sections for centralized API integration, error handling standards, TypeScript best practices, performance optimization, and security standards. Updated all patterns to reflect the completed professional-grade implementation of centralized API and error handling systems.
 

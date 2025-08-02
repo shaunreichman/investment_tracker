@@ -1,0 +1,122 @@
+name: Sanitize user inputs
+scope: typescript
+language: typescript
+severity: error
+if: User inputs used directly without sanitization
+then: Sanitize all user inputs before processing or displaying
+why: Prevents XSS attacks and data corruption.
+globs: ["frontend/src/**/*.ts", "frontend/src/**/*.tsx"]
+
+---
+name: Use environment variables for sensitive data
+scope: typescript
+language: typescript
+severity: error
+if: Hardcoded API keys, URLs, or sensitive configuration
+then: Use environment variables with REACT_APP_ prefix
+why: Prevents sensitive data from being exposed in client-side code.
+globs: ["frontend/src/**/*.ts", "frontend/src/**/*.tsx"]
+
+---
+name: Validate form inputs
+scope: typescript
+language: typescript
+severity: warning
+if: Form submissions without input validation
+then: Implement proper form validation on both client and server side
+why: Input validation prevents malicious data and improves user experience.
+globs: ["frontend/src/components/**/*.tsx"]
+
+---
+name: Use HTTPS in production
+scope: typescript
+language: typescript
+severity: error
+if: HTTP URLs in production environment
+then: Use HTTPS for all API calls and external resources
+why: HTTPS encrypts data transmission and prevents man-in-the-middle attacks.
+globs: ["frontend/src/**/*.ts", "frontend/src/**/*.tsx"]
+
+---
+name: Implement proper CORS handling
+scope: typescript
+language: typescript
+severity: warning
+if: API calls without proper CORS configuration
+then: Ensure proper CORS setup and handle CORS errors gracefully
+why: Proper CORS configuration prevents unauthorized cross-origin requests.
+globs: ["frontend/src/services/**/*.ts"]
+
+---
+name: Sanitize HTML content
+scope: typescript
+language: typescript
+severity: error
+if: User content rendered as HTML without sanitization
+then: Use DOMPurify or similar library to sanitize HTML content
+why: Prevents XSS attacks through malicious HTML content.
+globs: ["frontend/src/**/*.tsx"]
+
+---
+name: Validate API responses
+scope: typescript
+language: typescript
+severity: warning
+if: API responses used without validation
+then: Validate API response structure and data types
+why: Prevents runtime errors and potential security issues from malformed data.
+globs: ["frontend/src/**/*.ts", "frontend/src/**/*.tsx"]
+
+---
+name: Use secure session management
+scope: typescript
+language: typescript
+severity: error
+if: Sensitive data stored in localStorage or sessionStorage
+then: Use secure session management and avoid storing sensitive data in browser storage
+why: Browser storage is vulnerable to XSS attacks and should not contain sensitive data.
+globs: ["frontend/src/**/*.ts", "frontend/src/**/*.tsx"]
+
+---
+name: Implement rate limiting awareness
+scope: typescript
+language: typescript
+severity: info
+if: API calls without rate limiting consideration
+then: Implement client-side rate limiting and handle rate limit errors gracefully
+why: Rate limiting prevents abuse and improves API reliability.
+globs: ["frontend/src/services/**/*.ts", "frontend/src/hooks/**/*.ts"]
+
+---
+name: Use secure headers
+scope: typescript
+language: typescript
+severity: info
+if: API requests without proper security headers
+then: Include appropriate security headers in API requests
+why: Security headers help prevent various types of attacks.
+globs: ["frontend/src/services/**/*.ts"]
+
+---
+name: Validate file uploads
+scope: typescript
+language: typescript
+severity: error
+if: File uploads without validation
+then: Validate file types, sizes, and content before upload
+why: Prevents malicious file uploads and improves security.
+globs: ["frontend/src/**/*.ts", "frontend/src/**/*.tsx"]
+
+---
+name: Use Content Security Policy
+scope: typescript
+language: typescript
+severity: info
+if: No Content Security Policy implementation
+then: Implement CSP headers to prevent XSS and other injection attacks
+why: CSP provides an additional layer of security against various attacks.
+globs: ["frontend/src/**/*.tsx"]
+description:
+globs:
+alwaysApply: false
+---

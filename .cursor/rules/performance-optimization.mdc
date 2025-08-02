@@ -1,0 +1,122 @@
+name: Use useCallback for event handlers
+scope: typescript
+language: typescript
+severity: warning
+if: Event handlers passed to child components without useCallback
+then: Wrap event handlers in useCallback with proper dependencies
+why: Prevents unnecessary re-renders of child components when parent re-renders.
+globs: ["frontend/src/components/**/*.tsx"]
+
+---
+name: Use useMemo for expensive calculations
+scope: typescript
+language: typescript
+severity: warning
+if: Expensive calculations without memoization
+then: Use useMemo to cache calculation results
+why: Prevents recalculating expensive operations on every render.
+globs: ["frontend/src/components/**/*.tsx"]
+
+---
+name: Use React.memo for expensive components
+scope: typescript
+language: typescript
+severity: warning
+if: Expensive components without memoization
+then: Wrap components in React.memo to prevent unnecessary re-renders
+why: React.memo prevents re-rendering when props haven't changed.
+globs: ["frontend/src/components/**/*.tsx"]
+
+---
+name: Implement proper loading states
+scope: typescript
+language: typescript
+severity: warning
+if: Components without loading indicators for async operations
+then: Use loading states from custom hooks and display CircularProgress or skeletons
+why: Loading states improve perceived performance and user experience.
+globs: ["frontend/src/components/**/*.tsx"]
+
+---
+name: Optimize Material-UI imports
+scope: typescript
+language: typescript
+severity: warning
+if: Importing entire Material-UI libraries
+then: Import specific components to reduce bundle size
+why: Tree shaking reduces bundle size and improves load times.
+globs: ["frontend/src/**/*.tsx"]
+
+---
+name: Use lazy loading for routes
+scope: typescript
+language: typescript
+severity: info
+if: Large components loaded eagerly
+then: Use React.lazy() for route-based code splitting
+why: Lazy loading reduces initial bundle size and improves load times.
+globs: ["frontend/src/**/*.tsx"]
+
+---
+name: Implement request deduplication
+scope: typescript
+language: typescript
+severity: warning
+if: API calls that could be duplicated
+then: Implement request deduplication in custom hooks
+why: Prevents duplicate API calls and improves performance.
+globs: ["frontend/src/hooks/**/*.ts"]
+
+---
+name: Use optimistic updates
+scope: typescript
+language: typescript
+severity: info
+if: Mutations without optimistic updates
+then: Implement optimistic updates for better perceived performance
+why: Optimistic updates make the UI feel more responsive.
+globs: ["frontend/src/hooks/**/*.ts", "frontend/src/components/**/*.tsx"]
+
+---
+name: Monitor bundle size
+scope: typescript
+language: typescript
+severity: info
+if: Large bundle sizes without monitoring
+then: Use bundle analyzer and monitor bundle size
+why: Bundle size directly impacts load times and user experience.
+globs: ["frontend/src/**/*.tsx"]
+
+---
+name: Implement proper dependency arrays
+scope: typescript
+language: typescript
+severity: warning
+if: useEffect or useCallback with missing or incorrect dependencies
+then: Include all dependencies in dependency arrays
+why: Proper dependencies prevent stale closures and ensure correct behavior.
+globs: ["frontend/src/**/*.tsx"]
+
+---
+name: Use skeleton loading
+scope: typescript
+language: typescript
+severity: info
+if: Simple loading spinners for complex content
+then: Use skeleton components that match the actual content structure
+why: Skeleton loading provides better perceived performance and user experience.
+globs: ["frontend/src/components/**/*.tsx"]
+
+---
+name: Optimize re-render frequency
+scope: typescript
+language: typescript
+severity: warning
+if: Components re-rendering unnecessarily
+then: Review component structure and use React DevTools to identify unnecessary re-renders
+why: Reducing unnecessary re-renders improves performance.
+globs: ["frontend/src/**/*.tsx"]
+description:
+globs:
+alwaysApply: false
+---

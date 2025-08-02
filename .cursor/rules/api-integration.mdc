@@ -3,8 +3,8 @@ scope: typescript
 language: typescript
 severity: error
 if: Direct fetch() calls or local API state management in components
-then: Use centralized apiClient from services/api.ts with proper error handling
-why: Centralized client provides consistent error handling, type safety, and reduces code duplication.
+then: Use centralized apiClient from services/api.ts with proper error handling and categorization
+why: Centralized client provides consistent error handling, type safety, error categorization, and reduces code duplication.
 globs: ["frontend/src/components/**/*.tsx"]
 
 ---
@@ -33,8 +33,8 @@ scope: typescript
 language: typescript
 severity: error
 if: Direct apiClient calls in components or manual loading/error state management
-then: Use domain-specific hooks like useFunds(), useEntities(), useCreateFund()
-why: Custom hooks encapsulate API logic and provide consistent loading/error states.
+then: Use domain-specific hooks like useFunds(), useEntities(), useCreateFund() with centralized error handling
+why: Custom hooks encapsulate API logic and provide consistent loading/error states with proper error categorization.
 globs: ["frontend/src/components/**/*.tsx"]
 
 ---
