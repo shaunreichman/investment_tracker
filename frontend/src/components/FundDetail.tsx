@@ -113,7 +113,7 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               borderRadius: 1,
               backgroundColor: index === 0 ? 'primary.50' : 'transparent',
               border: '1px solid',
-              borderColor: index === 0 ? 'primary.200' : 'grey.200'
+              borderColor: 'grey.200'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -197,7 +197,7 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
               borderRadius: 1,
               backgroundColor: 'success.50',
               border: '1px solid',
-              borderColor: 'success.200'
+              borderColor: 'grey.200'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -289,7 +289,7 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
               borderRadius: 1,
               backgroundColor: 'info.50',
               border: '1px solid',
-              borderColor: 'info.200'
+              borderColor: 'grey.200'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -388,7 +388,7 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
               borderRadius: 1,
               backgroundColor: detail.priority === 1 ? 'success.50' : 'transparent',
               border: '1px solid',
-              borderColor: detail.priority === 1 ? 'success.200' : 'grey.200'
+              borderColor: 'grey.200'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -500,55 +500,40 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
         <Typography variant="h6" sx={{ fontSize: 16 }}>Transaction Summary</Typography>
       </Box>
       
-      {/* Phase 3.1: Data Table for Transaction Summary */}
-      <Box sx={{ mt: 1 }}>
-        <TableContainer sx={{ maxHeight: 200, overflow: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 200 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ py: 0.5, px: 1, fontSize: 11, fontWeight: 600, color: 'text.secondary' }}>
-                  Type
-                </TableCell>
-                <TableCell sx={{ py: 0.5, px: 1, fontSize: 11, fontWeight: 600, color: 'text.secondary' }} align="right">
-                  Amount
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {transactionData.map((item, index) => (
-                <TableRow 
-                  key={index}
-                  sx={{ 
-                    '&:hover': { 
-                      backgroundColor: 'action.hover',
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
-                    },
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                >
-                  <TableCell sx={{ py: 0.5, px: 1, fontSize: 11 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <span>{item.icon}</span>
-                      {item.type}
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ py: 0.5, px: 1, fontSize: 11, fontWeight: 600 }} align="right">
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: item.color,
-                        fontWeight: 600
-                      }}
-                    >
-                      {formatCurrency(item.amount, fund.currency)}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+      {/* Phase 3B: Enhanced card layout with consistent styling */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {transactionData.map((item, index) => (
+          <Box 
+            key={index}
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 0.5,
+              borderRadius: 1,
+              backgroundColor: 'transparent',
+              border: '1px solid',
+              borderColor: 'grey.200'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <span style={{ fontSize: '12px' }}>{item.icon}</span>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                {item.type}
+              </Typography>
+            </Box>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: item.color,
+                fontSize: 12,
+                fontWeight: 600
+              }}
+            >
+              {formatCurrency(item.amount, fund.currency)}
+            </Typography>
+          </Box>
+        ))}
       </Box>
     </Paper>
   );
