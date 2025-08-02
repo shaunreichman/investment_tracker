@@ -659,7 +659,11 @@ const FundDetail: React.FC = () => {
           borderRadius: { sm: 1 },
           boxShadow: { sm: '0 2px 8px rgba(0,0,0,0.08)' },
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          // Hide completely when not visible
+          opacity: sidebarVisible ? 1 : 0,
+          visibility: sidebarVisible ? 'visible' : 'hidden',
+          transform: sidebarVisible ? 'translateX(0)' : 'translateX(-100%)'
         }}>
           {/* Summary Section Header */}
           <Box sx={{ 
