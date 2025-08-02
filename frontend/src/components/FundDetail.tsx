@@ -27,7 +27,7 @@ import {
   Grid
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
-import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon, Timeline, Assessment, Info, Receipt } from '@mui/icons-material';
+import { TrendingUp, AccountBalance, Event, Edit as EditIcon, Delete as DeleteIcon, Timeline, Assessment, Info, Receipt, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
 import CreateFundEventModal from './CreateFundEventModal';
@@ -364,6 +364,18 @@ const FundDetail: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<ExtendedFundEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
 
+  // Phase 2C: Sidebar toggle state with localStorage persistence
+  const [sidebarVisible, setSidebarVisible] = useState(() => {
+    const saved = localStorage.getItem('fundDetailSidebarVisible');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const toggleSidebar = () => {
+    const newState = !sidebarVisible;
+    setSidebarVisible(newState);
+    localStorage.setItem('fundDetailSidebarVisible', JSON.stringify(newState));
+  };
+
   // Centralized API hooks
   const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
@@ -561,23 +573,66 @@ const FundDetail: React.FC = () => {
       </Breadcrumbs>
 
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, position: 'relative' }}>
         <Typography variant="h4" component="h1" gutterBottom>
           {fund.name}
         </Typography>
         <Typography variant="subtitle1" color="text.secondary" gutterBottom>
           {fund.fund_type} • {fund.entity} • {fund.investment_company}
         </Typography>
+        
+        {/* Phase 2C: Sidebar Toggle Button */}
+        <IconButton
+          onClick={toggleSidebar}
+          sx={{ 
+            position: 'absolute', 
+            right: 0, 
+            top: 0,
+            zIndex: 1,
+            bgcolor: 'background.paper',
+            boxShadow: 1,
+            '&:hover': {
+              bgcolor: 'action.hover'
+            }
+          }}
+        >
+          {sidebarVisible ? <ChevronLeft /> : <ChevronRight />}
+        </IconButton>
       </Box>
 
-      {/* New Section-Based Layout */}
-      <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      {/* Phase 2C: Side-by-Side Layout */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 2, sm: 3 },
+        minHeight: { xs: 'auto', sm: 'calc(100vh - 200px)' },
+        alignItems: 'flex-start'
+      }}>
+        {/* Left Sidebar - Summary Sections */}
+        <Box sx={{ 
+          width: sidebarVisible ? { xs: '100%', sm: '280px', md: '320px', lg: '360px' } : 0,
+          flexShrink: 0,
+          position: { xs: 'static', sm: 'sticky' },
+          top: { sm: 24 },
+          maxHeight: { xs: 'auto', sm: 'calc(100vh - 250px)' },
+          overflowY: { xs: 'visible', sm: 'auto' },
+          transition: 'width 0.3s ease-in-out',
+          overflow: 'hidden'
+        }}>
+          <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+          <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+        </Box>
 
-      {/* Events Table Header with Add Cash Flow Button */}
+        {/* Right Main Area - Events Table */}
+        <Box sx={{ 
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden'
+        }}>
+          {/* Events Table Header with Add Cash Flow Button */}
       <Paper sx={{ width: '100%', overflow: 'hidden', mb: 3 }}>
         <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1534,6 +1589,8 @@ const FundDetail: React.FC = () => {
           </Box>
         </Paper>
       )}
+        </Box>
+      </Box>
       {/* Modal rendered at root */}
       <CreateFundEventModal
         open={eventModalOpen}
