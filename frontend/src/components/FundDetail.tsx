@@ -77,12 +77,14 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
             {formatCurrency(fund.commitment_amount || null, fund.currency)}
           </Typography>
         </Box>
-        <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Current NAV Fund Value</Typography>
-          <Typography variant="h6" color="primary" sx={{ fontSize: 16, fontWeight: 600 }}>
-            {formatCurrency(fund.current_nav_fund_value || null, fund.currency)}
-          </Typography>
-        </Box>
+        {fund.tracking_type === 'nav_based' && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Current NAV Fund Value</Typography>
+            <Typography variant="h6" color="primary" sx={{ fontSize: 16, fontWeight: 600 }}>
+              {formatCurrency(fund.current_nav_fund_value || null, fund.currency)}
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Paper>
   );
@@ -210,19 +212,7 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
             <Typography variant="body1" sx={{ fontSize: 14 }}>{fund.actual_duration_months} months</Typography>
           </Box>
         )}
-        {fund.fund_type && (
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Fund Type</Typography>
-            <Typography variant="body1" sx={{ fontSize: 14 }}>{fund.fund_type}</Typography>
-          </Box>
-        )}
       </Box>
-      {fund.description && (
-        <Box sx={{ mt: 1 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Description</Typography>
-          <Typography variant="body1" sx={{ fontSize: 14 }}>{fund.description}</Typography>
-        </Box>
-      )}
     </Paper>
   );
 };
@@ -238,7 +228,7 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
         <Typography variant="h6" sx={{ fontSize: 18 }}>Transaction Summary</Typography>
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-        {fund.total_capital_calls !== null && fund.total_capital_calls !== undefined && (
+        {fund.tracking_type === 'cost_based' && fund.total_capital_calls !== null && fund.total_capital_calls !== undefined && (
           <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Total Capital Calls</Typography>
             <Typography variant="h6" color="primary" sx={{ fontSize: 16, fontWeight: 600 }}>
@@ -246,11 +236,19 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
             </Typography>
           </Box>
         )}
-        {fund.total_capital_returns !== null && fund.total_capital_returns !== undefined && (
+        {fund.tracking_type === 'cost_based' && fund.total_capital_returns !== null && fund.total_capital_returns !== undefined && (
           <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Total Capital Returns</Typography>
             <Typography variant="h6" color="warning.main" sx={{ fontSize: 16, fontWeight: 600 }}>
               {formatCurrency(fund.total_capital_returns, fund.currency)}
+            </Typography>
+          </Box>
+        )}
+        {fund.total_distributions !== null && fund.total_distributions !== undefined && (
+          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Total Distributions</Typography>
+            <Typography variant="h6" color="success.main" sx={{ fontSize: 16, fontWeight: 600 }}>
+              {formatCurrency(fund.total_distributions, fund.currency)}
             </Typography>
           </Box>
         )}
@@ -270,7 +268,7 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
             </Typography>
           </Box>
         )}
-        {fund.total_unit_purchases !== null && fund.total_unit_purchases !== undefined && (
+        {fund.tracking_type === 'nav_based' && fund.total_unit_purchases !== null && fund.total_unit_purchases !== undefined && (
           <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Total Unit Purchases</Typography>
             <Typography variant="h6" color="primary" sx={{ fontSize: 16, fontWeight: 600 }}>
@@ -278,7 +276,7 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
             </Typography>
           </Box>
         )}
-        {fund.total_unit_sales !== null && fund.total_unit_sales !== undefined && (
+        {fund.tracking_type === 'nav_based' && fund.total_unit_sales !== null && fund.total_unit_sales !== undefined && (
           <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>Total Unit Sales</Typography>
             <Typography variant="h6" color="warning.main" sx={{ fontSize: 16, fontWeight: 600 }}>

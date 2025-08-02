@@ -50,6 +50,21 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - Typography should guide scanning, not compete for attention
 - Maintain accessibility standards while reducing visual weight
 
+### Phase 1B: Field Cleanup - Contextual Display ✅
+**Goal**: Remove unnecessary fields and make display contextual to fund type
+
+**Tasks**:
+- [x] **Hide NAV Fund Value** on cost-based funds (not relevant)
+- [x] **Show unit transactions** only for NAV-based funds (purchases/sales)
+- [x] **Show capital transactions** only for cost-based funds (calls/returns)
+- [x] **Remove Fund Type** from summary (already in heading)
+- [x] **Remove Description** field (not essential for summary view)
+
+**Design Principles**:
+- Show only relevant information for each fund type
+- Reduce visual noise by removing redundant fields
+- Maintain clear distinction between NAV and cost-based fund displays
+
 ### Phase 2: Component Modernization
 **Goal**: Replace outdated components with modern alternatives
 
@@ -171,6 +186,11 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - [x] Update spacing and typography system
 - [x] Implement consistent color palette
 - [x] Create base component styles
+
+### Phase 1B: Field Cleanup (Week 1) ✅
+- [x] Remove unnecessary fields based on fund type
+- [x] Implement contextual display logic
+- [x] Clean up redundant information
 
 ### Phase 2: Components (Week 2)
 - [ ] Modernize status indicators
