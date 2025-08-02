@@ -234,33 +234,7 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 
 **Note**: Sidebar toggle functionality is already completed in Phase 2C.1
 
-**Phase 2C.6: Inline Editing (Future)**
-**Goal**: Enable inline editing of fund events for faster workflow
 
-**Tasks**:
-- [ ] **Edit Mode Implementation**
-  - [ ] Add edit buttons to table rows
-  - [ ] Implement inline form components
-  - [ ] Handle edit mode state management
-  - [ ] Create save/cancel button layout
-- [ ] **Validation & Error Handling**
-  - [ ] Add form validation for inline editing
-  - [ ] Implement error display and recovery
-  - [ ] Handle save/cancel flows with proper state management
-  - [ ] Add field-level validation feedback
-- [ ] **UX Polish**
-  - [ ] Add smooth transitions between view/edit modes
-  - [ ] Implement loading states during save operations
-  - [ ] Add user feedback for successful saves
-  - [ ] Ensure keyboard navigation support
-  - [ ] Add confirmation dialogs for destructive actions
-
-**Design Principles**:
-- Edit mode should feel natural and non-disruptive
-- Validation should be immediate and helpful
-- Users should be able to easily cancel changes
-- Loading states should provide clear feedback
-- Keyboard shortcuts should enhance productivity
 
 ### Phase 3: Information Architecture (Future)
 **Goal**: Implement better data presentation and modern layout
@@ -295,6 +269,34 @@ Transform the fund detail page from a clunky, oversized layout to a modern, info
 - Shadows should create depth, not heaviness
 - Colors should support hierarchy, not compete for attention
 - Interactions should feel smooth and responsive
+
+### Phase 5: Inline Editing (Future)
+**Goal**: Enable inline editing of fund events for faster workflow
+
+**Tasks**:
+- [ ] **Edit Mode Implementation**
+  - [ ] Add edit buttons to table rows
+  - [ ] Implement inline form components
+  - [ ] Handle edit mode state management
+  - [ ] Create save/cancel button layout
+- [ ] **Validation & Error Handling**
+  - [ ] Add form validation for inline editing
+  - [ ] Implement error display and recovery
+  - [ ] Handle save/cancel flows with proper state management
+  - [ ] Add field-level validation feedback
+- [ ] **UX Polish**
+  - [ ] Add smooth transitions between view/edit modes
+  - [ ] Implement loading states during save operations
+  - [ ] Add user feedback for successful saves
+  - [ ] Ensure keyboard navigation support
+  - [ ] Add confirmation dialogs for destructive actions
+
+**Design Principles**:
+- Edit mode should feel natural and non-disruptive
+- Validation should be immediate and helpful
+- Users should be able to easily cancel changes
+- Loading states should provide clear feedback
+- Keyboard shortcuts should enhance productivity
 
 ## Design Principles
 
