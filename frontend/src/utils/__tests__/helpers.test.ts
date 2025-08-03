@@ -78,23 +78,31 @@ describe('helpers', () => {
   describe('getStatusInfo', () => {
     it('should return correct status info for known statuses', () => {
       expect(getStatusInfo('ACTIVE')).toEqual({
-        label: 'Active',
-        color: 'success',
+        value: 'Active',
+        color: '#4caf50',
+        icon: '📊',
+        tooltip: 'Fund is still invested and has capital at risk'
       });
       expect(getStatusInfo('REALIZED')).toEqual({
-        label: 'Realized',
-        color: 'warning',
+        value: 'Realized',
+        color: '#424242',
+        icon: '📊',
+        tooltip: 'All capital has been returned. Fund will be completed once the final tax statement is added.'
       });
       expect(getStatusInfo('COMPLETED')).toEqual({
-        label: 'Completed',
-        color: 'info',
+        value: 'Completed',
+        color: '#000000',
+        icon: '📊',
+        tooltip: 'Fund is fully realized and all tax obligations are complete'
       });
     });
 
     it('should return status as label for unknown statuses', () => {
       expect(getStatusInfo('UNKNOWN')).toEqual({
-        label: 'UNKNOWN',
-        color: 'default',
+        value: 'Unknown',
+        color: 'text.secondary',
+        icon: '📊',
+        tooltip: 'Unknown fund status'
       });
     });
   });
