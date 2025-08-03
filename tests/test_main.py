@@ -520,6 +520,7 @@ def recalculate_everything(session, show_irr_cashflows=True):
         
         print(f"  Current equity: ${current_equity:,.2f}")
         print(f"  Average equity: ${average_equity:,.2f}")
+        print(f"  Status: {fund.status.value.upper()}")
         
         if fund.tracking_type == FundType.NAV_BASED:
             current_units = fund.current_units
@@ -607,6 +608,7 @@ def verify_results(session):
         
         print(f"  Current equity: ${current_equity:,.2f}")
         print(f"  Average equity: ${average_equity:,.2f}")
+        print(f"  Status: {fund.status.value.upper()}")
         
         # Check if current equity matches calculated value
         calculated_equity = fund.current_equity_balance  # Just use the field directly

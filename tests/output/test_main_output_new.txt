@@ -21,6 +21,12 @@ Adding 3PG Finance events using domain methods...
 Fund '3PG Finance' status updated: active → realized
 Adding 3PG Finance distributions with tax...
 Fund 'ABC Ltd' status updated: active → realized
+Fund 'Senior Debt Fund No.24' status updated: realized → completed (final tax statement received)
+Fund 'Senior Debt Fund No.24' tax statement added, but already completed
+Fund '3PG Finance' status updated: realized → completed (final tax statement received)
+Fund '3PG Finance' tax statement added, but already completed
+Fund 'ABC Ltd' status updated: realized → completed (final tax statement received)
+Fund 'ABC Ltd' tax statement added, but already completed
 ABC Ltd capital gain for 2013-14: 397.50 (discount: 196.35, tax: 119.25)
 Test data setup complete!
 Created 2 funds for Alceon
@@ -39,6 +45,7 @@ Number of funds to recalculate: 3
 Recalculating for Senior Debt Fund No.24:
   Current equity: $0.00
   Average equity: $81,598.52
+  Status: COMPLETED
   Created 0 tax payment events
 Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
 Created 406 daily risk-free interest charge events for Senior Debt Fund No.24
@@ -502,6 +509,7 @@ Created 2 EOFY debt cost events for Senior Debt Fund No.24
 Recalculating for 3PG Finance:
   Current equity: $0.00
   Average equity: $66,045.18
+  Status: COMPLETED
   Created 1 tax payment events
 Created 512 daily risk-free interest charge events for 3PG Finance
 Created 512 daily risk-free interest charge events for 3PG Finance
@@ -1093,6 +1101,7 @@ Created 2 EOFY debt cost events for 3PG Finance
 Recalculating for ABC Ltd:
   Current equity: $0.00
   Average equity: $3,746.21
+  Status: COMPLETED
   Current units: 0.00
   Current unit price: $62.6200
   Created 1 tax payment events
@@ -1554,6 +1563,7 @@ Senior Debt Fund No.24:
   Type: cost_based
   Current equity: $0.00
   Average equity: $81,598.52
+  Status: COMPLETED
   Events: {'capital_call': 1, 'return_of_capital': 3, 'distribution': 5, 'tax_payment': 5, 'daily_risk_free_interest_charge': 406, 'eofy_debt_cost': 2}
   Tax payment events: 5
   EOFY debt cost events: 2
@@ -1563,6 +1573,7 @@ Senior Debt Fund No.24:
   Type: cost_based
   Current equity: $0.00
   Average equity: $66,045.18
+  Status: COMPLETED
   Events: {'capital_call': 1, 'return_of_capital': 7, 'distribution': 7, 'tax_payment': 7, 'daily_risk_free_interest_charge': 512, 'eofy_debt_cost': 2}
   Tax payment events: 7
   EOFY debt cost events: 2
@@ -1572,6 +1583,7 @@ ABC Ltd:
   Type: nav_based
   Current equity: $0.00
   Average equity: $3,746.21
+  Status: COMPLETED
   Events: {'unit_purchase': 2, 'nav_update': 14, 'unit_sale': 2, 'distribution': 1, 'tax_payment': 1, 'daily_risk_free_interest_charge': 411, 'eofy_debt_cost': 2}
   Tax payment events: 1
   EOFY debt cost events: 2

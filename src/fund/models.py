@@ -467,6 +467,10 @@ class Fund(Base):
             session.add(statement)
         
         session.commit()
+        
+        # Update fund status after tax statement creation/update
+        self.update_status_after_tax_statement(session=session)
+        
         return statement
     
     @with_session
