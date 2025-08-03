@@ -34,6 +34,8 @@ import {
   ExtendedFund
 } from '../types/api';
 import { useFundDetail, useDeleteFundEvent } from '../hooks/useFunds';
+import { formatCurrency, formatBrokerageFee, formatDate } from '../utils/formatters';
+import { getEventTypeColor, getEventTypeLabel } from '../utils/helpers';
 
 // ============================================================================
 // SECTION COMPONENTS FOR FUND DETAIL REDESIGN
@@ -850,75 +852,6 @@ const FundDetail: React.FC = () => {
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
 
-
-  const formatCurrency = (amount: number | null, currency: string = 'AUD') => {
-    if (amount === null) return '-';
-    
-    // Excel accounting format: parentheses for negatives, no minus sign
-    const absAmount = Math.abs(amount);
-    const formatted = new Intl.NumberFormat('en-AU', {
-      style: 'currency',
-      currency: currency,
-    }).format(absAmount);
-    
-    return amount < 0 ? `(${formatted})` : formatted;
-  };
-
-  const formatBrokerageFee = (amount: number | null, currency: string = 'AUD') => {
-    if (amount === null) return '-';
-    const rounded = Math.round(amount);
-    const formatted = new Intl.NumberFormat('en-AU', {
-      style: 'currency',
-      currency: currency,
-    }).format(rounded);
-    
-    // Remove .00 for whole numbers
-    return formatted.replace(/\.00$/, '');
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-AU', { month: 'short' });
-    const year = date.getFullYear().toString().slice(-2);
-    return `${day}-${month}-${year}`;
-  };
-
-  const getEventTypeColor = (eventType: string) => {
-    switch (eventType) {
-      case 'CAPITAL_CALL':
-        return 'primary';
-      case 'DISTRIBUTION':
-        return 'success';
-      case 'RETURN_OF_CAPITAL':
-        return 'warning';
-      case 'NAV_UPDATE':
-        return 'info';
-      case 'UNIT_PURCHASE':
-        return 'primary';
-      case 'UNIT_SALE':
-        return 'warning';
-      case 'TAX_PAYMENT':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  const getEventTypeLabel = (event: ExtendedFundEvent) => {
-    // Show only subtype if available, otherwise show the main type
-    if (event.distribution_type) {
-      // Format distribution type to be consistent (uppercase)
-      return event.distribution_type.toUpperCase();
-    }
-    if (event.tax_payment_type) {
-      return event.tax_payment_type;
-    }
-    
-    // For events without subtypes, show the main type
-    return event.event_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   // Add this function to refresh events after event creation
   const handleEventCreated = () => {

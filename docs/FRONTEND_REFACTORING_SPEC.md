@@ -68,11 +68,11 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [x] Extract `getStatusInfo` from FundDetail.tsx (line 320)
   - [x] Add helper for combining interest + withholding tax events
   - [x] Add helper for chart data preparation
-- [ ] Update all components to use centralized utilities
-  - [ ] Update FundDetail.tsx to import from utils
-  - [ ] Update CreateFundEventModal.tsx to use shared validators
-  - [ ] Update EditFundEventModal.tsx to use shared validators
-  - [ ] Update CreateFundModal.tsx to use shared validators
+- [x] Update all components to use centralized utilities
+  - [x] Update FundDetail.tsx to import from utils
+  - [x] Update CreateFundEventModal.tsx to use shared validators
+  - [x] Update EditFundEventModal.tsx to use shared validators
+  - [x] Update CreateFundModal.tsx to use shared validators
   - [x] Update CompaniesPage.tsx to use shared formatters
   - [x] Update OverallDashboard.tsx to use shared formatters
 - [x] Add comprehensive tests for all utility functions
