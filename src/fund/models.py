@@ -416,6 +416,10 @@ class Fund(Base):
             "completed_irr": completed_irr,
             "completed_after_tax_irr": completed_after_tax_irr,
             "completed_real_irr": completed_real_irr,
+            # NAV-based fund specific fields
+            "current_units": float(self.current_units) if self.current_units else None,
+            "current_unit_price": float(self.current_unit_price) if self.current_unit_price else None,
+            "current_nav_total": float(self.current_nav_total) if self.current_nav_total else None,
             "start_date": self.start_date.isoformat() if self.start_date else None,
             "end_date": self.end_date.isoformat() if self.end_date else None
         }

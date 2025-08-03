@@ -14,9 +14,9 @@ Add a new NAV information card to the Fund Detail page that displays current NAV
 ### Phase 1: Backend Foundation
 **Goal**: Ensure NAV data is properly exposed through the API
 **Tasks**:
-- [ ] Verify NAV fields are included in fund API responses
-- [ ] Confirm NAV data is being calculated and updated correctly
-- [ ] Test API endpoints return current NAV information
+- [x] Verify NAV fields are included in fund API responses
+- [x] Confirm NAV data is being calculated and updated correctly
+- [x] Test API endpoints return current NAV information
 
 **Design Principles**:
 - Leverage existing `current_units`, `current_unit_price`, and `current_nav_total` fields
