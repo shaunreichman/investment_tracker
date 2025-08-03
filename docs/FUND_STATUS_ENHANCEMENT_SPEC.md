@@ -6,8 +6,9 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 ## Design Philosophy
 - **Event-Driven**: Status updates triggered by specific events (equity changes, tax statements)
 - **Business-Focused**: Status reflects actual fund lifecycle, not just technical state
-- **Backward Compatible**: Existing functionality preserved while adding new capabilities
+- **Single Source of Truth**: The `status` field is the only authority for fund lifecycle state
 - **Clear Definitions**: Each status has unambiguous business meaning
+- **No Redundancy**: Remove legacy fields to avoid conflicting state
 
 ## Implementation Strategy
 
@@ -15,23 +16,29 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 **Goal**: Implement three-state status system with clear business definitions
 
 **Tasks**:
-- [ ] **Add FundStatus Enum**
-  - [ ] Create `FundStatus` enum with `ACTIVE`, `REALIZED`, `COMPLETED`
-  - [ ] Update database schema to use new enum
-  - [ ] Create migration for existing funds
-- [ ] **Update Status Logic**
-  - [ ] Replace `is_active` boolean with `status` enum field
-  - [ ] Implement new status determination logic
-  - [ ] Update `should_be_active` property to use new status
-- [ ] **Backward Compatibility**
-  - [ ] Map existing `is_active=True` to `status=ACTIVE`
-  - [ ] Map existing `is_active=False` to `status=REALIZED`
+- [x] **Add FundStatus Enum**
+  - [x] Create `FundStatus` enum with `ACTIVE`, `REALIZED`, `COMPLETED`
+  - [x] Update database schema to use new enum
+  - [x] Create migration for existing funds
+- [x] **Update Status Logic**
+  - [x] Replace `is_active` boolean with `status` enum field
+  - [x] Implement new status determination logic
+  - [x] Update `should_be_active` property to use new status
+- [ ] **Remove Legacy Fields**
+  - [ ] Remove `final_tax_statement_received` field from model and database
+  - [ ] Update all code to reference only the `status` field
+  - [ ] Create migration to drop the legacy field
+- [ ] **Single Source of Truth**
+  - [ ] Ensure all business logic uses only the `status` field
+  - [ ] Remove any references to `final_tax_statement_received`
   - [ ] Update API responses to include new status field
 
 **Design Principles**:
 - Status transitions are automatic based on business rules
 - Manual status overrides allowed for edge cases
 - Clear audit trail of status changes
+- **Single source of truth**: Only the `status` field determines fund lifecycle
+- **No redundancy**: Remove legacy fields to prevent conflicting state
 
 ### Phase 2: Event-Driven Status Updates
 **Goal**: Implement automatic status updates triggered by specific events
@@ -56,23 +63,23 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - No periodic background checks required
 - Clear business rules for each transition
 
-### Phase 3: Final Tax Statement Detection
-**Goal**: Implement logic to determine when a tax statement is "final"
+### Phase 3: Status-Based Tax Statement Logic
+**Goal**: Implement logic to determine when a fund should transition to `COMPLETED`
 
 **Tasks**:
-- [ ] **Final Tax Statement Logic**
-  - [ ] Define criteria for "final" tax statement (e.g., fund end date + X months)
-  - [ ] Implement `is_final_tax_statement()` method
-  - [ ] Add configuration for final tax statement timing
-- [ ] **Tax Statement Tracking**
-  - [ ] Track expected vs received tax statements
+- [ ] **Completed Status Logic**
+  - [ ] Define criteria for `COMPLETED` status (e.g., fund end date + X months)
+  - [ ] Implement logic to detect when final tax statement event has occurred
+  - [ ] Add configuration for completed status timing
+- [ ] **Tax Statement Event Tracking**
+  - [ ] Track tax statement events after fund realization
   - [ ] Implement logic for multiple tax statements after realization
   - [ ] Handle edge cases (missing tax statements, late filings)
 
 **Design Principles**:
 - Conservative approach: prefer staying `REALIZED` over premature `COMPLETED`
-- Configurable timing for final tax statement detection
-- Clear documentation of final tax statement criteria
+- Use tax statement events to determine completion, not legacy fields
+- Clear documentation of completed status criteria
 
 ### Phase 4: UI and API Updates
 **Goal**: Update frontend and API to support new status system

@@ -105,6 +105,19 @@ class TaxPaymentType(enum.Enum):
     OTHER = "other"
 
 
+class FundStatus(enum.Enum):
+    """Enumeration for fund status types.
+    
+    Business definitions:
+    - ACTIVE: Equity balance > 0 (fund still invested, has capital at risk)
+    - REALIZED: Equity balance = 0 (all capital returned, may still receive distributions)
+    - COMPLETED: Final tax statement received after equity balance = 0 (fully realized AND all tax obligations complete)
+    """
+    ACTIVE = "active"
+    REALIZED = "realized"
+    COMPLETED = "completed"
+
+
 class Fund(Base):
     """Model representing an investment fund.
     
@@ -154,8 +167,8 @@ class Fund(Base):
     # Cost-based fund specific fields (CALCULATED)
     
     # Status and metadata
-    is_active = Column(Boolean, default=True)  # (CALCULATED) whether fund has positive equity balance
-    final_tax_statement_received = Column(Boolean, default=False)  # (CALCULATED) whether all expected tax statements received
+    is_active = Column(Boolean, default=True)  # (CALCULATED) whether fund has positive equity balance (legacy field)
+    status = Column(Enum(FundStatus), default=FundStatus.ACTIVE)  # (CALCULATED) fund status (ACTIVE/REALIZED/COMPLETED)
     description = Column(Text)  # (MANUAL) fund description
     currency = Column(String(10), default="AUD")  # (MANUAL) currency code for the fund
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
@@ -373,6 +386,7 @@ class Fund(Base):
             "current_equity_balance": float(self.current_equity_balance) if self.current_equity_balance else 0.0,
             "average_equity_balance": float(self.average_equity_balance) if self.average_equity_balance else 0.0,
             "is_active": self.is_active if self.is_active is not None else True,
+            "status": self.status.value if self.status else FundStatus.ACTIVE.value,
             "commitment_amount": float(self.commitment_amount) if self.commitment_amount else None,
             "expected_irr": float(self.expected_irr) if self.expected_irr else None,
             "expected_duration_months": self.expected_duration_months,
@@ -1320,6 +1334,62 @@ class Fund(Base):
             return self.current_units is not None and self.current_units > 0
         elif self.tracking_type == FundType.COST_BASED:
             return self.current_equity_balance is not None and self.current_equity_balance > 0
+
+    @property
+    def should_be_status(self):
+        """Return the appropriate FundStatus based on current fund state.
+        
+        Business rules:
+        - ACTIVE: Equity balance > 0 (fund still invested)
+        - REALIZED: Equity balance = 0 (all capital returned)
+        - COMPLETED: Fund is fully realized AND final tax statement event has been processed
+        """
+        # Check if fund has positive equity balance
+        if self.tracking_type == FundType.NAV_BASED:
+            has_equity = self.current_units is not None and self.current_units > 0
+        elif self.tracking_type == FundType.COST_BASED:
+            has_equity = self.current_equity_balance is not None and self.current_equity_balance > 0
+        else:
+            has_equity = False
+        
+        if has_equity:
+            return FundStatus.ACTIVE
+        else:
+            # Fund is realized (equity balance = 0)
+            # For now, default to REALIZED - COMPLETED logic will be implemented in Phase 3
+            return FundStatus.REALIZED
+
+    @with_session
+    def update_status(self, session=None):
+        """Update the fund's status based on current state.
+        Commits the change to the database if the status changes.
+        """
+        from sqlalchemy.orm import object_session
+        if session is None:
+            session = object_session(self)
+        
+        new_status = self.should_be_status
+        if self.status != new_status:
+            old_status = self.status
+            self.status = new_status
+            session.commit()
+            print(f"Fund '{self.name}' status updated: {old_status.value} → {new_status.value}")
+
+    @with_session
+    def update_status_after_equity_event(self, session=None):
+        """Update status after equity balance changes (capital calls, returns, unit purchases/sales).
+        This is the primary method for automatic status updates.
+        """
+        self.update_status(session=session)
+
+    @with_session
+    def update_status_after_tax_statement(self, session=None):
+        """Update status after tax statement is added.
+        This checks if the fund should transition from REALIZED to COMPLETED.
+        """
+        # Only update if fund is currently REALIZED
+        if self.status == FundStatus.REALIZED:
+            self.update_status(session=session)
 
     @property
     def start_date(self):

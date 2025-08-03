@@ -126,8 +126,8 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               <span style={{ fontSize: '12px' }}>{metric.icon}</span>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
                 {metric.label}
-              </Typography>
-            </Box>
+          </Typography>
+        </Box>
             <Typography 
               variant="body2" 
               sx={{ 
@@ -137,8 +137,8 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               }}
             >
               {formatCurrency(metric.value, fund.currency)}
-            </Typography>
-          </Box>
+          </Typography>
+        </Box>
         ))}
       </Box>
     </Paper>
@@ -219,8 +219,8 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
               <span style={{ fontSize: '12px' }}>{metric.icon}</span>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
                 {metric.label}
-              </Typography>
-            </Box>
+            </Typography>
+          </Box>
             <Typography 
               variant="body2" 
               sx={{ 
@@ -324,8 +324,8 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
               <span style={{ fontSize: '12px' }}>{metric.icon}</span>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
                 {metric.label}
-              </Typography>
-            </Box>
+            </Typography>
+          </Box>
             <Typography 
               variant="body2" 
               sx={{ 
@@ -376,7 +376,7 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
         {fundDetails.map((detail, index) => (
           <Box 
             key={index}
-            sx={{ 
+              sx={{
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
@@ -403,10 +403,10 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               {detail.isStatus && (
                 <Box sx={{ 
-                  width: 8, 
-                  height: 8, 
-                  borderRadius: '50%', 
-                  bgcolor: fund.is_active ? 'success.main' : 'grey.400',
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: fund.is_active ? 'success.main' : 'grey.400',
                   // Phase 4: Enhanced status indicator
                   transition: 'all 0.2s ease-in-out',
                   boxShadow: fund.is_active ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
@@ -414,9 +414,9 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
               )}
               <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
                 {detail.value}
-              </Typography>
-            </Box>
+            </Typography>
           </Box>
+        </Box>
         ))}
       </Box>
     </Paper>
@@ -489,14 +489,14 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
               <span style={{ fontSize: '12px' }}>{item.icon}</span>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
                 {item.type}
-              </Typography>
-            </Box>
+            </Typography>
+          </Box>
             <Typography variant="body2" sx={{ color: item.color, fontSize: 12, fontWeight: 600 }}>
               {formatCurrency(item.amount, fund.currency)}
             </Typography>
           </Box>
         ))}
-      </Box>
+          </Box>
     </Paper>
   );
 };
@@ -526,7 +526,7 @@ const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, f
       <Box display="flex" alignItems="center" mb={0.5}>
         <TrendingUp color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Unit Price Performance</Typography>
-      </Box>
+          </Box>
       
       <Box sx={{ height: 200, position: 'relative' }}>
         {(() => {
@@ -602,8 +602,8 @@ const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, f
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                   <Typography variant="body2" color="text.secondary">
                     No chart data available
-                  </Typography>
-                </Box>
+            </Typography>
+          </Box>
               );
             }
 
@@ -719,8 +719,8 @@ const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, f
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                 <Typography variant="body2" color="error">
                   Error loading chart
-                </Typography>
-              </Box>
+            </Typography>
+          </Box>
             );
           }
         })()}
@@ -1074,11 +1074,11 @@ const FundDetail: React.FC = () => {
             </Typography>
           </Box>
           
-          <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
           <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
         </Box>
 
@@ -1099,7 +1099,7 @@ const FundDetail: React.FC = () => {
           display: 'flex',
           flexDirection: 'column'
         }}>
-          {/* Events Table Header with Add Cash Flow Button */}
+      {/* Events Table Header with Add Cash Flow Button */}
       <Paper sx={{ 
         width: '100%', 
         overflow: 'hidden', 
@@ -2080,7 +2080,7 @@ const FundDetail: React.FC = () => {
       </Paper>
 
 
-        </Box>
+          </Box>
       </Box>
       {/* Modal rendered at root */}
       <CreateFundEventModal
