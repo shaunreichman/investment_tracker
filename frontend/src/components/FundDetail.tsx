@@ -35,7 +35,7 @@ import {
 } from '../types/api';
 import { useFundDetail, useDeleteFundEvent } from '../hooks/useFunds';
 import { formatCurrency, formatBrokerageFee, formatDate } from '../utils/formatters';
-import { getEventTypeColor, getEventTypeLabel } from '../utils/helpers';
+import { getEventTypeColor, getEventTypeLabel, getStatusInfo } from '../utils/helpers';
 
 // ============================================================================
 // SECTION COMPONENTS FOR FUND DETAIL REDESIGN
@@ -391,39 +391,7 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
  * Fund Details Section - Basic fund information
  */
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Helper function to get status display info
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'active':
-        return { 
-          value: 'Active', 
-          color: '#4caf50', // Lighter green
-          icon: '📊',
-          tooltip: 'Fund is still invested and has capital at risk'
-        };
-      case 'realized':
-        return { 
-          value: 'Realized', 
-          color: '#424242', // Dark gray
-          icon: '📊',
-          tooltip: 'All capital has been returned. Fund will be completed once the final tax statement is added.'
-        };
-      case 'completed':
-        return { 
-          value: 'Completed', 
-          color: '#000000', // Black
-          icon: '📊',
-          tooltip: 'Fund is fully realized and all tax obligations are complete'
-        };
-      default:
-        return { 
-          value: 'Unknown', 
-          color: 'text.secondary', 
-          icon: '📊',
-          tooltip: 'Unknown fund status'
-        };
-    }
-  };
+
 
   const statusInfo = getStatusInfo(fund.status);
   

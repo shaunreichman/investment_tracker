@@ -93,16 +93,50 @@ export const getEventTypeLabel = (event: ExtendedFundEvent): string => {
 };
 
 /**
- * Get fund status information for display
+ * Get fund status information for display (FundDetail interface)
  * @param status - The fund status string
- * @returns Object with label and color
+ * @returns Status info object with value, color, icon, and tooltip
  */
 export const getStatusInfo = (status: string) => {
-  const statusKey = status as keyof typeof FUND_STATUS_COLORS;
-  return {
-    label: FUND_STATUS_LABELS[statusKey] || status,
-    color: FUND_STATUS_COLORS[statusKey] || 'default',
-  };
+  if (!status) {
+    return { 
+      value: 'Unknown', 
+      color: 'text.secondary', 
+      icon: '📊',
+      tooltip: 'Unknown fund status'
+    };
+  }
+  
+  switch (status.toLowerCase()) {
+    case 'active':
+      return { 
+        value: 'Active', 
+        color: '#4caf50', // Lighter green
+        icon: '📊',
+        tooltip: 'Fund is still invested and has capital at risk'
+      };
+    case 'realized':
+      return { 
+        value: 'Realized', 
+        color: '#424242', // Dark gray
+        icon: '📊',
+        tooltip: 'All capital has been returned. Fund will be completed once the final tax statement is added.'
+      };
+    case 'completed':
+      return { 
+        value: 'Completed', 
+        color: '#000000', // Black
+        icon: '📊',
+        tooltip: 'Fund is fully realized and all tax obligations are complete'
+      };
+    default:
+      return { 
+        value: 'Unknown', 
+        color: 'text.secondary', 
+        icon: '📊',
+        tooltip: 'Unknown fund status'
+      };
+  }
 };
 
 /**
