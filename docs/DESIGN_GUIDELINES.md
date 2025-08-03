@@ -118,6 +118,11 @@ The `docs/FUND_DETAIL_MODERNIZATION_SPEC.md` demonstrates the gold standard for 
 - **Code-free** focus on what to build, not how to build it
 - **Logical progression** from foundation to polish
 
+### **Specification Completion and Archiving**
+- **Mark specs as completed** by updating all task checkboxes and adding a completion banner
+- **Move completed specs** to `docs/specs_completed/` folder for organization
+- **Update spec content** to reflect actual implementation if it differs from original plan
+
 ---
 
 ## Table of Contents
