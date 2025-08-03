@@ -273,7 +273,15 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
       color: 'info.main',
       icon: '📈',
       priority: 3
-    }
+    },
+    ...(fund.actual_duration_months ? [{
+      label: 'Actual Duration',
+      value: fund.actual_duration_months,
+      unit: ' months',
+      color: 'info.main',
+      icon: '⏱️',
+      priority: 4
+    }] : [])
   ].filter(metric => metric.value !== null && metric.value !== undefined);
 
   if (performanceMetrics.length === 0) {
@@ -335,7 +343,9 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
                 fontWeight: 600
               }}
             >
-              {metric.value ? (metric.value * 100).toFixed(2) : '0.00'}{metric.unit}
+              {metric.label === 'Actual Duration' 
+                ? `${metric.value}${metric.unit}`
+                : `${metric.value ? (metric.value * 100).toFixed(2) : '0.00'}${metric.unit}`}
             </Typography>
           </Box>
         ))}
@@ -387,7 +397,7 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
   const fundDetails = [
     { label: 'Status', value: statusInfo.value, color: statusInfo.color, icon: statusInfo.icon, priority: 1, isStatus: true },
     { label: 'Currency', value: fund.currency, color: 'text.primary', icon: '💱', priority: 2 },
-    ...(fund.actual_duration_months ? [{ label: 'Actual Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
+    ...(fund.status === 'active' && fund.actual_duration_months ? [{ label: 'Current Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
   ];
 
   return (
