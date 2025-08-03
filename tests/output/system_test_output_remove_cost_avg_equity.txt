@@ -1,1 +1,0 @@
-/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker/venv/bin/python: No module named tests/test_main

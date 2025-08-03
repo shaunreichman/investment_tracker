@@ -33,6 +33,7 @@ from ..shared.calculations import orchestrate_irr_base
 # Import models from other domains
 from ..rates.models import RiskFreeRate
 from ..entity.models import Entity
+# Note: TaxStatement is imported as a string reference to avoid circular imports
 
 # Import shared calculations
 from ..shared.calculations import get_equity_change_for_event
@@ -105,6 +106,19 @@ class TaxPaymentType(enum.Enum):
     OTHER = "other"
 
 
+class FundStatus(enum.Enum):
+    """Enumeration for fund status types.
+    
+    Business definitions:
+    - ACTIVE: Equity balance > 0 (fund still invested, has capital at risk)
+    - REALIZED: Equity balance = 0 (all capital returned, may still receive distributions)
+    - COMPLETED: Final tax statement received after equity balance = 0 (fully realized AND all tax obligations complete)
+    """
+    ACTIVE = "active"
+    REALIZED = "realized"
+    COMPLETED = "completed"
+
+
 class Fund(Base):
     """Model representing an investment fund.
     
@@ -146,6 +160,11 @@ class Fund(Base):
     expected_irr = Column(Float)  # (MANUAL) expected IRR as percentage
     expected_duration_months = Column(Integer)  # (MANUAL) expected fund duration in months
     
+    # IRR storage fields (CALCULATED)
+    irr_gross = Column(Float, nullable=True)  # (CALCULATED) Gross IRR when realized/completed
+    irr_after_tax = Column(Float, nullable=True)  # (CALCULATED) After-tax IRR when completed
+    irr_real = Column(Float, nullable=True)  # (CALCULATED) Real IRR when completed
+    
     # NAV-based fund specific fields (CALCULATED)
     current_units = Column(Float, default=0.0)  # (CALCULATED) current number of units owned
     current_unit_price = Column(Float, default=0.0)  # (CALCULATED) current unit price from latest NAV update
@@ -154,8 +173,9 @@ class Fund(Base):
     # Cost-based fund specific fields (CALCULATED)
     
     # Status and metadata
-    is_active = Column(Boolean, default=True)  # (CALCULATED) whether fund has positive equity balance
-    final_tax_statement_received = Column(Boolean, default=False)  # (CALCULATED) whether all expected tax statements received
+
+    status = Column(Enum(FundStatus), default=FundStatus.ACTIVE)  # (CALCULATED) fund status (ACTIVE/REALIZED/COMPLETED)
+    end_date = Column(Date, nullable=True)  # (CALCULATED) fund end date based on last equity/distribution event after equity balance reached zero
     description = Column(Text)  # (MANUAL) fund description
     currency = Column(String(10), default="AUD")  # (MANUAL) currency code for the fund
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
@@ -372,7 +392,8 @@ class Fund(Base):
             "currency": self.currency,
             "current_equity_balance": float(self.current_equity_balance) if self.current_equity_balance else 0.0,
             "average_equity_balance": float(self.average_equity_balance) if self.average_equity_balance else 0.0,
-            "is_active": self.is_active if self.is_active is not None else True,
+
+            "status": self.status.value if self.status else FundStatus.ACTIVE.value,
             "commitment_amount": float(self.commitment_amount) if self.commitment_amount else None,
             "expected_irr": float(self.expected_irr) if self.expected_irr else None,
             "expected_duration_months": self.expected_duration_months,
@@ -452,6 +473,10 @@ class Fund(Base):
             session.add(statement)
         
         session.commit()
+        
+        # Update fund status after tax statement creation/update
+        self.update_status_after_tax_statement(session=session)
+        
         return statement
     
     @with_session
@@ -913,6 +938,10 @@ class Fund(Base):
         )
         
         session.add(event)
+        session.flush()
+        
+        # Calculate end_date (may affect status)
+        self.calculate_end_date(session=session)
         
         return event
     
@@ -981,6 +1010,9 @@ class Fund(Base):
             )
             session.add(tax_event)
 
+        # Calculate end_date (may affect status)
+        self.calculate_end_date(session=session)
+        
         session.commit()
         return distribution_event, tax_event
 
@@ -1000,6 +1032,11 @@ class Fund(Base):
             reference_number=reference_number
         )
         session.add(distribution_event)
+        session.flush()
+        
+        # Calculate end_date (may affect status)
+        self.calculate_end_date(session=session)
+        
         session.commit()
         return distribution_event
 
@@ -1253,9 +1290,15 @@ class Fund(Base):
                 )
                 if first_event:
                     self.recalculate_capital_chain_from(first_event, session=session)
-                # else: no capital events left, nothing to recalculate
+                else:
+                    # No capital events left, just update end_date and status
+                    self.calculate_end_date(session=session)
+                    self.update_status_after_equity_event(session=session)
+        else:
+            # For non-capital events (distributions, etc.), just update end_date and status
+            self.calculate_end_date(session=session)
+            self.update_status_after_equity_event(session=session)
         
-        # No recalculation methods needed; handled by unified flow
         return True
 
     def _create_bulk_event_objects(self, events_data):
@@ -1296,30 +1339,186 @@ class Fund(Base):
         
         return created_events
 
+
     @with_session
-    def update_active_status(self, session=None):
-        """Update the fund's active status based on current equity balance or units.
+    def update_status(self, session=None):
+        """Update the fund's status based on current state.
         Commits the change to the database if the status changes.
+        Also calculates and stores IRRs based on the new status.
         """
         from sqlalchemy.orm import object_session
         if session is None:
             session = object_session(self)
         
-        new_active_status = self.should_be_active
-        if self.is_active is not None and self.is_active != new_active_status:
-            self.is_active = new_active_status
-            session.commit()
-            print(f"Fund '{self.name}' status updated: {'Active' if new_active_status else 'Exited'}")
-
-    @property
-    def should_be_active(self):
-        """Return True if the fund should be active, False if exited.
-        A fund is active if it has units (NAV-based) or equity balance (cost-based).
-        """
+        # Determine what the status should be based on current equity balance
         if self.tracking_type == FundType.NAV_BASED:
-            return self.current_units is not None and self.current_units > 0
+            has_equity = self.current_units is not None and self.current_units > 0
         elif self.tracking_type == FundType.COST_BASED:
-            return self.current_equity_balance is not None and self.current_equity_balance > 0
+            has_equity = self.current_equity_balance is not None and self.current_equity_balance > 0
+        else:
+            has_equity = False
+        
+        if has_equity:
+            new_status = FundStatus.ACTIVE
+        else:
+            # Fund is realized (equity balance = 0)
+            # Check if it should be COMPLETED based on tax statements
+            if self.is_final_tax_statement_received(session=session):
+                new_status = FundStatus.COMPLETED
+            else:
+                new_status = FundStatus.REALIZED
+        
+        if self.status != new_status:
+            old_status = self.status
+            self.status = new_status
+            
+            # Calculate and store IRRs based on new status
+            self._calculate_and_store_irrs_for_status(new_status, session=session)
+            
+            session.commit()
+            print(f"Fund '{self.name}' status updated: {old_status.value} → {new_status.value}")
+        else:
+            # Status didn't change, but we still need to recalculate IRRs if the fund is REALIZED or COMPLETED
+            # (events may have been modified that affect IRR calculations)
+            if self.status in [FundStatus.REALIZED, FundStatus.COMPLETED]:
+                self._calculate_and_store_irrs_for_status(self.status, session=session)
+                session.commit()
+                print(f"Fund '{self.name}' status unchanged ({self.status.value}) but IRRs recalculated")
+
+    def _calculate_and_store_irrs_for_status(self, status, session=None):
+        """Calculate and store IRRs based on fund status.
+        
+        Business rules:
+        - ACTIVE: All IRRs = None (fund has capital at risk)
+        - REALIZED: irr_gross only, others = None (all capital returned)
+        - COMPLETED: All IRRs calculated (all tax obligations complete)
+        """
+        # Reset all IRRs to None initially
+        self.irr_gross = None
+        self.irr_after_tax = None
+        self.irr_real = None
+        
+        if status == FundStatus.ACTIVE:
+            # ACTIVE: No IRRs meaningful (fund has capital at risk)
+            print(f"  [IRR] Fund '{self.name}' is ACTIVE - no IRRs calculated")
+            return
+        
+        elif status == FundStatus.REALIZED:
+            # REALIZED: Calculate gross IRR only
+            try:
+                self.irr_gross = self.calculate_irr(session=session)
+                print(f"  [IRR] Fund '{self.name}' REALIZED - gross IRR: {self.irr_gross:.2%}" if self.irr_gross else f"  [IRR] Fund '{self.name}' REALIZED - gross IRR: None")
+            except Exception as e:
+                print(f"  [IRR] Error calculating gross IRR for '{self.name}': {e}")
+                self.irr_gross = None
+        
+        elif status == FundStatus.COMPLETED:
+            # COMPLETED: Calculate all IRRs
+            try:
+                # Ensure daily interest charges exist for real IRR calculation
+                self.create_daily_risk_free_interest_charges(session=session)
+                
+                # Calculate all IRRs
+                self.irr_gross = self.calculate_irr(session=session)
+                self.irr_after_tax = self.calculate_after_tax_irr(session=session)
+                self.irr_real = self.calculate_real_irr(session=session)
+                
+                print(f"  [IRR] Fund '{self.name}' COMPLETED - gross: {self.irr_gross:.2%}, after-tax: {self.irr_after_tax:.2%}, real: {self.irr_real:.2%}" if all([self.irr_gross, self.irr_after_tax, self.irr_real]) else f"  [IRR] Fund '{self.name}' COMPLETED - some IRRs could not be calculated")
+            except Exception as e:
+                print(f"  [IRR] Error calculating IRRs for '{self.name}': {e}")
+                self.irr_gross = None
+                self.irr_after_tax = None
+                self.irr_real = None
+
+    @with_session
+    def update_status_after_equity_event(self, session=None):
+        """Update status after equity balance changes (capital calls, returns, unit purchases/sales).
+        This is the primary method for automatic status updates.
+        """
+        self.update_status(session=session)
+
+    @with_session
+    def update_status_after_tax_statement(self, session=None):
+        """Update status after tax statement is added or removed.
+        This checks if the fund should transition between REALIZED and COMPLETED.
+        Also recalculates IRRs when tax statements change.
+        """
+        # Only update if fund is not ACTIVE (i.e., REALIZED or COMPLETED)
+        if self.status == FundStatus.ACTIVE:
+            print(f"Fund '{self.name}' tax statement added, but remains {self.status.value}")
+            return
+        
+        # Check if this tax statement makes the fund COMPLETED
+        if self.is_final_tax_statement_received(session=session):
+            if self.status == FundStatus.REALIZED:
+                # Transition from REALIZED to COMPLETED
+                old_status = self.status
+                self.status = FundStatus.COMPLETED
+                # Calculate and store IRRs for COMPLETED status
+                self._calculate_and_store_irrs_for_status(FundStatus.COMPLETED, session=session)
+                session.commit()
+                print(f"Fund '{self.name}' status updated: {old_status.value} → {self.status.value} (final tax statement received)")
+            else:
+                # Already COMPLETED, but tax statement may have changed - recalculate IRRs
+                self._calculate_and_store_irrs_for_status(FundStatus.COMPLETED, session=session)
+                session.commit()
+                print(f"Fund '{self.name}' tax statement added, but already {self.status.value} - IRRs recalculated")
+        else:
+            if self.status == FundStatus.COMPLETED:
+                # Transition from COMPLETED back to REALIZED (tax statement was deleted)
+                old_status = self.status
+                self.status = FundStatus.REALIZED
+                # Calculate and store IRRs for REALIZED status
+                self._calculate_and_store_irrs_for_status(FundStatus.REALIZED, session=session)
+                session.commit()
+                print(f"Fund '{self.name}' status updated: {old_status.value} → {self.status.value} (final tax statement removed)")
+            else:
+                # Already REALIZED, but tax statement may have changed - recalculate IRRs
+                self._calculate_and_store_irrs_for_status(FundStatus.REALIZED, session=session)
+                session.commit()
+                print(f"Fund '{self.name}' tax statement added, but remains {self.status.value} - IRRs recalculated")
+
+    @with_session
+    def is_final_tax_statement_received(self, session=None):
+        """Check if the fund has received its final tax statement.
+        
+        A fund is considered to have received its final tax statement when:
+        1. Fund is REALIZED (equity balance = 0)
+        2. We have a tax statement after the fund end_date
+        
+        Returns:
+            bool: True if final tax statement criteria are met
+        """
+        from datetime import date
+        
+        # Only check if fund is not ACTIVE (i.e., REALIZED or COMPLETED)
+        if self.status == FundStatus.ACTIVE:
+            return False
+        
+        # Get fund end date (last event date)
+        end_date = self.end_date
+        if not end_date:
+            return False
+        
+        # Get all tax statements for this fund
+        from ..tax.models import TaxStatement
+        tax_statements = session.query(TaxStatement).filter(
+            TaxStatement.fund_id == self.id
+        ).all()
+        
+        if not tax_statements:
+            return False
+        
+        # Check if any tax statement has a tax_payment_date after the fund end_date
+        # This indicates the final tax statement has been received
+        for statement in tax_statements:
+            tax_payment_date = statement.get_tax_payment_date()
+            if tax_payment_date and tax_payment_date > end_date:
+                return True
+        
+        return False
+
+
 
     @property
     def start_date(self):
@@ -1348,24 +1547,49 @@ class Fund(Base):
             return first_event.event_date
         return None
 
-    @property
-    def end_date(self):
-        """Return the date of the last event if the fund is exited (equity balance is zero), else None.
-        Used as the fund's effective end date for calculations.
+    def calculate_end_date(self, session=None):
+        """Calculate and set the fund's end date based on current events.
+        
+        Sets self.end_date to the date of the final equity or distribution event.
+        Only calculates when fund's equity balance is 0.
         """
         from sqlalchemy.orm import object_session
+        
+        # Check if fund has equity balance > 0
+        has_equity = False
+        if self.tracking_type == FundType.NAV_BASED:
+            has_equity = self.current_units is not None and self.current_units > 0
+        elif self.tracking_type == FundType.COST_BASED:
+            has_equity = self.current_equity_balance is not None and self.current_equity_balance > 0
+        
         # If fund still has equity balance > 0, no end date yet
-        if not isinstance(self.current_equity_balance, (Column, ColumnElement)) and self.current_equity_balance is not None and self.current_equity_balance > 0:
-            return None
-        session = object_session(self)
+        if has_equity:
+            self.end_date = None
+            return
+        
+        session = object_session(self) if session is None else session
         if session is None:
-            return None
-        last_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id
-        ).order_by(FundEvent.event_date.desc()).first()
-        if last_event and not isinstance(last_event.event_date, (Column, ColumnElement)):
-            return last_event.event_date
-        return None
+            self.end_date = None
+            return
+        
+        # Get all equity and distribution events, ordered by date (newest first)
+        relevant_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_([
+                EventType.CAPITAL_CALL,
+                EventType.RETURN_OF_CAPITAL, 
+                EventType.UNIT_PURCHASE,
+                EventType.UNIT_SALE,
+                EventType.DISTRIBUTION
+            ])
+        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).all()
+        
+        if not relevant_events:
+            self.end_date = None
+            return
+        
+        # Set end_date to the date of the final equity or distribution event
+        self.end_date = relevant_events[0].event_date
 
     @with_session
     def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=None, return_cashflows=False):
@@ -1373,8 +1597,8 @@ class Fund(Base):
         Delegates to orchestrate_irr_base in calculations.py.
         """
         from datetime import date
-        # Only calculate IRR for completed funds
-        if self.should_be_active:
+        # Only calculate IRR for completed funds (not active)
+        if self.status == FundStatus.ACTIVE:
             if return_cashflows:
                 return {'cash_flows': [], 'days_from_start': [], 'labels': [], 'irr': None}
             return None
@@ -1420,21 +1644,6 @@ class Fund(Base):
         self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
         return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_eofy_debt_cost=True, session=session)
 
-    @with_session
-    def recalculate_all_equity_balances(self, session=None):
-        """Recalculate and set current_equity_balance for all events in date order, and update fund.current_equity_balance to the latest."""
-        events = session.query(FundEvent).filter(FundEvent.fund_id == self.id).order_by(FundEvent.event_date, FundEvent.id).all()
-        equity = 0.0
-        for event in events:
-            if event.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]:
-                equity += get_equity_change_for_event(event, self.tracking_type)
-                event.current_equity_balance = equity
-            else:
-                event.current_equity_balance = None
-        # Update fund's field to match latest event
-        if events:
-            self.current_equity_balance = events[-1].current_equity_balance
-        session.commit()
 
     def calculate_average_equity_balance(self, session=None, events=None):
         """
@@ -1452,8 +1661,10 @@ class Fund(Base):
                 FundEvent.fund_id == self.id,
                 FundEvent.event_type.in_(event_types)
             ).order_by(FundEvent.event_date, FundEvent.id).all()
-        if not events or len(events) < 2:
+        if not events:
             return 0.0
+        elif len(events) == 1:
+            return events[0].current_equity_balance
         # Time-weighted average: sum(balance * days) / total_days
         total_weighted_equity = 0.0
         total_days = 0
@@ -1468,14 +1679,16 @@ class Fund(Base):
         from datetime import date
         last_event = events[-1]
         period_end = None
-        if hasattr(self, "end_date") and self.end_date:
+        if self.end_date is not None:
             period_end = self.end_date
-        elif getattr(self, "is_active", True):
+        elif self.status == FundStatus.ACTIVE:
             period_end = date.today()
-        # Only include the last period if period_end is after the last event
+        else:
+            period_end = last_event.event_date
+        # Include the last period if period_end is after or equal to the last event
         if period_end:
             days = (period_end - last_event.event_date).days
-            if days > 0:
+            if days >= 0:  # Include even if days = 0 (realized funds)
                 equity = last_event.current_equity_balance if last_event.current_equity_balance is not None else 0.0
                 total_weighted_equity += equity * days
                 total_days += days
@@ -1543,8 +1756,7 @@ class Fund(Base):
             units_purchased=units,
             unit_price=price,
             brokerage_fee=brokerage_fee,
-            amount=amount,
-            description=description or f"Unit purchase: {units} units at ${price:.2f}",
+            description=description or f"Unit purchase: {units} units @ ${price:,.2f}",
             reference_number=reference_number
         )
         session.add(event)
@@ -1554,7 +1766,27 @@ class Fund(Base):
 
     def update_unit_purchase(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
         """
-        [NEW FLOW] Update an existing unit purchase event and recalculate all affected fields using the unified capital recalculation flow.
+        Update an existing unit purchase event and recalculate all affected fields using the unified capital recalculation flow.
+        
+        This method updates a unit purchase event and automatically recalculates all subsequent capital events to maintain
+        data consistency.
+        
+        Args:
+            event_id (int): ID of the unit purchase event to update
+            units (float, optional): Number of units to purchase (must be positive)
+            price (float, optional): Price per unit (must be positive)
+            date (date, optional): Date of the unit purchase
+            brokerage_fee (float, optional): Brokerage fee for the transaction
+            description (str, optional): Description of the purchase
+            reference_number (str, optional): External reference number for the transaction
+            session (Session): Database session (required - managed by outermost backend layer)
+        
+        Returns:
+            FundEvent: The updated unit purchase event
+            
+        Raises:
+            ValueError: If event not found, or if units/price are invalid
+            TypeError: If required parameters are missing or of wrong type
         """
         event = session.query(FundEvent).filter(
             FundEvent.id == event_id,
@@ -1583,10 +1815,49 @@ class Fund(Base):
 
     def add_unit_sale(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
         """
-        [NEW FLOW] Add a unit sale event and update all relevant calculated fields using the unified capital recalculation flow.
+        Add a unit sale event and update all relevant calculated fields using the unified capital recalculation flow.
+        
+        This method is part of the unified capital event handling system for NAV-based funds. It creates a unit sale
+        event and automatically recalculates all subsequent capital events to maintain data consistency.
+        
+        Args:
+            units (float): Number of units to sell (must be positive)
+            price (float): Price per unit (must be positive)
+            date (date): Date of the unit sale
+            brokerage_fee (float, optional): Brokerage fee for the transaction (default: 0.0)
+            description (str, optional): Description of the sale (auto-generated if not provided)
+            reference_number (str, optional): External reference number for the transaction
+            session (Session): Database session (required - managed by outermost backend layer)
+        
+        Returns:
+            FundEvent: The created unit sale event
+            
+        Raises:
+            ValueError: If fund is not NAV-based, or if units/price are invalid
+            TypeError: If required parameters are missing or of wrong type
+            
+        Example:
+            >>> fund = Fund.get_by_id(1, session=session)
+            >>> event = fund.add_unit_sale(
+            ...     units=50.0,
+            ...     price=12.00,
+            ...     date=date(2024, 6, 15),
+            ...     brokerage_fee=15.0,
+            ...     description="Partial unit sale",
+            ...     session=session
+            ... )
+            >>> print(f"Created event: {event.id}, Amount: ${event.amount}")
         """
         if self.tracking_type != FundType.NAV_BASED:
             raise ValueError("Unit sales are only applicable for NAV-based funds")
+        
+        if not units or units <= 0:
+            raise ValueError("Units must be a positive number")
+        if not price or price <= 0:
+            raise ValueError("Price must be a positive number")
+        if not date:
+            raise ValueError("Date is required")
+        
         amount = (units * price) - brokerage_fee
         event = FundEvent(
             fund_id=self.id,
@@ -1596,7 +1867,7 @@ class Fund(Base):
             unit_price=price,
             brokerage_fee=brokerage_fee,
             amount=amount,
-            description=description or f"Unit sale: {units} units at ${price:.2f}",
+            description=description or f"Unit sale: {units} units @ ${price:,.2f}",
             reference_number=reference_number
         )
         session.add(event)
@@ -1606,11 +1877,32 @@ class Fund(Base):
 
     def update_unit_sale(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
         """
-        [NEW FLOW] Update an existing unit sale event and recalculate all affected fields using the unified capital recalculation flow.
+        Update an existing unit sale event and recalculate all affected fields using the unified capital recalculation flow.
+        
+        This method updates a unit sale event and automatically recalculates all subsequent capital events to maintain
+        data consistency. It includes validation to prevent selling more units than owned.
+        
+        Args:
+            event_id (int): ID of the unit sale event to update
+            units (float, optional): Number of units to sell (must be positive)
+            price (float, optional): Price per unit (must be positive)
+            date (date, optional): Date of the unit sale
+            brokerage_fee (float, optional): Brokerage fee for the transaction
+            description (str, optional): Description of the sale
+            reference_number (str, optional): External reference number for the transaction
+            session (Session): Database session (required - managed by outermost backend layer)
+        
+        Returns:
+            FundEvent: The updated unit sale event
+            
+        Raises:
+            ValueError: If event not found, or if units/price are invalid
+            TypeError: If required parameters are missing or of wrong type
         """
         event = session.query(FundEvent).filter_by(id=event_id, fund_id=self.id).first()
         if not event or event.event_type != EventType.UNIT_SALE:
             raise ValueError("Unit sale event not found")
+        
         if units is not None:
             # Validation: Prevent selling more units than owned after update
             current_units = self.current_units or 0.0
@@ -1636,6 +1928,7 @@ class Fund(Base):
             event.description = description
         if reference_number is not None:
             event.reference_number = reference_number
+        
         session.flush()
         self.recalculate_capital_chain_from(event, session=session)
         return event
@@ -1782,8 +2075,10 @@ class Fund(Base):
             return
         # Recalculate all fields from this event forward
         self._recalculate_subsequent_capital_fund_events_after_capital_event(events, idx, session=session)
-        # Update fund-level summary fields
+        # Update fund-level summary fields (includes end_date and average calculation)
         self.update_fund_summary_fields_after_capital_event(session=session)
+        # Update fund status after equity event
+        self.update_status_after_equity_event(session=session)
         # Commit session
         session.commit()
 
@@ -1944,6 +2239,10 @@ class Fund(Base):
             self.current_unit_price = 0.0
         # Set current_nav_total
         self.current_nav_total = (self.current_units or 0.0) * (self.current_unit_price or 0.0)
+        
+        # Calculate end_date before average equity balance calculation
+        self.calculate_end_date(session=session)
+        
         # Average equity balance (unified method)
         self.average_equity_balance = self.calculate_average_equity_balance(session=session)
 
@@ -1957,17 +2256,27 @@ class Fund(Base):
             FundEvent.fund_id == self.id,
             FundEvent.event_type.in_([EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL])
         ).order_by(FundEvent.event_date, FundEvent.id).all()
+        
         if events:
             latest_event = events[-1]
             self.current_equity_balance = latest_event.current_equity_balance if latest_event.current_equity_balance is not None else 0.0
         else:
             self.current_equity_balance = 0.0
+        
         # Total cost basis = sum of capital calls - sum of returns
         total_calls = sum(e.amount or 0.0 for e in events if e.event_type == EventType.CAPITAL_CALL)
         total_returns = sum(e.amount or 0.0 for e in events if e.event_type == EventType.RETURN_OF_CAPITAL)
         self.total_cost_basis = total_calls - total_returns
+        
+        # Calculate end_date before average equity balance calculation
+        self.calculate_end_date(session=session)
+        
         # Average equity balance (unified method)
-        self.average_equity_balance = self.calculate_average_equity_balance(session=session)
+        calculated_avg = self.calculate_average_equity_balance(session=session)
+        old_avg = self.average_equity_balance
+        self.average_equity_balance = calculated_avg
+        
+
 
     @with_session
     def create_tax_payment_events(self, session=None):
@@ -2001,7 +2310,10 @@ class Fund(Base):
         if reference_number is not None:
             event.reference_number = reference_number
         session.flush()
-        self.recalculate_all_equity_balances(session=session)
+        
+        # Calculate end_date (may affect status)
+        self.calculate_end_date(session=session)
+        
         return event
 
     @with_session
@@ -2087,7 +2399,10 @@ class Fund(Base):
             if tax_event:
                 session.delete(tax_event)
         session.flush()
-        self.recalculate_all_equity_balances(session=session)
+        
+        # Calculate end_date (may affect status)
+        self.calculate_end_date(session=session)
+        
         return event
 
     @with_session
@@ -2263,7 +2578,7 @@ class Fund(Base):
     @with_session
     def calculate_completed_irr(self, session=None):
         """
-        Calculate IRR for completed funds (is_active = False).
+        Calculate IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2271,7 +2586,7 @@ class Fund(Base):
         Returns:
             float: IRR percentage, or None if not calculable
         """
-        if self.is_active:
+        if self.status == FundStatus.ACTIVE:
             return None
             
         return self.calculate_irr(session=session)
@@ -2279,7 +2594,7 @@ class Fund(Base):
     @with_session
     def calculate_completed_after_tax_irr(self, session=None):
         """
-        Calculate after-tax IRR for completed funds (is_active = False).
+        Calculate after-tax IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2287,7 +2602,7 @@ class Fund(Base):
         Returns:
             float: After-tax IRR percentage, or None if not calculable
         """
-        if self.is_active:
+        if self.status == FundStatus.ACTIVE:
             return None
             
         return self.calculate_after_tax_irr(session=session)
@@ -2295,7 +2610,7 @@ class Fund(Base):
     @with_session
     def calculate_completed_real_irr(self, session=None):
         """
-        Calculate real IRR for completed funds (is_active = False).
+        Calculate real IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2303,7 +2618,7 @@ class Fund(Base):
         Returns:
             float: Real IRR percentage, or None if not calculable
         """
-        if self.is_active:
+        if self.status == FundStatus.ACTIVE:
             return None
             
         return self.calculate_real_irr(session=session)

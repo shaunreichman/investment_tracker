@@ -20,7 +20,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText
+  DialogContentText,
+  Tooltip as MuiTooltip
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { TrendingUp, AccountBalance, Edit as EditIcon, Delete as DeleteIcon, Assessment, Info, Receipt, ChevronLeft, ChevronRight } from '@mui/icons-material';
@@ -126,8 +127,8 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               <span style={{ fontSize: '12px' }}>{metric.icon}</span>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
                 {metric.label}
-              </Typography>
-            </Box>
+          </Typography>
+        </Box>
             <Typography 
               variant="body2" 
               sx={{ 
@@ -137,8 +138,8 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               }}
             >
               {formatCurrency(metric.value, fund.currency)}
-            </Typography>
-          </Box>
+          </Typography>
+        </Box>
         ))}
       </Box>
     </Paper>
@@ -219,8 +220,8 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
               <span style={{ fontSize: '12px' }}>{metric.icon}</span>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
                 {metric.label}
-              </Typography>
-            </Box>
+            </Typography>
+          </Box>
             <Typography 
               variant="body2" 
               sx={{ 
@@ -242,8 +243,8 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
  * Completed Performance Section - Historical performance for finished funds
  */
 const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Only show if fund is not active (completed)
-  if (fund.is_active) {
+  // Only show if fund is completed (not active)
+  if (fund.status === 'active') {
     return null;
   }
 
@@ -272,7 +273,15 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
       color: 'info.main',
       icon: '📈',
       priority: 3
-    }
+    },
+    ...(fund.actual_duration_months ? [{
+      label: 'Actual Duration',
+      value: fund.actual_duration_months,
+      unit: ' months',
+      color: 'info.main',
+      icon: '⏱️',
+      priority: 4
+    }] : [])
   ].filter(metric => metric.value !== null && metric.value !== undefined);
 
   if (performanceMetrics.length === 0) {
@@ -324,8 +333,8 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
               <span style={{ fontSize: '12px' }}>{metric.icon}</span>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
                 {metric.label}
-              </Typography>
-            </Box>
+            </Typography>
+          </Box>
             <Typography 
               variant="body2" 
               sx={{ 
@@ -334,7 +343,9 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
                 fontWeight: 600
               }}
             >
-              {metric.value}{metric.unit}
+              {metric.label === 'Actual Duration' 
+                ? `${metric.value}${metric.unit}`
+                : `${metric.value ? (metric.value * 100).toFixed(2) : '0.00'}${metric.unit}`}
             </Typography>
           </Box>
         ))}
@@ -347,10 +358,46 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
  * Fund Details Section - Basic fund information
  */
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Helper function to get status display info
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'active':
+        return { 
+          value: 'Active', 
+          color: '#4caf50', // Lighter green
+          icon: '📊',
+          tooltip: 'Fund is still invested and has capital at risk'
+        };
+      case 'realized':
+        return { 
+          value: 'Realized', 
+          color: '#424242', // Dark gray
+          icon: '📊',
+          tooltip: 'All capital has been returned. Fund will be completed once the final tax statement is added.'
+        };
+      case 'completed':
+        return { 
+          value: 'Completed', 
+          color: '#000000', // Black
+          icon: '📊',
+          tooltip: 'Fund is fully realized and all tax obligations are complete'
+        };
+      default:
+        return { 
+          value: 'Unknown', 
+          color: 'text.secondary', 
+          icon: '📊',
+          tooltip: 'Unknown fund status'
+        };
+    }
+  };
+
+  const statusInfo = getStatusInfo(fund.status);
+  
   const fundDetails = [
-    { label: 'Status', value: fund.is_active ? 'Active' : 'Inactive', color: fund.is_active ? 'success.main' : 'text.secondary', icon: fund.is_active ? '🟢' : '⚪', priority: 1, isStatus: true },
+    { label: 'Status', value: statusInfo.value, color: statusInfo.color, icon: statusInfo.icon, priority: 1, isStatus: true },
     { label: 'Currency', value: fund.currency, color: 'text.primary', icon: '💱', priority: 2 },
-    ...(fund.actual_duration_months ? [{ label: 'Actual Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
+    ...(fund.status === 'active' && fund.actual_duration_months ? [{ label: 'Current Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
   ];
 
   return (
@@ -376,7 +423,7 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
         {fundDetails.map((detail, index) => (
           <Box 
             key={index}
-            sx={{ 
+              sx={{
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
@@ -402,21 +449,30 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               {detail.isStatus && (
-                <Box sx={{ 
-                  width: 8, 
-                  height: 8, 
-                  borderRadius: '50%', 
-                  bgcolor: fund.is_active ? 'success.main' : 'grey.400',
-                  // Phase 4: Enhanced status indicator
-                  transition: 'all 0.2s ease-in-out',
-                  boxShadow: fund.is_active ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
-                }} />
+                <MuiTooltip title={statusInfo.tooltip} arrow>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
+                    <Box sx={{ 
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: statusInfo.color,
+                      // Phase 4: Enhanced status indicator
+                      transition: 'all 0.2s ease-in-out',
+                      boxShadow: statusInfo.color === 'success.main' ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
+                    }} />
+                    <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
+                      {detail.value}
+                    </Typography>
+                  </Box>
+                </MuiTooltip>
               )}
-              <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
-                {detail.value}
-              </Typography>
+              {!detail.isStatus && (
+                <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
+                  {detail.value}
+                </Typography>
+              )}
             </Box>
-          </Box>
+        </Box>
         ))}
       </Box>
     </Paper>
@@ -489,14 +545,14 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
               <span style={{ fontSize: '12px' }}>{item.icon}</span>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
                 {item.type}
-              </Typography>
-            </Box>
+            </Typography>
+          </Box>
             <Typography variant="body2" sx={{ color: item.color, fontSize: 12, fontWeight: 600 }}>
               {formatCurrency(item.amount, fund.currency)}
             </Typography>
           </Box>
         ))}
-      </Box>
+          </Box>
     </Paper>
   );
 };
@@ -526,7 +582,7 @@ const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, f
       <Box display="flex" alignItems="center" mb={0.5}>
         <TrendingUp color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Unit Price Performance</Typography>
-      </Box>
+          </Box>
       
       <Box sx={{ height: 200, position: 'relative' }}>
         {(() => {
@@ -602,8 +658,8 @@ const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, f
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                   <Typography variant="body2" color="text.secondary">
                     No chart data available
-                  </Typography>
-                </Box>
+            </Typography>
+          </Box>
               );
             }
 
@@ -719,8 +775,8 @@ const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, f
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                 <Typography variant="body2" color="error">
                   Error loading chart
-                </Typography>
-              </Box>
+            </Typography>
+          </Box>
             );
           }
         })()}
@@ -1074,11 +1130,11 @@ const FundDetail: React.FC = () => {
             </Typography>
           </Box>
           
-          <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
           <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
         </Box>
 
@@ -1099,7 +1155,7 @@ const FundDetail: React.FC = () => {
           display: 'flex',
           flexDirection: 'column'
         }}>
-          {/* Events Table Header with Add Cash Flow Button */}
+      {/* Events Table Header with Add Cash Flow Button */}
       <Paper sx={{ 
         width: '100%', 
         overflow: 'hidden', 
@@ -2080,7 +2136,7 @@ const FundDetail: React.FC = () => {
       </Paper>
 
 
-        </Box>
+          </Box>
       </Box>
       {/* Modal rendered at root */}
       <CreateFundEventModal

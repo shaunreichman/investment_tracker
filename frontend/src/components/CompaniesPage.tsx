@@ -15,7 +15,8 @@ import {
   CircularProgress,
   Link,
   Breadcrumbs,
-  Button
+  Button,
+  Tooltip
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { ErrorType, ErrorSeverity, createErrorInfo } from '../types/errors';
@@ -47,7 +48,7 @@ interface Fund {
   currency: string;
   current_equity_balance: number;
   average_equity_balance: number;
-  is_active: boolean;
+  status: string;
   entity: string;
   recent_events_count: number;
   created_at: string;
@@ -99,6 +100,32 @@ const CompaniesPage: React.FC = () => {
         return 'primary';
       case 'cost_based':
         return 'secondary';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusTooltip = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Fund is still invested and has capital at risk';
+      case 'realized':
+        return 'All capital has been returned. Fund will be completed once the final tax statement is added.';
+      case 'completed':
+        return 'Fund is fully realized and all tax obligations are complete';
+      default:
+        return 'Unknown fund status';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return '#4caf50'; // Lighter green
+      case 'realized':
+        return '#424242'; // Dark gray
+      case 'completed':
+        return '#000000'; // Black
       default:
         return 'default';
     }
@@ -225,11 +252,23 @@ const CompaniesPage: React.FC = () => {
                       {formatCurrency(fund.current_equity_balance)}
                     </TableCell>
                     <TableCell align="right">
-                      <Chip
-                        label={fund.is_active ? 'Active' : 'Inactive'}
-                        size="small"
-                        color={fund.is_active ? 'success' : 'default'}
-                      />
+                      <Tooltip title={getStatusTooltip(fund.status)} arrow placement="top">
+                        <Box component="span" sx={{ display: 'inline-block' }}>
+                          <Chip
+                            label={fund.status === 'active' ? 'Active' : fund.status === 'realized' ? 'Realized' : 'Completed'}
+                            size="small"
+                            sx={{ 
+                              cursor: 'help',
+                              backgroundColor: getStatusColor(fund.status),
+                              color: 'white',
+                              '&:hover': {
+                                backgroundColor: getStatusColor(fund.status),
+                                opacity: 0.8
+                              }
+                            }}
+                          />
+                        </Box>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -278,7 +317,7 @@ const CompaniesPage: React.FC = () => {
                     Active Funds
                   </Typography>
                   <Typography variant="h5">
-                    {fundsData?.funds?.filter(fund => fund.is_active).length || 0}
+                    {fundsData?.funds?.filter(fund => fund.status === 'active').length || 0}
                   </Typography>
                 </Box>
               </Box>

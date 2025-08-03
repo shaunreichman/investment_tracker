@@ -102,6 +102,7 @@ def setup_test_data(session):
         description="Initial capital call",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund capital call", session)
     
     # Add returns of capital
     senior_debt_fund.add_return_of_capital(
@@ -110,18 +111,21 @@ def setup_test_data(session):
         description="Return of capital",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund return of capital 1", session)
     senior_debt_fund.add_return_of_capital(
         amount=45000.0,
         date=date(2024, 3, 26),
         description="Partial exit distribution",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund return of capital 2", session)
     senior_debt_fund.add_return_of_capital(
         amount=48000.0,
         date=date(2024, 8, 2),
         description="Return of capital",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund return of capital 3", session)
     
     # Add distribution events with tax using domain methods
     print("Adding Senior Debt Fund distributions with tax...")
@@ -132,6 +136,7 @@ def setup_test_data(session):
         description="Interest distribution",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund distribution 1", session)
     senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 1, 16),
         gross_interest=2836.98,
@@ -139,6 +144,7 @@ def setup_test_data(session):
         description="Interest distribution",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund distribution 2", session)
     senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 3, 26),
         gross_interest=2630.16,
@@ -146,6 +152,7 @@ def setup_test_data(session):
         description="Interest distribution",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund distribution 3", session)
     senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 7, 9),
         gross_interest=1392.19,
@@ -153,6 +160,7 @@ def setup_test_data(session):
         description="Interest distribution",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund distribution 4", session)
     senior_debt_fund.add_interest_distribution_with_withholding_tax(
         event_date=date(2024, 8, 2),
         gross_interest=509.84,
@@ -160,6 +168,7 @@ def setup_test_data(session):
         description="Interest distribution",
         session=session
     )
+    debug_average_equity_after_event(senior_debt_fund, "Senior Debt Fund distribution 5", session)
     
     # Add events for 3PG Finance using domain methods
     print("Adding 3PG Finance events using domain methods...")
@@ -171,6 +180,7 @@ def setup_test_data(session):
         description="Initial capital call",
         session=session
     )
+    debug_average_equity_after_event(finance_fund, "3PG Finance capital call", session)
     
     # Add returns of capital
     finance_fund.add_return_of_capital(
@@ -179,6 +189,7 @@ def setup_test_data(session):
         description="Return of capital",
         session=session
     )
+    debug_average_equity_after_event(finance_fund, "3PG Finance return of capital 1", session)
     finance_fund.add_return_of_capital(
         amount=26326.88,
         date=date(2023, 7, 7),
@@ -500,92 +511,6 @@ def get_irr_cashflows(fund, irr_type, session):
     else:
         raise ValueError(f"Unknown IRR type: {irr_type}")
 
-def recalculate_everything(session, show_irr_cashflows=True):
-    """Recalculate all derived values using domain methods."""
-    print("\n3. Recalculating all derived values...")
-    
-    # Get all funds using domain methods
-    funds = session.query(Fund).all()
-    print(f"Funds to recalculate: {[f'{fund.id}: {fund.name}' for fund in funds]}")
-    print(f"Number of funds to recalculate: {len(funds)}")
-    
-    iteration_count = 0
-    for fund in funds:
-        iteration_count += 1
-        print(f"\nRecalculating for {fund.name}:")
-        
-        # Get current values
-        current_equity = fund.current_equity_balance
-        average_equity = fund.average_equity_balance
-        
-        print(f"  Current equity: ${current_equity:,.2f}")
-        print(f"  Average equity: ${average_equity:,.2f}")
-        
-        if fund.tracking_type == FundType.NAV_BASED:
-            current_units = fund.current_units
-            current_unit_price = fund.current_unit_price
-            print(f"  Current units: {current_units:.2f}")
-            print(f"  Current unit price: ${current_unit_price:.4f}")
-        # Remove lines that reference fund.total_cost_basis and their print statements
-        
-        # Create tax payment events using domain methods
-        tax_events = fund.create_tax_payment_events(session=session)
-        print(f"  Created {len(tax_events)} tax payment events")
-        
-        # Create daily risk-free interest charges using domain methods
-        daily_events = fund.create_daily_risk_free_interest_charges(session=session)
-        print(f"Created {len(daily_events)} daily risk-free interest charge events for {fund.name}")
-        
-        # Create EOFY debt cost events using domain methods
-        eofy_events = fund.create_eofy_debt_cost_events(session=session)
-        print(f"Created {len(eofy_events)} EOFY debt cost events for {fund.name}")
-        
-        # Calculate IRRs using domain methods
-        irr = fund.calculate_irr(session=session)
-        after_tax_irr = fund.calculate_after_tax_irr(session=session)
-        real_irr = fund.calculate_real_irr(session=session)
-        
-        # Handle None values gracefully
-        irr_str = f"{irr * 100:.2f}%" if irr is not None else "N/A"
-        after_tax_irr_str = f"{after_tax_irr * 100:.2f}%" if after_tax_irr is not None else "N/A"
-        real_irr_str = f"{real_irr * 100:.2f}%" if real_irr is not None else "N/A"
-        
-        print(f"  IRR: {irr_str}")
-        print(f"  After-tax IRR: {after_tax_irr_str}")
-        print(f"  Real IRR: {real_irr_str}")
-        
-        if show_irr_cashflows:
-            # Get IRR cash flows using domain methods
-            try:
-                irr_result = get_irr_cashflows(fund, "irr", session)
-                after_tax_result = get_irr_cashflows(fund, "after_tax_irr", session)
-                real_result = get_irr_cashflows(fund, "real_irr", session)
-                
-                print(f"\n    --- IRR Cash Flows ---")
-                if irr_result and irr_result.get('cash_flows') and irr_result.get('labels'):
-                    for i, (cf, label) in enumerate(zip(irr_result['cash_flows'], irr_result['labels']), 1):
-                        print(f"     {i:2d}: {cf:12,.2f}  {label}")
-                else:
-                    print("     No IRR cash flows available")
-                
-                print(f"\n    --- After-tax IRR Cash Flows ---")
-                if after_tax_result and after_tax_result.get('cash_flows') and after_tax_result.get('labels'):
-                    for i, (cf, label) in enumerate(zip(after_tax_result['cash_flows'], after_tax_result['labels']), 1):
-                        print(f"     {i:2d}: {cf:12,.2f}  {label}")
-                else:
-                    print("     No after-tax IRR cash flows available")
-                
-                print(f"\n    --- Real IRR Cash Flows ---")
-                if real_result and real_result.get('cash_flows') and real_result.get('labels'):
-                    for i, (cf, label) in enumerate(zip(real_result['cash_flows'], real_result['labels']), 1):
-                        print(f"     {i:2d}: {cf:12,.2f}  {label}")
-                else:
-                    print("     No real IRR cash flows available")
-            except Exception as e:
-                print(f"     Error calculating IRR cash flows: {e}")
-    print(f"Completed recalculation loop. Iterations: {iteration_count}")
-    print("\nAll recalculations completed!")
-
 def verify_results(session):
     """Verify the results using domain methods."""
     print("\n4. Verifying results...")
@@ -605,12 +530,13 @@ def verify_results(session):
         current_equity = fund.current_equity_balance
         average_equity = fund.average_equity_balance
         
-        print(f"  Current equity: ${current_equity:,.2f}")
-        print(f"  Average equity: ${average_equity:,.2f}")
+        print(f"  Current equity: ${current_equity:,.2f}" if current_equity is not None else "  Current equity: None")
+        print(f"  Average equity: ${average_equity:,.2f}" if average_equity is not None else "  Average equity: None")
+        print(f"  Status: {fund.status.value.upper()}")
         
         # Check if current equity matches calculated value
         calculated_equity = fund.current_equity_balance  # Just use the field directly
-        if abs(current_equity - calculated_equity) > 0.01:
+        if current_equity is not None and calculated_equity is not None and abs(current_equity - calculated_equity) > 0.01:
             print(f"  ⚠️  WARNING: Current equity doesn't match calculated value!")
             print(f"     Expected: ${calculated_equity:,.2f}")
         
@@ -739,12 +665,106 @@ def print_daily_debt_cost_breakdown(fund, session, fy_label, fy_start, fy_end):
         print(f"{charge:12.6f} | {days:5}")
     print()
 
+def print_fund_summaries_and_derived_values(session, show_irr_cashflows=True):
+    """Print all derived values and summaries using domain methods."""
+    print("\n3. Printing all derived values and summaries...")
+    
+    # Get all funds using domain methods
+    funds = session.query(Fund).all()
+    print(f"Funds to print: {[f'{fund.id}: {fund.name}' for fund in funds]}")
+    print(f"Number of funds to print: {len(funds)}")
+    
+    iteration_count = 0
+    for fund in funds:
+        iteration_count += 1
+        print(f"\nSummary for {fund.name}:")
+        
+        # Get current values
+        current_equity = fund.current_equity_balance
+        average_equity = fund.average_equity_balance
+        status = fund.status
+        end_date = fund.end_date
+        
+        print(f"  Current Equity Balance: ${current_equity:,.2f}")
+        print(f"  Average Equity Balance: ${average_equity:,.2f}")
+        print(f"  Status: {status}")
+        print(f"  End Date: {end_date}")
+        
+        # Create system events first (tax payments, daily charges, EOFY debt costs)
+        fund.create_tax_payment_events(session=session)
+        fund.create_daily_risk_free_interest_charges(session=session)
+        fund.create_eofy_debt_cost_events(session=session)
+        
+        # Update fund status (this will calculate and store IRRs)
+        fund.update_status(session=session)
+        
+        # Print stored IRR values
+        if show_irr_cashflows:
+            print(f"  IRR: {fund.irr_gross:.2%}" if fund.irr_gross else "  IRR: None")
+            print(f"  After-Tax IRR: {fund.irr_after_tax:.2%}" if fund.irr_after_tax else "  After-Tax IRR: None")
+            print(f"  Real IRR: {fund.irr_real:.2%}" if fund.irr_real else "  Real IRR: None")
+        
+        # Print IRR cash flows
+        if show_irr_cashflows:
+            print(f"  IRR Cash Flows:")
+            irr_result = fund._calculate_irr_base(include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=session, return_cashflows=True)
+            if irr_result and 'cash_flows' in irr_result:
+                for i, cf in enumerate(irr_result['cash_flows']):
+                    label = irr_result['labels'][i] if i < len(irr_result['labels']) else 'Unknown'
+                    print(f"    {label}: ${cf:,.2f}")
+            else:
+                print("    No cash flows available")
+
+def debug_average_equity_after_event(fund, event_description, session):
+    """Debug helper to print average equity balance after each event."""
+    session.refresh(fund)  # Ensure we have latest data
+    
+    # Get the latest capital event to see current_equity_balance
+    latest_capital_event = session.query(FundEvent).filter(
+        FundEvent.fund_id == fund.id,
+        FundEvent.event_type.in_([EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL])
+    ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+    
+    current_equity_str = f"${latest_capital_event.current_equity_balance:,.2f}" if latest_capital_event and latest_capital_event.current_equity_balance is not None else "None"
+    
+    
+
 def main():
     """Main test function demonstrating proper session management architecture."""
     parser = argparse.ArgumentParser(description='Test the new domain structure')
     parser.add_argument('--no-cashflows', action='store_true', help='Skip showing IRR cash flows')
+    parser.add_argument('--output-file', type=str, help='Save output to specified file')
     args = parser.parse_args()
     
+    # Capture output if output file is specified
+    if args.output_file:
+        import sys
+        from io import StringIO
+        
+        # Redirect stdout to capture output
+        old_stdout = sys.stdout
+        output_buffer = StringIO()
+        sys.stdout = output_buffer
+        
+        try:
+            run_test(args)
+            # Get the captured output
+            output = output_buffer.getvalue()
+            
+            # Write to file
+            with open(args.output_file, 'w') as f:
+                f.write(output)
+            
+            print(f"Test output saved to: {args.output_file}")
+            
+        finally:
+            # Restore stdout
+            sys.stdout = old_stdout
+    else:
+        run_test(args)
+
+def run_test(args):
+    """Run the actual test logic."""
     print("Starting comprehensive system test...")
     print("Demonstrating proper session management architecture:")
     print("- Outermost backend layer manages sessions")
@@ -773,9 +793,6 @@ def main():
             average_equity = fund.average_equity_balance
             print(f"  {fund.name}: equity=${current_equity:.2f}, avg=${average_equity:.2f}")
         
-        # Recalculate everything using domain methods
-        recalculate_everything(session, show_irr_cashflows=not args.no_cashflows)
-        
         # Verify results using domain methods
         verify_results(session)
         
@@ -789,6 +806,9 @@ def main():
         print_equity_balance_over_time(finance_fund, session)
         print_equity_balance_over_time(abc_fund, session)
         
+        # Print all derived values and summaries using domain methods
+        print_fund_summaries_and_derived_values(session, not args.no_cashflows)
+        
         print("\n=== DOMAIN STRUCTURE TEST COMPLETED SUCCESSFULLY ===")
         print("\n🎉 All domain structure tests passed! Migration was successful.")
         print("\n✅ Architectural pattern verified:")
@@ -797,16 +817,7 @@ def main():
         print("   - No direct database operations from external clients")
         print("   - Stateless external clients (sessions hidden from API consumers)")
         
-    finally:
-        # ✅ CORRECT: Outermost layer closes session
-        session.close()
-
-if __name__ == "__main__":
-    main() 
-    # --- Print exact daily breakdown for ABC fund debt cost ---
-    engine, session_factory, scoped_session = get_database_session()
-    session = scoped_session()
-    try:
+        # --- Print exact daily breakdown for ABC fund debt cost ---
         abc_fund = session.query(Fund).filter(Fund.name == "ABC Ltd").first()
         if abc_fund:
             # FY13: 2012-07-01 to 2013-06-30
@@ -819,5 +830,10 @@ if __name__ == "__main__":
             )
         else:
             print("ABC Ltd fund not found for daily debt cost breakdown.")
+        
     finally:
-        session.close() 
+        # ✅ CORRECT: Outermost layer closes session
+        session.close()
+
+if __name__ == "__main__":
+    main() 
