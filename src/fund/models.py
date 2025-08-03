@@ -1335,29 +1335,7 @@ class Fund(Base):
         elif self.tracking_type == FundType.COST_BASED:
             return self.current_equity_balance is not None and self.current_equity_balance > 0
 
-    @property
-    def should_be_status(self):
-        """Return the appropriate FundStatus based on current fund state.
-        
-        Business rules:
-        - ACTIVE: Equity balance > 0 (fund still invested)
-        - REALIZED: Equity balance = 0 (all capital returned)
-        - COMPLETED: Fund is fully realized AND final tax statement event has been processed
-        """
-        # Check if fund has positive equity balance
-        if self.tracking_type == FundType.NAV_BASED:
-            has_equity = self.current_units is not None and self.current_units > 0
-        elif self.tracking_type == FundType.COST_BASED:
-            has_equity = self.current_equity_balance is not None and self.current_equity_balance > 0
-        else:
-            has_equity = False
-        
-        if has_equity:
-            return FundStatus.ACTIVE
-        else:
-            # Fund is realized (equity balance = 0)
-            # For now, default to REALIZED - COMPLETED logic will be implemented in Phase 3
-            return FundStatus.REALIZED
+
 
     @with_session
     def update_status(self, session=None):
@@ -1368,7 +1346,21 @@ class Fund(Base):
         if session is None:
             session = object_session(self)
         
-        new_status = self.should_be_status
+        # Determine what the status should be based on current equity balance
+        if self.tracking_type == FundType.NAV_BASED:
+            has_equity = self.current_units is not None and self.current_units > 0
+        elif self.tracking_type == FundType.COST_BASED:
+            has_equity = self.current_equity_balance is not None and self.current_equity_balance > 0
+        else:
+            has_equity = False
+        
+        if has_equity:
+            new_status = FundStatus.ACTIVE
+        else:
+            # Fund is realized (equity balance = 0)
+            # For now, default to REALIZED - COMPLETED logic will be implemented in Phase 3
+            new_status = FundStatus.REALIZED
+        
         if self.status != new_status:
             old_status = self.status
             self.status = new_status

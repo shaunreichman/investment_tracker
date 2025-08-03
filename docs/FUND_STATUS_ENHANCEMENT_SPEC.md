@@ -48,6 +48,31 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - **Single source of truth**: Only the `status` field determines fund lifecycle
 - **No redundancy**: Remove legacy fields to prevent conflicting state
 
+### Phase 1b: Remove Redundant should_be_status Property ✅ (COMPLETED)
+**Goal**: Simplify status system by removing redundant validation property
+
+**Tasks**:
+- [x] **Remove should_be_status Property**
+  - [x] Remove should_be_status property method from Fund model
+  - [x] Update update_status method to use direct status determination logic
+  - [x] Ensure no other references to should_be_status exist
+- [x] **Simplify Status Logic**
+  - [x] Move status determination logic directly into update_status method
+  - [x] Remove redundant validation property
+  - [x] Maintain single source of truth with status field only
+
+**Key Achievements**:
+- ✅ Removed redundant should_be_status property
+- ✅ Simplified status system architecture
+- ✅ Maintained single source of truth with status field
+- ✅ Updated update_status method to use direct logic
+- ✅ No remaining references to should_be_status
+
+**Design Principles**:
+- **Single source of truth**: Only the status field determines fund lifecycle
+- **No redundant calculations**: Remove validation properties that duplicate logic
+- **Simple architecture**: One field, one value, one truth
+
 ### Phase 2: Event-Driven Status Updates
 **Goal**: Implement automatic status updates triggered by specific events
 
