@@ -47,20 +47,29 @@ interface SectionProps {
 }
 
 /**
- * Equity Section - Current investment position and value
+ * Equity & NAV Summary Section - Current investment position and NAV data
  */
 const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Phase 3.2: Enhanced data organization for equity metrics
+  // Enhanced data organization for equity and NAV metrics
+  const isActiveNavFund = fund.tracking_type === 'nav_based' && fund.status === 'active';
+  
   const equityMetrics = [
-    {
+    // Current Balance for cost-based funds, Current Cost of Units only for active NAV-based funds
+    ...(fund.tracking_type === 'cost_based' ? [{
       label: 'Current Balance',
       value: fund.current_equity_balance ?? null,
       color: 'primary.main',
       icon: '💰',
       priority: 1
-    },
+    }] : isActiveNavFund ? [{
+      label: 'Current Cost of Units',
+      value: fund.current_equity_balance ?? null,
+      color: 'primary.main',
+      icon: '💰',
+      priority: 1
+    }] : []),
     {
-      label: 'Average Balance',
+      label: fund.tracking_type === 'nav_based' ? 'Average Cost of Units' : 'Average Balance',
       value: fund.average_equity_balance ?? null,
       color: 'primary.main',
       icon: '📊',
@@ -73,13 +82,33 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
       icon: '📋',
       priority: 3
     },
-    ...(fund.tracking_type === 'nav_based' ? [{
-      label: 'NAV Fund Value',
-      value: fund.current_nav_fund_value ?? null,
-      color: 'success.main',
-      icon: '📈',
-      priority: 4
-    }] : [])
+    // NAV-specific metrics for NAV-based funds (only when active)
+    ...(isActiveNavFund ? [
+      {
+        label: 'Current NAV',
+        value: fund.current_unit_price ?? null,
+        color: 'success.main',
+        icon: '📊',
+        priority: 4,
+        formatValue: (value: number | null) => value ? formatCurrency(value, fund.currency) : 'N/A'
+      },
+      {
+        label: 'Units Owned',
+        value: fund.current_units ?? null,
+        color: 'info.main',
+        icon: '📈',
+        priority: 5,
+        formatValue: (value: number | null) => value ? `${value.toLocaleString()} units` : 'N/A'
+      },
+      {
+        label: 'NAV Market Value',
+        value: fund.current_nav_total ?? null,
+        color: 'success.main',
+        icon: '💰',
+        priority: 6,
+        formatValue: (value: number | null) => value ? formatCurrency(value, fund.currency) : 'N/A'
+      }
+    ] : [])
   ].filter(metric => metric.value !== null);
 
   return (
@@ -97,7 +126,9 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
         <AccountBalance color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
-        <Typography variant="h6" sx={{ fontSize: 16 }}>Equity Position</Typography>
+        <Typography variant="h6" sx={{ fontSize: 16 }}>
+          {fund.tracking_type === 'nav_based' ? 'Equity & NAV Summary' : 'Equity Position'}
+        </Typography>
       </Box>
       
       {/* Phase 3B: Enhanced card layout with consistent styling */}
@@ -137,7 +168,7 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
                 fontWeight: index === 0 ? 700 : 600
               }}
             >
-              {formatCurrency(metric.value, fund.currency)}
+              {metric.formatValue ? metric.formatValue(metric.value) : formatCurrency(metric.value, fund.currency)}
           </Typography>
         </Box>
         ))}
@@ -557,110 +588,7 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
   );
 };
 
-/**
- * NAV Information Section - Current NAV data for NAV-based funds
- */
-const NavInformationSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Only show for NAV-based funds
-  if (fund.tracking_type !== 'nav_based') {
-    return null;
-  }
 
-  // NAV metrics for display
-  const navMetrics = [
-    {
-      label: 'Current NAV',
-      value: fund.current_unit_price ?? null,
-      color: 'success.main',
-      icon: '📊',
-      priority: 1,
-      formatValue: (value: number | null) => value ? formatCurrency(value, fund.currency) : 'N/A'
-    },
-    {
-      label: 'Units Owned',
-      value: fund.current_units ?? null,
-      color: 'info.main',
-      icon: '📈',
-      priority: 2,
-      formatValue: (value: number | null) => value ? `${value.toLocaleString()} units` : 'N/A'
-    },
-    {
-      label: 'Total Value',
-      value: fund.current_nav_total ?? null,
-      color: 'primary.main',
-      icon: '💰',
-      priority: 3,
-      formatValue: (value: number | null) => value ? formatCurrency(value, fund.currency) : 'N/A'
-    }
-  ].filter(metric => metric.value !== null);
-
-  if (navMetrics.length === 0) {
-    return null;
-  }
-
-  return (
-    <Paper sx={{ 
-      p: 0.75, 
-      mb: 1, 
-      borderRadius: 2,
-      // Phase 4: Enhanced visual effects
-      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      '&:hover': {
-        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
-        transform: 'translateY(-1px)'
-      }
-    }}>
-      <Box display="flex" alignItems="center" mb={0.5}>
-        <TrendingUp color="success" sx={{ mr: 0.5, fontSize: 16 }} />
-        <Typography variant="h6" sx={{ fontSize: 16 }}>NAV Information</Typography>
-      </Box>
-      
-      {/* Phase 3B: Enhanced card layout with consistent styling */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {navMetrics.map((metric, index) => (
-          <Box 
-            key={index}
-            sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              p: 0.5,
-              borderRadius: 1,
-              backgroundColor: index === 0 ? 'success.50' : 'transparent',
-              border: '1px solid',
-              borderColor: 'grey.200',
-              // Phase 4: Enhanced hover effects for individual items
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: index === 0 ? 'success.100' : 'grey.50',
-                borderColor: 'grey.300',
-                transform: 'translateX(2px)'
-              }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <span style={{ fontSize: '12px' }}>{metric.icon}</span>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
-                {metric.label}
-              </Typography>
-            </Box>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: metric.color,
-                fontSize: 12,
-                fontWeight: index === 0 ? 700 : 600
-              }}
-            >
-              {metric.formatValue(metric.value)}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-    </Paper>
-  );
-};
 
 /**
  * Unit Price Chart Section - NAV performance chart for NAV-based funds
@@ -1236,7 +1164,6 @@ const FundDetail: React.FC = () => {
           </Box>
           
       <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-      <NavInformationSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
       <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
       <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
       <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
