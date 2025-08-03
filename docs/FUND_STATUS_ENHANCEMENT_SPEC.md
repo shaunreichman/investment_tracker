@@ -48,30 +48,37 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - **Single source of truth**: Only the `status` field determines fund lifecycle
 - **No redundancy**: Remove legacy fields to prevent conflicting state
 
-### Phase 1b: Remove Redundant should_be_status Property ✅ (COMPLETED)
-**Goal**: Simplify status system by removing redundant validation property
+### Phase 1b: Remove Legacy is_active Field ✅ (COMPLETED)
+**Goal**: Complete the migration from legacy `is_active` boolean to new `status` enum system
 
 **Tasks**:
-- [x] **Remove should_be_status Property**
-  - [x] Remove should_be_status property method from Fund model
-  - [x] Update update_status method to use direct status determination logic
-  - [x] Ensure no other references to should_be_status exist
-- [x] **Simplify Status Logic**
-  - [x] Move status determination logic directly into update_status method
-  - [x] Remove redundant validation property
-  - [x] Maintain single source of truth with status field only
+- [x] **Remove is_active Field**
+  - [x] Remove `is_active` column from Fund model
+  - [x] Remove `is_active` from API responses
+  - [x] Update all business logic to use `status` instead of `is_active`
+- [x] **Update IRR Calculations**
+  - [x] Update `calculate_completed_irr()` to use `status == FundStatus.ACTIVE`
+  - [x] Update `calculate_completed_after_tax_irr()` to use `status == FundStatus.ACTIVE`
+  - [x] Update `calculate_completed_real_irr()` to use `status == FundStatus.ACTIVE`
+- [x] **Update API Layer**
+  - [x] Remove `is_active` from fund list API responses
+  - [x] Update active fund counting logic to use `status == FundStatus.ACTIVE`
+  - [x] Update company fund counting logic to use `status == FundStatus.ACTIVE`
+- [x] **Update Average Equity Calculation**
+  - [x] Update average equity balance calculation to use `status == FundStatus.ACTIVE`
 
 **Key Achievements**:
-- ✅ Removed redundant should_be_status property
-- ✅ Simplified status system architecture
-- ✅ Maintained single source of truth with status field
-- ✅ Updated update_status method to use direct logic
-- ✅ No remaining references to should_be_status
+- ✅ Completely removed legacy `is_active` field from database and code
+- ✅ All business logic now uses the new `status` enum system
+- ✅ API responses no longer include `is_active` field
+- ✅ IRR calculations properly use `status == FundStatus.ACTIVE` logic
+- ✅ Single source of truth established with `status` field only
 
 **Design Principles**:
-- **Single source of truth**: Only the status field determines fund lifecycle
-- **No redundant calculations**: Remove validation properties that duplicate logic
-- **Simple architecture**: One field, one value, one truth
+- **Single source of truth**: Only the `status` field determines fund lifecycle
+- **No legacy fields**: Complete migration from old boolean system
+- **Consistent API**: All endpoints use the new status system
+- **Clean architecture**: No redundant or conflicting state fields
 
 ### Phase 2: Event-Driven Status Updates ✅ (COMPLETED)
 **Goal**: Implement automatic status updates triggered by specific events
@@ -225,6 +232,13 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - Status determination logic updated to use equity balance
 - Database migrations successfully applied
 - Single source of truth established
+
+**Phase 1b: Remove Legacy is_active Field** ✅ (COMPLETED)
+- Completely removed legacy `is_active` field from database and code
+- All business logic now uses the new `status` enum system
+- API responses no longer include `is_active` field
+- IRR calculations properly use `status == FundStatus.ACTIVE` logic
+- Single source of truth established with `status` field only
 
 **Phase 2: Event-Driven Status Updates** ✅ (COMPLETED)
 - Automatic status updates triggered by all capital events

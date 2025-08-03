@@ -45,7 +45,7 @@ def create_app():
                 
                 # Calculate summary metrics using domain data
                 total_funds = len(funds)
-                active_funds = sum(1 for fund in funds if fund.is_active)
+                active_funds = sum(1 for fund in funds if fund.status == FundStatus.ACTIVE)
                 total_equity = sum(fund.current_equity_balance or 0.0 for fund in funds)
                 total_avg_equity = sum(fund.average_equity_balance or 0.0 for fund in funds)
                 
@@ -101,7 +101,7 @@ def create_app():
                         "currency": fund.currency,
                         "current_equity_balance": float(fund.current_equity_balance) if fund.current_equity_balance else 0.0,
                         "average_equity_balance": float(fund.average_equity_balance) if fund.average_equity_balance else 0.0,
-                        "is_active": fund.is_active if fund.is_active is not None else True,
+
                         "investment_company": fund.investment_company.name if fund.investment_company else "Unknown",
                         "entity": fund.entity.name if fund.entity else "Unknown",
                         "recent_events_count": recent_events_count,
@@ -211,7 +211,7 @@ def create_app():
                     total_commitments = company.get_total_commitments(session)
                     active_funds = 0
                     for fund in company.funds:
-                        if fund.is_active:
+                        if fund.status == FundStatus.ACTIVE:
                             active_funds += 1
                     total_equity = sum(fund.current_equity_balance or 0.0 for fund in company.funds)
                     companies_data.append({

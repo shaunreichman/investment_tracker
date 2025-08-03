@@ -167,7 +167,7 @@ class Fund(Base):
     # Cost-based fund specific fields (CALCULATED)
     
     # Status and metadata
-    is_active = Column(Boolean, default=True)  # (CALCULATED) whether fund has positive equity balance (legacy field)
+
     status = Column(Enum(FundStatus), default=FundStatus.ACTIVE)  # (CALCULATED) fund status (ACTIVE/REALIZED/COMPLETED)
     description = Column(Text)  # (MANUAL) fund description
     currency = Column(String(10), default="AUD")  # (MANUAL) currency code for the fund
@@ -385,7 +385,7 @@ class Fund(Base):
             "currency": self.currency,
             "current_equity_balance": float(self.current_equity_balance) if self.current_equity_balance else 0.0,
             "average_equity_balance": float(self.average_equity_balance) if self.average_equity_balance else 0.0,
-            "is_active": self.is_active if self.is_active is not None else True,
+
             "status": self.status.value if self.status else FundStatus.ACTIVE.value,
             "commitment_amount": float(self.commitment_amount) if self.commitment_amount else None,
             "expected_irr": float(self.expected_irr) if self.expected_irr else None,
@@ -1310,30 +1310,7 @@ class Fund(Base):
         
         return created_events
 
-    @with_session
-    def update_active_status(self, session=None):
-        """Update the fund's active status based on current equity balance or units.
-        Commits the change to the database if the status changes.
-        """
-        from sqlalchemy.orm import object_session
-        if session is None:
-            session = object_session(self)
-        
-        new_active_status = self.should_be_active
-        if self.is_active is not None and self.is_active != new_active_status:
-            self.is_active = new_active_status
-            session.commit()
-            print(f"Fund '{self.name}' status updated: {'Active' if new_active_status else 'Exited'}")
 
-    @property
-    def should_be_active(self):
-        """Return True if the fund should be active, False if exited.
-        A fund is active if it has units (NAV-based) or equity balance (cost-based).
-        """
-        if self.tracking_type == FundType.NAV_BASED:
-            return self.current_units is not None and self.current_units > 0
-        elif self.tracking_type == FundType.COST_BASED:
-            return self.current_equity_balance is not None and self.current_equity_balance > 0
 
 
 
@@ -1435,8 +1412,8 @@ class Fund(Base):
         Delegates to orchestrate_irr_base in calculations.py.
         """
         from datetime import date
-        # Only calculate IRR for completed funds
-        if self.should_be_active:
+        # Only calculate IRR for completed funds (not active)
+        if self.status == FundStatus.ACTIVE:
             if return_cashflows:
                 return {'cash_flows': [], 'days_from_start': [], 'labels': [], 'irr': None}
             return None
@@ -1532,7 +1509,7 @@ class Fund(Base):
         period_end = None
         if hasattr(self, "end_date") and self.end_date:
             period_end = self.end_date
-        elif getattr(self, "is_active", True):
+        elif self.status == FundStatus.ACTIVE:
             period_end = date.today()
         # Only include the last period if period_end is after the last event
         if period_end:
@@ -2407,7 +2384,7 @@ class Fund(Base):
     @with_session
     def calculate_completed_irr(self, session=None):
         """
-        Calculate IRR for completed funds (is_active = False).
+        Calculate IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2415,7 +2392,7 @@ class Fund(Base):
         Returns:
             float: IRR percentage, or None if not calculable
         """
-        if self.is_active:
+        if self.status == FundStatus.ACTIVE:
             return None
             
         return self.calculate_irr(session=session)
@@ -2423,7 +2400,7 @@ class Fund(Base):
     @with_session
     def calculate_completed_after_tax_irr(self, session=None):
         """
-        Calculate after-tax IRR for completed funds (is_active = False).
+        Calculate after-tax IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2431,7 +2408,7 @@ class Fund(Base):
         Returns:
             float: After-tax IRR percentage, or None if not calculable
         """
-        if self.is_active:
+        if self.status == FundStatus.ACTIVE:
             return None
             
         return self.calculate_after_tax_irr(session=session)
@@ -2439,7 +2416,7 @@ class Fund(Base):
     @with_session
     def calculate_completed_real_irr(self, session=None):
         """
-        Calculate real IRR for completed funds (is_active = False).
+        Calculate real IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2447,7 +2424,7 @@ class Fund(Base):
         Returns:
             float: Real IRR percentage, or None if not calculable
         """
-        if self.is_active:
+        if self.status == FundStatus.ACTIVE:
             return None
             
         return self.calculate_real_irr(session=session)
