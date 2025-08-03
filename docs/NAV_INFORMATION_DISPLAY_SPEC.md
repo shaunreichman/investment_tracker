@@ -26,10 +26,10 @@ Add a new NAV information card to the Fund Detail page that displays current NAV
 ### Phase 2: Frontend Component Development
 **Goal**: Create the NAV information display component
 **Tasks**:
-- [ ] Create new `NavInformationSection` component
-- [ ] Implement conditional rendering for NAV-based funds only
-- [ ] Display current NAV per unit, total units, and total value
-- [ ] Apply consistent styling with existing cards
+- [x] Create new `NavInformationSection` component
+- [x] Implement conditional rendering for NAV-based funds only
+- [x] Display current NAV per unit, total units, and total value
+- [x] Apply consistent styling with existing cards
 
 **Design Principles**:
 - Follow existing section component patterns

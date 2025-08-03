@@ -558,6 +558,111 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
 };
 
 /**
+ * NAV Information Section - Current NAV data for NAV-based funds
+ */
+const NavInformationSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Only show for NAV-based funds
+  if (fund.tracking_type !== 'nav_based') {
+    return null;
+  }
+
+  // NAV metrics for display
+  const navMetrics = [
+    {
+      label: 'Current NAV',
+      value: fund.current_unit_price ?? null,
+      color: 'success.main',
+      icon: '📊',
+      priority: 1,
+      formatValue: (value: number | null) => value ? formatCurrency(value, fund.currency) : 'N/A'
+    },
+    {
+      label: 'Units Owned',
+      value: fund.current_units ?? null,
+      color: 'info.main',
+      icon: '📈',
+      priority: 2,
+      formatValue: (value: number | null) => value ? `${value.toLocaleString()} units` : 'N/A'
+    },
+    {
+      label: 'Total Value',
+      value: fund.current_nav_total ?? null,
+      color: 'primary.main',
+      icon: '💰',
+      priority: 3,
+      formatValue: (value: number | null) => value ? formatCurrency(value, fund.currency) : 'N/A'
+    }
+  ].filter(metric => metric.value !== null);
+
+  if (navMetrics.length === 0) {
+    return null;
+  }
+
+  return (
+    <Paper sx={{ 
+      p: 0.75, 
+      mb: 1, 
+      borderRadius: 2,
+      // Phase 4: Enhanced visual effects
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      '&:hover': {
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.16)',
+        transform: 'translateY(-1px)'
+      }
+    }}>
+      <Box display="flex" alignItems="center" mb={0.5}>
+        <TrendingUp color="success" sx={{ mr: 0.5, fontSize: 16 }} />
+        <Typography variant="h6" sx={{ fontSize: 16 }}>NAV Information</Typography>
+      </Box>
+      
+      {/* Phase 3B: Enhanced card layout with consistent styling */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {navMetrics.map((metric, index) => (
+          <Box 
+            key={index}
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 0.5,
+              borderRadius: 1,
+              backgroundColor: index === 0 ? 'success.50' : 'transparent',
+              border: '1px solid',
+              borderColor: 'grey.200',
+              // Phase 4: Enhanced hover effects for individual items
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: index === 0 ? 'success.100' : 'grey.50',
+                borderColor: 'grey.300',
+                transform: 'translateX(2px)'
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <span style={{ fontSize: '12px' }}>{metric.icon}</span>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                {metric.label}
+              </Typography>
+            </Box>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: metric.color,
+                fontSize: 12,
+                fontWeight: index === 0 ? 700 : 600
+              }}
+            >
+              {metric.formatValue(metric.value)}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    </Paper>
+  );
+};
+
+/**
  * Unit Price Chart Section - NAV performance chart for NAV-based funds
  */
 const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events }) => {
@@ -1131,6 +1236,7 @@ const FundDetail: React.FC = () => {
           </Box>
           
       <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+      <NavInformationSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
       <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
       <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
       <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
