@@ -33,6 +33,7 @@ from ..shared.calculations import orchestrate_irr_base
 # Import models from other domains
 from ..rates.models import RiskFreeRate
 from ..entity.models import Entity
+# Note: TaxStatement is imported as a string reference to avoid circular imports
 
 # Import shared calculations
 from ..shared.calculations import get_equity_change_for_event
@@ -1311,9 +1312,6 @@ class Fund(Base):
         return created_events
 
 
-
-
-
     @with_session
     def update_status(self, session=None):
         """Update the fund's status based on current state.
@@ -1335,8 +1333,11 @@ class Fund(Base):
             new_status = FundStatus.ACTIVE
         else:
             # Fund is realized (equity balance = 0)
-            # For now, default to REALIZED - COMPLETED logic will be implemented in Phase 3
-            new_status = FundStatus.REALIZED
+            # Check if it should be COMPLETED based on tax statements
+            if self.is_final_tax_statement_received(session=session):
+                new_status = FundStatus.COMPLETED
+            else:
+                new_status = FundStatus.REALIZED
         
         if self.status != new_status:
             old_status = self.status
@@ -1353,12 +1354,75 @@ class Fund(Base):
 
     @with_session
     def update_status_after_tax_statement(self, session=None):
-        """Update status after tax statement is added.
-        This checks if the fund should transition from REALIZED to COMPLETED.
+        """Update status after tax statement is added or removed.
+        This checks if the fund should transition between REALIZED and COMPLETED.
         """
-        # Only update if fund is currently REALIZED
-        if self.status == FundStatus.REALIZED:
-            self.update_status(session=session)
+        # Only update if fund is not ACTIVE (i.e., REALIZED or COMPLETED)
+        if self.status == FundStatus.ACTIVE:
+            print(f"Fund '{self.name}' tax statement added, but remains {self.status.value}")
+            return
+        
+        # Check if this tax statement makes the fund COMPLETED
+        if self.is_final_tax_statement_received(session=session):
+            if self.status == FundStatus.REALIZED:
+                # Transition from REALIZED to COMPLETED
+                old_status = self.status
+                self.status = FundStatus.COMPLETED
+                session.commit()
+                print(f"Fund '{self.name}' status updated: {old_status.value} → {self.status.value} (final tax statement received)")
+            else:
+                # Already COMPLETED, no change needed
+                print(f"Fund '{self.name}' tax statement added, but already {self.status.value}")
+        else:
+            if self.status == FundStatus.COMPLETED:
+                # Transition from COMPLETED back to REALIZED (tax statement was deleted)
+                old_status = self.status
+                self.status = FundStatus.REALIZED
+                session.commit()
+                print(f"Fund '{self.name}' status updated: {old_status.value} → {self.status.value} (final tax statement removed)")
+            else:
+                # Already REALIZED, no change needed
+                print(f"Fund '{self.name}' tax statement added, but remains {self.status.value}")
+
+    @with_session
+    def is_final_tax_statement_received(self, session=None):
+        """Check if the fund has received its final tax statement.
+        
+        A fund is considered to have received its final tax statement when:
+        1. Fund is REALIZED (equity balance = 0)
+        2. We have a tax statement after the fund end_date
+        
+        Returns:
+            bool: True if final tax statement criteria are met
+        """
+        from datetime import date
+        
+        # Only check if fund is not ACTIVE (i.e., REALIZED or COMPLETED)
+        if self.status == FundStatus.ACTIVE:
+            return False
+        
+        # Get fund end date (last event date)
+        end_date = self.end_date
+        if not end_date:
+            return False
+        
+        # Get all tax statements for this fund
+        from ..tax.models import TaxStatement
+        tax_statements = session.query(TaxStatement).filter(
+            TaxStatement.fund_id == self.id
+        ).all()
+        
+        if not tax_statements:
+            return False
+        
+        # Check if any tax statement has a statement_date after the fund end_date
+        for statement in tax_statements:
+            if statement.statement_date and statement.statement_date > end_date:
+                return True
+        
+        return False
+
+
 
     @property
     def start_date(self):

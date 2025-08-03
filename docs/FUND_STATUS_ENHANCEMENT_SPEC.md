@@ -123,23 +123,31 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - **Single responsibility**: One method handles all post-event updates
 - **DRY principle**: Don't Repeat Yourself - eliminate redundant calls
 
-### Phase 3: Status-Based Tax Statement Logic
+### Phase 3: Status-Based Tax Statement Logic ✅ (COMPLETED)
 **Goal**: Implement logic to determine when a fund should transition to `COMPLETED`
 
 **Tasks**:
-- [ ] **Completed Status Logic**
-  - [ ] Define criteria for `COMPLETED` status (e.g., fund end date + X months)
-  - [ ] Implement logic to detect when final tax statement event has occurred
-  - [ ] Add configuration for completed status timing
-- [ ] **Tax Statement Event Tracking**
-  - [ ] Track tax statement events after fund realization
-  - [ ] Implement logic for multiple tax statements after realization
-  - [ ] Handle edge cases (missing tax statements, late filings)
+- [x] **Completed Status Logic**
+  - [x] Define criteria for `COMPLETED` status: fund is REALIZED AND has tax statement after end_date
+  - [x] Implement logic to detect when final tax statement event has occurred
+  - [x] Add bidirectional status transitions (REALIZED ↔ COMPLETED)
+- [x] **Tax Statement Event Tracking**
+  - [x] Track tax statement events after fund realization
+  - [x] Implement logic for tax statement additions and deletions
+  - [x] Handle edge cases (missing tax statements, late filings)
+
+**Key Achievements**:
+- ✅ **Simple Criteria**: Fund is COMPLETED when REALIZED AND has tax statement after end_date
+- ✅ **Bidirectional Transitions**: Funds can move REALIZED → COMPLETED and COMPLETED → REALIZED
+- ✅ **Event-Driven Updates**: Status updates triggered by tax statement additions/deletions
+- ✅ **Consistent Logic**: Both methods use `if status != ACTIVE` pattern
+- ✅ **Clear Logging**: Each transition logged with appropriate messages
 
 **Design Principles**:
-- Conservative approach: prefer staying `REALIZED` over premature `COMPLETED`
-- Use tax statement events to determine completion, not legacy fields
-- Clear documentation of completed status criteria
+- **Simple Criteria**: Fund is COMPLETED when REALIZED AND has tax statement after end_date
+- **Bidirectional**: Handle both additions and deletions of tax statements
+- **Consistent Logic**: Use same status check pattern across all methods
+- **Clear Documentation**: Well-documented completion criteria
 
 ### Phase 4: UI and API Updates
 **Goal**: Update frontend and API to support new status system
@@ -248,12 +256,18 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - Event-driven architecture ensures consistent status updates
 - Single source of truth for all post-event processing
 
-**Next Phase: Phase 3 - Status-Based Tax Statement Logic**
-- Implement logic to determine when a fund should transition to `COMPLETED`
-- Define criteria for `COMPLETED` status (e.g., fund end date + X months)
-- Implement logic to detect when final tax statement event has occurred
-- Add configuration for completed status timing
-- Handle edge cases (missing tax statements, late filings)
+**Phase 3: Status-Based Tax Statement Logic** ✅ (COMPLETED)
+- Implemented logic to determine when a fund should transition to `COMPLETED`
+- Defined criteria: fund is REALIZED AND has tax statement after end_date
+- Implemented bidirectional transitions (REALIZED ↔ COMPLETED)
+- Added event-driven updates for tax statement additions/deletions
+- Handled edge cases with consistent logic across all methods
+
+**Next Phase: Phase 4 - UI and API Updates**
+- Update frontend and API to support new status system
+- Add status indicators with appropriate colors/icons
+- Update fund list to show new status values
+- Add status filtering capabilities
 
 ## Success Metrics
 - [x] All existing funds correctly mapped to new status system
