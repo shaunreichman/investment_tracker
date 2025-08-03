@@ -13,57 +13,78 @@ Replace on-demand IRR calculations in test scripts with domain-driven IRR storag
 
 ## Implementation Strategy
 
-### Phase 1: Database Foundation
+### Phase 1: Database Foundation ✅ **COMPLETED**
 **Goal**: Add IRR storage columns to Fund model
 **Tasks**:
-- [ ] Add `irr_gross`, `irr_after_tax`, `irr_real` columns to Fund model
-- [ ] Create Alembic migration for new columns
-- [ ] Update model documentation and field classifications
+- [x] Add `irr_gross`, `irr_after_tax`, `irr_real` columns to Fund model
+- [x] Create Alembic migration for new columns
+- [x] Update model documentation and field classifications
 **Design Principles**:
 - Use nullable Float columns to allow `None` for incomplete funds
 - Follow existing field classification patterns (CALCULATED fields)
 - Maintain backward compatibility with existing data
 - Leverage existing IRR calculation infrastructure from shared/fund calculations
 
-### Phase 2: Domain Logic Integration
+### Phase 2: Domain Logic Integration ✅ **COMPLETED**
 **Goal**: Integrate IRR calculations into fund status update process
 **Tasks**:
-- [ ] Update `update_status()` method to calculate and store IRRs based on status
-- [ ] Add IRR storage fields to Fund model (`irr_gross`, `irr_after_tax`, `irr_real`)
-- [ ] Use existing `calculate_irr()`, `calculate_after_tax_irr()`, `calculate_real_irr()` methods
-- [ ] Ensure daily interest charges exist before real IRR calculation
+- [x] Update `update_status()` method to calculate and store IRRs based on status
+- [x] Add IRR storage fields to Fund model (`irr_gross`, `irr_after_tax`, `irr_real`)
+- [x] Use existing `calculate_irr()`, `calculate_after_tax_irr()`, `calculate_real_irr()` methods
+- [x] Ensure daily interest charges exist before real IRR calculation
 **Design Principles**:
 - Leverage existing IRR calculation methods that already use `orchestrate_irr_base()`
-- Calculate IRRs only when status changes (ACTIVE → REALIZED → COMPLETED)
+- Calculate IRRs when status changes OR when events are modified (even if status unchanged)
 - Store calculated IRRs in database fields for performance
 - Maintain existing IRR calculation logic and accuracy
 
 
 
-### Phase 3: Data Validation
+### Phase 3A: Test Script Updates ✅ **COMPLETED**
+**Goal**: Update test scripts to use stored IRRs instead of on-demand calculations
+**Tasks**:
+- [x] Remove on-demand IRR calculations from `test_main.py`
+- [x] Update test output to read stored IRR values (`fund.irr_gross`, `fund.irr_after_tax`, `fund.irr_real`)
+- [x] Ensure test scripts rely on domain methods for IRR storage
+- [x] Maintain existing test output format for compatibility
+**Design Principles**:
+- Remove direct calls to `calculate_irr()`, `calculate_after_tax_irr()`, `calculate_real_irr()` from test scripts
+- Use stored IRR values that are calculated by domain methods during status updates
+- Preserve existing test output format and structure
+- Ensure tests validate business rules (status-based IRR availability)
+
+### Phase 3B: Baseline Validation ✅ **COMPLETED**
 **Goal**: Validate IRR storage works with existing test data
 **Tasks**:
-- [ ] Run `run_test_with_baseline.py` to create test data and validate IRR storage
-- [ ] Compare output against `tests/output/test_main_output_baseline.txt`
-- [ ] Verify IRR values match baseline expectations
-- [ ] Audit and investigate any differences between new output and baseline
-- [ ] Ensure fund statuses trigger proper IRR calculations
+- [x] Run `run_test_with_baseline.py` to create test data and validate IRR storage
+- [x] Compare output against `tests/output/test_main_output_baseline.txt`
+- [x] Verify IRR values match baseline expectations
+- [x] Audit and investigate any differences between new output and baseline
+- [x] Ensure fund statuses trigger proper IRR calculations
 **Design Principles**:
 - Use existing baseline comparison infrastructure for validation
 - Leverage existing test data creation and comprehensive output comparison
 - Maintain existing test coverage and edge case handling
 - Investigate any discrepancies to ensure IRR storage accuracy
 
-### Phase 4: Test Integration
+**Results**:
+- ✅ Status transitions working correctly (REALIZED → COMPLETED)
+- ✅ IRR calculations working correctly (all three types for COMPLETED funds)
+- ✅ Business rules enforced (ACTIVE: no IRRs, REALIZED: gross only, COMPLETED: all three)
+- ✅ System events created correctly (daily charges, EOFY debt costs, tax payments)
+
+### Phase 4: Test Integration ✅ **COMPLETED**
 **Goal**: Update tests to use stored IRRs instead of on-demand calculations
 **Tasks**:
-- [ ] Remove on-demand IRR calculations from test scripts
-- [ ] Update test assertions to read stored IRR values
-- [ ] Validate test output matches baseline expectations
+- [x] Remove on-demand IRR calculations from test scripts
+- [x] Update test assertions to read stored IRR values
+- [x] Validate test output matches baseline expectations
 **Design Principles**:
 - Maintain test coverage for all IRR calculation scenarios
 - Ensure tests validate business rules (status-based IRR availability)
 - Preserve existing test output format for compatibility
+
+**Note**: Phase 4 objectives were completed as part of Phases 3A and 3B implementation and validation.
 
 ## Success Metrics
 
