@@ -1419,10 +1419,24 @@ class Fund(Base):
         if not tax_statements:
             return False
         
-        # Check if any tax statement has a statement_date after the fund end_date
+        # Check if any tax statement covers a financial year after the fund end_date
+        # This means the tax statement covers a period after the fund ended
         for statement in tax_statements:
-            if statement.statement_date and statement.statement_date > end_date:
-                return True
+            if statement.financial_year:
+                # Parse financial year (e.g., "2022-23" -> 2022, "2023-24" -> 2023)
+                try:
+                    fy_start_year = int(statement.financial_year.split('-')[0])
+                    # Check if this financial year starts after the fund ended
+                    if fy_start_year > end_date.year:
+                        return True
+                    elif fy_start_year == end_date.year:
+                        # If same year, check if fund ended before July (start of financial year)
+                        if end_date.month < 7:  # Fund ended before financial year started
+                            return True
+                except (ValueError, IndexError):
+                    # If we can't parse the financial year, fall back to statement_date
+                    if statement.statement_date and statement.statement_date > end_date:
+                        return True
         
         return False
 
@@ -1455,24 +1469,53 @@ class Fund(Base):
             return first_event.event_date
         return None
 
-    @property
-    def end_date(self):
-        """Return the date of the last event if the fund is exited (equity balance is zero), else None.
-        Used as the fund's effective end date for calculations.
+    def calculate_end_date(self, session=None):
+        """Calculate the fund's end date based on current events.
+        
+        Returns the date of the last equity or distribution event after equity balance reached zero.
+        Excludes administrative events (tax payments, interest charges).
         """
         from sqlalchemy.orm import object_session
+        
         # If fund still has equity balance > 0, no end date yet
         if not isinstance(self.current_equity_balance, (Column, ColumnElement)) and self.current_equity_balance is not None and self.current_equity_balance > 0:
             return None
-        session = object_session(self)
+        
+        session = object_session(self) if session is None else session
         if session is None:
             return None
-        last_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id
-        ).order_by(FundEvent.event_date.desc()).first()
-        if last_event and not isinstance(last_event.event_date, (Column, ColumnElement)):
-            return last_event.event_date
-        return None
+        
+        # Get all events that could affect end date
+        relevant_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type.in_([
+                EventType.CAPITAL_CALL,
+                EventType.RETURN_OF_CAPITAL, 
+                EventType.UNIT_PURCHASE,
+                EventType.UNIT_SALE,
+                EventType.DISTRIBUTION
+            ])
+        ).order_by(FundEvent.event_date.desc()).all()
+        
+        if not relevant_events:
+            return None
+        
+        # Find the last event after equity balance reached zero
+        for event in relevant_events:
+            if event.current_equity_balance is not None and event.current_equity_balance == 0:
+                return event.event_date
+        
+        # If no events after equity balance reached zero, return last equity event
+        equity_events = [e for e in relevant_events if e.event_type in [
+            EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, 
+            EventType.UNIT_PURCHASE, EventType.UNIT_SALE
+        ]]
+        return equity_events[0].event_date if equity_events else None
+
+    @property
+    def end_date(self):
+        """Return the fund's end date (calculated on demand)"""
+        return self.calculate_end_date()
 
     @with_session
     def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=None, return_cashflows=False):
