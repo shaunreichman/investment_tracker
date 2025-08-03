@@ -149,6 +149,46 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - **Consistent Logic**: Use same status check pattern across all methods
 - **Clear Documentation**: Well-documented completion criteria
 
+### Phase 3b: Enhanced End Date Logic
+**Goal**: Implement sophisticated end date calculation that distinguishes between equity events, income events, and administrative events
+
+**Tasks**:
+- [ ] **Redefine End Date Logic**
+  - [ ] Update `end_date` property to exclude tax events and tax payments
+  - [ ] Include only equity events (capital calls, returns, unit purchases/sales) and distributions
+  - [ ] Set end date to last equity/distribution event after equity balance reaches zero
+  - [ ] Handle edge case: if no events after equity balance reaches zero, use last equity event
+- [ ] **Event Type Classification**
+  - [ ] Define equity events: CAPITAL_CALL, RETURN_OF_CAPITAL, UNIT_PURCHASE, UNIT_SALE
+  - [ ] Define income events: DISTRIBUTION (all types)
+  - [ ] Define administrative events: TAX_PAYMENT, DAILY_RISK_FREE_INTEREST_CHARGE, EOFY_DEBT_COST
+  - [ ] Update end date logic to exclude administrative events
+- [ ] **Business Logic Implementation**
+  - [ ] Implement logic: "Last equity or distribution event since equity balance went to zero"
+  - [ ] Handle case where distributions continue after fund "ended"
+  - [ ] Ensure tax statements are compared against correct end date
+  - [ ] Update tax statement completion logic to use new end date
+- [ ] **Event-Driven End Date Updates**
+  - [ ] Update end date after capital events via `recalculate_capital_chain_from()`
+  - [ ] Update end date after distribution events via distribution methods
+  - [ ] Ensure end date recalculates on event creation, updates, and deletions
+  - [ ] Handle both equity and distribution events in centralized post-event processing
+
+**Key Principles**:
+- **Equity Events**: Define when fund actually "ended" (capital returned)
+- **Income Events**: Can continue after fund "ended" (final distributions)
+- **Administrative Events**: Should not affect end date (tax payments, interest charges)
+- **Accurate Tax Statement Logic**: Compare tax statement financial years against actual fund end date
+- **Dynamic Updates**: End date recalculates whenever relevant events change
+
+**Design Principles**:
+- **Business Accuracy**: End date reflects when fund actually ceased operations
+- **Event Type Awareness**: Distinguish between different types of events
+- **Tax Statement Precision**: Accurate comparison of tax statement periods vs fund end date
+- **Future-Proof**: Handle ongoing distributions after fund "ended"
+- **Event-Driven**: End date updates automatically when events change
+- **Centralized Processing**: All post-event updates handled in one place
+
 ### Phase 4: UI and API Updates
 **Goal**: Update frontend and API to support new status system
 
@@ -263,6 +303,12 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - Added event-driven updates for tax statement additions/deletions
 - Handled edge cases with consistent logic across all methods
 
+**Phase 3b: Enhanced End Date Logic** 🔄 (IN PROGRESS)
+- Redefine end date logic to distinguish between equity, income, and administrative events
+- Update end date calculation to exclude tax events and tax payments
+- Implement business logic: "Last equity or distribution event since equity balance went to zero"
+- Ensure accurate tax statement completion logic using correct end date
+
 **Next Phase: Phase 4 - UI and API Updates**
 - Update frontend and API to support new status system
 - Add status indicators with appropriate colors/icons
@@ -280,6 +326,86 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - [ ] Comprehensive test coverage for all scenarios
 
 ## Example Implementation
+
+### **Enhanced End Date Implementation**
+```python
+def calculate_end_date(self, session=None):
+    """Calculate the fund's end date based on current events.
+    
+    Returns the date of the last equity or distribution event after equity balance reached zero.
+    Excludes administrative events (tax payments, interest charges).
+    """
+    from sqlalchemy.orm import object_session
+    
+    # If fund still has equity balance > 0, no end date yet
+    if not isinstance(self.current_equity_balance, (Column, ColumnElement)) and self.current_equity_balance is not None and self.current_equity_balance > 0:
+        return None
+    
+    session = object_session(self) if session is None else session
+    if session is None:
+        return None
+    
+    # Get all events that could affect end date
+    relevant_events = session.query(FundEvent).filter(
+        FundEvent.fund_id == self.id,
+        FundEvent.event_type.in_([
+            EventType.CAPITAL_CALL,
+            EventType.RETURN_OF_CAPITAL, 
+            EventType.UNIT_PURCHASE,
+            EventType.UNIT_SALE,
+            EventType.DISTRIBUTION
+        ])
+    ).order_by(FundEvent.event_date.desc()).all()
+    
+    if not relevant_events:
+        return None
+    
+    # Find the last event after equity balance reached zero
+    for event in relevant_events:
+        if event.current_equity_balance is not None and event.current_equity_balance == 0:
+            return event.event_date
+    
+    # If no events after equity balance reached zero, return last equity event
+    equity_events = [e for e in relevant_events if e.event_type in [
+        EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, 
+        EventType.UNIT_PURCHASE, EventType.UNIT_SALE
+    ]]
+    return equity_events[0].event_date if equity_events else None
+
+@property
+def end_date(self):
+    """Return the fund's end date (calculated on demand)"""
+    return self.calculate_end_date()
+```
+
+### **Event-Driven Updates**
+```python
+def recalculate_capital_chain_from(self, event, session=None):
+    """Centralized post-event processing for capital events"""
+    # 1. Recalculate all capital events
+    self._recalculate_subsequent_capital_fund_events_after_capital_event(events, idx, session=session)
+    # 2. Update fund-level summary fields
+    self.update_fund_summary_fields_after_capital_event(session=session)
+    # 3. Update fund status after equity event
+    self.update_status_after_equity_event(session=session)
+    # 4. End date automatically recalculates via property when accessed
+    # 5. Commit session
+    session.commit()
+
+def add_distribution(self, amount, event_date, distribution_type=DistributionType.INTEREST, description=None, reference_number=None, session=None):
+    """Add distribution with automatic end date update"""
+    event = FundEvent.create_distribution_static(
+        fund_id=self.id, event_date=event_date, amount=amount,
+        distribution_type=distribution_type, description=description, 
+        reference_number=reference_number, session=session
+    )
+    session.add(event)
+    session.flush()
+    
+    # End date automatically recalculates via property when accessed
+    session.commit()
+    return event
+```
 
 ### **Database Schema Update**
 ```python
@@ -308,17 +434,6 @@ def update_status_after_tax_statement(self, session=None):
         self.status = FundStatus.COMPLETED
         session.commit()
         print(f"Fund '{self.name}' status updated to COMPLETED")
-
-def recalculate_capital_chain_from(self, event, session=None):
-    """Centralized post-event processing including status updates"""
-    # 1. Recalculate all capital events
-    self._recalculate_subsequent_capital_fund_events_after_capital_event(events, idx, session=session)
-    # 2. Update fund-level summary fields
-    self.update_fund_summary_fields_after_capital_event(session=session)
-    # 3. Update fund status after equity event
-    self.update_status_after_equity_event(session=session)
-    # 4. Commit session
-    session.commit()
 ```
 
 ## Architectural Improvements
