@@ -20,6 +20,8 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { MonetizationOn } from '@mui/icons-material';
 import { useUpdateFundEvent } from '../hooks/useFunds';
 import { ExtendedFundEvent } from '../types/api';
+import { validateField } from '../utils/validators';
+import { formatNumber, parseNumber, formatWithThousandSeparator, getEventTypeLabelSimple } from '../utils/helpers';
 
 interface EditFundEventModalProps {
   open: boolean;
@@ -160,64 +162,6 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       setValidationErrors({});
     }
   }, [open, event]);
-
-  const formatNumber = (value: string | number): string => {
-    if (value === null || value === undefined || value === '') return '';
-    const num = typeof value === 'number' ? value : parseFloat(value.toString().replace(/,/g, ''));
-    if (isNaN(num)) return '';
-    return num.toLocaleString('en-US');
-  };
-  const parseNumber = (value: string): string => {
-    if (!value) return '';
-    return value.replace(/,/g, '');
-  };
-
-  // Add a helper function for formatting numbers with thousand separators
-  const formatWithThousandSeparator = (value: string | number): string => {
-    if (value === null || value === undefined || value === '') return '';
-    const num = typeof value === 'number' ? value : parseFloat(value.replace(/,/g, ''));
-    if (isNaN(num)) return '';
-    return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
-  };
-
-
-  const validateField = useCallback((field: string, value: string): string | undefined => {
-    if (!value.trim()) {
-      if (field === 'event_date') return 'Event date is required';
-      if (field === 'amount' && ['CAPITAL_CALL', 'RETURN_OF_CAPITAL', 'DISTRIBUTION'].includes(event?.event_type || '')) {
-        return 'Amount is required';
-      }
-      if (field === 'units_purchased' && event?.event_type === 'UNIT_PURCHASE') {
-        return 'Units purchased is required';
-      }
-      if (field === 'units_sold' && event?.event_type === 'UNIT_SALE') {
-        return 'Units sold is required';
-      }
-      if (field === 'unit_price' && ['UNIT_PURCHASE', 'UNIT_SALE'].includes(event?.event_type || '')) {
-        return 'Unit price is required';
-      }
-      if (field === 'nav_per_share' && event?.event_type === 'NAV_UPDATE') {
-        return 'NAV per share is required';
-      }
-      return undefined;
-    }
-
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-      return 'Must be a valid number';
-    }
-
-    if (numValue < 0) {
-      return 'Must be positive';
-    }
-
-    // Specific validations
-    if (field === 'units_sold' && event?.event_type === 'UNIT_SALE') {
-      // This will be validated on the backend
-    }
-
-    return undefined;
-  }, [event]);
 
   const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
@@ -468,18 +412,6 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       await updateFundEvent.mutate(payload);
   };
 
-  const getEventTypeLabel = (eventType: string): string => {
-    switch (eventType) {
-      case 'CAPITAL_CALL': return 'Capital Call';
-      case 'RETURN_OF_CAPITAL': return 'Capital Return';
-      case 'UNIT_PURCHASE': return 'Unit Purchase';
-      case 'UNIT_SALE': return 'Unit Sale';
-      case 'NAV_UPDATE': return 'NAV Update';
-      case 'DISTRIBUTION': return 'Distribution';
-      default: return eventType;
-    }
-  };
-
   if (!event) return null;
 
   const DIVIDEND_SUB_TEMPLATES = [
@@ -497,7 +429,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">
-            Edit {getEventTypeLabel(event.event_type)}
+            Edit {getEventTypeLabelSimple(event.event_type)}
           </Typography>
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
