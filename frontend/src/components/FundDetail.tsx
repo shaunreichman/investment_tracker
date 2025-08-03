@@ -361,14 +361,14 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
       case 'realized':
         return { 
           value: 'Realized', 
-          color: '#2196f3', // Light blue
+          color: '#424242', // Dark gray
           icon: '📊',
           tooltip: 'All capital has been returned. Fund will be completed once the final tax statement is added.'
         };
       case 'completed':
         return { 
           value: 'Completed', 
-          color: '#1976d2', // Blue
+          color: '#000000', // Black
           icon: '📊',
           tooltip: 'Fund is fully realized and all tax obligations are complete'
         };

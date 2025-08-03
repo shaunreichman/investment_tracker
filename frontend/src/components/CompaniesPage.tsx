@@ -123,9 +123,9 @@ const CompaniesPage: React.FC = () => {
       case 'active':
         return '#4caf50'; // Lighter green
       case 'realized':
-        return '#2196f3'; // Light blue
+        return '#424242'; // Dark gray
       case 'completed':
-        return '#1976d2'; // Blue
+        return '#000000'; // Black
       default:
         return 'default';
     }
