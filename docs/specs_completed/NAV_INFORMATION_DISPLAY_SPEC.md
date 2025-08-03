@@ -1,0 +1,109 @@
+# NAV Information Display Specification
+
+> ✅ **COMPLETED** - NAV information has been successfully integrated into the Fund Detail page with contextual display logic based on fund type and status.
+
+## Overview
+Add a new NAV information card to the Fund Detail page that displays current NAV data for NAV-based funds. This will provide users with real-time insights into their NAV-based fund positions, showing current NAV per unit, total units owned, and total current value.
+
+## Design Philosophy
+- **Contextual Display**: Only show NAV information for NAV-based funds where it's relevant
+- **Consistent Styling**: Follow existing card design patterns for visual consistency
+- **Real-time Data**: Display current calculated values from the database
+- **Clear Information Hierarchy**: Present the most important NAV metrics prominently
+
+## Implementation Strategy
+
+### Phase 1: Backend Foundation
+**Goal**: Ensure NAV data is properly exposed through the API
+**Tasks**:
+- [x] Verify NAV fields are included in fund API responses
+- [x] Confirm NAV data is being calculated and updated correctly
+- [x] Test API endpoints return current NAV information
+
+**Design Principles**:
+- Leverage existing `current_units`, `current_unit_price`, and `current_nav_total` fields
+- Ensure data consistency with existing fund calculations
+- Maintain API response format consistency
+
+### Phase 2: Frontend Component Development
+**Goal**: Integrate NAV information into the existing Equity section
+**Tasks**:
+- [x] Integrate NAV metrics directly into `EquitySection` component
+- [x] Implement conditional rendering for NAV-based funds only
+- [x] Display current NAV per unit, total units, and total value
+- [x] Apply consistent styling with existing cards
+- [x] Add contextual section title: "Equity & NAV Summary" for NAV funds
+
+**Design Principles**:
+- Integrate NAV information logically with equity data
+- Use consistent Material-UI styling and spacing
+- Implement proper conditional display based on fund type and status
+- Match visual hierarchy of other summary sections
+
+### Phase 3: Integration and Layout
+**Goal**: Integrate NAV information into the Fund Detail page layout
+**Tasks**:
+- [x] Add NAV information section to Fund Detail sidebar
+- [x] Position appropriately within the existing card hierarchy
+- [x] Ensure responsive design works on all screen sizes
+- [x] Test with various NAV-based fund scenarios
+
+**Design Principles**:
+- Maintain sidebar layout consistency
+- Ensure proper spacing and visual flow
+- Support responsive design patterns
+- Follow existing component integration patterns
+
+### Phase 4: Testing and Validation
+**Goal**: Ensure NAV information displays correctly and updates properly
+**Tasks**:
+- [x] Test with NAV-based funds that have NAV update events
+- [x] Verify calculations match expected values
+- [x] Test conditional rendering (hidden for cost-based funds)
+- [x] Validate responsive design on different screen sizes
+
+**Design Principles**:
+- Ensure data accuracy and consistency
+- Validate user experience across different scenarios
+- Confirm proper error handling and edge cases
+
+## Success Metrics
+- **Functionality**: NAV information displays correctly for NAV-based funds
+- **User Experience**: Information is clearly presented and easy to understand
+- **Performance**: No impact on page load times or responsiveness
+- **Consistency**: Visual design matches existing components
+- **Reliability**: Data updates correctly when NAV events are added/modified
+
+## Technical Requirements
+
+### Data Fields
+- `current_unit_price`: Current NAV per unit (from latest NAV update)
+- `current_units`: Total number of units owned
+- `current_nav_total`: Total current value (units × NAV)
+
+### Component Structure
+```typescript
+// Integrated into EquitySection with enhanced conditional logic
+const isActiveNavFund = fund.tracking_type === 'nav_based' && fund.status === 'active';
+
+// NAV metrics included in equityMetrics array with conditional display
+```
+
+### Display Logic
+- **Conditional Rendering**: Only show for active NAV-based funds (`fund.tracking_type === 'nav_based' && fund.status === 'active'`)
+- **Contextual Labels**: "Current Cost of Units" for active NAV funds, "Current Balance" for cost-based funds
+- **Data Validation**: Handle null/undefined values gracefully
+- **Formatting**: Use consistent currency and number formatting
+
+### Styling Guidelines
+- **Card Design**: Match existing Paper component styling
+- **Typography**: Use consistent font sizes and weights
+- **Colors**: Follow existing color scheme and hierarchy
+- **Icons**: Use appropriate icons for NAV-related metrics
+- **Spacing**: Maintain consistent padding and margins
+
+## Future Enhancements
+- **Gains/Losses**: Add unrealized gains/losses calculation
+- **Historical NAV**: Show NAV performance over time
+- **Cost Basis**: Display average cost per unit
+- **Performance Metrics**: Add NAV-based performance indicators 

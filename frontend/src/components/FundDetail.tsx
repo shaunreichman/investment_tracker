@@ -47,20 +47,29 @@ interface SectionProps {
 }
 
 /**
- * Equity Section - Current investment position and value
+ * Equity & NAV Summary Section - Current investment position and NAV data
  */
 const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Phase 3.2: Enhanced data organization for equity metrics
+  // Enhanced data organization for equity and NAV metrics
+  const isActiveNavFund = fund.tracking_type === 'nav_based' && fund.status === 'active';
+  
   const equityMetrics = [
-    {
+    // Current Balance for cost-based funds, Current Cost of Units only for active NAV-based funds
+    ...(fund.tracking_type === 'cost_based' ? [{
       label: 'Current Balance',
       value: fund.current_equity_balance ?? null,
       color: 'primary.main',
       icon: '💰',
       priority: 1
-    },
+    }] : isActiveNavFund ? [{
+      label: 'Current Cost of Units',
+      value: fund.current_equity_balance ?? null,
+      color: 'primary.main',
+      icon: '💰',
+      priority: 1
+    }] : []),
     {
-      label: 'Average Balance',
+      label: fund.tracking_type === 'nav_based' ? 'Average Cost of Units' : 'Average Balance',
       value: fund.average_equity_balance ?? null,
       color: 'primary.main',
       icon: '📊',
@@ -73,13 +82,33 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
       icon: '📋',
       priority: 3
     },
-    ...(fund.tracking_type === 'nav_based' ? [{
-      label: 'NAV Fund Value',
-      value: fund.current_nav_fund_value ?? null,
-      color: 'success.main',
-      icon: '📈',
-      priority: 4
-    }] : [])
+    // NAV-specific metrics for NAV-based funds (only when active)
+    ...(isActiveNavFund ? [
+      {
+        label: 'Current NAV',
+        value: fund.current_unit_price ?? null,
+        color: 'success.main',
+        icon: '📊',
+        priority: 4,
+        formatValue: (value: number | null) => value ? formatCurrency(value, fund.currency) : 'N/A'
+      },
+      {
+        label: 'Units Owned',
+        value: fund.current_units ?? null,
+        color: 'info.main',
+        icon: '📈',
+        priority: 5,
+        formatValue: (value: number | null) => value ? `${value.toLocaleString()} units` : 'N/A'
+      },
+      {
+        label: 'NAV Market Value',
+        value: fund.current_nav_total ?? null,
+        color: 'success.main',
+        icon: '💰',
+        priority: 6,
+        formatValue: (value: number | null) => value ? formatCurrency(value, fund.currency) : 'N/A'
+      }
+    ] : [])
   ].filter(metric => metric.value !== null);
 
   return (
@@ -97,7 +126,9 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
     }}>
       <Box display="flex" alignItems="center" mb={0.5}>
         <AccountBalance color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
-        <Typography variant="h6" sx={{ fontSize: 16 }}>Equity Position</Typography>
+        <Typography variant="h6" sx={{ fontSize: 16 }}>
+          {fund.tracking_type === 'nav_based' ? 'Equity & NAV Summary' : 'Equity Position'}
+        </Typography>
       </Box>
       
       {/* Phase 3B: Enhanced card layout with consistent styling */}
@@ -137,7 +168,7 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
                 fontWeight: index === 0 ? 700 : 600
               }}
             >
-              {formatCurrency(metric.value, fund.currency)}
+              {metric.formatValue ? metric.formatValue(metric.value) : formatCurrency(metric.value, fund.currency)}
           </Typography>
         </Box>
         ))}
@@ -556,6 +587,8 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
     </Paper>
   );
 };
+
+
 
 /**
  * Unit Price Chart Section - NAV performance chart for NAV-based funds

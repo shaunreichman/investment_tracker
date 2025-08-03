@@ -93,6 +93,7 @@ export interface Fund {
   final_tax_statement_received: boolean;
   current_units?: number;
   current_unit_price?: number;
+  current_nav_total?: number;
   total_cost_basis?: number;
   created_at: string;
   updated_at: string;

@@ -118,6 +118,11 @@ The `docs/FUND_DETAIL_MODERNIZATION_SPEC.md` demonstrates the gold standard for 
 - **Code-free** focus on what to build, not how to build it
 - **Logical progression** from foundation to polish
 
+### **Specification Completion and Archiving**
+- **Mark specs as completed** by updating all task checkboxes and adding a completion banner
+- **Move completed specs** to `docs/specs_completed/` folder for organization
+- **Update spec content** to reflect actual implementation if it differs from original plan
+
 ---
 
 ## Table of Contents
@@ -430,6 +435,11 @@ event = FundEvent(event_type=EventType.TAX_PAYMENT, ...)  # System should create
 - **All recalculation logic is centralized** in the orchestrator and single-pass methods for maintainability.
 - **Session management**: Unified methods require a session parameter, as with all domain methods.
 
+### **Fund Status and IRR Storage**
+- **Status-Based Logic**: Use `fund.status === 'active'` for conditional rendering and calculations
+- **IRR Storage**: Status determines which IRRs are calculated (`irr_gross`, `irr_after_tax`, `irr_real`)
+- **Status Transitions**: ACTIVE → REALIZED → COMPLETED lifecycle with automatic IRR updates
+
 ### **Example Usage**
 ```python
 # NAV-based fund: add a unit purchase
@@ -517,6 +527,15 @@ interface FundDetailProps {
   onEventUpdated?: (event: FundEvent) => void;
   onEventDeleted?: (eventId: number) => void;
 }
+
+// ✅ CORRECT: Section-based architecture with consistent props
+interface SectionProps {
+  fund: ExtendedFund;
+  formatCurrency: (amount: number | null, currency?: string) => string;
+  formatDate: (dateString: string | null) => string;
+  events?: ExtendedFundEvent[];
+}
+```
 
 // ✅ CORRECT: Event handler types
 const handleEventCreated = useCallback((event: FundEvent) => {
@@ -917,6 +936,11 @@ const ChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate
 - **Type Safety**: TypeScript ensures correct prop usage
 - **Maintainability**: Changes to data structure affect all sections consistently
 
+### **NAV-Based Fund Display Patterns**
+- **Conditional Display Logic**: Use `isActiveNavFund` pattern for NAV metrics
+- **Contextual Labels**: "Current Cost of Units" for active NAV funds, "Current Balance" for cost-based funds
+- **Status-Based Rendering**: Only show NAV metrics (Current NAV, Units Owned, NAV Market Value) for active NAV funds
+
 ---
 
 ## API Integration Patterns
@@ -1139,6 +1163,11 @@ cd frontend && npm install      # Frontend
 - **CALCULATED**: Set by system only, never manually
 - **HYBRID**: Can be set manually OR calculated (with clear precedence)
 
+### **Fund Status and IRR Fields**
+- **Status Fields**: `status` (ACTIVE/REALIZED/COMPLETED) - calculated based on equity balance and tax statements
+- **IRR Storage**: `irr_gross`, `irr_after_tax`, `irr_real` - calculated and stored based on fund status
+- **NAV Fields**: `current_units`, `current_unit_price`, `current_nav_total` - calculated for NAV-based funds only
+
 ### **Implementation: Comments on Field Initialization**
 ```python
 class Fund(Base):
@@ -1187,11 +1216,19 @@ expected_duration_months = Column(Integer)  # (MANUAL) expected fund duration in
 ```python
 current_equity_balance = Column(Float, default=0.0)  # (CALCULATED) current equity balance from capital calls - returns
 average_equity_balance = Column(Float, default=0.0)  # (CALCULATED) time-weighted average equity balance
-is_active = Column(Boolean, default=True)  # (CALCULATED) whether fund has positive equity balance
-final_tax_statement_received = Column(Boolean, default=False)  # (CALCULATED) whether all expected tax statements received
-_current_units = Column('current_units', Float)  # (CALCULATED) current number of units owned
-_current_unit_price = Column('current_unit_price', Float)  # (CALCULATED) current unit price from latest NAV update
-_total_cost_basis = Column('total_cost_basis', Float)  # (CALCULATED) total cost basis from capital calls - capital returns
+status = Column(Enum(FundStatus), default=FundStatus.ACTIVE)  # (CALCULATED) fund status (ACTIVE/REALIZED/COMPLETED)
+end_date = Column(Date, nullable=True)  # (CALCULATED) fund end date based on last event after equity balance reached zero
+
+# IRR storage fields (CALCULATED)
+irr_gross = Column(Float, nullable=True)  # (CALCULATED) Gross IRR when realized/completed
+irr_after_tax = Column(Float, nullable=True)  # (CALCULATED) After-tax IRR when completed
+irr_real = Column(Float, nullable=True)  # (CALCULATED) Real IRR when completed
+
+# NAV-based fund specific fields (CALCULATED)
+current_units = Column(Float, default=0.0)  # (CALCULATED) current number of units owned
+current_unit_price = Column(Float, default=0.0)  # (CALCULATED) current unit price from latest NAV update
+current_nav_total = Column(Float, default=0.0)  # (CALCULATED) current NAV total (units * unit price)
+
 created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
 updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) timestamp when record was last updated
 ```
