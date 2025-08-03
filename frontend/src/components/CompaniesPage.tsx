@@ -30,6 +30,8 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import CreateFundModal from './CreateFundModal';
 import { useCompanyFunds } from '../hooks/useInvestmentCompanies';
+import { formatCurrency } from '../utils/formatters';
+import { getTrackingTypeColor, getStatusTooltip, getStatusColor } from '../utils/helpers';
 
 interface Company {
   id: number;
@@ -83,52 +85,6 @@ const CompaniesPage: React.FC = () => {
   const handleFundCreated = () => {
     // Refresh the funds list using the centralized hook
     refetch();
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-AU', {
-      style: 'currency',
-      currency: 'AUD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const getTrackingTypeColor = (trackingType: string) => {
-    switch (trackingType.toLowerCase()) {
-      case 'nav_based':
-        return 'primary';
-      case 'cost_based':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
-
-  const getStatusTooltip = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'Fund is still invested and has capital at risk';
-      case 'realized':
-        return 'All capital has been returned. Fund will be completed once the final tax statement is added.';
-      case 'completed':
-        return 'Fund is fully realized and all tax obligations are complete';
-      default:
-        return 'Unknown fund status';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return '#4caf50'; // Lighter green
-      case 'realized':
-        return '#424242'; // Dark gray
-      case 'completed':
-        return '#000000'; // Black
-      default:
-        return 'default';
-    }
   };
 
   if (loading) {

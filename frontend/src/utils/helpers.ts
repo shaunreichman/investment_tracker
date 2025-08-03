@@ -106,6 +106,58 @@ export const getStatusInfo = (status: string) => {
 };
 
 /**
+ * Get tracking type color for display
+ * @param trackingType - The fund tracking type string
+ * @returns Material-UI color value
+ */
+export const getTrackingTypeColor = (trackingType: string): 'primary' | 'secondary' | 'default' => {
+  switch (trackingType.toLowerCase()) {
+    case 'nav_based':
+      return 'primary';
+    case 'cost_based':
+      return 'secondary';
+    default:
+      return 'default';
+  }
+};
+
+/**
+ * Get status tooltip text for display
+ * @param status - The fund status string
+ * @returns Tooltip text
+ */
+export const getStatusTooltip = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'Fund is still invested and has capital at risk';
+    case 'realized':
+      return 'All capital has been returned. Fund will be completed once the final tax statement is added.';
+    case 'completed':
+      return 'Fund is fully realized and all tax obligations are complete';
+    default:
+      return 'Unknown fund status';
+  }
+};
+
+/**
+ * Get status color for display
+ * @param status - The fund status string
+ * @returns Color value
+ */
+export const getStatusColor = (status: string): string => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return '#4caf50'; // Lighter green
+    case 'realized':
+      return '#424242'; // Dark gray
+    case 'completed':
+      return '#000000'; // Black
+    default:
+      return 'default';
+  }
+};
+
+/**
  * Check if fund is an active NAV-based fund
  * @param fund - The fund object
  * @returns True if fund is active and NAV-based

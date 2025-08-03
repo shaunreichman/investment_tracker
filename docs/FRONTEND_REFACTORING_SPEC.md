@@ -73,8 +73,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] Update CreateFundEventModal.tsx to use shared validators
   - [ ] Update EditFundEventModal.tsx to use shared validators
   - [ ] Update CreateFundModal.tsx to use shared validators
-  - [ ] Update CompaniesPage.tsx to use shared formatters
-  - [ ] Update OverallDashboard.tsx to use shared formatters
+  - [x] Update CompaniesPage.tsx to use shared formatters
+  - [x] Update OverallDashboard.tsx to use shared formatters
 - [x] Add comprehensive tests for all utility functions
   - [x] Test formatters with null/undefined values
   - [x] Test validators with edge cases
