@@ -189,14 +189,16 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - **Event-Driven**: End date updates automatically when events change
 - **Centralized Processing**: All post-event updates handled in one place
 
-### Phase 4: Frontend Integration ⚠️ **PARTIALLY COMPLETED**
+### Phase 4: Frontend Integration ✅ **COMPLETED**
 **Goal**: Update frontend to use new status system
 
 **Current State**:
 - ✅ Backend status system fully implemented and working
-- ❌ Frontend still uses legacy `is_active` field (line 350 in FundDetail.tsx)
-- ❌ No `FundStatus` enum in frontend types (`frontend/src/types/api.ts`)
-- ❌ API endpoints don't return status field
+- ✅ Frontend updated to use new status system
+- ✅ FundStatus enum added to frontend types (`frontend/src/types/api.ts`)
+- ✅ API endpoints return status field
+- ✅ All components updated (FundDetail, Dashboard, CompaniesPage)
+- ✅ Status colors implemented (ACTIVE: green, REALIZED: light gray, COMPLETED: gray)
 
 **Tasks**:
 - [ ] **Frontend Type Updates**

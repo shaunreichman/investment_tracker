@@ -15,7 +15,8 @@ import {
   CircularProgress,
   Link,
   Breadcrumbs,
-  Button
+  Button,
+  Tooltip
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { ErrorType, ErrorSeverity, createErrorInfo } from '../types/errors';
@@ -101,6 +102,19 @@ const CompaniesPage: React.FC = () => {
         return 'secondary';
       default:
         return 'default';
+    }
+  };
+
+  const getStatusTooltip = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Fund is still invested and has capital at risk';
+      case 'realized':
+        return 'All capital has been returned. Fund will be completed once the final tax statement is added.';
+      case 'completed':
+        return 'Fund is fully realized and all tax obligations are complete';
+      default:
+        return 'Unknown fund status';
     }
   };
 
@@ -225,11 +239,16 @@ const CompaniesPage: React.FC = () => {
                       {formatCurrency(fund.current_equity_balance)}
                     </TableCell>
                     <TableCell align="right">
-                                                <Chip
+                      <Tooltip title={getStatusTooltip(fund.status)} arrow placement="top">
+                        <Box component="span" sx={{ display: 'inline-block' }}>
+                          <Chip
                             label={fund.status === 'active' ? 'Active' : fund.status === 'realized' ? 'Realized' : 'Completed'}
                             size="small"
                             color={fund.status === 'active' ? 'success' : fund.status === 'realized' ? 'warning' : 'default'}
+                            sx={{ cursor: 'help' }}
                           />
+                        </Box>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}

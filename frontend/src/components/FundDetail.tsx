@@ -20,7 +20,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText
+  DialogContentText,
+  Tooltip as MuiTooltip
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { TrendingUp, AccountBalance, Edit as EditIcon, Delete as DeleteIcon, Assessment, Info, Receipt, ChevronLeft, ChevronRight } from '@mui/icons-material';
@@ -351,13 +352,33 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'active':
-        return { value: 'Active', color: 'success.main', icon: '🟢' };
+        return { 
+          value: 'Active', 
+          color: 'success.main', 
+          icon: '🟢',
+          tooltip: 'Fund is still invested and has capital at risk'
+        };
       case 'realized':
-        return { value: 'Realized', color: 'grey.500', icon: '🟡' };
+        return { 
+          value: 'Realized', 
+          color: 'grey.500', 
+          icon: '🟡',
+          tooltip: 'All capital has been returned. Fund will be completed once the final tax statement is added.'
+        };
       case 'completed':
-        return { value: 'Completed', color: 'grey.600', icon: '⚫' };
+        return { 
+          value: 'Completed', 
+          color: 'grey.600', 
+          icon: '⚫',
+          tooltip: 'Fund is fully realized and all tax obligations are complete'
+        };
       default:
-        return { value: 'Unknown', color: 'text.secondary', icon: '❓' };
+        return { 
+          value: 'Unknown', 
+          color: 'text.secondary', 
+          icon: '❓',
+          tooltip: 'Unknown fund status'
+        };
     }
   };
 
@@ -418,20 +439,29 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               {detail.isStatus && (
-                <Box sx={{ 
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                bgcolor: statusInfo.color,
-                  // Phase 4: Enhanced status indicator
-                  transition: 'all 0.2s ease-in-out',
-                  boxShadow: statusInfo.color === 'success.main' ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
-                }} />
+                <MuiTooltip title={statusInfo.tooltip} arrow>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
+                    <Box sx={{ 
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: statusInfo.color,
+                      // Phase 4: Enhanced status indicator
+                      transition: 'all 0.2s ease-in-out',
+                      boxShadow: statusInfo.color === 'success.main' ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
+                    }} />
+                    <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
+                      {detail.value}
+                    </Typography>
+                  </Box>
+                </MuiTooltip>
               )}
-              <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
-                {detail.value}
-            </Typography>
-          </Box>
+              {!detail.isStatus && (
+                <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
+                  {detail.value}
+                </Typography>
+              )}
+            </Box>
         </Box>
         ))}
       </Box>
