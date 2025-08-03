@@ -118,6 +118,19 @@ const CompaniesPage: React.FC = () => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return '#4caf50'; // Lighter green
+      case 'realized':
+        return '#2196f3'; // Light blue
+      case 'completed':
+        return '#1976d2'; // Blue
+      default:
+        return 'default';
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -244,8 +257,15 @@ const CompaniesPage: React.FC = () => {
                           <Chip
                             label={fund.status === 'active' ? 'Active' : fund.status === 'realized' ? 'Realized' : 'Completed'}
                             size="small"
-                            color={fund.status === 'active' ? 'success' : fund.status === 'realized' ? 'warning' : 'default'}
-                            sx={{ cursor: 'help' }}
+                            sx={{ 
+                              cursor: 'help',
+                              backgroundColor: getStatusColor(fund.status),
+                              color: 'white',
+                              '&:hover': {
+                                backgroundColor: getStatusColor(fund.status),
+                                opacity: 0.8
+                              }
+                            }}
                           />
                         </Box>
                       </Tooltip>

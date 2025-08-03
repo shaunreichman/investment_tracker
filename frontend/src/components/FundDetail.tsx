@@ -335,7 +335,7 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
                 fontWeight: 600
               }}
             >
-              {metric.value}{metric.unit}
+              {metric.value ? (metric.value * 100).toFixed(2) : '0.00'}{metric.unit}
             </Typography>
           </Box>
         ))}
@@ -354,29 +354,29 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
       case 'active':
         return { 
           value: 'Active', 
-          color: 'success.main', 
-          icon: '🟢',
+          color: '#4caf50', // Lighter green
+          icon: '📊',
           tooltip: 'Fund is still invested and has capital at risk'
         };
       case 'realized':
         return { 
           value: 'Realized', 
-          color: 'grey.500', 
-          icon: '🟡',
+          color: '#2196f3', // Light blue
+          icon: '📊',
           tooltip: 'All capital has been returned. Fund will be completed once the final tax statement is added.'
         };
       case 'completed':
         return { 
           value: 'Completed', 
-          color: 'grey.600', 
-          icon: '⚫',
+          color: '#1976d2', // Blue
+          icon: '📊',
           tooltip: 'Fund is fully realized and all tax obligations are complete'
         };
       default:
         return { 
           value: 'Unknown', 
           color: 'text.secondary', 
-          icon: '❓',
+          icon: '📊',
           tooltip: 'Unknown fund status'
         };
     }
