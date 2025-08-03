@@ -1,3 +1,7 @@
+# ✅ COMPLETED SPEC (AUG 2025)
+
+> **This specification is fully completed and archived. All phases and tasks are done.**
+
 # IRR Calculation and Storage Specification
 
 ## Overview
