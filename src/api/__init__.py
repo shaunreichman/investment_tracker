@@ -1077,6 +1077,9 @@ def create_app():
                 from src.tax.events import TaxEventManager
                 TaxEventManager.create_or_update_tax_events(tax_statement, session=session)
                 
+                # Update fund status after tax statement creation
+                fund.update_status_after_tax_statement(session=session)
+                
                 # Return created tax statement
                 response_data = {
                     "id": tax_statement.id,

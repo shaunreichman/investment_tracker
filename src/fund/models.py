@@ -1605,8 +1605,7 @@ class Fund(Base):
             units_purchased=units,
             unit_price=price,
             brokerage_fee=brokerage_fee,
-            amount=amount,
-            description=description or f"Unit purchase: {units} units at ${price:.2f}",
+            description=description or f"Unit purchase: {units} units @ ${price:,.2f}",
             reference_number=reference_number
         )
         session.add(event)
@@ -1616,7 +1615,27 @@ class Fund(Base):
 
     def update_unit_purchase(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
         """
-        [NEW FLOW] Update an existing unit purchase event and recalculate all affected fields using the unified capital recalculation flow.
+        Update an existing unit purchase event and recalculate all affected fields using the unified capital recalculation flow.
+        
+        This method updates a unit purchase event and automatically recalculates all subsequent capital events to maintain
+        data consistency.
+        
+        Args:
+            event_id (int): ID of the unit purchase event to update
+            units (float, optional): Number of units to purchase (must be positive)
+            price (float, optional): Price per unit (must be positive)
+            date (date, optional): Date of the unit purchase
+            brokerage_fee (float, optional): Brokerage fee for the transaction
+            description (str, optional): Description of the purchase
+            reference_number (str, optional): External reference number for the transaction
+            session (Session): Database session (required - managed by outermost backend layer)
+        
+        Returns:
+            FundEvent: The updated unit purchase event
+            
+        Raises:
+            ValueError: If event not found, or if units/price are invalid
+            TypeError: If required parameters are missing or of wrong type
         """
         event = session.query(FundEvent).filter(
             FundEvent.id == event_id,
@@ -1645,10 +1664,49 @@ class Fund(Base):
 
     def add_unit_sale(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
         """
-        [NEW FLOW] Add a unit sale event and update all relevant calculated fields using the unified capital recalculation flow.
+        Add a unit sale event and update all relevant calculated fields using the unified capital recalculation flow.
+        
+        This method is part of the unified capital event handling system for NAV-based funds. It creates a unit sale
+        event and automatically recalculates all subsequent capital events to maintain data consistency.
+        
+        Args:
+            units (float): Number of units to sell (must be positive)
+            price (float): Price per unit (must be positive)
+            date (date): Date of the unit sale
+            brokerage_fee (float, optional): Brokerage fee for the transaction (default: 0.0)
+            description (str, optional): Description of the sale (auto-generated if not provided)
+            reference_number (str, optional): External reference number for the transaction
+            session (Session): Database session (required - managed by outermost backend layer)
+        
+        Returns:
+            FundEvent: The created unit sale event
+            
+        Raises:
+            ValueError: If fund is not NAV-based, or if units/price are invalid
+            TypeError: If required parameters are missing or of wrong type
+            
+        Example:
+            >>> fund = Fund.get_by_id(1, session=session)
+            >>> event = fund.add_unit_sale(
+            ...     units=50.0,
+            ...     price=12.00,
+            ...     date=date(2024, 6, 15),
+            ...     brokerage_fee=15.0,
+            ...     description="Partial unit sale",
+            ...     session=session
+            ... )
+            >>> print(f"Created event: {event.id}, Amount: ${event.amount}")
         """
         if self.tracking_type != FundType.NAV_BASED:
             raise ValueError("Unit sales are only applicable for NAV-based funds")
+        
+        if not units or units <= 0:
+            raise ValueError("Units must be a positive number")
+        if not price or price <= 0:
+            raise ValueError("Price must be a positive number")
+        if not date:
+            raise ValueError("Date is required")
+        
         amount = (units * price) - brokerage_fee
         event = FundEvent(
             fund_id=self.id,
@@ -1658,7 +1716,7 @@ class Fund(Base):
             unit_price=price,
             brokerage_fee=brokerage_fee,
             amount=amount,
-            description=description or f"Unit sale: {units} units at ${price:.2f}",
+            description=description or f"Unit sale: {units} units @ ${price:,.2f}",
             reference_number=reference_number
         )
         session.add(event)
@@ -1668,11 +1726,32 @@ class Fund(Base):
 
     def update_unit_sale(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
         """
-        [NEW FLOW] Update an existing unit sale event and recalculate all affected fields using the unified capital recalculation flow.
+        Update an existing unit sale event and recalculate all affected fields using the unified capital recalculation flow.
+        
+        This method updates a unit sale event and automatically recalculates all subsequent capital events to maintain
+        data consistency. It includes validation to prevent selling more units than owned.
+        
+        Args:
+            event_id (int): ID of the unit sale event to update
+            units (float, optional): Number of units to sell (must be positive)
+            price (float, optional): Price per unit (must be positive)
+            date (date, optional): Date of the unit sale
+            brokerage_fee (float, optional): Brokerage fee for the transaction
+            description (str, optional): Description of the sale
+            reference_number (str, optional): External reference number for the transaction
+            session (Session): Database session (required - managed by outermost backend layer)
+        
+        Returns:
+            FundEvent: The updated unit sale event
+            
+        Raises:
+            ValueError: If event not found, or if units/price are invalid
+            TypeError: If required parameters are missing or of wrong type
         """
         event = session.query(FundEvent).filter_by(id=event_id, fund_id=self.id).first()
         if not event or event.event_type != EventType.UNIT_SALE:
             raise ValueError("Unit sale event not found")
+        
         if units is not None:
             # Validation: Prevent selling more units than owned after update
             current_units = self.current_units or 0.0
@@ -1698,6 +1777,7 @@ class Fund(Base):
             event.description = description
         if reference_number is not None:
             event.reference_number = reference_number
+        
         session.flush()
         self.recalculate_capital_chain_from(event, session=session)
         return event
@@ -1846,6 +1926,8 @@ class Fund(Base):
         self._recalculate_subsequent_capital_fund_events_after_capital_event(events, idx, session=session)
         # Update fund-level summary fields
         self.update_fund_summary_fields_after_capital_event(session=session)
+        # Update fund status after equity event
+        self.update_status_after_equity_event(session=session)
         # Commit session
         session.commit()
 

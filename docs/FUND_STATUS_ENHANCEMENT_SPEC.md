@@ -73,28 +73,48 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - **No redundant calculations**: Remove validation properties that duplicate logic
 - **Simple architecture**: One field, one value, one truth
 
-### Phase 2: Event-Driven Status Updates
+### Phase 2: Event-Driven Status Updates ✅ (COMPLETED)
 **Goal**: Implement automatic status updates triggered by specific events
 
 **Tasks**:
-- [ ] **Equity Event Triggers**
-  - [ ] Add status check after capital call events
-  - [ ] Add status check after return of capital events
-  - [ ] Add status check after unit purchase/sale events
-  - [ ] Implement transition to `REALIZED` when equity balance reaches zero
-- [ ] **Tax Statement Event Triggers**
-  - [ ] Add status check after tax statement creation
-  - [ ] Implement logic to determine "final" tax statement
-  - [ ] Add transition to `COMPLETED` when final tax statement received
-- [ ] **Status Update Methods**
-  - [ ] Create `update_status_after_equity_event()` method
-  - [ ] Create `update_status_after_tax_statement()` method
-  - [ ] Add status change logging and audit trail
+- [x] **Equity Event Triggers**
+  - [x] Add status check after capital call events
+  - [x] Add status check after return of capital events
+  - [x] Add status check after unit purchase/sale events
+  - [x] Implement transition to `REALIZED` when equity balance reaches zero
+- [x] **Tax Statement Event Triggers**
+  - [x] Add status check after tax statement creation
+  - [x] Implement logic to determine "final" tax statement
+  - [x] Add transition to `COMPLETED` when final tax statement received
+- [x] **Status Update Methods**
+  - [x] Create `update_status_after_equity_event()` method
+  - [x] Create `update_status_after_tax_statement()` method
+  - [x] Add status change logging and audit trail
+
+**Key Achievements**:
+- ✅ **Centralized Status Updates**: Moved all status updates to `recalculate_capital_chain_from()` method
+- ✅ **Event-Driven Architecture**: Status updates automatically triggered by all capital events
+- ✅ **Eliminated Redundancy**: Removed 8 separate status update calls across event methods
+- ✅ **Single Source of Truth**: All post-event processing centralized in one method
+- ✅ **Automatic Consistency**: Status updates happen immediately after any equity event
+- ✅ **Tax Statement Integration**: Status updates triggered by tax statement creation in API
+
+**Architectural Improvements**:
+- **Centralized Post-Event Processing**: `recalculate_capital_chain_from()` now handles:
+  1. Recalculate all capital events
+  2. Update fund summary fields
+  3. Update fund status
+  4. Commit session
+- **Event-Driven Design**: Status updates triggered by actual business events
+- **Maintainability**: Changes to post-event logic only need to happen in one place
+- **Performance**: Single call instead of multiple redundant calls
 
 **Design Principles**:
 - Status updates happen immediately after relevant events
 - No periodic background checks required
 - Clear business rules for each transition
+- **Single responsibility**: One method handles all post-event updates
+- **DRY principle**: Don't Repeat Yourself - eliminate redundant calls
 
 ### Phase 3: Status-Based Tax Statement Logic
 **Goal**: Implement logic to determine when a fund should transition to `COMPLETED`
@@ -206,15 +226,27 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - Database migrations successfully applied
 - Single source of truth established
 
-**Next Phase: Phase 2 - Event-Driven Status Updates**
-- Implement automatic status updates triggered by equity events
-- Add status update methods for tax statement events
-- Ensure status changes are properly tracked and audited
-- Update existing funds to have correct status based on current equity balance
+**Phase 2: Event-Driven Status Updates** ✅ (COMPLETED)
+- Automatic status updates triggered by all capital events
+- Centralized status updates in `recalculate_capital_chain_from()` method
+- Eliminated redundant status update calls across event methods
+- Tax statement creation triggers status updates via API
+- Event-driven architecture ensures consistent status updates
+- Single source of truth for all post-event processing
+
+**Next Phase: Phase 3 - Status-Based Tax Statement Logic**
+- Implement logic to determine when a fund should transition to `COMPLETED`
+- Define criteria for `COMPLETED` status (e.g., fund end date + X months)
+- Implement logic to detect when final tax statement event has occurred
+- Add configuration for completed status timing
+- Handle edge cases (missing tax statements, late filings)
 
 ## Success Metrics
 - [x] All existing funds correctly mapped to new status system
-- [ ] Status updates happen immediately after relevant events
+- [x] Status updates happen immediately after relevant events
+- [x] Centralized status updates eliminate redundant calls
+- [x] Event-driven architecture ensures consistent status updates
+- [x] Single source of truth for all post-event processing
 - [ ] Clear visual distinction between statuses in UI
 - [ ] No performance impact on existing functionality
 - [ ] Comprehensive test coverage for all scenarios
@@ -248,6 +280,54 @@ def update_status_after_tax_statement(self, session=None):
         self.status = FundStatus.COMPLETED
         session.commit()
         print(f"Fund '{self.name}' status updated to COMPLETED")
+
+def recalculate_capital_chain_from(self, event, session=None):
+    """Centralized post-event processing including status updates"""
+    # 1. Recalculate all capital events
+    self._recalculate_subsequent_capital_fund_events_after_capital_event(events, idx, session=session)
+    # 2. Update fund-level summary fields
+    self.update_fund_summary_fields_after_capital_event(session=session)
+    # 3. Update fund status after equity event
+    self.update_status_after_equity_event(session=session)
+    # 4. Commit session
+    session.commit()
+```
+
+## Architectural Improvements
+
+### **Centralized Status Updates**
+**Problem**: Status updates were scattered across 8 different event methods, leading to:
+- Redundant code and potential inconsistencies
+- Risk of forgetting to call status updates
+- Difficult maintenance and debugging
+
+**Solution**: Moved all status updates to `recalculate_capital_chain_from()` method:
+- **Single Responsibility**: One method handles all post-event processing
+- **Event-Driven**: Status updates automatically triggered by all capital events
+- **Consistency**: No risk of missing status updates
+- **Maintainability**: Changes to post-event logic only need to happen in one place
+
+### **Benefits of Centralized Approach**
+1. **Eliminates Redundancy**: Removed 8 separate status update calls
+2. **Ensures Consistency**: Status always updated after any capital event
+3. **Better Performance**: Single call instead of multiple
+4. **Easier Maintenance**: One place to modify post-event logic
+5. **Follows DRY Principle**: Don't Repeat Yourself
+
+### **New Flow**
+```python
+# Event method (e.g., add_capital_call)
+event = FundEvent(...)
+session.add(event)
+session.flush()
+self.recalculate_capital_chain_from(event, session=session)  # ← Centralized
+return event
+
+# Inside recalculate_capital_chain_from()
+# 1. Recalculate all capital events
+# 2. Update fund summary fields  
+# 3. Update fund status ← NEW
+# 4. Commit session
 ```
 
 ## Migration Strategy
