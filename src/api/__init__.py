@@ -16,7 +16,7 @@ if project_root not in sys.path:
 from src.database import get_database_session
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
-from src.fund.models import Fund, FundType, FundEvent
+from src.fund.models import Fund, FundType, FundEvent, FundStatus
 
 def create_app():
     app = Flask(__name__)
@@ -101,7 +101,7 @@ def create_app():
                         "currency": fund.currency,
                         "current_equity_balance": float(fund.current_equity_balance) if fund.current_equity_balance else 0.0,
                         "average_equity_balance": float(fund.average_equity_balance) if fund.average_equity_balance else 0.0,
-
+                        "status": fund.status.value if fund.status else None,
                         "investment_company": fund.investment_company.name if fund.investment_company else "Unknown",
                         "entity": fund.entity.name if fund.entity else "Unknown",
                         "recent_events_count": recent_events_count,

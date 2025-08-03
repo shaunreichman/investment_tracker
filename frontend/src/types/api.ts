@@ -10,6 +10,12 @@ export enum FundType {
   COST_BASED = 'cost_based'
 }
 
+export enum FundStatus {
+  ACTIVE = 'active',
+  REALIZED = 'realized',
+  COMPLETED = 'completed'
+}
+
 export enum EventType {
   CAPITAL_CALL = 'CAPITAL_CALL',
   RETURN_OF_CAPITAL = 'RETURN_OF_CAPITAL',
@@ -83,7 +89,7 @@ export interface Fund {
   entity_id: number;
   current_equity_balance: number;
   average_equity_balance: number;
-  is_active: boolean;
+  status: FundStatus;
   final_tax_statement_received: boolean;
   current_units?: number;
   current_unit_price?: number;

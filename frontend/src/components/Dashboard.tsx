@@ -240,9 +240,9 @@ const Dashboard: React.FC = () => {
                         </TableCell>
                         <TableCell align="right">
                           <Chip
-                            label={fund.is_active ? 'Active' : 'Inactive'}
+                            label={fund.status === 'active' ? 'Active' : fund.status === 'realized' ? 'Realized' : 'Completed'}
                             size="small"
-                            color={fund.is_active ? 'success' : 'default'}
+                            color={fund.status === 'active' ? 'success' : fund.status === 'realized' ? 'warning' : 'default'}
                           />
                         </TableCell>
                       </TableRow>

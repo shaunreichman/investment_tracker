@@ -47,7 +47,7 @@ interface Fund {
   currency: string;
   current_equity_balance: number;
   average_equity_balance: number;
-  is_active: boolean;
+  status: string;
   entity: string;
   recent_events_count: number;
   created_at: string;
@@ -225,11 +225,11 @@ const CompaniesPage: React.FC = () => {
                       {formatCurrency(fund.current_equity_balance)}
                     </TableCell>
                     <TableCell align="right">
-                      <Chip
-                        label={fund.is_active ? 'Active' : 'Inactive'}
-                        size="small"
-                        color={fund.is_active ? 'success' : 'default'}
-                      />
+                                                <Chip
+                            label={fund.status === 'active' ? 'Active' : fund.status === 'realized' ? 'Realized' : 'Completed'}
+                            size="small"
+                            color={fund.status === 'active' ? 'success' : fund.status === 'realized' ? 'warning' : 'default'}
+                          />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -278,7 +278,7 @@ const CompaniesPage: React.FC = () => {
                     Active Funds
                   </Typography>
                   <Typography variant="h5">
-                    {fundsData?.funds?.filter(fund => fund.is_active).length || 0}
+                    {fundsData?.funds?.filter(fund => fund.status === 'active').length || 0}
                   </Typography>
                 </Box>
               </Box>

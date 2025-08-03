@@ -242,8 +242,8 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
  * Completed Performance Section - Historical performance for finished funds
  */
 const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
-  // Only show if fund is not active (completed)
-  if (fund.is_active) {
+  // Only show if fund is completed (not active)
+  if (fund.status === 'active') {
     return null;
   }
 
@@ -347,8 +347,24 @@ const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurre
  * Fund Details Section - Basic fund information
  */
 const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+  // Helper function to get status display info
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'active':
+        return { value: 'Active', color: 'success.main', icon: '🟢' };
+      case 'realized':
+        return { value: 'Realized', color: 'grey.500', icon: '🟡' };
+      case 'completed':
+        return { value: 'Completed', color: 'grey.600', icon: '⚫' };
+      default:
+        return { value: 'Unknown', color: 'text.secondary', icon: '❓' };
+    }
+  };
+
+  const statusInfo = getStatusInfo(fund.status);
+  
   const fundDetails = [
-    { label: 'Status', value: fund.is_active ? 'Active' : 'Inactive', color: fund.is_active ? 'success.main' : 'text.secondary', icon: fund.is_active ? '🟢' : '⚪', priority: 1, isStatus: true },
+    { label: 'Status', value: statusInfo.value, color: statusInfo.color, icon: statusInfo.icon, priority: 1, isStatus: true },
     { label: 'Currency', value: fund.currency, color: 'text.primary', icon: '💱', priority: 2 },
     ...(fund.actual_duration_months ? [{ label: 'Actual Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
   ];
@@ -406,10 +422,10 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                bgcolor: fund.is_active ? 'success.main' : 'grey.400',
+                bgcolor: statusInfo.color,
                   // Phase 4: Enhanced status indicator
                   transition: 'all 0.2s ease-in-out',
-                  boxShadow: fund.is_active ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
+                  boxShadow: statusInfo.color === 'success.main' ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
                 }} />
               )}
               <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
