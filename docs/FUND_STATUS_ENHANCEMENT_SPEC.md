@@ -12,7 +12,7 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 
 ## Implementation Strategy
 
-### Phase 1: Core Status System Enhancement
+### Phase 1: Core Status System Enhancement ✅ (COMPLETED)
 **Goal**: Implement three-state status system with clear business definitions
 
 **Tasks**:
@@ -24,14 +24,22 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
   - [x] Replace `is_active` boolean with `status` enum field
   - [x] Implement new status determination logic
   - [x] Update `should_be_active` property to use new status
-- [ ] **Remove Legacy Fields**
-  - [ ] Remove `final_tax_statement_received` field from model and database
-  - [ ] Update all code to reference only the `status` field
-  - [ ] Create migration to drop the legacy field
-- [ ] **Single Source of Truth**
-  - [ ] Ensure all business logic uses only the `status` field
-  - [ ] Remove any references to `final_tax_statement_received`
-  - [ ] Update API responses to include new status field
+- [x] **Remove Legacy Fields**
+  - [x] Remove `final_tax_statement_received` field from model and database
+  - [x] Update all code to reference only the `status` field
+  - [x] Create migration to drop the legacy field
+- [x] **Single Source of Truth**
+  - [x] Ensure all business logic uses only the `status` field
+  - [x] Remove any references to `final_tax_statement_received`
+- [x] Update API responses to include new status field
+
+**Key Achievements**:
+- ✅ FundStatus enum implemented with clear business definitions
+- ✅ Status column added to database with proper migration
+- ✅ Legacy field completely removed from model and database
+- ✅ API now returns status field in fund responses
+- ✅ Status determination logic updated to use equity balance
+- ✅ Single source of truth established - only status field determines fund lifecycle
 
 **Design Principles**:
 - Status transitions are automatic based on business rules
@@ -162,8 +170,25 @@ Enhance the fund status system from binary (Active/Exited) to three-state (Activ
 - **Tax Statement Events**: New tax statements added to realized funds
 - **System Events**: Periodic checks for final tax statement detection
 
+## Current Status
+
+**Phase 1: Core Status System Enhancement** ✅ (COMPLETED)
+- FundStatus enum implemented with ACTIVE, REALIZED, COMPLETED
+- Status column added to Fund model with proper default
+- Legacy final_tax_statement_received field removed
+- API responses now include status field
+- Status determination logic updated to use equity balance
+- Database migrations successfully applied
+- Single source of truth established
+
+**Next Phase: Phase 2 - Event-Driven Status Updates**
+- Implement automatic status updates triggered by equity events
+- Add status update methods for tax statement events
+- Ensure status changes are properly tracked and audited
+- Update existing funds to have correct status based on current equity balance
+
 ## Success Metrics
-- [ ] All existing funds correctly mapped to new status system
+- [x] All existing funds correctly mapped to new status system
 - [ ] Status updates happen immediately after relevant events
 - [ ] Clear visual distinction between statuses in UI
 - [ ] No performance impact on existing functionality
