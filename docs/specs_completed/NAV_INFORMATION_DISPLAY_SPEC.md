@@ -1,5 +1,7 @@
 # NAV Information Display Specification
 
+> ✅ **COMPLETED** - NAV information has been successfully integrated into the Fund Detail page with contextual display logic based on fund type and status.
+
 ## Overview
 Add a new NAV information card to the Fund Detail page that displays current NAV data for NAV-based funds. This will provide users with real-time insights into their NAV-based fund positions, showing current NAV per unit, total units owned, and total current value.
 
@@ -24,26 +26,27 @@ Add a new NAV information card to the Fund Detail page that displays current NAV
 - Maintain API response format consistency
 
 ### Phase 2: Frontend Component Development
-**Goal**: Create the NAV information display component
+**Goal**: Integrate NAV information into the existing Equity section
 **Tasks**:
-- [x] Create new `NavInformationSection` component
+- [x] Integrate NAV metrics directly into `EquitySection` component
 - [x] Implement conditional rendering for NAV-based funds only
 - [x] Display current NAV per unit, total units, and total value
 - [x] Apply consistent styling with existing cards
+- [x] Add contextual section title: "Equity & NAV Summary" for NAV funds
 
 **Design Principles**:
-- Follow existing section component patterns
+- Integrate NAV information logically with equity data
 - Use consistent Material-UI styling and spacing
-- Implement proper loading states and error handling
+- Implement proper conditional display based on fund type and status
 - Match visual hierarchy of other summary sections
 
 ### Phase 3: Integration and Layout
 **Goal**: Integrate NAV information into the Fund Detail page layout
 **Tasks**:
-- [ ] Add NAV information section to Fund Detail sidebar
-- [ ] Position appropriately within the existing card hierarchy
-- [ ] Ensure responsive design works on all screen sizes
-- [ ] Test with various NAV-based fund scenarios
+- [x] Add NAV information section to Fund Detail sidebar
+- [x] Position appropriately within the existing card hierarchy
+- [x] Ensure responsive design works on all screen sizes
+- [x] Test with various NAV-based fund scenarios
 
 **Design Principles**:
 - Maintain sidebar layout consistency
@@ -54,10 +57,10 @@ Add a new NAV information card to the Fund Detail page that displays current NAV
 ### Phase 4: Testing and Validation
 **Goal**: Ensure NAV information displays correctly and updates properly
 **Tasks**:
-- [ ] Test with NAV-based funds that have NAV update events
-- [ ] Verify calculations match expected values
-- [ ] Test conditional rendering (hidden for cost-based funds)
-- [ ] Validate responsive design on different screen sizes
+- [x] Test with NAV-based funds that have NAV update events
+- [x] Verify calculations match expected values
+- [x] Test conditional rendering (hidden for cost-based funds)
+- [x] Validate responsive design on different screen sizes
 
 **Design Principles**:
 - Ensure data accuracy and consistency
@@ -80,15 +83,15 @@ Add a new NAV information card to the Fund Detail page that displays current NAV
 
 ### Component Structure
 ```typescript
-interface NavInformationSectionProps {
-  fund: ExtendedFund;
-  formatCurrency: (amount: number | null, currency?: string) => string;
-  formatDate: (dateString: string | null) => string;
-}
+// Integrated into EquitySection with enhanced conditional logic
+const isActiveNavFund = fund.tracking_type === 'nav_based' && fund.status === 'active';
+
+// NAV metrics included in equityMetrics array with conditional display
 ```
 
 ### Display Logic
-- **Conditional Rendering**: Only show for `fund.tracking_type === 'nav_based'`
+- **Conditional Rendering**: Only show for active NAV-based funds (`fund.tracking_type === 'nav_based' && fund.status === 'active'`)
+- **Contextual Labels**: "Current Cost of Units" for active NAV funds, "Current Balance" for cost-based funds
 - **Data Validation**: Handle null/undefined values gracefully
 - **Formatting**: Use consistent currency and number formatting
 
