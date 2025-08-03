@@ -743,8 +743,38 @@ def main():
     """Main test function demonstrating proper session management architecture."""
     parser = argparse.ArgumentParser(description='Test the new domain structure')
     parser.add_argument('--no-cashflows', action='store_true', help='Skip showing IRR cash flows')
+    parser.add_argument('--output-file', type=str, help='Save output to specified file')
     args = parser.parse_args()
     
+    # Capture output if output file is specified
+    if args.output_file:
+        import sys
+        from io import StringIO
+        
+        # Redirect stdout to capture output
+        old_stdout = sys.stdout
+        output_buffer = StringIO()
+        sys.stdout = output_buffer
+        
+        try:
+            run_test(args)
+            # Get the captured output
+            output = output_buffer.getvalue()
+            
+            # Write to file
+            with open(args.output_file, 'w') as f:
+                f.write(output)
+            
+            print(f"Test output saved to: {args.output_file}")
+            
+        finally:
+            # Restore stdout
+            sys.stdout = old_stdout
+    else:
+        run_test(args)
+
+def run_test(args):
+    """Run the actual test logic."""
     print("Starting comprehensive system test...")
     print("Demonstrating proper session management architecture:")
     print("- Outermost backend layer manages sessions")
@@ -797,16 +827,7 @@ def main():
         print("   - No direct database operations from external clients")
         print("   - Stateless external clients (sessions hidden from API consumers)")
         
-    finally:
-        # ✅ CORRECT: Outermost layer closes session
-        session.close()
-
-if __name__ == "__main__":
-    main() 
-    # --- Print exact daily breakdown for ABC fund debt cost ---
-    engine, session_factory, scoped_session = get_database_session()
-    session = scoped_session()
-    try:
+        # --- Print exact daily breakdown for ABC fund debt cost ---
         abc_fund = session.query(Fund).filter(Fund.name == "ABC Ltd").first()
         if abc_fund:
             # FY13: 2012-07-01 to 2013-06-30
@@ -819,5 +840,10 @@ if __name__ == "__main__":
             )
         else:
             print("ABC Ltd fund not found for daily debt cost breakdown.")
+        
     finally:
-        session.close() 
+        # ✅ CORRECT: Outermost layer closes session
+        session.close()
+
+if __name__ == "__main__":
+    main() 
