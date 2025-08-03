@@ -296,16 +296,6 @@ export const generateChartTicks = (startDate: string, endDate: string): string[]
 };
 
 /**
- * Calculate withholding tax amount
- * @param grossAmount - Gross amount
- * @param rate - Tax rate percentage
- * @returns Withholding tax amount
- */
-export const calculateWithholdingTax = (grossAmount: number, rate: number): number => {
-  return (grossAmount * rate) / 100;
-};
-
-/**
  * Calculate net amount from gross and withholding tax
  * @param grossAmount - Gross amount
  * @param withholdingAmount - Withholding tax amount
@@ -335,16 +325,6 @@ export const parseNumber = (value: string): string => {
   const num = parseFloat(value);
   if (isNaN(num)) return '';
   return num.toString();
-};
-
-/**
- * Calculate tax payment date from financial year
- * @param financialYear - Financial year string (e.g., "2023-24")
- * @returns Tax payment date string
- */
-export const calculateTaxPaymentDate = (financialYear: string): string => {
-  const year = parseInt(financialYear.split('-')[0]);
-  return `${year + 1}-05-15`; // May 15th of the following year
 };
 
 /**
@@ -398,31 +378,80 @@ export const deepClone = <T>(obj: T): T => {
 };
 
 /**
- * Check if two objects are deeply equal
- * @param obj1 - First object
- * @param obj2 - Second object
+ * Deep equality check for objects
+ * @param obj1 - First object to compare
+ * @param obj2 - Second object to compare
  * @returns True if objects are deeply equal
  */
 export const deepEqual = (obj1: any, obj2: any): boolean => {
   if (obj1 === obj2) return true;
-  if (obj1 == null || obj2 == null) return obj1 === obj2;
+  if (obj1 == null || obj2 == null) return false;
   if (typeof obj1 !== typeof obj2) return false;
   
-  if (typeof obj1 === 'object') {
-    if (Array.isArray(obj1) !== Array.isArray(obj2)) return false;
-    
-    const keys1 = Object.keys(obj1);
-    const keys2 = Object.keys(obj2);
-    
-    if (keys1.length !== keys2.length) return false;
-    
-    for (const key of keys1) {
-      if (!keys2.includes(key) || !deepEqual(obj1[key], obj2[key])) {
-        return false;
-      }
-    }
-    return true;
+  if (typeof obj1 !== 'object') return obj1 === obj2;
+  
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false;
+    if (!deepEqual(obj1[key], obj2[key])) return false;
   }
   
-  return false;
+  return true;
+};
+
+/**
+ * Format number with thousand separators
+ * @param value - Number or string to format
+ * @returns Formatted number string
+ */
+export const formatWithThousandSeparator = (value: string | number): string => {
+  if (!value) return '';
+  const num = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
+  if (isNaN(num)) return String(value);
+  return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+};
+
+/**
+ * Calculate tax payment date from financial year
+ * @param financialYear - Financial year string (e.g., "2023-24")
+ * @returns Tax payment date string (YYYY-MM-DD)
+ */
+export const calculateTaxPaymentDate = (financialYear: string): string => {
+  if (!financialYear) return '';
+  const [startYear] = financialYear.split('-');
+  const endYear = parseInt(startYear) + 1;
+  return `${endYear}-06-30`; // Last day of financial year (June 30)
+};
+
+/**
+ * Calculate withholding tax amount
+ * @param grossAmount - Gross amount
+ * @param rate - Tax rate percentage
+ * @returns Withholding tax amount
+ */
+export const calculateWithholdingTax = (grossAmount: number, rate: number): number => {
+  return (grossAmount * rate) / 100;
+};
+
+/**
+ * Get simple event type label for modal components
+ * @param eventType - The event type string
+ * @returns Simple event type label
+ */
+export const getEventTypeLabelSimple = (eventType: string): string => {
+  switch (eventType) {
+    case 'CAPITAL_CALL': return 'Capital Call';
+    case 'RETURN_OF_CAPITAL': return 'Capital Return';
+    case 'UNIT_PURCHASE': return 'Unit Purchase';
+    case 'UNIT_SALE': return 'Unit Sale';
+    case 'NAV_UPDATE': return 'NAV Update';
+    case 'DISTRIBUTION': return 'Distribution';
+    case 'TAX_STATEMENT': return 'Tax Statement';
+    case 'TAX_PAYMENT': return 'Tax Payment';
+    default: return eventType;
+  }
 }; 
