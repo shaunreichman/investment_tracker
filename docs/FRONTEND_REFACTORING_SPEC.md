@@ -1,18 +1,5 @@
 # Frontend Refactoring Specification
 
-> **🎉 Phase 1 Foundation Complete!** 
-> 
-> **Completed Tasks:**
-> - ✅ Created centralized utility files (`formatters.ts`, `validators.ts`, `constants.ts`, `helpers.ts`)
-> - ✅ Extracted all formatting, validation, and helper functions from components
-> - ✅ Added comprehensive test coverage (93 tests passing with 100% coverage)
-> - ✅ Standardized on FundDetail implementation for consistent UI behavior
-> - ✅ All utilities are production-ready and thoroughly audited
-> - ✅ ALL 6/6 components updated to use centralized utilities
-> - ✅ Zero code duplication achieved
-> - ✅ All TypeScript compilation passes
-> - ✅ Professional audit completed - meets all industry standards
-> 
 > **Next Steps:** Phase 2 - Extract FundDetail Component into focused sections
 
 ## Overview
@@ -95,38 +82,41 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - Validation patterns are repeated across all modal components
 - Chart data preparation logic is complex and should be centralized
 
-### Phase 2: Extract FundDetail Component
+### Phase 2: Extract FundDetail Component (PARTIALLY COMPLETE)
 **Goal**: Break down the massive FundDetail.tsx into focused, maintainable components
 **Tasks**:
-- [ ] Create `frontend/src/components/fund-detail/` directory structure
-- [ ] Extract `EquitySection.tsx` (~150 lines) with equity and NAV metrics
-  - [ ] Extract from FundDetail.tsx lines 51-181 (EquitySection component)
-  - [ ] Include `isActiveNavFund` logic for NAV-based fund display
-  - [ ] Include conditional rendering for NAV metrics (current NAV, units owned, NAV market value)
-  - [ ] Include priority-based metric ordering and styling
-  - [ ] Add proper TypeScript interfaces for metric data structure
-- [ ] Extract `PerformanceSection.tsx` (~200 lines) with expected and completed performance
-  - [ ] Extract `ExpectedPerformanceSection` from FundDetail.tsx lines 182-275
-  - [ ] Extract `CompletedPerformanceSection` from FundDetail.tsx lines 275-390
-  - [ ] Combine into single component with conditional rendering based on fund status
-  - [ ] Include IRR formatting with percentage display
-  - [ ] Include duration formatting with month display
-- [ ] Extract `FundDetailsSection.tsx` (~150 lines) with basic fund information
-  - [ ] Extract from FundDetail.tsx lines 390-515 (FundDetailsSection component)
-  - [ ] Include status display with color coding and tooltips
-  - [ ] Include currency and duration information
-  - [ ] Include status transition logic (ACTIVE → REALIZED → COMPLETED)
-- [ ] Extract `TransactionSummarySection.tsx` (~150 lines) with transaction totals
-  - [ ] Extract from FundDetail.tsx lines 515-595 (TransactionSummarySection component)
-  - [ ] Include conditional display for cost-based vs NAV-based funds
-  - [ ] Include transaction type filtering and grouping
-  - [ ] Include color coding for different transaction types
-- [ ] Extract `UnitPriceChartSection.tsx` (~300 lines) with NAV performance chart
-  - [ ] Extract from FundDetail.tsx lines 595-853 (UnitPriceChartSection component)
-  - [ ] Include chart data preparation logic (NAV data, purchase/sale data)
-  - [ ] Include error handling for chart rendering
-  - [ ] Include responsive chart sizing and tooltips
-  - [ ] Include date range calculation and tick generation
+- [x] Create `frontend/src/components/fund-detail/` directory structure
+- [x] Extract `EquitySection.tsx` (~149 lines) with equity and NAV metrics
+  - [x] Extract from FundDetail.tsx lines 51-181 (EquitySection component)
+  - [x] Include `isActiveNavFund` logic for NAV-based fund display
+  - [x] Include conditional rendering for NAV metrics (current NAV, units owned, NAV market value)
+  - [x] Include priority-based metric ordering and styling
+  - [x] Add proper TypeScript interfaces for metric data structure
+- [x] Extract `ExpectedPerformanceSection.tsx` (~110 lines) with expected performance
+  - [x] Extract `ExpectedPerformanceSection` from FundDetail.tsx lines 182-275
+  - [x] Include IRR formatting with percentage display
+  - [x] Include duration formatting with month display
+- [x] Extract `CompletedPerformanceSection.tsx` (~132 lines) with completed performance
+  - [x] Extract `CompletedPerformanceSection` from FundDetail.tsx lines 275-390
+  - [x] Include conditional rendering based on fund status
+  - [x] Include IRR formatting with percentage display
+  - [x] Include duration formatting with month display
+- [x] Extract `FundDetailsSection.tsx` (~110 lines) with basic fund information
+  - [x] Extract from FundDetail.tsx lines 390-515 (FundDetailsSection component)
+  - [x] Include status display with color coding and tooltips
+  - [x] Include currency and duration information
+  - [x] Include status transition logic (ACTIVE → REALIZED → COMPLETED)
+- [x] Extract `TransactionSummarySection.tsx` (~96 lines) with transaction totals
+  - [x] Extract from FundDetail.tsx lines 515-595 (TransactionSummarySection component)
+  - [x] Include conditional display for cost-based vs NAV-based funds
+  - [x] Include transaction type filtering and grouping
+  - [x] Include color coding for different transaction types
+- [x] Extract `UnitPriceChartSection.tsx` (~246 lines) with NAV performance chart
+  - [x] Extract from FundDetail.tsx lines 595-853 (UnitPriceChartSection component)
+  - [x] Include chart data preparation logic (NAV data, purchase/sale data)
+  - [x] Include error handling for chart rendering
+  - [x] Include responsive chart sizing and tooltips
+  - [x] Include date range calculation and tick generation
 - [ ] Extract `FundDetailTable.tsx` (~400 lines) with events table and filtering
   - [ ] Extract table logic from FundDetail.tsx lines 1200-2200
   - [ ] Include event grouping by date and type
@@ -145,11 +135,12 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] Include section composition and layout
   - [ ] Include sidebar visibility state management
 - [ ] Create main `FundDetail.tsx` orchestrator (~200 lines)
-  - [ ] Extract main component logic from FundDetail.tsx lines 850-1100
-  - [ ] Include API data fetching and error handling
-  - [ ] Include state management for modals and dialogs
-  - [ ] Include event handlers for CRUD operations
-  - [ ] Include responsive layout orchestration
+  - [x] Extract main component logic from FundDetail.tsx lines 850-1100
+  - [x] Include API data fetching and error handling
+  - [x] Include state management for modals and dialogs
+  - [x] Include event handlers for CRUD operations
+  - [x] Include responsive layout orchestration
+  - [ ] **STILL NEEDS**: Extract remaining table, header, and sidebar logic
 - [ ] Add comprehensive tests for each section component
   - [ ] Test conditional rendering based on fund type
   - [ ] Test data formatting and display
