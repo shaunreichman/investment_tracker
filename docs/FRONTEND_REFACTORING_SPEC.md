@@ -123,18 +123,22 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [x] Include error handling for chart rendering
   - [x] Include responsive chart sizing and tooltips
   - [x] Include date range calculation and tick generation
-- [ ] Extract `FundDetailTable/` directory with component-based architecture (~400 lines total)
-  - [ ] Create `FundDetailTable/index.ts` (~50 lines) - Main orchestrator and exports
-  - [ ] Create `FundDetailTable/FundDetailTable.tsx` (~100 lines) - Main table container
-    - [ ] Extract table container logic from FundDetail.tsx lines 1200-1300
-    - [ ] Include table structure and responsive layout
-    - [ ] Include event filtering and grouping orchestration
-    - [ ] Include table state management (showTaxEvents, showNavUpdates)
-  - [ ] Create `FundDetailTable/TableHeader.tsx` (~80 lines) - Table headers and filters
-    - [ ] Extract table header logic from FundDetail.tsx lines 494-618
-    - [ ] Include conditional column display based on fund type
-    - [ ] Include filter toggles for tax events and NAV updates
-    - [ ] Include responsive header styling and typography
+- [ ] Extract `FundDetailTable/` directory with **MODULAR, STEP-BY-STEP** approach (~400 lines total)
+  
+  **Phase 2A: Foundation Setup** (Safe, no UI changes)
+  - [ ] Create `FundDetailTable/` directory structure
+  - [ ] Create `FundDetailTable/useEventGrouping.ts` (~80 lines) - Event grouping logic hook
+    - [ ] Extract event grouping logic from FundDetail.tsx lines 620-683
+    - [ ] Include date-based event grouping algorithm
+    - [ ] Include interest + withholding tax combination logic
+    - [ ] Include grouped event calculations and formatting
+    - [ ] Include memoization for performance optimization
+    - [ ] **TEST**: Verify hook works correctly with existing table
+  - [ ] Create `FundDetailTable/index.ts` (~10 lines) - Basic exports
+    - [ ] Export useEventGrouping hook only
+    - [ ] **TEST**: Verify imports work without breaking existing code
+  
+  **Phase 2B: Row Components** (Safe, isolated components)
   - [ ] Create `FundDetailTable/EventRow.tsx` (~150 lines) - Individual event row rendering
     - [ ] Extract individual row logic from FundDetail.tsx lines 808-1043
     - [ ] Include event type-specific cell rendering (tax payments, NAV updates, etc.)
@@ -142,23 +146,53 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [ ] Include complex tax payment type handling (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
     - [ ] Include EOFY debt cost event handling with deduction calculations
     - [ ] Include row hover effects and styling
+    - [ ] **TEST**: Verify component renders correctly in isolation
   - [ ] Create `FundDetailTable/GroupedEventRow.tsx` (~120 lines) - Grouped events row rendering
     - [ ] Extract grouped row logic from FundDetail.tsx lines 684-773
     - [ ] Include interest + withholding tax combination logic
     - [ ] Include grouped event amount calculations
     - [ ] Include conditional equity/tax column display
     - [ ] Include grouped row styling and hover effects
+    - [ ] **TEST**: Verify component renders correctly in isolation
+  
+  **Phase 2C: Table Container** (Replace existing table)
+  - [ ] Create `FundDetailTable/FundDetailTable.tsx` (~100 lines) - Main table container
+    - [ ] Extract table container logic from FundDetail.tsx lines 1200-1300
+    - [ ] Include table structure and responsive layout
+    - [ ] Include event filtering and grouping orchestration
+    - [ ] Include table state management (showTaxEvents, showNavUpdates)
+    - [ ] **TEST**: Verify table renders identically to original
+  - [ ] Update `FundDetailTable/index.ts` to export FundDetailTable
+  - [ ] **REPLACE**: Replace original table section with FundDetailTable component
+    - [ ] Remove original table JSX from FundDetail.tsx
+    - [ ] Add FundDetailTable component import
+    - [ ] Replace table section with FundDetailTable component
+    - [ ] **TEST**: Verify single table appears with identical functionality
+  
+  **Phase 2D: Header Extraction** (Optional, for future)
+  - [ ] Create `FundDetailTable/TableHeader.tsx` (~80 lines) - Table headers and filters
+    - [ ] Extract table header logic from FundDetailTable.tsx
+    - [ ] Include conditional column display based on fund type
+    - [ ] Include filter toggles for tax events and NAV updates
+    - [ ] Include responsive header styling and typography
   - [ ] Create `FundDetailTable/TableActions.tsx` (~50 lines) - Edit/delete action buttons
-    - [ ] Extract action button logic from FundDetail.tsx lines 998-1042
+    - [ ] Extract action button logic from EventRow/GroupedEventRow components
     - [ ] Include edit/delete button rendering with proper event type filtering
     - [ ] Include button styling and hover effects
     - [ ] Include action button accessibility and tooltips
-  - [ ] Create `FundDetailTable/useEventGrouping.ts` (~80 lines) - Event grouping logic hook
-    - [ ] Extract event grouping logic from FundDetail.tsx lines 620-683
-    - [ ] Include date-based event grouping algorithm
-    - [ ] Include interest + withholding tax combination logic
-    - [ ] Include grouped event calculations and formatting
-    - [ ] Include memoization for performance optimization
+**MODULAR APPROACH PRINCIPLES**:
+- **Phase-by-Phase**: Each phase must be completed and tested before moving to the next
+- **No UI Changes**: Phases 2A and 2B should not change the visible UI at all
+- **Incremental Testing**: Test each component in isolation before integration
+- **Rollback Safety**: Each phase should be easily reversible if issues arise
+- **Preservation First**: Every step must maintain 100% functional and visual parity
+
+**TESTING STRATEGY**:
+- **Phase 2A**: Test useEventGrouping hook with existing table (no UI changes)
+- **Phase 2B**: Test row components in isolation (no integration yet)
+- **Phase 2C**: Test FundDetailTable component side-by-side with original
+- **Final Integration**: Replace original table only after all tests pass
+
 **CRITICAL PRESERVATION REQUIREMENTS**:
 - **Event Grouping Logic**: Must group events by date exactly as before, combining interest + withholding tax events identically
 - **Tax Payment Display**: Must show tax payment types (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.) with exact same formatting and calculations
