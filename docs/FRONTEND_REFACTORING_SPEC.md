@@ -123,22 +123,32 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [x] Include error handling for chart rendering
   - [x] Include responsive chart sizing and tooltips
   - [x] Include date range calculation and tick generation
-- [ ] Extract `FundDetailTable/` directory with **MODULAR, STEP-BY-STEP** approach (~400 lines total)
+- [ ] Extract `FundDetailTable/` directory with **INCREMENTAL, STEP-BY-STEP** approach (~400 lines total)
   
-  **Phase 2A: Foundation Setup** (Safe, no UI changes)
+  **Phase 2B.1: Foundation & Debug Infrastructure** (Safe, no UI changes)
   - [ ] Create `FundDetailTable/` directory structure
+  - [ ] Create `FundDetailTable/debug.ts` (~50 lines) - Debug utilities for table rendering
+    - [ ] Create `debugTableRendering` function to log table state and events
+    - [ ] Create `compareTableRendering` function to compare before/after rendering
+    - [ ] Create `logEventGrouping` function to debug event grouping logic
+    - [ ] Create `validateTableStructure` function to ensure table integrity
+    - [ ] **TEST**: Verify debug utilities work with existing table without breaking functionality
+  - [ ] Create `FundDetailTable/index.ts` (~10 lines) - Basic exports
+    - [ ] Export debug utilities only
+    - [ ] **TEST**: Verify imports work without breaking existing code
+  
+  **Phase 2B.2: Extract Event Grouping Logic** (Safe, isolated logic)
   - [ ] Create `FundDetailTable/useEventGrouping.ts` (~80 lines) - Event grouping logic hook
-    - [ ] Extract event grouping logic from FundDetail.tsx lines 620-683
+    - [ ] Extract event grouping logic from FundDetail.tsx lines 650-680
     - [ ] Include date-based event grouping algorithm
     - [ ] Include interest + withholding tax combination logic
     - [ ] Include grouped event calculations and formatting
     - [ ] Include memoization for performance optimization
-    - [ ] **TEST**: Verify hook works correctly with existing table
-  - [ ] Create `FundDetailTable/index.ts` (~10 lines) - Basic exports
-    - [ ] Export useEventGrouping hook only
-    - [ ] **TEST**: Verify imports work without breaking existing code
+    - [ ] Add comprehensive logging for debugging
+    - [ ] **TEST**: Verify hook returns identical grouping results to original logic
+    - [ ] **TEST**: Test with various event combinations and fund types
   
-  **Phase 2B: Row Components** (Safe, isolated components)
+  **Phase 2B.3: Extract Row Rendering Components** (Safe, isolated components)
   - [ ] Create `FundDetailTable/EventRow.tsx` (~150 lines) - Individual event row rendering
     - [ ] Extract individual row logic from FundDetail.tsx lines 808-1043
     - [ ] Include event type-specific cell rendering (tax payments, NAV updates, etc.)
@@ -146,52 +156,78 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [ ] Include complex tax payment type handling (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
     - [ ] Include EOFY debt cost event handling with deduction calculations
     - [ ] Include row hover effects and styling
+    - [ ] Add comprehensive prop validation
     - [ ] **TEST**: Verify component renders correctly in isolation
+    - [ ] **TEST**: Test with all event types and edge cases
   - [ ] Create `FundDetailTable/GroupedEventRow.tsx` (~120 lines) - Grouped events row rendering
     - [ ] Extract grouped row logic from FundDetail.tsx lines 684-773
     - [ ] Include interest + withholding tax combination logic
     - [ ] Include grouped event amount calculations
     - [ ] Include conditional equity/tax column display
     - [ ] Include grouped row styling and hover effects
+    - [ ] Add comprehensive prop validation
     - [ ] **TEST**: Verify component renders correctly in isolation
+    - [ ] **TEST**: Test with various interest + withholding combinations
   
-  **Phase 2C: Table Container** (Replace existing table)
+  **Phase 2B.4: Extract Table Container** (Integration with safety measures)
   - [ ] Create `FundDetailTable/FundDetailTable.tsx` (~100 lines) - Main table container
     - [ ] Extract table container logic from FundDetail.tsx lines 1200-1300
     - [ ] Include table structure and responsive layout
     - [ ] Include event filtering and grouping orchestration
     - [ ] Include table state management (showTaxEvents, showNavUpdates)
+    - [ ] Use extracted useEventGrouping hook
+    - [ ] Use extracted EventRow and GroupedEventRow components
+    - [ ] Add comprehensive error boundaries and loading states
     - [ ] **TEST**: Verify table renders identically to original
+    - [ ] **TEST**: Test all filtering combinations and edge cases
   - [ ] Update `FundDetailTable/index.ts` to export FundDetailTable
   - [ ] **REPLACE**: Replace original table section with FundDetailTable component
     - [ ] Remove original table JSX from FundDetail.tsx
     - [ ] Add FundDetailTable component import
     - [ ] Replace table section with FundDetailTable component
+    - [ ] Add debug logging to compare before/after rendering
     - [ ] **TEST**: Verify single table appears with identical functionality
+    - [ ] **TEST**: Run comprehensive visual regression tests
   
-  **Phase 2D: Header Extraction** (Optional, for future)
+  **Phase 2B.5: Extract Table Header** (Optional, for future maintainability)
   - [ ] Create `FundDetailTable/TableHeader.tsx` (~80 lines) - Table headers and filters
     - [ ] Extract table header logic from FundDetailTable.tsx
     - [ ] Include conditional column display based on fund type
     - [ ] Include filter toggles for tax events and NAV updates
     - [ ] Include responsive header styling and typography
+    - [ ] Add accessibility features and keyboard navigation
   - [ ] Create `FundDetailTable/TableActions.tsx` (~50 lines) - Edit/delete action buttons
     - [ ] Extract action button logic from EventRow/GroupedEventRow components
     - [ ] Include edit/delete button rendering with proper event type filtering
     - [ ] Include button styling and hover effects
     - [ ] Include action button accessibility and tooltips
-**MODULAR APPROACH PRINCIPLES**:
-- **Phase-by-Phase**: Each phase must be completed and tested before moving to the next
-- **No UI Changes**: Phases 2A and 2B should not change the visible UI at all
-- **Incremental Testing**: Test each component in isolation before integration
+    - [ ] Add comprehensive event type validation
+
+**INCREMENTAL APPROACH PRINCIPLES**:
+- **Step-by-Step Safety**: Each step must be completed and thoroughly tested before proceeding
+- **No UI Changes**: Phases 2B.1 and 2B.2 should not change the visible UI at all
+- **Comprehensive Testing**: Each component must be tested in isolation before integration
 - **Rollback Safety**: Each phase should be easily reversible if issues arise
+- **Debug Infrastructure**: Extensive logging and debugging utilities for troubleshooting
 - **Preservation First**: Every step must maintain 100% functional and visual parity
+- **Performance Monitoring**: Track render performance and memory usage throughout
 
 **TESTING STRATEGY**:
-- **Phase 2A**: Test useEventGrouping hook with existing table (no UI changes)
-- **Phase 2B**: Test row components in isolation (no integration yet)
-- **Phase 2C**: Test FundDetailTable component side-by-side with original
+- **Phase 2B.1**: Test debug utilities with existing table (no UI changes)
+- **Phase 2B.2**: Test useEventGrouping hook with existing table (no UI changes)
+- **Phase 2B.3**: Test row components in isolation (no integration yet)
+- **Phase 2B.4**: Test FundDetailTable component side-by-side with original
 - **Final Integration**: Replace original table only after all tests pass
+- **Regression Testing**: Run comprehensive tests after each phase
+
+**SAFETY MEASURES**:
+- **Debug Infrastructure**: Comprehensive logging and debugging utilities
+- **Visual Regression**: Screenshot comparison before/after each step
+- **Functional Testing**: Test all event types and combinations
+- **Performance Testing**: Ensure no performance regression
+- **User Interaction Testing**: Test all buttons, filters, and interactions
+- **Rollback Scripts**: Automated rollback for each phase if issues arise
+- **Comprehensive Logging**: Detailed logging for troubleshooting
 
 **CRITICAL PRESERVATION REQUIREMENTS**:
 - **Event Grouping Logic**: Must group events by date exactly as before, combining interest + withholding tax events identically
@@ -201,6 +237,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - **Action Buttons**: Must show edit/delete buttons for same event types with identical behavior
 - **Filtering Logic**: Must preserve showTaxEvents and showNavUpdates functionality exactly
 - **Responsive Behavior**: Must maintain identical responsive behavior on all screen sizes
+- **Performance**: Must maintain or improve render performance
 - [ ] Extract `FundDetailHeader.tsx` (~100 lines) with breadcrumbs and title
   - [ ] Extract header from FundDetail.tsx lines 1100-1200
   - [ ] Include breadcrumb navigation with proper routing
@@ -223,27 +260,48 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] Test data formatting and display
   - [ ] Test user interactions and callbacks
   - [ ] Test error states and loading states
-**Design Principles**:
-- Each section is a focused, single-responsibility component
-- Consistent props interface across all sections
-- Reusable formatting functions passed as props
-- Conditional rendering based on fund type and status
-- **FundDetailTable uses component-based architecture** for complex table logic
-- **Event grouping logic is extracted into custom hooks** for reusability and testing
-- **Row rendering is separated by type** (individual vs grouped events) for maintainability
-- **CRITICAL: All logic must be preserved exactly** - no changes to calculations, filtering, or behavior
-- **CRITICAL: All styling must be preserved exactly** - no changes to colors, spacing, or visual effects
-- **CRITICAL: All user interactions must work identically** - no changes to button behavior, hover effects, or responsiveness
-**Critical Context**:
-- The `isActiveNavFund` pattern is crucial for NAV-based fund display logic
-- Event grouping logic combines interest distributions with withholding tax events
-- Chart data preparation is complex and handles multiple data types
-- Table filtering logic includes conditional column display based on fund type
-- Sidebar visibility state is persisted in localStorage
-- **FundDetailTable has complex tax payment type handling** (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
-- **Event grouping algorithm** groups events by date and combines specific event types
-- **Conditional column display** shows different columns based on fund type and event types
-- **Row rendering differs** between grouped events (interest + withholding) and individual events
+
+**PROFESSIONAL SOLUTION BENEFITS**:
+
+This incremental approach will result in a **very professional solution** because it addresses the core challenges of enterprise-grade React development:
+
+### **1. Risk Mitigation & Safety**
+- **Zero Downtime**: Each step is tested and validated before proceeding
+- **Rollback Capability**: Any phase can be safely reverted if issues arise
+- **Debug Infrastructure**: Comprehensive logging and debugging tools for troubleshooting
+- **Visual Regression**: Automated screenshot comparison ensures UI consistency
+
+### **2. Maintainability & Scalability**
+- **Single Responsibility**: Each component has one clear purpose
+- **Reusable Logic**: Event grouping logic extracted into reusable hooks
+- **Type Safety**: Comprehensive TypeScript interfaces and prop validation
+- **Performance Optimization**: Memoization and performance monitoring throughout
+
+### **3. Professional Development Standards**
+- **Incremental Testing**: Each component tested in isolation before integration
+- **Comprehensive Error Handling**: Error boundaries and loading states
+- **Accessibility**: Keyboard navigation and screen reader support
+- **Performance Monitoring**: Track render performance and memory usage
+
+### **4. Team Collaboration Benefits**
+- **Parallel Development**: Multiple developers can work on different components simultaneously
+- **Clear Interfaces**: Well-defined props and interfaces for all components
+- **Documentation**: Comprehensive logging and debugging utilities
+- **Code Review**: Smaller, focused components are easier to review
+
+### **5. Enterprise-Grade Architecture**
+- **Separation of Concerns**: Business logic separated from UI components
+- **Reusable Patterns**: Consistent patterns across all components
+- **Error Recovery**: Graceful error handling and user feedback
+- **Performance**: Optimized rendering and reduced bundle size
+
+### **6. Future-Proof Design**
+- **Extensible**: Easy to add new event types or fund types
+- **Testable**: Each component can be tested independently
+- **Debuggable**: Comprehensive logging and debugging infrastructure
+- **Maintainable**: Clear structure and documentation
+
+**This approach transforms a monolithic, hard-to-maintain component into a professional, enterprise-grade React application that follows industry best practices and supports long-term team growth.**
 
 ### Phase 3: Refactor Modal Components
 **Goal**: Break down large modal components into manageable, reusable pieces
