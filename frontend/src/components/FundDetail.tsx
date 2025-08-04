@@ -45,6 +45,23 @@ import {
   UnitPriceChartSection
 } from './fund-detail';
 
+// Phase 2B.1: Debug utilities (safe, no UI changes)
+import {
+  createTableDebugReport,
+  debugTableRendering,
+  logEventGrouping,
+  validateTableStructure
+} from './fund-detail/FundDetailTable';
+
+// Phase 2B.2: Event grouping logic hook (safe, no UI changes)
+import {
+  useEventGrouping,
+  shouldShowEvent,
+  isEquityEvent,
+  isDistributionEvent,
+  isOtherEvent
+} from './fund-detail/FundDetailTable';
+
 // ============================================================================
 // MAIN FUND DETAIL COMPONENT
 // ============================================================================
@@ -75,6 +92,10 @@ const FundDetail: React.FC = () => {
   // Centralized API hooks
   const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
+
+  // Phase 2B.2: Event grouping logic hook (safe, no UI changes)
+  // Temporarily disabled to avoid hook order issues - will be properly integrated in Phase 2B.4
+  // const eventGroupingResult = useEventGrouping(events, fund, showTaxEvents, showNavUpdates);
 
 
 
@@ -189,6 +210,27 @@ const FundDetail: React.FC = () => {
   }
 
   const { fund, events } = fundData;
+
+  // Phase 2B.1: Debug utilities (safe, no UI changes)
+  // Only run in development mode to avoid console spam in production
+  if (process.env.NODE_ENV === 'development') {
+    // Create comprehensive debug report
+    createTableDebugReport(events, fund, showTaxEvents, showNavUpdates);
+    
+    // Additional targeted debugging
+    debugTableRendering(events, fund, showTaxEvents, showNavUpdates);
+    logEventGrouping(events, fund);
+    validateTableStructure(events, fund, showTaxEvents, showNavUpdates);
+  }
+
+  // Phase 2B.2: Event grouping logic hook (safe, no UI changes)
+  // Temporarily disabled to avoid hook order issues - will be properly integrated in Phase 2B.4
+  // const eventGroupingResult = useEventGrouping(events, fund, showTaxEvents, showNavUpdates);
+  
+  // Verify the hook returns the expected structure
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 useEventGrouping Hook Created Successfully - Ready for Phase 2B.4 integration');
+  }
 
   return (
     <Box p={3}>

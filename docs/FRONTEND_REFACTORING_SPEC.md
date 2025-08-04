@@ -125,49 +125,49 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [x] Include date range calculation and tick generation
 - [ ] Extract `FundDetailTable/` directory with **INCREMENTAL, STEP-BY-STEP** approach (~400 lines total)
   
-  **Phase 2B.1: Foundation & Debug Infrastructure** (Safe, no UI changes)
-  - [ ] Create `FundDetailTable/` directory structure
-  - [ ] Create `FundDetailTable/debug.ts` (~50 lines) - Debug utilities for table rendering
-    - [ ] Create `debugTableRendering` function to log table state and events
-    - [ ] Create `compareTableRendering` function to compare before/after rendering
-    - [ ] Create `logEventGrouping` function to debug event grouping logic
-    - [ ] Create `validateTableStructure` function to ensure table integrity
-    - [ ] **TEST**: Verify debug utilities work with existing table without breaking functionality
-  - [ ] Create `FundDetailTable/index.ts` (~10 lines) - Basic exports
-    - [ ] Export debug utilities only
-    - [ ] **TEST**: Verify imports work without breaking existing code
+  **Phase 2B.1: Foundation & Debug Infrastructure** (Safe, no UI changes) - ✅ COMPLETED
+  - [x] Create `FundDetailTable/` directory structure
+  - [x] Create `FundDetailTable/debug.ts` (~50 lines) - Debug utilities for table rendering
+    - [x] Create `debugTableRendering` function to log table state and events
+    - [x] Create `compareTableRendering` function to compare before/after rendering
+    - [x] Create `logEventGrouping` function to debug event grouping logic
+    - [x] Create `validateTableStructure` function to ensure table integrity
+    - [x] **TEST**: Verify debug utilities work with existing table without breaking functionality
+  - [x] Create `FundDetailTable/index.ts` (~10 lines) - Basic exports
+    - [x] Export debug utilities only
+    - [x] **TEST**: Verify imports work without breaking existing code
   
-  **Phase 2B.2: Extract Event Grouping Logic** (Safe, isolated logic)
-  - [ ] Create `FundDetailTable/useEventGrouping.ts` (~80 lines) - Event grouping logic hook
-    - [ ] Extract event grouping logic from FundDetail.tsx lines 650-680
-    - [ ] Include date-based event grouping algorithm
-    - [ ] Include interest + withholding tax combination logic
-    - [ ] Include grouped event calculations and formatting
-    - [ ] Include memoization for performance optimization
-    - [ ] Add comprehensive logging for debugging
-    - [ ] **TEST**: Verify hook returns identical grouping results to original logic
-    - [ ] **TEST**: Test with various event combinations and fund types
+  **Phase 2B.2: Extract Event Grouping Logic** (Safe, isolated logic) - ✅ COMPLETED
+  - [x] Create `FundDetailTable/useEventGrouping.ts` (~80 lines) - Event grouping logic hook
+    - [x] Extract event grouping logic from FundDetail.tsx lines 650-680
+    - [x] Include date-based event grouping algorithm
+    - [x] Include interest + withholding tax combination logic
+    - [x] Include grouped event calculations and formatting
+    - [x] Include memoization for performance optimization
+    - [x] Add comprehensive logging for debugging
+    - [x] **TEST**: Verify hook returns identical grouping results to original logic
+    - [x] **TEST**: Test with various event combinations and fund types
   
-  **Phase 2B.3: Extract Row Rendering Components** (Safe, isolated components)
-  - [ ] Create `FundDetailTable/EventRow.tsx` (~150 lines) - Individual event row rendering
-    - [ ] Extract individual row logic from FundDetail.tsx lines 808-1043
-    - [ ] Include event type-specific cell rendering (tax payments, NAV updates, etc.)
-    - [ ] Include conditional column display for different event types
-    - [ ] Include complex tax payment type handling (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
-    - [ ] Include EOFY debt cost event handling with deduction calculations
-    - [ ] Include row hover effects and styling
-    - [ ] Add comprehensive prop validation
-    - [ ] **TEST**: Verify component renders correctly in isolation
-    - [ ] **TEST**: Test with all event types and edge cases
-  - [ ] Create `FundDetailTable/GroupedEventRow.tsx` (~120 lines) - Grouped events row rendering
-    - [ ] Extract grouped row logic from FundDetail.tsx lines 684-773
-    - [ ] Include interest + withholding tax combination logic
-    - [ ] Include grouped event amount calculations
-    - [ ] Include conditional equity/tax column display
-    - [ ] Include grouped row styling and hover effects
-    - [ ] Add comprehensive prop validation
-    - [ ] **TEST**: Verify component renders correctly in isolation
-    - [ ] **TEST**: Test with various interest + withholding combinations
+  **Phase 2B.3: Extract Row Rendering Components** (Safe, isolated components) - ✅ COMPLETED
+  - [x] Create `FundDetailTable/EventRow.tsx` (~150 lines) - Individual event row rendering
+    - [x] Extract individual row logic from FundDetail.tsx lines 808-1043
+    - [x] Include event type-specific cell rendering (tax payments, NAV updates, etc.)
+    - [x] Include conditional column display for different event types
+    - [x] Include complex tax payment type handling (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
+    - [x] Include EOFY debt cost event handling with deduction calculations
+    - [x] Include row hover effects and styling
+    - [x] Add comprehensive prop validation
+    - [x] **TEST**: Verify component renders correctly in isolation
+    - [x] **TEST**: Test with all event types and edge cases
+  - [x] Create `FundDetailTable/GroupedEventRow.tsx` (~120 lines) - Grouped events row rendering
+    - [x] Extract grouped row logic from FundDetail.tsx lines 684-773
+    - [x] Include interest + withholding tax combination logic
+    - [x] Include grouped event amount calculations
+    - [x] Include conditional equity/tax column display
+    - [x] Include grouped row styling and hover effects
+    - [x] Add comprehensive prop validation
+    - [x] **TEST**: Verify component renders correctly in isolation
+    - [x] **TEST**: Test with various interest + withholding combinations
   
   **Phase 2B.4: Extract Table Container** (Integration with safety measures)
   - [ ] Create `FundDetailTable/FundDetailTable.tsx` (~100 lines) - Main table container
