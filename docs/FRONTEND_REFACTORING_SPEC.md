@@ -12,6 +12,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - **Performance**: Optimized rendering and reduced bundle size
 - **Team Collaboration**: Multiple developers can work simultaneously without conflicts
 - **Professional Standards**: Follow React and TypeScript industry conventions
+- **Functional Parity**: **ZERO changes to existing functionality or user experience**
+- **Visual Parity**: **ZERO changes to UI appearance, styling, or behavior**
 
 ## Problems We're Solving
 1. **Massive File Sizes**: FundDetail.tsx (2,221 lines) violates professional standards
@@ -28,6 +30,10 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - Faster development cycles and easier debugging
 - Reduced bundle size and improved performance
 - Professional-grade architecture that supports team growth
+- **Complex components are broken into focused, testable pieces**
+- **Business logic is extracted into reusable hooks and utilities**
+- **100% functional parity** - no regression in any feature or behavior
+- **100% visual parity** - no changes to UI appearance or user experience
 
 ## Implementation Strategy
 
@@ -117,13 +123,50 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [x] Include error handling for chart rendering
   - [x] Include responsive chart sizing and tooltips
   - [x] Include date range calculation and tick generation
-- [ ] Extract `FundDetailTable.tsx` (~400 lines) with events table and filtering
-  - [ ] Extract table logic from FundDetail.tsx lines 1200-2200
-  - [ ] Include event grouping by date and type
-  - [ ] Include interest + withholding tax combination logic
-  - [ ] Include conditional column display (NAV updates, tax events)
-  - [ ] Include event editing and deletion functionality
-  - [ ] Include table row hover effects and styling
+- [ ] Extract `FundDetailTable/` directory with component-based architecture (~400 lines total)
+  - [ ] Create `FundDetailTable/index.ts` (~50 lines) - Main orchestrator and exports
+  - [ ] Create `FundDetailTable/FundDetailTable.tsx` (~100 lines) - Main table container
+    - [ ] Extract table container logic from FundDetail.tsx lines 1200-1300
+    - [ ] Include table structure and responsive layout
+    - [ ] Include event filtering and grouping orchestration
+    - [ ] Include table state management (showTaxEvents, showNavUpdates)
+  - [ ] Create `FundDetailTable/TableHeader.tsx` (~80 lines) - Table headers and filters
+    - [ ] Extract table header logic from FundDetail.tsx lines 494-618
+    - [ ] Include conditional column display based on fund type
+    - [ ] Include filter toggles for tax events and NAV updates
+    - [ ] Include responsive header styling and typography
+  - [ ] Create `FundDetailTable/EventRow.tsx` (~150 lines) - Individual event row rendering
+    - [ ] Extract individual row logic from FundDetail.tsx lines 808-1043
+    - [ ] Include event type-specific cell rendering (tax payments, NAV updates, etc.)
+    - [ ] Include conditional column display for different event types
+    - [ ] Include complex tax payment type handling (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
+    - [ ] Include EOFY debt cost event handling with deduction calculations
+    - [ ] Include row hover effects and styling
+  - [ ] Create `FundDetailTable/GroupedEventRow.tsx` (~120 lines) - Grouped events row rendering
+    - [ ] Extract grouped row logic from FundDetail.tsx lines 684-773
+    - [ ] Include interest + withholding tax combination logic
+    - [ ] Include grouped event amount calculations
+    - [ ] Include conditional equity/tax column display
+    - [ ] Include grouped row styling and hover effects
+  - [ ] Create `FundDetailTable/TableActions.tsx` (~50 lines) - Edit/delete action buttons
+    - [ ] Extract action button logic from FundDetail.tsx lines 998-1042
+    - [ ] Include edit/delete button rendering with proper event type filtering
+    - [ ] Include button styling and hover effects
+    - [ ] Include action button accessibility and tooltips
+  - [ ] Create `FundDetailTable/useEventGrouping.ts` (~80 lines) - Event grouping logic hook
+    - [ ] Extract event grouping logic from FundDetail.tsx lines 620-683
+    - [ ] Include date-based event grouping algorithm
+    - [ ] Include interest + withholding tax combination logic
+    - [ ] Include grouped event calculations and formatting
+    - [ ] Include memoization for performance optimization
+**CRITICAL PRESERVATION REQUIREMENTS**:
+- **Event Grouping Logic**: Must group events by date exactly as before, combining interest + withholding tax events identically
+- **Tax Payment Display**: Must show tax payment types (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.) with exact same formatting and calculations
+- **Conditional Columns**: Must show/hide columns based on fund type and event types exactly as before
+- **Row Styling**: Must preserve exact hover effects, colors, spacing, and typography
+- **Action Buttons**: Must show edit/delete buttons for same event types with identical behavior
+- **Filtering Logic**: Must preserve showTaxEvents and showNavUpdates functionality exactly
+- **Responsive Behavior**: Must maintain identical responsive behavior on all screen sizes
 - [ ] Extract `FundDetailHeader.tsx` (~100 lines) with breadcrumbs and title
   - [ ] Extract header from FundDetail.tsx lines 1100-1200
   - [ ] Include breadcrumb navigation with proper routing
@@ -151,12 +194,22 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - Consistent props interface across all sections
 - Reusable formatting functions passed as props
 - Conditional rendering based on fund type and status
+- **FundDetailTable uses component-based architecture** for complex table logic
+- **Event grouping logic is extracted into custom hooks** for reusability and testing
+- **Row rendering is separated by type** (individual vs grouped events) for maintainability
+- **CRITICAL: All logic must be preserved exactly** - no changes to calculations, filtering, or behavior
+- **CRITICAL: All styling must be preserved exactly** - no changes to colors, spacing, or visual effects
+- **CRITICAL: All user interactions must work identically** - no changes to button behavior, hover effects, or responsiveness
 **Critical Context**:
 - The `isActiveNavFund` pattern is crucial for NAV-based fund display logic
 - Event grouping logic combines interest distributions with withholding tax events
 - Chart data preparation is complex and handles multiple data types
 - Table filtering logic includes conditional column display based on fund type
 - Sidebar visibility state is persisted in localStorage
+- **FundDetailTable has complex tax payment type handling** (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
+- **Event grouping algorithm** groups events by date and combines specific event types
+- **Conditional column display** shows different columns based on fund type and event types
+- **Row rendering differs** between grouped events (interest + withholding) and individual events
 
 ### Phase 3: Refactor Modal Components
 **Goal**: Break down large modal components into manageable, reusable pieces
