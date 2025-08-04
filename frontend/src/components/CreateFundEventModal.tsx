@@ -20,6 +20,8 @@ import { useErrorHandler } from '../hooks/useErrorHandler';
 import { TrendingUp, AccountBalance, Add as AddIcon, MonetizationOn, Receipt } from '@mui/icons-material';
 import { useFund } from '../hooks/useFunds';
 import { useCreateFundEvent, useCreateTaxStatement } from '../hooks/useFunds';
+import { validateField } from '../utils/validators';
+import { formatNumber, parseNumber, calculateTaxPaymentDate, calculateWithholdingTax } from '../utils/helpers';
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -184,70 +186,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     }
   }, [fundData, open]);
 
-  // Calculate tax payment date (last day of financial year)
-  const calculateTaxPaymentDate = (financialYear: string): string => {
-    if (!financialYear) return '';
-    const [startYear] = financialYear.split('-');
-    const endYear = parseInt(startYear) + 1;
-    return `${endYear}-06-30`; // Last day of financial year (June 30)
-  };
-
-  // Number formatting helpers
-  const formatNumber = (value: string): string => {
-    if (!value) return '';
-    const num = parseFloat(value.replace(/,/g, ''));
-    if (isNaN(num)) return value;
-    return num.toLocaleString('en-US');
-  };
-  const parseNumber = (value: string): string => {
-    if (!value) return '';
-    return value.replace(/,/g, '');
-  };
-
-  // Simple withholding tax calculation
-  const calculateWithholdingTax = () => {
-    if (!withholdingAmountType || !withholdingTaxType) return;
-
-    const amountValue = withholdingAmountType === 'gross' ? 
-      parseFloat(formData.gross_amount || '0') : 
-      parseFloat(formData.net_amount || '0');
-    const taxValue = withholdingTaxType === 'rate' ? 
-      parseFloat(formData.withholding_tax_rate || '0') : 
-      parseFloat(formData.withholding_tax_amount || '0');
-
-    if (amountValue <= 0 || taxValue <= 0) return;
-
-    let newFormData = { ...formData };
-
-    if (withholdingAmountType === 'gross' && withholdingTaxType === 'rate') {
-      // Gross + Tax Rate → Calculate Net and Tax Amount
-      const taxAmount = (amountValue * taxValue) / 100;
-      const netAmount = amountValue - taxAmount;
-      newFormData.net_amount = netAmount.toFixed(2);
-      newFormData.withholding_tax_amount = taxAmount.toFixed(2);
-    } else if (withholdingAmountType === 'net' && withholdingTaxType === 'rate') {
-      // Net + Tax Rate → Calculate Gross and Tax Amount
-      const grossAmount = (amountValue * 100) / (100 - taxValue);
-      const taxAmount = grossAmount - amountValue;
-      newFormData.gross_amount = grossAmount.toFixed(2);
-      newFormData.withholding_tax_amount = taxAmount.toFixed(2);
-    } else if (withholdingAmountType === 'gross' && withholdingTaxType === 'amount') {
-      // Gross + Tax Amount → Calculate Net and Tax Rate
-      const netAmount = amountValue - taxValue;
-      const taxRate = (taxValue / amountValue) * 100;
-      newFormData.net_amount = netAmount.toFixed(2);
-      newFormData.withholding_tax_rate = taxRate.toFixed(2);
-    } else if (withholdingAmountType === 'net' && withholdingTaxType === 'amount') {
-      // Net + Tax Amount → Calculate Gross and Tax Rate
-      const grossAmount = amountValue + taxValue;
-      const taxRate = (taxValue / grossAmount) * 100;
-      newFormData.gross_amount = grossAmount.toFixed(2);
-      newFormData.withholding_tax_rate = taxRate.toFixed(2);
-    }
-
-    setFormData(newFormData);
-  };
-
   const resetForm = () => {
     setEventType('');
     setDistributionType('');
@@ -292,101 +230,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     } else {
       setEventType('');
     }
-  };
-
-  // Field-level validation
-  const validateField = (field: string, value: string): string | undefined => {
-    switch (field) {
-      case 'event_date':
-        if (!value) return 'Event date is required';
-        break;
-      case 'amount':
-        if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
-          const amt = parseFloat(value);
-          if (!value) return 'Amount is required';
-          if (isNaN(amt) || amt <= 0) return 'Enter a valid positive amount';
-        }
-        break;
-      case 'distribution_type':
-        if (eventType === 'DISTRIBUTION' && !distributionType) return 'Distribution type is required';
-        break;
-              case 'sub_distribution_type':
-          if ((distributionType === 'DIVIDEND_FRANKED' || distributionType === 'DIVIDEND_UNFRANKED') && !subDistributionType) return 'Sub-distribution type is required';
-          break;
-      case 'units_purchased':
-        if (eventType === 'UNIT_PURCHASE') {
-          const units = parseFloat(value);
-          if (!value) return 'Units purchased is required';
-          if (isNaN(units) || units <= 0) return 'Enter a valid positive number';
-        }
-        break;
-      case 'units_sold':
-        if (eventType === 'UNIT_SALE') {
-          const units = parseFloat(value);
-          if (!value) return 'Units sold is required';
-          if (isNaN(units) || units <= 0) return 'Enter a valid positive number';
-        }
-        break;
-      case 'unit_price':
-        if ((eventType === 'UNIT_PURCHASE' || eventType === 'UNIT_SALE' || eventType === 'NAV_UPDATE')) {
-          const price = parseFloat(value);
-          if (!value) return 'Unit price is required';
-          if (isNaN(price) || price <= 0) return 'Enter a valid positive price';
-        }
-        break;
-      case 'gross_amount':
-      case 'net_amount':
-      case 'withholding_tax_amount':
-        if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
-          const num = parseFloat(value);
-          if (value && (isNaN(num) || num <= 0)) return 'Enter a valid positive amount';
-        }
-        break;
-      case 'withholding_tax_rate':
-        if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
-          const rate = parseFloat(value);
-          if (value && (isNaN(rate) || rate <= 0 || rate >= 100)) return 'Enter a valid tax rate between 0 and 100';
-        }
-        break;
-      // Tax Statement validation
-      case 'financial_year':
-        if (eventType === 'TAX_STATEMENT' && !value) return 'Financial year is required';
-        break;
-      case 'statement_date':
-        if (eventType === 'TAX_STATEMENT' && !value) return 'Statement date is required';
-        break;
-      case 'eofy_debt_interest_deduction_rate':
-        if (eventType === 'TAX_STATEMENT') {
-          if (!value) return 'End of financial year debt interest deduction rate is required';
-          const rate = parseFloat(value);
-          if (isNaN(rate) || rate < 0 || rate > 100) return 'Enter a valid rate between 0 and 100';
-        }
-        break;
-      case 'interest_received_in_cash':
-      case 'interest_receivable_this_fy':
-      case 'interest_receivable_prev_fy':
-      case 'interest_non_resident_withholding_tax_from_statement':
-      case 'dividend_franked_income_amount':
-      case 'dividend_unfranked_income_amount':
-      case 'capital_gain_income_amount':
-        if (eventType === 'TAX_STATEMENT' && value) {
-          const num = parseFloat(value);
-          if (isNaN(num) || num < 0) return 'Enter a valid non-negative amount';
-        }
-        break;
-      case 'interest_income_tax_rate':
-      case 'dividend_franked_income_tax_rate':
-      case 'dividend_unfranked_income_tax_rate':
-      case 'capital_gain_income_tax_rate':
-        if (eventType === 'TAX_STATEMENT' && value) {
-          const rate = parseFloat(value);
-          if (isNaN(rate) || rate < 0 || rate > 100) return 'Enter a valid rate between 0 and 100';
-        }
-        break;
-      default:
-        return undefined;
-    }
-    return undefined;
   };
 
   // Form-level validation

@@ -32,7 +32,7 @@ import { useNavigate } from 'react-router-dom';
 import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
-
+import { formatCurrency, formatDate } from '../utils/formatters';
 
 
 const OverallDashboard: React.FC = () => {
@@ -43,25 +43,6 @@ const OverallDashboard: React.FC = () => {
   // Centralized API hook
   const { data: companies, loading, error, refetch } = useInvestmentCompanies();
 
-
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-AU', {
-      style: 'currency',
-      currency: 'AUD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-AU', { month: 'short' });
-    const year = date.getFullYear().toString().slice(-2);
-    return `${day}-${month}-${year}`;
-  };
 
   const handleEntityCreated = (entity: { id: number; name: string }) => {
     // Refresh the page or show a success message

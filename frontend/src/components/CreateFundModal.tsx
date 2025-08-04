@@ -28,7 +28,8 @@ import CreateEntityModal from './CreateEntityModal';
 import { useEntities } from '../hooks/useEntities';
 import { useCreateFund } from '../hooks/useFunds';
 import { Entity, FundType } from '../types/api';
-
+import { validateField } from '../utils/validators';
+import { formatNumber, parseNumber } from '../utils/helpers';
 
 
 interface CreateFundModalProps {
@@ -142,19 +143,6 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     }
   }, [open]);
 
-  // Number formatting helpers
-  const formatNumber = (value: string): string => {
-    if (!value) return '';
-    const num = parseFloat(value.replace(/,/g, ''));
-    if (isNaN(num)) return value;
-    return num.toLocaleString('en-US');
-  };
-
-  const parseNumber = (value: string): string => {
-    if (!value) return '';
-    return value.replace(/,/g, '');
-  };
-
   // Apply template to form data
   const applyTemplate = (template: FundTemplate) => {
     setFormData({
@@ -203,57 +191,6 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   };
 
   // Validation rules
-  const validateField = (field: string, value: string): string | undefined => {
-    switch (field) {
-      case 'name':
-        if (!value.trim()) return 'Fund name is required';
-        if (value.trim().length < 2) return 'Fund name must be at least 2 characters';
-        if (value.trim().length > 255) return 'Fund name must be less than 255 characters';
-        if (!/^[a-zA-Z0-9\s\-_()]+$/.test(value.trim())) {
-          return 'Fund name can only contain letters, numbers, spaces, hyphens, underscores, and parentheses';
-        }
-        break;
-      
-      case 'fund_type':
-        if (!value.trim()) return 'Fund type is required';
-        if (value.trim().length < 2) return 'Fund type must be at least 2 characters';
-        if (value.trim().length > 100) return 'Fund type must be less than 100 characters';
-        break;
-      
-      case 'commitment_amount':
-        if (value && value.trim() !== '') {
-          const num = parseFloat(value);
-          if (isNaN(num)) return 'Commitment amount must be a valid number';
-          if (num <= 0) return 'Commitment amount must be positive';
-          if (num > 999999999) return 'Commitment amount must be less than 1 billion';
-        }
-        break;
-      
-      case 'expected_irr':
-        if (value && value.trim() !== '') {
-          const num = parseFloat(value);
-          if (isNaN(num)) return 'Expected IRR must be a valid number';
-          if (num < 0 || num > 100) return 'Expected IRR must be between 0 and 100';
-        }
-        break;
-      
-      case 'expected_duration_months':
-        if (value && value.trim() !== '') {
-          const num = parseInt(value);
-          if (isNaN(num)) return 'Expected duration must be a valid number';
-          if (num < 1 || num > 1200) return 'Expected duration must be between 1 and 1200 months';
-        }
-        break;
-      
-      case 'description':
-        if (value && value.trim().length > 1000) {
-          return 'Description must be less than 1000 characters';
-        }
-        break;
-    }
-    return undefined;
-  };
-
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
     
