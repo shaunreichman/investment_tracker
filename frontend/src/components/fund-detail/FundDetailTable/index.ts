@@ -54,6 +54,12 @@ export {
   type ActionButtonsProps
 } from './ActionButtons';
 
+// Phase 2B.4: Table body component
+export {
+  default as TableBody,
+  type TableBodyProps
+} from './TableBody';
+
 // Future exports will be added here as we progress through the phases:
-// Phase 2B.4: FundDetailTable component
-// Phase 2B.5: TableHeader and TableActions components 
+// Phase 2B.5: TableContainer component
+// Phase 2B.6: Complete table integration 
