@@ -36,6 +36,12 @@ export {
   type GroupedEventRowProps
 } from './GroupedEventRow';
 
+// Phase 2B.4: Table filters component
+export {
+  default as TableFilters,
+  type TableFiltersProps
+} from './TableFilters';
+
 // Future exports will be added here as we progress through the phases:
 // Phase 2B.4: FundDetailTable component
 // Phase 2B.5: TableHeader and TableActions components 

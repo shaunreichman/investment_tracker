@@ -174,17 +174,17 @@ Transform the frontend codebase from a monolithic structure with massive files a
   **Goal**: Extract the 850-line table logic into 8 focused, manageable components with immediate verification at each step
   **Strategy**: Break down complex table logic into small, testable pieces that can be verified immediately
   
-  **Step 1: Extract TableFilters Component** (SAFE, IMMEDIATE VERIFICATION)
-  - [ ] Create `FundDetailTable/TableFilters.tsx` (~80 lines) - Filter toggles and add button
-    - [ ] Extract filter toggle logic from FundDetail.tsx lines 450-500
-    - [ ] Include "Show Tax Events" and "Show NAV Updates" switches
-    - [ ] Include "Add Event" button with modal trigger
-    - [ ] Include responsive styling and hover effects
-    - [ ] Add proper TypeScript interfaces for filter props
-    - [ ] **VERIFICATION**: Toggle filters work identically to original
-    - [ ] **VERIFICATION**: Add Event button opens modal correctly
-    - [ ] **VERIFICATION**: Filters work on all fund types (NAV-based and cost-based)
-    - [ ] **VERIFICATION**: No visual changes to filter section
+  **Step 1: Extract TableFilters Component** (SAFE, IMMEDIATE VERIFICATION) - ✅ COMPLETED
+  - [x] Create `FundDetailTable/TableFilters.tsx` (~80 lines) - Filter toggles and add button
+    - [x] Extract filter toggle logic from FundDetail.tsx lines 450-500
+    - [x] Include "Show Tax Events" and "Show NAV Updates" switches
+    - [x] Include "Add Event" button with modal trigger
+    - [x] Include responsive styling and hover effects
+    - [x] Add proper TypeScript interfaces for filter props
+    - [x] **VERIFICATION**: Toggle filters work identically to original
+    - [x] **VERIFICATION**: Add Event button opens modal correctly
+    - [x] **VERIFICATION**: Filters work on all fund types (NAV-based and cost-based)
+    - [x] **VERIFICATION**: No visual changes to filter section
   
   **Step 2: Extract TableHeader Component** (SAFE, IMMEDIATE VERIFICATION)
   - [ ] Create `FundDetailTable/TableHeader.tsx` (~120 lines) - Table header row
