@@ -169,64 +169,145 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **TEST**: Verify component renders correctly in isolation
     - [x] **TEST**: Test with various interest + withholding combinations
   
-  **Phase 2B.4: Extract Table Container** (Integration with safety measures)
-  - [ ] Create `FundDetailTable/FundDetailTable.tsx` (~100 lines) - Main table container
-    - [ ] Extract table container logic from FundDetail.tsx lines 1200-1300
-    - [ ] Include table structure and responsive layout
-    - [ ] Include event filtering and grouping orchestration
-    - [ ] Include table state management (showTaxEvents, showNavUpdates)
-    - [ ] Use extracted useEventGrouping hook
-    - [ ] Use extracted EventRow and GroupedEventRow components
-    - [ ] Add comprehensive error boundaries and loading states
-    - [ ] **TEST**: Verify table renders identically to original
-    - [ ] **TEST**: Test all filtering combinations and edge cases
-  - [ ] Update `FundDetailTable/index.ts` to export FundDetailTable
-  - [ ] **REPLACE**: Replace original table section with FundDetailTable component
-    - [ ] Remove original table JSX from FundDetail.tsx
-    - [ ] Add FundDetailTable component import
-    - [ ] Replace table section with FundDetailTable component
-    - [ ] Add debug logging to compare before/after rendering
-    - [ ] **TEST**: Verify single table appears with identical functionality
-    - [ ] **TEST**: Run comprehensive visual regression tests
+  **Phase 2B.4: Granular Table Extraction with Step-by-Step Verification** (REALISTIC APPROACH)
   
-  **Phase 2B.5: Extract Table Header** (Optional, for future maintainability)
-  - [ ] Create `FundDetailTable/TableHeader.tsx` (~80 lines) - Table headers and filters
-    - [ ] Extract table header logic from FundDetailTable.tsx
+  **Goal**: Extract the 850-line table logic into 8 focused, manageable components with immediate verification at each step
+  **Strategy**: Break down complex table logic into small, testable pieces that can be verified immediately
+  
+  **Step 1: Extract TableFilters Component** (SAFE, IMMEDIATE VERIFICATION)
+  - [ ] Create `FundDetailTable/TableFilters.tsx` (~80 lines) - Filter toggles and add button
+    - [ ] Extract filter toggle logic from FundDetail.tsx lines 450-500
+    - [ ] Include "Show Tax Events" and "Show NAV Updates" switches
+    - [ ] Include "Add Event" button with modal trigger
+    - [ ] Include responsive styling and hover effects
+    - [ ] Add proper TypeScript interfaces for filter props
+    - [ ] **VERIFICATION**: Toggle filters work identically to original
+    - [ ] **VERIFICATION**: Add Event button opens modal correctly
+    - [ ] **VERIFICATION**: Filters work on all fund types (NAV-based and cost-based)
+    - [ ] **VERIFICATION**: No visual changes to filter section
+  
+  **Step 2: Extract TableHeader Component** (SAFE, IMMEDIATE VERIFICATION)
+  - [ ] Create `FundDetailTable/TableHeader.tsx` (~120 lines) - Table header row
+    - [ ] Extract header row logic from FundDetail.tsx lines 536-660
     - [ ] Include conditional column display based on fund type
-    - [ ] Include filter toggles for tax events and NAV updates
-    - [ ] Include responsive header styling and typography
-    - [ ] Add accessibility features and keyboard navigation
-  - [ ] Create `FundDetailTable/TableActions.tsx` (~50 lines) - Edit/delete action buttons
-    - [ ] Extract action button logic from EventRow/GroupedEventRow components
-    - [ ] Include edit/delete button rendering with proper event type filtering
+    - [ ] Include responsive column styling and typography
+    - [ ] Include event count display in header
+    - [ ] Add proper TypeScript interfaces for header props
+    - [ ] **VERIFICATION**: All columns display correctly
+    - [ ] **VERIFICATION**: NAV column shows/hides based on fund type
+    - [ ] **VERIFICATION**: Tax column shows/hides based on filter state
+    - [ ] **VERIFICATION**: Column alignment and styling identical to original
+  
+  **Step 3: Extract ActionButtons Component** (SAFE, IMMEDIATE VERIFICATION)
+  - [ ] Create `FundDetailTable/ActionButtons.tsx` (~80 lines) - Edit/delete buttons
+    - [ ] Extract action button logic from FundDetail.tsx lines 1040-1084
+    - [ ] Include edit/delete button rendering with event type filtering
     - [ ] Include button styling and hover effects
-    - [ ] Include action button accessibility and tooltips
-    - [ ] Add comprehensive event type validation
+    - [ ] Include proper event type validation for editable events
+    - [ ] Add comprehensive TypeScript interfaces
+    - [ ] **VERIFICATION**: Edit button opens edit modal for editable events
+    - [ ] **VERIFICATION**: Delete button opens delete dialog for editable events
+    - [ ] **VERIFICATION**: Buttons don't show for system events (TAX_PAYMENT, etc.)
+    - [ ] **VERIFICATION**: Button styling and hover effects identical to original
+  
+  **Step 4: Extract EventGroupingLogic Hook** (SAFE, IMMEDIATE VERIFICATION)
+  - [ ] Create `FundDetailTable/useEventGrouping.ts` (~100 lines) - Event grouping logic
+    - [ ] Extract grouping logic from FundDetail.tsx lines 695-710
+    - [ ] Include date-based event grouping algorithm
+    - [ ] Include interest + withholding tax combination logic
+    - [ ] Include event filtering based on showTaxEvents and showNavUpdates
+    - [ ] Add comprehensive logging for debugging
+    - [ ] **VERIFICATION**: Events grouped by date correctly
+    - [ ] **VERIFICATION**: Interest + withholding tax events identified correctly
+    - [ ] **VERIFICATION**: Grouping works for all event types
+    - [ ] **VERIFICATION**: Performance maintained or improved
+  
+  **Step 5: Extract IndividualEventRow Component** (RISKY, CAREFUL TESTING REQUIRED)
+  - [ ] Create `FundDetailTable/IndividualEventRow.tsx` (~200 lines) - Individual event row
+    - [ ] Extract individual row rendering logic from FundDetail.tsx lines 850-1084
+    - [ ] Include NAV-based vs cost-based fund logic
+    - [ ] Include event type-specific cell rendering
+    - [ ] Include conditional column display
+    - [ ] Add comprehensive TypeScript interfaces
+    - [ ] **VERIFICATION**: Test with every event type:
+      - [ ] CAPITAL_CALL, RETURN_OF_CAPITAL (cost-based funds)
+      - [ ] UNIT_PURCHASE, UNIT_SALE (NAV-based funds)
+      - [ ] DISTRIBUTION (INTEREST, DIVIDEND, OTHER)
+      - [ ] TAX_PAYMENT (all types: EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
+      - [ ] NAV_UPDATE (NAV-based funds only)
+      - [ ] EOFY_DEBT_COST, MANAGEMENT_FEE, CARRIED_INTEREST
+    - [ ] **VERIFICATION**: Row styling identical to original
+    - [ ] **VERIFICATION**: Cell content displays correctly for all event types
+  
+  **Step 6: Extract CombinedEventRow Component** (RISKY, CAREFUL TESTING REQUIRED)
+  - [ ] Create `FundDetailTable/CombinedEventRow.tsx` (~150 lines) - Combined interest + withholding
+    - [ ] Extract combined row logic from FundDetail.tsx lines 723-815
+    - [ ] Include interest + withholding tax combination logic
+    - [ ] Include conditional column display for combined events
+    - [ ] Include complex tax payment type handling
+    - [ ] Add comprehensive TypeScript interfaces
+    - [ ] **VERIFICATION**: Test with funds that have interest + withholding tax events
+    - [ ] **VERIFICATION**: Test with funds that don't have combined events
+    - [ ] **VERIFICATION**: Combined row displays correctly
+    - [ ] **VERIFICATION**: Other events on same date still display correctly
+  
+  **Step 7: Extract EventTypeCells Components** (RISKY, CAREFUL TESTING REQUIRED)
+  - [ ] Create `FundDetailTable/EventTypeCells.tsx` (~150 lines) - Event type-specific cells
+    - [ ] Extract cell rendering logic from IndividualEventRow
+    - [ ] Include EquityCell (unit purchases/sales, capital calls/returns)
+    - [ ] Include NavUpdateCell (NAV updates for NAV-based funds)
+    - [ ] Include DistributionCell (distributions)
+    - [ ] Include TaxCell (tax payments and debt costs)
+    - [ ] Add comprehensive TypeScript interfaces
+    - [ ] **VERIFICATION**: Each cell type renders correctly for all event types
+    - [ ] **VERIFICATION**: Cell content and formatting identical to original
+    - [ ] **VERIFICATION**: Conditional display logic works correctly
+  
+  **Step 8: Extract TableContainer Component** (INTEGRATION, COMPREHENSIVE TESTING)
+  - [ ] Create `FundDetailTable/TableContainer.tsx` (~100 lines) - Main table container
+    - [ ] Combine all extracted components into main table container
+    - [ ] Include table wrapper and responsive layout
+    - [ ] Include loading states and error boundaries
+    - [ ] Include comprehensive TypeScript interfaces
+    - [ ] **VERIFICATION**: Complete table renders identically to original
+    - [ ] **VERIFICATION**: All interactions work correctly
+    - [ ] **VERIFICATION**: Performance maintained or improved
+    - [ ] **VERIFICATION**: No console errors or warnings
+  
+  **Step 9: Integration and Final Testing** (COMPREHENSIVE VERIFICATION)
+  - [ ] Replace original table section in FundDetail.tsx with TableContainer
+    - [ ] Remove original table JSX (~850 lines)
+    - [ ] Add TableContainer component import
+    - [ ] Replace table section with TableContainer component
+    - [ ] Add debug logging to compare before/after rendering
+    - [ ] **VERIFICATION**: Complete visual regression testing
+    - [ ] **VERIFICATION**: All functionality preserved
+    - [ ] **VERIFICATION**: Performance testing with large datasets
+    - [ ] **VERIFICATION**: Cross-browser compatibility testing
 
-**INCREMENTAL APPROACH PRINCIPLES**:
-- **Step-by-Step Safety**: Each step must be completed and thoroughly tested before proceeding
-- **No UI Changes**: Phases 2B.1 and 2B.2 should not change the visible UI at all
-- **Comprehensive Testing**: Each component must be tested in isolation before integration
-- **Rollback Safety**: Each phase should be easily reversible if issues arise
-- **Debug Infrastructure**: Extensive logging and debugging utilities for troubleshooting
-- **Preservation First**: Every step must maintain 100% functional and visual parity
-- **Performance Monitoring**: Track render performance and memory usage throughout
+**GRANULAR APPROACH PRINCIPLES**:
+- **Step-by-Step Verification**: Each step must be verified immediately before proceeding
+- **Small, Manageable Pieces**: No component larger than 200 lines (industry standard)
+- **Clear Responsibilities**: Each component has one focused purpose
+- **Immediate Testing**: Each step tested in isolation before integration
+- **Rollback Safety**: Each step easily reversible if issues arise
+- **Debug Infrastructure**: Comprehensive logging and debugging utilities
+- **Preservation First**: Every step maintains 100% functional and visual parity
+- **Performance Monitoring**: Track render performance throughout
 
-**TESTING STRATEGY**:
-- **Phase 2B.1**: Test debug utilities with existing table (no UI changes)
-- **Phase 2B.2**: Test useEventGrouping hook with existing table (no UI changes)
-- **Phase 2B.3**: Test row components in isolation (no integration yet)
-- **Phase 2B.4**: Test FundDetailTable component side-by-side with original
-- **Final Integration**: Replace original table only after all tests pass
-- **Regression Testing**: Run comprehensive tests after each phase
+**VERIFICATION STRATEGY**:
+- **Safe Steps (1-4)**: Immediate verification with no risk
+- **Risky Steps (5-7)**: Careful testing with all event types and scenarios
+- **Integration Step (8)**: Comprehensive testing with visual regression
+- **Final Step (9)**: End-to-end testing with performance validation
 
 **SAFETY MEASURES**:
-- **Debug Infrastructure**: Comprehensive logging and debugging utilities
+- **Debug Infrastructure**: Use existing debug utilities from FundDetailTable/debug.ts
 - **Visual Regression**: Screenshot comparison before/after each step
-- **Functional Testing**: Test all event types and combinations
+- **Functional Testing**: Test all event types, filter combinations, and interactions
 - **Performance Testing**: Ensure no performance regression
 - **User Interaction Testing**: Test all buttons, filters, and interactions
-- **Rollback Scripts**: Automated rollback for each phase if issues arise
+- **Rollback Scripts**: Keep original code commented out during transition
 - **Comprehensive Logging**: Detailed logging for troubleshooting
 
 **CRITICAL PRESERVATION REQUIREMENTS**:
@@ -238,6 +319,12 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - **Filtering Logic**: Must preserve showTaxEvents and showNavUpdates functionality exactly
 - **Responsive Behavior**: Must maintain identical responsive behavior on all screen sizes
 - **Performance**: Must maintain or improve render performance
+
+**REALISTIC TIMELINE**:
+- **Week 1**: Steps 1-4 (Safe, immediate verification)
+- **Week 2**: Steps 5-6 (Careful testing required)
+- **Week 3**: Steps 7-8 (Complex logic, comprehensive testing)
+- **Week 4**: Step 9 (Integration and final testing)
 - [ ] Extract `FundDetailHeader.tsx` (~100 lines) with breadcrumbs and title
   - [ ] Extract header from FundDetail.tsx lines 1100-1200
   - [ ] Include breadcrumb navigation with proper routing
