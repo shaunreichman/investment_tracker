@@ -48,6 +48,12 @@ export {
   type TableHeaderProps
 } from './TableHeader';
 
+// Phase 2B.4: Action buttons component
+export {
+  default as ActionButtons,
+  type ActionButtonsProps
+} from './ActionButtons';
+
 // Future exports will be added here as we progress through the phases:
 // Phase 2B.4: FundDetailTable component
 // Phase 2B.5: TableHeader and TableActions components 
