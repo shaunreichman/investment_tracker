@@ -60,6 +60,11 @@ export {
   type TableBodyProps
 } from './TableBody';
 
+// Phase 2B.5: Table container component
+export {
+  default as TableContainer,
+  type TableContainerProps
+} from './TableContainer';
+
 // Future exports will be added here as we progress through the phases:
-// Phase 2B.5: TableContainer component
 // Phase 2B.6: Complete table integration 
