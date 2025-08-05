@@ -112,6 +112,7 @@ describe('TableBody', () => {
     mockUseEventGrouping.mockReturnValue({
       groupedEvents: [],
       individualEvents: mockEvents.slice(0, 2), // First two events
+      sortedEvents: mockEvents.slice(0, 2),
       totalEvents: 2,
       totalGroups: 0,
       interestWithholdingPairs: 0
@@ -143,6 +144,7 @@ describe('TableBody', () => {
     mockUseEventGrouping.mockReturnValue({
       groupedEvents,
       individualEvents: mockEvents.slice(0, 1), // Only capital call
+      sortedEvents: [groupedEvents[0], ...mockEvents.slice(0, 1)],
       totalEvents: 3,
       totalGroups: 1,
       interestWithholdingPairs: 1
@@ -164,6 +166,7 @@ describe('TableBody', () => {
     mockUseEventGrouping.mockReturnValue({
       groupedEvents: [],
       individualEvents: mockEvents.slice(0, 1),
+      sortedEvents: mockEvents.slice(0, 1),
       totalEvents: 1,
       totalGroups: 0,
       interestWithholdingPairs: 0
@@ -194,6 +197,7 @@ describe('TableBody', () => {
     mockUseEventGrouping.mockReturnValue({
       groupedEvents,
       individualEvents: [],
+      sortedEvents: groupedEvents,
       totalEvents: 2,
       totalGroups: 1,
       interestWithholdingPairs: 1
@@ -215,6 +219,7 @@ describe('TableBody', () => {
     mockUseEventGrouping.mockReturnValue({
       groupedEvents: [],
       individualEvents: [],
+      sortedEvents: [],
       totalEvents: 0,
       totalGroups: 0,
       interestWithholdingPairs: 0
@@ -236,6 +241,7 @@ describe('TableBody', () => {
     mockUseEventGrouping.mockReturnValue({
       groupedEvents: [],
       individualEvents: [],
+      sortedEvents: [],
       totalEvents: 0,
       totalGroups: 0,
       interestWithholdingPairs: 0
@@ -261,6 +267,7 @@ describe('TableBody', () => {
     mockUseEventGrouping.mockReturnValue({
       groupedEvents: [],
       individualEvents: mockEvents.slice(0, 1),
+      sortedEvents: mockEvents.slice(0, 1),
       totalEvents: 1,
       totalGroups: 0,
       interestWithholdingPairs: 0

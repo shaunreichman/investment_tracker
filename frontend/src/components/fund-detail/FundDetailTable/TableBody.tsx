@@ -67,7 +67,7 @@ export const TableBody: React.FC<TableBodyProps> = ({
       }
     }}>
       {/* Render events in chronological order */}
-      {sortedEvents.map((item) => {
+      {sortedEvents?.map((item) => {
         // Check if this is a grouped event or individual event
         if ('hasInterestWithholdingPair' in item) {
           // This is a GroupedEvent
