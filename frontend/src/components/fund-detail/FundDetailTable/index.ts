@@ -42,6 +42,12 @@ export {
   type TableFiltersProps
 } from './TableFilters';
 
+// Phase 2B.4: Table header component
+export {
+  default as TableHeader,
+  type TableHeaderProps
+} from './TableHeader';
+
 // Future exports will be added here as we progress through the phases:
 // Phase 2B.4: FundDetailTable component
 // Phase 2B.5: TableHeader and TableActions components 

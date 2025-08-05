@@ -186,17 +186,17 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: Filters work on all fund types (NAV-based and cost-based)
     - [x] **VERIFICATION**: No visual changes to filter section
   
-  **Step 2: Extract TableHeader Component** (SAFE, IMMEDIATE VERIFICATION)
-  - [ ] Create `FundDetailTable/TableHeader.tsx` (~120 lines) - Table header row
-    - [ ] Extract header row logic from FundDetail.tsx lines 536-660
-    - [ ] Include conditional column display based on fund type
-    - [ ] Include responsive column styling and typography
-    - [ ] Include event count display in header
-    - [ ] Add proper TypeScript interfaces for header props
-    - [ ] **VERIFICATION**: All columns display correctly
-    - [ ] **VERIFICATION**: NAV column shows/hides based on fund type
-    - [ ] **VERIFICATION**: Tax column shows/hides based on filter state
-    - [ ] **VERIFICATION**: Column alignment and styling identical to original
+  **Step 2: Extract TableHeader Component** (SAFE, IMMEDIATE VERIFICATION) - ✅ COMPLETED
+  - [x] Create `FundDetailTable/TableHeader.tsx` (~120 lines) - Table header row
+    - [x] Extract header row logic from FundDetail.tsx lines 536-660
+    - [x] Include conditional column display based on fund type
+    - [x] Include responsive column styling and typography
+    - [x] Include event count display in header
+    - [x] Add proper TypeScript interfaces for header props
+    - [x] **VERIFICATION**: All columns display correctly
+    - [x] **VERIFICATION**: NAV column shows/hides based on fund type
+    - [x] **VERIFICATION**: Tax column shows/hides based on filter state
+    - [x] **VERIFICATION**: Column alignment and styling identical to original
   
   **Step 3: Extract ActionButtons Component** (SAFE, IMMEDIATE VERIFICATION)
   - [ ] Create `FundDetailTable/ActionButtons.tsx` (~80 lines) - Edit/delete buttons
