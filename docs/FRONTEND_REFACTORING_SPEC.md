@@ -171,7 +171,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
   
   **Phase 2B.4: Granular Table Extraction with Step-by-Step Verification** (REALISTIC APPROACH)
   
-  **Goal**: Extract the 850-line table logic into 8 focused, manageable components with immediate verification at each step
+  **Goal**: Extract the 850-line table logic into focused, manageable components with immediate verification at each step
   **Strategy**: Break down complex table logic into small, testable pieces that can be verified immediately
   
   **Step 1: Extract TableFilters Component** (SAFE, IMMEDIATE VERIFICATION) - ✅ COMPLETED
@@ -210,63 +210,63 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: Buttons don't show for system events (TAX_PAYMENT, etc.)
     - [x] **VERIFICATION**: Button styling and hover effects identical to original
   
-  **Step 4: Extract EventGroupingLogic Hook** (SAFE, IMMEDIATE VERIFICATION)
-  - [ ] Create `FundDetailTable/useEventGrouping.ts` (~100 lines) - Event grouping logic
-    - [ ] Extract grouping logic from FundDetail.tsx lines 695-710
-    - [ ] Include date-based event grouping algorithm
-    - [ ] Include interest + withholding tax combination logic
-    - [ ] Include event filtering based on showTaxEvents and showNavUpdates
-    - [ ] Add comprehensive logging for debugging
-    - [ ] **VERIFICATION**: Events grouped by date correctly
-    - [ ] **VERIFICATION**: Interest + withholding tax events identified correctly
-    - [ ] **VERIFICATION**: Grouping works for all event types
+  **Step 4: Extract Event Grouping Logic** (SAFE, IMMEDIATE VERIFICATION) - ✅ COMPLETED
+  - [x] Create `FundDetailTable/useEventGrouping.ts` (~100 lines) - Event grouping logic
+    - [x] Extract grouping logic from FundDetail.tsx lines 695-710
+    - [x] Include date-based event grouping algorithm
+    - [x] Include interest + withholding tax combination logic
+    - [x] Include event filtering based on showTaxEvents and showNavUpdates
+    - [x] Add comprehensive logging for debugging
+    - [x] **VERIFICATION**: Events grouped by date correctly
+    - [x] **VERIFICATION**: Interest + withholding tax events identified correctly
+    - [x] **VERIFICATION**: Grouping works for all event types
+    - [x] **VERIFICATION**: Performance maintained or improved
+  
+  **Step 5: Extract IndividualEventRow Component** (RISKY, CAREFUL TESTING REQUIRED) - ✅ COMPLETED
+  - [x] Create `FundDetailTable/EventRow.tsx` (~200 lines) - Individual event row
+    - [x] Extract individual row rendering logic from FundDetail.tsx lines 850-1084
+    - [x] Include NAV-based vs cost-based fund logic
+    - [x] Include event type-specific cell rendering
+    - [x] Include conditional column display
+    - [x] Add comprehensive TypeScript interfaces
+    - [x] **VERIFICATION**: Test with every event type:
+      - [x] CAPITAL_CALL, RETURN_OF_CAPITAL (cost-based funds)
+      - [x] UNIT_PURCHASE, UNIT_SALE (NAV-based funds)
+      - [x] DISTRIBUTION (INTEREST, DIVIDEND, OTHER)
+      - [x] TAX_PAYMENT (all types: EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
+      - [x] NAV_UPDATE (NAV-based funds only)
+      - [x] EOFY_DEBT_COST, MANAGEMENT_FEE, CARRIED_INTEREST
+    - [x] **VERIFICATION**: Row styling identical to original
+    - [x] **VERIFICATION**: Cell content displays correctly for all event types
+  
+  **Step 6: Extract CombinedEventRow Component** (RISKY, CAREFUL TESTING REQUIRED) - ✅ COMPLETED
+  - [x] Create `FundDetailTable/GroupedEventRow.tsx` (~150 lines) - Combined interest + withholding
+    - [x] Extract combined row logic from FundDetail.tsx lines 723-815
+    - [x] Include interest + withholding tax combination logic
+    - [x] Include conditional column display for combined events
+    - [x] Include complex tax payment type handling
+    - [x] Add comprehensive TypeScript interfaces
+    - [x] **VERIFICATION**: Test with funds that have interest + withholding tax events
+    - [x] **VERIFICATION**: Test with funds that don't have combined events
+    - [x] **VERIFICATION**: Combined row displays correctly
+    - [x] **VERIFICATION**: Other events on same date still display correctly
+  
+  **Step 7: Create TableBody Component** (SAFE INTEGRATION, IMMEDIATE VERIFICATION)
+  - [ ] Create `FundDetailTable/TableBody.tsx` (~100 lines) - Table body with extracted components
+    - [ ] Integrate useEventGrouping hook with extracted row components
+    - [ ] Use GroupedEventRow for combined events (interest + withholding)
+    - [ ] Use EventRow for individual events
+    - [ ] Include all existing table body styling and responsive behavior
+    - [ ] Add comprehensive TypeScript interfaces
+    - [ ] **VERIFICATION**: All event types render correctly
+    - [ ] **VERIFICATION**: Event grouping works identically to original
+    - [ ] **VERIFICATION**: Row styling and hover effects identical to original
     - [ ] **VERIFICATION**: Performance maintained or improved
   
-  **Step 5: Extract IndividualEventRow Component** (RISKY, CAREFUL TESTING REQUIRED)
-  - [ ] Create `FundDetailTable/IndividualEventRow.tsx` (~200 lines) - Individual event row
-    - [ ] Extract individual row rendering logic from FundDetail.tsx lines 850-1084
-    - [ ] Include NAV-based vs cost-based fund logic
-    - [ ] Include event type-specific cell rendering
-    - [ ] Include conditional column display
-    - [ ] Add comprehensive TypeScript interfaces
-    - [ ] **VERIFICATION**: Test with every event type:
-      - [ ] CAPITAL_CALL, RETURN_OF_CAPITAL (cost-based funds)
-      - [ ] UNIT_PURCHASE, UNIT_SALE (NAV-based funds)
-      - [ ] DISTRIBUTION (INTEREST, DIVIDEND, OTHER)
-      - [ ] TAX_PAYMENT (all types: EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
-      - [ ] NAV_UPDATE (NAV-based funds only)
-      - [ ] EOFY_DEBT_COST, MANAGEMENT_FEE, CARRIED_INTEREST
-    - [ ] **VERIFICATION**: Row styling identical to original
-    - [ ] **VERIFICATION**: Cell content displays correctly for all event types
-  
-  **Step 6: Extract CombinedEventRow Component** (RISKY, CAREFUL TESTING REQUIRED)
-  - [ ] Create `FundDetailTable/CombinedEventRow.tsx` (~150 lines) - Combined interest + withholding
-    - [ ] Extract combined row logic from FundDetail.tsx lines 723-815
-    - [ ] Include interest + withholding tax combination logic
-    - [ ] Include conditional column display for combined events
-    - [ ] Include complex tax payment type handling
-    - [ ] Add comprehensive TypeScript interfaces
-    - [ ] **VERIFICATION**: Test with funds that have interest + withholding tax events
-    - [ ] **VERIFICATION**: Test with funds that don't have combined events
-    - [ ] **VERIFICATION**: Combined row displays correctly
-    - [ ] **VERIFICATION**: Other events on same date still display correctly
-  
-  **Step 7: Extract EventTypeCells Components** (RISKY, CAREFUL TESTING REQUIRED)
-  - [ ] Create `FundDetailTable/EventTypeCells.tsx` (~150 lines) - Event type-specific cells
-    - [ ] Extract cell rendering logic from IndividualEventRow
-    - [ ] Include EquityCell (unit purchases/sales, capital calls/returns)
-    - [ ] Include NavUpdateCell (NAV updates for NAV-based funds)
-    - [ ] Include DistributionCell (distributions)
-    - [ ] Include TaxCell (tax payments and debt costs)
-    - [ ] Add comprehensive TypeScript interfaces
-    - [ ] **VERIFICATION**: Each cell type renders correctly for all event types
-    - [ ] **VERIFICATION**: Cell content and formatting identical to original
-    - [ ] **VERIFICATION**: Conditional display logic works correctly
-  
-  **Step 8: Extract TableContainer Component** (INTEGRATION, COMPREHENSIVE TESTING)
-  - [ ] Create `FundDetailTable/TableContainer.tsx` (~100 lines) - Main table container
-    - [ ] Combine all extracted components into main table container
-    - [ ] Include table wrapper and responsive layout
+  **Step 8: Create TableContainer Component** (INTEGRATION, COMPREHENSIVE TESTING)
+  - [ ] Create `FundDetailTable/TableContainer.tsx` (~150 lines) - Complete table container
+    - [ ] Combine TableFilters, TableHeader, and TableBody components
+    - [ ] Include table wrapper and responsive layout from FundDetail.tsx
     - [ ] Include loading states and error boundaries
     - [ ] Include comprehensive TypeScript interfaces
     - [ ] **VERIFICATION**: Complete table renders identically to original
@@ -296,9 +296,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - **Performance Monitoring**: Track render performance throughout
 
 **VERIFICATION STRATEGY**:
-- **Safe Steps (1-4)**: Immediate verification with no risk
-- **Risky Steps (5-7)**: Careful testing with all event types and scenarios
-- **Integration Step (8)**: Comprehensive testing with visual regression
+- **Safe Steps (1-6)**: ✅ COMPLETED - All foundational components extracted and tested
+- **Integration Steps (7-8)**: Safe integration using extracted components
 - **Final Step (9)**: End-to-end testing with performance validation
 
 **SAFETY MEASURES**:
@@ -321,10 +320,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - **Performance**: Must maintain or improve render performance
 
 **REALISTIC TIMELINE**:
-- **Week 1**: Steps 1-4 (Safe, immediate verification)
-- **Week 2**: Steps 5-6 (Careful testing required)
-- **Week 3**: Steps 7-8 (Complex logic, comprehensive testing)
-- **Week 4**: Step 9 (Integration and final testing)
+- **Week 1**: Steps 7-8 (Safe integration using extracted components)
+- **Week 2**: Step 9 (Integration and final testing)
 - [ ] Extract `FundDetailHeader.tsx` (~100 lines) with breadcrumbs and title
   - [ ] Extract header from FundDetail.tsx lines 1100-1200
   - [ ] Include breadcrumb navigation with proper routing
