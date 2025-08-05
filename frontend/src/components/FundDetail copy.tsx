@@ -36,7 +36,7 @@ import {
 } from './fund-detail';
 
 // Import the extracted table components
-import { TableContainer } from './fund-detail/FundDetailTable';
+import TableContainer from './fund-detail/FundDetailTable/TableContainer';
 
 // ============================================================================
 // MAIN FUND DETAIL COMPONENT
