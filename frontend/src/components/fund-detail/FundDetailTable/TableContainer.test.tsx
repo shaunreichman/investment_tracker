@@ -2,18 +2,19 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import TableContainer from './TableContainer';
-import { ExtendedFundEvent, ExtendedFund, FundType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../types/api';
+import { ExtendedFund, ExtendedFundEvent, FundType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../types/api';
 
 // ============================================================================
 // TABLE CONTAINER COMPONENT TESTS
 // ============================================================================
 
+// Create a theme for testing
 const theme = createTheme();
 
-// Simple mock that just returns a div for each component
+// Mock the child components to return proper table elements
 jest.mock('./TableFilters', () => ({
   __esModule: true,
-  default: ({ showTaxEvents, showNavUpdates, onShowTaxEventsChange, onShowNavUpdatesChange, onAddEventClick }: any) => (
+  default: ({ showTaxEvents, showNavUpdates, onAddEventClick }: any) => (
     <div data-testid="table-filters">
       <span>Filters: Tax={showTaxEvents ? 'ON' : 'OFF'}, NAV={showNavUpdates ? 'ON' : 'OFF'}</span>
       <button onClick={onAddEventClick}>Add Event</button>
@@ -24,23 +25,31 @@ jest.mock('./TableFilters', () => ({
 jest.mock('./TableHeader', () => ({
   __esModule: true,
   default: ({ isNavBasedFund, showTaxEvents }: any) => (
-    <div data-testid="table-header">
-      <span>Header: NAV={isNavBasedFund ? 'yes' : 'no'}, Tax={showTaxEvents ? 'yes' : 'no'}</span>
-    </div>
+    <thead data-testid="table-header">
+      <tr>
+        <td>Date</td>
+        <td>Type</td>
+        <td>Description</td>
+        <td>Equity</td>
+        {isNavBasedFund && <td>Nav Update</td>}
+        <td>Distributions</td>
+        {showTaxEvents && <td>Tax</td>}
+        <td>Actions</td>
+      </tr>
+    </thead>
   )
 }));
 
 jest.mock('./TableBody', () => ({
   __esModule: true,
   default: ({ events }: any) => (
-    <div data-testid="table-body">
-      <span>Events: {events.length}</span>
+    <tbody data-testid="table-body">
       {events.map((event: any) => (
-        <div key={event.id} data-testid={`event-row-${event.id}`}>
-          {event.event_type}
-        </div>
+        <tr key={event.id} data-testid={`event-row-${event.id}`}>
+          <td>{event.event_type}</td>
+        </tr>
       ))}
-    </div>
+    </tbody>
   )
 }));
 

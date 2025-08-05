@@ -1,8 +1,7 @@
 import React from 'react';
 import {
-  Paper,
+  TableContainer,
   Table,
-  TableContainer as MuiTableContainer,
   Box,
   Typography
 } from '@mui/material';
@@ -37,7 +36,7 @@ export interface TableContainerProps {
  * 3. Maintains all existing styling and responsive behavior
  * 4. Provides clean interface for parent components
  */
-const TableContainer: React.FC<TableContainerProps> = ({
+const TableContainerComponent: React.FC<TableContainerProps> = ({
   events,
   fund,
   showTaxEvents,
@@ -60,21 +59,7 @@ const TableContainer: React.FC<TableContainerProps> = ({
   }).length;
 
   return (
-    <Paper sx={{ 
-      width: '100%', 
-      overflow: 'hidden', 
-      mb: 3,
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      // Enhanced visual polish
-      boxShadow: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)',
-      borderRadius: 2,
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      '&:hover': {
-        boxShadow: '0 6px 20px rgba(0,0,0,0.12), 0 3px 8px rgba(0,0,0,0.16)'
-      }
-    }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Table Header with Filters */}
       <Box sx={{ 
         p: 3, 
@@ -106,12 +91,12 @@ const TableContainer: React.FC<TableContainerProps> = ({
         </Box>
       </Box>
 
-      {/* Table Container */}
-      <MuiTableContainer sx={{ 
+      {/* Table Container - EXACTLY matching original structure */}
+      <TableContainer sx={{ 
         flex: 1,
         maxHeight: { xs: 300, sm: 'none' },
         scrollBehavior: 'smooth',
-        // Enhanced scrollbar styling
+        // Phase 4: Enhanced scrollbar styling
         '&::-webkit-scrollbar': {
           width: '8px',
           height: '8px'
@@ -148,9 +133,9 @@ const TableContainer: React.FC<TableContainerProps> = ({
             onDeleteEvent={onDeleteEvent}
           />
         </Table>
-      </MuiTableContainer>
-    </Paper>
+      </TableContainer>
+    </Box>
   );
 };
 
-export default TableContainer; 
+export default TableContainerComponent; 
