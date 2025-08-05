@@ -18,6 +18,7 @@ export interface GroupedEvent {
 export interface EventGroupingResult {
   groupedEvents: GroupedEvent[];
   individualEvents: ExtendedFundEvent[];
+  sortedEvents: (GroupedEvent | ExtendedFundEvent)[]; // New: chronologically sorted events
   totalEvents: number;
   totalGroups: number;
   interestWithholdingPairs: number;
@@ -51,12 +52,16 @@ export const useEventGrouping = (
       groupedByDate[dateKey].push(event);
     });
 
+    // Sort dates in chronological order (oldest first)
+    const initialSortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
     // Process each date group to find interest + withholding pairs
     const groupedEvents: GroupedEvent[] = [];
     const individualEvents: ExtendedFundEvent[] = [];
     let interestWithholdingPairs = 0;
 
-    Object.entries(groupedByDate).forEach(([date, dateEvents]) => {
+    initialSortedDates.forEach(date => {
+      const dateEvents = groupedByDate[date];
       // Find interest distribution and related withholding tax for this date
       const interestEvent = dateEvents.find(e => 
         e.event_type === 'DISTRIBUTION' && e.distribution_type === 'INTEREST'
@@ -105,9 +110,38 @@ export const useEventGrouping = (
       }
     });
 
+    // Sort individual events by date (oldest first)
+    individualEvents.sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+
+    // Create a chronologically sorted array of all events (grouped and individual)
+    const sortedEvents: (GroupedEvent | ExtendedFundEvent)[] = [];
+    
+    // Get all unique dates from both grouped and individual events
+    const allDates = new Set([
+      ...groupedEvents.map(g => g.date),
+      ...individualEvents.map(e => e.event_date)
+    ]);
+    
+    // Sort dates chronologically
+    const finalSortedDates = Array.from(allDates).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    
+    // For each date, add the appropriate events in order
+    finalSortedDates.forEach(date => {
+      // Add grouped event if it exists for this date
+      const groupedEvent = groupedEvents.find(g => g.date === date);
+      if (groupedEvent) {
+        sortedEvents.push(groupedEvent);
+      }
+      
+      // Add individual events for this date
+      const dateIndividualEvents = individualEvents.filter(e => e.event_date === date);
+      sortedEvents.push(...dateIndividualEvents);
+    });
+
     const result: EventGroupingResult = {
       groupedEvents,
       individualEvents,
+      sortedEvents,
       totalEvents: events.length,
       totalGroups: groupedEvents.length,
       interestWithholdingPairs

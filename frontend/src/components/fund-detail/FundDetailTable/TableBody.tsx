@@ -37,7 +37,7 @@ export const TableBody: React.FC<TableBodyProps> = ({
   onDeleteEvent
 }) => {
   // Use the event grouping hook to process events
-  const { groupedEvents, individualEvents } = useEventGrouping(
+  const { sortedEvents } = useEventGrouping(
     events,
     fund,
     showTaxEvents,
@@ -66,31 +66,37 @@ export const TableBody: React.FC<TableBodyProps> = ({
         }
       }
     }}>
-      {/* Render grouped events (interest + withholding combinations) */}
-      {groupedEvents.map((groupedEvent) => (
-        <GroupedEventRow
-          key={`${groupedEvent.date}-combined`}
-          groupedEvent={groupedEvent}
-          fund={fund}
-          showTaxEvents={showTaxEvents}
-          showNavUpdates={showNavUpdates}
-          onEditEvent={onEditEvent}
-          onDeleteEvent={onDeleteEvent}
-        />
-      ))}
-
-      {/* Render individual events */}
-      {individualEvents.map((event) => (
-        <EventRow
-          key={event.id}
-          event={event}
-          fund={fund}
-          showTaxEvents={showTaxEvents}
-          showNavUpdates={showNavUpdates}
-          onEditEvent={onEditEvent}
-          onDeleteEvent={onDeleteEvent}
-        />
-      ))}
+      {/* Render events in chronological order */}
+      {sortedEvents.map((item) => {
+        // Check if this is a grouped event or individual event
+        if ('hasInterestWithholdingPair' in item) {
+          // This is a GroupedEvent
+          return (
+            <GroupedEventRow
+              key={`${item.date}-combined`}
+              groupedEvent={item}
+              fund={fund}
+              showTaxEvents={showTaxEvents}
+              showNavUpdates={showNavUpdates}
+              onEditEvent={onEditEvent}
+              onDeleteEvent={onDeleteEvent}
+            />
+          );
+        } else {
+          // This is an ExtendedFundEvent
+          return (
+            <EventRow
+              key={item.id}
+              event={item}
+              fund={fund}
+              showTaxEvents={showTaxEvents}
+              showNavUpdates={showNavUpdates}
+              onEditEvent={onEditEvent}
+              onDeleteEvent={onDeleteEvent}
+            />
+          );
+        }
+      })}
     </MuiTableBody>
   );
 };
