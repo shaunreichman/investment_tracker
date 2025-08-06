@@ -22,6 +22,7 @@ import { useFund } from '../hooks/useFunds';
 import { useCreateFundEvent, useCreateTaxStatement } from '../hooks/useFunds';
 import { validateField } from '../utils/validators';
 import { formatNumber, parseNumber, calculateTaxPaymentDate, calculateWithholdingTax } from '../utils/helpers';
+import EventTypeSelector from './modals/EventTypeSelector';
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -33,31 +34,7 @@ interface CreateFundEventModalProps {
 
 type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE' | 'NAV_UPDATE' | 'TAX_STATEMENT';
 
-const EVENT_TEMPLATES: { label: string; value: EventType | 'RETURN_OF_CAPITAL'; description: string; icon: React.ReactNode; trackingType: 'nav_based' | 'cost_based' | 'both' }[] = [
-  { label: 'Capital Call', value: 'CAPITAL_CALL', description: 'Add a capital call (cost-based funds)', icon: <AccountBalance color="primary" />, trackingType: 'cost_based' },
-  { label: 'Capital Return', value: 'RETURN_OF_CAPITAL', description: 'Return capital to investors (cost-based funds)', icon: <AccountBalance color="warning" />, trackingType: 'cost_based' },
-  { label: 'Unit Purchase', value: 'UNIT_PURCHASE', description: 'Buy units (NAV-based funds)', icon: <AddIcon color="primary" />, trackingType: 'nav_based' },
-  { label: 'Unit Sale', value: 'UNIT_SALE', description: 'Sell units (NAV-based funds)', icon: <TrendingUp color="warning" />, trackingType: 'nav_based' },
-  { label: 'NAV Update', value: 'NAV_UPDATE', description: 'Update NAV per share (NAV-based funds)', icon: <TrendingUp color="info" />, trackingType: 'nav_based' },
-  { label: 'Distribution', value: 'DISTRIBUTION', description: 'Add a distribution (all funds)', icon: <MonetizationOn color="success" />, trackingType: 'both' },
-  { label: 'Tax Statement', value: 'TAX_STATEMENT', description: 'Add a tax statement (all funds)', icon: <Receipt color="secondary" />, trackingType: 'both' },
-];
 
-const DISTRIBUTION_TEMPLATES = [
-  { label: 'Interest', value: 'INTEREST', description: 'Interest distribution', icon: <MonetizationOn color="primary" /> },
-  { label: 'Dividend', value: 'DIVIDEND', description: 'Dividend distribution', icon: <MonetizationOn color="success" /> },
-  { label: 'Other', value: 'OTHER', description: 'Other distribution', icon: <MonetizationOn color="warning" /> },
-];
-
-const DIVIDEND_SUB_TEMPLATES = [
-  { label: 'Franked', value: 'DIVIDEND_FRANKED', description: 'Franked dividend', icon: <MonetizationOn color="success" /> },
-  { label: 'Unfranked', value: 'DIVIDEND_UNFRANKED', description: 'Unfranked dividend', icon: <MonetizationOn color="warning" /> },
-];
-
-const INTEREST_SUB_TEMPLATES = [
-  { label: 'Regular', value: 'REGULAR', description: 'Regular interest', icon: <MonetizationOn color="primary" /> },
-  { label: 'Withholding Tax', value: 'WITHHOLDING_TAX', description: 'Interest with withholding tax', icon: <MonetizationOn color="warning" /> },
-];
 
 interface ValidationErrors {
   event_date?: string;
@@ -205,22 +182,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     }
   };
 
-  const handleTemplateSelect = (value: EventType | 'RETURN_OF_CAPITAL') => {
-    setEventType(value);
-    setDistributionType('');
-    setSubDistributionType('');
-    clearError();
-    // Validate all required fields after template selection
-    setTimeout(() => validateForm(), 0);
-  };
 
-  const handleDistributionTypeSelect = (distType: string) => {
-    setDistributionType(distType);
-  };
-
-  const handleSubDistributionTypeSelect = (subDistType: string) => {
-    setSubDistributionType(subDistType);
-  };
 
   const handleBack = () => {
     if (distributionType) {
@@ -476,152 +438,17 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
             variant="inline"
           />
         )}
-        {/* Event Type Cards */}
-        <Box display="flex" gap={2} mb={2}>
-          {EVENT_TEMPLATES.filter(t => t.trackingType === fundTrackingType || t.trackingType === 'both').map(template => {
-            const isSelected = eventType === template.value;
-            const isDisabled = eventType && eventType !== template.value && !(eventType === 'DISTRIBUTION' && template.value === 'DISTRIBUTION');
-            return (
-              <Paper
-                key={template.value}
-                elevation={isSelected ? 6 : 1}
-                sx={{
-                  p: 2,
-                  minWidth: 120,
-                  border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
-                  background: isSelected ? '#e3f2fd' : '#fff',
-                  opacity: isDisabled ? 0.5 : 1,
-                  cursor: isDisabled ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s',
-                  position: 'relative',
-                }}
-                onClick={() => {
-                  if (isDisabled) return;
-                  if (isSelected) {
-                    setEventType('');
-                    setDistributionType('');
-                    setSubDistributionType('');
-                  } else {
-                    setEventType(template.value as EventType | 'RETURN_OF_CAPITAL');
-                    setDistributionType('');
-                    setSubDistributionType('');
-                  }
-                }}
-              >
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  {template.icon}
-                  <Typography variant="subtitle1" fontWeight={isSelected ? 'bold' : 'normal'}>
-                    {template.label}
-                  </Typography>
-                </Box>
-                {/* Expand indicator for Distribution */}
-                {template.value === 'DISTRIBUTION' && isSelected && (
-                  <Box position="absolute" top={8} right={8}>
-                    <AddIcon color="primary" />
-                  </Box>
-                )}
-              </Paper>
-            );
-          })}
-        </Box>
-
-        {/* Distribution Type Options (inline, below cards, always visible when Distribution is selected) */}
-        {eventType === 'DISTRIBUTION' && (
-          <Box mb={2}>
-            <Typography variant="subtitle1" mb={1} color="primary">Select Distribution Type</Typography>
-            <Box display="flex" gap={2}>
-              {DISTRIBUTION_TEMPLATES.map(dt => {
-                const isSelected = distributionType === dt.value;
-                return (
-                  <Paper
-                    key={dt.value}
-                    elevation={isSelected ? 6 : 2}
-                    sx={{
-                      p: 2,
-                      minWidth: 120,
-                      border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
-                      background: isSelected ? '#e3f2fd' : '#f3f6fa',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onClick={() => {
-                      if (isSelected) {
-                        setDistributionType('');
-                        setSubDistributionType('');
-                      } else {
-                        setDistributionType(dt.value);
-                        setSubDistributionType('');
-                      }
-                    }}
-                  >
-                    <Box display="flex" flexDirection="column" alignItems="center">
-                      {dt.icon}
-                      <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>{dt.label}</Typography>
-                    </Box>
-                  </Paper>
-                );
-              })}
-            </Box>
-          </Box>
-        )}
-
-                 {/* Sub-Distribution Type Options (inline, below Distribution Type, only visible when Dividend is selected) */}
-         {distributionType === 'DIVIDEND' && (
-          <Box mb={2}>
-            <Typography variant="subtitle1" mb={1} color="primary">Select Dividend Type</Typography>
-            <Box display="flex" gap={2}>
-              {DIVIDEND_SUB_TEMPLATES.map(sub => (
-                <Button
-                  key={sub.value}
-                  variant={subDistributionType === sub.value ? 'contained' : 'outlined'}
-                  color={sub.value === 'DIVIDEND_FRANKED' ? 'success' : 'warning'}
-                  onClick={() => setSubDistributionType(sub.value)}
-                  startIcon={sub.icon}
-                >
-                  {sub.label}
-                </Button>
-              ))}
-            </Box>
-          </Box>
-        )}
-
-                 {/* Interest Sub-Distribution Type Options (inline, below Distribution Type, only visible when Interest is selected) */}
-         {distributionType === 'INTEREST' && (
-          <Box mb={2}>
-            <Typography variant="subtitle1" mb={1} color="primary">Select Interest Sub-Distribution Type</Typography>
-            <Box display="flex" gap={2}>
-              {INTEREST_SUB_TEMPLATES.map(subDt => {
-                const isSelected = subDistributionType === subDt.value;
-                return (
-                  <Paper
-                    key={subDt.value}
-                    elevation={isSelected ? 6 : 2}
-                    sx={{
-                      p: 2,
-                      minWidth: 120,
-                      border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
-                      background: isSelected ? '#e3f2fd' : '#f3f6fa',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSubDistributionType('');
-                      } else {
-                        setSubDistributionType(subDt.value);
-                      }
-                    }}
-                  >
-                    <Box display="flex" flexDirection="column" alignItems="center">
-                      {subDt.icon}
-                      <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>{subDt.label}</Typography>
-                    </Box>
-                  </Paper>
-                );
-              })}
-            </Box>
-          </Box>
-        )}
+        {/* Event Type Selection */}
+        <EventTypeSelector
+          fundTrackingType={fundTrackingType}
+          eventType={eventType}
+          distributionType={distributionType}
+          subDistributionType={subDistributionType}
+          onEventTypeSelect={setEventType}
+          onDistributionTypeSelect={setDistributionType}
+          onSubDistributionTypeSelect={setSubDistributionType}
+          onBack={handleBack}
+        />
 
         {/* Form appears below all cards (after event type or distribution type selected) */}
                  {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType))) || eventType === 'TAX_STATEMENT') && (
