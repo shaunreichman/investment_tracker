@@ -403,6 +403,24 @@ Transform the frontend codebase from a monolithic structure with massive files a
 
 **REFINED STRATEGY**: Incremental, safe extraction with comprehensive testing at each step
 
+### **TESTING STRATEGY FOR PHASE 3**
+
+**Core Functionality Testing Approach**:
+- ✅ **Component Renders**: Verify component renders without errors
+- ✅ **Event Handlers**: Test that user interactions trigger correct callbacks
+- ✅ **State Management**: Verify state changes work as expected
+- ✅ **Conditional Logic**: Test show/hide logic and conditional rendering
+- ✅ **Form Validation**: Test validation rules and error handling
+- ✅ **API Integration**: Test data flow and API calls
+- ❌ **Avoid**: CSS property assertions, color values, exact styling matches
+
+**Testing Guidelines for Each Step**:
+- Focus on business logic and user interactions
+- Test component integration, not styling details
+- Verify functionality works identically to original
+- Test edge cases and error scenarios
+- Ensure no regressions in existing functionality
+
 #### **Phase 3A: CreateFundEventModal Refactoring** (1,118 → ~200 lines)
 **Goal**: Extract the largest modal into focused, manageable components with minimal risk
 **Strategy**: Incremental extraction with comprehensive testing at each step
@@ -438,6 +456,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **VERIFICATION**: Form validation works identically
   - [ ] **VERIFICATION**: Error handling works correctly
   - [ ] **TESTING**: Create comprehensive test suite for useEventForm hook
+  - [ ] **TESTING**: Test form state changes and validation logic
+  - [ ] **TESTING**: Test error handling and form reset functionality
 
 **Step 3: Extract DistributionForm (MEDIUM RISK, CAREFUL TESTING)**
 - [ ] Extract `DistributionForm.tsx` (~200 lines) for distribution events
@@ -451,6 +471,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **VERIFICATION**: Tax calculations are accurate
   - [ ] **VERIFICATION**: Form validation works properly
   - [ ] **TESTING**: Test with all distribution type combinations
+  - [ ] **TESTING**: Test withholding tax calculation logic
+  - [ ] **TESTING**: Test gross/net amount handling
   - [ ] **PERFORMANCE**: Verify no performance regression
 
 **Step 4: Extract UnitTransactionForm (LOW RISK, STRAIGHTFORWARD)**
@@ -464,6 +486,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **VERIFICATION**: Brokerage fee handling works correctly
   - [ ] **VERIFICATION**: Form validation works properly
   - [ ] **TESTING**: Test with various unit/price combinations
+  - [ ] **TESTING**: Test amount calculation (units × price + brokerage)
+  - [ ] **TESTING**: Test validation for units and unit price
 
 **Step 5: Extract NavUpdateForm (LOW RISK, SIMPLE)**
 - [ ] Extract `NavUpdateForm.tsx` (~150 lines) for NAV updates
@@ -476,6 +500,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **VERIFICATION**: Percentage changes display correctly
   - [ ] **VERIFICATION**: Form validation works properly
   - [ ] **TESTING**: Test NAV calculation edge cases
+  - [ ] **TESTING**: Test NAV change calculation logic
+  - [ ] **TESTING**: Test percentage change display
 
 **Step 6: Extract TaxStatementForm (HIGH RISK, SAVE FOR LAST)**
 - [ ] Extract `TaxStatementForm.tsx` (~300 lines) for tax statements
@@ -489,6 +515,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **VERIFICATION**: Tax calculations are accurate
   - [ ] **VERIFICATION**: Form validation works properly
   - [ ] **TESTING**: Test with complex tax scenarios
+  - [ ] **TESTING**: Test interest income breakdown calculations
+  - [ ] **TESTING**: Test debt interest deduction logic
   - [ ] **PERFORMANCE**: Verify no performance regression with large forms
 
 **Step 7: Create Main Orchestrator (INTEGRATION, COMPREHENSIVE TESTING)**

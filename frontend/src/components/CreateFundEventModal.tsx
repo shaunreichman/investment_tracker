@@ -9,7 +9,6 @@ import {
   MenuItem,
   Box,
   CircularProgress,
-  Paper,
   Typography,
   Divider,
   Checkbox,
@@ -17,11 +16,10 @@ import {
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { TrendingUp, AccountBalance, Add as AddIcon, MonetizationOn, Receipt } from '@mui/icons-material';
 import { useFund } from '../hooks/useFunds';
 import { useCreateFundEvent, useCreateTaxStatement } from '../hooks/useFunds';
 import { validateField } from '../utils/validators';
-import { formatNumber, parseNumber, calculateTaxPaymentDate, calculateWithholdingTax } from '../utils/helpers';
+import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../utils/helpers';
 import EventTypeSelector from './modals/EventTypeSelector';
 
 interface CreateFundEventModalProps {
@@ -87,7 +85,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
   const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
   // Centralized API hooks
-  const { data: fundData, loading: fundLoading, error: fundError } = useFund(fundId);
+  const { data: fundData } = useFund(fundId);
   const createFundEvent = useCreateFundEvent(fundId);
   const createTaxStatement = useCreateTaxStatement(fundId);
 
@@ -175,12 +173,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     setSuccess(false);
   };
 
-  const handleClose = () => {
-    if (!createFundEvent.loading && !createTaxStatement.loading) {
-      resetForm();
-      onClose();
-    }
-  };
+
 
 
 
