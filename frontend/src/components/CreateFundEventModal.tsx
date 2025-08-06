@@ -20,12 +20,24 @@ import { useFund } from '../hooks/useFunds';
 import { useCreateFundEvent, useCreateTaxStatement } from '../hooks/useFunds';
 import { validateField } from '../utils/validators';
 import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../utils/helpers';
+import { useEventSubmission } from '../hooks/useEventSubmission';
 import EventTypeSelector from './modals/EventTypeSelector';
 import DistributionForm from './modals/DistributionForm';
 import UnitTransactionForm from './modals/UnitTransactionForm';
 import NavUpdateForm from './modals/NavUpdateForm';
 import TaxStatementForm from './modals/TaxStatementForm';
 import { useEventForm, type EventType, type ValidationErrors } from '../hooks/useEventForm';
+
+// Constants for styling
+const REQUIRED_FIELD_COLOR = '#d32f2f';
+const SUCCESS_BOX_STYLES = {
+  mb: 2,
+  p: 2,
+  bgcolor: 'success.light',
+  borderRadius: 1,
+  display: 'flex',
+  alignItems: 'center'
+};
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -70,21 +82,32 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
 
   // Centralized API hooks
   const { data: fundData } = useFund(fundId);
-  const createFundEvent = useCreateFundEvent(fundId);
-  const createTaxStatement = useCreateTaxStatement(fundId);
+  const { handleSubmit: submitEvent, createFundEvent, createTaxStatement } = useEventSubmission({
+    fundId,
+    fundEntity,
+    onSuccess: () => {
+      setSuccess(true);
+      setTimeout(() => {
+        resetForm();
+        onEventCreated();
+        onClose();
+      }, 1000);
+    },
+    onError: setError,
+  });
 
   // Handle errors and success from hooks
   useEffect(() => {
     if (createFundEvent.error) {
       setError(createFundEvent.error);
     }
-  }, [createFundEvent.error]);
+  }, [createFundEvent.error, setError]);
 
   useEffect(() => {
     if (createTaxStatement.error) {
       setError(createTaxStatement.error);
     }
-  }, [createTaxStatement.error]);
+  }, [createTaxStatement.error, setError]);
 
   useEffect(() => {
     if (createFundEvent.data) {
@@ -95,7 +118,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         onClose();
       }, 1000);
     }
-  }, [createFundEvent.data, onEventCreated, onClose]);
+  }, [createFundEvent.data, onEventCreated, onClose, resetForm, setSuccess]);
 
   useEffect(() => {
     if (createTaxStatement.data) {
@@ -106,7 +129,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         onClose();
       }, 1000);
     }
-  }, [createTaxStatement.data, onEventCreated, onClose]);
+  }, [createTaxStatement.data, onEventCreated, onClose, resetForm, setSuccess]);
 
   // Load fund entity and financial years
   useEffect(() => {
@@ -129,72 +152,12 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
 
     clearError();
 
-    // Prepare payload based on event type
-    const payload: any = {
-      event_type: eventType,
-      event_date: formData.event_date || '',
-      description: formData.description || '',
-      reference_number: formData.reference_number || '',
-    };
-
-    // Handle different event types
-    if (eventType === 'CAPITAL_CALL' || eventType === 'RETURN_OF_CAPITAL') {
-      payload.amount = parseFloat(formData.amount || '0');
-    } else if (eventType === 'DISTRIBUTION') {
-      payload.amount = parseFloat(formData.amount || '0');
-      if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
-        payload.gross_amount = parseFloat(formData.gross_amount || '0');
-        payload.net_amount = parseFloat(formData.net_amount || '0');
-        payload.withholding_tax_amount = parseFloat(formData.withholding_tax_amount || '0');
-        payload.withholding_tax_rate = parseFloat(formData.withholding_tax_rate || '0');
-      } else {
-        payload.distribution_type = distributionType;
-      }
-    } else if (eventType === 'UNIT_PURCHASE') {
-      payload.units_purchased = parseFloat(formData.units_purchased || '0');
-      payload.unit_price = parseFloat(formData.unit_price || '0');
-      payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
-    } else if (eventType === 'UNIT_SALE') {
-      payload.units_sold = parseFloat(formData.units_sold || '0');
-      payload.unit_price = parseFloat(formData.unit_price || '0');
-      payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
-    } else if (eventType === 'NAV_UPDATE') {
-      payload.nav_per_share = parseFloat(formData.nav_per_share || '0');
-    }
-    
-    // Handle Tax Statement submission
-    if (eventType === 'TAX_STATEMENT') {
-      const taxStatementPayload = {
-        entity_id: fundEntity?.id,
-        financial_year: formData.financial_year || '',
-        statement_date: formData.statement_date || '',
-        eofy_debt_interest_deduction_rate: parseFloat(formData.eofy_debt_interest_deduction_rate || '0'),
-        interest_received_in_cash: parseFloat(formData.interest_received_in_cash || '0'),
-        interest_receivable_this_fy: parseFloat(formData.interest_receivable_this_fy || '0'),
-        interest_receivable_prev_fy: parseFloat(formData.interest_receivable_prev_fy || '0'),
-        interest_non_resident_withholding_tax_from_statement: parseFloat(formData.interest_non_resident_withholding_tax_from_statement || '0'),
-        interest_income_tax_rate: parseFloat(formData.interest_income_tax_rate || '0'),
-        dividend_franked_income_amount: parseFloat(formData.dividend_franked_income_amount || '0'),
-        dividend_unfranked_income_amount: parseFloat(formData.dividend_unfranked_income_amount || '0'),
-        dividend_franked_income_tax_rate: parseFloat(formData.dividend_franked_income_tax_rate || '0'),
-        dividend_unfranked_income_tax_rate: parseFloat(formData.dividend_unfranked_income_tax_rate || '0'),
-        capital_gain_income_amount: parseFloat(formData.capital_gain_income_amount || '0'),
-        capital_gain_income_tax_rate: parseFloat(formData.capital_gain_income_tax_rate || '0'),
-        accountant: formData.accountant || '',
-        notes: formData.notes || '',
-        non_resident: formData.non_resident || false
-      };
-      
-      console.log('DEBUG: Sending tax statement payload:', taxStatementPayload);
-      
-      await createTaxStatement.mutate(taxStatementPayload);
-      return;
-    }
-    
-    // Debug: Log the payload being sent
-    console.log('DEBUG: Sending payload:', payload);
-    
-    await createFundEvent.mutate(payload);
+    await submitEvent({
+      eventType,
+      formData,
+      distributionType,
+      subDistributionType,
+    });
   };
 
   // UI rendering
@@ -203,7 +166,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       <DialogTitle>Add Cash Flow Event</DialogTitle>
       <DialogContent>
         {success && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
+          <Box sx={SUCCESS_BOX_STYLES}>
             <Typography variant="body1" fontWeight="medium" color="success.main">
               Event created successfully!
             </Typography>
@@ -234,12 +197,12 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType))) || eventType === 'TAX_STATEMENT') && (
           <Box mt={2}>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Fields marked with <span style={{ color: '#d32f2f' }}>*</span> are required.
+              Fields marked with <span style={{ color: REQUIRED_FIELD_COLOR }}>*</span> are required.
             </Typography>
             <Box component="form" noValidate autoComplete="off">
               <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
                 <TextField
-                  label={<span>Event Date <span style={{ color: '#d32f2f' }}>*</span></span>}
+                  label={<span>Event Date <span style={{ color: REQUIRED_FIELD_COLOR }}>*</span></span>}
                   type="date"
                   value={formData.event_date || ''}
                   onChange={e => handleInputChange('event_date', e.target.value)}
@@ -250,7 +213,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                 />
                 {(eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') && !(distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') && (
                   <TextField
-                    label={<span>{eventType === 'RETURN_OF_CAPITAL' ? 'Return Amount' : 'Amount'} <span style={{ color: '#d32f2f' }}>*</span></span>}
+                    label={<span>{eventType === 'RETURN_OF_CAPITAL' ? 'Return Amount' : 'Amount'} <span style={{ color: REQUIRED_FIELD_COLOR }}>*</span></span>}
                     type="text"
                     value={formatNumber(formData.amount || '')}
                     onChange={e => handleInputChange('amount', parseNumber(e.target.value))}
