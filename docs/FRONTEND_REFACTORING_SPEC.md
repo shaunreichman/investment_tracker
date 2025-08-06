@@ -507,19 +507,24 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - ✅ Comprehensive test coverage with 19 passing tests
 - ✅ Component ready for reuse in other modal components
 
-**Step 5: Extract NavUpdateForm (LOW RISK, SIMPLE)**
-- [ ] Extract `NavUpdateForm.tsx` (~150 lines) for NAV updates
-  - [ ] Extract from CreateFundEventModal.tsx lines 1000-1150 (NAV update logic)
-  - [ ] Include NAV per share validation
-  - [ ] Include NAV change calculation
-  - [ ] Include percentage change display
-  - [ ] Add comprehensive validation and error handling
-  - [ ] **VERIFICATION**: NAV calculations are accurate
-  - [ ] **VERIFICATION**: Percentage changes display correctly
-  - [ ] **VERIFICATION**: Form validation works properly
-  - [ ] **TESTING**: Test NAV calculation edge cases
-  - [ ] **TESTING**: Test NAV change calculation logic
-  - [ ] **TESTING**: Test percentage change display
+**Step 5: Extract NavUpdateForm** ✅ **COMPLETED**
+- [x] Extract `NavUpdateForm.tsx` (~44 lines) for NAV updates
+  - [x] Extract from CreateFundEventModal.tsx lines 296-306 (NAV update logic)
+  - [x] Include NAV per share validation
+  - [x] Include proper input constraints (min: 0, step: any)
+  - [x] Add comprehensive validation and error handling
+  - [x] **VERIFICATION**: NAV per share validation works correctly
+  - [x] **VERIFICATION**: Form validation works properly
+  - [x] **VERIFICATION**: Input constraints are applied correctly
+  - [x] **TESTING**: Test NAV per share validation (16 tests)
+  - [x] **TESTING**: Test input constraints and edge cases
+  - [x] **TESTING**: Test accessibility and error states
+
+**Results**: 
+- ✅ CreateFundEventModal reduced from 582 to 578 lines (1% reduction)
+- ✅ All functionality preserved and working identically
+- ✅ Comprehensive test coverage with 16 passing tests
+- ✅ Component ready for reuse in other modal components
 
 **Step 6: Extract TaxStatementForm (HIGH RISK, SAVE FOR LAST)**
 - [ ] Extract `TaxStatementForm.tsx` (~300 lines) for tax statements

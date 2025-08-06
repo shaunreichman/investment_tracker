@@ -23,6 +23,7 @@ import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../utils/hel
 import EventTypeSelector from './modals/EventTypeSelector';
 import DistributionForm from './modals/DistributionForm';
 import UnitTransactionForm from './modals/UnitTransactionForm';
+import NavUpdateForm from './modals/NavUpdateForm';
 import { useEventForm, type EventType, type ValidationErrors } from '../hooks/useEventForm';
 
 interface CreateFundEventModalProps {
@@ -294,18 +295,13 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                   />
                 )}
                 
+                {/* NAV Update Form */}
                 {eventType === 'NAV_UPDATE' && (
-                  <>
-                    <TextField
-                      label={<span>NAV Per Share <span style={{ color: '#d32f2f' }}>*</span></span>}
-                      type="number"
-                      value={formData.nav_per_share || ''}
-                      onChange={e => handleInputChange('nav_per_share', e.target.value)}
-                      fullWidth
-                      error={!!validationErrors.nav_per_share}
-                      helperText={validationErrors.nav_per_share}
-                    />
-                  </>
+                  <NavUpdateForm
+                    formData={formData}
+                    validationErrors={validationErrors}
+                    onInputChange={handleInputChange}
+                  />
                 )}
                 
 
