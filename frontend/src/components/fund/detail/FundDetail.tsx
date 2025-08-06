@@ -15,15 +15,15 @@ import {
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ErrorDisplay } from './ErrorDisplay';
+import { ErrorDisplay } from '../../ErrorDisplay';
 import CreateFundEventModal from '../events/CreateFundEventModal';
 import EditFundEventModal from '../events/EditFundEventModal';
 import { 
   ExtendedFundEvent,
   ExtendedFund
-} from '../types/api';
-import { useFundDetail, useDeleteFundEvent } from '../hooks/useFunds';
-import { formatCurrency, formatDate } from '../utils/formatters';
+} from '../../../types/api';
+import { useFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
+import { formatCurrency, formatDate } from '../../../utils/formatters';
 
 // Import all the extracted section components
 import {

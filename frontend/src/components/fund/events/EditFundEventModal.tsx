@@ -14,14 +14,14 @@ import {
   FormControlLabel,
   Radio
 } from '@mui/material';
-import { ErrorDisplay } from './ErrorDisplay';
-import { useErrorHandler } from '../hooks/useErrorHandler';
+import { ErrorDisplay } from '../../ErrorDisplay';
+import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { MonetizationOn } from '@mui/icons-material';
-import { useUpdateFundEvent } from '../hooks/useFunds';
-import { ExtendedFundEvent } from '../types/api';
-import { validateField } from '../utils/validators';
-import { formatNumber, parseNumber, formatWithThousandSeparator, getEventTypeLabelSimple } from '../utils/helpers';
+import { useUpdateFundEvent } from '../../../hooks/useFunds';
+import { ExtendedFundEvent } from '../../../types/api';
+import { validateField } from '../../../utils/validators';
+import { formatNumber, parseNumber, formatWithThousandSeparator, getEventTypeLabelSimple } from '../../../utils/helpers';
 
 interface EditFundEventModalProps {
   open: boolean;

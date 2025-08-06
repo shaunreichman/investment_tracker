@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ExtendedFundEvent, ExtendedFund } from '../../../types/api';
+import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
 import { logEventGrouping } from './debug';
 
 // ============================================================================

@@ -6,8 +6,8 @@ import {
   Tooltip as MuiTooltip
 } from '@mui/material';
 import { Info } from '@mui/icons-material';
-import { ExtendedFund } from '../../types/api';
-import { getStatusInfo } from '../../utils/helpers';
+import { ExtendedFund } from '../../../../types/api';
+import { getStatusInfo } from '../../../../utils/helpers';
 
 interface SectionProps {
   fund: ExtendedFund;

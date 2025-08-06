@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { TrendingUp } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
-import { ExtendedFund, ExtendedFundEvent } from '../../types/api';
+import { ExtendedFund, ExtendedFundEvent } from '../../../../types/api';
 
 interface SectionProps {
   fund: ExtendedFund;

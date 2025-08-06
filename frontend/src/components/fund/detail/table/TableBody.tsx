@@ -1,6 +1,6 @@
 import React from 'react';
 import { TableBody as MuiTableBody } from '@mui/material';
-import { ExtendedFundEvent, ExtendedFund } from '../../../types/api';
+import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
 import { useEventGrouping } from './useEventGrouping';
 import { EventRow } from './EventRow';
 import { GroupedEventRow } from './GroupedEventRow';

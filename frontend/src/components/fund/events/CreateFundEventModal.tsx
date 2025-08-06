@@ -14,19 +14,19 @@ import {
   Checkbox,
   FormControlLabel
 } from '@mui/material';
-import { ErrorDisplay } from './ErrorDisplay';
-import { useErrorHandler } from '../hooks/useErrorHandler';
-import { useFund } from '../hooks/useFunds';
-import { useCreateFundEvent, useCreateTaxStatement } from '../hooks/useFunds';
-import { validateField } from '../utils/validators';
-import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../utils/helpers';
-import { useEventSubmission } from '../hooks/useEventSubmission';
+import { ErrorDisplay } from '../../ErrorDisplay';
+import { useErrorHandler } from '../../../hooks/useErrorHandler';
+import { useFund } from '../../../hooks/useFunds';
+import { useCreateFundEvent, useCreateTaxStatement } from '../../../hooks/useFunds';
+import { validateField } from '../../../utils/validators';
+import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../../../utils/helpers';
+import { useEventSubmission } from '../../../hooks/useEventSubmission';
 import EventTypeSelector from './shared/EventTypeSelector';
 import DistributionForm from './shared/DistributionForm';
 import UnitTransactionForm from './shared/UnitTransactionForm';
 import NavUpdateForm from './shared/NavUpdateForm';
 import TaxStatementForm from './shared/TaxStatementForm';
-import { useEventForm, type EventType, type ValidationErrors } from '../hooks/useEventForm';
+import { useEventForm, type EventType, type ValidationErrors } from '../../../hooks/useEventForm';
 
 // Constants for styling
 const REQUIRED_FIELD_COLOR = '#d32f2f';

@@ -8,9 +8,9 @@ import {
   IconButton
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { ExtendedFundEvent, ExtendedFund } from '../../../types/api';
-import { formatCurrency, formatDate } from '../../../utils/formatters';
-import { getEventTypeColor } from '../../../utils/helpers';
+import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
+import { formatCurrency, formatDate } from '../../../../utils/formatters';
+import { getEventTypeColor } from '../../../../utils/helpers';
 import { GroupedEvent } from './useEventGrouping';
 
 // ============================================================================

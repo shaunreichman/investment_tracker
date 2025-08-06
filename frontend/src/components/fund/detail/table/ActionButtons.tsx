@@ -7,7 +7,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
-import { ExtendedFundEvent } from '../../../types/api';
+import { ExtendedFundEvent } from '../../../../types/api';
 
 export interface ActionButtonsProps {
   event: ExtendedFundEvent;

@@ -5,8 +5,8 @@ import {
   Box
 } from '@mui/material';
 import { AccountBalance } from '@mui/icons-material';
-import { ExtendedFund } from '../../types/api';
-import { formatCurrency } from '../../utils/formatters';
+import { ExtendedFund } from '../../../../types/api';
+import { formatCurrency } from '../../../../utils/formatters';
 
 interface SectionProps {
   fund: ExtendedFund;

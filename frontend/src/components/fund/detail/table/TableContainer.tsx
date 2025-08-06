@@ -5,7 +5,7 @@ import {
   Box,
   Typography
 } from '@mui/material';
-import { ExtendedFundEvent, ExtendedFund } from '../../../types/api';
+import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
 import TableFilters from './TableFilters';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';

@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import TableContainer from './TableContainer';
-import { ExtendedFund, ExtendedFundEvent, FundType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../types/api';
+import { ExtendedFund, ExtendedFundEvent, FundType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../../types/api';
 
 // ============================================================================
 // TABLE CONTAINER COMPONENT TESTS

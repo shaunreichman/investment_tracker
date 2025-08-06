@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { TableBody } from './TableBody';
-import { ExtendedFundEvent, ExtendedFund, FundType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../types/api';
+import { ExtendedFundEvent, ExtendedFund, FundType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../../types/api';
 
 // ============================================================================
 // TABLE BODY COMPONENT TESTS

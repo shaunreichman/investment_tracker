@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import ActionButtons from './ActionButtons';
-import { ExtendedFundEvent, EventType } from '../../../types/api';
+import { ExtendedFundEvent, EventType } from '../../../../types/api';
 
 // Create a theme for testing
 const theme = createTheme();

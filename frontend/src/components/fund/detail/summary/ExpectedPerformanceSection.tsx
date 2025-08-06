@@ -5,7 +5,7 @@ import {
   Box
 } from '@mui/material';
 import { TrendingUp } from '@mui/icons-material';
-import { ExtendedFund } from '../../types/api';
+import { ExtendedFund } from '../../../../types/api';
 
 interface SectionProps {
   fund: ExtendedFund;

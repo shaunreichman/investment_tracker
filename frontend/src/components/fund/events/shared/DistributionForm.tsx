@@ -5,8 +5,8 @@ import {
   Button,
   Typography,
 } from '@mui/material';
-import { formatNumber, parseNumber } from '../../utils/helpers';
-import { ValidationErrors, FormData } from '../../hooks/useEventForm';
+import { formatNumber, parseNumber } from '../../../../utils/helpers';
+import { ValidationErrors, FormData } from '../../../../hooks/useEventForm';
 
 interface DistributionFormProps {
   // Form state

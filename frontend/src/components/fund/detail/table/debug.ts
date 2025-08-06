@@ -1,4 +1,4 @@
-import { ExtendedFundEvent, ExtendedFund } from '../../../types/api';
+import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
 
 // ============================================================================
 // DEBUG UTILITIES FOR FUND DETAIL TABLE
