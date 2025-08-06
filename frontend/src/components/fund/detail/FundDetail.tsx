@@ -16,8 +16,8 @@ import {
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ErrorDisplay } from './ErrorDisplay';
-import CreateFundEventModal from './CreateFundEventModal';
-import EditFundEventModal from './EditFundEventModal';
+import CreateFundEventModal from '../events/CreateFundEventModal';
+import EditFundEventModal from '../events/EditFundEventModal';
 import { 
   ExtendedFundEvent,
   ExtendedFund
@@ -33,10 +33,10 @@ import {
   FundDetailsSection,
   TransactionSummarySection,
   UnitPriceChartSection
-} from './fund-detail';
+} from './';
 
 // Import the extracted table components
-import TableContainer from './fund-detail/FundDetailTable/TableContainer';
+import TableContainer from './table/TableContainer';
 
 // ============================================================================
 // MAIN FUND DETAIL COMPONENT
