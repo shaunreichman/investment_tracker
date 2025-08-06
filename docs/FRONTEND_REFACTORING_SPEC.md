@@ -407,19 +407,25 @@ Transform the frontend codebase from a monolithic structure with massive files a
 **Goal**: Extract the largest modal into focused, manageable components with minimal risk
 **Strategy**: Incremental extraction with comprehensive testing at each step
 
-**Step 1: Extract EventTypeSelector (SAFE, IMMEDIATE VERIFICATION)**
-- [ ] Create `frontend/src/components/modals/` directory structure
-- [ ] Extract `EventTypeSelector.tsx` (~150 lines) for event type selection
-  - [ ] Extract from CreateFundEventModal.tsx lines 30-100 (EVENT_TEMPLATES)
-  - [ ] Include template selection with icons and descriptions
-  - [ ] Include tracking type filtering (nav_based vs cost_based)
-  - [ ] Include template application logic
-  - [ ] Add comprehensive TypeScript interfaces
-  - [ ] **VERIFICATION**: Template selection works identically to original
-  - [ ] **VERIFICATION**: All event types display correctly
-  - [ ] **VERIFICATION**: Tracking type filtering works properly
-  - [ ] **TESTING**: Create comprehensive test suite for EventTypeSelector
-  - [ ] **INTEGRATION**: Test EventTypeSelector in isolation and with parent
+**Step 1: Extract EventTypeSelector** ✅ **COMPLETED**
+- [x] Create `frontend/src/components/modals/` directory structure
+- [x] Extract `EventTypeSelector.tsx` (~150 lines) for event type selection
+  - [x] Extract from CreateFundEventModal.tsx lines 30-100 (EVENT_TEMPLATES)
+  - [x] Include template selection with icons and descriptions
+  - [x] Include tracking type filtering (nav_based vs cost_based)
+  - [x] Include template application logic
+  - [x] Add comprehensive TypeScript interfaces
+  - [x] **VERIFICATION**: Template selection works identically to original
+  - [x] **VERIFICATION**: All event types display correctly
+  - [x] **VERIFICATION**: Tracking type filtering works properly
+  - [x] **TESTING**: Create comprehensive test suite for EventTypeSelector (22 tests)
+  - [x] **INTEGRATION**: Test EventTypeSelector in isolation and with parent
+
+**Results**: 
+- ✅ CreateFundEventModal reduced from 1,120 to 961 lines (14% reduction)
+- ✅ All functionality preserved and working identically
+- ✅ Comprehensive test coverage with 22 passing tests
+- ✅ Component ready for reuse in other modals
 
 **Step 2: Extract Form State Management (SAFE, IMMEDIATE VERIFICATION)**
 - [ ] Create `useEventForm.ts` hook (~100 lines) for form state management
