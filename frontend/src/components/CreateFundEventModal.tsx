@@ -21,6 +21,7 @@ import { useCreateFundEvent, useCreateTaxStatement } from '../hooks/useFunds';
 import { validateField } from '../utils/validators';
 import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../utils/helpers';
 import EventTypeSelector from './modals/EventTypeSelector';
+import { useEventForm, type EventType, type ValidationErrors } from '../hooks/useEventForm';
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -30,59 +31,40 @@ interface CreateFundEventModalProps {
   fundTrackingType: 'nav_based' | 'cost_based';
 }
 
-type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE' | 'NAV_UPDATE' | 'TAX_STATEMENT';
 
-
-
-interface ValidationErrors {
-  event_date?: string;
-  amount?: string;
-  distribution_type?: string;
-  sub_distribution_type?: string;
-  units_purchased?: string;
-  units_sold?: string;
-  unit_price?: string;
-  brokerage_fee?: string;
-  nav_per_share?: string;
-  gross_amount?: string;
-  net_amount?: string;
-  withholding_tax_amount?: string;
-  withholding_tax_rate?: string;
-  // Tax Statement fields
-  financial_year?: string;
-  statement_date?: string;
-  eofy_debt_interest_deduction_rate?: string;
-  interest_received_in_cash?: string;
-  interest_receivable_this_fy?: string;
-  interest_receivable_prev_fy?: string;
-  interest_non_resident_withholding_tax_from_statement?: string;
-  interest_income_tax_rate?: string;
-  dividend_franked_income_amount?: string;
-  dividend_unfranked_income_amount?: string;
-  dividend_franked_income_tax_rate?: string;
-  dividend_unfranked_income_tax_rate?: string;
-  capital_gain_income_amount?: string;
-  capital_gain_income_tax_rate?: string;
-  accountant?: string;
-  notes?: string;
-}
 
 const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClose, onEventCreated, fundId, fundTrackingType }) => {
-  const [eventType, setEventType] = useState<EventType | 'RETURN_OF_CAPITAL' | ''>('');
-  const [distributionType, setDistributionType] = useState<string>('');
-  const [subDistributionType, setSubDistributionType] = useState<string>('');
-  const [formData, setFormData] = useState<any>({});
-  const [success, setSuccess] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [isFormValid, setIsFormValid] = useState(false);
+  // Use the extracted form state management hook
+  const {
+    eventType,
+    setEventType,
+    distributionType,
+    setDistributionType,
+    subDistributionType,
+    setSubDistributionType,
+    formData,
+    setFormData,
+    success,
+    setSuccess,
+    validationErrors,
+    isFormValid,
+    withholdingAmountType,
+    setWithholdingAmountType,
+    withholdingTaxType,
+    setWithholdingTaxType,
+    hybridFieldOverrides,
+    setHybridFieldOverrides,
+    handleInputChange,
+    handleHybridFieldToggle,
+    validateForm,
+    resetForm,
+    handleBack,
+  } = useEventForm(open, fundTrackingType);
 
   // Centralized error handler
   const { error, setError, clearError } = useErrorHandler();
-  const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
-  const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
   const [fundEntity, setFundEntity] = useState<any>(null);
   const [financialYears, setFinancialYears] = useState<string[]>([]);
-  const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
   // Centralized API hooks
   const { data: fundData } = useFund(fundId);
@@ -134,7 +116,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       setFormData({ event_date: new Date().toISOString().slice(0, 10) });
       clearError();
       setSuccess(false);
-      setValidationErrors({});
     }
   }, [open]);
 
@@ -161,159 +142,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     }
   }, [fundData, open]);
 
-  const resetForm = () => {
-    setEventType('');
-    setDistributionType('');
-    setSubDistributionType('');
-    setWithholdingAmountType('');
-    setWithholdingTaxType('');
-    setFormData({});
-    setHybridFieldOverrides({});
-    clearError();
-    setSuccess(false);
-  };
 
-
-
-
-
-  const handleBack = () => {
-    if (distributionType) {
-      setDistributionType('');
-      setSubDistributionType('');
-      setFormData((prev: any) => ({ ...prev, distribution_type: '' }));
-    } else {
-      setEventType('');
-    }
-  };
-
-  // Form-level validation
-  const validateForm = (): boolean => {
-    const errors: ValidationErrors = {};
-    if (!formData.event_date) {
-      errors.event_date = 'Event date is required';
-    }
-    if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
-      // Skip amount validation for withholding tax scenarios
-      if (!(distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX')) {
-        const amt = parseFloat(formData.amount);
-        if (!formData.amount) {
-          errors.amount = 'Amount is required';
-        } else if (isNaN(amt) || amt <= 0) {
-          errors.amount = 'Enter a valid positive amount';
-        }
-      }
-      if (eventType === 'DISTRIBUTION' && !distributionType) {
-        errors.distribution_type = 'Distribution type is required';
-      }
-    }
-          if ((distributionType === 'DIVIDEND_FRANKED' || distributionType === 'DIVIDEND_UNFRANKED') && !subDistributionType) {
-        errors.sub_distribution_type = 'Sub-distribution type is required';
-      }
-      if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
-        // For withholding tax, require both amount type and tax type to be selected
-        if (!withholdingAmountType) {
-          errors.gross_amount = 'Select amount type (Gross or Net)';
-        }
-        if (!withholdingTaxType) {
-          errors.withholding_tax_rate = 'Select tax type (Amount or Rate)';
-        }
-        // Also require the actual values to be entered
-        const amountValue = withholdingAmountType === 'gross' ? formData.gross_amount : formData.net_amount;
-        const taxValue = withholdingTaxType === 'rate' ? formData.withholding_tax_rate : formData.withholding_tax_amount;
-        
-        if (!amountValue) {
-          if (withholdingAmountType === 'gross') {
-            errors.gross_amount = 'Enter the gross amount';
-          } else if (withholdingAmountType === 'net') {
-            errors.net_amount = 'Enter the net amount';
-          }
-        }
-        if (!taxValue) {
-          if (withholdingTaxType === 'amount') {
-            errors.withholding_tax_amount = 'Enter the tax amount';
-          } else if (withholdingTaxType === 'rate') {
-            errors.withholding_tax_rate = 'Enter the tax rate';
-          }
-        }
-      }
-    if (eventType === 'UNIT_PURCHASE') {
-      const units = parseFloat(formData.units_purchased);
-      const price = parseFloat(formData.unit_price);
-      if (!formData.units_purchased) {
-        errors.units_purchased = 'Units purchased is required';
-      } else if (isNaN(units) || units <= 0) {
-        errors.units_purchased = 'Enter a valid positive number';
-      }
-      if (!formData.unit_price) {
-        errors.unit_price = 'Unit price is required';
-      } else if (isNaN(price) || price <= 0) {
-        errors.unit_price = 'Enter a valid positive price';
-      }
-    }
-    if (eventType === 'UNIT_SALE') {
-      const units = parseFloat(formData.units_sold);
-      const price = parseFloat(formData.unit_price);
-      if (!formData.units_sold) {
-        errors.units_sold = 'Units sold is required';
-      } else if (isNaN(units) || units <= 0) {
-        errors.units_sold = 'Enter a valid positive number';
-      }
-      if (!formData.unit_price) {
-        errors.unit_price = 'Unit price is required';
-      } else if (isNaN(price) || price <= 0) {
-        errors.unit_price = 'Enter a valid positive price';
-      }
-    }
-    if (eventType === 'NAV_UPDATE') {
-      const nav = parseFloat(formData.nav_per_share);
-      if (!formData.nav_per_share) {
-        errors.nav_per_share = 'NAV per share is required';
-      } else if (isNaN(nav) || nav <= 0) {
-        errors.nav_per_share = 'Enter a valid positive number';
-      }
-    }
-    setValidationErrors(errors);
-    const isValid = Object.keys(errors).length === 0;
-    setIsFormValid(isValid);
-    return isValid;
-  };
-
-  // Update form validity when relevant state changes
-  useEffect(() => {
-    if (open) {
-      validateForm();
-    }
-  }, [open, eventType, distributionType, subDistributionType, withholdingAmountType, withholdingTaxType, formData]);
-
-  // Handle input change
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev: typeof formData) => {
-      const newFormData = { ...prev, [field]: value };
-      
-      // Auto-calculate tax payment date when financial year changes
-      if (field === 'financial_year' && eventType === 'TAX_STATEMENT') {
-        newFormData.tax_payment_date = calculateTaxPaymentDate(value);
-      }
-      
-      return newFormData;
-    });
-    
-    // Real-time validation for the field
-    const error = validateField(field, value);
-    setValidationErrors(prev => ({
-      ...prev,
-      [field]: error || undefined
-    }));
-  };
-
-  // Handle hybrid field toggle changes
-  const handleHybridFieldToggle = (field: string) => {
-    setHybridFieldOverrides(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
 
   const handleSubmit = async () => {
     clearError();
@@ -333,20 +162,20 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
           // For withholding tax, send only the relevant fields
           if (withholdingAmountType === 'gross') {
-            payload.gross_interest = parseFloat(formData.gross_amount);
+            payload.gross_interest = parseFloat(formData.gross_amount || '0');
           } else if (withholdingAmountType === 'net') {
-            payload.net_interest = parseFloat(formData.net_amount);
+            payload.net_interest = parseFloat(formData.net_amount || '0');
           }
           if (withholdingTaxType === 'amount') {
-            payload.withholding_amount = parseFloat(formData.withholding_tax_amount);
+            payload.withholding_amount = parseFloat(formData.withholding_tax_amount || '0');
           } else if (withholdingTaxType === 'rate') {
-            payload.withholding_rate = parseFloat(formData.withholding_tax_rate);
+            payload.withholding_rate = parseFloat(formData.withholding_tax_rate || '0');
           }
           payload.distribution_type = distributionType;
           payload.sub_distribution_type = subDistributionType;
         } else {
           // For regular distributions, send the amount field
-          payload.amount = parseFloat(formData.amount);
+          payload.amount = parseFloat(formData.amount || '0');
           if (eventType === 'DISTRIBUTION' && distributionType) {
             payload.distribution_type = distributionType;
           }
@@ -354,7 +183,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
       }
       if (distributionType === 'DIVIDEND') {
         if (!subDistributionType) {
-          validationErrors.sub_distribution_type = 'Please select Franked or Unfranked';
+          // This validation is now handled by the hook
         } else {
           payload.distribution_type = subDistributionType;
         }
@@ -362,25 +191,25 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         payload.distribution_type = distributionType;
       }
       if (eventType === 'UNIT_PURCHASE') {
-        payload.units_purchased = parseFloat(formData.units_purchased);
-        payload.unit_price = parseFloat(formData.unit_price);
+        payload.units_purchased = parseFloat(formData.units_purchased || '0');
+        payload.unit_price = parseFloat(formData.unit_price || '0');
         payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
       }
       if (eventType === 'UNIT_SALE') {
-        payload.units_sold = parseFloat(formData.units_sold);
-        payload.unit_price = parseFloat(formData.unit_price);
+        payload.units_sold = parseFloat(formData.units_sold || '0');
+        payload.unit_price = parseFloat(formData.unit_price || '0');
         payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
       }
       if (eventType === 'NAV_UPDATE') {
-        payload.nav_per_share = parseFloat(formData.nav_per_share);
+        payload.nav_per_share = parseFloat(formData.nav_per_share || '0');
       }
       
       // Handle Tax Statement submission
       if (eventType === 'TAX_STATEMENT') {
         const taxStatementPayload = {
           entity_id: fundEntity?.id,
-          financial_year: formData.financial_year,
-          statement_date: formData.statement_date,
+          financial_year: formData.financial_year || '',
+          statement_date: formData.statement_date || '',
           eofy_debt_interest_deduction_rate: parseFloat(formData.eofy_debt_interest_deduction_rate || '0'),
           interest_received_in_cash: parseFloat(formData.interest_received_in_cash || '0'),
           interest_receivable_this_fy: parseFloat(formData.interest_receivable_this_fy || '0'),
