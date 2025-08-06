@@ -22,6 +22,7 @@ import { validateField } from '../utils/validators';
 import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../utils/helpers';
 import EventTypeSelector from './modals/EventTypeSelector';
 import DistributionForm from './modals/DistributionForm';
+import UnitTransactionForm from './modals/UnitTransactionForm';
 import { useEventForm, type EventType, type ValidationErrors } from '../hooks/useEventForm';
 
 interface CreateFundEventModalProps {
@@ -31,8 +32,6 @@ interface CreateFundEventModalProps {
   fundId: number;
   fundTrackingType: 'nav_based' | 'cost_based';
 }
-
-
 
 const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClose, onEventCreated, fundId, fundTrackingType }) => {
   // Use the extracted form state management hook
@@ -107,130 +106,86 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
     }
   }, [createTaxStatement.data, onEventCreated, onClose]);
 
+  // Load fund entity and financial years
   useEffect(() => {
-    if (open) {
-      setEventType('');
-      setDistributionType('');
-      setSubDistributionType('');
-      setWithholdingAmountType('');
-      setWithholdingTaxType('');
-      setFormData({ event_date: new Date().toISOString().slice(0, 10) });
-      clearError();
-      setSuccess(false);
-    }
-  }, [open]);
-
-  // Validate formData.event_date after it is set on modal open
-  useEffect(() => {
-    if (open && formData.event_date) {
-      validateForm();
-    }
-  }, [open, formData.event_date]);
-
-  // Process fund data when it loads
-  useEffect(() => {
-    if (fundData && open) {
+    if (fundData) {
       setFundEntity(fundData.entity);
-      
-      // Generate financial years from fund creation to current year
+      // Generate financial years (current year + 5 years back)
       const currentYear = new Date().getFullYear();
-      const fundStartYear = fundData.created_at ? new Date(fundData.created_at).getFullYear() : currentYear - 5;
       const years = [];
-      for (let year = fundStartYear; year <= currentYear; year++) {
-        years.push(`${year}-${(year + 1).toString().slice(-2)}`);
+      for (let i = 0; i < 6; i++) {
+        years.push((currentYear - i).toString());
       }
       setFinancialYears(years);
     }
-  }, [fundData, open]);
-
-
+  }, [fundData]);
 
   const handleSubmit = async () => {
-    clearError();
     if (!validateForm()) {
-      setError('Please fill in all required fields.');
       return;
     }
-    
+
+    clearError();
+
+    // Prepare payload based on event type
     const payload: any = {
-        event_type: eventType,
-        event_date: formData.event_date,
-        description: formData.description,
-        reference_number: formData.reference_number,
-      };
-      if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
-        // Handle withholding tax distributions differently
-        if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
-          // For withholding tax, send only the relevant fields
-          if (withholdingAmountType === 'gross') {
-            payload.gross_interest = parseFloat(formData.gross_amount || '0');
-          } else if (withholdingAmountType === 'net') {
-            payload.net_interest = parseFloat(formData.net_amount || '0');
-          }
-          if (withholdingTaxType === 'amount') {
-            payload.withholding_amount = parseFloat(formData.withholding_tax_amount || '0');
-          } else if (withholdingTaxType === 'rate') {
-            payload.withholding_rate = parseFloat(formData.withholding_tax_rate || '0');
-          }
-          payload.distribution_type = distributionType;
-          payload.sub_distribution_type = subDistributionType;
-        } else {
-          // For regular distributions, send the amount field
-          payload.amount = parseFloat(formData.amount || '0');
-          if (eventType === 'DISTRIBUTION' && distributionType) {
-            payload.distribution_type = distributionType;
-          }
-        }
-      }
-      if (distributionType === 'DIVIDEND') {
-        if (!subDistributionType) {
-          // This validation is now handled by the hook
-        } else {
-          payload.distribution_type = subDistributionType;
-        }
+      event_type: eventType,
+      event_date: formData.event_date || '',
+      description: formData.description || '',
+      reference_number: formData.reference_number || '',
+    };
+
+    // Handle different event types
+    if (eventType === 'CAPITAL_CALL' || eventType === 'RETURN_OF_CAPITAL') {
+      payload.amount = parseFloat(formData.amount || '0');
+    } else if (eventType === 'DISTRIBUTION') {
+      payload.amount = parseFloat(formData.amount || '0');
+      if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
+        payload.gross_amount = parseFloat(formData.gross_amount || '0');
+        payload.net_amount = parseFloat(formData.net_amount || '0');
+        payload.withholding_tax_amount = parseFloat(formData.withholding_tax_amount || '0');
+        payload.withholding_tax_rate = parseFloat(formData.withholding_tax_rate || '0');
       } else {
         payload.distribution_type = distributionType;
       }
-      if (eventType === 'UNIT_PURCHASE') {
-        payload.units_purchased = parseFloat(formData.units_purchased || '0');
-        payload.unit_price = parseFloat(formData.unit_price || '0');
-        payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
-      }
-      if (eventType === 'UNIT_SALE') {
-        payload.units_sold = parseFloat(formData.units_sold || '0');
-        payload.unit_price = parseFloat(formData.unit_price || '0');
-        payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
-      }
-      if (eventType === 'NAV_UPDATE') {
-        payload.nav_per_share = parseFloat(formData.nav_per_share || '0');
-      }
+    } else if (eventType === 'UNIT_PURCHASE') {
+      payload.units_purchased = parseFloat(formData.units_purchased || '0');
+      payload.unit_price = parseFloat(formData.unit_price || '0');
+      payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
+    } else if (eventType === 'UNIT_SALE') {
+      payload.units_sold = parseFloat(formData.units_sold || '0');
+      payload.unit_price = parseFloat(formData.unit_price || '0');
+      payload.brokerage_fee = formData.brokerage_fee ? parseFloat(formData.brokerage_fee) : 0.0;
+    } else if (eventType === 'NAV_UPDATE') {
+      payload.nav_per_share = parseFloat(formData.nav_per_share || '0');
+    }
+    
+    // Handle Tax Statement submission
+    if (eventType === 'TAX_STATEMENT') {
+      const taxStatementPayload = {
+        entity_id: fundEntity?.id,
+        financial_year: formData.financial_year || '',
+        statement_date: formData.statement_date || '',
+        eofy_debt_interest_deduction_rate: parseFloat(formData.eofy_debt_interest_deduction_rate || '0'),
+        interest_received_in_cash: parseFloat(formData.interest_received_in_cash || '0'),
+        interest_receivable_this_fy: parseFloat(formData.interest_receivable_this_fy || '0'),
+        interest_receivable_prev_fy: parseFloat(formData.interest_receivable_prev_fy || '0'),
+        interest_non_resident_withholding_tax_from_statement: parseFloat(formData.interest_non_resident_withholding_tax_from_statement || '0'),
+        interest_income_tax_rate: parseFloat(formData.interest_income_tax_rate || '0'),
+        dividend_franked_income_amount: parseFloat(formData.dividend_franked_income_amount || '0'),
+        dividend_unfranked_income_amount: parseFloat(formData.dividend_unfranked_income_amount || '0'),
+        dividend_franked_income_tax_rate: parseFloat(formData.dividend_franked_income_tax_rate || '0'),
+        dividend_unfranked_income_tax_rate: parseFloat(formData.dividend_unfranked_income_tax_rate || '0'),
+        capital_gain_income_amount: parseFloat(formData.capital_gain_income_amount || '0'),
+        capital_gain_income_tax_rate: parseFloat(formData.capital_gain_income_tax_rate || '0'),
+        accountant: formData.accountant || '',
+        notes: formData.notes || '',
+        non_resident: formData.non_resident || false
+      };
       
-      // Handle Tax Statement submission
-      if (eventType === 'TAX_STATEMENT') {
-        const taxStatementPayload = {
-          entity_id: fundEntity?.id,
-          financial_year: formData.financial_year || '',
-          statement_date: formData.statement_date || '',
-          eofy_debt_interest_deduction_rate: parseFloat(formData.eofy_debt_interest_deduction_rate || '0'),
-          interest_received_in_cash: parseFloat(formData.interest_received_in_cash || '0'),
-          interest_receivable_this_fy: parseFloat(formData.interest_receivable_this_fy || '0'),
-          interest_receivable_prev_fy: parseFloat(formData.interest_receivable_prev_fy || '0'),
-          interest_non_resident_withholding_tax_from_statement: parseFloat(formData.interest_non_resident_withholding_tax_from_statement || '0'),
-          interest_income_tax_rate: parseFloat(formData.interest_income_tax_rate || '0'),
-          dividend_franked_income_amount: parseFloat(formData.dividend_franked_income_amount || '0'),
-          dividend_unfranked_income_amount: parseFloat(formData.dividend_unfranked_income_amount || '0'),
-          dividend_franked_income_tax_rate: parseFloat(formData.dividend_franked_income_tax_rate || '0'),
-          dividend_unfranked_income_tax_rate: parseFloat(formData.dividend_unfranked_income_tax_rate || '0'),
-          capital_gain_income_amount: parseFloat(formData.capital_gain_income_amount || '0'),
-          capital_gain_income_tax_rate: parseFloat(formData.capital_gain_income_tax_rate || '0'),
-          accountant: formData.accountant || '',
-          notes: formData.notes || '',
-          non_resident: formData.non_resident || false
-        };
-        
-        console.log('DEBUG: Sending tax statement payload:', taxStatementPayload);
-        
-              await createTaxStatement.mutate(taxStatementPayload);
+      console.log('DEBUG: Sending tax statement payload:', taxStatementPayload);
+      
+      await createTaxStatement.mutate(taxStatementPayload);
       return;
     }
     
@@ -274,7 +229,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
         />
 
         {/* Form appears below all cards (after event type or distribution type selected) */}
-                 {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType))) || eventType === 'TAX_STATEMENT') && (
+        {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType))) || eventType === 'TAX_STATEMENT') && (
           <Box mt={2}>
             <Typography variant="body2" color="text.secondary" mb={2}>
               Fields marked with <span style={{ color: '#d32f2f' }}>*</span> are required.
@@ -328,68 +283,17 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({ open, onClo
                   onChange={e => handleInputChange('reference_number', e.target.value)}
                   fullWidth
                 />
-                {eventType === 'UNIT_PURCHASE' && (
-                  <>
-                    <TextField
-                      label={<span>Units Purchased <span style={{ color: '#d32f2f' }}>*</span></span>}
-                      type="number"
-                      value={formData.units_purchased || ''}
-                      onChange={e => handleInputChange('units_purchased', e.target.value)}
-                      fullWidth
-                      error={!!validationErrors.units_purchased}
-                      helperText={validationErrors.units_purchased}
-                    />
-                    <TextField
-                      label={<span>Unit Price <span style={{ color: '#d32f2f' }}>*</span></span>}
-                      type="number"
-                      value={formData.unit_price || ''}
-                      onChange={e => handleInputChange('unit_price', e.target.value)}
-                      fullWidth
-                      error={!!validationErrors.unit_price}
-                      helperText={validationErrors.unit_price}
-                    />
-                    <TextField
-                      label="Brokerage Fee (Optional)"
-                      type="number"
-                      value={formData.brokerage_fee || ''}
-                      onChange={e => handleInputChange('brokerage_fee', e.target.value)}
-                      fullWidth
-                      error={!!validationErrors.brokerage_fee}
-                      helperText={validationErrors.brokerage_fee}
-                    />
-                  </>
+                
+                {/* Unit Transaction Form */}
+                {(eventType === 'UNIT_PURCHASE' || eventType === 'UNIT_SALE') && (
+                  <UnitTransactionForm
+                    eventType={eventType as 'UNIT_PURCHASE' | 'UNIT_SALE'}
+                    formData={formData}
+                    validationErrors={validationErrors}
+                    onInputChange={handleInputChange}
+                  />
                 )}
-                {eventType === 'UNIT_SALE' && (
-                  <>
-                    <TextField
-                      label={<span>Units Sold <span style={{ color: '#d32f2f' }}>*</span></span>}
-                      type="number"
-                      value={formData.units_sold || ''}
-                      onChange={e => handleInputChange('units_sold', e.target.value)}
-                      fullWidth
-                      error={!!validationErrors.units_sold}
-                      helperText={validationErrors.units_sold}
-                    />
-                    <TextField
-                      label={<span>Unit Price <span style={{ color: '#d32f2f' }}>*</span></span>}
-                      type="number"
-                      value={formData.unit_price || ''}
-                      onChange={e => handleInputChange('unit_price', e.target.value)}
-                      fullWidth
-                      error={!!validationErrors.unit_price}
-                      helperText={validationErrors.unit_price}
-                    />
-                    <TextField
-                      label="Brokerage Fee (Optional)"
-                      type="number"
-                      value={formData.brokerage_fee || ''}
-                      onChange={e => handleInputChange('brokerage_fee', e.target.value)}
-                      fullWidth
-                      error={!!validationErrors.brokerage_fee}
-                      helperText={validationErrors.brokerage_fee}
-                    />
-                  </>
-                )}
+                
                 {eventType === 'NAV_UPDATE' && (
                   <>
                     <TextField
