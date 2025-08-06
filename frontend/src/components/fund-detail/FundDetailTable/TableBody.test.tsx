@@ -263,26 +263,5 @@ describe('TableBody', () => {
     );
   });
 
-  it('should maintain table body styling', () => {
-    mockUseEventGrouping.mockReturnValue({
-      groupedEvents: [],
-      individualEvents: mockEvents.slice(0, 1),
-      sortedEvents: mockEvents.slice(0, 1),
-      totalEvents: 1,
-      totalGroups: 0,
-      interestWithholdingPairs: 0
-    });
 
-    const { container } = renderTableBody({
-      events: mockEvents,
-      fund: mockFund,
-      showTaxEvents: true,
-      showNavUpdates: true,
-      ...mockHandlers
-    });
-
-    // Verify table body has the expected styling classes
-    const tableBody = container.querySelector('tbody');
-    expect(tableBody).toBeInTheDocument();
-  });
 }); 

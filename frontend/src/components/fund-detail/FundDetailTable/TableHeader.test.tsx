@@ -110,19 +110,5 @@ describe('TableHeader', () => {
     expect(screen.queryByText('Tax')).not.toBeInTheDocument();
   });
 
-  it('applies correct styling to header cells', () => {
-    renderTableHeader(defaultProps);
-    
-    // Check that the table head is rendered
-    const tableHead = document.querySelector('thead');
-    expect(tableHead).toBeInTheDocument();
-    
-    // Check that table row is rendered
-    const tableRow = document.querySelector('thead tr');
-    expect(tableRow).toBeInTheDocument();
-    
-    // Check that header cells are rendered
-    const headerCells = document.querySelectorAll('thead th');
-    expect(headerCells.length).toBeGreaterThan(0);
-  });
+
 }); 

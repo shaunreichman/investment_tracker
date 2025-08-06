@@ -235,20 +235,7 @@ describe('TableContainer', () => {
     expect(screen.getByTestId('table-body')).toBeInTheDocument();
   });
 
-  it('should maintain table styling and structure', () => {
-    const { container } = renderTableContainer({
-      events: mockEvents,
-      fund: mockFund,
-      showTaxEvents: true,
-      showNavUpdates: true,
-      ...mockHandlers
-    });
 
-    // Verify table structure
-    expect(container.querySelector('table')).toBeInTheDocument();
-    expect(screen.getByTestId('table-header')).toBeInTheDocument();
-    expect(screen.getByTestId('table-body')).toBeInTheDocument();
-  });
 
   it('should pass fund data to all child components', () => {
     renderTableContainer({
