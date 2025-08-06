@@ -29,6 +29,16 @@
 
 **Next Steps**: Continue modal extraction with Main Orchestrator (Step 7)
 
+### **✅ DIRECTORY RESTRUCTURING COMPLETED**
+**Goal**: Implement domain-first architecture for better organization and maintainability
+**Completed**: 
+- ✅ **Fund Detail Components**: Moved to `fund/detail/` with `summary/` and `table/` subdirectories
+- ✅ **Fund Events Components**: Moved to `fund/events/` with `shared/` subdirectory for modal forms
+- ✅ **Fund Modals**: Moved to `fund/modals/` (CreateFundModal moved back to main components)
+- ✅ **Import Paths**: All TypeScript import paths updated and verified
+- ✅ **TypeScript Compilation**: All errors resolved, compilation passes
+- ✅ **Frontend Build**: Application builds successfully with new structure
+
 ## Overview
 Transform the frontend codebase from a monolithic structure with massive files and code duplication into a maintainable, scalable, and professional-grade React application that follows industry best practices.
 
@@ -134,7 +144,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
 ### Phase 2: Extract FundDetail Component (PARTIALLY COMPLETE)
 **Goal**: Break down the massive FundDetail.tsx into focused, maintainable components
 **Tasks**:
-- [x] Create `frontend/src/components/fund-detail/` directory structure
+- [x] Create `frontend/src/components/fund/detail/` directory structure
 - [x] Extract `EquitySection.tsx` (~149 lines) with equity and NAV metrics
   - [x] Extract from FundDetail.tsx lines 51-181 (EquitySection component)
   - [x] Include `isActiveNavFund` logic for NAV-based fund display
@@ -166,22 +176,22 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [x] Include error handling for chart rendering
   - [x] Include responsive chart sizing and tooltips
   - [x] Include date range calculation and tick generation
-- [ ] Extract `FundDetailTable/` directory with **INCREMENTAL, STEP-BY-STEP** approach (~400 lines total)
+- [ ] Extract `fund/detail/table/` directory with **INCREMENTAL, STEP-BY-STEP** approach (~400 lines total)
   
   **Phase 2B.1: Foundation & Debug Infrastructure** (Safe, no UI changes) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/` directory structure
-  - [x] Create `FundDetailTable/debug.ts` (~50 lines) - Debug utilities for table rendering
+  - [x] Create `fund/detail/table/` directory structure
+  - [x] Create `fund/detail/table/debug.ts` (~50 lines) - Debug utilities for table rendering
     - [x] Create `debugTableRendering` function to log table state and events
     - [x] Create `compareTableRendering` function to compare before/after rendering
     - [x] Create `logEventGrouping` function to debug event grouping logic
     - [x] Create `validateTableStructure` function to ensure table integrity
     - [x] **TEST**: Verify debug utilities work with existing table without breaking functionality
-  - [x] Create `FundDetailTable/index.ts` (~10 lines) - Basic exports
+  - [x] Create `fund/detail/table/index.ts` (~10 lines) - Basic exports
     - [x] Export debug utilities only
     - [x] **TEST**: Verify imports work without breaking existing code
   
   **Phase 2B.2: Extract Event Grouping Logic** (Safe, isolated logic) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/useEventGrouping.ts` (~80 lines) - Event grouping logic hook
+  - [x] Create `fund/detail/table/useEventGrouping.ts` (~80 lines) - Event grouping logic hook
     - [x] Extract event grouping logic from FundDetail.tsx lines 650-680
     - [x] Include date-based event grouping algorithm
     - [x] Include interest + withholding tax combination logic
@@ -192,7 +202,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **TEST**: Test with various event combinations and fund types
   
   **Phase 2B.3: Extract Row Rendering Components** (Safe, isolated components) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/EventRow.tsx` (~150 lines) - Individual event row rendering
+  - [x] Create `fund/detail/table/EventRow.tsx` (~150 lines) - Individual event row rendering
     - [x] Extract individual row logic from FundDetail.tsx lines 808-1043
     - [x] Include event type-specific cell rendering (tax payments, NAV updates, etc.)
     - [x] Include conditional column display for different event types
@@ -202,7 +212,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] Add comprehensive prop validation
     - [x] **TEST**: Verify component renders correctly in isolation
     - [x] **TEST**: Test with all event types and edge cases
-  - [x] Create `FundDetailTable/GroupedEventRow.tsx` (~120 lines) - Grouped events row rendering
+  - [x] Create `fund/detail/table/GroupedEventRow.tsx` (~120 lines) - Grouped events row rendering
     - [x] Extract grouped row logic from FundDetail.tsx lines 684-773
     - [x] Include interest + withholding tax combination logic
     - [x] Include grouped event amount calculations
@@ -218,7 +228,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
   **Strategy**: Break down complex table logic into small, testable pieces that can be verified immediately
   
   **Step 1: Extract TableFilters Component** (SAFE, IMMEDIATE VERIFICATION) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/TableFilters.tsx` (~80 lines) - Filter toggles and add button
+  - [x] Create `fund/detail/table/TableFilters.tsx` (~80 lines) - Filter toggles and add button
     - [x] Extract filter toggle logic from FundDetail.tsx lines 450-500
     - [x] Include "Show Tax Events" and "Show NAV Updates" switches
     - [x] Include "Add Event" button with modal trigger
@@ -230,7 +240,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: No visual changes to filter section
   
   **Step 2: Extract TableHeader Component** (SAFE, IMMEDIATE VERIFICATION) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/TableHeader.tsx` (~120 lines) - Table header row
+  - [x] Create `fund/detail/table/TableHeader.tsx` (~120 lines) - Table header row
     - [x] Extract header row logic from FundDetail.tsx lines 536-660
     - [x] Include conditional column display based on fund type
     - [x] Include responsive column styling and typography
@@ -242,7 +252,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: Column alignment and styling identical to original
   
   **Step 3: Extract ActionButtons Component** (SAFE, IMMEDIATE VERIFICATION) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/ActionButtons.tsx` (~80 lines) - Edit/delete buttons
+  - [x] Create `fund/detail/table/ActionButtons.tsx` (~80 lines) - Edit/delete buttons
     - [x] Extract action button logic from FundDetail.tsx lines 1040-1084
     - [x] Include edit/delete button rendering with event type filtering
     - [x] Include button styling and hover effects
@@ -254,7 +264,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: Button styling and hover effects identical to original
   
   **Step 4: Extract Event Grouping Logic** (SAFE, IMMEDIATE VERIFICATION) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/useEventGrouping.ts` (~100 lines) - Event grouping logic
+  - [x] Create `fund/detail/table/useEventGrouping.ts` (~100 lines) - Event grouping logic
     - [x] Extract grouping logic from FundDetail.tsx lines 695-710
     - [x] Include date-based event grouping algorithm
     - [x] Include interest + withholding tax combination logic
@@ -266,7 +276,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: Performance maintained or improved
   
   **Step 5: Extract IndividualEventRow Component** (RISKY, CAREFUL TESTING REQUIRED) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/EventRow.tsx` (~200 lines) - Individual event row
+  - [x] Create `fund/detail/table/EventRow.tsx` (~200 lines) - Individual event row
     - [x] Extract individual row rendering logic from FundDetail.tsx lines 850-1084
     - [x] Include NAV-based vs cost-based fund logic
     - [x] Include event type-specific cell rendering
@@ -283,7 +293,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: Cell content displays correctly for all event types
   
   **Step 6: Extract CombinedEventRow Component** (RISKY, CAREFUL TESTING REQUIRED) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/GroupedEventRow.tsx` (~150 lines) - Combined interest + withholding
+  - [x] Create `fund/detail/table/GroupedEventRow.tsx` (~150 lines) - Combined interest + withholding
     - [x] Extract combined row logic from FundDetail.tsx lines 723-815
     - [x] Include interest + withholding tax combination logic
     - [x] Include conditional column display for combined events
@@ -295,7 +305,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: Other events on same date still display correctly
   
   **Step 7: Create TableBody Component** (SAFE INTEGRATION, IMMEDIATE VERIFICATION) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/TableBody.tsx` (~100 lines) - Table body with extracted components
+  - [x] Create `fund/detail/table/TableBody.tsx` (~100 lines) - Table body with extracted components
     - [x] Integrate useEventGrouping hook with extracted row components
     - [x] Use GroupedEventRow for combined events (interest + withholding)
     - [x] Use EventRow for individual events
@@ -307,7 +317,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
     - [x] **VERIFICATION**: Performance maintained or improved
   
   **Step 8: Create TableContainer Component** (INTEGRATION, COMPREHENSIVE TESTING) - ✅ COMPLETED
-  - [x] Create `FundDetailTable/TableContainer.tsx` (~150 lines) - Complete table container
+  - [x] Create `fund/detail/table/TableContainer.tsx` (~150 lines) - Complete table container
     - [x] Combine TableFilters, TableHeader, and TableBody components
     - [x] Include table wrapper and responsive layout from FundDetail.tsx
     - [x] Include loading states and error boundaries
@@ -427,7 +437,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
 **Strategy**: Incremental extraction with comprehensive testing at each step
 
 **Step 1: Extract EventTypeSelector** ✅ **COMPLETED**
-- [x] Create `frontend/src/components/modals/` directory structure
+- [x] Create `frontend/src/components/fund/events/shared/` directory structure
 - [x] Extract `EventTypeSelector.tsx` (~150 lines) for event type selection
   - [x] Extract from CreateFundEventModal.tsx lines 30-100 (EVENT_TEMPLATES)
   - [x] Include template selection with icons and descriptions
@@ -580,8 +590,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
 **Goal**: Extract edit modal into focused, manageable components with minimal risk
 
 **Step 1: Extract EventForm (MEDIUM RISK, CAREFUL TESTING)**
-- [ ] Extract `EventForm.tsx` (~200 lines) for general event editing
-  - [ ] Extract from EditFundEventModal.tsx lines 200-400 (general form logic)
+- [ ] Extract `fund/events/shared/EventForm.tsx` (~200 lines) for general event editing
+  - [ ] Extract from fund/events/EditFundEventModal.tsx lines 200-400 (general form logic)
   - [ ] Include event type-specific field rendering
   - [ ] Include form validation and error display
   - [ ] Include form submission handling
@@ -592,8 +602,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **TESTING**: Test with all editable event types
 
 **Step 2: Extract WithholdingTaxForm (MEDIUM RISK, CAREFUL TESTING)**
-- [ ] Extract `WithholdingTaxForm.tsx` (~150 lines) for tax withholding
-  - [ ] Extract from EditFundEventModal.tsx lines 400-600 (withholding tax logic)
+- [ ] Extract `fund/events/shared/WithholdingTaxForm.tsx` (~150 lines) for tax withholding
+  - [ ] Extract from fund/events/EditFundEventModal.tsx lines 400-600 (withholding tax logic)
   - [ ] Include gross/net interest handling
   - [ ] Include withholding amount/rate calculations
   - [ ] Include tax payment type handling
@@ -605,7 +615,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
 
 **Step 3: Create Main Orchestrator (INTEGRATION, COMPREHENSIVE TESTING)**
 - [ ] Create main orchestrator (~150 lines)
-  - [ ] Extract from EditFundEventModal.tsx lines 50-200 (main component logic)
+  - [ ] Extract from fund/events/EditFundEventModal.tsx lines 50-200 (main component logic)
   - [ ] Include event data initialization
   - [ ] Include form state management
   - [ ] Include API update logic
@@ -619,7 +629,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
 **Goal**: Extract fund creation modal into focused, manageable components with minimal risk
 
 **Step 1: Extract TemplateSelector (LOW RISK, STRAIGHTFORWARD)**
-- [ ] Extract `TemplateSelector.tsx` (~150 lines) for fund templates
+- [ ] Extract `fund/modals/TemplateSelector.tsx` (~150 lines) for fund templates
   - [ ] Extract from CreateFundModal.tsx lines 50-150 (FUND_TEMPLATES)
   - [ ] Include template selection with icons and descriptions
   - [ ] Include template application logic
@@ -631,7 +641,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **TESTING**: Test template selection and application
 
 **Step 2: Extract FundForm (MEDIUM RISK, CAREFUL TESTING)**
-- [ ] Extract `FundForm.tsx` (~200 lines) for fund creation form
+- [ ] Extract `fund/modals/FundForm.tsx` (~200 lines) for fund creation form
   - [ ] Extract from CreateFundModal.tsx lines 150-400 (fund form logic)
   - [ ] Include entity selection with CreateEntityModal integration
   - [ ] Include fund type and tracking type selection
@@ -670,7 +680,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] Test memory usage patterns
   - [ ] Test render performance
 - [ ] **Integration Testing**
-  - [ ] Update all imports to use new modal structure
+  - [ ] Update all imports to use new modal structure (fund/events/, fund/modals/)
   - [ ] Ensure all modal functionality preserved
   - [ ] Test cross-browser compatibility
   - [ ] Test accessibility compliance
@@ -802,13 +812,13 @@ This incremental approach will result in a **very professional solution** becaus
 ### Phase 6: Create Form System
 **Goal**: Establish a consistent, reusable form system
 **Tasks**:
-- [ ] Create `frontend/src/components/forms/` directory structure
+- [ ] Create `frontend/src/components/fund/forms/` directory structure
 - [ ] Create `FormField.tsx` with consistent field rendering
 - [ ] Create `FormSection.tsx` with form section organization
 - [ ] Create `FormActions.tsx` with form action buttons
-- [ ] Create `EventTypeSelector.tsx` with event type selection
+- [ ] **NOTE**: `EventTypeSelector.tsx` already exists in `fund/events/shared/`
 - [ ] Create `DistributionTypeSelector.tsx` with distribution type selection
-- [ ] Create `TaxStatementForm.tsx` with tax statement form
+- [ ] **NOTE**: `TaxStatementForm.tsx` already exists in `fund/events/shared/`
 - [ ] Create `frontend/src/hooks/forms/` directory structure
 - [ ] Create `useFormValidation.ts` for form validation logic
 - [ ] Create `useFormState.ts` for form state management
@@ -845,17 +855,17 @@ This incremental approach will result in a **very professional solution** becaus
 - [ ] Implement React.memo for expensive components
   - [ ] Memoize FundDetail sections (EquitySection, PerformanceSection, etc.)
   - [ ] Memoize chart components (UnitPriceChartSection)
-  - [ ] Memoize table components (FundDetailTable)
+  - [ ] Memoize table components (fund/detail/table/)
   - [ ] Memoize form components with stable props
 - [ ] Add useMemo and useCallback for expensive calculations
   - [ ] Memoize chart data preparation in UnitPriceChartSection
-  - [ ] Memoize event grouping logic in FundDetailTable
+  - [ ] Memoize event grouping logic in fund/detail/table/useEventGrouping
   - [ ] Memoize validation calculations in form components
   - [ ] Memoize formatting functions with stable dependencies
 - [ ] Implement code splitting for large components
-  - [ ] Lazy load modal components (CreateFundEventModal, EditFundEventModal)
-  - [ ] Lazy load chart components (UnitPriceChartSection)
-  - [ ] Lazy load form components (TaxStatementForm)
+  - [ ] Lazy load modal components (fund/events/CreateFundEventModal, fund/events/EditFundEventModal)
+  - [ ] Lazy load chart components (fund/detail/summary/UnitPriceChartSection)
+  - [ ] Lazy load form components (fund/events/shared/TaxStatementForm)
   - [ ] Use React.lazy with Suspense boundaries
 - [ ] Optimize bundle size with tree shaking
   - [ ] Remove unused Material-UI imports
@@ -863,8 +873,8 @@ This incremental approach will result in a **very professional solution** becaus
   - [ ] Remove unused TypeScript types
   - [ ] Configure webpack for tree shaking
 - [ ] Implement lazy loading for modals and forms
-  - [ ] Lazy load CreateFundEventModal on demand
-  - [ ] Lazy load EditFundEventModal on demand
+  - [ ] Lazy load fund/events/CreateFundEventModal on demand
+  - [ ] Lazy load fund/events/EditFundEventModal on demand
   - [ ] Lazy load CreateFundModal on demand
   - [ ] Add loading states for lazy components
 - [ ] Add performance monitoring and metrics
@@ -873,12 +883,12 @@ This incremental approach will result in a **very professional solution** becaus
   - [ ] Add render time monitoring
   - [ ] Add memory usage monitoring
 - [ ] Optimize chart rendering and data processing
-  - [ ] Optimize chart data transformation in UnitPriceChartSection
+  - [ ] Optimize chart data transformation in fund/detail/summary/UnitPriceChartSection
   - [ ] Implement chart data caching
   - [ ] Optimize chart re-rendering logic
   - [ ] Add chart performance monitoring
 - [ ] Implement virtual scrolling for large tables
-  - [ ] Implement virtual scrolling for FundDetailTable
+  - [ ] Implement virtual scrolling for fund/detail/table/
   - [ ] Optimize table row rendering
   - [ ] Add scroll performance monitoring
   - [ ] Test with large datasets (1000+ events)
@@ -893,8 +903,8 @@ This incremental approach will result in a **very professional solution** becaus
 - Performance is measured and monitored
 - User experience is smooth and responsive
 **Critical Context**:
-- Chart data preparation in UnitPriceChartSection is computationally expensive
-- Event grouping logic in FundDetailTable processes large datasets
+- Chart data preparation in fund/detail/summary/UnitPriceChartSection is computationally expensive
+- Event grouping logic in fund/detail/table/useEventGrouping processes large datasets
 - Modal components are large and should be lazy loaded
 - Form validation calculations can be expensive with complex rules
 
@@ -920,17 +930,17 @@ This incremental approach will result in a **very professional solution** becaus
 **Goal**: Complete migration and cleanup of old code
 **Tasks**:
 - [ ] Migrate all components to use new utilities
-  - [ ] Update FundDetail.tsx to use centralized formatters and validators
-  - [ ] Update CreateFundEventModal.tsx to use shared validation patterns
-  - [ ] Update EditFundEventModal.tsx to use shared validation patterns
+  - [ ] Update fund/detail/FundDetail.tsx to use centralized formatters and validators
+  - [ ] Update fund/events/CreateFundEventModal.tsx to use shared validation patterns
+  - [ ] Update fund/events/EditFundEventModal.tsx to use shared validation patterns
   - [ ] Update CreateFundModal.tsx to use shared validation patterns
   - [ ] Update CompaniesPage.tsx to use shared formatters
   - [ ] Update OverallDashboard.tsx to use shared formatters
 - [ ] Remove old utility functions from components
-  - [ ] Remove formatCurrency from FundDetail.tsx (line 853)
-  - [ ] Remove formatDate from FundDetail.tsx (line 878) and OverallDashboard.tsx
+  - [ ] Remove formatCurrency from fund/detail/FundDetail.tsx (line 853)
+  - [ ] Remove formatDate from fund/detail/FundDetail.tsx (line 878) and OverallDashboard.tsx
   - [ ] Remove validateField from all modal components
-  - [ ] Remove getEventTypeColor and getEventTypeLabel from FundDetail.tsx
+  - [ ] Remove getEventTypeColor and getEventTypeLabel from fund/detail/FundDetail.tsx
   - [ ] Remove duplicate constants and enums
 - [ ] Update all imports to use new structure
   - [ ] Update import paths for new component structure
