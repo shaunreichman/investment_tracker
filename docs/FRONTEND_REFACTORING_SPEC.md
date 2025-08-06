@@ -487,19 +487,25 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - ✅ Comprehensive test coverage with 29 passing tests
 - ✅ Component ready for reuse in other modal components
 
-**Step 4: Extract UnitTransactionForm (LOW RISK, STRAIGHTFORWARD)**
-- [ ] Extract `UnitTransactionForm.tsx` (~200 lines) for unit purchases/sales
-  - [ ] Extract from CreateFundEventModal.tsx lines 800-1000 (unit transaction logic)
-  - [ ] Include units and unit price validation
-  - [ ] Include brokerage fee handling
-  - [ ] Include amount calculation (units × price + brokerage)
-  - [ ] Add comprehensive validation and error handling
-  - [ ] **VERIFICATION**: Unit calculations are accurate
-  - [ ] **VERIFICATION**: Brokerage fee handling works correctly
-  - [ ] **VERIFICATION**: Form validation works properly
-  - [ ] **TESTING**: Test with various unit/price combinations
-  - [ ] **TESTING**: Test amount calculation (units × price + brokerage)
-  - [ ] **TESTING**: Test validation for units and unit price
+**Step 4: Extract UnitTransactionForm** ✅ **COMPLETED**
+- [x] Extract `UnitTransactionForm.tsx` (~200 lines) for unit purchases/sales
+  - [x] Extract from CreateFundEventModal.tsx lines 330-380 (unit transaction logic)
+  - [x] Include units and unit price validation
+  - [x] Include brokerage fee handling
+  - [x] Include amount calculation (units × price + brokerage)
+  - [x] Add comprehensive validation and error handling
+  - [x] **VERIFICATION**: Unit calculations are accurate
+  - [x] **VERIFICATION**: Brokerage fee handling works correctly
+  - [x] **VERIFICATION**: Form validation works properly
+  - [x] **TESTING**: Test with various unit/price combinations (19 tests)
+  - [x] **TESTING**: Test amount calculation (units × price + brokerage)
+  - [x] **TESTING**: Test validation for units and unit price
+
+**Results**: 
+- ✅ CreateFundEventModal reduced from 679 to 582 lines (14% reduction)
+- ✅ All functionality preserved and working identically
+- ✅ Comprehensive test coverage with 19 passing tests
+- ✅ Component ready for reuse in other modal components
 
 **Step 5: Extract NavUpdateForm (LOW RISK, SIMPLE)**
 - [ ] Extract `NavUpdateForm.tsx` (~150 lines) for NAV updates
