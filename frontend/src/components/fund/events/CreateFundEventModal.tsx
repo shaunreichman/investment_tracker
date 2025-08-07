@@ -21,11 +21,11 @@ import { useCreateFundEvent, useCreateTaxStatement } from '../../../hooks/useFun
 import { validateField } from '../../../utils/validators';
 import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../../../utils/helpers';
 import { useEventSubmission } from '../../../hooks/useEventSubmission';
-import EventTypeSelector from './shared/EventTypeSelector';
-import DistributionForm from './shared/DistributionForm';
-import UnitTransactionForm from './shared/UnitTransactionForm';
-import NavUpdateForm from './shared/NavUpdateForm';
-import TaxStatementForm from './shared/TaxStatementForm';
+import EventTypeSelector from './create/EventTypeSelector';
+import DistributionForm from './create/DistributionForm';
+import UnitTransactionForm from './create/UnitTransactionForm';
+import NavUpdateForm from './create/NavUpdateForm';
+import TaxStatementForm from './create/TaxStatementForm';
 import { useEventForm, type EventType, type ValidationErrors } from '../../../hooks/useEventForm';
 
 // Constants for styling

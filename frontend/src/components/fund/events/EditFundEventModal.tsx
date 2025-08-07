@@ -22,6 +22,7 @@ import { useUpdateFundEvent } from '../../../hooks/useFunds';
 import { ExtendedFundEvent } from '../../../types/api';
 import { validateField } from '../../../utils/validators';
 import { formatNumber, parseNumber, formatWithThousandSeparator, getEventTypeLabelSimple } from '../../../utils/helpers';
+import WithholdingTaxSection from './edit/WithholdingTaxSection';
 
 interface EditFundEventModalProps {
   open: boolean;
@@ -457,30 +458,21 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
         )}
 
         <Box sx={{ mt: 2 }}>
-          {/* Interest Type Selection (for Interest Distribution events) */}
-          {event?.event_type === 'DISTRIBUTION' && event?.distribution_type === 'INTEREST' && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Interest Type
-              </Typography>
-              <RadioGroup
-                row
-                value={interestType}
-                onChange={(e) => setInterestType(e.target.value as 'regular' | 'withholding')}
-              >
-                <FormControlLabel
-                  value="regular"
-                  control={<Radio />}
-                  label="Regular Interest"
-                />
-                <FormControlLabel
-                  value="withholding"
-                  control={<Radio />}
-                  label="Withholding Tax Interest"
-                />
-              </RadioGroup>
-            </Box>
-          )}
+          {/* Withholding Tax Section */}
+          <WithholdingTaxSection
+            formData={formData}
+            setFormData={setFormData}
+            interestType={interestType}
+            setInterestType={setInterestType}
+            withholdingAmountType={withholdingAmountType}
+            setWithholdingAmountType={setWithholdingAmountType}
+            withholdingTaxType={withholdingTaxType}
+            setWithholdingTaxType={setWithholdingTaxType}
+            validationErrors={validationErrors}
+            setValidationErrors={setValidationErrors}
+            event={event}
+            handleInputChange={handleInputChange}
+          />
 
           {/* Event Date */}
           <TextField
@@ -613,102 +605,6 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
               <option value="dividend">Dividend</option>
               <option value="other">Other</option>
             </TextField>
-          )}
-
-          {/* Interest Distribution Fields */}
-          {event.event_type === 'DISTRIBUTION' && formData.distribution_type === 'interest' && (
-            <>
-              {interestType === 'regular' && (
-                <TextField
-                  fullWidth
-                  label="Gross Interest"
-                  type="number"
-                  value={formData.gross_interest || ''}
-                  onChange={(e) => handleInputChange('gross_interest', e.target.value)}
-                  error={!!validationErrors.gross_interest}
-                  helperText={validationErrors.gross_interest}
-                  sx={{ mb: 2 }}
-                />
-              )}
-              
-              {interestType === 'withholding' && (
-                <>
-                  {/* Amount Type Selection */}
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" mb={1}>
-                      Amount Type:
-                    </Typography>
-                    <Box display="flex" gap={1}>
-                      <Button
-                        size="small"
-                        variant={withholdingAmountType === 'gross' ? 'contained' : 'outlined'}
-                        onClick={() => setWithholdingAmountType('gross')}
-                      >
-                        Gross
-                      </Button>
-                      <Button
-                        size="small"
-                        variant={withholdingAmountType === 'net' ? 'contained' : 'outlined'}
-                        onClick={() => setWithholdingAmountType('net')}
-                      >
-                        Net
-                      </Button>
-                    </Box>
-                  </Box>
-
-                  {/* Tax Type Selection */}
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" mb={1}>
-                      Tax Type:
-                    </Typography>
-                    <Box display="flex" gap={1}>
-                      <Button
-                        size="small"
-                        variant={withholdingTaxType === 'amount' ? 'contained' : 'outlined'}
-                        onClick={() => setWithholdingTaxType('amount')}
-                      >
-                        Tax Amount
-                      </Button>
-                      <Button
-                        size="small"
-                        variant={withholdingTaxType === 'rate' ? 'contained' : 'outlined'}
-                        onClick={() => setWithholdingTaxType('rate')}
-                      >
-                        Tax Rate (%)
-                      </Button>
-                    </Box>
-                  </Box>
-
-                  {/* Amount Input Field */}
-                  {withholdingAmountType && (
-                    <TextField
-                      fullWidth
-                      label={`${withholdingAmountType === 'gross' ? 'Gross' : 'Net'} Interest`}
-                      type="number"
-                      value={formData[withholdingAmountType === 'gross' ? 'gross_interest' : 'net_interest'] || ''}
-                      onChange={(e) => handleInputChange(withholdingAmountType === 'gross' ? 'gross_interest' : 'net_interest', e.target.value)}
-                      error={!!validationErrors[withholdingAmountType === 'gross' ? 'gross_interest' : 'net_interest']}
-                      helperText={validationErrors[withholdingAmountType === 'gross' ? 'gross_interest' : 'net_interest']}
-                      sx={{ mb: 2 }}
-                    />
-                  )}
-
-                  {/* Tax Input Field */}
-                  {withholdingTaxType && (
-                    <TextField
-                      fullWidth
-                      label={withholdingTaxType === 'amount' ? 'Tax Amount' : 'Tax Rate (%)'}
-                      type="number"
-                      value={formData[withholdingTaxType === 'amount' ? 'withholding_amount' : 'withholding_rate'] || ''}
-                      onChange={(e) => handleInputChange(withholdingTaxType === 'amount' ? 'withholding_amount' : 'withholding_rate', e.target.value)}
-                      error={!!validationErrors[withholdingTaxType === 'amount' ? 'withholding_amount' : 'withholding_rate']}
-                      helperText={validationErrors[withholdingTaxType === 'amount' ? 'withholding_amount' : 'withholding_rate']}
-                      sx={{ mb: 2 }}
-                    />
-                  )}
-                </>
-              )}
-            </>
           )}
 
           {/* Amount for other distribution types (non-interest) */}
