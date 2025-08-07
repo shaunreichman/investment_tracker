@@ -5,24 +5,20 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextField,
   Box,
   CircularProgress,
   Typography,
-  IconButton,
-  RadioGroup,
-  FormControlLabel,
-  Radio
+  IconButton
 } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { MonetizationOn } from '@mui/icons-material';
 import { useUpdateFundEvent } from '../../../hooks/useFunds';
 import { ExtendedFundEvent } from '../../../types/api';
 import { validateField } from '../../../utils/validators';
 import { formatNumber, parseNumber, formatWithThousandSeparator, getEventTypeLabelSimple } from '../../../utils/helpers';
 import WithholdingTaxSection from './edit/WithholdingTaxSection';
+import EventFormSection from './edit/EventFormSection';
 
 interface EditFundEventModalProps {
   open: boolean;
@@ -415,10 +411,7 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
 
   if (!event) return null;
 
-  const DIVIDEND_SUB_TEMPLATES = [
-    { label: 'Franked', value: 'dividend_franked', icon: <MonetizationOn color="success" /> },
-    { label: 'Unfranked', value: 'dividend_unfranked', icon: <MonetizationOn color="warning" /> },
-  ];
+
 
   return (
     <Dialog 
@@ -474,169 +467,16 @@ const EditFundEventModal: React.FC<EditFundEventModalProps> = ({
             handleInputChange={handleInputChange}
           />
 
-          {/* Event Date */}
-          <TextField
-            fullWidth
-            label="Event Date"
-            type="date"
-            value={formData.event_date || ''}
-            onChange={(e) => handleInputChange('event_date', e.target.value)}
-            error={!!validationErrors.event_date}
-            helperText={validationErrors.event_date}
-            sx={{ mb: 2 }}
-            InputLabelProps={{ shrink: true }}
-          />
-
-          {/* Amount (for Capital Call, Return of Capital, Distribution) */}
-          {['CAPITAL_CALL', 'RETURN_OF_CAPITAL'].includes(event.event_type) && (
-            <TextField
-              fullWidth
-              label="Amount"
-              type="text"
-              value={formatNumber(formData.amount || '')}
-              onChange={e => handleInputChange('amount', parseNumber(e.target.value))}
-              error={!!validationErrors.amount}
-              helperText={validationErrors.amount}
-              sx={{ mb: 2 }}
-            />
-          )}
-
-          {/* Units Purchased (for Unit Purchase) */}
-          {event.event_type === 'UNIT_PURCHASE' && (
-            <TextField
-              fullWidth
-              label="Units Purchased"
-              type="number"
-              value={formData.units_purchased || ''}
-              onChange={(e) => handleInputChange('units_purchased', e.target.value)}
-              error={!!validationErrors.units_purchased}
-              helperText={validationErrors.units_purchased}
-              sx={{ mb: 2 }}
-            />
-          )}
-
-          {/* Units Sold (for Unit Sale) */}
-          {event.event_type === 'UNIT_SALE' && (
-            <TextField
-              fullWidth
-              label="Units Sold"
-              type="number"
-              value={formData.units_sold || ''}
-              onChange={(e) => handleInputChange('units_sold', e.target.value)}
-              error={!!validationErrors.units_sold}
-              helperText={validationErrors.units_sold}
-              sx={{ mb: 2 }}
-            />
-          )}
-
-          {/* Unit Price (for Unit Purchase/Sale) */}
-          {['UNIT_PURCHASE', 'UNIT_SALE'].includes(event.event_type) && (
-            <TextField
-              fullWidth
-              label="Unit Price"
-              type="number"
-              value={formData.unit_price || ''}
-              onChange={(e) => handleInputChange('unit_price', e.target.value)}
-              error={!!validationErrors.unit_price}
-              helperText={validationErrors.unit_price}
-              sx={{ mb: 2 }}
-            />
-          )}
-
-          {/* Brokerage Fee (for Unit Purchase/Sale) */}
-          {['UNIT_PURCHASE', 'UNIT_SALE'].includes(event.event_type) && (
-            <TextField
-              fullWidth
-              label="Brokerage Fee (Optional)"
-              type="number"
-              value={formData.brokerage_fee || ''}
-              onChange={(e) => handleInputChange('brokerage_fee', e.target.value)}
-              error={!!validationErrors.brokerage_fee}
-              helperText={validationErrors.brokerage_fee}
-              sx={{ mb: 2 }}
-            />
-          )}
-
-          {/* NAV Per Share (for NAV Update) */}
-          {event.event_type === 'NAV_UPDATE' && (
-            <TextField
-              fullWidth
-              label="NAV Per Share"
-              type="number"
-              value={formData.nav_per_share || ''}
-              onChange={(e) => handleInputChange('nav_per_share', e.target.value)}
-              error={!!validationErrors.nav_per_share}
-              helperText={validationErrors.nav_per_share}
-              sx={{ mb: 2 }}
-            />
-          )}
-
-          {/* Distribution Type (for Distribution) */}
-          {event?.event_type === 'DISTRIBUTION' && (formData.distribution_type === 'dividend_franked' || formData.distribution_type === 'dividend_unfranked') ? (
-            <Box mb={2}>
-              <Typography variant="subtitle1" mb={1} color="primary">Dividend Type</Typography>
-              <Box display="flex" gap={2}>
-                {DIVIDEND_SUB_TEMPLATES.map(sub => (
-                  <Button
-                    key={sub.value}
-                    variant={formData.distribution_type === sub.value ? 'contained' : 'outlined'}
-                    color={sub.value === 'dividend_franked' ? 'success' : 'warning'}
-                    onClick={() => handleInputChange('distribution_type', sub.value)}
-                    startIcon={sub.icon}
-                  >
-                    {sub.label}
-                  </Button>
-                ))}
-              </Box>
-            </Box>
-          ) : (
-            <TextField
-              fullWidth
-              label="Distribution Type"
-              select
-              value={formData.distribution_type || ''}
-              onChange={(e) => handleInputChange('distribution_type', e.target.value)}
-              error={!!validationErrors.distribution_type}
-              helperText={validationErrors.distribution_type}
-              sx={{ mb: 2 }}
-            >
-              <option value="">Select type</option>
-              <option value="interest">Interest</option>
-              <option value="dividend">Dividend</option>
-              <option value="other">Other</option>
-            </TextField>
-          )}
-
-          {/* Amount for other distribution types (non-interest) */}
-          {event.event_type === 'DISTRIBUTION' && formData.distribution_type !== 'interest' && (
-            <TextField
-              fullWidth
-              label="Amount"
-              type="number"
-              value={formData.amount || ''}
-              onChange={(e) => handleInputChange('amount', e.target.value)}
-              error={!!validationErrors.amount}
-              helperText={validationErrors.amount}
-              sx={{ mb: 2 }}
-            />
-          )}
-
-          {/* Description */}
-          <TextField
-            fullWidth
-            label="Description (Optional)"
-            value={formData.description || ''}
-            onChange={(e) => handleInputChange('description', e.target.value)}
-            sx={{ mb: 2 }}
-          />
-
-          {/* Reference Number */}
-          <TextField
-            fullWidth
-            label="Reference Number (Optional)"
-            value={formData.reference_number || ''}
-            onChange={(e) => handleInputChange('reference_number', e.target.value)}
-            sx={{ mb: 2 }}
+          {/* Event Form Section */}
+          <EventFormSection
+            event={event}
+            formData={formData}
+            setFormData={setFormData}
+            validationErrors={validationErrors}
+            setValidationErrors={setValidationErrors}
+            isFormValid={isFormValid}
+            setIsFormValid={setIsFormValid}
+            handleInputChange={handleInputChange}
           />
         </Box>
       </DialogContent>

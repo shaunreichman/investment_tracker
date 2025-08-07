@@ -27,7 +27,7 @@
 - EditFundEventModal.tsx: 659 lines (target: ~400 lines) - **IN PROGRESS** 🚀
 - CreateFundModal.tsx: 787 lines (target: ~400 lines) - **NEXT PRIORITY**
 
-**Current Progress**: Phase 3B Step 1 completed - WithholdingTaxSection extracted and folder structure reorganized
+**Current Progress**: Phase 3B Steps 1 & 2 completed - WithholdingTaxSection and EventFormSection extracted, folder structure reorganized
 
 ### **✅ DIRECTORY RESTRUCTURING COMPLETED**
 **Goal**: Implement domain-first architecture for better organization and maintainability
@@ -409,7 +409,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
 
 **Current File Sizes vs REALISTIC Targets**:
 - CreateFundEventModal.tsx: 307 lines → **PHASE 3A COMPLETE** ✅ (Professional and maintainable, cleanup completed)
-- EditFundEventModal.tsx: 659 lines → Target: ~400 lines (39% reduction needed) - **PHASE 3B IN PROGRESS** 🚀
+- EditFundEventModal.tsx: 499 lines → Target: ~400 lines (20% reduction needed) - **PHASE 3B IN PROGRESS** 🚀
 - CreateFundModal.tsx: 787 lines → Target: ~400 lines (49% reduction needed) - **NEXT PRIORITY**
 
 **REFINED STRATEGY**: Incremental, safe extraction with comprehensive testing at each step
@@ -612,18 +612,19 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [x] **TESTING**: Test interest type switching and state management
   - [x] **FOLDER RESTRUCTURING**: Moved from `shared/` to `edit/` for clarity
 
-**Step 2: Extract EventFormSection (MEDIUM RISK, CAREFUL TESTING)**
-- [ ] Extract `fund/events/shared/EventFormSection.tsx` (~200 lines) for general event editing
-  - [ ] Extract from fund/events/EditFundEventModal.tsx lines 200-400 (general form logic)
-  - [ ] Include event type-specific field rendering (DISTRIBUTION, UNIT_PURCHASE, etc.)
-  - [ ] Include form validation and error display for all event types
-  - [ ] Include form submission handling with proper state management
-  - [ ] Include conditional field rendering based on event type
-  - [ ] Add comprehensive TypeScript interfaces for all event types
-  - [ ] **VERIFICATION**: All event types can be edited successfully
-  - [ ] **VERIFICATION**: Form validation works properly for all event types
-  - [ ] **VERIFICATION**: API submission works correctly with proper error handling
-  - [ ] **TESTING**: Test with all editable event types and edge cases
+**Step 2: Extract EventFormSection (MEDIUM RISK, CAREFUL TESTING)** ✅ **COMPLETED**
+- [x] Extract `fund/events/edit/EventFormSection.tsx` (305 lines) for general event editing
+  - [x] Extract from fund/events/EditFundEventModal.tsx lines 150-450 (general form logic)
+  - [x] Include event type-specific field rendering (DISTRIBUTION, UNIT_PURCHASE, etc.)
+  - [x] Include form validation and error display for all event types
+  - [x] Include form submission handling with proper state management
+  - [x] Include conditional field rendering based on event type
+  - [x] Add comprehensive TypeScript interfaces for all event types
+  - [x] **VERIFICATION**: All event types can be edited successfully
+  - [x] **VERIFICATION**: Form validation works properly for all event types
+  - [x] **VERIFICATION**: API submission works correctly with proper error handling
+  - [x] **TESTING**: Test with all editable event types and edge cases (27 tests passing)
+  - [x] **TYPE SAFETY**: Fixed all TypeScript enum errors
 
 **Step 3: Create Main Orchestrator (INTEGRATION, COMPREHENSIVE TESTING)**
 - [ ] Create main orchestrator (~250 lines)
@@ -640,7 +641,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **TESTING**: Test modal lifecycle and state transitions
 
 **Target Results**:
-- ✅ EditFundEventModal reduced from 764 to 659 lines (14% reduction - Step 1 complete)
+- ✅ EditFundEventModal reduced from 764 to 499 lines (35% reduction - Steps 1 & 2 complete)
 - ✅ Complex withholding tax logic preserved and isolated
 - ✅ All business logic maintained with 100% accuracy
 - ✅ Professional file size standards achieved
