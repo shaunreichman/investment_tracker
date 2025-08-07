@@ -71,6 +71,7 @@ export interface EventTypeSelectorProps {
   eventType: EventType | 'RETURN_OF_CAPITAL' | '';
   distributionType: string;
   subDistributionType: string;
+  mode?: 'create' | 'edit'; // New prop for edit mode
   onEventTypeSelect: (value: EventType | 'RETURN_OF_CAPITAL') => void;
   onDistributionTypeSelect: (value: string) => void;
   onSubDistributionTypeSelect: (value: string) => void;
@@ -89,6 +90,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
   eventType,
   distributionType,
   subDistributionType,
+  mode = 'create', // Default to create mode
   onEventTypeSelect,
   onDistributionTypeSelect,
   onSubDistributionTypeSelect,
@@ -101,11 +103,20 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
 
   return (
     <Box>
+      {/* Edit Mode Info */}
+      {mode === 'edit' && (
+        <Box mb={2} p={2} bgcolor="info.light" borderRadius={1}>
+          <Typography variant="body2" color="info.contrastText">
+            Event type cannot be changed in edit mode. To change the event type, delete this event and create a new one.
+          </Typography>
+        </Box>
+      )}
+      
       {/* Event Type Cards */}
       <Box display="flex" gap={2} mb={2}>
         {filteredTemplates.map(template => {
           const isSelected = eventType === template.value;
-          const isDisabled = eventType && eventType !== template.value && !(eventType === 'DISTRIBUTION' && template.value === 'DISTRIBUTION');
+          const isDisabled = mode === 'edit' || (eventType && eventType !== template.value && !(eventType === 'DISTRIBUTION' && template.value === 'DISTRIBUTION'));
           
           return (
             <Paper
@@ -123,15 +134,16 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
               }}
               onClick={() => {
                 if (isDisabled) return;
-                if (isSelected) {
+                if (isSelected && mode === 'create') {
                   onEventTypeSelect('' as EventType | 'RETURN_OF_CAPITAL');
                   onDistributionTypeSelect('');
                   onSubDistributionTypeSelect('');
-                } else {
+                } else if (mode === 'create') {
                   onEventTypeSelect(template.value);
                   onDistributionTypeSelect('');
                   onSubDistributionTypeSelect('');
                 }
+                // In edit mode, no action on click
               }}
             >
               <Box display="flex" flexDirection="column" alignItems="center">
@@ -154,10 +166,13 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
       {/* Distribution Type Options (inline, below cards, always visible when Distribution is selected) */}
       {eventType === 'DISTRIBUTION' && (
         <Box mb={2}>
-          <Typography variant="subtitle1" mb={1} color="primary">Select Distribution Type</Typography>
+          <Typography variant="subtitle1" mb={1} color="primary">
+            {mode === 'edit' ? 'Distribution Type (Fixed)' : 'Select Distribution Type'}
+          </Typography>
           <Box display="flex" gap={2}>
             {DISTRIBUTION_TEMPLATES.map(dt => {
               const isSelected = distributionType === dt.value;
+              const isDisabled = mode === 'edit';
               return (
                 <Paper
                   key={dt.value}
@@ -167,17 +182,20 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                     minWidth: 120,
                     border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
                     background: isSelected ? '#e3f2fd' : '#f3f6fa',
-                    cursor: 'pointer',
+                    opacity: isDisabled ? 0.5 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
                   }}
                   onClick={() => {
-                    if (isSelected) {
+                    if (isDisabled) return;
+                    if (isSelected && mode === 'create') {
                       onDistributionTypeSelect('');
                       onSubDistributionTypeSelect('');
-                    } else {
+                    } else if (mode === 'create') {
                       onDistributionTypeSelect(dt.value);
                       onSubDistributionTypeSelect('');
                     }
+                    // In edit mode, no action on click
                   }}
                 >
                   <Box display="flex" flexDirection="column" alignItems="center">
@@ -196,14 +214,21 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
       {/* Sub-Distribution Type Options (inline, below Distribution Type, only visible when Dividend is selected) */}
       {distributionType === 'DIVIDEND' && (
         <Box mb={2}>
-          <Typography variant="subtitle1" mb={1} color="primary">Select Dividend Type</Typography>
+          <Typography variant="subtitle1" mb={1} color="primary">
+            {mode === 'edit' ? 'Dividend Type (Fixed)' : 'Select Dividend Type'}
+          </Typography>
           <Box display="flex" gap={2}>
             {DIVIDEND_SUB_TEMPLATES.map(sub => (
               <Button
                 key={sub.value}
                 variant={subDistributionType === sub.value ? 'contained' : 'outlined'}
                 color={sub.value === 'DIVIDEND_FRANKED' ? 'success' : 'warning'}
-                onClick={() => onSubDistributionTypeSelect(sub.value)}
+                disabled={mode === 'edit'}
+                onClick={() => {
+                  if (mode === 'create') {
+                    onSubDistributionTypeSelect(sub.value);
+                  }
+                }}
                 startIcon={sub.icon}
               >
                 {sub.label}
@@ -216,10 +241,13 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
       {/* Interest Sub-Distribution Type Options (inline, below Distribution Type, only visible when Interest is selected) */}
       {distributionType === 'INTEREST' && (
         <Box mb={2}>
-          <Typography variant="subtitle1" mb={1} color="primary">Select Interest Sub-Distribution Type</Typography>
+          <Typography variant="subtitle1" mb={1} color="primary">
+            {mode === 'edit' ? 'Interest Type (Fixed)' : 'Select Interest Sub-Distribution Type'}
+          </Typography>
           <Box display="flex" gap={2}>
             {INTEREST_SUB_TEMPLATES.map(subDt => {
               const isSelected = subDistributionType === subDt.value;
+              const isDisabled = mode === 'edit';
               return (
                 <Paper
                   key={subDt.value}
@@ -229,15 +257,18 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                     minWidth: 120,
                     border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
                     background: isSelected ? '#e3f2fd' : '#f3f6fa',
-                    cursor: 'pointer',
+                    opacity: isDisabled ? 0.5 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
                   }}
                   onClick={() => {
-                    if (isSelected) {
+                    if (isDisabled) return;
+                    if (isSelected && mode === 'create') {
                       onSubDistributionTypeSelect('');
-                    } else {
+                    } else if (mode === 'create') {
                       onSubDistributionTypeSelect(subDt.value);
                     }
+                    // In edit mode, no action on click
                   }}
                 >
                   <Box display="flex" flexDirection="column" alignItems="center">

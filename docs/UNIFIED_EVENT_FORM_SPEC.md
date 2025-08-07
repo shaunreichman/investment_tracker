@@ -72,33 +72,42 @@ Consolidate the separate `CreateFundEventModal` and `EditFundEventModal` compone
 - ✅ Shared validation logic between create and edit modes
 - ✅ Mode-specific validation rules (template selection only for create mode)
 
-### **Phase 2: Create Template Mapping System** ✅ **Core Logic**
+### **Phase 2: Create Template Mapping System** ✅ **Core Logic** ✅ **COMPLETED**
 **Goal**: Map existing event data to fixed template selection for edit mode
 
 **Tasks**:
-- [ ] Create `mapEventToTemplates` utility function
-  - [ ] Map event type to template selection state using create form logic
-  - [ ] Handle distribution type mapping (INTEREST, DIVIDEND, OTHER)
-  - [ ] Handle sub-distribution type mapping (WITHHOLDING_TAX, FRANKED, etc.)
-  - [ ] Determine withholding tax configuration from existing data
-  - [ ] **TESTING**: Test with all event types and configurations
-- [ ] Create `mapEventToFormData` utility function
-  - [ ] Convert event data to form field values using create form field structure
-  - [ ] Handle complex scenarios (withholding tax, NAV updates, etc.)
-  - [ ] Preserve all existing field mappings exactly
-  - [ ] **TESTING**: Verify all field values are mapped correctly
-- [ ] Update `EventTypeSelector` for edit mode
-  - [ ] Add `mode` prop to component interface
-  - [ ] Show current template selection as read-only in edit mode
-  - [ ] Disable all template selection interactions in edit mode
-  - [ ] Add visual indication that template is fixed (e.g., disabled state, info text)
-  - [ ] **TESTING**: Ensure template selection is properly locked in edit mode
+- [x] Create `mapEventToTemplates` utility function
+  - [x] Map event type to template selection state using create form logic
+  - [x] Handle distribution type mapping (INTEREST, DIVIDEND, OTHER)
+  - [x] Handle sub-distribution type mapping (WITHHOLDING_TAX, FRANKED, etc.)
+  - [x] Determine withholding tax configuration from existing data
+  - [x] **TESTING**: Test with all event types and configurations
+- [x] Create `mapEventToFormData` utility function
+  - [x] Convert event data to form field values using create form field structure
+  - [x] Handle complex scenarios (withholding tax, NAV updates, etc.)
+  - [x] Preserve all existing field mappings exactly
+  - [x] **TESTING**: Verify all field values are mapped correctly
+- [x] Update `EventTypeSelector` for edit mode
+  - [x] Add `mode` prop to component interface
+  - [x] Show current template selection as read-only in edit mode
+  - [x] Disable all template selection interactions in edit mode
+  - [x] Add visual indication that template is fixed (e.g., disabled state, info text)
+  - [x] **TESTING**: Ensure template selection is properly locked in edit mode
 
 **Design Principles**:
 - **Fixed Template**: Template selection is locked to the original event type in edit mode
 - **Clear Indication**: Users understand they cannot change the event type/template
 - **Intuitive UX**: If users want different template, they delete and recreate
 - **Backend Alignment**: Simplified validation matches domain method constraints
+
+**Results**: 
+- ✅ Created `mapEventToTemplates` utility with comprehensive event type mapping
+- ✅ Created `mapEventToFormData` utility with complete form field mapping
+- ✅ Updated `EventTypeSelector` with edit mode support and proper UX
+- ✅ Integrated template mapping with `useUnifiedEventForm` hook
+- ✅ Comprehensive test coverage with 27 passing tests
+- ✅ Fixed template selection locked in edit mode with clear user feedback
+- ✅ All TypeScript errors resolved and type safety maintained
 
 ### **Phase 3: Build Unified Form Component** ✅ **Main Implementation**
 **Goal**: Create the main `UnifiedFundEventForm` component that handles both modes

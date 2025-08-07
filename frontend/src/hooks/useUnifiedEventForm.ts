@@ -3,6 +3,7 @@ import { validateField } from '../utils/validators';
 import { calculateTaxPaymentDate } from '../utils/helpers';
 import { EventType, ValidationErrors, FormData, UseEventFormReturn } from './useEventForm';
 import { ExtendedFundEvent } from '../types/api';
+import { mapEventToTemplates, mapEventToFormData } from '../components/fund/events/utils/eventTemplateMapping';
 
 export interface UseUnifiedEventFormProps {
   mode: 'create' | 'edit';
@@ -58,24 +59,17 @@ export const useUnifiedEventForm = ({
       } else {
         // Edit mode: Initialize with existing event data
         if (event) {
-          // Map event to template selection (will be implemented in Phase 2)
-          // For now, use basic mapping
-          setEventType(event.event_type as EventType);
-          setDistributionType(event.distribution_type?.toLowerCase() || '');
-          setSubDistributionType(''); // Will be mapped in Phase 2
+          // Map event to template selection using the mapping utilities
+          const templateMapping = mapEventToTemplates(event);
+          setEventType(templateMapping.eventType as EventType | '');
+          setDistributionType(templateMapping.distributionType);
+          setSubDistributionType(templateMapping.subDistributionType);
+          setWithholdingAmountType(templateMapping.withholdingAmountType);
+          setWithholdingTaxType(templateMapping.withholdingTaxType);
           
-          // Initialize form data with event values
-          setFormData({
-            event_date: event.event_date,
-            amount: event.amount?.toString() || '',
-            description: event.description || '',
-            reference_number: event.reference_number || '',
-            units_purchased: event.units_purchased?.toString() || '',
-            units_sold: event.units_sold?.toString() || '',
-            unit_price: event.unit_price?.toString() || '',
-            brokerage_fee: event.brokerage_fee?.toString() || '',
-            nav_per_share: event.nav_per_share?.toString() || '',
-          });
+          // Initialize form data with event values using the mapping utilities
+          const formDataMapping = mapEventToFormData(event);
+          setFormData(formDataMapping);
           
           setSuccess(false);
           setValidationErrors({});
