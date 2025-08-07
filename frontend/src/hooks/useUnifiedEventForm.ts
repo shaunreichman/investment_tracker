@@ -1,119 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import { validateField } from '../utils/validators';
 import { calculateTaxPaymentDate } from '../utils/helpers';
+import { EventType, ValidationErrors, FormData, UseEventFormReturn } from './useEventForm';
+import { ExtendedFundEvent } from '../types/api';
 
-export type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE' | 'NAV_UPDATE' | 'TAX_STATEMENT' | 'RETURN_OF_CAPITAL';
-
-export interface ValidationErrors {
-  event_type?: string;
-  event_date?: string;
-  amount?: string;
-  distribution_type?: string;
-  sub_distribution_type?: string;
-  units_purchased?: string;
-  units_sold?: string;
-  unit_price?: string;
-  brokerage_fee?: string;
-  nav_per_share?: string;
-  gross_amount?: string;
-  net_amount?: string;
-  withholding_tax_amount?: string;
-  withholding_tax_rate?: string;
-  // Tax Statement fields
-  financial_year?: string;
-  statement_date?: string;
-  eofy_debt_interest_deduction_rate?: string;
-  interest_received_in_cash?: string;
-  interest_receivable_this_fy?: string;
-  interest_receivable_prev_fy?: string;
-  interest_non_resident_withholding_tax_from_statement?: string;
-  interest_income_tax_rate?: string;
-  dividend_franked_income_amount?: string;
-  dividend_unfranked_income_amount?: string;
-  dividend_franked_income_tax_rate?: string;
-  dividend_unfranked_income_tax_rate?: string;
-  capital_gain_income_amount?: string;
-  capital_gain_income_tax_rate?: string;
-  accountant?: string;
-  notes?: string;
+export interface UseUnifiedEventFormProps {
+  mode: 'create' | 'edit';
+  open: boolean;
+  fundTrackingType: 'nav_based' | 'cost_based';
+  event?: ExtendedFundEvent; // Only for edit mode
 }
 
-export interface FormData {
-  event_date?: string;
-  amount?: string;
-  distribution_type?: string;
-  sub_distribution_type?: string;
-  units_purchased?: string;
-  units_sold?: string;
-  unit_price?: string;
-  brokerage_fee?: string;
-  nav_per_share?: string;
-  gross_amount?: string;
-  net_amount?: string;
-  withholding_tax_amount?: string;
-  withholding_tax_rate?: string;
-  // Tax Statement fields
-  financial_year?: string;
-  statement_date?: string;
-  eofy_debt_interest_deduction_rate?: string;
-  interest_received_in_cash?: string;
-  interest_receivable_this_fy?: string;
-  interest_receivable_prev_fy?: string;
-  interest_non_resident_withholding_tax_from_statement?: string;
-  interest_income_tax_rate?: string;
-  dividend_franked_income_amount?: string;
-  dividend_unfranked_income_amount?: string;
-  dividend_franked_income_tax_rate?: string;
-  dividend_unfranked_income_tax_rate?: string;
-  capital_gain_income_amount?: string;
-  capital_gain_income_tax_rate?: string;
-  accountant?: string;
-  notes?: string;
-  description?: string;
-  reference_number?: string;
-  tax_payment_date?: string;
-  non_resident?: boolean;
+export interface UseUnifiedEventFormReturn extends UseEventFormReturn {
+  mode: 'create' | 'edit';
 }
 
-export interface UseEventFormReturn {
-  // Form state
-  eventType: EventType | '';
-  setEventType: (type: EventType | '') => void;
-  distributionType: string;
-  setDistributionType: (type: string) => void;
-  subDistributionType: string;
-  setSubDistributionType: (type: string) => void;
-  formData: FormData;
-  setFormData: (data: FormData | ((prev: FormData) => FormData)) => void;
-  
-  // Validation state
-  validationErrors: ValidationErrors;
-  isFormValid: boolean;
-  
-  // Withholding tax state
-  withholdingAmountType: 'gross' | 'net' | '';
-  setWithholdingAmountType: (type: 'gross' | 'net' | '') => void;
-  withholdingTaxType: 'amount' | 'rate' | '';
-  setWithholdingTaxType: (type: 'amount' | 'rate' | '') => void;
-  
-  // Hybrid field state
-  hybridFieldOverrides: { [key: string]: boolean };
-  setHybridFieldOverrides: (overrides: { [key: string]: boolean } | ((prev: { [key: string]: boolean }) => { [key: string]: boolean })) => void;
-  
-  // Form actions
-  handleInputChange: (field: string, value: string) => void;
-  handleHybridFieldToggle: (field: string) => void;
-  validateForm: () => boolean;
-  resetForm: () => void;
-  handleBack: () => void;
-  
-  // Success state
-  success: boolean;
-  setSuccess: (success: boolean) => void;
-}
-
-export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cost_based'): UseEventFormReturn => {
-  // Form state
+/**
+ * Unified form state management hook that uses complete create form logic as foundation
+ * with mode-specific initialization for edit mode
+ */
+export const useUnifiedEventForm = ({
+  mode,
+  open,
+  fundTrackingType,
+  event
+}: UseUnifiedEventFormProps): UseUnifiedEventFormReturn => {
+  // Form state (same as create form)
   const [eventType, setEventType] = useState<EventType | ''>('');
   const [distributionType, setDistributionType] = useState<string>('');
   const [subDistributionType, setSubDistributionType] = useState<string>('');
@@ -122,27 +34,56 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
 
-  // Withholding tax state
+  // Withholding tax state (same as create form)
   const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
   const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
   
-  // Hybrid field state
+  // Hybrid field state (same as create form)
   const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
   // Initialize form when modal opens
   useEffect(() => {
     if (open) {
-      setEventType('');
-      setDistributionType('');
-      setSubDistributionType('');
-      setWithholdingAmountType('');
-      setWithholdingTaxType('');
-      setFormData({ event_date: new Date().toISOString().slice(0, 10) });
-      setSuccess(false);
-      setValidationErrors({});
-      setHybridFieldOverrides({});
+      if (mode === 'create') {
+        // Create mode: Reset to initial state
+        setEventType('');
+        setDistributionType('');
+        setSubDistributionType('');
+        setWithholdingAmountType('');
+        setWithholdingTaxType('');
+        setFormData({ event_date: new Date().toISOString().slice(0, 10) });
+        setSuccess(false);
+        setValidationErrors({});
+        setHybridFieldOverrides({});
+      } else {
+        // Edit mode: Initialize with existing event data
+        if (event) {
+          // Map event to template selection (will be implemented in Phase 2)
+          // For now, use basic mapping
+          setEventType(event.event_type as EventType);
+          setDistributionType(event.distribution_type?.toLowerCase() || '');
+          setSubDistributionType(''); // Will be mapped in Phase 2
+          
+          // Initialize form data with event values
+          setFormData({
+            event_date: event.event_date,
+            amount: event.amount?.toString() || '',
+            description: event.description || '',
+            reference_number: event.reference_number || '',
+            units_purchased: event.units_purchased?.toString() || '',
+            units_sold: event.units_sold?.toString() || '',
+            unit_price: event.unit_price?.toString() || '',
+            brokerage_fee: event.brokerage_fee?.toString() || '',
+            nav_per_share: event.nav_per_share?.toString() || '',
+          });
+          
+          setSuccess(false);
+          setValidationErrors({});
+          setHybridFieldOverrides({});
+        }
+      }
     }
-  }, [open]);
+  }, [open, mode, event]);
 
   // Validate formData.event_date after it is set on modal open
   useEffect(() => {
@@ -151,7 +92,7 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
     }
   }, [open, formData.event_date]);
 
-  // Form-level validation
+  // Form-level validation (same as create form)
   const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
     
@@ -246,11 +187,31 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
       }
     }
     
+    // Mode-specific validations
+    if (mode === 'create') {
+      // Create-specific validations
+      if (!eventType) {
+        errors.event_type = 'Please select an event type';
+      }
+      
+      if (eventType === 'DISTRIBUTION' && !distributionType) {
+        errors.distribution_type = 'Distribution type is required';
+      }
+      
+      if (distributionType === 'INTEREST' && !subDistributionType) {
+        errors.sub_distribution_type = 'Interest type is required';
+      }
+    } else {
+      // Edit-specific validations (minimal - template is locked)
+      // No additional validation needed since template is fixed
+      // All other validation uses the same logic as create mode
+    }
+    
     setValidationErrors(errors);
     const isValid = Object.keys(errors).length === 0;
     setIsFormValid(isValid);
     return isValid;
-  }, [eventType, distributionType, subDistributionType, withholdingAmountType, withholdingTaxType, formData]);
+  }, [eventType, distributionType, subDistributionType, withholdingAmountType, withholdingTaxType, formData, mode]);
 
   // Update form validity when relevant state changes
   useEffect(() => {
@@ -259,7 +220,7 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
     }
   }, [open, eventType, distributionType, subDistributionType, withholdingAmountType, withholdingTaxType, formData, validateForm]);
 
-  // Handle input change
+  // Handle input change (same as create form)
   const handleInputChange = useCallback((field: string, value: string) => {
     setFormData((prev: FormData) => {
       const newFormData = { ...prev, [field]: value };
@@ -280,7 +241,7 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
     }));
   }, [eventType]);
 
-  // Handle hybrid field toggle changes
+  // Handle hybrid field toggle changes (same as create form)
   const handleHybridFieldToggle = useCallback((field: string) => {
     setHybridFieldOverrides(prev => ({
       ...prev,
@@ -288,7 +249,7 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
     }));
   }, []);
 
-  // Reset form
+  // Reset form (same as create form)
   const resetForm = useCallback(() => {
     setEventType('');
     setDistributionType('');
@@ -300,7 +261,7 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
     setSuccess(false);
   }, []);
 
-  // Handle back navigation
+  // Handle back navigation (same as create form)
   const handleBack = useCallback(() => {
     if (distributionType) {
       setDistributionType('');
@@ -346,5 +307,8 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
     // Success state
     success,
     setSuccess,
+    
+    // Mode
+    mode,
   };
 }; 
