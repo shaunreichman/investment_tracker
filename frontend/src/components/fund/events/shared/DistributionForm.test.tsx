@@ -4,7 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import DistributionForm from './DistributionForm';
 
 // Mock the helpers
-jest.mock('../../utils/helpers', () => ({
+jest.mock('../../../../utils/helpers', () => ({
   formatNumber: (value: string) => value,
   parseNumber: (value: string) => value,
 }));

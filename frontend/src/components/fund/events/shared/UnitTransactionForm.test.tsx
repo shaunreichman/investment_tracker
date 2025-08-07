@@ -6,7 +6,7 @@ import UnitTransactionForm from './UnitTransactionForm';
 const theme = createTheme();
 
 // Mock the helpers module
-jest.mock('../../utils/helpers', () => ({
+jest.mock('../../../../utils/helpers', () => ({
   formatNumber: jest.fn((value) => value ? `$${parseFloat(value).toFixed(2)}` : ''),
   parseNumber: jest.fn((value) => value),
 }));

@@ -4,7 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import TaxStatementForm from './TaxStatementForm';
 
 // Mock the helpers module
-jest.mock('../../utils/helpers', () => ({
+jest.mock('../../../../utils/helpers', () => ({
   formatNumber: jest.fn((value) => value),
   parseNumber: jest.fn((value) => value),
 }));

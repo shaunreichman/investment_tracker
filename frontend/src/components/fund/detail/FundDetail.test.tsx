@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import FundDetail from './FundDetail';
 
 // Mock the API hooks
-jest.mock('../hooks/useFunds', () => ({
+jest.mock('../../../hooks/useFunds', () => ({
   useFundDetail: () => ({
     data: {
       fund: {
@@ -53,20 +53,20 @@ jest.mock('../hooks/useFunds', () => ({
 }));
 
 // Mock the modal components
-jest.mock('./CreateFundEventModal', () => {
+jest.mock('../events/CreateFundEventModal', () => {
   return function MockCreateFundEventModal({ open, onClose }: any) {
     return open ? <div data-testid="create-event-modal">Create Event Modal</div> : null;
   };
 });
 
-jest.mock('./EditFundEventModal', () => {
+jest.mock('../events/EditFundEventModal', () => {
   return function MockEditFundEventModal({ open, onClose }: any) {
     return open ? <div data-testid="edit-event-modal">Edit Event Modal</div> : null;
   };
 });
 
 // Mock the section components
-jest.mock('./fund-detail', () => ({
+jest.mock('./', () => ({
   EquitySection: ({ fund }: any) => (
     <div data-testid="equity-section">
       <div>Current Balance: {fund.current_equity_balance}</div>
@@ -100,7 +100,7 @@ jest.mock('./fund-detail', () => ({
 }));
 
 // Mock the TableContainer component
-jest.mock('./fund-detail/FundDetailTable/TableContainer', () => {
+jest.mock('./table/TableContainer', () => {
   return function MockTableContainer({ 
     fund, 
     events, 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextField, Box, Typography } from '@mui/material';
-import { formatNumber, parseNumber } from '../../../../utils/helpers';
+import { formatNumber } from '../../../../utils/helpers';
 
 interface UnitTransactionFormProps {
   eventType: 'UNIT_PURCHASE' | 'UNIT_SALE';
@@ -27,25 +27,24 @@ const UnitTransactionForm: React.FC<UnitTransactionFormProps> = ({
   validationErrors,
   onInputChange,
 }) => {
-  // Calculate total amount (units × price + brokerage)
-  const calculateAmount = () => {
-    const units = eventType === 'UNIT_PURCHASE' 
-      ? parseFloat(formData.units_purchased || '0')
-      : parseFloat(formData.units_sold || '0');
-    const unitPrice = parseFloat(formData.unit_price || '0');
-    const brokerageFee = parseFloat(formData.brokerage_fee || '0');
-    
-    const totalAmount = (units * unitPrice) + brokerageFee;
-    return totalAmount;
-  };
-
   // Update amount when units, price, or brokerage changes
   React.useEffect(() => {
+    const calculateAmount = () => {
+      const units = eventType === 'UNIT_PURCHASE' 
+        ? parseFloat(formData.units_purchased || '0')
+        : parseFloat(formData.units_sold || '0');
+      const unitPrice = parseFloat(formData.unit_price || '0');
+      const brokerageFee = parseFloat(formData.brokerage_fee || '0');
+      
+      const totalAmount = (units * unitPrice) + brokerageFee;
+      return totalAmount;
+    };
+
     const amount = calculateAmount();
     if (amount > 0) {
       onInputChange('amount', amount.toString());
     }
-  }, [formData.units_purchased, formData.units_sold, formData.unit_price, formData.brokerage_fee]);
+  }, [formData.units_purchased, formData.units_sold, formData.unit_price, formData.brokerage_fee, eventType, onInputChange]);
 
   const isPurchase = eventType === 'UNIT_PURCHASE';
   const unitsField = isPurchase ? 'units_purchased' : 'units_sold';
