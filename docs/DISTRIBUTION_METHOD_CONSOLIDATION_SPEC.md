@@ -61,19 +61,55 @@ This creates complexity, code duplication, and inconsistent interfaces. We need 
 - Implement robust validation with helpful error messages
 - Follow existing session management patterns
 
-### Phase 3: Update Methods Consolidation
-**Goal**: Consolidate update methods to match the unified approach
+### Phase 3: Edit Functionality Removal
+**Goal**: Remove edit functionality and simplify to delete + create pattern
 **Tasks**:
-- [ ] Design unified `update_distribution()` method interface
-- [ ] Implement unified update method with all parameters
-- [ ] Add validation for update scenarios
-- [ ] Ensure proper tax payment event synchronization
-- [ ] Test update scenarios thoroughly
+- [ ] Remove backend edit endpoints and methods
+- [ ] Remove frontend edit forms and modals
+- [ ] Update frontend to use delete + create pattern
+- [ ] Clean up API documentation
+- [ ] Update tests to remove edit scenarios
 **Design Principles**:
-- Match the add method interface for consistency
-- Handle tax payment event updates properly
-- Maintain data integrity during updates
-- Provide clear feedback on update operations
+- Simplify user experience with delete + create
+- Maintain clear audit trail
+- Reduce complexity and potential bugs
+- Focus on core create/delete functionality
+
+### Phase 3A: Backend Edit Logic Removal
+**Goal**: Remove all backend edit functionality
+**Tasks**:
+- [ ] Remove `update_distribution()` method from Fund model
+- [ ] Remove `update_interest_distribution_with_withholding_tax()` method
+- [ ] Remove PUT endpoints for fund events
+- [ ] Remove edit-related validation logic
+- [ ] Clean up API documentation
+**Design Principles**:
+- Remove all edit-related code cleanly
+- Maintain only create and delete functionality
+- Keep API endpoints simple and focused
+
+### Phase 3B: Frontend Edit UI Removal
+**Goal**: Remove all frontend edit interfaces
+**Tasks**:
+- [ ] Remove edit buttons from event tables
+- [ ] Remove edit modals and forms
+- [ ] Remove edit-related state management
+- [ ] Update event actions to show delete + create options
+- [ ] Clean up edit-related components
+**Design Principles**:
+- Provide clear delete + create workflow
+- Maintain good user experience
+- Simplify component complexity
+
+### Phase 3C: User Experience Enhancement
+**Goal**: Improve delete + create user experience
+**Tasks**:
+- [ ] Add confirmation dialogs for deletions
+- [ ] Add success/error messaging
+**Design Principles**:
+- Make delete + create as smooth as possible
+- Provide clear feedback to users
+- Maintain data integrity throughout process
 
 ### Phase 4: Legacy Method Deprecation
 **Goal**: Deprecate old methods while maintaining backward compatibility
@@ -392,11 +428,33 @@ fund.add_distribution(
 - [ ] Implement withholding tax calculations
 - [ ] Add proper error handling
 
-### Phase 3: Update Methods
-- [ ] Design unified `update_distribution()` method
-- [ ] Implement update method with validation
-- [ ] Add tax payment synchronization
-- [ ] Test update scenarios
+### Phase 3: Edit Functionality Removal
+- [ ] Remove backend edit endpoints and methods
+- [ ] Remove frontend edit forms and modals
+- [ ] Update frontend to use delete + create pattern
+- [ ] Clean up API documentation
+- [ ] Update tests to remove edit scenarios
+
+### Phase 3A: Backend Edit Logic Removal
+- [ ] Remove `update_distribution()` method from Fund model
+- [ ] Remove `update_interest_distribution_with_withholding_tax()` method
+- [ ] Remove PUT endpoints for fund events
+- [ ] Remove edit-related validation logic
+- [ ] Clean up API documentation
+
+### Phase 3B: Frontend Edit UI Removal
+- [ ] Remove edit buttons from event tables
+- [ ] Remove edit modals and forms
+- [ ] Remove edit-related state management
+- [ ] Update event actions to show delete + create options
+- [ ] Clean up edit-related components
+
+### Phase 3C: User Experience Enhancement
+- [ ] Add confirmation dialogs for deletions
+- [ ] Implement quick create forms after deletion
+- [ ] Add success/error messaging
+- [ ] Optimize delete + create workflow
+- [ ] Add keyboard shortcuts if needed
 
 ### Phase 4: Deprecation
 - [ ] Add deprecation warnings to old methods
