@@ -15,7 +15,6 @@ import {
   // Request/response data types
   CreateFundData,
   CreateFundEventData,
-  UpdateFundEventData,
   CreateTaxStatementData,
   CreateInvestmentCompanyData,
   CreateEntityData,
@@ -217,12 +216,7 @@ class ApiClient {
     });
   }
 
-  async updateFundEvent(fundId: number, eventId: number, data: UpdateFundEventData): Promise<FundEvent> {
-    return this.request<FundEvent>(`/api/funds/${fundId}/events/${eventId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
+
 
   async deleteFundEvent(fundId: number, eventId: number): Promise<void> {
     return this.request<void>(`/api/funds/${fundId}/events/${eventId}`, {

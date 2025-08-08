@@ -1226,58 +1226,7 @@ class Fund(Base):
             session.commit()
         return event
 
-    @with_session
-    def update_nav_update(self, event_id, nav_per_share=None, date=None, description=None, reference_number=None, session=None):
-        """
-        Update an existing NAV update event. If this is the latest NAV_UPDATE event, update NAV-specific fund summary fields.
-        """
-        event = session.query(FundEvent).filter(
-            FundEvent.id == event_id,
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.NAV_UPDATE
-        ).first()
-        if not event:
-            raise ValueError("NAV update event not found")
-        
-        # Store original values for recalculation
-        original_date = event.event_date
-        original_nav = event.nav_per_share
-        
-        if nav_per_share is not None:
-            event.nav_per_share = nav_per_share
-        if date is not None:
-            event.event_date = date
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        
-        # Recalculate NAV change fields if NAV or date changed
-        if nav_per_share is not None or date is not None:
-            new_nav = nav_per_share if nav_per_share is not None else original_nav
-            new_date = date if date is not None else original_date
-            prev_nav, abs_change, pct_change = self._calculate_nav_change_fields(new_nav, new_date, session)
-            event.previous_nav_per_share = prev_nav
-            event.nav_change_absolute = abs_change
-            event.nav_change_percentage = pct_change
-        
-        session.flush()
-        
-        # Update subsequent NAV_UPDATE events if this event's date or NAV changed
-        if nav_per_share is not None or date is not None:
-            self._update_subsequent_nav_change_fields(event, session)
-        
-        # Check if this is the latest NAV_UPDATE event
-        latest_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.NAV_UPDATE
-        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
-        if latest_event and latest_event.id == event.id:
-            self.current_unit_price = event.nav_per_share
-            # current_units should be updated elsewhere (unit purchase/sale), not here
-            self.current_nav_total = (self.current_units or 0.0) * (event.nav_per_share or 0.0)
-            session.commit()
-        return event
+
 
     @with_session
     def get_events(self, event_types=None, start_date=None, end_date=None, session=None):
@@ -1864,54 +1813,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_unit_purchase(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
-        """
-        Update an existing unit purchase event and recalculate all affected fields using the unified capital recalculation flow.
-        
-        This method updates a unit purchase event and automatically recalculates all subsequent capital events to maintain
-        data consistency.
-        
-        Args:
-            event_id (int): ID of the unit purchase event to update
-            units (float, optional): Number of units to purchase (must be positive)
-            price (float, optional): Price per unit (must be positive)
-            date (date, optional): Date of the unit purchase
-            brokerage_fee (float, optional): Brokerage fee for the transaction
-            description (str, optional): Description of the purchase
-            reference_number (str, optional): External reference number for the transaction
-            session (Session): Database session (required - managed by outermost backend layer)
-        
-        Returns:
-            FundEvent: The updated unit purchase event
-            
-        Raises:
-            ValueError: If event not found, or if units/price are invalid
-            TypeError: If required parameters are missing or of wrong type
-        """
-        event = session.query(FundEvent).filter(
-            FundEvent.id == event_id,
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.UNIT_PURCHASE
-        ).first()
-        if not event:
-            raise ValueError("Unit purchase event not found")
-        if units is not None:
-            event.units_purchased = units
-        if price is not None:
-            event.unit_price = price
-        if date is not None:
-            event.event_date = date
-        if brokerage_fee is not None:
-            event.brokerage_fee = brokerage_fee
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        # Recalculate amount
-        event.amount = (event.units_purchased * event.unit_price) + (event.brokerage_fee or 0.0)
-        session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
-        return event
+
 
     def add_unit_sale(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
         """
@@ -1975,63 +1877,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_unit_sale(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
-        """
-        Update an existing unit sale event and recalculate all affected fields using the unified capital recalculation flow.
-        
-        This method updates a unit sale event and automatically recalculates all subsequent capital events to maintain
-        data consistency. It includes validation to prevent selling more units than owned.
-        
-        Args:
-            event_id (int): ID of the unit sale event to update
-            units (float, optional): Number of units to sell (must be positive)
-            price (float, optional): Price per unit (must be positive)
-            date (date, optional): Date of the unit sale
-            brokerage_fee (float, optional): Brokerage fee for the transaction
-            description (str, optional): Description of the sale
-            reference_number (str, optional): External reference number for the transaction
-            session (Session): Database session (required - managed by outermost backend layer)
-        
-        Returns:
-            FundEvent: The updated unit sale event
-            
-        Raises:
-            ValueError: If event not found, or if units/price are invalid
-            TypeError: If required parameters are missing or of wrong type
-        """
-        event = session.query(FundEvent).filter_by(id=event_id, fund_id=self.id).first()
-        if not event or event.event_type != EventType.UNIT_SALE:
-            raise ValueError("Unit sale event not found")
-        
-        if units is not None:
-            # Validation: Prevent selling more units than owned after update
-            current_units = self.current_units or 0.0
-            # Calculate units owned before this event
-            events = self.get_all_fund_events(session=session)
-            idx = [e.id for e in events].index(event_id)
-            units_before = 0.0
-            for e in events[:idx]:
-                if e.event_type == EventType.UNIT_PURCHASE:
-                    units_before += e.units_purchased or 0.0
-                elif e.event_type == EventType.UNIT_SALE:
-                    units_before -= e.units_sold or 0.0
-            if units > units_before:
-                raise ValueError(f"Cannot sell {units} units, only {units_before} owned before this event")
-            event.units_sold = units
-        if price is not None:
-            event.unit_price = price
-        if date is not None:
-            event.event_date = date
-        if brokerage_fee is not None:
-            event.brokerage_fee = brokerage_fee
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        
-        session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
-        return event
+
 
     def add_capital_call(self, amount, date, description=None, reference_number=None, session=None):
         """
@@ -2085,28 +1931,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_capital_call(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
-        """
-        [NEW FLOW] Update an existing capital call event and recalculate all affected fields using the unified capital recalculation flow.
-        """
-        event = session.query(FundEvent).filter(
-            FundEvent.id == event_id,
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.CAPITAL_CALL
-        ).first()
-        if not event:
-            raise ValueError("Capital call event not found")
-        if amount is not None:
-            event.amount = amount
-        if date is not None:
-            event.event_date = date
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
-        return event
+
 
     def add_return_of_capital(self, amount, date, description=None, reference_number=None, session=None):
         """
@@ -2127,28 +1952,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_return_of_capital(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
-        """
-        [NEW FLOW] Update an existing return of capital event and recalculate all affected fields using the unified capital recalculation flow.
-        """
-        event = session.query(FundEvent).filter(
-            FundEvent.id == event_id,
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.RETURN_OF_CAPITAL
-        ).first()
-        if not event:
-            raise ValueError("Return of capital event not found")
-        if amount is not None:
-            event.amount = amount
-        if date is not None:
-            event.event_date = date
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
-        return event
+
 
     def recalculate_capital_chain_from(self, event, session=None):
         """
