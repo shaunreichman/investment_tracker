@@ -995,7 +995,8 @@ class Fund(Base):
             amount=gross_amount,
             distribution_type=dist_type,
             description=description or f"Distribution: ${gross_amount:,.2f}",
-            reference_number=reference_number
+            reference_number=reference_number,
+            has_withholding_tax=True  # Set flag to true since this method creates withholding tax
         )
         session.add(distribution_event)
 
@@ -2667,6 +2668,7 @@ class FundEvent(Base):
     reference_number = Column(String(100))  # (MANUAL) external reference number
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
     current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event (set only on capital events). For cost-based funds: net capital after this event (set only on capital events).
+    has_withholding_tax = Column(Boolean, default=False)  # (MANUAL) Flag indicating if this distribution event has associated withholding tax
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
@@ -2719,44 +2721,5 @@ class FundEvent(Base):
         if event_type == EventType.DISTRIBUTION:
             self.distribution_type = self.infer_distribution_type()
     
-    @staticmethod
-    def create_distribution_with_tax_static(fund_id, event_date, gross_amount, tax_withheld=0.0, tax_rate=None, distribution_type=None, description=None, reference_number=None, session=None):
-        """Create a distribution event and an associated tax payment event for a fund.
-        Used by Fund methods to ensure both events are created together.
-        Returns a tuple: (distribution_event, tax_event).
-        Commits both events to the database.
-        """
-        from sqlalchemy.orm import object_session
-        
-        if session is None:
-            session = object_session(fund_id) if hasattr(fund_id, 'id') else None
-        
-        # Create the distribution event
-        distribution_event = FundEvent(
-            fund_id=fund_id,
-            event_type=EventType.DISTRIBUTION,
-            event_date=event_date,
-            amount=gross_amount,
-            distribution_type=distribution_type or DistributionType.INTEREST,
-            description=description or "Distribution",
-            reference_number=reference_number
-        )
-        session.add(distribution_event)
-        
-        # Create the tax payment event if there's tax withheld
-        tax_event = None
-        if tax_withheld > 0:
-            tax_event = FundEvent(
-                fund_id=fund_id,
-                event_type=EventType.TAX_PAYMENT,
-                event_date=event_date,
-                amount=tax_withheld,
-                description=f"Tax withheld on distribution (rate: {tax_rate}%)" if tax_rate else "Tax withheld on distribution",
-                reference_number=f"{reference_number}_TAX" if reference_number else None,
-                tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
-            )
-            session.add(tax_event)
-        
-        session.commit()
-        return distribution_event, tax_event
+
 

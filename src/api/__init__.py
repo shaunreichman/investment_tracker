@@ -369,6 +369,7 @@ def create_app():
                         "nav_change_absolute": float(event.nav_change_absolute) if event.nav_change_absolute else None,
                         "nav_change_percentage": float(event.nav_change_percentage) if event.nav_change_percentage else None,
                         "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None,
+                        "has_withholding_tax": bool(event.has_withholding_tax) if event.has_withholding_tax is not None else None,
                         "created_at": event.created_at.isoformat() if event.created_at else None
                     }
                     

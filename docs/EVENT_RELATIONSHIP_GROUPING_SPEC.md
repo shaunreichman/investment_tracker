@@ -12,14 +12,14 @@ Currently, interest distribution events with tax withheld create two separate fu
 
 ## Implementation Strategy
 
-### Phase 1: Backend Flag Enhancement
+### Phase 1: Backend Flag Enhancement ✅ **COMPLETED**
 **Goal**: Add has_withholding_tax flag to FundEvent model
 **Tasks**:
-- [ ] Add `has_withholding_tax` boolean field to FundEvent model
-- [ ] Update `add_interest_distribution_with_withholding_tax` to set flag to true
-- [ ] Remove unused `create_distribution_with_tax_static` method (dead code)
-- [ ] Add migration for new field
-- [ ] Update API to include has_withholding_tax in responses
+- [x] Add `has_withholding_tax` boolean field to FundEvent model
+- [x] Update `add_interest_distribution_with_withholding_tax` to set flag to true
+- [x] Remove unused `create_distribution_with_tax_static` method (dead code)
+- [x] Add migration for new field (field already existed in database)
+- [x] Update API to include has_withholding_tax in responses
 **Design Principles**:
 - Simple boolean flag, no complex relationships
 - Flag only set on interest distribution events
