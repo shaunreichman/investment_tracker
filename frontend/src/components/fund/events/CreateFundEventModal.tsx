@@ -1,5 +1,5 @@
 import React from 'react';
-import UnifiedFundEventForm from './UnifiedFundEventForm';
+import CreateFundEventForm from './CreateFundEventForm';
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -17,7 +17,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   fundTrackingType 
 }) => {
   return (
-    <UnifiedFundEventForm
+          <CreateFundEventForm
       open={open}
       onClose={onClose}
       onSuccess={onEventCreated}

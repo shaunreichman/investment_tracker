@@ -2,29 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { validateField } from '../utils/validators';
 import { calculateTaxPaymentDate } from '../utils/helpers';
 import { EventType, ValidationErrors, FormData, UseEventFormReturn } from './useEventForm';
-import { ExtendedFundEvent } from '../types/api';
-import { mapEventToTemplates, mapEventToFormData } from '../components/fund/events/utils/eventTemplateMapping';
 
-export interface UseUnifiedEventFormProps {
-  mode: 'create';
+export interface UseCreateEventFormProps {
   open: boolean;
   fundTrackingType: 'nav_based' | 'cost_based';
 }
 
-export interface UseUnifiedEventFormReturn extends UseEventFormReturn {
-  mode: 'create';
-}
-
 /**
- * Unified form state management hook that uses complete create form logic as foundation
- * with mode-specific initialization for edit mode
+ * Create-only form state management hook
  */
-export const useUnifiedEventForm = ({
-  mode,
+export const useCreateEventForm = ({
   open,
   fundTrackingType
-}: UseUnifiedEventFormProps): UseEventFormReturn => {
-  // Form state (same as create form)
+}: UseCreateEventFormProps): UseEventFormReturn => {
+  // Form state
   const [eventType, setEventType] = useState<EventType | ''>('');
   const [distributionType, setDistributionType] = useState<string>('');
   const [subDistributionType, setSubDistributionType] = useState<string>('');
@@ -33,13 +24,12 @@ export const useUnifiedEventForm = ({
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
 
-  // Hybrid field state (same as create form)
+  // Hybrid field state
   const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
-  // Initialize form when modal opens (edit mode removed)
+  // Initialize form when modal opens
   useEffect(() => {
     if (open) {
-      // Create mode: Reset to initial state
       setEventType('');
       setDistributionType('');
       setSubDistributionType('');
@@ -57,7 +47,7 @@ export const useUnifiedEventForm = ({
     }
   }, [open, formData.event_date]);
 
-  // Form-level validation (same as create form)
+  // Form-level validation
   const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
     
@@ -131,24 +121,17 @@ export const useUnifiedEventForm = ({
       }
     }
     
-    // Mode-specific validations
-    if (mode === 'create') {
-      // Create-specific validations
-      if (!eventType) {
-        errors.event_type = 'Please select an event type';
-      }
-      
-      if (eventType === 'DISTRIBUTION' && !distributionType) {
-        errors.distribution_type = 'Distribution type is required';
-      }
-      
-      if (distributionType === 'INTEREST' && !subDistributionType) {
-        errors.sub_distribution_type = 'Interest type is required';
-      }
-    } else {
-      // Edit-specific validations (minimal - template is locked)
-      // No additional validation needed since template is fixed
-      // All other validation uses the same logic as create mode
+    // Create-specific validations
+    if (!eventType) {
+      errors.event_type = 'Please select an event type';
+    }
+    
+    if (eventType === 'DISTRIBUTION' && !distributionType) {
+      errors.distribution_type = 'Distribution type is required';
+    }
+    
+    if (distributionType === 'INTEREST' && !subDistributionType) {
+      errors.sub_distribution_type = 'Interest type is required';
     }
     
     setValidationErrors(errors);
@@ -164,7 +147,7 @@ export const useUnifiedEventForm = ({
     }
   }, [open, eventType, distributionType, subDistributionType, formData, validateForm]);
 
-  // Handle input change (same as create form)
+  // Handle input change
   const handleInputChange = useCallback((field: string, value: string) => {
     setFormData((prev: FormData) => {
       const newFormData = { ...prev, [field]: value };
@@ -185,7 +168,7 @@ export const useUnifiedEventForm = ({
     }));
   }, [eventType]);
 
-  // Handle hybrid field toggle changes (same as create form)
+  // Handle hybrid field toggle changes
   const handleHybridFieldToggle = useCallback((field: string) => {
     setHybridFieldOverrides(prev => ({
       ...prev,
@@ -193,7 +176,7 @@ export const useUnifiedEventForm = ({
     }));
   }, []);
 
-  // Reset form (same as create form)
+  // Reset form
   const resetForm = useCallback(() => {
     setEventType('');
     setDistributionType('');
@@ -203,7 +186,7 @@ export const useUnifiedEventForm = ({
     setSuccess(false);
   }, []);
 
-  // Handle back navigation (same as create form)
+  // Handle back navigation
   const handleBack = useCallback(() => {
     if (distributionType) {
       setDistributionType('');

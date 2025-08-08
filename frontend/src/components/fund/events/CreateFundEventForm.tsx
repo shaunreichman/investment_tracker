@@ -25,7 +25,7 @@ import DistributionForm from './create/DistributionForm';
 import UnitTransactionForm from './create/UnitTransactionForm';
 import NavUpdateForm from './create/NavUpdateForm';
 import TaxStatementForm from './create/TaxStatementForm';
-import { useUnifiedEventForm } from '../../../hooks/useUnifiedEventForm';
+import { useCreateEventForm } from '../../../hooks/useCreateEventForm';
 import { ExtendedFundEvent } from '../../../types/api';
 
 // Constants for styling
@@ -39,7 +39,7 @@ const SUCCESS_BOX_STYLES = {
   alignItems: 'center'
 };
 
-interface UnifiedFundEventFormProps {
+interface CreateFundEventFormProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -47,14 +47,14 @@ interface UnifiedFundEventFormProps {
   fundTrackingType: 'nav_based' | 'cost_based';
 }
 
-const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
+const CreateFundEventForm: React.FC<CreateFundEventFormProps> = ({
   open,
   onClose,
   onSuccess,
   fundId,
   fundTrackingType
 }) => {
-  // Use the unified form state management hook
+  // Use the create-only form state management hook
   const {
     eventType,
     setEventType,
@@ -75,8 +75,7 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
     validateForm,
     resetForm,
     handleBack,
-  } = useUnifiedEventForm({
-    mode: 'create',
+  } = useCreateEventForm({
     open,
     fundTrackingType
   });
@@ -317,4 +316,4 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
   );
 };
 
-export default UnifiedFundEventForm; 
+export default CreateFundEventForm; 

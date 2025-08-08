@@ -1,9 +1,8 @@
 import { renderHook, act } from '@testing-library/react';
-import { useUnifiedEventValidation } from './useUnifiedEventValidation';
+import { useCreateEventValidation } from './useCreateEventValidation';
 
-describe('useUnifiedEventValidation', () => {
+describe('useCreateEventValidation', () => {
   const defaultConfig = {
-    mode: 'create' as const,
     eventType: '' as any,
     distributionType: '',
     subDistributionType: '',
@@ -17,10 +16,9 @@ describe('useUnifiedEventValidation', () => {
   });
 
   describe('Create Mode Validation', () => {
-    it('should require event type selection in create mode', () => {
-      const { result } = renderHook(() => useUnifiedEventValidation({
+    it('should require event type selection', () => {
+      const { result } = renderHook(() => useCreateEventValidation({
         ...defaultConfig,
-        mode: 'create',
         eventType: '',
         formData: { event_date: '2024-01-15' }
       }));
@@ -30,9 +28,8 @@ describe('useUnifiedEventValidation', () => {
     });
 
     it('should validate required fields for capital call', () => {
-      const { result } = renderHook(() => useUnifiedEventValidation({
+      const { result } = renderHook(() => useCreateEventValidation({
         ...defaultConfig,
-        mode: 'create',
         eventType: 'CAPITAL_CALL',
         formData: { 
           event_date: '2024-01-15',
@@ -45,9 +42,8 @@ describe('useUnifiedEventValidation', () => {
     });
 
     it('should validate distribution type for distributions', () => {
-      const { result } = renderHook(() => useUnifiedEventValidation({
+      const { result } = renderHook(() => useCreateEventValidation({
         ...defaultConfig,
-        mode: 'create',
         eventType: 'DISTRIBUTION',
         formData: { 
           event_date: '2024-01-15',
@@ -60,9 +56,8 @@ describe('useUnifiedEventValidation', () => {
     });
 
     it('should validate withholding tax configuration', () => {
-      const { result } = renderHook(() => useUnifiedEventValidation({
+      const { result } = renderHook(() => useCreateEventValidation({
         ...defaultConfig,
-        mode: 'create',
         eventType: 'DISTRIBUTION',
         distributionType: 'INTEREST',
         subDistributionType: 'WITHHOLDING_TAX',
@@ -77,43 +72,10 @@ describe('useUnifiedEventValidation', () => {
       expect(result.current.validationErrors.gross_amount).toBe('Select amount type (Gross or Net)');
       expect(result.current.validationErrors.withholding_tax_rate).toBe('Select tax type (Amount or Rate)');
     });
-  });
-
-  describe('Edit Mode Validation', () => {
-    it('should not require event type selection in edit mode', () => {
-      const { result } = renderHook(() => useUnifiedEventValidation({
-        ...defaultConfig,
-        mode: 'edit',
-        eventType: 'CAPITAL_CALL',
-        formData: { 
-          event_date: '2024-01-15',
-          amount: '1000'
-        }
-      }));
-
-      expect(result.current.isFormValid).toBe(true);
-      expect(result.current.validationErrors.event_type).toBeUndefined();
-    });
-
-    it('should validate required fields for capital call in edit mode', () => {
-      const { result } = renderHook(() => useUnifiedEventValidation({
-        ...defaultConfig,
-        mode: 'edit',
-        eventType: 'CAPITAL_CALL',
-        formData: { 
-          event_date: '2024-01-15',
-          amount: '1000'
-        }
-      }));
-
-      expect(result.current.isFormValid).toBe(true);
-      expect(result.current.validationErrors).toEqual({});
-    });
 
     it('should validate unit purchase fields', () => {
-      const { result } = renderHook(() => useUnifiedEventValidation({
+      const { result } = renderHook(() => useCreateEventValidation({
         ...defaultConfig,
-        mode: 'edit',
         eventType: 'UNIT_PURCHASE',
         formData: { 
           event_date: '2024-01-15',
@@ -127,9 +89,8 @@ describe('useUnifiedEventValidation', () => {
     });
 
     it('should validate NAV update fields', () => {
-      const { result } = renderHook(() => useUnifiedEventValidation({
+      const { result } = renderHook(() => useCreateEventValidation({
         ...defaultConfig,
-        mode: 'edit',
         eventType: 'NAV_UPDATE',
         formData: { 
           event_date: '2024-01-15',
@@ -143,59 +104,35 @@ describe('useUnifiedEventValidation', () => {
   });
 
   describe('Shared Validation Logic', () => {
-    it('should require event date for both modes', () => {
-      const createResult = renderHook(() => useUnifiedEventValidation({
+    it('should require event date', () => {
+      const { result } = renderHook(() => useCreateEventValidation({
         ...defaultConfig,
-        mode: 'create',
         eventType: 'CAPITAL_CALL',
         formData: {}
       }));
 
-      const editResult = renderHook(() => useUnifiedEventValidation({
-        ...defaultConfig,
-        mode: 'edit',
-        eventType: 'CAPITAL_CALL',
-        formData: {}
-      }));
-
-      expect(createResult.result.current.isFormValid).toBe(false);
-      expect(createResult.result.current.validationErrors.event_date).toBe('Event date is required');
-      
-      expect(editResult.result.current.isFormValid).toBe(false);
-      expect(editResult.result.current.validationErrors.event_date).toBe('Event date is required');
+      expect(result.current.isFormValid).toBe(false);
+      expect(result.current.validationErrors.event_date).toBe('Event date is required');
     });
 
-    it('should validate amount for capital events in both modes', () => {
-      const createResult = renderHook(() => useUnifiedEventValidation({
+    it('should validate amount for capital events', () => {
+      const { result } = renderHook(() => useCreateEventValidation({
         ...defaultConfig,
-        mode: 'create',
         eventType: 'CAPITAL_CALL',
         formData: { 
           event_date: '2024-01-15'
         }
       }));
 
-      const editResult = renderHook(() => useUnifiedEventValidation({
-        ...defaultConfig,
-        mode: 'edit',
-        eventType: 'CAPITAL_CALL',
-        formData: { 
-          event_date: '2024-01-15'
-        }
-      }));
-
-      expect(createResult.result.current.isFormValid).toBe(false);
-      expect(createResult.result.current.validationErrors.amount).toBe('Amount is required');
-      
-      expect(editResult.result.current.isFormValid).toBe(false);
-      expect(editResult.result.current.validationErrors.amount).toBe('Amount is required');
+      expect(result.current.isFormValid).toBe(false);
+      expect(result.current.validationErrors.amount).toBe('Amount is required');
     });
   });
 
   describe('Validation Updates', () => {
     it('should update validation when config changes', () => {
       const { result, rerender } = renderHook(
-        (config) => useUnifiedEventValidation(config),
+        (config) => useCreateEventValidation(config),
         { initialProps: defaultConfig }
       );
 
@@ -205,7 +142,6 @@ describe('useUnifiedEventValidation', () => {
       // Update with valid data
       rerender({
         ...defaultConfig,
-        mode: 'create',
         eventType: 'CAPITAL_CALL',
         formData: { 
           event_date: '2024-01-15',

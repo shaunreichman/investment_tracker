@@ -3,8 +3,7 @@ import { validateField } from '../utils/validators';
 import { calculateTaxPaymentDate } from '../utils/helpers';
 import { EventType, ValidationErrors, FormData } from './useEventForm';
 
-export interface ValidationConfig {
-  mode: 'create' | 'edit';
+export interface CreateEventValidationConfig {
   eventType: EventType | '';
   distributionType: string;
   subDistributionType: string;
@@ -13,25 +12,24 @@ export interface ValidationConfig {
   formData: FormData;
 }
 
-export interface UseUnifiedEventValidationReturn {
+export interface UseCreateEventValidationReturn {
   validationErrors: ValidationErrors;
   isFormValid: boolean;
   validateForm: () => boolean;
 }
 
 /**
- * Unified validation hook that uses complete create form validation as foundation
- * with minimal mode-specific logic for edit mode
+ * Create-only validation hook
  */
-export const useUnifiedEventValidation = (config: ValidationConfig): UseUnifiedEventValidationReturn => {
+export const useCreateEventValidation = (config: CreateEventValidationConfig): UseCreateEventValidationReturn => {
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
 
-  // Form-level validation using complete create form logic as foundation
+  // Form-level validation
   const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
     
-    // Common validations (same for both create and edit modes)
+    // Common validations
     if (!config.formData.event_date) {
       errors.event_date = 'Event date is required';
     }
@@ -123,24 +121,17 @@ export const useUnifiedEventValidation = (config: ValidationConfig): UseUnifiedE
       }
     }
     
-    // Mode-specific validations
-    if (config.mode === 'create') {
-      // Create-specific validations
-      if (!config.eventType) {
-        errors.event_type = 'Please select an event type';
-      }
-      
-      if (config.eventType === 'DISTRIBUTION' && !config.distributionType) {
-        errors.distribution_type = 'Distribution type is required';
-      }
-      
-      if (config.distributionType === 'INTEREST' && !config.subDistributionType) {
-        errors.sub_distribution_type = 'Interest type is required';
-      }
-    } else {
-      // Edit-specific validations (minimal - template is locked)
-      // No additional validation needed since template is fixed
-      // All other validation uses the same logic as create mode
+    // Create-specific validations
+    if (!config.eventType) {
+      errors.event_type = 'Please select an event type';
+    }
+    
+    if (config.eventType === 'DISTRIBUTION' && !config.distributionType) {
+      errors.distribution_type = 'Distribution type is required';
+    }
+    
+    if (config.distributionType === 'INTEREST' && !config.subDistributionType) {
+      errors.sub_distribution_type = 'Interest type is required';
     }
     
     setValidationErrors(errors);
@@ -148,7 +139,6 @@ export const useUnifiedEventValidation = (config: ValidationConfig): UseUnifiedE
     setIsFormValid(isValid);
     return isValid;
   }, [
-    config.mode,
     config.eventType,
     config.distributionType,
     config.subDistributionType,
