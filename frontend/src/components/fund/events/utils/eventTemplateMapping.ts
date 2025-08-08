@@ -4,7 +4,7 @@ import { ExtendedFundEvent, EventType, DistributionType } from '../../../../type
  * Maps an existing event to its template selection state for edit mode
  * Uses the same logic as the create form to determine template selection
  */
-export const mapEventToTemplates = (event: ExtendedFundEvent): {
+export const mapEventToTemplates = (event: ExtendedFundEvent, allEvents?: ExtendedFundEvent[]): {
   eventType: EventType | 'RETURN_OF_CAPITAL' | '';
   distributionType: string;
   subDistributionType: string;
@@ -19,18 +19,30 @@ export const mapEventToTemplates = (event: ExtendedFundEvent): {
   let subDistributionType = '';
   
   if (event.event_type === EventType.DISTRIBUTION) {
-    // Map distribution type from event
-    distributionType = event.distribution_type?.toLowerCase() || '';
+    // Map distribution type from event - use uppercase to match DISTRIBUTION_TEMPLATES
+    distributionType = event.distribution_type?.toUpperCase() || '';
     
     // Map sub-distribution type based on distribution type
-    if (distributionType === 'interest') {
-      // Check if this is a withholding tax event
-      if (event.has_withholding_tax) {
+    if (distributionType === 'INTEREST') {
+      // Check if this is a withholding tax event by looking for related withholding tax event
+      let hasWithholdingTax = event.has_withholding_tax || false;
+      
+      // If we have all events, check for related withholding tax event
+      if (allEvents && !hasWithholdingTax) {
+        const withholdingEvent = allEvents.find(e => 
+          e.event_type === 'TAX_PAYMENT' && 
+          e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING' &&
+          e.event_date === event.event_date
+        );
+        hasWithholdingTax = !!withholdingEvent;
+      }
+      
+      if (hasWithholdingTax) {
         subDistributionType = 'WITHHOLDING_TAX';
       } else {
         subDistributionType = 'REGULAR';
       }
-    } else if (distributionType === 'dividend') {
+    } else if (distributionType === 'DIVIDEND') {
       // Map dividend type based on event data
       if (event.dividend_franked_income_amount && event.dividend_franked_income_amount > 0) {
         subDistributionType = 'DIVIDEND_FRANKED';
@@ -46,7 +58,11 @@ export const mapEventToTemplates = (event: ExtendedFundEvent): {
   
   if (event.event_type === EventType.DISTRIBUTION && 
       event.distribution_type === DistributionType.INTEREST && 
-      event.has_withholding_tax) {
+      (event.has_withholding_tax || (allEvents && allEvents.some(e => 
+        e.event_type === 'TAX_PAYMENT' && 
+        e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING' &&
+        e.event_date === event.event_date
+      )))) {
     
     // Determine withholding amount type based on available data
     if (event.net_interest && event.amount) {
@@ -83,7 +99,7 @@ export const mapEventToTemplates = (event: ExtendedFundEvent): {
  * Maps an existing event to form field values for edit mode
  * Converts event data to form field structure used by create form
  */
-export const mapEventToFormData = (event: ExtendedFundEvent): Record<string, string> => {
+export const mapEventToFormData = (event: ExtendedFundEvent, allEvents?: ExtendedFundEvent[]): Record<string, string> => {
   const formData: Record<string, string> = {};
   
   // Basic event fields
@@ -137,6 +153,28 @@ export const mapEventToFormData = (event: ExtendedFundEvent): Record<string, str
     if (event.withholding_rate !== null && event.withholding_rate !== undefined) {
       formData.withholding_rate = event.withholding_rate.toString();
     }
+    
+    // If we have all events, look for related withholding tax event
+    if (allEvents && event.distribution_type === DistributionType.INTEREST) {
+      const withholdingEvent = allEvents.find(e => 
+        e.event_type === 'TAX_PAYMENT' && 
+        e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING' &&
+        e.event_date === event.event_date
+      );
+      
+      if (withholdingEvent) {
+        // Add withholding tax data from the related event
+        if (withholdingEvent.amount !== null && withholdingEvent.amount !== undefined) {
+          formData.withholding_amount = withholdingEvent.amount.toString();
+        }
+        
+        // Calculate net interest if not already present
+        if (!formData.net_interest && event.amount && withholdingEvent.amount) {
+          const netInterest = event.amount - withholdingEvent.amount;
+          formData.net_interest = netInterest.toString();
+        }
+      }
+    }
   }
   
   // Tax statement fields - these are handled separately in the backend
@@ -180,9 +218,9 @@ export const getTemplateDisplayLabel = (event: ExtendedFundEvent): string => {
   // Add distribution type for distributions
   if (eventType === 'DISTRIBUTION' && distributionType) {
     const distributionLabels: Record<string, string> = {
-      'interest': 'Interest',
-      'dividend': 'Dividend',
-      'other': 'Other',
+      'INTEREST': 'Interest',
+      'DIVIDEND': 'Dividend',
+      'OTHER': 'Other',
     };
     
     const distributionLabel = distributionLabels[distributionType] || distributionType;

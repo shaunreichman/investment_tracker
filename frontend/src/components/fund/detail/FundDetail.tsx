@@ -346,6 +346,8 @@ const FundDetail: React.FC = () => {
         onEventUpdated={handleEventUpdated}
         event={selectedEvent}
         fundId={Number(fundId)}
+        fundTrackingType={fund.tracking_type}
+        allEvents={fundData?.events}
       />
 
       {/* Delete Confirmation Dialog */}

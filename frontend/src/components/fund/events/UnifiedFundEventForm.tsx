@@ -47,6 +47,7 @@ interface UnifiedFundEventFormProps {
   fundId: number;
   fundTrackingType: 'nav_based' | 'cost_based';
   event?: ExtendedFundEvent; // Only for edit mode
+  allEvents?: ExtendedFundEvent[]; // All events for edit mode to detect withholding tax
 }
 
 const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
@@ -56,7 +57,8 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
   onSuccess,
   fundId,
   fundTrackingType,
-  event
+  event,
+  allEvents
 }) => {
   // Use the unified form state management hook
   const {
@@ -87,7 +89,8 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
     mode,
     open,
     fundTrackingType,
-    event
+    event,
+    allEvents
   });
 
   // Centralized error handler

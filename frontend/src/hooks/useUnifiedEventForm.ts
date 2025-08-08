@@ -10,6 +10,7 @@ export interface UseUnifiedEventFormProps {
   open: boolean;
   fundTrackingType: 'nav_based' | 'cost_based';
   event?: ExtendedFundEvent; // Only for edit mode
+  allEvents?: ExtendedFundEvent[]; // All events for edit mode to detect withholding tax
 }
 
 export interface UseUnifiedEventFormReturn extends UseEventFormReturn {
@@ -24,7 +25,8 @@ export const useUnifiedEventForm = ({
   mode,
   open,
   fundTrackingType,
-  event
+  event,
+  allEvents
 }: UseUnifiedEventFormProps): UseUnifiedEventFormReturn => {
   // Form state (same as create form)
   const [eventType, setEventType] = useState<EventType | ''>('');
@@ -60,7 +62,7 @@ export const useUnifiedEventForm = ({
         // Edit mode: Initialize with existing event data
         if (event) {
           // Map event to template selection using the mapping utilities
-          const templateMapping = mapEventToTemplates(event);
+          const templateMapping = mapEventToTemplates(event, allEvents);
           setEventType(templateMapping.eventType as EventType | '');
           setDistributionType(templateMapping.distributionType);
           setSubDistributionType(templateMapping.subDistributionType);
@@ -68,7 +70,7 @@ export const useUnifiedEventForm = ({
           setWithholdingTaxType(templateMapping.withholdingTaxType);
           
           // Initialize form data with event values using the mapping utilities
-          const formDataMapping = mapEventToFormData(event);
+          const formDataMapping = mapEventToFormData(event, allEvents);
           setFormData(formDataMapping);
           
           setSuccess(false);
@@ -77,7 +79,7 @@ export const useUnifiedEventForm = ({
         }
       }
     }
-  }, [open, mode, event]);
+  }, [open, mode, event, allEvents]);
 
   // Validate formData.event_date after it is set on modal open
   useEffect(() => {

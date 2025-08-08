@@ -41,7 +41,7 @@ describe('eventTemplateMapping', () => {
 
       expect(result).toEqual({
         eventType: 'DISTRIBUTION',
-        distributionType: 'interest',
+        distributionType: 'INTEREST',
         subDistributionType: 'REGULAR',
         withholdingAmountType: '',
         withholdingTaxType: '',
@@ -67,7 +67,7 @@ describe('eventTemplateMapping', () => {
 
       expect(result).toEqual({
         eventType: 'DISTRIBUTION',
-        distributionType: 'interest',
+        distributionType: 'INTEREST',
         subDistributionType: 'WITHHOLDING_TAX',
         withholdingAmountType: 'gross',
         withholdingTaxType: 'amount',
@@ -91,7 +91,7 @@ describe('eventTemplateMapping', () => {
 
       expect(result).toEqual({
         eventType: 'DISTRIBUTION',
-        distributionType: 'dividend',
+        distributionType: 'DIVIDEND',
         subDistributionType: 'DIVIDEND_FRANKED',
         withholdingAmountType: '',
         withholdingTaxType: '',
