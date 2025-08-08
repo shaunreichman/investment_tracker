@@ -916,8 +916,7 @@ class Fund(Base):
         
         return distributions_by_type
     
-    @with_session
-    def add_distribution(
+    def _add_distribution_validate_distribution_parameters(
         self,
         event_date,
         distribution_type,
@@ -927,17 +926,15 @@ class Fund(Base):
         net_interest_amount=None,
         withholding_tax_amount=None,
         withholding_tax_rate=None,
-        description=None,
-        reference_number=None,
         session=None
     ):
         """
-        Unified method to add distribution events.
+        Validate all parameters for add_distribution method.
         
-        Handles all distribution scenarios:
-        - Simple distributions (amount + type)
-        - Interest distributions with withholding tax (gross/net + tax amount/rate)
-        - Interest distributions without withholding tax
+        This method implements the three-tier validation system:
+        - Group A: General validations (always run)
+        - Group B: Withholding tax validations (when has_withholding_tax=True)
+        - Group C: Simple distribution validations (when has_withholding_tax=False)
         
         Args:
             event_date: Distribution date
@@ -948,12 +945,10 @@ class Fund(Base):
             net_interest_amount: Net interest amount (when has_withholding_tax=True)
             withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
             withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
-            description: Event description
-            reference_number: External reference number
             session: Database session
             
-        Returns:
-            tuple: (distribution_event, tax_event) where tax_event may be None
+        Raises:
+            ValueError: If any validation fails with specific error message
         """
         # Group A: General validations (always run)
         if not event_date:
@@ -1017,6 +1012,58 @@ class Fund(Base):
                 raise ValueError("distribution_amount is required when has_withholding_tax=False")
             if distribution_amount <= 0:
                 raise ValueError("distribution_amount must be a positive number")
+
+    @with_session
+    def add_distribution(
+        self,
+        event_date,
+        distribution_type,
+        distribution_amount=None,
+        has_withholding_tax=False,
+        gross_interest_amount=None,
+        net_interest_amount=None,
+        withholding_tax_amount=None,
+        withholding_tax_rate=None,
+        description=None,
+        reference_number=None,
+        session=None
+    ):
+        """
+        Unified method to add distribution events.
+        
+        Handles all distribution scenarios:
+        - Simple distributions (amount + type)
+        - Interest distributions with withholding tax (gross/net + tax amount/rate)
+        - Interest distributions without withholding tax
+        
+        Args:
+            event_date: Distribution date
+            distribution_type: Type of distribution (DistributionType enum)
+            distribution_amount: Simple distribution amount (when has_withholding_tax=False)
+            has_withholding_tax: Whether this distribution has withholding tax
+            gross_interest_amount: Gross interest amount (when has_withholding_tax=True)
+            net_interest_amount: Net interest amount (when has_withholding_tax=True)
+            withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
+            withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
+            description: Event description
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            tuple: (distribution_event, tax_event) where tax_event may be None
+        """
+        # Validate all parameters before proceeding with business logic
+        self._add_distribution_validate_distribution_parameters(
+            event_date=event_date,
+            distribution_type=distribution_type,
+            distribution_amount=distribution_amount,
+            has_withholding_tax=has_withholding_tax,
+            gross_interest_amount=gross_interest_amount,
+            net_interest_amount=net_interest_amount,
+            withholding_tax_amount=withholding_tax_amount,
+            withholding_tax_rate=withholding_tax_rate,
+            session=session
+        )
         
         # Business logic implementation
         if has_withholding_tax:
@@ -1093,9 +1140,6 @@ class Fund(Base):
             self.calculate_end_date(session=session)
             
             return distribution_event, None
-
-
-
     
     def _calculate_nav_change_fields(self, nav_per_share, date, session):
         """
