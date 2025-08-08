@@ -25,14 +25,14 @@ Currently, interest distribution events with tax withheld create two separate fu
 - Flag only set on interest distribution events
 - Maintain backward compatibility with existing events
 
-### Phase 2: Frontend Logic Simplification
+### Phase 2: Frontend Logic Simplification ✅ **COMPLETED**
 **Goal**: Simplify frontend grouping logic using the flag
 **Tasks**:
-- [ ] Update `ExtendedFundEvent` interface to include has_withholding_tax
-- [ ] Simplify `useEventGrouping` hook to use flag for grouping
-- [ ] Replace complex date/event type matching with direct flag check
-- [ ] Update `GroupedEventRow` to use simplified logic
-- [ ] Add fallback logic for events without flag data
+- [x] Update `ExtendedFundEvent` interface to include has_withholding_tax
+- [x] Simplify `useEventGrouping` hook to use flag for grouping
+- [x] Replace complex date/event type matching with direct flag check
+- [x] Update `GroupedEventRow` to use simplified logic
+- [x] Add fallback logic for events without flag data
 **Design Principles**:
 - Use flag as primary grouping indicator
 - Keep existing UI/UX patterns

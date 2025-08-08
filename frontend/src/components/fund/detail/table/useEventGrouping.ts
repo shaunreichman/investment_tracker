@@ -55,59 +55,86 @@ export const useEventGrouping = (
     // Sort dates in chronological order (oldest first)
     const initialSortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-    // Process each date group to find interest + withholding pairs
+    // Process each date group to find interest + withholding pairs using the flag
     const groupedEvents: GroupedEvent[] = [];
     const individualEvents: ExtendedFundEvent[] = [];
     let interestWithholdingPairs = 0;
 
     initialSortedDates.forEach(date => {
       const dateEvents = groupedByDate[date];
-      // Find interest distribution and related withholding tax for this date
+      
+      // Find interest distribution with withholding tax using the flag
+      // Fallback to date-based matching for events without flag data
       const interestEvent = dateEvents.find(e => 
-        e.event_type === 'DISTRIBUTION' && e.distribution_type === 'INTEREST'
+        e.event_type === 'DISTRIBUTION' && 
+        e.distribution_type === 'INTEREST' && 
+        (e.has_withholding_tax === true || e.has_withholding_tax === undefined)
       );
-      const withholdingEvent = dateEvents.find(e => 
-        e.event_type === 'TAX_PAYMENT' && e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING'
-      );
-
-      // If we have both interest and withholding on the same date, create a grouped event
-      if (interestEvent && withholdingEvent) {
-        const otherEvents = dateEvents.filter(event => 
-          event.id !== interestEvent.id && event.id !== withholdingEvent.id
+      
+      let withholdingEvent: ExtendedFundEvent | undefined;
+      let processedEventIds = new Set<number>();
+      
+      // If we found an interest event with withholding tax, look for the related withholding event
+      if (interestEvent) {
+        withholdingEvent = dateEvents.find(e => 
+          e.event_type === 'TAX_PAYMENT' && 
+          e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING'
         );
 
-        groupedEvents.push({
-          date,
-          events: dateEvents,
-          hasInterestWithholdingPair: true,
-          interestEvent,
-          withholdingEvent,
-          otherEvents
-        });
+        // If we have both interest and withholding on the same date, create a grouped event
+        if (withholdingEvent) {
+          const otherEvents = dateEvents.filter(event => 
+            event.id !== interestEvent.id && event.id !== withholdingEvent!.id
+          );
 
-        interestWithholdingPairs++;
-      } else {
-        // No interest + withholding pair, add as individual events
-        dateEvents.forEach(event => {
-          // Skip standalone withholding tax events (they should only appear when combined with interest distributions)
-          if (event.event_type === 'TAX_PAYMENT' && 
-              event.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING') {
-            return;
+          groupedEvents.push({
+            date,
+            events: dateEvents,
+            hasInterestWithholdingPair: true,
+            interestEvent,
+            withholdingEvent,
+            otherEvents
+          });
+
+          interestWithholdingPairs++;
+          
+          // Mark these events as processed
+          processedEventIds.add(interestEvent.id);
+          if (withholdingEvent) {
+            processedEventIds.add(withholdingEvent.id);
           }
-
-          // Skip tax and debt events if toggle is off
-          if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'EOFY_DEBT_COST')) {
-            return;
-          }
-
-          // Skip NAV updates if toggle is off
-          if (!showNavUpdates && event.event_type === 'NAV_UPDATE') {
-            return;
-          }
-
-          individualEvents.push(event);
-        });
+        } else {
+          // Interest event has flag but no withholding event found - add as individual
+          individualEvents.push(interestEvent);
+          processedEventIds.add(interestEvent.id);
+        }
       }
+      
+      // Add remaining events as individual events
+      dateEvents.forEach(event => {
+        // Skip events that were already processed in grouping
+        if (processedEventIds.has(event.id)) {
+          return;
+        }
+        
+        // Skip standalone withholding tax events (they should only appear when combined with interest distributions)
+        if (event.event_type === 'TAX_PAYMENT' && 
+            event.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING') {
+          return;
+        }
+
+        // Skip tax and debt events if toggle is off
+        if (!showTaxEvents && (event.event_type === 'TAX_PAYMENT' || event.event_type === 'EOFY_DEBT_COST')) {
+          return;
+        }
+
+        // Skip NAV updates if toggle is off
+        if (!showNavUpdates && event.event_type === 'NAV_UPDATE') {
+          return;
+        }
+
+        individualEvents.push(event);
+      });
     });
 
     // Sort individual events by date (oldest first)
