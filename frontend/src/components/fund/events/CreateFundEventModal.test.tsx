@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import CreateFundEventForm from './CreateFundEventForm';
+import CreateFundEventModal from './CreateFundEventModal';
 import { ExtendedFundEvent, EventType, DistributionType } from '../../../types/api';
 
 // Mock the hooks
@@ -92,7 +92,7 @@ const mockUseEventSubmission = {
 
 
 
-describe('CreateFundEventForm', () => {
+describe('CreateFundEventModal', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
@@ -128,7 +128,7 @@ describe('CreateFundEventForm', () => {
   };
 
   const renderComponent = (props = {}) => {
-    return render(<CreateFundEventForm {...defaultProps} {...props} />);
+    return render(<CreateFundEventModal {...defaultProps} {...props} />);
   };
 
   describe('Form Functionality', () => {

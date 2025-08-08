@@ -321,7 +321,7 @@ const FundDetail: React.FC = () => {
       <CreateFundEventModal
         open={eventModalOpen}
         onClose={() => setEventModalOpen(false)}
-        onEventCreated={handleEventCreated}
+        onSuccess={handleEventCreated}
         fundId={Number(fundId)}
         fundTrackingType={fund.tracking_type}
       />
