@@ -111,19 +111,20 @@ This creates complexity, code duplication, and inconsistent interfaces. We need 
 - Provide clear feedback to users
 - Maintain data integrity throughout process
 
-### Phase 4: Legacy Method Deprecation
-**Goal**: Deprecate old methods while maintaining backward compatibility
+### Phase 4: Legacy Method Removal
+**Goal**: Completely remove old distribution methods and force migration to unified approach
 **Tasks**:
-- [ ] Add deprecation warnings to old methods
-- [ ] Implement old methods as wrappers around new unified method
-- [ ] Update documentation to reflect new unified approach
-- [ ] Add migration guide for developers
-- [ ] Plan future removal timeline
+- [ ] Remove `add_interest_distribution_with_withholding_tax()` method
+- [ ] Remove `add_interest_distribution_without_withholding_tax()` method
+- [ ] Update all existing code to use new unified `add_distribution()` method
+- [ ] Update API endpoints to use unified method
+- [ ] Update all tests to use new unified method
+- [ ] Remove old method documentation
 **Design Principles**:
-- Maintain backward compatibility during transition
-- Provide clear migration path for existing code
-- Document deprecation timeline clearly
-- Ensure no breaking changes to existing functionality
+- Force clean migration to unified approach
+- Eliminate code duplication completely
+- Maintain single source of truth for distribution logic
+- Ensure all code uses the new validation structure
 
 ### Phase 5: Testing and Validation
 **Goal**: Ensure all functionality works correctly with unified approach
@@ -456,11 +457,13 @@ fund.add_distribution(
 - [ ] Optimize delete + create workflow
 - [ ] Add keyboard shortcuts if needed
 
-### Phase 4: Deprecation
-- [ ] Add deprecation warnings to old methods
-- [ ] Implement wrapper methods for backward compatibility
-- [ ] Update documentation
-- [ ] Create migration guide
+### Phase 4: Legacy Method Removal
+- [ ] Remove `add_interest_distribution_with_withholding_tax()` method
+- [ ] Remove `add_interest_distribution_without_withholding_tax()` method
+- [ ] Update all existing code to use new unified `add_distribution()` method
+- [ ] Update API endpoints to use unified method
+- [ ] Update all tests to use new unified method
+- [ ] Remove old method documentation
 
 ### Phase 5: Testing
 - [ ] Update all existing tests
