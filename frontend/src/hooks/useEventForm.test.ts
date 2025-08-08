@@ -157,20 +157,7 @@ describe('useEventForm', () => {
       expect(result.current.validationErrors.nav_per_share).toBe('Enter a valid positive number');
     });
 
-    it('should validate withholding tax fields', () => {
-      const { result } = renderHook(() => useEventForm(true, 'cost_based'));
 
-      act(() => {
-        result.current.setEventType('DISTRIBUTION');
-        result.current.setDistributionType('INTEREST');
-        result.current.setSubDistributionType('WITHHOLDING_TAX');
-        result.current.setWithholdingAmountType('gross');
-        result.current.setWithholdingTaxType('rate');
-      });
-
-      expect(result.current.validationErrors.gross_amount).toBe('Enter the gross amount');
-      expect(result.current.validationErrors.withholding_tax_rate).toBe('Enter the tax rate');
-    });
 
     it('should pass validation with valid data', () => {
       const { result } = renderHook(() => useEventForm(true, 'cost_based'));
@@ -210,7 +197,6 @@ describe('useEventForm', () => {
       act(() => {
         result.current.setEventType('DISTRIBUTION');
         result.current.setDistributionType('INTEREST');
-        result.current.setSubDistributionType('WITHHOLDING_TAX');
       });
 
       act(() => {
@@ -253,27 +239,7 @@ describe('useEventForm', () => {
     });
   });
 
-  describe('Withholding Tax State', () => {
-    it('should update withholding amount type', () => {
-      const { result } = renderHook(() => useEventForm(true, 'cost_based'));
 
-      act(() => {
-        result.current.setWithholdingAmountType('gross');
-      });
-
-      expect(result.current.withholdingAmountType).toBe('gross');
-    });
-
-    it('should update withholding tax type', () => {
-      const { result } = renderHook(() => useEventForm(true, 'cost_based'));
-
-      act(() => {
-        result.current.setWithholdingTaxType('rate');
-      });
-
-      expect(result.current.withholdingTaxType).toBe('rate');
-    });
-  });
 
   describe('Success State', () => {
     it('should update success state', () => {

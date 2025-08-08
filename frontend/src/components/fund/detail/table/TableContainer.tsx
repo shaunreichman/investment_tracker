@@ -22,7 +22,7 @@ export interface TableContainerProps {
   onShowTaxEventsChange: (show: boolean) => void;
   onShowNavUpdatesChange: (show: boolean) => void;
   onAddEvent: () => void;
-  onEditEvent: (event: ExtendedFundEvent) => void;
+
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }
 
@@ -44,7 +44,7 @@ const TableContainerComponent: React.FC<TableContainerProps> = ({
   onShowTaxEventsChange,
   onShowNavUpdatesChange,
   onAddEvent,
-  onEditEvent,
+
   onDeleteEvent
 }) => {
   // Calculate filtered event count for header display
@@ -129,7 +129,7 @@ const TableContainerComponent: React.FC<TableContainerProps> = ({
             fund={fund}
             showTaxEvents={showTaxEvents}
             showNavUpdates={showNavUpdates}
-            onEditEvent={onEditEvent}
+
             onDeleteEvent={onDeleteEvent}
           />
         </Table>

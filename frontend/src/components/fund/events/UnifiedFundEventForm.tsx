@@ -74,10 +74,6 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
     setSuccess,
     validationErrors,
     isFormValid,
-    withholdingAmountType,
-    setWithholdingAmountType,
-    withholdingTaxType,
-    setWithholdingTaxType,
     hybridFieldOverrides,
     setHybridFieldOverrides,
     handleInputChange,
@@ -242,32 +238,17 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
         if (formData.description !== undefined) payload.description = formData.description;
         if (formData.reference_number !== undefined) payload.reference_number = formData.reference_number;
         
-        if (formData.distribution_type === 'interest') {
-          // Handle interest distribution
-          if (subDistributionType === 'WITHHOLDING_TAX') {
-            // For withholding tax interest, only send fields based on current button selections
-            if (withholdingAmountType === 'gross' && formData.amount && formData.amount.trim() !== '') {
-              payload.amount = parseFloat(formData.amount);
-            } else if (withholdingAmountType === 'net' && formData.net_amount && formData.net_amount.trim() !== '') {
-              payload.net_interest = parseFloat(formData.net_amount);
-            }
-            
-            if (withholdingTaxType === 'amount' && formData.withholding_tax_amount && formData.withholding_tax_amount.trim() !== '') {
-              payload.withholding_amount = parseFloat(formData.withholding_tax_amount);
-            } else if (withholdingTaxType === 'rate' && formData.withholding_tax_rate && formData.withholding_tax_rate.trim() !== '') {
-              payload.withholding_rate = parseFloat(formData.withholding_tax_rate);
-            }
-          } else {
-            // For regular interest, send amount
-            if (formData.amount) payload.amount = parseFloat(formData.amount);
-            // Clear withholding fields for regular interest
-            payload.net_interest = null;
-            payload.withholding_amount = null;
-            payload.withholding_rate = null;
+        // Handle all distributions with unified approach
+        if (formData.amount) payload.amount = parseFloat(formData.amount);
+        
+        // Add withholding tax fields if checkbox is checked
+        if (formData.has_withholding_tax === true) {
+          if (formData.withholding_tax_amount) {
+            payload.withholding_tax_amount = parseFloat(formData.withholding_tax_amount);
           }
-        } else {
-          // Handle non-interest distributions
-          if (formData.amount) payload.amount = parseFloat(formData.amount);
+          if (formData.withholding_tax_rate) {
+            payload.withholding_tax_rate = parseFloat(formData.withholding_tax_rate);
+          }
         }
       }
 
@@ -354,13 +335,7 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
                   subDistributionType={subDistributionType}
                   formData={formData}
                   validationErrors={validationErrors}
-                  withholdingAmountType={withholdingAmountType}
-                  withholdingTaxType={withholdingTaxType}
-                  hybridFieldOverrides={hybridFieldOverrides}
                   onInputChange={handleInputChange}
-                  onWithholdingAmountTypeChange={setWithholdingAmountType}
-                  onWithholdingTaxTypeChange={setWithholdingTaxType}
-                  onHybridFieldToggle={handleHybridFieldToggle}
                   eventType={eventType}
                 />
                 <TextField

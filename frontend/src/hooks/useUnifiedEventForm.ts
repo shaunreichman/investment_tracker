@@ -37,10 +37,6 @@ export const useUnifiedEventForm = ({
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
 
-  // Withholding tax state (same as create form)
-  const [withholdingAmountType, setWithholdingAmountType] = useState<'gross' | 'net' | ''>('');
-  const [withholdingTaxType, setWithholdingTaxType] = useState<'amount' | 'rate' | ''>('');
-  
   // Hybrid field state (same as create form)
   const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
@@ -52,8 +48,6 @@ export const useUnifiedEventForm = ({
         setEventType('');
         setDistributionType('');
         setSubDistributionType('');
-        setWithholdingAmountType('');
-        setWithholdingTaxType('');
         setFormData({ event_date: new Date().toISOString().slice(0, 10) });
         setSuccess(false);
         setValidationErrors({});
@@ -63,11 +57,9 @@ export const useUnifiedEventForm = ({
         if (event) {
           // Map event to template selection using the mapping utilities
           const templateMapping = mapEventToTemplates(event, allEvents);
-          setEventType(templateMapping.eventType as EventType | '');
-          setDistributionType(templateMapping.distributionType);
-          setSubDistributionType(templateMapping.subDistributionType);
-          setWithholdingAmountType(templateMapping.withholdingAmountType);
-          setWithholdingTaxType(templateMapping.withholdingTaxType);
+                  setEventType(templateMapping.eventType as EventType | '');
+        setDistributionType(templateMapping.distributionType);
+        setSubDistributionType(templateMapping.subDistributionType);
           
           // Initialize form data with event values using the mapping utilities
           const formDataMapping = mapEventToFormData(event, allEvents);
@@ -97,14 +89,11 @@ export const useUnifiedEventForm = ({
     }
     
     if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
-      // Skip amount validation for withholding tax scenarios
-      if (!(distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX')) {
-        const amt = parseFloat(formData.amount || '');
-        if (!formData.amount) {
-          errors.amount = 'Amount is required';
-        } else if (isNaN(amt) || amt <= 0) {
-          errors.amount = 'Enter a valid positive amount';
-        }
+      const amt = parseFloat(formData.amount || '');
+      if (!formData.amount) {
+        errors.amount = 'Amount is required';
+      } else if (isNaN(amt) || amt <= 0) {
+        errors.amount = 'Enter a valid positive amount';
       }
       
       if (eventType === 'DISTRIBUTION' && !distributionType) {
@@ -116,31 +105,13 @@ export const useUnifiedEventForm = ({
       errors.sub_distribution_type = 'Sub-distribution type is required';
     }
     
-    if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
-      // For withholding tax, require both amount type and tax type to be selected
-      if (!withholdingAmountType) {
-        errors.gross_amount = 'Select amount type (Gross or Net)';
+    // Simple validation for withholding tax fields when checkbox is checked
+    if (distributionType === 'INTEREST' && formData.has_withholding_tax === true) {
+      if (formData.withholding_tax_amount && parseFloat(formData.withholding_tax_amount) < 0) {
+        errors.withholding_tax_amount = 'Tax amount must be positive';
       }
-      if (!withholdingTaxType) {
-        errors.withholding_tax_rate = 'Select tax type (Amount or Rate)';
-      }
-      // Also require the actual values to be entered
-      const amountValue = withholdingAmountType === 'gross' ? formData.gross_amount : formData.net_amount;
-      const taxValue = withholdingTaxType === 'rate' ? formData.withholding_tax_rate : formData.withholding_tax_amount;
-      
-      if (!amountValue) {
-        if (withholdingAmountType === 'gross') {
-          errors.gross_amount = 'Enter the gross amount';
-        } else if (withholdingAmountType === 'net') {
-          errors.net_amount = 'Enter the net amount';
-        }
-      }
-      if (!taxValue) {
-        if (withholdingTaxType === 'amount') {
-          errors.withholding_tax_amount = 'Enter the tax amount';
-        } else if (withholdingTaxType === 'rate') {
-          errors.withholding_tax_rate = 'Enter the tax rate';
-        }
+      if (formData.withholding_tax_rate && (parseFloat(formData.withholding_tax_rate) < 0 || parseFloat(formData.withholding_tax_rate) > 100)) {
+        errors.withholding_tax_rate = 'Tax rate must be between 0 and 100';
       }
     }
     
@@ -207,14 +178,14 @@ export const useUnifiedEventForm = ({
     const isValid = Object.keys(errors).length === 0;
     setIsFormValid(isValid);
     return isValid;
-  }, [eventType, distributionType, subDistributionType, withholdingAmountType, withholdingTaxType, formData, mode]);
+  }, [eventType, distributionType, subDistributionType, formData, mode]);
 
   // Update form validity when relevant state changes
   useEffect(() => {
     if (open) {
       validateForm();
     }
-  }, [open, eventType, distributionType, subDistributionType, withholdingAmountType, withholdingTaxType, formData, validateForm]);
+  }, [open, eventType, distributionType, subDistributionType, formData, validateForm]);
 
   // Handle input change (same as create form)
   const handleInputChange = useCallback((field: string, value: string) => {
@@ -250,8 +221,6 @@ export const useUnifiedEventForm = ({
     setEventType('');
     setDistributionType('');
     setSubDistributionType('');
-    setWithholdingAmountType('');
-    setWithholdingTaxType('');
     setFormData({});
     setHybridFieldOverrides({});
     setSuccess(false);
@@ -283,11 +252,7 @@ export const useUnifiedEventForm = ({
     validationErrors,
     isFormValid,
     
-    // Withholding tax state
-    withholdingAmountType,
-    setWithholdingAmountType,
-    withholdingTaxType,
-    setWithholdingTaxType,
+
     
     // Hybrid field state
     hybridFieldOverrides,

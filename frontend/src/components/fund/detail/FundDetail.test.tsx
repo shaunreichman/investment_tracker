@@ -59,11 +59,7 @@ jest.mock('../events/CreateFundEventModal', () => {
   };
 });
 
-jest.mock('../events/EditFundEventModal', () => {
-  return function MockEditFundEventModal({ open, onClose }: any) {
-    return open ? <div data-testid="edit-event-modal">Edit Event Modal</div> : null;
-  };
-});
+
 
 // Mock the section components
 jest.mock('./', () => ({
@@ -109,7 +105,6 @@ jest.mock('./table/TableContainer', () => {
     onShowTaxEventsChange,
     onShowNavUpdatesChange,
     onAddEvent,
-    onEditEvent,
     onDeleteEvent 
   }: any) {
     return (
@@ -118,7 +113,6 @@ jest.mock('./table/TableContainer', () => {
         <div>Show Tax Events: {showTaxEvents ? 'Yes' : 'No'}</div>
         <div>Show NAV Updates: {showNavUpdates ? 'Yes' : 'No'}</div>
         <button onClick={() => onAddEvent()}>Add Event</button>
-        <button onClick={() => onEditEvent(events[0])}>Edit Event</button>
         <button onClick={() => onDeleteEvent(events[0])}>Delete Event</button>
         <button onClick={() => onShowTaxEventsChange(!showTaxEvents)}>Toggle Tax Events</button>
         <button onClick={() => onShowNavUpdatesChange(!showNavUpdates)}>Toggle NAV Updates</button>
@@ -201,18 +195,7 @@ describe('FundDetail Copy Component', () => {
     });
   });
 
-  it('should handle edit event button click', async () => {
-    renderFundDetail();
 
-    await waitFor(() => {
-      const editEventButton = screen.getByText('Edit Event');
-      fireEvent.click(editEventButton);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByTestId('edit-event-modal')).toBeInTheDocument();
-    });
-  });
 
   it('should handle delete event button click', async () => {
     renderFundDetail();

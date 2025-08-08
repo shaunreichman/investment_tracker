@@ -664,50 +664,62 @@ def create_app():
                     )
                 elif event_type.upper() == 'DISTRIBUTION':
                     distribution_type = data.get('distribution_type')
-                    sub_distribution_type = data.get('sub_distribution_type')
-
-                    if distribution_type == 'INTEREST':
+                    if distribution_type is None:
+                        return jsonify({"error": "Missing required field: distribution_type for distribution"}), 400
+                    
+                    # Use the new unified add_distribution method for all distribution types
+                    try:
+                        from src.fund.models import DistributionType
+                        
+                        # Determine if this is a withholding tax distribution
                         gross_interest = data.get('gross_interest')
                         net_interest = data.get('net_interest')
                         withholding_amount = data.get('withholding_amount')
                         withholding_rate = data.get('withholding_rate')
-                        from src.fund.models import DistributionType
-                        if (withholding_amount is not None) or (withholding_rate is not None):
-                            created_event, _ = fund.add_interest_distribution_with_withholding_tax(
+                        
+                        has_withholding_tax = any([
+                            gross_interest is not None,
+                            net_interest is not None,
+                            withholding_amount is not None,
+                            withholding_rate is not None
+                        ])
+                        
+                        if has_withholding_tax:
+                            # Withholding tax distribution
+                            created_event, tax_event = fund.add_distribution(
                                 event_date=event_date,
-                                gross_interest=gross_interest if gross_interest is not None else None,
-                                net_interest=net_interest if net_interest is not None else None,
-                                withholding_amount=withholding_amount if withholding_amount is not None else None,
-                                withholding_rate=withholding_rate if withholding_rate is not None else None,
+                                distribution_type=DistributionType.INTEREST,
+                                has_withholding_tax=True,
+                                gross_interest_amount=gross_interest,
+                                net_interest_amount=net_interest,
+                                withholding_tax_amount=withholding_amount,
+                                withholding_tax_rate=withholding_rate,
                                 description=data.get('description'),
                                 reference_number=data.get('reference_number'),
                                 session=session
                             )
                         else:
-                            # No withholding tax: use new method
-                            created_event = fund.add_interest_distribution_without_withholding_tax(
+                            # Simple distribution
+                            amount = data.get('amount')
+                            if amount is None:
+                                return jsonify({"error": "Missing required field: amount for distribution"}), 400
+                            
+                            # Enforce explicit franked/unfranked for dividends
+                            if distribution_type and distribution_type.upper().startswith('DIVIDEND'):
+                                if distribution_type not in ("DIVIDEND_FRANKED", "DIVIDEND_UNFRANKED"):
+                                    return jsonify({"error": "Dividend distributions must be either DIVIDEND_FRANKED or DIVIDEND_UNFRANKED."}), 400
+                            
+                            created_event, tax_event = fund.add_distribution(
                                 event_date=event_date,
-                                gross_interest=gross_interest if gross_interest is not None else data.get('amount'),
+                                distribution_type=DistributionType(distribution_type.lower()),
+                                distribution_amount=amount,
+                                has_withholding_tax=False,
                                 description=data.get('description'),
                                 reference_number=data.get('reference_number'),
                                 session=session
                             )
-                    else:
-                        amount = data.get('amount')
-                        if amount is None:
-                            return jsonify({"error": "Missing required field: amount for distribution"}), 400
-                        # Enforce explicit franked/unfranked for dividends
-                        if distribution_type and distribution_type.upper().startswith('DIVIDEND'):
-                            if distribution_type not in ("DIVIDEND_FRANKED", "DIVIDEND_UNFRANKED"):
-                                return jsonify({"error": "Dividend distributions must be either DIVIDEND_FRANKED or DIVIDEND_UNFRANKED."}), 400
-                        created_event = fund.add_distribution(
-                            amount=amount,
-                            event_date=event_date,
-                            distribution_type=distribution_type,
-                            description=data.get('description'),
-                            reference_number=data.get('reference_number'),
-                            session=session
-                        )
+                    except ValueError as e:
+                        return jsonify({"error": str(e)}), 400
                 elif event_type.upper() == 'UNIT_PURCHASE' and fund.tracking_type.value == 'nav_based':
                     units = data.get('units_purchased')
                     price = data.get('unit_price')

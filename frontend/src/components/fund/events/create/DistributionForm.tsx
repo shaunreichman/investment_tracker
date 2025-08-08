@@ -4,6 +4,8 @@ import {
   Box,
   Button,
   Typography,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { formatNumber, parseNumber } from '../../../../utils/helpers';
 import { ValidationErrors, FormData } from '../../../../hooks/useEventForm';
@@ -15,16 +17,8 @@ interface DistributionFormProps {
   formData: FormData;
   validationErrors: ValidationErrors;
   
-  // Withholding tax state
-  withholdingAmountType: 'gross' | 'net' | '';
-  withholdingTaxType: 'amount' | 'rate' | '';
-  hybridFieldOverrides: { [key: string]: boolean };
-  
   // Event handlers
   onInputChange: (field: string, value: string) => void;
-  onWithholdingAmountTypeChange: (type: 'gross' | 'net' | '') => void;
-  onWithholdingTaxTypeChange: (type: 'amount' | 'rate' | '') => void;
-  onHybridFieldToggle: (field: string) => void;
   
   // Event type for context
   eventType: string;
@@ -35,13 +29,7 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
   subDistributionType,
   formData,
   validationErrors,
-  withholdingAmountType,
-  withholdingTaxType,
-  hybridFieldOverrides,
   onInputChange,
-  onWithholdingAmountTypeChange,
-  onWithholdingTaxTypeChange,
-  onHybridFieldToggle,
   eventType,
 }) => {
   // Only render for distribution events
@@ -73,93 +61,58 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
         />
       )}
 
-      {/* Regular Amount Field (for non-withholding tax distributions) */}
-      {!(distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') && (
-        <TextField
-          label={<span>Amount <span style={{ color: '#d32f2f' }}>*</span></span>}
-          type="text"
-          value={formatNumber(formData.amount || '')}
-          onChange={e => onInputChange('amount', parseNumber(e.target.value))}
-          fullWidth
-          error={!!validationErrors.amount}
-          helperText={validationErrors.amount}
+      {/* Simple Amount Field for all distributions */}
+      <TextField
+        label={<span>Amount <span style={{ color: '#d32f2f' }}>*</span></span>}
+        type="text"
+        value={formatNumber(formData.amount || '')}
+        onChange={e => onInputChange('amount', parseNumber(e.target.value))}
+        fullWidth
+        error={!!validationErrors.amount}
+        helperText={validationErrors.amount}
+      />
+
+      {/* Withholding Tax Checkbox for Interest distributions */}
+      {distributionType === 'INTEREST' && (
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={formData.has_withholding_tax === true}
+              onChange={(e) => onInputChange('has_withholding_tax', e.target.checked ? 'true' : 'false')}
+            />
+          }
+          label="Has Withholding Tax"
         />
       )}
 
-      {/* Withholding Tax Form Section */}
-      {distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX' && (
-        <>
-          {/* Amount Type Selection */}
-          <Box>
-            <Typography variant="body2" color="text.secondary" mb={1}>
-              Amount Type:
-            </Typography>
-            <Box display="flex" gap={1}>
-              <Button
-                size="small"
-                variant={withholdingAmountType === 'gross' ? 'contained' : 'outlined'}
-                onClick={() => onWithholdingAmountTypeChange('gross')}
-              >
-                Gross
-              </Button>
-              <Button
-                size="small"
-                variant={withholdingAmountType === 'net' ? 'contained' : 'outlined'}
-                onClick={() => onWithholdingAmountTypeChange('net')}
-              >
-                Net
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Tax Type Selection */}
-          <Box>
-            <Typography variant="body2" color="text.secondary" mb={1}>
-              Tax Type:
-            </Typography>
-            <Box display="flex" gap={1}>
-              <Button
-                size="small"
-                variant={withholdingTaxType === 'amount' ? 'contained' : 'outlined'}
-                onClick={() => onWithholdingTaxTypeChange('amount')}
-              >
-                Tax Amount
-              </Button>
-              <Button
-                size="small"
-                variant={withholdingTaxType === 'rate' ? 'contained' : 'outlined'}
-                onClick={() => onWithholdingTaxTypeChange('rate')}
-              >
-                Tax Rate (%)
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Withholding Tax Input Fields */}
-          {withholdingAmountType && (
-            <TextField
-              label={`${withholdingAmountType === 'gross' ? 'Gross' : 'Net'} Amount`}
-              type="text"
-              value={formatNumber(formData[withholdingAmountType === 'gross' ? 'gross_amount' : 'net_amount'] || '')}
-              onChange={e => onInputChange(withholdingAmountType === 'gross' ? 'gross_amount' : 'net_amount', parseNumber(e.target.value))}
-              fullWidth
-              error={!!validationErrors[withholdingAmountType === 'gross' ? 'gross_amount' : 'net_amount']}
-              helperText={validationErrors[withholdingAmountType === 'gross' ? 'gross_amount' : 'net_amount']}
-            />
-          )}
-
-          {withholdingTaxType && (
-            <TextField
-              label={withholdingTaxType === 'amount' ? 'Tax Amount' : 'Tax Rate (%)'}
-              type="text"
-              value={formatNumber(formData[withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate'] || '')}
-              onChange={e => onInputChange(withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate', parseNumber(e.target.value))}
-              fullWidth
-              error={!!validationErrors[withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate']}
-              helperText={validationErrors[withholdingTaxType === 'amount' ? 'withholding_tax_amount' : 'withholding_tax_rate']}
-            />
-          )}
-        </>
+      {/* Withholding Tax Fields (only shown when checkbox is checked) */}
+      {distributionType === 'INTEREST' && formData.has_withholding_tax === true && (
+        <Box>
+          <Typography variant="body2" color="text.secondary" mb={1}>
+            Withholding Tax Details:
+          </Typography>
+          
+          <TextField
+            label="Withholding Tax Amount"
+            type="text"
+            value={formatNumber(formData.withholding_tax_amount || '')}
+            onChange={e => onInputChange('withholding_tax_amount', parseNumber(e.target.value))}
+            fullWidth
+            error={!!validationErrors.withholding_tax_amount}
+            helperText={validationErrors.withholding_tax_amount}
+            sx={{ mb: 2 }}
+          />
+          
+          <TextField
+            label="Withholding Tax Rate (%)"
+            type="text"
+            value={formatNumber(formData.withholding_tax_rate || '')}
+            onChange={e => onInputChange('withholding_tax_rate', parseNumber(e.target.value))}
+            fullWidth
+            error={!!validationErrors.withholding_tax_rate}
+            helperText={validationErrors.withholding_tax_rate}
+          />
+        </Box>
       )}
     </>
   );

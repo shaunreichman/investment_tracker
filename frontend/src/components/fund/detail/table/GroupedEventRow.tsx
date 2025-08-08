@@ -22,7 +22,7 @@ export interface GroupedEventRowProps {
   fund: ExtendedFund;
   showTaxEvents: boolean;
   showNavUpdates: boolean;
-  onEditEvent: (event: ExtendedFundEvent) => void;
+
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }
 
@@ -35,7 +35,7 @@ export const GroupedEventRow: React.FC<GroupedEventRowProps> = ({
   fund,
   showTaxEvents,
   showNavUpdates,
-  onEditEvent,
+
   onDeleteEvent
 }) => {
   const { date, interestEvent, withholdingEvent, otherEvents } = groupedEvent;
@@ -111,44 +111,24 @@ export const GroupedEventRow: React.FC<GroupedEventRowProps> = ({
         }}>
           <Box display="flex" gap={{ xs: 0.5, sm: 1.5 }} justifyContent="flex-end" alignItems="center">
             {isEditable && interestEvent && (
-              <>
-                <IconButton
-                  size="small"
-                  onClick={() => onEditEvent(interestEvent)}
-                  sx={{
-                    color: 'primary.main',
-                    p: 1,
-                    borderRadius: 1,
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                      bgcolor: 'primary.light',
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }
-                  }}
-                  title="Edit event"
-                >
-                  <EditIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => onDeleteEvent(interestEvent)}
-                  sx={{
-                    color: 'error.main',
-                    p: 1,
-                    borderRadius: 1,
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                      bgcolor: 'error.light',
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }
-                  }}
-                  title="Delete event"
-                >
-                  <DeleteIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </>
+              <IconButton
+                size="small"
+                onClick={() => onDeleteEvent(interestEvent)}
+                sx={{
+                  color: 'error.main',
+                  p: 1,
+                  borderRadius: 1,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    bgcolor: 'error.light',
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }
+                }}
+                title="Delete event"
+              >
+                <DeleteIcon sx={{ fontSize: 18 }} />
+              </IconButton>
             )}
           </Box>
         </TableCell>
@@ -162,7 +142,6 @@ export const GroupedEventRow: React.FC<GroupedEventRowProps> = ({
           fund={fund}
           showTaxEvents={showTaxEvents}
           showNavUpdates={showNavUpdates}
-          onEditEvent={onEditEvent}
           onDeleteEvent={onDeleteEvent}
         />
       ))}
@@ -179,9 +158,8 @@ const OtherEventRow: React.FC<{
   fund: ExtendedFund;
   showTaxEvents: boolean;
   showNavUpdates: boolean;
-  onEditEvent: (event: ExtendedFundEvent) => void;
   onDeleteEvent: (event: ExtendedFundEvent) => void;
-}> = ({ event, fund, showTaxEvents, showNavUpdates, onEditEvent, onDeleteEvent }) => {
+}> = ({ event, fund, showTaxEvents, showNavUpdates, onDeleteEvent }) => {
   const isNavBased = fund.tracking_type === 'nav_based';
   const isEquity = event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE' || 
                    event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL';
@@ -257,26 +235,7 @@ const OtherEventRow: React.FC<{
       {/* Actions Column */}
       <TableCell align="right" sx={{ minWidth: 120, px: 2 }}>
         <Box display="flex" gap={1.5} justifyContent="flex-end" alignItems="center">
-          {isEditable && (
-            <>
-              <IconButton
-                size="small"
-                onClick={() => onEditEvent(event)}
-                sx={{
-                  color: 'primary.main',
-                  p: 1,
-                  borderRadius: 1,
-                  transition: 'all 0.2s ease-in-out',
-                  '&:hover': {
-                    bgcolor: 'primary.light',
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                  }
-                }}
-                title="Edit event"
-              >
-                <EditIcon sx={{ fontSize: 18 }} />
-              </IconButton>
+                      {isEditable && (
               <IconButton
                 size="small"
                 onClick={() => onDeleteEvent(event)}
@@ -295,8 +254,7 @@ const OtherEventRow: React.FC<{
               >
                 <DeleteIcon sx={{ fontSize: 18 }} />
               </IconButton>
-            </>
-          )}
+            )}
         </Box>
       </TableCell>
     </TableRow>

@@ -17,7 +17,6 @@ import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import CreateFundEventModal from '../events/CreateFundEventModal';
-import EditFundEventModal from '../events/EditFundEventModal';
 import { 
   ExtendedFundEvent,
   ExtendedFund
@@ -48,7 +47,6 @@ const FundDetail: React.FC = () => {
   
   // Modal state management
   const [eventModalOpen, setEventModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ExtendedFundEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
@@ -79,16 +77,7 @@ const FundDetail: React.FC = () => {
     refetch();
   };
 
-  const handleEventUpdated = () => {
-    setEditModalOpen(false);
-    setSelectedEvent(null);
-    refetch();
-  };
 
-  const handleEditEvent = (event: ExtendedFundEvent) => {
-    setSelectedEvent(event);
-    setEditModalOpen(true);
-  };
 
   const handleDeleteEvent = (event: ExtendedFundEvent) => {
     setSelectedEvent(event);
@@ -322,7 +311,7 @@ const FundDetail: React.FC = () => {
             onShowTaxEventsChange={setShowTaxEvents}
             onShowNavUpdatesChange={setShowNavUpdates}
             onAddEvent={() => setEventModalOpen(true)}
-            onEditEvent={handleEditEvent}
+
             onDeleteEvent={handleDeleteEvent}
           />
         </Box>
@@ -337,18 +326,7 @@ const FundDetail: React.FC = () => {
         fundTrackingType={fund.tracking_type}
       />
 
-      <EditFundEventModal
-        open={editModalOpen}
-        onClose={() => {
-          setEditModalOpen(false);
-          setSelectedEvent(null);
-        }}
-        onEventUpdated={handleEventUpdated}
-        event={selectedEvent}
-        fundId={Number(fundId)}
-        fundTrackingType={fund.tracking_type}
-        allEvents={fundData?.events}
-      />
+
 
       {/* Delete Confirmation Dialog */}
       <Dialog

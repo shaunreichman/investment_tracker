@@ -14,7 +14,7 @@ export interface TableBodyProps {
   fund: ExtendedFund;
   showTaxEvents: boolean;
   showNavUpdates: boolean;
-  onEditEvent: (event: ExtendedFundEvent) => void;
+
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }
 
@@ -33,7 +33,7 @@ export const TableBody: React.FC<TableBodyProps> = ({
   fund,
   showTaxEvents,
   showNavUpdates,
-  onEditEvent,
+
   onDeleteEvent
 }) => {
   // Use the event grouping hook to process events
@@ -78,7 +78,6 @@ export const TableBody: React.FC<TableBodyProps> = ({
               fund={fund}
               showTaxEvents={showTaxEvents}
               showNavUpdates={showNavUpdates}
-              onEditEvent={onEditEvent}
               onDeleteEvent={onDeleteEvent}
             />
           );
@@ -91,7 +90,6 @@ export const TableBody: React.FC<TableBodyProps> = ({
               fund={fund}
               showTaxEvents={showTaxEvents}
               showNavUpdates={showNavUpdates}
-              onEditEvent={onEditEvent}
               onDeleteEvent={onDeleteEvent}
             />
           );
