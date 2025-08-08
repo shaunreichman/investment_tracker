@@ -29,7 +29,6 @@ describe('ActionButtons', () => {
 
   const defaultProps = {
     event: mockEvent,
-    onEditEvent: jest.fn(),
     onDeleteEvent: jest.fn(),
   };
 
@@ -37,19 +36,10 @@ describe('ActionButtons', () => {
     jest.clearAllMocks();
   });
 
-  it('renders edit and delete buttons for editable events', () => {
+  it('renders delete button for editable events', () => {
     renderWithTheme(<ActionButtons {...defaultProps} />);
     
-    expect(screen.getByTitle('Edit event')).toBeInTheDocument();
     expect(screen.getByTitle('Delete event')).toBeInTheDocument();
-  });
-
-  it('calls onEditEvent when edit button is clicked', () => {
-    const onEditEvent = jest.fn();
-    renderWithTheme(<ActionButtons {...defaultProps} onEditEvent={onEditEvent} />);
-    
-    fireEvent.click(screen.getByTitle('Edit event'));
-    expect(onEditEvent).toHaveBeenCalledWith(mockEvent);
   });
 
   it('calls onDeleteEvent when delete button is clicked', () => {
@@ -68,7 +58,6 @@ describe('ActionButtons', () => {
 
     renderWithTheme(<ActionButtons {...defaultProps} event={nonEditableEvent} />);
     
-    expect(screen.queryByTitle('Edit event')).not.toBeInTheDocument();
     expect(screen.queryByTitle('Delete event')).not.toBeInTheDocument();
   });
 
@@ -132,7 +121,7 @@ describe('ActionButtons', () => {
     expect(screen.queryByTitle('Delete event')).not.toBeInTheDocument();
   });
 
-  it('renders buttons for CAPITAL_CALL events', () => {
+  it('renders delete button for CAPITAL_CALL events', () => {
     const editableEvent: ExtendedFundEvent = {
       ...mockEvent,
       event_type: EventType.CAPITAL_CALL
@@ -140,11 +129,10 @@ describe('ActionButtons', () => {
 
     renderWithTheme(<ActionButtons {...defaultProps} event={editableEvent} />);
     
-    expect(screen.getByTitle('Edit event')).toBeInTheDocument();
     expect(screen.getByTitle('Delete event')).toBeInTheDocument();
   });
 
-  it('renders buttons for DISTRIBUTION events', () => {
+  it('renders delete button for DISTRIBUTION events', () => {
     const editableEvent: ExtendedFundEvent = {
       ...mockEvent,
       event_type: EventType.DISTRIBUTION
@@ -152,11 +140,10 @@ describe('ActionButtons', () => {
 
     renderWithTheme(<ActionButtons {...defaultProps} event={editableEvent} />);
     
-    expect(screen.getByTitle('Edit event')).toBeInTheDocument();
     expect(screen.getByTitle('Delete event')).toBeInTheDocument();
   });
 
-  it('renders buttons for UNIT_PURCHASE events', () => {
+  it('renders delete button for UNIT_PURCHASE events', () => {
     const editableEvent: ExtendedFundEvent = {
       ...mockEvent,
       event_type: EventType.UNIT_PURCHASE
@@ -164,11 +151,10 @@ describe('ActionButtons', () => {
 
     renderWithTheme(<ActionButtons {...defaultProps} event={editableEvent} />);
     
-    expect(screen.getByTitle('Edit event')).toBeInTheDocument();
     expect(screen.getByTitle('Delete event')).toBeInTheDocument();
   });
 
-  it('renders buttons for UNIT_SALE events', () => {
+  it('renders delete button for UNIT_SALE events', () => {
     const editableEvent: ExtendedFundEvent = {
       ...mockEvent,
       event_type: EventType.UNIT_SALE
@@ -176,11 +162,10 @@ describe('ActionButtons', () => {
 
     renderWithTheme(<ActionButtons {...defaultProps} event={editableEvent} />);
     
-    expect(screen.getByTitle('Edit event')).toBeInTheDocument();
     expect(screen.getByTitle('Delete event')).toBeInTheDocument();
   });
 
-  it('renders buttons for RETURN_OF_CAPITAL events', () => {
+  it('renders delete button for RETURN_OF_CAPITAL events', () => {
     const editableEvent: ExtendedFundEvent = {
       ...mockEvent,
       event_type: EventType.RETURN_OF_CAPITAL
@@ -188,11 +173,10 @@ describe('ActionButtons', () => {
 
     renderWithTheme(<ActionButtons {...defaultProps} event={editableEvent} />);
     
-    expect(screen.getByTitle('Edit event')).toBeInTheDocument();
     expect(screen.getByTitle('Delete event')).toBeInTheDocument();
   });
 
-  it('renders buttons for NAV_UPDATE events', () => {
+  it('renders delete button for NAV_UPDATE events', () => {
     const editableEvent: ExtendedFundEvent = {
       ...mockEvent,
       event_type: EventType.NAV_UPDATE
@@ -200,7 +184,6 @@ describe('ActionButtons', () => {
 
     renderWithTheme(<ActionButtons {...defaultProps} event={editableEvent} />);
     
-    expect(screen.getByTitle('Edit event')).toBeInTheDocument();
     expect(screen.getByTitle('Delete event')).toBeInTheDocument();
   });
 }); 

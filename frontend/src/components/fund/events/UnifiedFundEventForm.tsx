@@ -16,7 +16,7 @@ import {
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { useFund } from '../../../hooks/useFunds';
-import { useCreateFundEvent, useCreateTaxStatement, useUpdateFundEvent } from '../../../hooks/useFunds';
+import { useCreateFundEvent, useCreateTaxStatement } from '../../../hooks/useFunds';
 import { validateField } from '../../../utils/validators';
 import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../../../utils/helpers';
 import { useEventSubmission } from '../../../hooks/useEventSubmission';
@@ -40,25 +40,19 @@ const SUCCESS_BOX_STYLES = {
 };
 
 interface UnifiedFundEventFormProps {
-  mode: 'create' | 'edit';
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   fundId: number;
   fundTrackingType: 'nav_based' | 'cost_based';
-  event?: ExtendedFundEvent; // Only for edit mode
-  allEvents?: ExtendedFundEvent[]; // All events for edit mode to detect withholding tax
 }
 
 const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
-  mode,
   open,
   onClose,
   onSuccess,
   fundId,
-  fundTrackingType,
-  event,
-  allEvents
+  fundTrackingType
 }) => {
   // Use the unified form state management hook
   const {
@@ -82,11 +76,9 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
     resetForm,
     handleBack,
   } = useUnifiedEventForm({
-    mode,
+    mode: 'create',
     open,
-    fundTrackingType,
-    event,
-    allEvents
+    fundTrackingType
   });
 
   // Centralized error handler
@@ -110,8 +102,7 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
     onError: setError,
   });
 
-  // Update event hook for edit mode
-  const updateFundEvent = useUpdateFundEvent(fundId, event?.id || 0);
+  // Edit functionality removed - use delete + create pattern instead
 
   // Handle errors and success from hooks
   useEffect(() => {
@@ -126,11 +117,7 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
     }
   }, [createTaxStatement.error, setError]);
 
-  useEffect(() => {
-    if (updateFundEvent.error) {
-      setError(updateFundEvent.error);
-    }
-  }, [updateFundEvent.error, setError]);
+  // Edit functionality removed - use delete + create pattern instead
 
   useEffect(() => {
     if (createFundEvent.data) {
@@ -154,15 +141,7 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
     }
   }, [createTaxStatement.data, onSuccess, onClose, resetForm, setSuccess]);
 
-  useEffect(() => {
-    if (updateFundEvent.data) {
-      setSuccess(true);
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 1000);
-    }
-  }, [updateFundEvent.data, onSuccess, onClose]);
+  // Edit functionality removed - use delete + create pattern instead
 
   // Load fund entity and financial years
   useEffect(() => {
@@ -185,87 +164,21 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
 
     clearError();
 
-    if (mode === 'create') {
-      // Create mode: Use existing event submission logic
-      await submitEvent({
-        eventType,
-        formData,
-        distributionType,
-        subDistributionType,
-      });
-    } else {
-      // Edit mode: Use update event logic
-      if (!event) return;
-
-      const payload: any = {};
-
-      // Add fields based on event type
-      if (event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL') {
-        if (formData.amount) payload.amount = parseFloat(parseNumber(formData.amount));
-        if (formData.event_date) payload.event_date = formData.event_date;
-        if (formData.description !== undefined) payload.description = formData.description;
-        if (formData.reference_number !== undefined) payload.reference_number = formData.reference_number;
-      }
-
-      if (event.event_type === 'UNIT_PURCHASE') {
-        if (formData.units_purchased) payload.units_purchased = parseFloat(formData.units_purchased);
-        if (formData.unit_price) payload.unit_price = parseFloat(formData.unit_price);
-        if (formData.brokerage_fee) payload.brokerage_fee = parseFloat(formData.brokerage_fee);
-        if (formData.event_date) payload.event_date = formData.event_date;
-        if (formData.description !== undefined) payload.description = formData.description;
-        if (formData.reference_number !== undefined) payload.reference_number = formData.reference_number;
-      }
-
-      if (event.event_type === 'UNIT_SALE') {
-        if (formData.units_sold) payload.units_sold = parseFloat(formData.units_sold);
-        if (formData.unit_price) payload.unit_price = parseFloat(formData.unit_price);
-        if (formData.brokerage_fee) payload.brokerage_fee = parseFloat(formData.brokerage_fee);
-        if (formData.event_date) payload.event_date = formData.event_date;
-        if (formData.description !== undefined) payload.description = formData.description;
-        if (formData.reference_number !== undefined) payload.reference_number = formData.reference_number;
-      }
-
-      if (event.event_type === 'NAV_UPDATE') {
-        if (formData.nav_per_share) payload.nav_per_share = parseFloat(formData.nav_per_share);
-        if (formData.event_date) payload.event_date = formData.event_date;
-        if (formData.description !== undefined) payload.description = formData.description;
-        if (formData.reference_number !== undefined) payload.reference_number = formData.reference_number;
-      }
-
-      if (event.event_type === 'DISTRIBUTION') {
-        if (formData.distribution_type) payload.distribution_type = formData.distribution_type;
-        if (formData.event_date) payload.event_date = formData.event_date;
-        if (formData.description !== undefined) payload.description = formData.description;
-        if (formData.reference_number !== undefined) payload.reference_number = formData.reference_number;
-        
-        // Handle all distributions with unified approach
-        if (formData.amount) payload.amount = parseFloat(formData.amount);
-        
-        // Add withholding tax fields if checkbox is checked
-        if (formData.has_withholding_tax === true) {
-          if (formData.withholding_tax_amount) {
-            payload.withholding_tax_amount = parseFloat(formData.withholding_tax_amount);
-          }
-          if (formData.withholding_tax_rate) {
-            payload.withholding_tax_rate = parseFloat(formData.withholding_tax_rate);
-          }
-        }
-      }
-
-      await updateFundEvent.mutate(payload);
-    }
+    // Create mode: Use existing event submission logic
+    await submitEvent({
+      eventType,
+      formData,
+      distributionType,
+      subDistributionType,
+    });
   };
 
-  // Determine loading state and button text based on mode
-  const isLoading = mode === 'create' 
-    ? (createFundEvent.loading || createTaxStatement.loading)
-    : updateFundEvent.loading;
+  // Determine loading state and button text (edit mode removed)
+  const isLoading = createFundEvent.loading || createTaxStatement.loading;
 
-  const buttonText = mode === 'create' 
-    ? (isLoading ? 'Adding Event...' : 'Add Event')
-    : (isLoading ? 'Updating Event...' : 'Update Event');
+  const buttonText = isLoading ? 'Adding Event...' : 'Add Event';
 
-  const dialogTitle = mode === 'create' ? 'Add Cash Flow Event' : 'Edit Event';
+  const dialogTitle = 'Add Cash Flow Event';
 
   // UI rendering
   return (
@@ -275,7 +188,7 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
         {success && (
           <Box sx={SUCCESS_BOX_STYLES}>
             <Typography variant="body1" fontWeight="medium" color="success.main">
-              Event {mode === 'create' ? 'created' : 'updated'} successfully!
+              Event created successfully!
             </Typography>
           </Box>
         )}
@@ -294,7 +207,7 @@ const UnifiedFundEventForm: React.FC<UnifiedFundEventFormProps> = ({
           eventType={eventType}
           distributionType={distributionType}
           subDistributionType={subDistributionType}
-          mode={mode}
+          mode="create"
           onEventTypeSelect={setEventType}
           onDistributionTypeSelect={setDistributionType}
           onSubDistributionTypeSelect={setSubDistributionType}

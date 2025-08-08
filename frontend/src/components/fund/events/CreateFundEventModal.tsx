@@ -18,7 +18,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
 }) => {
   return (
     <UnifiedFundEventForm
-      mode="create"
       open={open}
       onClose={onClose}
       onSuccess={onEventCreated}

@@ -89,7 +89,7 @@ const mockEvents: ExtendedFundEvent[] = [
 ];
 
 const mockHandlers = {
-  onEditEvent: jest.fn(),
+  
   onDeleteEvent: jest.fn()
 };
 

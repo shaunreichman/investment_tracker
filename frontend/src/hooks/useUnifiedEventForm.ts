@@ -6,15 +6,13 @@ import { ExtendedFundEvent } from '../types/api';
 import { mapEventToTemplates, mapEventToFormData } from '../components/fund/events/utils/eventTemplateMapping';
 
 export interface UseUnifiedEventFormProps {
-  mode: 'create' | 'edit';
+  mode: 'create';
   open: boolean;
   fundTrackingType: 'nav_based' | 'cost_based';
-  event?: ExtendedFundEvent; // Only for edit mode
-  allEvents?: ExtendedFundEvent[]; // All events for edit mode to detect withholding tax
 }
 
 export interface UseUnifiedEventFormReturn extends UseEventFormReturn {
-  mode: 'create' | 'edit';
+  mode: 'create';
 }
 
 /**
@@ -24,10 +22,8 @@ export interface UseUnifiedEventFormReturn extends UseEventFormReturn {
 export const useUnifiedEventForm = ({
   mode,
   open,
-  fundTrackingType,
-  event,
-  allEvents
-}: UseUnifiedEventFormProps): UseUnifiedEventFormReturn => {
+  fundTrackingType
+}: UseUnifiedEventFormProps): UseEventFormReturn => {
   // Form state (same as create form)
   const [eventType, setEventType] = useState<EventType | ''>('');
   const [distributionType, setDistributionType] = useState<string>('');
@@ -40,38 +36,19 @@ export const useUnifiedEventForm = ({
   // Hybrid field state (same as create form)
   const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
-  // Initialize form when modal opens
+  // Initialize form when modal opens (edit mode removed)
   useEffect(() => {
     if (open) {
-      if (mode === 'create') {
-        // Create mode: Reset to initial state
-        setEventType('');
-        setDistributionType('');
-        setSubDistributionType('');
-        setFormData({ event_date: new Date().toISOString().slice(0, 10) });
-        setSuccess(false);
-        setValidationErrors({});
-        setHybridFieldOverrides({});
-      } else {
-        // Edit mode: Initialize with existing event data
-        if (event) {
-          // Map event to template selection using the mapping utilities
-          const templateMapping = mapEventToTemplates(event, allEvents);
-                  setEventType(templateMapping.eventType as EventType | '');
-        setDistributionType(templateMapping.distributionType);
-        setSubDistributionType(templateMapping.subDistributionType);
-          
-          // Initialize form data with event values using the mapping utilities
-          const formDataMapping = mapEventToFormData(event, allEvents);
-          setFormData(formDataMapping);
-          
-          setSuccess(false);
-          setValidationErrors({});
-          setHybridFieldOverrides({});
-        }
-      }
+      // Create mode: Reset to initial state
+      setEventType('');
+      setDistributionType('');
+      setSubDistributionType('');
+      setFormData({ event_date: new Date().toISOString().slice(0, 10) });
+      setSuccess(false);
+      setValidationErrors({});
+      setHybridFieldOverrides({});
     }
-  }, [open, mode, event, allEvents]);
+  }, [open]);
 
   // Validate formData.event_date after it is set on modal open
   useEffect(() => {
@@ -178,7 +155,7 @@ export const useUnifiedEventForm = ({
     const isValid = Object.keys(errors).length === 0;
     setIsFormValid(isValid);
     return isValid;
-  }, [eventType, distributionType, subDistributionType, formData, mode]);
+  }, [eventType, distributionType, subDistributionType, formData]);
 
   // Update form validity when relevant state changes
   useEffect(() => {
@@ -252,8 +229,6 @@ export const useUnifiedEventForm = ({
     validationErrors,
     isFormValid,
     
-
-    
     // Hybrid field state
     hybridFieldOverrides,
     setHybridFieldOverrides,
@@ -268,8 +243,5 @@ export const useUnifiedEventForm = ({
     // Success state
     success,
     setSuccess,
-    
-    // Mode
-    mode,
   };
 }; 

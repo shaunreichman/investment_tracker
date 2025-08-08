@@ -90,12 +90,7 @@ const mockUseEventSubmission = {
   createTaxStatement: { loading: false, error: null, data: null },
 };
 
-const mockUseUpdateFundEvent = {
-  mutate: jest.fn(),
-  loading: false,
-  error: null,
-  data: null,
-};
+
 
 describe('UnifiedFundEventForm', () => {
   beforeEach(() => {
@@ -108,12 +103,11 @@ describe('UnifiedFundEventForm', () => {
     (require('../../../hooks/useFunds') as any).useFund = jest.fn().mockReturnValue(mockUseFund);
     (require('../../../hooks/useFunds') as any).useCreateFundEvent = jest.fn().mockReturnValue(mockUseEventSubmission.createFundEvent);
     (require('../../../hooks/useFunds') as any).useCreateTaxStatement = jest.fn().mockReturnValue(mockUseEventSubmission.createTaxStatement);
-    (require('../../../hooks/useFunds') as any).useUpdateFundEvent = jest.fn().mockReturnValue(mockUseUpdateFundEvent);
+
     (require('../../../hooks/useEventSubmission') as any).useEventSubmission = jest.fn().mockReturnValue(mockUseEventSubmission);
   });
 
   const defaultProps = {
-    mode: 'create' as const,
     open: true,
     onClose: jest.fn(),
     onSuccess: jest.fn(),
@@ -137,16 +131,16 @@ describe('UnifiedFundEventForm', () => {
     return render(<UnifiedFundEventForm {...defaultProps} {...props} />);
   };
 
-  describe('Create Mode', () => {
-    it('should render create mode with correct title', () => {
-      renderComponent({ mode: 'create' });
+  describe('Form Functionality', () => {
+    it('should render with correct title', () => {
+      renderComponent();
 
       expect(screen.getByText('Add Cash Flow Event')).toBeInTheDocument();
       expect(screen.getByText('Add Event')).toBeInTheDocument();
     });
 
-    it('should show event type selector in create mode', () => {
-      renderComponent({ mode: 'create' });
+    it('should show event type selector', () => {
+      renderComponent();
 
       expect(screen.getByTestId('event-type-selector')).toBeInTheDocument();
       expect(screen.getByText('Mode: create')).toBeInTheDocument();
@@ -167,7 +161,7 @@ describe('UnifiedFundEventForm', () => {
         validateForm: jest.fn().mockReturnValue(true),
       });
 
-      renderComponent({ mode: 'create' });
+      renderComponent();
 
       const submitButton = screen.getByText('Add Event');
       fireEvent.click(submitButton);
@@ -188,7 +182,7 @@ describe('UnifiedFundEventForm', () => {
         createFundEvent: { loading: true, error: null, data: null },
       });
 
-      renderComponent({ mode: 'create' });
+      renderComponent();
 
       expect(screen.getByText('Adding Event...')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
@@ -201,166 +195,13 @@ describe('UnifiedFundEventForm', () => {
         success: true,
       });
 
-      renderComponent({ mode: 'create' });
+      renderComponent();
 
       expect(screen.getByText('Event created successfully!')).toBeInTheDocument();
     });
   });
 
-  describe('Edit Mode', () => {
-    it('should render edit mode with correct title', () => {
-      renderComponent({ 
-        mode: 'edit', 
-        event: mockEvent 
-      });
 
-      expect(screen.getByText('Edit Event')).toBeInTheDocument();
-      expect(screen.getByText('Update Event')).toBeInTheDocument();
-    });
-
-    it('should show event type selector in edit mode', () => {
-      renderComponent({ 
-        mode: 'edit', 
-        event: mockEvent 
-      });
-
-      expect(screen.getByTestId('event-type-selector')).toBeInTheDocument();
-      expect(screen.getByText('Mode: edit')).toBeInTheDocument();
-    });
-
-    it('should handle form submission in edit mode', async () => {
-      // Mock form with valid data for submission
-      (require('../../../hooks/useUnifiedEventForm') as any).useUnifiedEventForm = jest.fn().mockReturnValue({
-        ...mockUseUnifiedEventForm,
-        eventType: 'CAPITAL_CALL',
-        formData: { event_date: '2024-01-15', amount: '1000', description: 'Test capital call', reference_number: 'CC001' },
-        validateForm: jest.fn().mockReturnValue(true),
-      });
-
-      renderComponent({ 
-        mode: 'edit', 
-        event: mockEvent 
-      });
-
-      const submitButton = screen.getByText('Update Event');
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockUseUpdateFundEvent.mutate).toHaveBeenCalledWith({
-          amount: 1000,
-          event_date: '2024-01-15',
-          description: 'Test capital call',
-          reference_number: 'CC001',
-        });
-      });
-    });
-
-    it('should show loading state during update', () => {
-      (require('../../../hooks/useFunds') as any).useUpdateFundEvent = jest.fn().mockReturnValue({
-        ...mockUseUpdateFundEvent,
-        loading: true,
-      });
-
-      renderComponent({ 
-        mode: 'edit', 
-        event: mockEvent 
-      });
-
-      expect(screen.getByText('Updating Event...')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
-    });
-
-    it('should show success message after successful update', () => {
-      // Mock the success state to be true
-      (require('../../../hooks/useUnifiedEventForm') as any).useUnifiedEventForm = jest.fn().mockReturnValue({
-        ...mockUseUnifiedEventForm,
-        success: true,
-      });
-
-      renderComponent({ 
-        mode: 'edit', 
-        event: mockEvent 
-      });
-
-      expect(screen.getByText('Event updated successfully!')).toBeInTheDocument();
-    });
-
-    it('should handle distribution events correctly', async () => {
-      const distributionEvent: ExtendedFundEvent = {
-        ...mockEvent,
-        event_type: EventType.DISTRIBUTION,
-        distribution_type: DistributionType.INTEREST,
-        amount: 500,
-        net_interest: 450,
-        withholding_amount: 50,
-        withholding_rate: 10,
-      };
-
-      // Mock form with valid data for distribution submission
-      (require('../../../hooks/useUnifiedEventForm') as any).useUnifiedEventForm = jest.fn().mockReturnValue({
-        ...mockUseUnifiedEventForm,
-        eventType: 'DISTRIBUTION',
-        distributionType: 'INTEREST',
-        subDistributionType: 'REGULAR',
-        formData: { event_date: '2024-01-15', amount: '500', description: 'Test capital call', reference_number: 'CC001' },
-        validateForm: jest.fn().mockReturnValue(true),
-      });
-
-      renderComponent({ 
-        mode: 'edit', 
-        event: distributionEvent 
-      });
-
-      const submitButton = screen.getByText('Update Event');
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockUseUpdateFundEvent.mutate).toHaveBeenCalledWith({
-          amount: 500,
-          event_date: '2024-01-15',
-          description: 'Test capital call',
-          reference_number: 'CC001',
-        });
-      });
-    });
-
-    it('should handle NAV-based events correctly', async () => {
-      const navEvent: ExtendedFundEvent = {
-        ...mockEvent,
-        event_type: EventType.UNIT_PURCHASE,
-        units_purchased: 100,
-        unit_price: 10.5,
-        brokerage_fee: 50,
-      };
-
-      // Mock form with valid data for NAV submission
-      (require('../../../hooks/useUnifiedEventForm') as any).useUnifiedEventForm = jest.fn().mockReturnValue({
-        ...mockUseUnifiedEventForm,
-        eventType: 'UNIT_PURCHASE',
-        formData: { event_date: '2024-01-15', units_purchased: '100', unit_price: '10.5', brokerage_fee: '50', description: 'Test capital call', reference_number: 'CC001' },
-        validateForm: jest.fn().mockReturnValue(true),
-      });
-
-      renderComponent({ 
-        mode: 'edit', 
-        event: navEvent 
-      });
-
-      const submitButton = screen.getByText('Update Event');
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockUseUpdateFundEvent.mutate).toHaveBeenCalledWith({
-          units_purchased: 100,
-          unit_price: 10.5,
-          brokerage_fee: 50,
-          event_date: '2024-01-15',
-          description: 'Test capital call',
-          reference_number: 'CC001',
-        });
-      });
-    });
-  });
 
   describe('Error Handling', () => {
     it('should display error messages', () => {

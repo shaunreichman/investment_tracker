@@ -111,7 +111,7 @@ const mockHandlers = {
   onShowTaxEventsChange: jest.fn(),
   onShowNavUpdatesChange: jest.fn(),
   onAddEvent: jest.fn(),
-  onEditEvent: jest.fn(),
+  
   onDeleteEvent: jest.fn()
 };
 
