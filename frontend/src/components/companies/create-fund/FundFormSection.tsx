@@ -53,12 +53,23 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
   onInputChange,
   onCreateEntity
 }) => {
+  const entityLabelId = 'entity-select-label';
+  const entitySelectId = 'entity-select';
+  const fundTypeLabelId = 'fund-type-select-label';
+  const fundTypeSelectId = 'fund-type-select';
+  const trackingTypeLabelId = 'tracking-type-select-label';
+  const trackingTypeSelectId = 'tracking-type-select';
+  const currencyLabelId = 'currency-select-label';
+  const currencySelectId = 'currency-select';
+
   return (
     <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr' }}>
       {/* Entity Selection */}
       <FormControl fullWidth error={!!validationErrors.entity_id} required>
-        <InputLabel>Entity *</InputLabel>
+        <InputLabel id={entityLabelId}>Entity *</InputLabel>
         <Select
+          labelId={entityLabelId}
+          id={entitySelectId}
           value={formData.entity_id}
           onChange={(e) => onInputChange('entity_id', e.target.value as string)}
           label="Entity *"
@@ -96,8 +107,10 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
 
       {/* Fund Type */}
       <FormControl fullWidth error={!!validationErrors.fund_type} required>
-        <InputLabel>Fund Type *</InputLabel>
+        <InputLabel id={fundTypeLabelId}>Fund Type *</InputLabel>
         <Select
+          labelId={fundTypeLabelId}
+          id={fundTypeSelectId}
           value={formData.fund_type}
           onChange={(e) => onInputChange('fund_type', e.target.value as string)}
           label="Fund Type *"
@@ -120,8 +133,10 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
 
       {/* Tracking Type */}
       <FormControl fullWidth error={!!validationErrors.tracking_type} required>
-        <InputLabel>Tracking Type *</InputLabel>
+        <InputLabel id={trackingTypeLabelId}>Tracking Type *</InputLabel>
         <Select
+          labelId={trackingTypeLabelId}
+          id={trackingTypeSelectId}
           value={formData.tracking_type}
           onChange={(e) => onInputChange('tracking_type', e.target.value as string)}
           label="Tracking Type *"
@@ -136,8 +151,10 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
 
       {/* Currency */}
       <FormControl fullWidth>
-        <InputLabel>Currency</InputLabel>
+        <InputLabel id={currencyLabelId}>Currency</InputLabel>
         <Select
+          labelId={currencyLabelId}
+          id={currencySelectId}
           value={formData.currency}
           onChange={(e) => onInputChange('currency', e.target.value as string)}
           label="Currency"
