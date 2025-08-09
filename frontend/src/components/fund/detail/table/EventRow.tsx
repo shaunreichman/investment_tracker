@@ -4,13 +4,13 @@ import {
   TableCell,
   Typography,
   Box,
-  Chip,
   IconButton
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
 import { formatCurrency, formatBrokerageFee, formatDate } from '../../../../utils/formatters';
-import { getEventTypeColor, getEventTypeLabel } from '../../../../utils/helpers';
+import { getEventTypeLabel } from '../../../../utils/helpers';
+import { EventTypeChip } from '../../../ui/EventTypeChip';
 import { isEquityEvent, isDistributionEvent, isOtherEvent } from './useEventGrouping';
 
 // ============================================================================
@@ -60,11 +60,7 @@ const EventRowComponent: React.FC<EventRowProps> = ({
       
       {/* Type Column */}
       <TableCell>
-        <Chip
-          label={getEventTypeLabel(event)}
-          color={getEventTypeColor(event.event_type) as any}
-          size="small"
-        />
+        <EventTypeChip eventType={event.event_type} size="small" />
       </TableCell>
       
       {/* Description Column */}

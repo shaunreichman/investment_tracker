@@ -2,20 +2,16 @@ import React, { useState, Suspense } from 'react';
 import {
   Typography,
   Box,
-  CircularProgress,
   Breadcrumbs,
   Link,
   IconButton,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ErrorDisplay } from '../../ErrorDisplay';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
+import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { ExtendedFundEvent } from '../../../types/api';
 import { useFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
@@ -102,20 +98,7 @@ const FundDetail: React.FC = () => {
   if (loading) {
     return (
       <Box p={3}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px" flexDirection="column" gap={2}>
-          <CircularProgress 
-            size={40} 
-            sx={{ 
-              color: 'primary.main',
-              '& .MuiCircularProgress-circle': {
-                strokeLinecap: 'round',
-              }
-            }} 
-          />
-          <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
-            Loading fund details...
-          </Typography>
-        </Box>
+        <LoadingSpinner label="Loading fund details..." />
       </Box>
     );
   }
@@ -328,34 +311,15 @@ const FundDetail: React.FC = () => {
 
 
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
+      <ConfirmDialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-      >
-        <DialogTitle id="delete-dialog-title">
-          Delete Event
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete this event? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={confirmDeleteEvent} 
-            color="error" 
-            disabled={deletingEvent}
-          >
-            {deletingEvent ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Delete Event"
+        description="Are you sure you want to delete this event? This action cannot be undone."
+        confirmLabel="Delete"
+        loading={deletingEvent}
+        onCancel={() => setDeleteDialogOpen(false)}
+        onConfirm={confirmDeleteEvent}
+      />
     </Box>
   );
 };

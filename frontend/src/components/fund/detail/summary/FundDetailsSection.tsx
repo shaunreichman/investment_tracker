@@ -8,6 +8,7 @@ import {
 import { Info } from '@mui/icons-material';
 import { ExtendedFund } from '../../../../types/api';
 import { getStatusInfo } from '../../../../utils/helpers';
+import { StatusChip } from '../../../ui/StatusChip';
 
 interface SectionProps {
   fund: ExtendedFund;
@@ -79,18 +80,7 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
               {detail.isStatus && (
                 <MuiTooltip title={statusInfo.tooltip} arrow>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
-                    <Box sx={{ 
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    bgcolor: statusInfo.color,
-                      // Phase 4: Enhanced status indicator
-                      transition: 'all 0.2s ease-in-out',
-                      boxShadow: statusInfo.color === 'success.main' ? '0 0 4px rgba(76, 175, 80, 0.4)' : 'none'
-                    }} />
-                    <Typography variant="body2" sx={{ color: detail.color, fontSize: 12, fontWeight: detail.priority === 1 ? 600 : 500 }}>
-                      {detail.value}
-                    </Typography>
+                    <StatusChip status={fund.status} />
                   </Box>
                 </MuiTooltip>
               )}

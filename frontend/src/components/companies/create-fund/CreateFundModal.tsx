@@ -10,6 +10,8 @@ import { validateField } from '../../../utils/validators';
 import TemplateSelectionSection from './TemplateSelectionSection';
 import FundFormSection from './FundFormSection';
 import { FUND_TEMPLATES, FundTemplate } from './templates';
+import { LoadingSpinner } from '../../ui/LoadingSpinner';
+import { SuccessBanner } from '../../ui/SuccessBanner';
 
 interface CreateFundModalProps {
   open: boolean;
@@ -342,17 +344,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 
         {/* Success State */}
         {success && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
-            <CheckCircleIcon color="success" sx={{ mr: 1 }} />
-            <Box>
-              <Typography variant="body1" fontWeight="medium" color="success.main">
-                Fund created successfully!
-              </Typography>
-              <Typography variant="body2" color="success.main">
-                Redirecting to fund details...
-              </Typography>
-            </Box>
-          </Box>
+          <SuccessBanner title="Fund created successfully!" subtitle="Redirecting to fund details..." />
         )}
 
         {/* Error State */}
@@ -367,13 +359,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         )}
 
         {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-            <Box textAlign="center">
-              <CircularProgress size={40} sx={{ mb: 2 }} />
-              <Typography variant="body1" color="text.secondary">
-                Loading entities...
-              </Typography>
-            </Box>
+          <Box p={4}>
+            <LoadingSpinner label="Loading entities..." />
           </Box>
         ) : (
           <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
