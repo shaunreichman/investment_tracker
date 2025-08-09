@@ -115,7 +115,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 **Goal**: Lock in quality gates and usage guidance.
 **Tasks**:
 - [ ] Add `jest-axe` smoke checks for CreateFundEventModal, CreateFundModal, FundDetail.
-- [ ] Enable `eslint-plugin-jsx-a11y` in CI (treat a11y warnings as errors for new/changed code).
+- [x] Enable `eslint-plugin-jsx-a11y` in CI (treat a11y warnings as errors for new/changed code) — workflow added.
 - [ ] Document UI kit usage patterns (MD in `docs/`); Storybook optional.
 - [ ] Keep tests focused on logic and behavior (not styling).
 **Design Principles**:
