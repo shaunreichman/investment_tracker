@@ -4,3 +4,4 @@ export { default as CompletedPerformanceSection } from './summary/CompletedPerfo
 export { default as FundDetailsSection } from './summary/FundDetailsSection';
 export { default as TransactionSummarySection } from './summary/TransactionSummarySection';
 export { default as UnitPriceChartSection } from './summary/UnitPriceChartSection'; 
+export { default as FundDetailHeader } from './FundDetailHeader';
