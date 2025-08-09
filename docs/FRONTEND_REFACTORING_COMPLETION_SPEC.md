@@ -36,7 +36,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 - [x] Unify API surface: alias `getFund` to same endpoint shape and keep `getFundDetail` as canonical.
 - [ ] Remove unused dependency: delete `axios` from `frontend/package.json` and lockfile; ensure no references remain.
 - [x] Grep and remove any stale references to edit‑event flows (edit UI is decommissioned).
-- [ ] Enable a11y linting in CI for new/changed code (`eslint-plugin-jsx-a11y`, warnings-as-errors policy for new code only).
+- [x] Enable a11y linting dependencies (add `eslint-plugin-jsx-a11y`); integrate rule in CI (pending CI wiring).
 **Design Principles**:
 - One definition of each public type.
 - One public client method per endpoint to prevent misuse.
