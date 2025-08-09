@@ -105,14 +105,14 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 - No heavy framework; small composable hooks.
 - Centralized rules in `utils/validators.ts` remain the source of truth.
 
-### Phase 7: Layout & Navigation (Optional, Low Priority)
+### Phase 7: Layout & Navigation (Completed)
 **Goal**: Further separation for readability, if needed.
 **Tasks**:
 - [x] Extract `FundDetailHeader.tsx` (breadcrumbs, title, sidebar toggle).
-- [ ] Extract `FundDetailSidebar.tsx` (composition of summary sections, sticky behavior).
+- [~] Extract `FundDetailSidebar.tsx` — skipped by design. Sidebar wrapper is thin; extraction would add indirection without clear benefit.
 - [x] Keep `FundDetail.tsx` as orchestrator only.
-**Design Principles**:
-- Only proceed if it reduces noise; avoid churn for minimal gains.
+**Design Principles / Decision**:
+- Only proceed if it reduces noise; avoid churn for minimal gains. Sidebar extraction intentionally skipped to prevent low‑ROI refactor.
 
 ### Phase 8: Performance Optimization (Targeted)
 **Goal**: Reduce unnecessary renders and initial load.
