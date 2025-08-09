@@ -3,11 +3,7 @@
 
 import { apiClient } from '../services/api';
 import { useApiCall } from './useApiCall';
-import {
-  PortfolioSummary,
-  DashboardData,
-  FundEventListResponse,
-} from '../types/api';
+import {} from '../types/api';
 import { useCallback } from 'react';
 
 // ============================================================================

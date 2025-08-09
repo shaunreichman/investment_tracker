@@ -30,8 +30,7 @@ describe('EventTypeSelector', () => {
     it('should allow selecting event types', () => {
       render(<EventTypeSelector {...defaultProps} />);
       
-      const capitalCallCard = screen.getByText('Capital Call').closest('div');
-      fireEvent.click(capitalCallCard!);
+      fireEvent.click(screen.getByText('Capital Call'));
       
       expect(defaultProps.onEventTypeSelect).toHaveBeenCalledWith('CAPITAL_CALL');
     });
@@ -58,8 +57,7 @@ describe('EventTypeSelector', () => {
         />
       );
       
-      const interestCard = screen.getByText('Interest').closest('div');
-      fireEvent.click(interestCard!);
+      fireEvent.click(screen.getByText('Interest'));
       
       expect(defaultProps.onDistributionTypeSelect).toHaveBeenCalledWith('INTEREST');
     });
@@ -115,8 +113,7 @@ describe('EventTypeSelector', () => {
         />
       );
       
-      const capitalCallCard = screen.getByText('Capital Call').closest('div');
-      fireEvent.click(capitalCallCard!);
+      fireEvent.click(screen.getByText('Capital Call'));
       
       expect(defaultProps.onEventTypeSelect).not.toHaveBeenCalled();
     });
@@ -144,8 +141,7 @@ describe('EventTypeSelector', () => {
         />
       );
       
-      const interestCard = screen.getByText('Interest').closest('div');
-      fireEvent.click(interestCard!);
+      fireEvent.click(screen.getByText('Interest'));
       
       expect(defaultProps.onDistributionTypeSelect).not.toHaveBeenCalled();
     });
@@ -175,8 +171,7 @@ describe('EventTypeSelector', () => {
         />
       );
       
-      const withholdingTaxCard = screen.getByText('Withholding Tax').closest('div');
-      fireEvent.click(withholdingTaxCard!);
+      fireEvent.click(screen.getByText('Withholding Tax'));
       
       expect(defaultProps.onSubDistributionTypeSelect).not.toHaveBeenCalled();
     });
@@ -206,8 +201,7 @@ describe('EventTypeSelector', () => {
         />
       );
       
-      const frankedButton = screen.getByText('Franked');
-      fireEvent.click(frankedButton);
+      fireEvent.click(screen.getByText('Franked'));
       
       expect(defaultProps.onSubDistributionTypeSelect).not.toHaveBeenCalled();
     });

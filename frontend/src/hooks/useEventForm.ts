@@ -135,13 +135,6 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
     }
   }, [open]);
 
-  // Validate formData.event_date after it is set on modal open
-  useEffect(() => {
-    if (open && formData.event_date) {
-      validateForm();
-    }
-  }, [open, formData.event_date]);
-
   // Form-level validation
   const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
@@ -224,6 +217,13 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
     setIsFormValid(isValid);
     return isValid;
   }, [eventType, distributionType, subDistributionType, formData]);
+
+  // Validate formData.event_date after it is set on modal open
+  useEffect(() => {
+    if (open && formData.event_date) {
+      validateForm();
+    }
+  }, [open, formData.event_date, validateForm]);
 
   // Update form validity when relevant state changes
   useEffect(() => {

@@ -2,7 +2,7 @@
  * Centralized helper utilities for common application functions
  */
 
-import { EVENT_TYPE_COLORS, FUND_STATUS_COLORS, FUND_STATUS_LABELS, TAX_PAYMENT_TYPE_LABELS } from './constants';
+import { EVENT_TYPE_COLORS } from './constants';
 
 /**
  * Extended fund event interface for component-specific data

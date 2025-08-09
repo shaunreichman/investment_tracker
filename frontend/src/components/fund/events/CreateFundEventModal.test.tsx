@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CreateFundEventModal from './CreateFundEventModal';
-import { ExtendedFundEvent, EventType, DistributionType } from '../../../types/api';
 
 // Mock the hooks
 jest.mock('../../../hooks/useErrorHandler');
@@ -115,17 +114,7 @@ describe('CreateFundEventModal', () => {
     fundTrackingType: 'cost_based' as const,
   };
 
-  const mockEvent: ExtendedFundEvent = {
-    id: 1,
-    fund_id: 1,
-    event_type: EventType.CAPITAL_CALL,
-    event_date: '2024-01-15',
-    amount: 1000,
-    description: 'Test capital call',
-    reference_number: 'CC001',
-    created_at: '2024-01-15T00:00:00Z',
-    updated_at: '2024-01-15T00:00:00Z',
-  };
+  // Note: mockEvent retained only if needed in future tests
 
   const renderComponent = (props = {}) => {
     return render(<CreateFundEventModal {...defaultProps} {...props} />);

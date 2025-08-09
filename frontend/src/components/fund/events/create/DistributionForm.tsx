@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  TextField,
-  Box,
-  Button,
-  Typography,
-  FormControlLabel,
-  Checkbox,
-} from '@mui/material';
+import { TextField, Box, Typography, FormControlLabel, Checkbox } from '@mui/material';
 import { formatNumber, parseNumber } from '../../../../utils/helpers';
 import { ValidationErrors, FormData } from '../../../../hooks/useEventForm';
 

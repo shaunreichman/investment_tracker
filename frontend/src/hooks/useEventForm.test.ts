@@ -2,10 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useEventForm } from './useEventForm';
 
 describe('useEventForm', () => {
-  const defaultProps = {
-    open: true,
-    fundTrackingType: 'cost_based' as const,
-  };
+  // Note: keep constants minimal to avoid unused warnings
 
   beforeEach(() => {
     // Mock the current date to ensure consistent tests

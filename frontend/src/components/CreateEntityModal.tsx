@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -13,12 +13,11 @@ import {
   Box,
   CircularProgress,
   Typography,
-  FormHelperText,
   Paper
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon } from '@mui/icons-material';
+import { Add as AddIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { useCreateEntity } from '../hooks/useEntities';
 
 interface CreateEntityModalProps {
@@ -102,7 +101,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     return undefined;
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
     
     // Required fields
@@ -119,7 +118,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [formData]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -177,7 +176,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     if (open) {
       validateForm(); // Trigger validation when modal opens
     }
-  }, [open]);
+  }, [open, validateForm]);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>

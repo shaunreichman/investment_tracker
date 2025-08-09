@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { createErrorInfo, ErrorType } from '../../../../types/errors';
@@ -67,10 +67,8 @@ describe('CreateFundModal (orchestrator)', () => {
     const submitBtn = screen.getByRole('button', { name: /Create Fund/i });
     expect(submitBtn).toBeEnabled();
 
-    await act(async () => {
-      fireEvent.click(submitBtn);
-    });
-    expect(mockMutate).toHaveBeenCalledTimes(1);
+    fireEvent.click(submitBtn);
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
   });
 
   it('shows error display on failed submit', async () => {
@@ -94,12 +92,10 @@ describe('CreateFundModal (orchestrator)', () => {
     fireEvent.click(within(typeListbox).getByText('Private Equity'));
 
     const submitBtn = screen.getByRole('button', { name: /Create Fund/i });
-    await act(async () => {
-      fireEvent.click(submitBtn);
-    });
+    fireEvent.click(submitBtn);
 
     // Expect an error alert to be present
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
   });
 
   it('has no obvious accessibility violations (axe smoke)', async () => {

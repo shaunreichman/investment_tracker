@@ -397,8 +397,8 @@ export const createTableDebugReport = (
   console.group('📋 FundDetailTable Debug Report');
   
   // Run all debug utilities
-  const tableInfo = debugTableRendering(events, fund, showTaxEvents, showNavUpdates);
-  const groupingInfo = logEventGrouping(events, fund);
+  debugTableRendering(events, fund, showTaxEvents, showNavUpdates);
+  logEventGrouping(events, fund);
   const validation = validateTableStructure(events, fund, showTaxEvents, showNavUpdates);
   
   console.log('📊 Summary:', {

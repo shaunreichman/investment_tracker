@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import TaxStatementForm from './TaxStatementForm';
 
@@ -332,11 +332,9 @@ describe('TaxStatementForm', () => {
       
       // Find and click hybrid field buttons
       const autoButtons = screen.getAllByText('Auto');
-      
-      if (autoButtons.length > 0) {
-        fireEvent.click(autoButtons[0]);
-        expect(mockOnHybridFieldToggle).toHaveBeenCalled();
-      }
+      expect(autoButtons.length).toBeGreaterThan(0);
+      fireEvent.click(autoButtons[0]);
+      expect(mockOnHybridFieldToggle).toHaveBeenCalled();
     });
 
     it('handles multiline text input for notes field', () => {

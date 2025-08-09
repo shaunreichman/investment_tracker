@@ -1,15 +1,5 @@
 import React from 'react';
-import {
-  TextField,
-  MenuItem,
-  Typography,
-  Divider,
-  Button,
-  FormControlLabel,
-  Checkbox,
-  Box
-} from '@mui/material';
-import { formatNumber, parseNumber } from '../../../../utils/helpers';
+import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox } from '@mui/material';
 
 interface TaxStatementFormProps {
   formData: any;

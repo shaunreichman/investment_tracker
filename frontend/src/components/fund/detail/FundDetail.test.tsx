@@ -139,9 +139,9 @@ describe('FundDetail Copy Component', () => {
     renderFundDetail();
 
     await waitFor(() => {
-      expect(screen.getAllByText('Test Fund')).toHaveLength(2); // One in breadcrumb, one in header
-      expect(screen.getByText('Private Debt • Test Entity • Test Company')).toBeInTheDocument();
+      expect(screen.getAllByText('Test Fund')).toHaveLength(2);
     });
+    expect(screen.getByText('Private Debt • Test Entity • Test Company')).toBeInTheDocument();
   });
 
   it('should render all section components', async () => {
@@ -149,12 +149,12 @@ describe('FundDetail Copy Component', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('equity-section')).toBeInTheDocument();
-      expect(screen.getByTestId('expected-performance-section')).toBeInTheDocument();
-      expect(screen.getByTestId('completed-performance-section')).toBeInTheDocument();
-      expect(screen.getByTestId('fund-details-section')).toBeInTheDocument();
-      expect(screen.getByTestId('transaction-summary-section')).toBeInTheDocument();
-      expect(screen.getByTestId('unit-price-chart-section')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('expected-performance-section')).toBeInTheDocument();
+    expect(screen.getByTestId('completed-performance-section')).toBeInTheDocument();
+    expect(screen.getByTestId('fund-details-section')).toBeInTheDocument();
+    expect(screen.getByTestId('transaction-summary-section')).toBeInTheDocument();
+    expect(screen.getByTestId('unit-price-chart-section')).toBeInTheDocument();
   });
 
   it('should render table container with correct props', async () => {
@@ -162,37 +162,28 @@ describe('FundDetail Copy Component', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('table-container')).toBeInTheDocument();
-      expect(screen.getByText('Fund Events (2)')).toBeInTheDocument();
     });
+    expect(screen.getByText('Fund Events (2)')).toBeInTheDocument();
   });
 
   it('should handle sidebar toggle correctly', async () => {
     renderFundDetail();
 
-    await waitFor(() => {
-      const toggleButton = screen.getByTestId('ChevronLeftIcon');
-      expect(toggleButton).toBeInTheDocument();
-    });
+    const toggleButton = await screen.findByTestId('ChevronLeftIcon');
+    expect(toggleButton).toBeInTheDocument();
 
-    // Test sidebar toggle
-    const toggleButton = screen.getByTestId('ChevronLeftIcon');
     fireEvent.click(toggleButton);
 
-    // Verify localStorage was updated
     expect(JSON.parse(localStorage.getItem('fundDetailSidebarVisible') || 'true')).toBe(false);
   });
 
   it('should handle add event button click', async () => {
     renderFundDetail();
 
-    await waitFor(() => {
-      const addEventButton = screen.getByText('Add Event');
-      fireEvent.click(addEventButton);
-    });
+    const addEventButton = await screen.findByText('Add Event');
+    fireEvent.click(addEventButton);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('create-event-modal')).toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('create-event-modal')).toBeInTheDocument();
   });
 
 
@@ -200,52 +191,40 @@ describe('FundDetail Copy Component', () => {
   it('should handle delete event button click', async () => {
     renderFundDetail();
 
-    await waitFor(() => {
-      const deleteEventButton = screen.getByText('Delete Event');
-      fireEvent.click(deleteEventButton);
-    });
+    const deleteEventButton = await screen.findByText('Delete Event');
+    fireEvent.click(deleteEventButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Are you sure you want to delete this event? This action cannot be undone.')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Are you sure you want to delete this event? This action cannot be undone.')).toBeInTheDocument();
   });
 
   it('should handle filter toggles correctly', async () => {
     renderFundDetail();
 
-    await waitFor(() => {
-      const toggleTaxEventsButton = screen.getByText('Toggle Tax Events');
-      const toggleNavUpdatesButton = screen.getByText('Toggle NAV Updates');
-      
-      expect(screen.getByText('Show Tax Events: Yes')).toBeInTheDocument();
-      expect(screen.getByText('Show NAV Updates: Yes')).toBeInTheDocument();
-      
-      fireEvent.click(toggleTaxEventsButton);
-      fireEvent.click(toggleNavUpdatesButton);
-    });
+    const toggleTaxEventsButton = await screen.findByText('Toggle Tax Events');
+    const toggleNavUpdatesButton = await screen.findByText('Toggle NAV Updates');
+    
+    expect(screen.getByText('Show Tax Events: Yes')).toBeInTheDocument();
+    expect(screen.getByText('Show NAV Updates: Yes')).toBeInTheDocument();
+    
+    fireEvent.click(toggleTaxEventsButton);
+    fireEvent.click(toggleNavUpdatesButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Show Tax Events: No')).toBeInTheDocument();
-      expect(screen.getByText('Show NAV Updates: No')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Show Tax Events: No')).toBeInTheDocument();
+    expect(await screen.findByText('Show NAV Updates: No')).toBeInTheDocument();
   });
 
   it('should render breadcrumb navigation correctly', async () => {
     renderFundDetail();
 
-    await waitFor(() => {
-      expect(screen.getByText('Investment Companies')).toBeInTheDocument();
-      expect(screen.getByText('Test Company')).toBeInTheDocument();
-      expect(screen.getAllByText('Test Fund')).toHaveLength(2); // One in breadcrumb, one in header
-    });
+    expect(await screen.findByText('Investment Companies')).toBeInTheDocument();
+    expect(screen.getByText('Test Company')).toBeInTheDocument();
+    expect(screen.getAllByText('Test Fund')).toHaveLength(2);
   });
 
   it('should display fund statistics correctly', async () => {
     renderFundDetail();
 
-    await waitFor(() => {
-      expect(screen.getByText('Current Balance: 100000')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Current Balance: 100000')).toBeInTheDocument();
   });
 
   it('should handle loading state correctly', () => {

@@ -17,10 +17,7 @@ import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import CreateFundEventModal from '../events/CreateFundEventModal';
-import { 
-  ExtendedFundEvent,
-  ExtendedFund
-} from '../../../types/api';
+import { ExtendedFundEvent } from '../../../types/api';
 import { useFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 

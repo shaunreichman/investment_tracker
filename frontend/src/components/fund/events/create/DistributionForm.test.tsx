@@ -61,9 +61,8 @@ describe('DistributionForm', () => {
     });
 
     it('should not render for non-distribution events', () => {
-      const { container } = renderWithTheme({ eventType: 'CAPITAL_CALL' });
-
-      expect(container.firstChild).toBeNull();
+      renderWithTheme({ eventType: 'CAPITAL_CALL' });
+      expect(screen.queryByLabelText(/Amount/)).not.toBeInTheDocument();
     });
   });
 

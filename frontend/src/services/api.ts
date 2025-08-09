@@ -99,17 +99,13 @@ function isNetworkError(error: any): boolean {
  */
 function createApiErrorInfo(error: any, status?: number): any {
   let errorType: ErrorType;
-  let message: string;
   
   if (isNetworkError(error)) {
     errorType = ErrorType.NETWORK;
-    message = 'Network connection failed. Please check your internet connection.';
   } else if (error instanceof ApiError) {
     errorType = mapStatusToErrorType(error.status);
-    message = error.message;
   } else {
     errorType = ErrorType.UNKNOWN;
-    message = error instanceof Error ? error.message : String(error);
   }
   
   return createErrorInfo(error, errorType);
