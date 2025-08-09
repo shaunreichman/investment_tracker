@@ -1,5 +1,7 @@
 # Frontend Refactoring Specification
 
+> Supersession Notice: Phases 4–10 of this document are superseded by `docs/FRONTEND_REFACTORING_COMPLETION_SPEC.md`. All remaining work should follow that completion spec. This file remains as historical context for Phases 1–3.
+
 > **Current Status:** Phase 1 & 2 COMPLETED ✅ | Phase 3 (Modal Refactoring) - CRITICAL PRIORITY 🚀
 
 ## **PROGRESS SUMMARY**
