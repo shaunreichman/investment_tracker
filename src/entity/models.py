@@ -25,6 +25,7 @@ class Entity(Base):
     
     # Relationships
     funds = relationship("Fund", back_populates="entity", cascade="all, delete-orphan")
+    bank_accounts = relationship("BankAccount", back_populates="entity", cascade="all, delete-orphan")
     tax_statements = relationship("TaxStatement", back_populates="entity", cascade="all, delete-orphan")
     
     @classmethod

@@ -122,13 +122,13 @@ Matching strategy for withholding tax payments:
 - [ ] Confirm open questions below
 
 ### Phase 1: Schema (Alembic + Models)
-- [ ] Add `Bank` and `BankAccount` models and tables
-- [ ] Add `FundEventCashFlow` model and table
-- [ ] Add `is_cash_flow_complete` to `FundEvent`
-- [ ] Remove `MANAGEMENT_FEE` from `EventType` and enum storage
-- [ ] Constraints: `FundEventCashFlow.currency == BankAccount.currency`
-- [ ] Uniqueness: (`entity_id`, `bank_id`, `account_number`) on `BankAccount`
-- [ ] Indexes: `fund_event_id`, `bank_account_id`, `transfer_date` on `FundEventCashFlow`
+- [x] Add `Bank` and `BankAccount` models and tables
+- [x] Add `FundEventCashFlow` model and table
+- [x] Add `is_cash_flow_complete` to `FundEvent`
+- [x] Remove `MANAGEMENT_FEE`, `CARRIED_INTEREST`, and `OTHER` from `EventType` (code-level; DB enum storage varies by dialect)
+- [x] Constraints: `FundEventCashFlow.currency == BankAccount.currency` (note: enforced in domain logic due to cross-table limitation)
+- [x] Uniqueness: (`entity_id`, `bank_id`, `account_number`) on `BankAccount`
+- [x] Indexes: `fund_event_id`, `bank_account_id`, `transfer_date` on `FundEventCashFlow`
 
 ### Phase 2: Domain Logic & Validation
 - [ ] Add creation/update methods for bank, bank account (class methods)

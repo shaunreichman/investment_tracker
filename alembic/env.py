@@ -14,6 +14,7 @@ from src.shared.base import Base
 
 # Explicitly import all model modules to register them with Base
 import src.fund.models
+import src.banking.models
 import src.entity.models
 import src.tax.models
 import src.rates.models
