@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -15,7 +15,7 @@ import {
   CircularProgress,
   Link,
   Button,
-  Grid
+  
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { createErrorInfo } from '../types/errors';
@@ -32,7 +32,7 @@ import { useNavigate } from 'react-router-dom';
 import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 
 
 const OverallDashboard: React.FC = () => {

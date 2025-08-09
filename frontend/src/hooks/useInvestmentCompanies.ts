@@ -3,12 +3,7 @@
 
 import { apiClient } from '../services/api';
 import { useApiCall, useMutation, useApiCallWithDeps } from './useApiCall';
-import {
-  InvestmentCompany,
-  InvestmentCompanyListResponse,
-  CreateInvestmentCompanyData,
-  FundListResponse,
-} from '../types/api';
+import { InvestmentCompany, CreateInvestmentCompanyData } from '../types/api';
 import { useCallback } from 'react';
 
 // ============================================================================

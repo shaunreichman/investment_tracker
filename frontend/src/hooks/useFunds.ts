@@ -7,7 +7,6 @@ import { useApiCall, useMutation, useApiCallWithDeps, useConditionalApiCall } fr
 import {
   Fund,
   CreateFundData,
-  UpdateFundEventData,
   CreateFundEventData,
   CreateTaxStatementData,
   TaxStatement,
@@ -85,14 +84,7 @@ export function useCreateFundEvent(fundId: number) {
   );
 }
 
-/**
- * Hook to update a fund event
- */
-export function useUpdateFundEvent(fundId: number, eventId: number) {
-  return useMutation<UpdateFundEventData, FundEvent>(
-    (data) => apiClient.updateFundEvent(fundId, eventId, data)
-  );
-}
+
 
 /**
  * Hook to delete a fund event

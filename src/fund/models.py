@@ -916,134 +916,230 @@ class Fund(Base):
         
         return distributions_by_type
     
-    @with_session
-    def add_distribution(self, amount, event_date, distribution_type=DistributionType.INTEREST, description=None, reference_number=None, session=None):
-        """Add a distribution event.
+    def _add_distribution_validate_distribution_parameters(
+        self,
+        event_date,
+        distribution_type,
+        distribution_amount=None,
+        has_withholding_tax=False,
+        gross_interest_amount=None,
+        net_interest_amount=None,
+        withholding_tax_amount=None,
+        withholding_tax_rate=None,
+        session=None
+    ):
+        """
+        Validate all parameters for add_distribution method.
+        
+        This method implements the three-tier validation system:
+        - Group A: General validations (always run)
+        - Group B: Withholding tax validations (when has_withholding_tax=True)
+        - Group C: Simple distribution validations (when has_withholding_tax=False)
         
         Args:
-            amount (float): Distribution amount
-            date (date): Distribution date
-            distribution_type (DistributionType): Type of distribution
-            description (str): Event description
-            reference_number (str): External reference number
+            event_date: Distribution date
+            distribution_type: Type of distribution (DistributionType enum)
+            distribution_amount: Simple distribution amount (when has_withholding_tax=False)
+            has_withholding_tax: Whether this distribution has withholding tax
+            gross_interest_amount: Gross interest amount (when has_withholding_tax=True)
+            net_interest_amount: Net interest amount (when has_withholding_tax=True)
+            withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
+            withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
+            session: Database session
+            
+        Raises:
+            ValueError: If any validation fails with specific error message
+        """
+        # Group A: General validations (always run)
+        if not event_date:
+            raise ValueError("event_date is required")
+        if not distribution_type:
+            raise ValueError("distribution_type is required")
+        if session is None:
+            raise ValueError("session parameter is required for database operations")
+        
+        # Type validations
+        if not isinstance(distribution_type, DistributionType):
+            raise ValueError(f"Invalid distribution_type: {distribution_type}. Must be a valid DistributionType enum value.")
+        if not isinstance(event_date, date):
+            raise ValueError("event_date must be a valid date")
+        
+        # Group B or C: Scenario-specific validations
+        if has_withholding_tax:
+            # Group B: Validations when has_withholding_tax=True
+            if distribution_type != DistributionType.INTEREST:
+                raise ValueError(f"Withholding tax (has_withholding_tax=True) is only valid for INTEREST distributions, not {distribution_type}")
+            
+            # Amount parameter validation - must use gross/net interest amounts
+            if distribution_amount is not None:
+                raise ValueError("When has_withholding_tax=True, distribution_amount must be None (use gross_interest_amount or net_interest_amount)")
+            
+            # Exactly one of gross_interest_amount or net_interest_amount
+            interest_params = [gross_interest_amount, net_interest_amount]
+            provided_interest = [p for p in interest_params if p is not None]
+            if len(provided_interest) != 1:
+                raise ValueError("When has_withholding_tax=True, must provide exactly one of gross_interest_amount or net_interest_amount")
+            
+            # Exactly one of withholding_tax_amount or withholding_tax_rate
+            withholding_params = [withholding_tax_amount, withholding_tax_rate]
+            provided_withholding = [p for p in withholding_params if p is not None]
+            if len(provided_withholding) != 1:
+                raise ValueError("When has_withholding_tax=True, must provide exactly one of withholding_tax_amount or withholding_tax_rate")
+            
+            # Value validations
+            if gross_interest_amount is not None and gross_interest_amount <= 0:
+                raise ValueError("gross_interest_amount must be a positive number")
+            if net_interest_amount is not None and net_interest_amount <= 0:
+                raise ValueError("net_interest_amount must be a positive number")
+            if withholding_tax_amount is not None and withholding_tax_amount <= 0:
+                raise ValueError("withholding_tax_amount must be a positive number")
+            if withholding_tax_rate is not None and withholding_tax_rate <= 0:
+                raise ValueError("withholding_tax_rate must be a positive number")
+            if withholding_tax_rate is not None and withholding_tax_rate > 100:
+                raise ValueError("withholding_tax_rate must be between 0 and 100")
+        else:
+            # Group C: Validations when has_withholding_tax=False
+            # Must use distribution_amount (not gross/net interest amounts)
+            if gross_interest_amount is not None or net_interest_amount is not None:
+                raise ValueError("gross_interest_amount and net_interest_amount are only valid when has_withholding_tax=True")
+            
+            # Must not provide withholding tax parameters
+            if withholding_tax_amount is not None or withholding_tax_rate is not None:
+                raise ValueError("withholding_tax_amount and withholding_tax_rate are only valid when has_withholding_tax=True")
+            
+            # distribution_amount is required and must be positive
+            if distribution_amount is None:
+                raise ValueError("distribution_amount is required when has_withholding_tax=False")
+            if distribution_amount <= 0:
+                raise ValueError("distribution_amount must be a positive number")
+
+    @with_session
+    def add_distribution(
+        self,
+        event_date,
+        distribution_type,
+        distribution_amount=None,
+        has_withholding_tax=False,
+        gross_interest_amount=None,
+        net_interest_amount=None,
+        withholding_tax_amount=None,
+        withholding_tax_rate=None,
+        description=None,
+        reference_number=None,
+        session=None
+    ):
+        """
+        Unified method to add distribution events.
+        
+        Handles all distribution scenarios:
+        - Simple distributions (amount + type)
+        - Interest distributions with withholding tax (gross/net + tax amount/rate)
+        - Interest distributions without withholding tax
+        
+        Args:
+            event_date: Distribution date
+            distribution_type: Type of distribution (DistributionType enum)
+            distribution_amount: Simple distribution amount (when has_withholding_tax=False)
+            has_withholding_tax: Whether this distribution has withholding tax
+            gross_interest_amount: Gross interest amount (when has_withholding_tax=True)
+            net_interest_amount: Net interest amount (when has_withholding_tax=True)
+            withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
+            withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
+            description: Event description
+            reference_number: External reference number
+            session: Database session
             
         Returns:
-            FundEvent: The created distribution event
+            tuple: (distribution_event, tax_event) where tax_event may be None
         """
-        # Create event
-        event = FundEvent(
-            fund_id=self.id,
-            event_type=EventType.DISTRIBUTION,
+        # Validate all parameters before proceeding with business logic
+        self._add_distribution_validate_distribution_parameters(
             event_date=event_date,
-            amount=amount,
             distribution_type=distribution_type,
-            description=description or f"Distribution: ${amount:,.2f}",
-            reference_number=reference_number
+            distribution_amount=distribution_amount,
+            has_withholding_tax=has_withholding_tax,
+            gross_interest_amount=gross_interest_amount,
+            net_interest_amount=net_interest_amount,
+            withholding_tax_amount=withholding_tax_amount,
+            withholding_tax_rate=withholding_tax_rate,
+            session=session
         )
         
-        session.add(event)
-        session.flush()
-        
-        # Calculate end_date (may affect status)
-        self.calculate_end_date(session=session)
-        
-        return event
-    
-    def add_interest_distribution_with_withholding_tax(self, event_date, gross_interest=None, net_interest=None, withholding_amount=None, withholding_rate=None, description=None, reference_number=None, session=None):
-        """
-        Add an INTEREST distribution event with associated withholding tax.
-        Accepts either gross_interest or net_interest, and either withholding_amount or withholding_rate.
-        Calculates missing values and creates both distribution and tax payment events.
-        """
-        # Validate input
-        if (gross_interest is not None and net_interest is not None) or (gross_interest is None and net_interest is None):
-            raise ValueError("Must provide exactly one of gross_interest or net_interest amount.")
-        if (withholding_amount is not None and withholding_rate is not None) or (withholding_amount is None and withholding_rate is None):
-            raise ValueError("Must provide exactly one of withholding_amount or withholding_rate.")
-
-        # Calculate missing values
-        if gross_interest is not None:
-            gross_amount = float(gross_interest)
-            if withholding_amount is not None:
-                tax_withheld = float(withholding_amount)
-                net_amount = gross_amount - tax_withheld
-                tax_rate = (tax_withheld / gross_amount) * 100 if gross_amount else 0.0
+        # Business logic implementation
+        if has_withholding_tax:
+            # Calculate missing values using exact logic from add_interest_distribution_with_withholding_tax
+            if gross_interest_amount is not None:
+                gross_amount = float(gross_interest_amount)
+                if withholding_tax_amount is not None:
+                    tax_withheld = float(withholding_tax_amount)
+                    net_amount = gross_amount - tax_withheld
+                    tax_rate = (tax_withheld / gross_amount) * 100 if gross_amount else 0.0
+                else:
+                    tax_rate = float(withholding_tax_rate)
+                    tax_withheld = (gross_amount * tax_rate) / 100
+                    net_amount = gross_amount - tax_withheld
             else:
-                tax_rate = float(withholding_rate)
-                tax_withheld = (gross_amount * tax_rate) / 100
-                net_amount = gross_amount - tax_withheld
-        else:
-            net_amount = float(net_interest)
-            if withholding_amount is not None:
-                tax_withheld = float(withholding_amount)
-                gross_amount = net_amount + tax_withheld
-                tax_rate = (tax_withheld / gross_amount) * 100 if gross_amount else 0.0
-            else:
-                tax_rate = float(withholding_rate)
-                gross_amount = (net_amount * 100) / (100 - tax_rate) if tax_rate != 100 else 0.0
-                tax_withheld = gross_amount - net_amount
-
-        # Always use DistributionType.INTEREST
-        from .models import DistributionType
-        dist_type = DistributionType.INTEREST
-
-        # Create distribution event
-        distribution_event = FundEvent(
-            fund_id=self.id,
-            event_type=EventType.DISTRIBUTION,
-            event_date=event_date,
-            amount=gross_amount,
-            distribution_type=dist_type,
-            description=description or f"Distribution: ${gross_amount:,.2f}",
-            reference_number=reference_number
-        )
-        session.add(distribution_event)
-
-        # Create tax payment event if there's tax withheld
-        tax_event = None
-        if tax_withheld > 0:
-            from .models import TaxPaymentType
-            tax_event = FundEvent(
+                net_amount = float(net_interest_amount)
+                if withholding_tax_amount is not None:
+                    tax_withheld = float(withholding_tax_amount)
+                    gross_amount = net_amount + tax_withheld
+                    tax_rate = (tax_withheld / gross_amount) * 100 if gross_amount else 0.0
+                else:
+                    tax_rate = float(withholding_tax_rate)
+                    gross_amount = (net_amount * 100) / (100 - tax_rate) if tax_rate != 100 else 0.0
+                    tax_withheld = gross_amount - net_amount
+            
+            # Create distribution event
+            distribution_event = FundEvent(
                 fund_id=self.id,
-                event_type=EventType.TAX_PAYMENT,
+                event_type=EventType.DISTRIBUTION,
                 event_date=event_date,
-                amount=tax_withheld,
-                description=f"Tax withheld on distribution: ${tax_withheld:,.2f}",
-                reference_number=f"{reference_number}_TAX" if reference_number else None,
-                tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
+                amount=gross_amount,
+                distribution_type=DistributionType.INTEREST,
+                description=description or f"Distribution: ${gross_amount:,.2f}",
+                reference_number=reference_number,
+                has_withholding_tax=True  # Set flag to true since this method creates withholding tax
             )
-            session.add(tax_event)
-
-        # Calculate end_date (may affect status)
-        self.calculate_end_date(session=session)
-        
-        session.commit()
-        return distribution_event, tax_event
-
-    def add_interest_distribution_without_withholding_tax(self, event_date, gross_interest, description=None, reference_number=None, session=None):
-        """
-        Add an INTEREST distribution event with no withholding tax.
-        Creates a single distribution event with the given gross_interest amount.
-        """
-        from .models import DistributionType
-        distribution_event = FundEvent(
-            fund_id=self.id,
-            event_type=EventType.DISTRIBUTION,
-            event_date=event_date,
-            amount=float(gross_interest),
-            distribution_type=DistributionType.INTEREST,
-            description=description or f"Interest distribution: ${gross_interest:,.2f}",
-            reference_number=reference_number
-        )
-        session.add(distribution_event)
-        session.flush()
-        
-        # Calculate end_date (may affect status)
-        self.calculate_end_date(session=session)
-        
-        session.commit()
-        return distribution_event
-
+            session.add(distribution_event)
+            
+            # Create tax payment event if there's tax withheld
+            tax_event = None
+            if tax_withheld > 0:
+                from .models import TaxPaymentType
+                tax_event = FundEvent(
+                    fund_id=self.id,
+                    event_type=EventType.TAX_PAYMENT,
+                    event_date=event_date,
+                    amount=tax_withheld,
+                    description=f"Tax withheld on distribution: ${tax_withheld:,.2f}",
+                    reference_number=f"{reference_number}_TAX" if reference_number else None,
+                    tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
+                )
+                session.add(tax_event)
+            
+            # Calculate end_date (may affect status)
+            self.calculate_end_date(session=session)
+            
+            return distribution_event, tax_event
+        else:
+            # Simple distribution without withholding tax
+            distribution_event = FundEvent(
+                fund_id=self.id,
+                event_type=EventType.DISTRIBUTION,
+                event_date=event_date,
+                amount=float(distribution_amount),
+                distribution_type=distribution_type,
+                description=description or f"Distribution: ${distribution_amount:,.2f}",
+                reference_number=reference_number,
+                has_withholding_tax=False
+            )
+            session.add(distribution_event)
+            session.flush()
+            
+            # Calculate end_date (may affect status)
+            self.calculate_end_date(session=session)
+            
+            return distribution_event, None
     
     def _calculate_nav_change_fields(self, nav_per_share, date, session):
         """
@@ -1130,58 +1226,7 @@ class Fund(Base):
             session.commit()
         return event
 
-    @with_session
-    def update_nav_update(self, event_id, nav_per_share=None, date=None, description=None, reference_number=None, session=None):
-        """
-        Update an existing NAV update event. If this is the latest NAV_UPDATE event, update NAV-specific fund summary fields.
-        """
-        event = session.query(FundEvent).filter(
-            FundEvent.id == event_id,
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.NAV_UPDATE
-        ).first()
-        if not event:
-            raise ValueError("NAV update event not found")
-        
-        # Store original values for recalculation
-        original_date = event.event_date
-        original_nav = event.nav_per_share
-        
-        if nav_per_share is not None:
-            event.nav_per_share = nav_per_share
-        if date is not None:
-            event.event_date = date
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        
-        # Recalculate NAV change fields if NAV or date changed
-        if nav_per_share is not None or date is not None:
-            new_nav = nav_per_share if nav_per_share is not None else original_nav
-            new_date = date if date is not None else original_date
-            prev_nav, abs_change, pct_change = self._calculate_nav_change_fields(new_nav, new_date, session)
-            event.previous_nav_per_share = prev_nav
-            event.nav_change_absolute = abs_change
-            event.nav_change_percentage = pct_change
-        
-        session.flush()
-        
-        # Update subsequent NAV_UPDATE events if this event's date or NAV changed
-        if nav_per_share is not None or date is not None:
-            self._update_subsequent_nav_change_fields(event, session)
-        
-        # Check if this is the latest NAV_UPDATE event
-        latest_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.NAV_UPDATE
-        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
-        if latest_event and latest_event.id == event.id:
-            self.current_unit_price = event.nav_per_share
-            # current_units should be updated elsewhere (unit purchase/sale), not here
-            self.current_nav_total = (self.current_units or 0.0) * (event.nav_per_share or 0.0)
-            session.commit()
-        return event
+
 
     @with_session
     def get_events(self, event_types=None, start_date=None, end_date=None, session=None):
@@ -1768,54 +1813,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_unit_purchase(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
-        """
-        Update an existing unit purchase event and recalculate all affected fields using the unified capital recalculation flow.
-        
-        This method updates a unit purchase event and automatically recalculates all subsequent capital events to maintain
-        data consistency.
-        
-        Args:
-            event_id (int): ID of the unit purchase event to update
-            units (float, optional): Number of units to purchase (must be positive)
-            price (float, optional): Price per unit (must be positive)
-            date (date, optional): Date of the unit purchase
-            brokerage_fee (float, optional): Brokerage fee for the transaction
-            description (str, optional): Description of the purchase
-            reference_number (str, optional): External reference number for the transaction
-            session (Session): Database session (required - managed by outermost backend layer)
-        
-        Returns:
-            FundEvent: The updated unit purchase event
-            
-        Raises:
-            ValueError: If event not found, or if units/price are invalid
-            TypeError: If required parameters are missing or of wrong type
-        """
-        event = session.query(FundEvent).filter(
-            FundEvent.id == event_id,
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.UNIT_PURCHASE
-        ).first()
-        if not event:
-            raise ValueError("Unit purchase event not found")
-        if units is not None:
-            event.units_purchased = units
-        if price is not None:
-            event.unit_price = price
-        if date is not None:
-            event.event_date = date
-        if brokerage_fee is not None:
-            event.brokerage_fee = brokerage_fee
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        # Recalculate amount
-        event.amount = (event.units_purchased * event.unit_price) + (event.brokerage_fee or 0.0)
-        session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
-        return event
+
 
     def add_unit_sale(self, units, price, date, brokerage_fee=0.0, description=None, reference_number=None, session=None):
         """
@@ -1879,63 +1877,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_unit_sale(self, event_id, units=None, price=None, date=None, brokerage_fee=None, description=None, reference_number=None, session=None):
-        """
-        Update an existing unit sale event and recalculate all affected fields using the unified capital recalculation flow.
-        
-        This method updates a unit sale event and automatically recalculates all subsequent capital events to maintain
-        data consistency. It includes validation to prevent selling more units than owned.
-        
-        Args:
-            event_id (int): ID of the unit sale event to update
-            units (float, optional): Number of units to sell (must be positive)
-            price (float, optional): Price per unit (must be positive)
-            date (date, optional): Date of the unit sale
-            brokerage_fee (float, optional): Brokerage fee for the transaction
-            description (str, optional): Description of the sale
-            reference_number (str, optional): External reference number for the transaction
-            session (Session): Database session (required - managed by outermost backend layer)
-        
-        Returns:
-            FundEvent: The updated unit sale event
-            
-        Raises:
-            ValueError: If event not found, or if units/price are invalid
-            TypeError: If required parameters are missing or of wrong type
-        """
-        event = session.query(FundEvent).filter_by(id=event_id, fund_id=self.id).first()
-        if not event or event.event_type != EventType.UNIT_SALE:
-            raise ValueError("Unit sale event not found")
-        
-        if units is not None:
-            # Validation: Prevent selling more units than owned after update
-            current_units = self.current_units or 0.0
-            # Calculate units owned before this event
-            events = self.get_all_fund_events(session=session)
-            idx = [e.id for e in events].index(event_id)
-            units_before = 0.0
-            for e in events[:idx]:
-                if e.event_type == EventType.UNIT_PURCHASE:
-                    units_before += e.units_purchased or 0.0
-                elif e.event_type == EventType.UNIT_SALE:
-                    units_before -= e.units_sold or 0.0
-            if units > units_before:
-                raise ValueError(f"Cannot sell {units} units, only {units_before} owned before this event")
-            event.units_sold = units
-        if price is not None:
-            event.unit_price = price
-        if date is not None:
-            event.event_date = date
-        if brokerage_fee is not None:
-            event.brokerage_fee = brokerage_fee
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        
-        session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
-        return event
+
 
     def add_capital_call(self, amount, date, description=None, reference_number=None, session=None):
         """
@@ -1989,28 +1931,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_capital_call(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
-        """
-        [NEW FLOW] Update an existing capital call event and recalculate all affected fields using the unified capital recalculation flow.
-        """
-        event = session.query(FundEvent).filter(
-            FundEvent.id == event_id,
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.CAPITAL_CALL
-        ).first()
-        if not event:
-            raise ValueError("Capital call event not found")
-        if amount is not None:
-            event.amount = amount
-        if date is not None:
-            event.event_date = date
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
-        return event
+
 
     def add_return_of_capital(self, amount, date, description=None, reference_number=None, session=None):
         """
@@ -2031,28 +1952,7 @@ class Fund(Base):
         self.recalculate_capital_chain_from(event, session=session)
         return event
 
-    def update_return_of_capital(self, event_id, amount=None, date=None, description=None, reference_number=None, session=None):
-        """
-        [NEW FLOW] Update an existing return of capital event and recalculate all affected fields using the unified capital recalculation flow.
-        """
-        event = session.query(FundEvent).filter(
-            FundEvent.id == event_id,
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.RETURN_OF_CAPITAL
-        ).first()
-        if not event:
-            raise ValueError("Return of capital event not found")
-        if amount is not None:
-            event.amount = amount
-        if date is not None:
-            event.event_date = date
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
-        return event
+
 
     def recalculate_capital_chain_from(self, event, session=None):
         """
@@ -2299,115 +2199,9 @@ class Fund(Base):
             created_events.extend(events)
         return created_events
 
-    @with_session
-    def update_distribution(self, event_id, amount=None, distribution_type=None, description=None, reference_number=None, session=None):
-        """Update an existing distribution event."""
-        event = session.query(FundEvent).filter_by(id=event_id, fund_id=self.id).first()
-        if not event or event.event_type != EventType.DISTRIBUTION:
-            raise ValueError("Distribution event not found")
-        if amount is not None:
-            event.amount = amount
-        if distribution_type is not None:
-            event.distribution_type = DistributionType(distribution_type) if distribution_type else None
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        session.flush()
-        
-        # Calculate end_date (may affect status)
-        self.calculate_end_date(session=session)
-        
-        return event
 
-    @with_session
-    def update_interest_distribution_with_withholding_tax(self, event_id, gross_interest=None, net_interest=None, withholding_amount=None, withholding_rate=None, description=None, reference_number=None, session=None):
-        """Update an existing interest distribution event with withholding tax, and synchronize the corresponding tax payment event."""
-        event = session.query(FundEvent).filter_by(id=event_id, fund_id=self.id).first()
-        if not event or event.event_type != EventType.DISTRIBUTION or event.distribution_type != DistributionType.INTEREST:
-            raise ValueError("Interest distribution event not found")
-        
-        # Validate input - must provide exactly one of gross_interest or net_interest
-        if (gross_interest is not None and net_interest is not None) or (gross_interest is None and net_interest is None):
-            raise ValueError("Must provide exactly one of gross_interest or net_interest amount.")
-        
-        # Validate input - must provide exactly one of withholding_amount or withholding_rate
-        if (withholding_amount is not None and withholding_rate is not None) or (withholding_amount is None and withholding_rate is None):
-            raise ValueError("Must provide exactly one of withholding_amount or withholding_rate.")
-        
-        # Calculate missing values based on what's provided
-        calculated_gross_amount = None
-        calculated_net_amount = None
-        calculated_tax_withheld = None
-        calculated_tax_rate = None
-        
-        if gross_interest is not None:
-            calculated_gross_amount = float(gross_interest)
-            if withholding_amount is not None:
-                calculated_tax_withheld = float(withholding_amount)
-                calculated_net_amount = calculated_gross_amount - calculated_tax_withheld
-                calculated_tax_rate = (calculated_tax_withheld / calculated_gross_amount) * 100 if calculated_gross_amount else 0.0
-            elif withholding_rate is not None:
-                calculated_tax_rate = float(withholding_rate)
-                calculated_tax_withheld = (calculated_gross_amount * calculated_tax_rate) / 100
-                calculated_net_amount = calculated_gross_amount - calculated_tax_withheld
-        elif net_interest is not None:
-            calculated_net_amount = float(net_interest)
-            if withholding_amount is not None:
-                calculated_tax_withheld = float(withholding_amount)
-                calculated_gross_amount = calculated_net_amount + calculated_tax_withheld
-                calculated_tax_rate = (calculated_tax_withheld / calculated_gross_amount) * 100 if calculated_gross_amount else 0.0
-            elif withholding_rate is not None:
-                calculated_tax_rate = float(withholding_rate)
-                calculated_gross_amount = (calculated_net_amount * 100) / (100 - calculated_tax_rate) if calculated_tax_rate != 100 else 0.0
-                calculated_tax_withheld = calculated_gross_amount - calculated_net_amount
-        
-        # Update the event with calculated values (only fields that exist in the database)
-        if calculated_gross_amount is not None:
-            event.amount = calculated_gross_amount
-        if description is not None:
-            event.description = description
-        if reference_number is not None:
-            event.reference_number = reference_number
-        # Synchronize the tax payment event (match on fund_id and event_date)
-        tax_event = session.query(FundEvent).filter_by(
-            fund_id=self.id,
-            event_date=event.event_date,
-            event_type=EventType.TAX_PAYMENT,
-            tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
-        ).first()
-        
-        # Use calculated tax amount if available, otherwise use provided withholding_amount
-        tax_amount_to_use = calculated_tax_withheld if calculated_tax_withheld is not None else withholding_amount
-        
-        if tax_amount_to_use is not None and tax_amount_to_use > 0:
-            if tax_event:
-                tax_event.amount = tax_amount_to_use
-                if description is not None:
-                    tax_event.description = f"Withholding tax for interest distribution: {description}"
-                if reference_number is not None:
-                    tax_event.reference_number = reference_number
-            else:
-                tax_event = FundEvent(
-                    fund_id=self.id,
-                    event_type=EventType.TAX_PAYMENT,
-                    event_date=event.event_date,
-                    amount=tax_amount_to_use,
-                    tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING,
-                    description=f"Withholding tax for interest distribution: {description or ''}",
-                    reference_number=reference_number
-                )
-                session.add(tax_event)
-        else:
-            # If withholding is now zero or removed, delete the tax payment event if it exists
-            if tax_event:
-                session.delete(tax_event)
-        session.flush()
-        
-        # Calculate end_date (may affect status)
-        self.calculate_end_date(session=session)
-        
-        return event
+
+
 
     @with_session
     def get_current_nav_fund_value(self, session=None):
@@ -2667,6 +2461,7 @@ class FundEvent(Base):
     reference_number = Column(String(100))  # (MANUAL) external reference number
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
     current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event (set only on capital events). For cost-based funds: net capital after this event (set only on capital events).
+    has_withholding_tax = Column(Boolean, default=False)  # (MANUAL) Flag indicating if this distribution event has associated withholding tax
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
@@ -2719,44 +2514,5 @@ class FundEvent(Base):
         if event_type == EventType.DISTRIBUTION:
             self.distribution_type = self.infer_distribution_type()
     
-    @staticmethod
-    def create_distribution_with_tax_static(fund_id, event_date, gross_amount, tax_withheld=0.0, tax_rate=None, distribution_type=None, description=None, reference_number=None, session=None):
-        """Create a distribution event and an associated tax payment event for a fund.
-        Used by Fund methods to ensure both events are created together.
-        Returns a tuple: (distribution_event, tax_event).
-        Commits both events to the database.
-        """
-        from sqlalchemy.orm import object_session
-        
-        if session is None:
-            session = object_session(fund_id) if hasattr(fund_id, 'id') else None
-        
-        # Create the distribution event
-        distribution_event = FundEvent(
-            fund_id=fund_id,
-            event_type=EventType.DISTRIBUTION,
-            event_date=event_date,
-            amount=gross_amount,
-            distribution_type=distribution_type or DistributionType.INTEREST,
-            description=description or "Distribution",
-            reference_number=reference_number
-        )
-        session.add(distribution_event)
-        
-        # Create the tax payment event if there's tax withheld
-        tax_event = None
-        if tax_withheld > 0:
-            tax_event = FundEvent(
-                fund_id=fund_id,
-                event_type=EventType.TAX_PAYMENT,
-                event_date=event_date,
-                amount=tax_withheld,
-                description=f"Tax withheld on distribution (rate: {tax_rate}%)" if tax_rate else "Tax withheld on distribution",
-                reference_number=f"{reference_number}_TAX" if reference_number else None,
-                tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
-            )
-            session.add(tax_event)
-        
-        session.commit()
-        return distribution_event, tax_event
+
 

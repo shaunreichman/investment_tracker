@@ -2,24 +2,7 @@
  * Centralized constants and enums for consistent application configuration
  */
 
-import React from 'react';
-import {
-  AccountBalance,
-  Add,
-  TrendingUp,
-  MonetizationOn,
-  Receipt,
-  Business,
-  Person,
-  Description,
-  AttachMoney,
-  Assessment,
-  Timeline,
-  CheckCircle,
-  Warning,
-  Error,
-  Info,
-} from '@mui/icons-material';
+// Note: This module only exports string icon identifiers for UI components to map elsewhere.
 
 /**
  * Event types for fund events

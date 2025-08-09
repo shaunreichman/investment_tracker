@@ -2,7 +2,6 @@
 // This file provides a generic hook for API calls with loading, error, and data state management
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiClient } from '../services/api';
 import { useErrorHandler } from './useErrorHandler';
 import { ErrorInfo } from '../types/errors';
 
@@ -34,7 +33,7 @@ export function useApiCall<T>(
   const [loading, setLoading] = useState(true);
   
   // Use centralized error handler
-  const { error, setError, clearError, withErrorHandling } = useErrorHandler();
+  const { error, withErrorHandling } = useErrorHandler();
 
   const { enabled = true, refetchOnWindowFocus = false, refetchInterval } = options;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -63,7 +62,7 @@ export function useApiCall<T>(
       return;
     }
 
-    const result = await withErrorHandling(async () => {
+    await withErrorHandling(async () => {
       setLoading(true);
       const data = await apiCallRef.current();
       setData(data);
@@ -132,16 +131,15 @@ export function useMutation<T, R>(
   mutationFn: (data: T) => Promise<R>,
   options: {
     onSuccess?: (data: R) => void;
-    onError?: (error: ErrorInfo) => void;
   } = {}
 ): MutationState<R> & { mutate: (data: T) => Promise<R | undefined> } {
   const [data, setData] = useState<R | null>(null);
   const [loading, setLoading] = useState(false);
   
   // Use centralized error handler
-  const { error, setError, clearError, withErrorHandling } = useErrorHandler();
+  const { error, withErrorHandling } = useErrorHandler();
 
-  const { onSuccess, onError } = options;
+  const { onSuccess } = options;
 
   const mutate = useCallback(async (data: T): Promise<R | undefined> => {
     const result = await withErrorHandling(async () => {
@@ -178,12 +176,13 @@ export function useConditionalApiCall<T>(
 }
 
 // Hook for API calls with dependencies
-export function useApiCallWithDeps<T, D extends readonly any[]>(
+export function useApiCallWithDeps<T, D extends readonly unknown[]>(
   apiCall: (...deps: D) => Promise<T>,
   deps: D,
   options: ApiCallOptions = {}
 ): ApiCallState<T> & { refetch: () => Promise<void> } {
-  const memoizedApiCall = useCallback(() => apiCall(...deps), deps);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const memoizedApiCall = useCallback(() => apiCall(...deps), [...deps]);
   return useApiCall(memoizedApiCall, options);
 }
 

@@ -3,16 +3,7 @@
 // across the entire application, with automatic error categorization and retry mechanisms
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  ErrorInfo,
-  ErrorType,
-  ErrorSeverity,
-  createErrorInfo,
-  categorizeError,
-  getErrorSeverity,
-  isRetryableError,
-  getUserFriendlyMessage
-} from '../types/errors';
+import { ErrorInfo, ErrorType, ErrorSeverity, createErrorInfo, categorizeError, getUserFriendlyMessage } from '../types/errors';
 
 // ============================================================================
 // ERROR HANDLER STATE INTERFACE

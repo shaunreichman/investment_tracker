@@ -235,9 +235,7 @@ export interface CreateFundEventData {
   tax_payment_type?: TaxPaymentType;
 }
 
-export interface UpdateFundEventData extends CreateFundEventData {
-  // Same as CreateFundEventData for now
-}
+
 
 export interface CreateTaxStatementData {
   entity_id: number;

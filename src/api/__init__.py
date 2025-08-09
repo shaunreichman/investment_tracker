@@ -369,6 +369,7 @@ def create_app():
                         "nav_change_absolute": float(event.nav_change_absolute) if event.nav_change_absolute else None,
                         "nav_change_percentage": float(event.nav_change_percentage) if event.nav_change_percentage else None,
                         "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None,
+                        "has_withholding_tax": bool(event.has_withholding_tax) if event.has_withholding_tax is not None else None,
                         "created_at": event.created_at.isoformat() if event.created_at else None
                     }
                     
@@ -663,50 +664,62 @@ def create_app():
                     )
                 elif event_type.upper() == 'DISTRIBUTION':
                     distribution_type = data.get('distribution_type')
-                    sub_distribution_type = data.get('sub_distribution_type')
-
-                    if distribution_type == 'INTEREST':
+                    if distribution_type is None:
+                        return jsonify({"error": "Missing required field: distribution_type for distribution"}), 400
+                    
+                    # Use the new unified add_distribution method for all distribution types
+                    try:
+                        from src.fund.models import DistributionType
+                        
+                        # Determine if this is a withholding tax distribution
                         gross_interest = data.get('gross_interest')
                         net_interest = data.get('net_interest')
                         withholding_amount = data.get('withholding_amount')
                         withholding_rate = data.get('withholding_rate')
-                        from src.fund.models import DistributionType
-                        if (withholding_amount is not None) or (withholding_rate is not None):
-                            created_event, _ = fund.add_interest_distribution_with_withholding_tax(
+                        
+                        has_withholding_tax = any([
+                            gross_interest is not None,
+                            net_interest is not None,
+                            withholding_amount is not None,
+                            withholding_rate is not None
+                        ])
+                        
+                        if has_withholding_tax:
+                            # Withholding tax distribution
+                            created_event, tax_event = fund.add_distribution(
                                 event_date=event_date,
-                                gross_interest=gross_interest if gross_interest is not None else None,
-                                net_interest=net_interest if net_interest is not None else None,
-                                withholding_amount=withholding_amount if withholding_amount is not None else None,
-                                withholding_rate=withholding_rate if withholding_rate is not None else None,
+                                distribution_type=DistributionType.INTEREST,
+                                has_withholding_tax=True,
+                                gross_interest_amount=gross_interest,
+                                net_interest_amount=net_interest,
+                                withholding_tax_amount=withholding_amount,
+                                withholding_tax_rate=withholding_rate,
                                 description=data.get('description'),
                                 reference_number=data.get('reference_number'),
                                 session=session
                             )
                         else:
-                            # No withholding tax: use new method
-                            created_event = fund.add_interest_distribution_without_withholding_tax(
+                            # Simple distribution
+                            amount = data.get('amount')
+                            if amount is None:
+                                return jsonify({"error": "Missing required field: amount for distribution"}), 400
+                            
+                            # Enforce explicit franked/unfranked for dividends
+                            if distribution_type and distribution_type.upper().startswith('DIVIDEND'):
+                                if distribution_type not in ("DIVIDEND_FRANKED", "DIVIDEND_UNFRANKED"):
+                                    return jsonify({"error": "Dividend distributions must be either DIVIDEND_FRANKED or DIVIDEND_UNFRANKED."}), 400
+                            
+                            created_event, tax_event = fund.add_distribution(
                                 event_date=event_date,
-                                gross_interest=gross_interest if gross_interest is not None else data.get('amount'),
+                                distribution_type=DistributionType(distribution_type.lower()),
+                                distribution_amount=amount,
+                                has_withholding_tax=False,
                                 description=data.get('description'),
                                 reference_number=data.get('reference_number'),
                                 session=session
                             )
-                    else:
-                        amount = data.get('amount')
-                        if amount is None:
-                            return jsonify({"error": "Missing required field: amount for distribution"}), 400
-                        # Enforce explicit franked/unfranked for dividends
-                        if distribution_type and distribution_type.upper().startswith('DIVIDEND'):
-                            if distribution_type not in ("DIVIDEND_FRANKED", "DIVIDEND_UNFRANKED"):
-                                return jsonify({"error": "Dividend distributions must be either DIVIDEND_FRANKED or DIVIDEND_UNFRANKED."}), 400
-                        created_event = fund.add_distribution(
-                            amount=amount,
-                            event_date=event_date,
-                            distribution_type=distribution_type,
-                            description=data.get('description'),
-                            reference_number=data.get('reference_number'),
-                            session=session
-                        )
+                    except ValueError as e:
+                        return jsonify({"error": str(e)}), 400
                 elif event_type.upper() == 'UNIT_PURCHASE' and fund.tracking_type.value == 'nav_based':
                     units = data.get('units_purchased')
                     price = data.get('unit_price')
@@ -810,131 +823,8 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>', methods=['PUT'])
-    def update_fund_event(fund_id, event_id):
-        """Update a specific fund event."""
-        try:
-            session = get_db_session()
-            try:
-                data = request.get_json()
-                fund = Fund.get_by_id(fund_id, session=session)
-                if not fund:
-                    return jsonify({"error": "Fund not found"}), 404
-                # Correct event lookup
-                event = session.query(FundEvent).filter_by(id=event_id, fund_id=fund_id).first()
-                if not event:
-                    return jsonify({"error": "Event not found"}), 404
-                event_type = event.event_type.value.upper() if event.event_type else None
-                updated_event = None
-                # Parse event_date if present
-                event_date = data.get('event_date')
-                if event_date:
-                    from datetime import datetime
-                    try:
-                        event_date = datetime.fromisoformat(event_date).date()
-                    except Exception:
-                        return jsonify({"error": "Invalid event_date format. Use ISO format (YYYY-MM-DD)."}), 400
-                else:
-                    event_date = None
-                # Route to correct domain method
-                if event_type == 'CAPITAL_CALL' and fund.tracking_type.value == 'cost_based':
-                    updated_event = fund.update_capital_call(
-                        event_id=event_id,
-                        amount=data.get('amount'),
-                        date=event_date,
-                        description=data.get('description'),
-                        reference_number=data.get('reference_number'),
-                        session=session
-                    )
-                elif event_type == 'RETURN_OF_CAPITAL' and fund.tracking_type.value == 'cost_based':
-                    updated_event = fund.update_return_of_capital(
-                        event_id=event_id,
-                        amount=data.get('amount'),
-                        date=event_date,
-                        description=data.get('description'),
-                        reference_number=data.get('reference_number'),
-                        session=session
-                    )
-                elif event_type == 'UNIT_PURCHASE' and fund.tracking_type.value == 'nav_based':
-                    updated_event = fund.update_unit_purchase(
-                        event_id=event_id,
-                        units=data.get('units_purchased'),
-                        price=data.get('unit_price'),
-                        date=event_date,
-                        brokerage_fee=data.get('brokerage_fee'),
-                        description=data.get('description'),
-                        reference_number=data.get('reference_number'),
-                        session=session
-                    )
-                elif event_type == 'UNIT_SALE' and fund.tracking_type.value == 'nav_based':
-                    updated_event = fund.update_unit_sale(
-                        event_id=event_id,
-                        units=data.get('units_sold'),
-                        price=data.get('unit_price'),
-                        date=event_date,
-                        brokerage_fee=data.get('brokerage_fee'),
-                        description=data.get('description'),
-                        reference_number=data.get('reference_number'),
-                        session=session
-                    )
-                elif event_type == 'NAV_UPDATE' and fund.tracking_type.value == 'nav_based':
-                    updated_event = fund.update_nav_update(
-                        event_id=event_id,
-                        nav_per_share=data.get('nav_per_share'),
-                        date=event_date,
-                        description=data.get('description'),
-                        reference_number=data.get('reference_number'),
-                        session=session
-                    )
-                elif event_type == 'DISTRIBUTION':
-                    # Interest distribution with withholding tax
-                    if event.distribution_type and event.distribution_type.value.upper() == 'INTEREST' and (
-                        data.get('withholding_amount') is not None or data.get('withholding_rate') is not None):
-                        updated_event = fund.update_interest_distribution_with_withholding_tax(
-                            event_id=event_id,
-                            gross_interest=data.get('gross_interest'),
-                            net_interest=data.get('net_interest'),
-                            withholding_amount=data.get('withholding_amount'),
-                            withholding_rate=data.get('withholding_rate'),
-                            description=data.get('description'),
-                            reference_number=data.get('reference_number'),
-                            session=session
-                        )
-                    else:
-                        updated_event = fund.update_distribution(
-                            event_id=event_id,
-                            amount=data.get('amount'),
-                            distribution_type=data.get('distribution_type'),
-                            description=data.get('description'),
-                            reference_number=data.get('reference_number'),
-                            session=session
-                        )
-                else:
-                    return jsonify({"error": f"Editing this event type is not supported."}), 400
-                session.commit()
-                # Serialize updated event for response
-                event_response = {
-                    "id": updated_event.id,
-                    "event_type": updated_event.event_type.value.upper() if updated_event.event_type else None,
-                    "event_date": updated_event.event_date.isoformat() if updated_event.event_date else None,
-                    "amount": float(updated_event.amount) if updated_event.amount is not None else None,
-                    "description": updated_event.description,
-                    "reference_number": updated_event.reference_number,
-                    "distribution_type": updated_event.distribution_type.value.upper() if updated_event.distribution_type else None,
-                    "units_purchased": float(getattr(updated_event, 'units_purchased', 0.0)) if hasattr(updated_event, 'units_purchased') and updated_event.units_purchased is not None else None,
-                    "units_sold": float(getattr(updated_event, 'units_sold', 0.0)) if hasattr(updated_event, 'units_sold') and updated_event.units_sold is not None else None,
-                    "unit_price": float(getattr(updated_event, 'unit_price', 0.0)) if hasattr(updated_event, 'unit_price') and updated_event.unit_price is not None else None,
-                    "brokerage_fee": float(getattr(updated_event, 'brokerage_fee', 0.0)) if hasattr(updated_event, 'brokerage_fee') and updated_event.brokerage_fee is not None else None,
-                    "nav_per_share": float(getattr(updated_event, 'nav_per_share', 0.0)) if hasattr(updated_event, 'nav_per_share') and updated_event.nav_per_share is not None else None,
-                    "created_at": updated_event.created_at.isoformat() if updated_event.created_at else None
-                }
-                return jsonify(event_response), 200
-            finally:
-                session.close()
-        except ValueError as e:
-            return jsonify({"error": str(e)}), 400
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+    # Edit functionality removed - use delete + create pattern instead
+    # PUT endpoint removed as per Phase 6: Complete Legacy Cleanup
 
     @app.route('/api/funds/<int:fund_id>/tax-statements', methods=['POST'])
     def create_tax_statement(fund_id):

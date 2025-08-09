@@ -15,7 +15,6 @@ import {
   // Request/response data types
   CreateFundData,
   CreateFundEventData,
-  UpdateFundEventData,
   CreateTaxStatementData,
   CreateInvestmentCompanyData,
   CreateEntityData,
@@ -100,17 +99,13 @@ function isNetworkError(error: any): boolean {
  */
 function createApiErrorInfo(error: any, status?: number): any {
   let errorType: ErrorType;
-  let message: string;
   
   if (isNetworkError(error)) {
     errorType = ErrorType.NETWORK;
-    message = 'Network connection failed. Please check your internet connection.';
   } else if (error instanceof ApiError) {
     errorType = mapStatusToErrorType(error.status);
-    message = error.message;
   } else {
     errorType = ErrorType.UNKNOWN;
-    message = error instanceof Error ? error.message : String(error);
   }
   
   return createErrorInfo(error, errorType);
@@ -186,6 +181,7 @@ class ApiClient {
     return response.funds;
   }
 
+  // Alias to canonical endpoint to avoid divergence. Prefer getFundDetail for typed full response.
   async getFund(id: number): Promise<Fund> {
     const response = await this.request<{ fund: Fund; events: FundEvent[]; tax_statements: TaxStatement[]; statistics: any }>(`/api/funds/${id}`);
     return response.fund;
@@ -217,12 +213,7 @@ class ApiClient {
     });
   }
 
-  async updateFundEvent(fundId: number, eventId: number, data: UpdateFundEventData): Promise<FundEvent> {
-    return this.request<FundEvent>(`/api/funds/${fundId}/events/${eventId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
+
 
   async deleteFundEvent(fundId: number, eventId: number): Promise<void> {
     return this.request<void>(`/api/funds/${fundId}/events/${eventId}`, {

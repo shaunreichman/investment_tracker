@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,19 +6,14 @@ import {
   DialogActions,
   Button,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Box,
   CircularProgress,
   Typography,
-  FormHelperText,
   Paper
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, Business as BusinessIcon } from '@mui/icons-material';
+import { Add as AddIcon, CheckCircle as CheckCircleIcon, Business as BusinessIcon } from '@mui/icons-material';
 import { useCreateInvestmentCompany } from '../hooks/useInvestmentCompanies';
 
 interface CreateInvestmentCompanyModalProps {
@@ -88,7 +83,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
   }, [createInvestmentCompany.data, onCompanyCreated, onClose]);
 
   // Validation rules
-  const validateField = (field: string, value: string): string | undefined => {
+  const validateField = useCallback((field: string, value: string): string | undefined => {
     switch (field) {
       case 'name':
         if (!value.trim()) return 'Company name is required';
@@ -125,7 +120,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
       
       case 'contact_phone':
         if (value && value.trim() !== '') {
-          const phonePattern = /^[\+]?[0-9\s\-\(\)]+$/;
+          const phonePattern = /^[+0-9()\s-]+$/;
           if (!phonePattern.test(value.trim())) {
             return 'Please enter a valid phone number';
           }
@@ -133,9 +128,9 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
         break;
     }
     return undefined;
-  };
+  }, []);
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
     
     // Required fields
@@ -161,7 +156,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [formData, validateField]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -224,7 +219,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
     if (open) {
       validateForm(); // Trigger validation when modal opens
     }
-  }, [open]);
+  }, [open, validateForm]);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>

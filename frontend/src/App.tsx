@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import OverallDashboard from './components/OverallDashboard';
 import CompaniesPage from './components/CompaniesPage';
-import FundDetail from './components/FundDetail';
+import FundDetail from './components/fund/detail/FundDetail';
 import './App.css';
 
 function App() {
