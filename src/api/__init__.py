@@ -811,7 +811,7 @@ def create_app():
                     return jsonify({"error": "Event not found"}), 404
                 # Only allow deleting user-editable events
                 if event.event_type.value.upper() in [
-                    'TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST', 'MANAGEMENT_FEE', 'CARRIED_INTEREST', 'OTHER']:
+                    'TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST']:
                     return jsonify({"error": "Cannot delete system or tax events from the UI"}), 400
                 fund.delete_event(event_id, session=session)
                 session.commit()
