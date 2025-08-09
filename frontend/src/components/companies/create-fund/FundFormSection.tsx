@@ -44,6 +44,7 @@ interface FundFormSectionProps {
   entities: Entity[] | undefined;
   onInputChange: (field: string, value: string) => void;
   onCreateEntity: () => void;
+  trackingTypeLocked?: boolean;
 }
 
 const FundFormSection: React.FC<FundFormSectionProps> = ({
@@ -51,7 +52,8 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
   validationErrors,
   entities,
   onInputChange,
-  onCreateEntity
+  onCreateEntity,
+  trackingTypeLocked
 }) => {
   const entityLabelId = 'entity-select-label';
   const entitySelectId = 'entity-select';
@@ -140,6 +142,7 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
           value={formData.tracking_type}
           onChange={(e) => onInputChange('tracking_type', e.target.value as string)}
           label="Tracking Type *"
+          disabled={!!trackingTypeLocked}
         >
           <MenuItem value="nav_based">NAV-Based (Units & NAV)</MenuItem>
           <MenuItem value="cost_based">Cost-Based (Capital Calls)</MenuItem>

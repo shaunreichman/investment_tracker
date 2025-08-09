@@ -461,6 +461,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                   entities={entities as any}
                   onInputChange={handleInputChange}
                   onCreateEntity={() => setShowEntityModal(true)}
+                  trackingTypeLocked={true}
                 />
               </Box>
             )}

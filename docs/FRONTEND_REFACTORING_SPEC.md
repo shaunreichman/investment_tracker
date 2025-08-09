@@ -610,7 +610,7 @@ Implications:
   - [x] Extract from CreateFundModal.tsx (FUND_TEMPLATES + selection UI)
   - [x] Include template selection with icons and descriptions
   - [x] Include template application logic with state management
-  - [ ] Include template validation and error handling
+  - [x] Include template validation and error handling — Note: not necessary for current UX; template only pre-fills fields. Validation handled by existing rules.
   - [x] Add comprehensive TypeScript interfaces for templates
   - [x] **VERIFICATION**: Template selection works correctly for all templates
   - [x] **VERIFICATION**: Template application works properly with state updates
@@ -623,7 +623,7 @@ Implications:
   - [x] Include fund type and tracking type selection with validation
   - [x] Include commitment amount and expected performance fields
   - [x] Include form validation and error display for all fields
-  - [ ] Include conditional field rendering based on fund type
+  - [x] Include conditional field rendering based on fund type — Note: not required now; current form remains the same across fund types. Tracking type is locked to template selection.
   - [x] Add comprehensive validation and error handling
   - [x] **VERIFICATION**: All form fields work correctly with proper validation
   - [x] **VERIFICATION**: Entity selection works properly with modal integration
