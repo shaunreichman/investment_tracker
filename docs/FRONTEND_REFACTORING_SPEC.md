@@ -607,24 +607,24 @@ Implications:
 
 **Step 1: Extract TemplateSelectionSection (SAFE, ISOLATED LOGIC)**
 - [x] Extract `components/companies/create-fund/TemplateSelectionSection.tsx` (~150 lines) for fund templates
-  - [ ] Extract from CreateFundModal.tsx (FUND_TEMPLATES + selection UI)
-  - [ ] Include template selection with icons and descriptions
-  - [ ] Include template application logic with state management
+  - [x] Extract from CreateFundModal.tsx (FUND_TEMPLATES + selection UI)
+  - [x] Include template selection with icons and descriptions
+  - [x] Include template application logic with state management
   - [ ] Include template validation and error handling
-  - [ ] Add comprehensive TypeScript interfaces for templates
+  - [x] Add comprehensive TypeScript interfaces for templates
   - [ ] **VERIFICATION**: Template selection works correctly for all templates
   - [ ] **VERIFICATION**: Template application works properly with state updates
   - [ ] **TESTING**: Test template selection and application with all scenarios
 
 **Step 2: Extract FundFormSection (MEDIUM RISK, CAREFUL TESTING)**
-- [ ] Extract `components/companies/create-fund/FundFormSection.tsx` (~200 lines) for fund creation form
-  - [ ] Extract from CreateFundModal.tsx (fund form logic)
-  - [ ] Include entity selection with CreateEntityModal integration
-  - [ ] Include fund type and tracking type selection with validation
-  - [ ] Include commitment amount and expected performance fields
-  - [ ] Include form validation and error display for all fields
+- [x] Extract `components/companies/create-fund/FundFormSection.tsx` (~200 lines) for fund creation form
+  - [x] Extract from CreateFundModal.tsx (fund form logic)
+  - [x] Include entity selection with CreateEntityModal integration
+  - [x] Include fund type and tracking type selection with validation
+  - [x] Include commitment amount and expected performance fields
+  - [x] Include form validation and error display for all fields
   - [ ] Include conditional field rendering based on fund type
-  - [ ] Add comprehensive validation and error handling
+  - [x] Add comprehensive validation and error handling
   - [ ] **VERIFICATION**: All form fields work correctly with proper validation
   - [ ] **VERIFICATION**: Entity selection works properly with modal integration
   - [ ] **VERIFICATION**: Form validation works correctly for all field combinations
@@ -633,7 +633,7 @@ Implications:
 
 **Step 3: Create Main Orchestrator (INTEGRATION, COMPREHENSIVE TESTING)**
 - [x] Create main orchestrator (~200–250 lines) at `components/companies/create-fund/CreateFundModal.tsx`
-  - [ ] Wire extracted sections and existing state/validation hooks
+  - [x] Wire extracted sections and existing state/validation hooks
   - [ ] Include form submission logic with validation
   - [ ] Include success/error handling with user feedback
   - [ ] Include modal state management and lifecycle
