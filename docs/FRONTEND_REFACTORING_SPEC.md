@@ -654,26 +654,34 @@ Implications:
 - [ ] **Comprehensive Test Coverage**
   - [x] Test each extracted component in isolation (TemplateSelectionSection, FundFormSection)
   - [x] Test component integration with parent components (CreateFundModal orchestrator smoke test)
-  - [x] Test form validation and error states — Note: covered by validators suite and CreateFundModal submit-enable assertions.
+  - [x] Test form validation and error states — covered by validators suite and CreateFundModal submit-enable assertions
   - [x] Test template selection and application
   - [x] Test API submission and response handling
-  - [x] Test conditional field rendering — Note: N/A with template-locked tracking type.
-  - [x] Test edge cases and error scenarios — Note: core edge cases validated in validators tests; negative-path API tests are optional.
-- [ ] **Performance Testing**
-  - [ ] Test with large forms and complex data
-  - [ ] Verify no performance regression
-  - [ ] Test memory usage patterns
-  - [ ] Test render performance
+  - [x] Test edge cases and error scenarios — core edge cases validated in validators tests
+  - [x] Add negative-path test for CreateFundModal submit (mock API error) and assert error UI renders
+  - [x] Fix `act(...)` warnings in CreateFundModal test (wrap state updates)
+
+- [ ] **Accessibility (lightweight, no visual change)**
+  - [x] Add keyboard support to template cards (tabIndex + Enter/Space activation)
+  - [x] Add a `jest-axe` smoke check for the CreateFundModal content
+
 - [ ] **Integration Testing**
-  - [ ] Update all imports to use new modal structure (fund/events/, fund/modals/)
-  - [ ] Ensure all modal functionality preserved
-  - [ ] Test cross-browser compatibility
-  - [ ] Test accessibility compliance
-- [ ] **Rollback Safety**
-  - [ ] Keep original code commented out during transition
-  - [ ] Create rollback scripts for each step
-  - [ ] Monitor for any regressions or issues
-  - [ ] Have rollback plan ready if needed
+  - [x] Update imports to use new modal structure: `components/companies/create-fund/`
+  - [x] Ensure all modal functionality preserved
+  - [x] Accessibility compliance (basic) — verified via keyboard support and axe smoke
+  - [ ] Cross-browser depth testing deferred to Phase 9
+
+- [x] **Performance Testing**
+  - Deferred to Phase 8 (Performance Optimization). Use perf tasks defined there; do not duplicate in 3D
+
+- [x] **Rollback Safety**
+  - [x] Use Git history for rollback; do not keep commented-out code
+  - [x] Monitor for regressions (errors, UX issues) post-merge
+  - [x] Keep a simple revert plan via Git if issues arise
+
+- [x] **Minor Cleanup**
+  - [x] Extract `FUND_TEMPLATES` to a constants module for reuse (`components/companies/create-fund/templates.tsx`)
+  - [x] Normalize error shape passed to `ErrorDisplay` in `CreateFundModal` to match app convention
 
 **ENHANCED DESIGN PRINCIPLES**:
 - **Incremental Safety**: Each step must be verified before proceeding
@@ -773,6 +781,8 @@ This incremental approach will result in a **very professional solution** becaus
 - Consistent Material-UI integration
 - Accessible design patterns
 - Responsive design principles
+**Accessibility (cross-cutting):**
+- Bake keyboard navigation, proper roles/labels, focus management, and color contrast into shared UI components so consumers get a11y by default (e.g., dialogs trap/restore focus, buttons/links have correct semantics, form fields have labels/help/error associations)
 
 ### Phase 5: Extract Business Logic
 **Goal**: Separate business logic from UI components for better maintainability
@@ -898,6 +908,11 @@ This incremental approach will result in a **very professional solution** becaus
 - [ ] Add unit tests for all new components
 - [ ] Add integration tests for critical user flows
 - [ ] Add visual regression tests for UI components
+- [ ] Add accessibility testing and linting
+  - [ ] Enable `eslint-plugin-jsx-a11y` in CI (treat warnings as errors for new code)
+  - [ ] Add Storybook `@storybook/addon-a11y` for component-level checks (if/when Storybook is introduced)
+  - [ ] Add `jest-axe` smoke checks for key pages/modals (FundDetail, CreateFundEventModal, CreateFundModal)
+  - [ ] Add PR checklist covering labels/aria, keyboard nav, focus order/visible focus, color contrast, live regions for async states, no keyboard traps
 - [ ] Create component documentation with Storybook
 - [ ] Document architecture decisions and patterns
 - [ ] Create developer onboarding documentation

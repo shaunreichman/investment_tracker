@@ -56,5 +56,11 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest-axe": "^3.5.9",
+    "@types/testing-library__jest-dom": "^5.14.9",
+    "axe-core": "^4.10.3",
+    "jest-axe": "^10.0.0"
+  }
 }

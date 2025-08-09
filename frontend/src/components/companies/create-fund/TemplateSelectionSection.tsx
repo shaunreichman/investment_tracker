@@ -32,7 +32,18 @@ const TemplateSelectionSection: React.FC<TemplateSelectionSectionProps> = ({ tem
       <Box display="grid" gap={2} sx={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
         {templates.map((template) => (
           <Paper key={template.id} sx={{ cursor: 'pointer', p: 2, '&:hover': { bgcolor: 'primary.light' } }}>
-            <Box onClick={() => onSelect(template)}>
+            <Box
+              role="button"
+              tabIndex={0}
+              aria-label={`Select ${template.name} template`}
+              onClick={() => onSelect(template)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelect(template);
+                }
+              }}
+            >
               <Box display="flex" alignItems="center" gap={2} sx={{ mb: 1 }}>
                 {template.icon}
                 <Typography variant="h6">{template.name}</Typography>

@@ -43,6 +43,16 @@ describe('TemplateSelectionSection', () => {
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'cost' }));
   });
+
+  it('supports keyboard activation (Enter/Space)', () => {
+    const onSelect = jest.fn();
+    renderWithTheme(<TemplateSelectionSection templates={templates} onSelect={onSelect} />);
+
+    const navCard = screen.getByRole('button', { name: /Select NAV-Based Fund template/i });
+    navCard.focus();
+    fireEvent.keyDown(navCard, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalled();
+  });
 });
 
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, CircularProgress, Typography, Paper } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon, AccountBalance as AccountBalanceIcon, TrendingUp as TrendingUpIcon } from '@mui/icons-material';
+import { Add as AddIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import CreateEntityModal from '../../CreateEntityModal';
 import { useEntities } from '../../../hooks/useEntities';
 import { useCreateFund } from '../../../hooks/useFunds';
@@ -9,6 +9,7 @@ import { FundType } from '../../../types/api';
 import { validateField } from '../../../utils/validators';
 import TemplateSelectionSection from './TemplateSelectionSection';
 import FundFormSection from './FundFormSection';
+import { FUND_TEMPLATES, FundTemplate } from './templates';
 
 interface CreateFundModalProps {
   open: boolean;
@@ -30,42 +31,6 @@ interface ValidationErrors {
 }
 
 // Fund type templates with predefined values
-interface FundTemplate {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  fund_type: string;
-  tracking_type: 'nav_based' | 'cost_based';
-  currency: string;
-  commitment_amount?: number;
-  expected_irr?: number;
-  expected_duration_months?: number;
-  description_template: string;
-}
-
-const FUND_TEMPLATES: FundTemplate[] = [
-  {
-    id: 'cost-based',
-    name: 'Cost-Based Fund',
-    description: 'Track investments using capital calls and returns',
-    icon: <AccountBalanceIcon />,
-    fund_type: '',
-    tracking_type: 'cost_based',
-    currency: 'AUD',
-    description_template: ''
-  },
-  {
-    id: 'nav-based',
-    name: 'NAV-Based Fund',
-    description: 'Track investments using units and NAV per share',
-    icon: <TrendingUpIcon />,
-    fund_type: '',
-    tracking_type: 'nav_based',
-    currency: 'AUD',
-    description_template: ''
-  }
-];
 
 const CreateFundModal: React.FC<CreateFundModalProps> = ({
   open,
@@ -95,8 +60,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   });
 
   // Centralized API hooks
-  const { data: entities, loading, error } = useEntities({ refetchOnWindowFocus: true });
-  const { mutate: createFund } = useCreateFund();
+  const { data: entities, loading, error: entitiesError } = useEntities({ refetchOnWindowFocus: true });
+  const { mutate: createFund, error: submitError } = useCreateFund();
 
   // Reset form when modal opens
   useEffect(() => {
@@ -408,10 +373,10 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         )}
 
         {/* Error State */}
-        {error && (
+        {(submitError || entitiesError) && (
           <ErrorDisplay
-            error={error}
-            canRetry={error.retryable}
+            error={submitError || entitiesError}
+            canRetry={(submitError || entitiesError)!.retryable}
             onRetry={() => handleSubmit()}
             onDismiss={() => {}}
             variant="inline"
