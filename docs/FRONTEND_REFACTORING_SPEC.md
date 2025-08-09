@@ -613,8 +613,8 @@ Implications:
   - [ ] Include template validation and error handling
   - [x] Add comprehensive TypeScript interfaces for templates
   - [x] **VERIFICATION**: Template selection works correctly for all templates
-  - [ ] **VERIFICATION**: Template application works properly with state updates
-  - [ ] **TESTING**: Test template selection and application with all scenarios
+  - [x] **VERIFICATION**: Template application works properly with state updates
+  - [x] **TESTING**: Test template selection and application with all scenarios
 
 **Step 2: Extract FundFormSection (MEDIUM RISK, CAREFUL TESTING)**
 - [x] Extract `components/companies/create-fund/FundFormSection.tsx` (~200 lines) for fund creation form
@@ -655,8 +655,8 @@ Implications:
   - [x] Test each extracted component in isolation (TemplateSelectionSection, FundFormSection)
   - [x] Test component integration with parent components (CreateFundModal orchestrator smoke test)
   - [ ] Test form validation and error states
-  - [ ] Test template selection and application
-  - [ ] Test API submission and response handling
+  - [x] Test template selection and application
+  - [x] Test API submission and response handling
   - [ ] Test conditional field rendering
   - [ ] Test edge cases and error scenarios
 - [ ] **Performance Testing**
