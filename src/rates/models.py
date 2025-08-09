@@ -5,7 +5,7 @@ This module contains market data models including RiskFreeRate and future rate t
 """
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, UniqueConstraint
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import the Base from shared
 from ..shared.base import Base
@@ -32,7 +32,7 @@ class RiskFreeRate(Base):
     rate = Column(Float, nullable=False)  # (MANUAL) risk-free rate as percentage (e.g., 4.5 for 4.5%)
     rate_type = Column(String(50), default='government_bond')  # (MANUAL) type of rate (e.g., 'government_bond', 'libor', 'sofr')
     source = Column(String(100))  # (MANUAL) source of the rate data
-    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
     
     # Composite unique constraint
     __table_args__ = (

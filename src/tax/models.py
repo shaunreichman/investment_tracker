@@ -7,7 +7,7 @@ This module contains the core tax models including TaxStatement.
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.elements import ColumnElement
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 import enum
 
 # Import the Base from shared
@@ -85,8 +85,8 @@ class TaxStatement(Base):
     accountant = Column(String(255))  # (MANUAL) name of fund's accountant who prepared the tax statement
     notes = Column(Text)  # (MANUAL) additional notes
     statement_date = Column(Date)  # (MANUAL) date the tax statement was issued
-    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) timestamp when record was last updated
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated
     
     # Relationships
     fund = relationship("Fund", back_populates="tax_statements", lazy='selectin')
