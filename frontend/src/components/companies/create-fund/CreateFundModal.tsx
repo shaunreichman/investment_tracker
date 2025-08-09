@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, CircularProgress, Typography, Paper } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { Add as AddIcon } from '@mui/icons-material';
@@ -6,12 +6,14 @@ import CreateEntityModal from '../../CreateEntityModal';
 import { useEntities } from '../../../hooks/useEntities';
 import { useCreateFund } from '../../../hooks/useFunds';
 import { FundType } from '../../../types/api';
-import { validateField } from '../../../utils/validators';
+import { fundValidators, validationRules } from '../../../utils/validators';
 import TemplateSelectionSection from './TemplateSelectionSection';
 import FundFormSection from './FundFormSection';
 import { FUND_TEMPLATES, FundTemplate } from './templates';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { SuccessBanner } from '../../ui/SuccessBanner';
+import { useFormState } from '../../../hooks/forms/useFormState';
+import { useFormValidation } from '../../../hooks/forms/useFormValidation';
 
 interface CreateFundModalProps {
   open: boolean;
@@ -21,16 +23,7 @@ interface CreateFundModalProps {
   companyName: string;
 }
 
-interface ValidationErrors {
-  entity_id?: string;
-  name?: string;
-  fund_type?: string;
-  tracking_type?: string;
-  commitment_amount?: string;
-  expected_irr?: string;
-  expected_duration_months?: string;
-  description?: string;
-}
+//
 
 // Fund type templates with predefined values
 
@@ -43,13 +36,12 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 }) => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [showEntityModal, setShowEntityModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<FundTemplate | null>(null);
   const [showTemplateSelection, setShowTemplateSelection] = useState(true);
 
   // Form fields
-  const [formData, setFormData] = useState({
+  const initialFormValues = useMemo(() => ({
     entity_id: '',
     name: '',
     fund_type: '',
@@ -59,6 +51,20 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     expected_irr: '',
     expected_duration_months: '',
     description: ''
+  }), []);
+  const { values: formData, setFieldValue, setValues, reset } = useFormState(initialFormValues);
+
+  // Validation using centralized validators
+  const { errors: validationErrors, validateField, validateAll, setErrors } = useFormValidation<typeof initialFormValues>({
+    entity_id: validationRules.required('Entity'),
+    name: fundValidators.name,
+    fund_type: fundValidators.fundType,
+    tracking_type: validationRules.required('Tracking type'),
+    // currency: optional, no validator
+    commitment_amount: fundValidators.commitmentAmount,
+    expected_irr: fundValidators.expectedIrr,
+    expected_duration_months: fundValidators.expectedDuration,
+    description: fundValidators.description,
   });
 
   // Centralized API hooks
@@ -68,28 +74,18 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setFormData({
-        entity_id: '',
-        name: '',
-        fund_type: '',
-        tracking_type: '',
-        currency: 'AUD',
-        commitment_amount: '',
-        expected_irr: '',
-        expected_duration_months: '',
-        description: ''
-      });
+      reset(initialFormValues);
       setSelectedTemplate(null);
       setShowTemplateSelection(true);
-      setValidationErrors({});
+      setErrors({});
       setSuccess(false);
       setSubmitting(false);
     }
-  }, [open]);
+  }, [open, reset, setErrors, initialFormValues]);
 
   // Apply template to form data
   const applyTemplate = (template: FundTemplate) => {
-    setFormData({
+    setValues({
       entity_id: '',
       name: '',
       fund_type: template.fund_type,
@@ -104,41 +100,26 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     setShowTemplateSelection(false);
 
     // Clear validation errors only for fields that are filled by the template
-    setValidationErrors(prev => ({
-      ...prev,
+    setErrors({
       tracking_type: undefined,
       currency: undefined,
-      fund_type: template.fund_type ? undefined : prev.fund_type,
-      commitment_amount: template.commitment_amount ? undefined : prev.commitment_amount,
-      expected_irr: template.expected_irr ? undefined : prev.expected_irr,
-      expected_duration_months: template.expected_duration_months ? undefined : prev.expected_duration_months,
-      description: template.description_template ? undefined : prev.description
-    }));
+      fund_type: template.fund_type ? undefined : validationErrors.fund_type,
+      commitment_amount: template.commitment_amount ? undefined : validationErrors.commitment_amount,
+      expected_irr: template.expected_irr ? undefined : validationErrors.expected_irr,
+      expected_duration_months: template.expected_duration_months ? undefined : validationErrors.expected_duration_months,
+      description: template.description_template ? undefined : validationErrors.description
+    });
   };
 
   const validateForm = useCallback((): boolean => {
-    const errors: ValidationErrors = {};
-    if (!formData.entity_id) errors.entity_id = 'Entity is required';
-    if (!formData.name.trim()) errors.name = 'Fund name is required';
-    if (!formData.fund_type) errors.fund_type = 'Fund type is required';
-    if (!formData.tracking_type) errors.tracking_type = 'Tracking type is required';
-
-    const nameError = validateField('name', formData.name);
-    if (nameError) errors.name = nameError;
-    const fundTypeError = validateField('fund_type', formData.fund_type);
-    if (fundTypeError) errors.fund_type = fundTypeError;
-    const commitmentError = validateField('commitment_amount', formData.commitment_amount);
-    if (commitmentError) errors.commitment_amount = commitmentError;
-    const irrError = validateField('expected_irr', formData.expected_irr);
-    if (irrError) errors.expected_irr = irrError;
-    const durationError = validateField('expected_duration_months', formData.expected_duration_months);
-    if (durationError) errors.expected_duration_months = durationError;
-    const descriptionError = validateField('description', formData.description);
-    if (descriptionError) errors.description = descriptionError;
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [formData]);
+    // Run all validators
+    const allValid = validateAll(formData as typeof initialFormValues);
+    // Preserve required field semantics for submit enablement
+    const requiredFieldsValid = Boolean(
+      formData.entity_id && formData.name.trim() && formData.fund_type && formData.tracking_type
+    );
+    return allValid && requiredFieldsValid;
+  }, [formData, validateAll]);
 
   useEffect(() => {
     if (open) {
@@ -153,16 +134,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   }, [formData, open, showTemplateSelection, validateForm]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-
-    const error = validateField(field, value);
-    setValidationErrors(prev => ({
-      ...prev,
-      [field]: error || undefined
-    }));
+    setFieldValue(field as keyof typeof initialFormValues, value);
+    validateField(field as keyof typeof initialFormValues, value);
   };
 
   const handleSubmit = async () => {
@@ -187,18 +160,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         onFundCreated();
         onClose();
         setSuccess(false);
-        setFormData({
-          entity_id: '',
-          name: '',
-          fund_type: '',
-          tracking_type: '',
-          currency: 'AUD',
-          commitment_amount: '',
-          expected_irr: '',
-          expected_duration_months: '',
-          description: ''
-        });
-        setValidationErrors({});
+        reset(initialFormValues);
+        setErrors({});
       }, 2000);
     } catch (err) {
       // handled by hook
@@ -212,32 +175,16 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     if (!submitting) {
       onClose();
       setSuccess(false);
-      setValidationErrors({});
-      setFormData({
-        entity_id: '',
-        name: '',
-        fund_type: '',
-        tracking_type: '',
-        currency: 'AUD',
-        commitment_amount: '',
-        expected_irr: '',
-        expected_duration_months: '',
-        description: ''
-      });
+      setErrors({});
+      reset(initialFormValues);
       setSelectedTemplate(null);
       setShowTemplateSelection(true);
     }
   };
 
   const handleEntityCreated = (entity: { id: number; name: string }) => {
-    setFormData(prev => ({
-      ...prev,
-      entity_id: entity.id.toString()
-    }));
-    setValidationErrors(prev => ({
-      ...prev,
-      entity_id: undefined
-    }));
+    setFieldValue('entity_id', entity.id.toString());
+    setErrors({ entity_id: undefined });
   };
 
   const isFormValid = () => {

@@ -94,13 +94,13 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 ### Phase 6: Form System (Pragmatic)
 **Goal**: Minimal, consistent building blocks for forms.
 **Tasks**:
-- [ ] Add `frontend/src/hooks/forms/`:
-  - [ ] `useFormState.ts` (controlled state, touched, reset)
-  - [ ] `useFormValidation.ts` (run validators, field errors, form validity)
-  - [ ] Reuse existing `utils/validators.ts` and `useEventForm` where applicable.
-- [ ] Refactor `CreateFundModal` to compose these primitives without changing UX.
-- [ ] Keep validation messages and enable/disable behavior identical.
-- [ ] Tests: validation behavior, enable/disable, error rendering (logic only).
+- [x] Add `frontend/src/hooks/forms/`:
+  - [x] `useFormState.ts` (controlled state, touched, reset)
+  - [x] `useFormValidation.ts` (run validators, field errors, form validity)
+  - [x] Reuse existing `utils/validators.ts` and `useEventForm` where applicable.
+- [x] Refactor `CreateFundModal` to compose these primitives without changing UX.
+- [x] Keep validation messages and enable/disable behavior identical.
+- [x] Tests: validation behavior, enable/disable, error rendering (logic only).
 **Design Principles**:
 - No heavy framework; small composable hooks.
 - Centralized rules in `utils/validators.ts` remain the source of truth.
@@ -166,7 +166,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
   - [ ] No perceived performance regressions under typical datasets.
 - **Developer Experience**:
   - [ ] Smaller diffs via UI kit.
-  - [ ] Clear validators and form hooks with tests.
+  - [x] Clear validators and form hooks with tests.
 
 ## Risk Mitigation
 - **Type/API Drift**: Single source modules and removal of duplicates.
