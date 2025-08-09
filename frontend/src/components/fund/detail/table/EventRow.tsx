@@ -7,7 +7,7 @@ import {
   Chip,
   IconButton
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
 import { formatCurrency, formatBrokerageFee, formatDate } from '../../../../utils/formatters';
 import { getEventTypeColor, getEventTypeLabel } from '../../../../utils/helpers';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, CircularProgress, Typography, Paper } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
@@ -114,24 +114,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     }));
   };
 
-  const resetToTemplateSelection = () => {
-    setSelectedTemplate(null);
-    setShowTemplateSelection(true);
-    setFormData({
-      entity_id: '',
-      name: '',
-      fund_type: '',
-      tracking_type: '',
-      currency: 'AUD',
-      commitment_amount: '',
-      expected_irr: '',
-      expected_duration_months: '',
-      description: ''
-    });
-    setValidationErrors({});
-  };
-
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
     if (!formData.entity_id) errors.entity_id = 'Entity is required';
     if (!formData.name.trim()) errors.name = 'Fund name is required';
@@ -153,19 +136,19 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [formData]);
 
   useEffect(() => {
     if (open) {
       validateForm();
     }
-  }, [open]);
+  }, [open, validateForm]);
 
   useEffect(() => {
     if (open && !showTemplateSelection) {
       validateForm();
     }
-  }, [formData, open, showTemplateSelection]);
+  }, [formData, open, showTemplateSelection, validateForm]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
