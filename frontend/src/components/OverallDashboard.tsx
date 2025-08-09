@@ -12,7 +12,6 @@ import {
   TableRow,
   Paper,
   Chip,
-  CircularProgress,
   Link,
   Button,
   
@@ -33,6 +32,7 @@ import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
+import { LoadingSpinner } from './ui/LoadingSpinner';
 
 
 const OverallDashboard: React.FC = () => {
@@ -57,8 +57,8 @@ const OverallDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+      <Box p={3}>
+        <LoadingSpinner label="Loading companies..." />
       </Box>
     );
   }

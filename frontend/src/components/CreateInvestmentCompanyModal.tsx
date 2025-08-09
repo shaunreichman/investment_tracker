@@ -12,8 +12,9 @@ import {
   Paper
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
+import { SuccessBanner } from './ui/SuccessBanner';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon, Business as BusinessIcon } from '@mui/icons-material';
+import { Add as AddIcon, Business as BusinessIcon } from '@mui/icons-material';
 import { useCreateInvestmentCompany } from '../hooks/useInvestmentCompanies';
 
 interface CreateInvestmentCompanyModalProps {
@@ -246,17 +247,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
       <DialogContent sx={{ pb: 2 }}>
         {/* Success State */}
         {success && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
-            <CheckCircleIcon sx={{ mr: 1, color: 'success.main' }} />
-            <Box>
-              <Typography variant="body1" fontWeight="medium" color="success.main">
-                Investment company created successfully!
-              </Typography>
-              <Typography variant="body2" color="success.main">
-                Redirecting to dashboard...
-              </Typography>
-            </Box>
-          </Box>
+          <SuccessBanner title="Investment company created successfully!" subtitle="Redirecting to dashboard..." />
         )}
 
         {/* Error State */}

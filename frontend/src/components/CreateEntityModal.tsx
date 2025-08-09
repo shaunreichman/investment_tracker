@@ -16,8 +16,9 @@ import {
   Paper
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
+import { SuccessBanner } from './ui/SuccessBanner';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { Add as AddIcon } from '@mui/icons-material';
 import { useCreateEntity } from '../hooks/useEntities';
 
 interface CreateEntityModalProps {
@@ -203,17 +204,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       <DialogContent sx={{ pb: 2 }}>
         {/* Success State */}
         {success && (
-          <Box sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
-            <CheckCircleIcon sx={{ mr: 1, color: 'success.main' }} />
-            <Box>
-              <Typography variant="body1" fontWeight="medium" color="success.main">
-                Entity created successfully!
-              </Typography>
-              <Typography variant="body2" color="success.main">
-                Redirecting to fund creation...
-              </Typography>
-            </Box>
-          </Box>
+          <SuccessBanner title="Entity created successfully!" subtitle="Redirecting to fund creation..." />
         )}
 
         {/* Error State */}

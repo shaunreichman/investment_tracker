@@ -44,17 +44,37 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 ### Phase 4: Shared UI Components
 **Goal**: UI consistency and reuse across pages and modals.
 **Tasks**:
-- [ ] Create `frontend/src/components/ui/` directory.
-- [ ] Add primitives with a11y defaults:
-  - [ ] `StatusChip.tsx`
-  - [ ] `EventTypeChip.tsx`
-  - [ ] `ConfirmDialog.tsx`
-  - [ ] `ErrorBoundary.tsx`
-  - [ ] `LoadingSpinner.tsx`
-  - [ ] `FormField.tsx` (label/help/error wiring)
-  - [ ] `FormSection.tsx`
+- [x] Create `frontend/src/components/ui/` directory.
+- [x] Add primitives with a11y defaults:
+  - [x] `StatusChip.tsx`
+  - [x] `EventTypeChip.tsx`
+  - [x] `ConfirmDialog.tsx`
+  - [x] `ErrorBoundary.tsx`
+  - [x] `LoadingSpinner.tsx`
+  - [x] `FormField.tsx` (label/help/error wiring)
+  - [x] `FormSection.tsx`
+  - [x] `TrackingTypeChip.tsx` (bonus)
+  - [x] `SuccessBanner.tsx` (bonus)
 - [ ] Replace ad‑hoc usages in FundDetail and modals incrementally.
-- [ ] Add focused tests (render, props, a11y labels) for each component.
+  - [x] `FundDetail` delete confirmation uses `ConfirmDialog`.
+  - [x] `FundDetail` loading uses `LoadingSpinner`.
+  - [x] `FundDetailsSection` uses `StatusChip` for status display.
+  - [x] `EventRow` and `GroupedEventRow` use `EventTypeChip`.
+  - [x] `CreateFundModal` loading uses `LoadingSpinner`.
+  - [x] `CreateFundModal`, `CreateEntityModal`, `CreateInvestmentCompanyModal`, `CreateFundEventModal` success messages use `SuccessBanner`.
+  - [x] `CompaniesPage` status uses `StatusChip`; tracking uses `TrackingTypeChip`.
+  - [x] `OverallDashboard` loading uses `LoadingSpinner`.
+  - [ ] Migrate any remaining ad‑hoc chips/dialogs in other surfaces (review ongoing).
+- [x] Add focused tests (render, props, a11y labels) for each component.
+  - [x] `StatusChip.test.tsx`
+  - [x] `EventTypeChip.test.tsx`
+  - [x] `ConfirmDialog.test.tsx`
+  - [x] `ErrorBoundary.test.tsx`
+  - [x] `LoadingSpinner.test.tsx`
+  - [x] `FormField.test.tsx`
+  - [x] `FormSection.test.tsx`
+  - [x] `TrackingTypeChip.test.tsx`
+  - [x] `SuccessBanner.test.tsx`
 **Design Principles**:
 - Type‑safe props; consistent spacing/typography.
 - Keyboard/focus semantics and ARIA attributes included by default.

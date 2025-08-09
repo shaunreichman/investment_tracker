@@ -11,6 +11,7 @@ import {
   Typography
 } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
+import { SuccessBanner } from '../../ui/SuccessBanner';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { useFund } from '../../../hooks/useFunds';
 import { formatNumber, parseNumber } from '../../../utils/helpers';
@@ -26,14 +27,6 @@ import { useCreateEventForm } from '../../../hooks/useCreateEventForm';
 
 // Constants for styling
 const REQUIRED_FIELD_COLOR = '#d32f2f';
-const SUCCESS_BOX_STYLES = {
-  mb: 2,
-  p: 2,
-  bgcolor: 'success.light',
-  borderRadius: 1,
-  display: 'flex',
-  alignItems: 'center'
-};
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -181,11 +174,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
       <DialogTitle>{dialogTitle}</DialogTitle>
       <DialogContent>
         {success && (
-          <Box sx={SUCCESS_BOX_STYLES}>
-            <Typography variant="body1" fontWeight="medium" color="success.main">
-              Event created successfully!
-            </Typography>
-          </Box>
+          <SuccessBanner title="Event created successfully!" />
         )}
         {error && (
           <ErrorDisplay

@@ -11,8 +11,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
-  CircularProgress,
   Link,
   Breadcrumbs,
   Button,
@@ -30,7 +28,10 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCompanyFunds } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
-import { getTrackingTypeColor, getStatusTooltip, getStatusColor } from '../utils/helpers';
+import { getStatusTooltip } from '../utils/helpers';
+import { LoadingSpinner } from './ui/LoadingSpinner';
+import { StatusChip } from './ui/StatusChip';
+import { TrackingTypeChip } from './ui/TrackingTypeChip';
 const CreateFundModal = React.lazy(() => import('./companies/create-fund/CreateFundModal'));
 
 interface Company {
@@ -89,8 +90,8 @@ const CompaniesPage: React.FC = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+      <Box p={3}>
+        <LoadingSpinner label="Loading company funds..." />
       </Box>
     );
   }
@@ -197,34 +198,18 @@ const CompaniesPage: React.FC = () => {
                     </TableCell>
                     <TableCell>{fund.fund_type}</TableCell>
                     <TableCell>
-                      <Chip
-                        label={fund.tracking_type}
-                        size="small"
-                        color={getTrackingTypeColor(fund.tracking_type)}
-                      />
+                    <TrackingTypeChip trackingType={fund.tracking_type} />
                     </TableCell>
                     <TableCell>{fund.entity}</TableCell>
                     <TableCell align="right">
                       {formatCurrency(fund.current_equity_balance)}
                     </TableCell>
                     <TableCell align="right">
-                      <Tooltip title={getStatusTooltip(fund.status)} arrow placement="top">
-                        <Box component="span" sx={{ display: 'inline-block' }}>
-                          <Chip
-                            label={fund.status === 'active' ? 'Active' : fund.status === 'realized' ? 'Realized' : 'Completed'}
-                            size="small"
-                            sx={{ 
-                              cursor: 'help',
-                              backgroundColor: getStatusColor(fund.status),
-                              color: 'white',
-                              '&:hover': {
-                                backgroundColor: getStatusColor(fund.status),
-                                opacity: 0.8
-                              }
-                            }}
-                          />
-                        </Box>
-                      </Tooltip>
+                    <Tooltip title={getStatusTooltip(fund.status)} arrow placement="top">
+                      <Box component="span" sx={{ display: 'inline-block' }}>
+                        <StatusChip status={fund.status} />
+                      </Box>
+                    </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}

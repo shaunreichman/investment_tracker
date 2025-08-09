@@ -4,13 +4,12 @@ import {
   TableCell,
   Typography,
   Box,
-  Chip,
   IconButton
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
 import { formatCurrency, formatDate } from '../../../../utils/formatters';
-import { getEventTypeColor } from '../../../../utils/helpers';
+import { EventTypeChip } from '../../../ui/EventTypeChip';
 import { GroupedEvent } from './useEventGrouping';
 
 // ============================================================================
@@ -60,11 +59,7 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
         
         {/* Type Column */}
         <TableCell>
-          <Chip
-            label="INTEREST"
-            color={getEventTypeColor('DISTRIBUTION') as any}
-            size="small"
-          />
+        <EventTypeChip eventType="DISTRIBUTION" size="small" />
         </TableCell>
         
         {/* Description Column */}
@@ -185,11 +180,7 @@ const OtherEventRow: React.FC<{
       
       {/* Type Column */}
       <TableCell>
-        <Chip
-          label={event.event_type}
-          color={getEventTypeColor(event.event_type) as any}
-          size="small"
-        />
+        <EventTypeChip eventType={event.event_type} size="small" />
       </TableCell>
       
       {/* Description Column */}
