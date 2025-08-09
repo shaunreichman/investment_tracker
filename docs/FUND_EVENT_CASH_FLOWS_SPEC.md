@@ -131,11 +131,15 @@ Matching strategy for withholding tax payments:
 - [x] Indexes: `fund_event_id`, `bank_account_id`, `transfer_date` on `FundEventCashFlow`
 
 ### Phase 2: Domain Logic & Validation
-- [ ] Add creation/update methods for bank, bank account (class methods)
-- [ ] Add methods to add/update/delete `FundEventCashFlow` records
-- [ ] Implement reconciliation logic and auto-manage `is_cash_flow_complete`
-- [ ] Implement withholding matching via a centralized helper: same-date interest-withholding pairing only
-- [ ] Unit tests for reconciliation and withholding scenarios
+- [x] Add creation/update methods for bank, bank account (class methods)
+- [x] Add methods to add/update/delete `FundEventCashFlow` records
+- [x] Implement reconciliation logic and auto-manage `is_cash_flow_complete`
+- [x] Implement withholding matching via a centralized helper: same-date interest-withholding pairing only
+- [ ] Unit tests for reconciliation and withholding scenarios (pending backend test framework)
+
+Notes:
+- Cash flow direction is automatically inferred from `FundEvent.event_type` (outflow: CAPITAL_CALL, UNIT_PURCHASE; inflow: RETURN_OF_CAPITAL, DISTRIBUTION, UNIT_SALE). No manual direction input.
+- `distribution_type` is required for distribution creation and validated.
 
 ### Phase 3: API (Deferred)
 - [ ] Design API endpoints/DTOs for CRUD (cash flows, banks, accounts)

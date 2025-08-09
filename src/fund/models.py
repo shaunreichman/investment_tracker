@@ -29,6 +29,7 @@ from .calculations import (
     calculate_debt_cost
 )
 from ..shared.calculations import orchestrate_irr_base
+from ..shared.utils import with_session
 
 # Import models from other domains
 from ..rates.models import RiskFreeRate
@@ -71,6 +72,11 @@ class FundEventCashFlow(Base):
             f"<FundEventCashFlow(id={self.id}, event_id={self.fund_event_id}, acct_id={self.bank_account_id}, "
             f"dir={self.direction.value}, date={self.transfer_date}, {self.currency} {self.amount})>"
         )
+
+    @staticmethod
+    def _is_same_currency(session, bank_account_id: int, currency: str) -> bool:
+        acct: BankAccount | None = session.query(BankAccount).filter(BankAccount.id == bank_account_id).first()
+        return bool(acct and acct.currency.upper() == currency.upper())
 
 
 class EventType(enum.Enum):
@@ -807,7 +813,7 @@ class Fund(Base):
         # Group by distribution type
         distributions_by_type = {}
         for event in distribution_events:
-            dist_type = event.distribution_type or DistributionType.OTHER
+            dist_type = event.distribution_type  # None when unspecified; treat as missing
             if dist_type not in distributions_by_type:
                 distributions_by_type[dist_type] = 0
             distributions_by_type[dist_type] += event.amount or 0
@@ -2542,6 +2548,129 @@ class FundEvent(Base):
         # Infer distribution type for distribution events
         if event_type == EventType.DISTRIBUTION:
             self.distribution_type = self.infer_distribution_type()
+    
+    # ------- Cash Flow domain helpers (Phase 2) -------
+    @with_session
+    def add_cash_flow(
+        self,
+        *,
+        bank_account_id: int,
+        transfer_date: date,
+        currency: str,
+        amount: float,
+        reference: str | None = None,
+        notes: str | None = None,
+        session=None,
+    ) -> "FundEventCashFlow":
+        """Add a cash flow to this event with validation per spec.
+
+        Direction is derived automatically from the event type and persisted.
+        """
+        # Validate required args
+        if not bank_account_id:
+            raise ValueError("bank_account_id is required")
+        if not transfer_date:
+            raise ValueError("transfer_date is required")
+        if not currency or len(currency) != 3:
+            raise ValueError("currency must be ISO-4217 3-letter code")
+        if amount is None:
+            raise ValueError("amount is required")
+
+        # Enforce bank account currency match
+        if not FundEventCashFlow._is_same_currency(session, bank_account_id, currency):
+            raise ValueError("Cash flow currency must equal BankAccount.currency")
+
+        # Ensure this event has an id (in case caller adds flows immediately after creation)
+        if not self.id:
+            session.flush()
+
+        # Infer direction from event type
+        outflow_types = {EventType.CAPITAL_CALL, EventType.UNIT_PURCHASE}
+        inflow_types = {EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION, EventType.UNIT_SALE}
+        if self.event_type in outflow_types:
+            direction_value = CashFlowDirection.OUTFLOW
+        elif self.event_type in inflow_types:
+            direction_value = CashFlowDirection.INFLOW
+        else:
+            raise ValueError("Cash flows are not applicable for this event type")
+
+        cf = FundEventCashFlow(
+            fund_event_id=self.id,
+            bank_account_id=bank_account_id,
+            direction=direction_value,
+            transfer_date=transfer_date,
+            currency=currency.upper(),
+            amount=float(amount),
+            reference=reference,
+            notes=notes,
+        )
+        session.add(cf)
+        session.flush()
+
+        # Auto-manage completion flag
+        self._recompute_cash_flow_completion(session=session)
+        session.flush()
+        return cf
+
+    @with_session
+    def remove_cash_flow(self, cash_flow_id: int, session=None) -> None:
+        cf = next((c for c in self.cash_flows if c.id == cash_flow_id), None)
+        if not cf:
+            # Attempt fetch in case relationship not loaded
+            cf = session.query(FundEventCashFlow).filter(
+                FundEventCashFlow.id == cash_flow_id,
+                FundEventCashFlow.fund_event_id == self.id,
+            ).first()
+        if not cf:
+            raise ValueError("Cash flow not found for this event")
+        session.delete(cf)
+        session.flush()
+        self._recompute_cash_flow_completion(session=session)
+
+    def _recompute_cash_flow_completion(self, session=None) -> None:
+        """Recompute is_cash_flow_complete according to same-currency reconciliation rules.
+
+        - If any cash flow currency differs from fund currency: mark False
+        - If no cash flows: mark False
+        - If same currency for all: require sum to match target within 0.01
+        """
+        flows = list(self.cash_flows)
+        if not flows:
+            self.is_cash_flow_complete = False
+            return
+
+        # Determine fund currency from the Fund
+        fund_currency = (self.fund.currency or "").upper() if self.fund and self.fund.currency else ""
+        if not fund_currency:
+            # If fund has no currency set, cannot reconcile
+            self.is_cash_flow_complete = False
+            return
+
+        # Cross-currency rule: any flow not in fund currency => False
+        for cf in flows:
+            if (cf.currency or "").upper() != fund_currency:
+                self.is_cash_flow_complete = False
+                return
+
+        # All same currency as fund; compute target
+        target = float(self.amount or 0.0)
+
+        # Interest distribution withholding adjustment
+        if self.event_type == EventType.DISTRIBUTION and self.distribution_type == DistributionType.INTEREST:
+            # Same-date NON_RESIDENT_INTEREST_WITHHOLDING payments for same fund
+            withholding_sum = 0.0
+            same_day_tax = session.query(FundEvent).filter(
+                FundEvent.fund_id == self.fund_id,
+                FundEvent.event_date == self.event_date,
+                FundEvent.event_type == EventType.TAX_PAYMENT,
+                FundEvent.tax_payment_type == TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING,
+            ).all()
+            for t in same_day_tax:
+                withholding_sum += float(t.amount or 0.0)
+            target = target - withholding_sum
+
+        total = sum(float(cf.amount or 0.0) for cf in flows)
+        self.is_cash_flow_complete = abs(total - target) <= 0.01
     
 
 
