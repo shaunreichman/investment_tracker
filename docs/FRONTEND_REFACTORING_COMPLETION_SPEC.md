@@ -125,7 +125,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 - [x] Code splitting (lazy load with Suspense):
   - [x] `fund/events/CreateFundEventModal`
   - [x] `companies/create-fund/CreateFundModal`
-  - [ ] `fund/detail/summary/UnitPriceChartSection` (lazy-load in `FundDetail`)
+  - [x] `fund/detail/summary/UnitPriceChartSection` (lazy-load in `FundDetail`)
 - [ ] Stabilize callbacks/prop identity for memoized children:
   - [ ] Wrap handlers in `useCallback` in `FundDetail` and table components
   - [ ] Avoid inline lambdas in props where feasible
@@ -168,7 +168,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 - **Performance**:
   - [x] Table row components memoized; reduced re‑render counts in dev tools.
   - [x] Modals lazy‑loaded; smaller initial bundle.
-  - [ ] NAV chart lazy‑loaded (pending).
+  - [x] NAV chart lazy‑loaded (pending).
   - [ ] No perceived performance regressions under typical datasets.
 - **Developer Experience**:
   - [ ] Smaller diffs via UI kit.
