@@ -108,9 +108,9 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 ### Phase 7: Layout & Navigation (Optional, Low Priority)
 **Goal**: Further separation for readability, if needed.
 **Tasks**:
-- [ ] Extract `FundDetailHeader.tsx` (breadcrumbs, title, sidebar toggle).
+- [x] Extract `FundDetailHeader.tsx` (breadcrumbs, title, sidebar toggle).
 - [ ] Extract `FundDetailSidebar.tsx` (composition of summary sections, sticky behavior).
-- [ ] Keep `FundDetail.tsx` as orchestrator only.
+- [x] Keep `FundDetail.tsx` as orchestrator only.
 **Design Principles**:
 - Only proceed if it reduces noise; avoid churn for minimal gains.
 
