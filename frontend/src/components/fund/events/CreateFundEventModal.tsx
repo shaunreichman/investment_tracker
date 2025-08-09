@@ -8,17 +8,13 @@ import {
   TextField,
   Box,
   CircularProgress,
-  Typography,
-  Divider,
-  Checkbox,
-  FormControlLabel
+  Typography
 } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { useFund } from '../../../hooks/useFunds';
-import { useCreateFundEvent, useCreateTaxStatement } from '../../../hooks/useFunds';
-import { validateField } from '../../../utils/validators';
-import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../../../utils/helpers';
+import { formatNumber, parseNumber } from '../../../utils/helpers';
+// imports retained for reference types in hooks, not directly used here
 import { useEventSubmission } from '../../../hooks/useEventSubmission';
 import EventTypeSelector from './create/EventTypeSelector';
 import DistributionForm from './create/DistributionForm';
@@ -26,7 +22,7 @@ import UnitTransactionForm from './create/UnitTransactionForm';
 import NavUpdateForm from './create/NavUpdateForm';
 import TaxStatementForm from './create/TaxStatementForm';
 import { useCreateEventForm } from '../../../hooks/useCreateEventForm';
-import { ExtendedFundEvent } from '../../../types/api';
+// ExtendedFundEvent type not used directly in this component
 
 // Constants for styling
 const REQUIRED_FIELD_COLOR = '#d32f2f';
@@ -63,13 +59,13 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     subDistributionType,
     setSubDistributionType,
     formData,
-    setFormData,
+    // setFormData,
     success,
     setSuccess,
     validationErrors,
     isFormValid,
     hybridFieldOverrides,
-    setHybridFieldOverrides,
+    // setHybridFieldOverrides,
     handleInputChange,
     handleHybridFieldToggle,
     validateForm,

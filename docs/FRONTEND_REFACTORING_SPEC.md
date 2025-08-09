@@ -661,7 +661,7 @@ Implications:
   - [x] Add negative-path test for CreateFundModal submit (mock API error) and assert error UI renders
   - [x] Fix `act(...)` warnings in CreateFundModal test (wrap state updates)
 
-- [ ] **Accessibility (lightweight, no visual change)**
+- [x] **Accessibility (lightweight, no visual change)**
   - [x] Add keyboard support to template cards (tabIndex + Enter/Space activation)
   - [x] Add a `jest-axe` smoke check for the CreateFundModal content
 
@@ -669,7 +669,7 @@ Implications:
   - [x] Update imports to use new modal structure: `components/companies/create-fund/`
   - [x] Ensure all modal functionality preserved
   - [x] Accessibility compliance (basic) — verified via keyboard support and axe smoke
-  - [ ] Cross-browser depth testing deferred to Phase 9
+  - [x] Cross-browser depth testing deferred to Phase 9
 
 - [x] **Performance Testing**
   - Deferred to Phase 8 (Performance Optimization). Use perf tasks defined there; do not duplicate in 3D
