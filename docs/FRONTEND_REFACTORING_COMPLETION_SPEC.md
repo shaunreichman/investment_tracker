@@ -34,7 +34,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 **Tasks**:
 - [x] Deduplicate `ExtendedFundEvent`: remove interface from `utils/helpers.ts`; import from `types/api.ts` wherever needed.
 - [x] Unify API surface: alias `getFund` to same endpoint shape and keep `getFundDetail` as canonical.
-- [ ] Remove unused dependency: delete `axios` from `frontend/package.json` and lockfile; ensure no references remain.
+- [x] Remove unused dependency: delete `axios` from `frontend/package.json` and lockfile; ensure no references remain.
 - [x] Grep and remove any stale references to edit‑event flows (edit UI is decommissioned).
 - [x] Enable a11y linting dependencies (add `eslint-plugin-jsx-a11y`); integrate rule in CI (pending CI wiring).
 **Design Principles**:
