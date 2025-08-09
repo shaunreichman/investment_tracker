@@ -19,11 +19,39 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
-    # Rename fy_debt_interest_deduction fields to eofy_debt_interest_deduction
-    op.alter_column('tax_statements', 'fy_debt_interest_deduction_sum_of_daily_interest', new_column_name='eofy_debt_interest_deduction_sum_of_daily_interest')
-    op.alter_column('tax_statements', 'fy_debt_interest_deduction_rate', new_column_name='eofy_debt_interest_deduction_rate')
-    op.alter_column('tax_statements', 'fy_debt_interest_deduction_total_deduction', new_column_name='eofy_debt_interest_deduction_total_deduction')
+    """Upgrade schema.
+
+    SQLite-safe: only rename columns that actually exist, since fresh base schema
+    may already use the target names.
+    """
+    conn = op.get_bind()
+    # Fetch current columns for tax_statements
+    cols = set()
+    if conn.dialect.name == 'sqlite':
+        res = conn.exec_driver_sql("PRAGMA table_info(tax_statements)")
+        cols = {row[1] for row in res}
+    else:
+        # Fallback: use SQLAlchemy inspection if desired; for now assume presence
+        pass
+
+    if 'fy_debt_interest_deduction_sum_of_daily_interest' in cols:
+        op.alter_column(
+            'tax_statements',
+            'fy_debt_interest_deduction_sum_of_daily_interest',
+            new_column_name='eofy_debt_interest_deduction_sum_of_daily_interest'
+        )
+    if 'fy_debt_interest_deduction_rate' in cols:
+        op.alter_column(
+            'tax_statements',
+            'fy_debt_interest_deduction_rate',
+            new_column_name='eofy_debt_interest_deduction_rate'
+        )
+    if 'fy_debt_interest_deduction_total_deduction' in cols:
+        op.alter_column(
+            'tax_statements',
+            'fy_debt_interest_deduction_total_deduction',
+            new_column_name='eofy_debt_interest_deduction_total_deduction'
+        )
 
 
 def downgrade() -> None:

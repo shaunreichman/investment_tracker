@@ -39,6 +39,38 @@ from ..entity.models import Entity
 from ..shared.calculations import get_equity_change_for_event
 from ..entity.calculations import get_financial_years_for_fund_period
 from ..rates.calculations import get_risk_free_rate_for_date
+from ..banking.models import BankAccount
+
+
+class CashFlowDirection(enum.Enum):
+    INFLOW = "inflow"  # (SYSTEM) persisted enum value indicating money received by investor
+    OUTFLOW = "outflow"  # (SYSTEM) persisted enum value indicating money paid out by investor
+
+
+class FundEventCashFlow(Base):
+    """Actual cash transfer(s) linked to a FundEvent via investor bank accounts."""
+
+    __tablename__ = 'fund_event_cash_flows'
+
+    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
+    fund_event_id = Column(Integer, ForeignKey('fund_events.id'), nullable=False, index=True)  # (SYSTEM) link to parent event
+    bank_account_id = Column(Integer, ForeignKey('bank_accounts.id'), nullable=False, index=True)  # (MANUAL) account where the transfer occurred
+    direction = Column(Enum(CashFlowDirection), nullable=False)  # (SYSTEM) inflow/outflow from investor perspective
+    transfer_date = Column(Date, nullable=False, index=True)  # (MANUAL) date of transaction on bank statement
+    currency = Column(String(3), nullable=False)  # (MANUAL) ISO-4217; must equal BankAccount.currency
+    amount = Column(Float, nullable=False)  # (MANUAL) transfer amount in currency
+    reference = Column(String(255))  # (MANUAL) free-text bank reference
+    notes = Column(Text)  # (MANUAL) additional notes
+
+    # Relationships
+    fund_event = relationship('FundEvent', back_populates='cash_flows')
+    bank_account = relationship('BankAccount')
+
+    def __repr__(self) -> str:
+        return (
+            f"<FundEventCashFlow(id={self.id}, event_id={self.fund_event_id}, acct_id={self.bank_account_id}, "
+            f"dir={self.direction.value}, date={self.transfer_date}, {self.currency} {self.amount})>"
+        )
 
 
 class EventType(enum.Enum):
@@ -53,9 +85,7 @@ class EventType(enum.Enum):
     - NAV_UPDATE: NAV update (NAV-based funds)
     - UNIT_PURCHASE: Unit purchase (NAV-based funds)
     - UNIT_SALE: Unit sale (NAV-based funds)
-    - MANAGEMENT_FEE: Management fee
-    - CARRIED_INTEREST: Carried interest
-    - OTHER: Other event types
+    (Removed: MANAGEMENT_FEE, CARRIED_INTEREST, OTHER)
     """
     CAPITAL_CALL = "capital_call"
     RETURN_OF_CAPITAL = "return_of_capital"
@@ -66,9 +96,7 @@ class EventType(enum.Enum):
     NAV_UPDATE = "nav_update"
     UNIT_PURCHASE = "unit_purchase"
     UNIT_SALE = "unit_sale"
-    MANAGEMENT_FEE = "management_fee"
-    CARRIED_INTEREST = "carried_interest"
-    OTHER = "other"
+    # Removed: management_fee, carried_interest, other
 
 
 class FundType(enum.Enum):
@@ -92,7 +120,7 @@ class DistributionType(enum.Enum):
     INTEREST = "interest"  # Interest income
     RENT = "rent"  # Rental income
     CAPITAL_GAIN = "capital_gain"  # Capital gains income
-    OTHER = "other"  # Other income types
+    # Removed generic OTHER to enforce explicit types
 
 
 class TaxPaymentType(enum.Enum):
@@ -103,7 +131,7 @@ class TaxPaymentType(enum.Enum):
     EOFY_INTEREST_TAX = "eofy_interest_tax"
     DIVIDENDS_FRANKED_TAX = "dividends_franked_tax"
     DIVIDENDS_UNFRANKED_TAX = "dividends_unfranked_tax"
-    OTHER = "other"
+    # Keep other tax payment types as defined; no generic OTHER needed
 
 
 class FundStatus(enum.Enum):
@@ -2461,11 +2489,13 @@ class FundEvent(Base):
     reference_number = Column(String(100))  # (MANUAL) external reference number
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
     current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event (set only on capital events). For cost-based funds: net capital after this event (set only on capital events).
-    has_withholding_tax = Column(Boolean, default=False)  # (MANUAL) Flag indicating if this distribution event has associated withholding tax
+    has_withholding_tax = Column(Boolean, default=False)  # (MANUAL) flag for distributions with associated withholding tax
+    is_cash_flow_complete = Column(Boolean, default=False)  # (SYSTEM) auto-managed flag set by reconciliation logic
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
     tax_statement = relationship("TaxStatement", lazy='selectin')  # Eager load for tax statement data
+    cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan", lazy='selectin')
     
     def __repr__(self):
         """Return a string representation of the FundEvent instance for debugging/logging."""
@@ -2480,7 +2510,7 @@ class FundEvent(Base):
         - Falls back to generic dividend if no franking information is available
         """
         if not self.description:
-            return DistributionType.OTHER
+            return None
         
         desc_lower = self.description.lower()
         
@@ -2491,8 +2521,7 @@ class FundEvent(Base):
             elif 'unfranked' in desc_lower:
                 return DistributionType.DIVIDEND_UNFRANKED
             else:
-                # No franking info: treat as OTHER (enforce explicit type)
-                return DistributionType.OTHER
+                return None
         
         # Check for other distribution types
         if 'interest' in desc_lower:
@@ -2504,7 +2533,7 @@ class FundEvent(Base):
         elif 'income' in desc_lower:
             return DistributionType.INCOME
         else:
-            return DistributionType.OTHER
+            return None
     
     def set_event_type_and_infer_distribution(self, event_type):
         """Set the event type and infer the distribution type if applicable."""
