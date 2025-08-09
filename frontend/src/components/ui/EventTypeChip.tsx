@@ -1,7 +1,8 @@
 import React from 'react';
 import { Chip } from '@mui/material';
 import { DistributionType, EventType } from '../../types/api';
-import { getEventTypeColor, getEventTypeLabelSimple } from '../../utils/helpers';
+import { getEventTypeColor } from '../../utils/helpers';
+import { getEventTypeLabelSimple } from '../../utils/transformers/eventTransformers';
 
 export interface EventTypeChipProps {
   eventType: EventType | string;

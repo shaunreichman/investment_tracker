@@ -3,7 +3,10 @@
  */
 
 import { EVENT_TYPE_COLORS } from './constants';
-import { ExtendedFundEvent, ExtendedFund, FundStatus } from '../types/api';
+// Types are re-exported from this module; avoid importing here to prevent unused warnings
+import { getEventTypeLabel as _getEventTypeLabel, getEventTypeLabelSimple as _getEventTypeLabelSimple, combineInterestWithholdingEvents as _combineInterestWithholdingEvents } from './transformers/eventTransformers';
+import { prepareChartData as _prepareChartData, calculateDateRange as _calculateDateRange, generateChartTicks as _generateChartTicks } from './transformers/chartDataTransformers';
+import { isActiveNavFund as _isActiveNavFund } from './transformers/fundTransformers';
 export type { ExtendedFundEvent, ExtendedFund } from '../types/api';
 
 // Types are sourced from '../types/api' to avoid duplication
@@ -22,19 +25,7 @@ export const getEventTypeColor = (eventType: string): 'primary' | 'success' | 'w
  * @param event - The fund event object
  * @returns Formatted event type label
  */
-export const getEventTypeLabel = (event: ExtendedFundEvent): string => {
-  // Show only subtype if available, otherwise show the main type
-  if (event.distribution_type) {
-    // Format distribution type to be consistent (uppercase)
-    return event.distribution_type.toUpperCase();
-  }
-  if (event.tax_payment_type) {
-    return event.tax_payment_type;
-  }
-  
-  // For events without subtypes, show the main type
-  return event.event_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-};
+export const getEventTypeLabel = _getEventTypeLabel;
 
 /**
  * Get fund status information for display (FundDetail interface)
@@ -140,59 +131,14 @@ export const getStatusColor = (status: string): string => {
  * @param fund - The fund object
  * @returns True if fund is active and NAV-based
  */
-export const isActiveNavFund = (fund: ExtendedFund): boolean => {
-  return fund.tracking_type === 'nav_based' && fund.status === FundStatus.ACTIVE;
-};
+export const isActiveNavFund = _isActiveNavFund;
 
 /**
  * Combine interest and withholding tax events for display
  * @param events - Array of fund events
  * @returns Array of events with combined interest/withholding tax
  */
-export const combineInterestWithholdingEvents = (events: ExtendedFundEvent[]): ExtendedFundEvent[] => {
-  const combinedEvents: ExtendedFundEvent[] = [];
-  const processedEvents = new Set<number>();
-
-  events.forEach((event, index) => {
-    if (processedEvents.has(event.id)) return;
-
-    if (event.event_type === 'DISTRIBUTION' && event.distribution_type === 'INTEREST') {
-      // Look for withholding tax event on the same date
-      const sameDateEvents = events.filter(e => e.event_date === event.event_date);
-      const withholdingEvent = sameDateEvents.find(e => 
-        e.event_type === 'TAX_PAYMENT' && e.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING'
-      );
-
-      if (withholdingEvent) {
-        // Combine the events
-        const combinedEvent = {
-          ...event,
-          has_withholding_tax: true,
-          withholding_amount: withholdingEvent.amount,
-          withholding_rate: 10, // Default rate
-          net_interest: (event.amount || 0) - (withholdingEvent.amount || 0)
-        };
-        combinedEvents.push(combinedEvent);
-        processedEvents.add(event.id);
-        processedEvents.add(withholdingEvent.id);
-      } else {
-        combinedEvents.push(event);
-        processedEvents.add(event.id);
-      }
-    } else if (event.event_type === 'TAX_PAYMENT' && event.tax_payment_type === 'NON_RESIDENT_INTEREST_WITHHOLDING') {
-      // Skip withholding events that are already combined
-      if (!processedEvents.has(event.id)) {
-        combinedEvents.push(event);
-        processedEvents.add(event.id);
-      }
-    } else {
-      combinedEvents.push(event);
-      processedEvents.add(event.id);
-    }
-  });
-
-  return combinedEvents;
-};
+export const combineInterestWithholdingEvents = _combineInterestWithholdingEvents;
 
 /**
  * Prepare chart data for NAV performance visualization
@@ -200,58 +146,14 @@ export const combineInterestWithholdingEvents = (events: ExtendedFundEvent[]): E
  * @param fund - The fund object
  * @returns Chart data object
  */
-export const prepareChartData = (events: ExtendedFundEvent[], fund: ExtendedFund) => {
-  if (fund.tracking_type !== 'nav_based') {
-    return { navData: [], purchaseData: [], saleData: [] };
-  }
-
-  const navData: Array<{ date: string; nav: number }> = [];
-  const purchaseData: Array<{ date: string; price: number; units: number }> = [];
-  const saleData: Array<{ date: string; price: number; units: number }> = [];
-
-  events.forEach(event => {
-    const date = event.event_date;
-    
-    if (event.event_type === 'NAV_UPDATE' && event.nav_per_share) {
-      navData.push({ date, nav: event.nav_per_share });
-    } else if (event.event_type === 'UNIT_PURCHASE' && event.unit_price && event.units_purchased) {
-      purchaseData.push({ date, price: event.unit_price, units: event.units_purchased });
-    } else if (event.event_type === 'UNIT_SALE' && event.unit_price && event.units_sold) {
-      saleData.push({ date, price: event.unit_price, units: event.units_sold });
-    }
-  });
-
-  return { navData, purchaseData, saleData };
-};
+export const prepareChartData = _prepareChartData;
 
 /**
  * Calculate date range for chart display
  * @param events - Array of fund events
  * @returns Object with start and end dates
  */
-export const calculateDateRange = (events: ExtendedFundEvent[]) => {
-  if (events.length === 0) {
-    const today = new Date();
-    const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
-    return {
-      startDate: sixMonthsAgo.toISOString().split('T')[0],
-      endDate: today.toISOString().split('T')[0]
-    };
-  }
-
-  const dates = events.map(e => new Date(e.event_date));
-  const startDate = new Date(Math.min(...dates.map(d => d.getTime())));
-  const endDate = new Date(Math.max(...dates.map(d => d.getTime())));
-
-  // Add some padding to the date range
-  startDate.setMonth(startDate.getMonth() - 1);
-  endDate.setMonth(endDate.getMonth() + 1);
-
-  return {
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0]
-  };
-};
+export const calculateDateRange = _calculateDateRange;
 
 /**
  * Generate chart ticks for date axis
@@ -259,19 +161,7 @@ export const calculateDateRange = (events: ExtendedFundEvent[]) => {
  * @param endDate - End date string
  * @returns Array of date strings for ticks
  */
-export const generateChartTicks = (startDate: string, endDate: string): string[] => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const ticks: string[] = [];
-  
-  const current = new Date(start);
-  while (current <= end) {
-    ticks.push(current.toISOString().split('T')[0]);
-    current.setMonth(current.getMonth() + 1);
-  }
-  
-  return ticks;
-};
+export const generateChartTicks = _generateChartTicks;
 
 /**
  * Calculate net amount from gross and withholding tax
@@ -420,16 +310,4 @@ export const calculateWithholdingTax = (grossAmount: number, rate: number): numb
  * @param eventType - The event type string
  * @returns Simple event type label
  */
-export const getEventTypeLabelSimple = (eventType: string): string => {
-  switch (eventType) {
-    case 'CAPITAL_CALL': return 'Capital Call';
-    case 'RETURN_OF_CAPITAL': return 'Capital Return';
-    case 'UNIT_PURCHASE': return 'Unit Purchase';
-    case 'UNIT_SALE': return 'Unit Sale';
-    case 'NAV_UPDATE': return 'NAV Update';
-    case 'DISTRIBUTION': return 'Distribution';
-    case 'TAX_STATEMENT': return 'Tax Statement';
-    case 'TAX_PAYMENT': return 'Tax Payment';
-    default: return eventType;
-  }
-}; 
+export const getEventTypeLabelSimple = _getEventTypeLabelSimple;
