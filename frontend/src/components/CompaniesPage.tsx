@@ -28,7 +28,7 @@ import {
   Add as AddIcon
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import CreateFundModal from './CreateFundModal';
+import CreateFundModal from './companies/create-fund/CreateFundModal';
 import { useCompanyFunds } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
 import { getTrackingTypeColor, getStatusTooltip, getStatusColor } from '../utils/helpers';
