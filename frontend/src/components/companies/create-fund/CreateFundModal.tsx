@@ -1,23 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Box,
-  CircularProgress,
-  Typography,
-  FormHelperText,
-  Paper,
-  Divider,
-  InputAdornment
-} from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, CircularProgress, Typography, Paper } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { Add as AddIcon, CheckCircle as CheckCircleIcon, AccountBalance as AccountBalanceIcon, TrendingUp as TrendingUpIcon } from '@mui/icons-material';
 import CreateEntityModal from '../../CreateEntityModal';
@@ -25,7 +7,6 @@ import { useEntities } from '../../../hooks/useEntities';
 import { useCreateFund } from '../../../hooks/useFunds';
 import { FundType } from '../../../types/api';
 import { validateField } from '../../../utils/validators';
-import { formatNumber, parseNumber } from '../../../utils/helpers';
 import TemplateSelectionSection from './TemplateSelectionSection';
 import FundFormSection from './FundFormSection';
 
