@@ -34,7 +34,7 @@
 **Completed**: 
 - ✅ **Fund Detail Components**: Moved to `fund/detail/` with `summary/` and `table/` subdirectories
 - ✅ **Fund Events Components**: Moved to `fund/events/` with `create/` subdirectory for modal forms (edit subdirectory removed)
-- ✅ **Fund Modals**: Moved to `fund/modals/` (historical). Current plan: relocate `CreateFundModal` to `components/companies/create-fund/` for clearer ownership by companies flow
+- ✅ **Fund Modals**: `CreateFundModal` relocated to `components/companies/create-fund/` for clearer ownership by companies flow
 - ✅ **Import Paths**: All TypeScript import paths updated and verified
 - ✅ **TypeScript Compilation**: All errors resolved, compilation passes
 - ✅ **Frontend Build**: Application builds successfully with new structure
@@ -606,7 +606,7 @@ Implications:
 **Current Analysis (updated)**: CreateFundModal uses template selection + one form; stepper imports exist but are unused. File is oversized and monolithic.
 
 **Step 1: Extract TemplateSelectionSection (SAFE, ISOLATED LOGIC)**
-- [ ] Extract `components/companies/create-fund/TemplateSelectionSection.tsx` (~150 lines) for fund templates
+- [x] Extract `components/companies/create-fund/TemplateSelectionSection.tsx` (~150 lines) for fund templates
   - [ ] Extract from CreateFundModal.tsx (FUND_TEMPLATES + selection UI)
   - [ ] Include template selection with icons and descriptions
   - [ ] Include template application logic with state management
@@ -632,7 +632,7 @@ Implications:
   - [ ] **TESTING**: Test conditional field rendering and state management
 
 **Step 3: Create Main Orchestrator (INTEGRATION, COMPREHENSIVE TESTING)**
-- [ ] Create main orchestrator (~200–250 lines) at `components/companies/create-fund/CreateFundModal.tsx`
+- [x] Create main orchestrator (~200–250 lines) at `components/companies/create-fund/CreateFundModal.tsx`
   - [ ] Wire extracted sections and existing state/validation hooks
   - [ ] Include form submission logic with validation
   - [ ] Include success/error handling with user feedback
