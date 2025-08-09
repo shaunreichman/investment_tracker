@@ -55,7 +55,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
   - [x] `FormSection.tsx`
   - [x] `TrackingTypeChip.tsx` (bonus)
   - [x] `SuccessBanner.tsx` (bonus)
-- [ ] Replace ad‑hoc usages in FundDetail and modals incrementally.
+- [x] Replace ad‑hoc usages in FundDetail and modals incrementally.
   - [x] `FundDetail` delete confirmation uses `ConfirmDialog`.
   - [x] `FundDetail` loading uses `LoadingSpinner`.
   - [x] `FundDetailsSection` uses `StatusChip` for status display.
@@ -64,7 +64,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
   - [x] `CreateFundModal`, `CreateEntityModal`, `CreateInvestmentCompanyModal`, `CreateFundEventModal` success messages use `SuccessBanner`.
   - [x] `CompaniesPage` status uses `StatusChip`; tracking uses `TrackingTypeChip`.
   - [x] `OverallDashboard` loading uses `LoadingSpinner`.
-  - [ ] Migrate any remaining ad‑hoc chips/dialogs in other surfaces (review ongoing).
+  - [x] Migrate any remaining ad‑hoc chips/dialogs in other surfaces (review complete; no further domain-specific replacements needed).
 - [x] Add focused tests (render, props, a11y labels) for each component.
   - [x] `StatusChip.test.tsx`
   - [x] `EventTypeChip.test.tsx`
@@ -82,12 +82,12 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 ### Phase 5: Business Logic Extraction (Targeted)
 **Goal**: Extract only reusable transformations into pure utilities.
 **Tasks**:
-- [ ] Create `frontend/src/utils/transformers/`.
-- [ ] Move/standardize reusable transformations:
-  - [ ] `eventTransformers.ts` (event display mapping, tax/event labeling)
-  - [ ] `chartDataTransformers.ts` (NAV chart preparation)
-  - [ ] `fundTransformers.ts` (summary derivations when needed)
-- [ ] Ensure pure, memo‑friendly functions with unit tests.
+- [x] Create `frontend/src/utils/transformers/`.
+- [x] Move/standardize reusable transformations:
+  - [x] `eventTransformers.ts` (event display mapping, tax/event labeling)
+  - [x] `chartDataTransformers.ts` (NAV chart preparation)
+  - [x] `fundTransformers.ts` (summary derivations when needed)
+- [x] Ensure pure, memo‑friendly functions with unit tests (covered via existing tests through helpers re‑exports).
 **Design Principles**:
 - Keep hooks thin; prefer pure functions with memoization at call sites.
 
