@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ErrorBoundary } from '../ErrorBoundary';
 
-function Boom() {
-  throw new Error('boom');
-}
+const Boom: React.FC = () => {
+  useEffect(() => {
+    throw new Error('boom');
+  }, []);
+  return null;
+};
 
 describe('ErrorBoundary', () => {
   it('renders fallback and resets on click', async () => {
