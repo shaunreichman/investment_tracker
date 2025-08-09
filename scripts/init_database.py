@@ -9,8 +9,10 @@ Run this script from the project root directory.
 import sys
 import os
 
-# Add the src directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Ensure project root is on the Python path so `src` package can be imported
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from sqlalchemy import create_engine
 from src.investment_company.models import InvestmentCompany
@@ -77,7 +79,7 @@ def add_sample_data_to_database():
     print("Adding sample data to database...")
     
     # Get database session
-    from database import get_database_session
+    from src.database import get_database_session
     engine, session_factory, scoped_session = get_database_session()
     session = scoped_session()
     

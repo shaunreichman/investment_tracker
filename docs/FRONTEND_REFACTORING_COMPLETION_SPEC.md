@@ -120,16 +120,21 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 - [x] Memoize heavy components with stable props:
   - [x] `EventRow.tsx`, `GroupedEventRow.tsx`
   - [x] `TableHeader.tsx`
-  - [ ] `TableFilters.tsx`
+  - [x] `TableFilters.tsx`
 - [ ] Strengthen memoization in `useEventGrouping` (stable outputs when inputs unchanged).
 - [x] Code splitting (lazy load with Suspense):
   - [x] `fund/events/CreateFundEventModal`
   - [x] `companies/create-fund/CreateFundModal`
-  - [ ] `fund/detail/summary/UnitPriceChartSection`
+  - [x] `fund/detail/summary/UnitPriceChartSection` (lazy-load in `FundDetail`)
+- [ ] Stabilize callbacks/prop identity for memoized children:
+  - [ ] Wrap handlers in `useCallback` in `FundDetail` and table components
+  - [ ] Avoid inline lambdas in props where feasible
+  - [ ] Consider custom `React.memo` comparator for row components if function refs differ
 - [ ] Bundle monitoring (simple size check in CI/build output).
 - [ ] Virtualization (optional): evaluate only if events > 500 consistently.
 **Design Principles**:
-- Prefer memoization/code‑split over premature virtualization.
+ - Prefer memoization/code‑split over premature virtualization.
+ - Stable callbacks and prop references are required for `React.memo` to be effective.
 
 ### Phase 9: Testing & Documentation
 **Goal**: Lock in quality gates and usage guidance.
@@ -137,6 +142,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 - [ ] Add `jest-axe` smoke checks for CreateFundEventModal, CreateFundModal, FundDetail.
 - [x] Enable `eslint-plugin-jsx-a11y` in CI (treat a11y warnings as errors for new/changed code) — workflow added.
 - [ ] Document UI kit usage patterns (MD in `docs/`); Storybook optional.
+- [ ] Document performance patterns (memoization, stable callbacks, code-splitting) in `docs/`.
 - [ ] Keep tests focused on logic and behavior (not styling).
 **Design Principles**:
 - Tests assert behavior, not CSS.
@@ -162,7 +168,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 - **Performance**:
   - [x] Table row components memoized; reduced re‑render counts in dev tools.
   - [x] Modals lazy‑loaded; smaller initial bundle.
-  - [ ] NAV chart lazy‑loaded (pending).
+  - [x] NAV chart lazy‑loaded (pending).
   - [ ] No perceived performance regressions under typical datasets.
 - **Developer Experience**:
   - [ ] Smaller diffs via UI kit.

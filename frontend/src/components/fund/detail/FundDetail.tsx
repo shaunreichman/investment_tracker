@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useCallback } from 'react';
 import { Typography, Box } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ErrorDisplay } from '../../ErrorDisplay';
@@ -15,7 +15,6 @@ import {
   CompletedPerformanceSection,
   FundDetailsSection,
   TransactionSummarySection,
-  UnitPriceChartSection,
 } from './';
 import FundDetailHeader from './FundDetailHeader';
 
@@ -23,6 +22,7 @@ import FundDetailHeader from './FundDetailHeader';
 import TableContainer from './table/TableContainer';
 
 const CreateFundEventModal = React.lazy(() => import('../events/CreateFundEventModal'));
+const UnitPriceChartSection = React.lazy(() => import('./summary/UnitPriceChartSection'));
 
 // ============================================================================
 // MAIN FUND DETAIL COMPONENT
@@ -59,19 +59,21 @@ const FundDetail: React.FC = () => {
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
   // Event handlers
-  const handleEventCreated = () => {
+  const handleEventCreated = useCallback(() => {
     setEventModalOpen(false);
     refetch();
-  };
+  }, [refetch]);
 
+  const openEventModal = useCallback(() => {
+    setEventModalOpen(true);
+  }, []);
 
-
-  const handleDeleteEvent = (event: ExtendedFundEvent) => {
+  const handleDeleteEvent = useCallback((event: ExtendedFundEvent) => {
     setSelectedEvent(event);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDeleteEvent = async () => {
+  const confirmDeleteEvent = useCallback(async () => {
     if (!selectedEvent) return;
     
     setDeletingEvent(true);
@@ -85,7 +87,7 @@ const FundDetail: React.FC = () => {
     } finally {
       setDeletingEvent(false);
     }
-  };
+  }, [selectedEvent, deleteFundEvent, refetch]);
 
   // Loading state
   if (loading) {
@@ -190,7 +192,9 @@ const FundDetail: React.FC = () => {
           <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
           <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
           <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
+          <Suspense fallback={null}>
+            <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
+          </Suspense>
         </Box>
 
         {/* Right Main Area - Events Table */}
@@ -216,7 +220,7 @@ const FundDetail: React.FC = () => {
             showNavUpdates={showNavUpdates}
             onShowTaxEventsChange={setShowTaxEvents}
             onShowNavUpdatesChange={setShowNavUpdates}
-            onAddEvent={() => setEventModalOpen(true)}
+            onAddEvent={openEventModal}
 
             onDeleteEvent={handleDeleteEvent}
           />

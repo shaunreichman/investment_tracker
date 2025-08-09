@@ -4,7 +4,10 @@ import sys
 import os
 import csv
 from datetime import datetime
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+# Ensure project root on path for `src` imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

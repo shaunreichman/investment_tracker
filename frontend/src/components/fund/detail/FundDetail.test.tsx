@@ -59,6 +59,17 @@ jest.mock('../events/CreateFundEventModal', () => {
   };
 });
 
+// Mock the lazy-loaded chart section to ensure it renders synchronously in tests
+jest.mock('./summary/UnitPriceChartSection', () => {
+  return function MockUnitPriceChartSection() {
+    return (
+      <div data-testid="unit-price-chart-section">
+        <div>Unit Price Chart</div>
+      </div>
+    );
+  };
+});
+
 
 
 // Mock the section components
