@@ -6,7 +6,7 @@ This module contains the core investment company models including InvestmentComp
 
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import the Base from shared
 from ..shared.base import Base
@@ -22,8 +22,8 @@ class InvestmentCompany(Base):
     website = Column(String(255))  # (MANUAL) company website URL
     contact_email = Column(String(255))  # (MANUAL) contact email address
     contact_phone = Column(String(50))  # (MANUAL) contact phone number
-    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) timestamp when record was last updated
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated
     
     # Relationships
     funds = relationship("Fund", back_populates="investment_company", cascade="all, delete-orphan")

@@ -6,7 +6,7 @@ This module contains the core entity models including Entity.
 
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Import the Base from shared
 from ..shared.base import Base
@@ -20,8 +20,8 @@ class Entity(Base):
     name = Column(String(255), nullable=False, unique=True)  # (MANUAL) entity name
     description = Column(Text)  # (MANUAL) entity description
     tax_jurisdiction = Column(String(10), default="AU")  # (MANUAL) tax jurisdiction (e.g., 'AU' for Australia, 'US' for United States)
-    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) timestamp when record was last updated
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated
     
     # Relationships
     funds = relationship("Fund", back_populates="entity", cascade="all, delete-orphan")
