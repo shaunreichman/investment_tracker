@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, CircularProgress, Typography, Paper } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { Add as AddIcon } from '@mui/icons-material';
 import CreateEntityModal from '../../CreateEntityModal';
 import { useEntities } from '../../../hooks/useEntities';
 import { useCreateFund } from '../../../hooks/useFunds';

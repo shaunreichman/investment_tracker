@@ -27,14 +27,6 @@ import { useCreateEventForm } from '../../../hooks/useCreateEventForm';
 
 // Constants for styling
 const REQUIRED_FIELD_COLOR = '#d32f2f';
-const SUCCESS_BOX_STYLES = {
-  mb: 2,
-  p: 2,
-  bgcolor: 'success.light',
-  borderRadius: 1,
-  display: 'flex',
-  alignItems: 'center'
-};
 
 interface CreateFundEventModalProps {
   open: boolean;

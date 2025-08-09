@@ -14,7 +14,7 @@ import {
 import { ErrorDisplay } from './ErrorDisplay';
 import { SuccessBanner } from './ui/SuccessBanner';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon, Business as BusinessIcon } from '@mui/icons-material';
+import { Add as AddIcon, Business as BusinessIcon } from '@mui/icons-material';
 import { useCreateInvestmentCompany } from '../hooks/useInvestmentCompanies';
 
 interface CreateInvestmentCompanyModalProps {

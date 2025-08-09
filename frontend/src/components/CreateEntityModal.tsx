@@ -18,7 +18,7 @@ import {
 import { ErrorDisplay } from './ErrorDisplay';
 import { SuccessBanner } from './ui/SuccessBanner';
 import { useErrorHandler } from '../hooks/useErrorHandler';
-import { Add as AddIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { Add as AddIcon } from '@mui/icons-material';
 import { useCreateEntity } from '../hooks/useEntities';
 
 interface CreateEntityModalProps {
