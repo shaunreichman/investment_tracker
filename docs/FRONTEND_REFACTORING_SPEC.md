@@ -23,18 +23,18 @@
 
 ### **🚀 CRITICAL PRIORITY - Phase 3: Modal Refactoring**
 **Current Problem**: Massive modal components violate professional standards
-- CreateFundEventModal.tsx: 307 lines (target: ~400 lines) - **COMPLETED** ✅
-- EditFundEventModal.tsx: 659 lines (target: ~400 lines) - **IN PROGRESS** 🚀
-- CreateFundModal.tsx: 787 lines (target: ~400 lines) - **NEXT PRIORITY**
+- CreateFundEventModal.tsx: ~300–350 lines (target: < 500) - **COMPLETED** ✅
+- Edit fund event UI: **DECOMMISSIONED** — workflow is now delete + create; no edit modal
+- CreateFundModal.tsx: ~700–800 lines (target: ~400) - **NEXT PRIORITY**
 
-**Current Progress**: Phase 3B COMPLETED - WithholdingTaxSection and EventFormSection extracted, Step 3 cancelled due to architectural concerns
+**Current Progress**: Edit flow removed; spec updated to reflect delete + create workflow. Phase 3C (CreateFundModal) is the only remaining modal refactor.
 
 ### **✅ DIRECTORY RESTRUCTURING COMPLETED**
 **Goal**: Implement domain-first architecture for better organization and maintainability
 **Completed**: 
 - ✅ **Fund Detail Components**: Moved to `fund/detail/` with `summary/` and `table/` subdirectories
-- ✅ **Fund Events Components**: Moved to `fund/events/` with `create/` and `edit/` subdirectories for modal forms
-- ✅ **Fund Modals**: Moved to `fund/modals/` (CreateFundModal moved back to main components)
+- ✅ **Fund Events Components**: Moved to `fund/events/` with `create/` subdirectory for modal forms (edit subdirectory removed)
+- ✅ **Fund Modals**: Moved to `fund/modals/` (historical). Current plan: relocate `CreateFundModal` to `components/companies/create-fund/` for clearer ownership by companies flow
 - ✅ **Import Paths**: All TypeScript import paths updated and verified
 - ✅ **TypeScript Compilation**: All errors resolved, compilation passes
 - ✅ **Frontend Build**: Application builds successfully with new structure
@@ -63,7 +63,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
 6. **Inconsistent Patterns**: ✅ **SOLVED** - Standardized error handling and validation
 
 **REMAINING CRITICAL PROBLEMS**:
-7. **Modal Components**: CreateFundEventModal (343 lines), EditFundEventModal (764 lines), CreateFundModal (787 lines) - **CRITICAL PRIORITY**
+7. **Modal Components**: CreateFundEventModal (complete), CreateFundModal (787 lines) - **CRITICAL PRIORITY**
 8. **Form System**: Need centralized form validation and state management
 9. **UI Components**: Need shared component library for consistent UI/UX
 10. **Business Logic**: Need extracted business logic into custom hooks
@@ -81,8 +81,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - ✅ **100% visual parity** - no changes to UI appearance or user experience - **MAINTAINED**
 
 **REMAINING CRITICAL CRITERIA**:
-- [x] **Modal components under 500 lines** - CreateFundEventModal (307 lines) ✅ **COMPLETE**
-- [ ] **Modal components under 500 lines** - EditFundEventModal (764 lines), CreateFundModal (787 lines) - **NEXT PRIORITY**
+- [x] **Modal components under 500 lines** - CreateFundEventModal (≈307 lines) ✅ **COMPLETE**
+- [ ] **Modal components under 400–500 lines** - CreateFundModal (787 lines) - **NEXT PRIORITY**
 - [ ] **Form system with centralized validation** - Reusable form components and state management
 - [ ] **UI component library** - Shared components for consistent UI/UX
 - [ ] **Business logic hooks** - Custom hooks for complex business logic
@@ -371,7 +371,7 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - **Tax Payment Display**: Must show tax payment types (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.) with exact same formatting and calculations
 - **Conditional Columns**: Must show/hide columns based on fund type and event types exactly as before
 - **Row Styling**: Must preserve exact hover effects, colors, spacing, and typography
-- **Action Buttons**: Must show edit/delete buttons for same event types with identical behavior
+- **Action Buttons** (updated): Must show delete for user-editable events only; no edit button. Hide actions for system/tax events.
 - **Filtering Logic**: Must preserve showTaxEvents and showNavUpdates functionality exactly
 - **Responsive Behavior**: Must maintain identical responsive behavior on all screen sizes
 - **Performance**: Must maintain or improve render performance
@@ -408,8 +408,8 @@ Transform the frontend codebase from a monolithic structure with massive files a
 **Priority**: HIGH - These are the largest remaining files and biggest maintenance burden
 
 **Current File Sizes vs REALISTIC Targets**:
-- CreateFundEventModal.tsx: 307 lines → **PHASE 3A COMPLETE** ✅ (Professional and maintainable, cleanup completed)
-- EditFundEventModal.tsx: 499 lines → Target: ~400 lines (20% reduction needed) - **PHASE 3B IN PROGRESS** 🚀
+- CreateFundEventModal.tsx: ~300–350 lines → **PHASE 3A COMPLETE** ✅
+- Edit Fund Event UI: Decommissioned (delete + create workflow)
 - CreateFundModal.tsx: 787 lines → Target: ~400 lines (49% reduction needed) - **NEXT PRIORITY**
 
 **REFINED STRATEGY**: Incremental, safe extraction with comprehensive testing at each step
@@ -586,89 +586,39 @@ Transform the frontend codebase from a monolithic structure with massive files a
 - ✅ **Improved Maintainability**: Constants for styling and cleaner useEffect hooks
 - ✅ **Reusability**: Event submission logic can now be reused in other components
 
-#### **Phase 3B: EditFundEventModal Refactoring** (764 → ~400 lines)
-**Goal**: Extract edit modal into focused, manageable components with realistic targets and minimal risk
-**Strategy**: Preserve complex business logic while achieving professional file sizes
+#### **Phase 3B: Edit Fund Event UI — Decommissioned**
+The edit fund event functionality has been intentionally removed in favor of a delete + create workflow.
 
-**CRITICAL REQUIREMENT**: All extractions must maintain 100% functional and visual parity
-- **Zero UI Changes**: No changes to appearance, styling, or behavior
-- **Zero Functional Changes**: All user interactions, validations, and business logic must work identically
-- **Verification Required**: Screenshot comparison and functional testing before proceeding
-
-**Current Analysis**: EditFundEventModal contains complex withholding tax logic and gross/net amount calculations that require careful preservation.
-
-**Step 1: Extract WithholdingTaxSection (SAFE, ISOLATED LOGIC)** ✅ **COMPLETED**
-- [x] Extract `fund/events/edit/WithholdingTaxSection.tsx` (177 lines) for tax withholding logic
-  - [x] Extract from fund/events/EditFundEventModal.tsx lines 460-720 (withholding tax logic)
-  - [x] Include gross/net interest handling with proper validation
-  - [x] Include withholding amount/rate calculations with business rules
-  - [x] Include tax payment type handling (EOFY_INTEREST_TAX, DIVIDENDS_FRANKED_TAX, etc.)
-  - [x] Include interest type selection (regular vs withholding)
-  - [x] Add comprehensive validation and error handling
-  - [x] **VERIFICATION**: Withholding tax calculations are 100% accurate
-  - [x] **VERIFICATION**: Gross/net handling works correctly for all scenarios
-  - [x] **VERIFICATION**: Form validation works properly for all tax types
-  - [x] **TESTING**: Test complex withholding tax scenarios with edge cases (25 tests passing)
-  - [x] **TESTING**: Test interest type switching and state management
-  - [x] **FOLDER RESTRUCTURING**: Moved from `shared/` to `edit/` for clarity
-
-**Step 2: Extract EventFormSection (MEDIUM RISK, CAREFUL TESTING)** ✅ **COMPLETED**
-- [x] Extract `fund/events/edit/EventFormSection.tsx` (305 lines) for general event editing
-  - [x] Extract from fund/events/EditFundEventModal.tsx lines 150-450 (general form logic)
-  - [x] Include event type-specific field rendering (DISTRIBUTION, UNIT_PURCHASE, etc.)
-  - [x] Include form validation and error display for all event types
-  - [x] Include form submission handling with proper state management
-  - [x] Include conditional field rendering based on event type
-  - [x] Add comprehensive TypeScript interfaces for all event types
-  - [x] **VERIFICATION**: All event types can be edited successfully
-  - [x] **VERIFICATION**: Form validation works properly for all event types
-  - [x] **VERIFICATION**: API submission works correctly with proper error handling
-  - [x] **TESTING**: Test with all editable event types and edge cases (27 tests passing)
-  - [x] **TYPE SAFETY**: Fixed all TypeScript enum errors
-
-**Step 3: Create Main Orchestrator** ❌ **CANCELLED - ARCHITECTURAL CONCERNS**
-- **DECISION**: Step 3 cancelled due to infinite loop issues and architectural complexity
-- **REASON**: The tight coupling between form state, validation, and UI components creates circular dependencies
-- **IMPACT**: Current state (499 lines) is acceptable and functional - no further extraction needed
-- **LEARNING**: Complex state management should be addressed at the design level, not forced through extraction
-
-**Target Results**:
-- ✅ EditFundEventModal reduced from 764 to 499 lines (35% reduction - Steps 1 & 2 complete)
-- ✅ Complex withholding tax logic preserved and isolated
-- ✅ All business logic maintained with 100% accuracy
-- ✅ Professional file size standards achieved (499 lines is acceptable for complex modals)
-- ✅ Comprehensive test coverage for all extracted components
-- ✅ **FOLDER STRUCTURE**: Reorganized from `shared/` to `create/` and `edit/` for clarity
-- ✅ **PHASE 3B COMPLETE**: No further extraction needed - current state is maintainable
+Implications:
+- No edit modal; any references to `EditFundEventModal` and related sections are obsolete.
+- Table action buttons should only show Delete for user-editable events and hide actions for system/tax events.
+- Backend PUT endpoint has been removed; only POST (create) and DELETE are supported for events.
 
 #### **Phase 3C: CreateFundModal Refactoring** (787 → ~400 lines)
 **Goal**: Extract fund creation modal into focused, manageable components with realistic targets
-**Strategy**: Preserve stepper navigation and template selection logic while achieving professional file sizes
+**Strategy (updated)**: Keep current UX (template selection + single-page form). No stepper. Extract two focused sections and cleanup imports.
 
 **CRITICAL REQUIREMENT**: All extractions must maintain 100% functional and visual parity
 - **Zero UI Changes**: No changes to appearance, styling, or behavior
-- **Zero Functional Changes**: All stepper navigation, form validation, and business logic must work identically
+- **Zero Functional Changes**: Validation and business logic must work identically
 - **Verification Required**: Screenshot comparison and functional testing before proceeding
 
-**Current Analysis**: CreateFundModal contains complex stepper navigation with state dependencies and template selection logic that requires careful preservation.
+**Current Analysis (updated)**: CreateFundModal uses template selection + one form; stepper imports exist but are unused. File is oversized and monolithic.
 
 **Step 1: Extract TemplateSelectionSection (SAFE, ISOLATED LOGIC)**
-- [ ] Extract `fund/modals/TemplateSelectionSection.tsx` (~150 lines) for fund templates
-  - [ ] Extract from CreateFundModal.tsx lines 50-150 (FUND_TEMPLATES)
+- [ ] Extract `components/companies/create-fund/TemplateSelectionSection.tsx` (~150 lines) for fund templates
+  - [ ] Extract from CreateFundModal.tsx (FUND_TEMPLATES + selection UI)
   - [ ] Include template selection with icons and descriptions
   - [ ] Include template application logic with state management
-  - [ ] Include stepper navigation integration
   - [ ] Include template validation and error handling
   - [ ] Add comprehensive TypeScript interfaces for templates
   - [ ] **VERIFICATION**: Template selection works correctly for all templates
   - [ ] **VERIFICATION**: Template application works properly with state updates
-  - [ ] **VERIFICATION**: Stepper navigation works correctly with template selection
   - [ ] **TESTING**: Test template selection and application with all scenarios
-  - [ ] **TESTING**: Test stepper integration and state transitions
 
 **Step 2: Extract FundFormSection (MEDIUM RISK, CAREFUL TESTING)**
-- [ ] Extract `fund/modals/FundFormSection.tsx` (~200 lines) for fund creation form
-  - [ ] Extract from CreateFundModal.tsx lines 150-400 (fund form logic)
+- [ ] Extract `components/companies/create-fund/FundFormSection.tsx` (~200 lines) for fund creation form
+  - [ ] Extract from CreateFundModal.tsx (fund form logic)
   - [ ] Include entity selection with CreateEntityModal integration
   - [ ] Include fund type and tracking type selection with validation
   - [ ] Include commitment amount and expected performance fields
@@ -682,25 +632,23 @@ Transform the frontend codebase from a monolithic structure with massive files a
   - [ ] **TESTING**: Test conditional field rendering and state management
 
 **Step 3: Create Main Orchestrator (INTEGRATION, COMPREHENSIVE TESTING)**
-- [ ] Create main orchestrator (~250 lines)
-  - [ ] Extract from CreateFundModal.tsx lines 400-850 (main component logic)
-  - [ ] Include stepper state management with proper transitions
+- [ ] Create main orchestrator (~200–250 lines) at `components/companies/create-fund/CreateFundModal.tsx`
+  - [ ] Wire extracted sections and existing state/validation hooks
   - [ ] Include form submission logic with validation
   - [ ] Include success/error handling with user feedback
   - [ ] Include modal state management and lifecycle
   - [ ] Add comprehensive error handling and loading states
-  - [ ] **VERIFICATION**: Stepper navigation works correctly with all steps
   - [ ] **VERIFICATION**: Form submission works properly with validation
   - [ ] **VERIFICATION**: Success/error handling works correctly with user feedback
   - [ ] **TESTING**: End-to-end testing of fund creation flow with all scenarios
   - [ ] **TESTING**: Test modal lifecycle and state transitions
 
 **Target Results**:
-- ✅ CreateFundModal reduced from 787 to ~400 lines (49% reduction)
-- ✅ Stepper navigation logic preserved and isolated
+- ✅ CreateFundModal reduced from 787 to ~400–500 lines
 - ✅ Template selection functionality maintained with 100% accuracy
 - ✅ Professional file size standards achieved
-- ✅ Comprehensive test coverage for all extracted components
+- ✅ Unused imports (Stepper, etc.) removed
+- ✅ Comprehensive test coverage for extracted sections
 
 #### **Phase 3D: Enhanced Testing and Integration**
 - [ ] **Comprehensive Test Coverage**
@@ -900,7 +848,7 @@ This incremental approach will result in a **very professional solution** becaus
   - [ ] Memoize validation calculations in form components
   - [ ] Memoize formatting functions with stable dependencies
 - [ ] Implement code splitting for large components
-  - [ ] Lazy load modal components (fund/events/CreateFundEventModal, fund/events/EditFundEventModal)
+  - [ ] Lazy load modal components (fund/events/CreateFundEventModal)
   - [ ] Lazy load chart components (fund/detail/summary/UnitPriceChartSection)
   - [ ] Lazy load form components (fund/events/shared/TaxStatementForm)
   - [ ] Use React.lazy with Suspense boundaries
@@ -911,7 +859,6 @@ This incremental approach will result in a **very professional solution** becaus
   - [ ] Configure webpack for tree shaking
 - [ ] Implement lazy loading for modals and forms
   - [ ] Lazy load fund/events/CreateFundEventModal on demand
-  - [ ] Lazy load fund/events/EditFundEventModal on demand
   - [ ] Lazy load CreateFundModal on demand
   - [ ] Add loading states for lazy components
 - [ ] Add performance monitoring and metrics
@@ -969,8 +916,8 @@ This incremental approach will result in a **very professional solution** becaus
 - [ ] Migrate all components to use new utilities
   - [ ] Update fund/detail/FundDetail.tsx to use centralized formatters and validators
   - [ ] Update fund/events/CreateFundEventModal.tsx to use shared validation patterns
-  - [ ] Update fund/events/EditFundEventModal.tsx to use shared validation patterns
-  - [ ] Update CreateFundModal.tsx to use shared validation patterns
+  - [ ] Remove references to EditFundEventModal (edit flow decommissioned)
+  - [ ] Relocate `CreateFundModal.tsx` to `components/companies/create-fund/` and update imports
   - [ ] Update CompaniesPage.tsx to use shared formatters
   - [ ] Update OverallDashboard.tsx to use shared formatters
 - [ ] Remove old utility functions from components
