@@ -32,10 +32,10 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 ### Phase 0: Immediate Cleanup & Consolidation
 **Goal**: Remove drift and redundancies before further work.
 **Tasks**:
-- [ ] Deduplicate `ExtendedFundEvent`: remove interface from `utils/helpers.ts`; import from `types/api.ts` wherever needed.
-- [ ] Unify API surface: remove or alias `getFund` to `getFundDetail` in `services/api.ts` (single canonical method for `/api/funds/:id`).
+- [x] Deduplicate `ExtendedFundEvent`: remove interface from `utils/helpers.ts`; import from `types/api.ts` wherever needed.
+- [x] Unify API surface: alias `getFund` to same endpoint shape and keep `getFundDetail` as canonical.
 - [ ] Remove unused dependency: delete `axios` from `frontend/package.json` and lockfile; ensure no references remain.
-- [ ] Grep and remove any stale references to edit‑event flows (edit UI is decommissioned).
+- [x] Grep and remove any stale references to edit‑event flows (edit UI is decommissioned).
 - [ ] Enable a11y linting in CI for new/changed code (`eslint-plugin-jsx-a11y`, warnings-as-errors policy for new code only).
 **Design Principles**:
 - One definition of each public type.
@@ -97,13 +97,14 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 ### Phase 8: Performance Optimization (Targeted)
 **Goal**: Reduce unnecessary renders and initial load.
 **Tasks**:
-- [ ] Memoize heavy components with stable props:
-  - [ ] `EventRow.tsx`, `GroupedEventRow.tsx`
-  - [ ] `TableHeader.tsx`, `TableFilters.tsx`
+- [x] Memoize heavy components with stable props:
+  - [x] `EventRow.tsx`, `GroupedEventRow.tsx`
+  - [x] `TableHeader.tsx`
+  - [ ] `TableFilters.tsx`
 - [ ] Strengthen memoization in `useEventGrouping` (stable outputs when inputs unchanged).
-- [ ] Code splitting (lazy load with Suspense):
-  - [ ] `fund/events/CreateFundEventModal`
-  - [ ] `companies/create-fund/CreateFundModal`
+- [x] Code splitting (lazy load with Suspense):
+  - [x] `fund/events/CreateFundEventModal`
+  - [x] `companies/create-fund/CreateFundModal`
   - [ ] `fund/detail/summary/UnitPriceChartSection`
 - [ ] Bundle monitoring (simple size check in CI/build output).
 - [ ] Virtualization (optional): evaluate only if events > 500 consistently.
@@ -139,8 +140,9 @@ Finalize the frontend refactor into a first‑class, professional system by comp
   - [ ] Shared UI components used in FundDetail and modals.
   - [ ] A11y lint passes for new code; `jest-axe` smoke checks pass.
 - **Performance**:
-  - [ ] Table row components memoized; reduced re‑render counts in dev tools.
-  - [ ] Modals and NAV chart lazy‑loaded; smaller initial bundle.
+  - [x] Table row components memoized; reduced re‑render counts in dev tools.
+  - [x] Modals lazy‑loaded; smaller initial bundle.
+  - [ ] NAV chart lazy‑loaded (pending).
   - [ ] No perceived performance regressions under typical datasets.
 - **Developer Experience**:
   - [ ] Smaller diffs via UI kit.
