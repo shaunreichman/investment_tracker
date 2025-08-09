@@ -16,7 +16,7 @@ export interface TableFiltersProps {
   onAddEventClick: () => void;
 }
 
-const TableFilters: React.FC<TableFiltersProps> = ({
+const TableFiltersComponent: React.FC<TableFiltersProps> = ({
   showTaxEvents,
   showNavUpdates,
   isNavBasedFund,
@@ -114,4 +114,4 @@ const TableFilters: React.FC<TableFiltersProps> = ({
   );
 };
 
-export default TableFilters; 
+export default React.memo(TableFiltersComponent);

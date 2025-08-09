@@ -30,7 +30,7 @@ export interface EventRowProps {
  * Component to render individual event rows in the fund detail table
  * Extracted from FundDetail.tsx lines 808-1043 for reusability and testing
  */
-export const EventRow: React.FC<EventRowProps> = ({
+const EventRowComponent: React.FC<EventRowProps> = ({
   event,
   fund,
   showTaxEvents,
@@ -137,6 +137,8 @@ export const EventRow: React.FC<EventRowProps> = ({
     </TableRow>
   );
 };
+
+export const EventRow = React.memo(EventRowComponent);
 
 /**
  * Component to render equity cell content based on fund type and event type

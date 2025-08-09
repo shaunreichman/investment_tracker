@@ -181,6 +181,7 @@ class ApiClient {
     return response.funds;
   }
 
+  // Alias to canonical endpoint to avoid divergence. Prefer getFundDetail for typed full response.
   async getFund(id: number): Promise<Fund> {
     const response = await this.request<{ fund: Fund; events: FundEvent[]; tax_statements: TaxStatement[]; statistics: any }>(`/api/funds/${id}`);
     return response.fund;

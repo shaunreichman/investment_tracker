@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import {
   Typography,
   Box,
@@ -16,7 +16,6 @@ import {
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ErrorDisplay } from '../../ErrorDisplay';
-import CreateFundEventModal from '../events/CreateFundEventModal';
 import { ExtendedFundEvent } from '../../../types/api';
 import { useFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
@@ -33,6 +32,8 @@ import {
 
 // Import the extracted table components
 import TableContainer from './table/TableContainer';
+
+const CreateFundEventModal = React.lazy(() => import('../events/CreateFundEventModal'));
 
 // ============================================================================
 // MAIN FUND DETAIL COMPONENT
@@ -315,13 +316,15 @@ const FundDetail: React.FC = () => {
       </Box>
 
       {/* Modals */}
-      <CreateFundEventModal
-        open={eventModalOpen}
-        onClose={() => setEventModalOpen(false)}
-        onSuccess={handleEventCreated}
-        fundId={Number(fundId)}
-        fundTrackingType={fund.tracking_type}
-      />
+      <Suspense fallback={null}>
+        <CreateFundEventModal
+          open={eventModalOpen}
+          onClose={() => setEventModalOpen(false)}
+          onSuccess={handleEventCreated}
+          fundId={Number(fundId)}
+          fundTrackingType={fund.tracking_type}
+        />
+      </Suspense>
 
 
 

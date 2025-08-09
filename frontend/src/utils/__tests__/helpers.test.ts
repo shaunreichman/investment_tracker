@@ -23,6 +23,7 @@ import {
   ExtendedFundEvent,
   ExtendedFund,
 } from '../helpers';
+import { EventType, DistributionType, TaxPaymentType, FundType, FundStatus } from '../../types/api';
 
 describe('helpers', () => {
   describe('getEventTypeColor', () => {
@@ -45,10 +46,12 @@ describe('helpers', () => {
     const mockEvent: ExtendedFundEvent = {
       id: 1,
       fund_id: 1,
-      event_type: 'DISTRIBUTION',
+      event_type: EventType.DISTRIBUTION,
       event_date: '2023-01-01',
       amount: 1000,
-      distribution_type: 'INTEREST',
+      distribution_type: DistributionType.INTEREST,
+      created_at: '2023-01-01',
+      updated_at: '2023-01-01',
     };
 
     it('should return distribution type label when available', () => {
@@ -58,9 +61,9 @@ describe('helpers', () => {
     it('should return tax payment type label when available', () => {
       const taxEvent: ExtendedFundEvent = {
         ...mockEvent,
-        event_type: 'TAX_PAYMENT',
+        event_type: EventType.TAX_PAYMENT,
         distribution_type: undefined, // Clear distribution_type to test tax_payment_type
-        tax_payment_type: 'NON_RESIDENT_INTEREST_WITHHOLDING',
+        tax_payment_type: TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING,
       };
       expect(getEventTypeLabel(taxEvent)).toBe('NON_RESIDENT_INTEREST_WITHHOLDING');
     });
@@ -68,7 +71,7 @@ describe('helpers', () => {
     it('should format event type when no subtype available', () => {
       const capitalEvent: ExtendedFundEvent = {
         ...mockEvent,
-        event_type: 'CAPITAL_CALL',
+        event_type: EventType.CAPITAL_CALL,
         distribution_type: undefined,
       };
       expect(getEventTypeLabel(capitalEvent)).toBe('CAPITAL CALL');
@@ -112,8 +115,8 @@ describe('helpers', () => {
       const fund: ExtendedFund = {
         id: 1,
         name: 'Test Fund',
-        tracking_type: 'nav_based',
-        status: 'ACTIVE',
+        tracking_type: FundType.NAV_BASED,
+        status: FundStatus.ACTIVE,
         currency: 'AUD',
         current_equity_balance: 100000,
         average_equity_balance: 100000,
@@ -121,6 +124,9 @@ describe('helpers', () => {
         entity_id: 1,
         created_at: '2023-01-01',
         updated_at: '2023-01-01',
+        investment_company: 'Co',
+        entity: 'Entity',
+        final_tax_statement_received: false,
       };
       expect(isActiveNavFund(fund)).toBe(true);
     });
@@ -129,8 +135,8 @@ describe('helpers', () => {
       const fund: ExtendedFund = {
         id: 1,
         name: 'Test Fund',
-        tracking_type: 'cost_based',
-        status: 'ACTIVE',
+        tracking_type: FundType.COST_BASED,
+        status: FundStatus.ACTIVE,
         currency: 'AUD',
         current_equity_balance: 100000,
         average_equity_balance: 100000,
@@ -138,6 +144,9 @@ describe('helpers', () => {
         entity_id: 1,
         created_at: '2023-01-01',
         updated_at: '2023-01-01',
+        investment_company: 'Co',
+        entity: 'Entity',
+        final_tax_statement_received: false,
       };
       expect(isActiveNavFund(fund)).toBe(false);
     });
@@ -146,8 +155,8 @@ describe('helpers', () => {
       const fund: ExtendedFund = {
         id: 1,
         name: 'Test Fund',
-        tracking_type: 'nav_based',
-        status: 'COMPLETED',
+        tracking_type: FundType.NAV_BASED,
+        status: FundStatus.COMPLETED,
         currency: 'AUD',
         current_equity_balance: 0,
         average_equity_balance: 0,
@@ -155,6 +164,9 @@ describe('helpers', () => {
         entity_id: 1,
         created_at: '2023-01-01',
         updated_at: '2023-01-01',
+        investment_company: 'Co',
+        entity: 'Entity',
+        final_tax_statement_received: true,
       };
       expect(isActiveNavFund(fund)).toBe(false);
     });
@@ -164,19 +176,23 @@ describe('helpers', () => {
     const interestEvent: ExtendedFundEvent = {
       id: 1,
       fund_id: 1,
-      event_type: 'DISTRIBUTION',
+      event_type: EventType.DISTRIBUTION,
       event_date: '2023-06-30',
       amount: 1000,
-      distribution_type: 'INTEREST',
+      distribution_type: DistributionType.INTEREST,
+      created_at: '2023-01-01',
+      updated_at: '2023-01-01',
     };
 
     const withholdingEvent: ExtendedFundEvent = {
       id: 2,
       fund_id: 1,
-      event_type: 'TAX_PAYMENT',
+      event_type: EventType.TAX_PAYMENT,
       event_date: '2023-06-30',
       amount: 100,
-      tax_payment_type: 'NON_RESIDENT_INTEREST_WITHHOLDING',
+      tax_payment_type: TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING,
+      created_at: '2023-01-01',
+      updated_at: '2023-01-01',
     };
 
     it('should combine interest and withholding events on same date', () => {
@@ -227,37 +243,43 @@ describe('helpers', () => {
     const navEvent: ExtendedFundEvent = {
       id: 1,
       fund_id: 1,
-      event_type: 'NAV_UPDATE',
+      event_type: EventType.NAV_UPDATE,
       event_date: '2023-01-01',
       amount: null,
       nav_per_share: 10.5,
+      created_at: '2023-01-01',
+      updated_at: '2023-01-01',
     };
 
     const purchaseEvent: ExtendedFundEvent = {
       id: 2,
       fund_id: 1,
-      event_type: 'UNIT_PURCHASE',
+      event_type: EventType.UNIT_PURCHASE,
       event_date: '2023-01-01',
       amount: 1000,
       units_purchased: 100,
       unit_price: 10.0,
+      created_at: '2023-01-01',
+      updated_at: '2023-01-01',
     };
 
     const saleEvent: ExtendedFundEvent = {
       id: 3,
       fund_id: 1,
-      event_type: 'UNIT_SALE',
+      event_type: EventType.UNIT_SALE,
       event_date: '2023-01-01',
       amount: 500,
       units_sold: 50,
       unit_price: 10.0,
+      created_at: '2023-01-01',
+      updated_at: '2023-01-01',
     };
 
     const fund: ExtendedFund = {
       id: 1,
       name: 'Test Fund',
-      tracking_type: 'nav_based',
-      status: 'ACTIVE',
+      tracking_type: FundType.NAV_BASED,
+      status: FundStatus.ACTIVE,
       currency: 'AUD',
       current_equity_balance: 100000,
       average_equity_balance: 100000,
@@ -265,6 +287,9 @@ describe('helpers', () => {
       entity_id: 1,
       created_at: '2023-01-01',
       updated_at: '2023-01-01',
+      investment_company: 'Co',
+      entity: 'Entity',
+      final_tax_statement_received: false,
     };
 
     it('should prepare chart data for NAV-based funds', () => {
@@ -282,7 +307,7 @@ describe('helpers', () => {
     });
 
     it('should return empty arrays for cost-based funds', () => {
-      const costBasedFund: ExtendedFund = { ...fund, tracking_type: 'cost_based' };
+      const costBasedFund: ExtendedFund = { ...fund, tracking_type: FundType.COST_BASED };
       const events = [navEvent, purchaseEvent, saleEvent];
       const chartData = prepareChartData(events, costBasedFund);
 
@@ -298,16 +323,20 @@ describe('helpers', () => {
         {
           id: 1,
           fund_id: 1,
-          event_type: 'CAPITAL_CALL',
+          event_type: EventType.CAPITAL_CALL,
           event_date: '2023-01-01',
           amount: 1000,
+          created_at: '2023-01-01',
+          updated_at: '2023-01-01',
         },
         {
           id: 2,
           fund_id: 1,
-          event_type: 'DISTRIBUTION',
+          event_type: EventType.DISTRIBUTION,
           event_date: '2023-12-31',
           amount: 500,
+          created_at: '2023-01-01',
+          updated_at: '2023-01-01',
         },
       ];
 

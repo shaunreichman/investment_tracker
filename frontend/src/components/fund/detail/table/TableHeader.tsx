@@ -10,7 +10,7 @@ export interface TableHeaderProps {
   showTaxEvents: boolean;
 }
 
-const TableHeader: React.FC<TableHeaderProps> = ({
+const TableHeaderComponent: React.FC<TableHeaderProps> = ({
   isNavBasedFund,
   showTaxEvents
 }) => {
@@ -78,4 +78,4 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   );
 };
 
-export default TableHeader; 
+export default React.memo(TableHeaderComponent);

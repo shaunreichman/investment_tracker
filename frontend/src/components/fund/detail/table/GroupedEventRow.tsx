@@ -30,7 +30,7 @@ export interface GroupedEventRowProps {
  * Component to render grouped event rows (interest + withholding tax combinations)
  * Extracted from FundDetail.tsx lines 684-773 for reusability and testing
  */
-export const GroupedEventRow: React.FC<GroupedEventRowProps> = ({
+const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
   groupedEvent,
   fund,
   showTaxEvents,
@@ -148,6 +148,8 @@ export const GroupedEventRow: React.FC<GroupedEventRowProps> = ({
     </React.Fragment>
   );
 };
+
+export const GroupedEventRow = React.memo(GroupedEventRowComponent);
 
 /**
  * Component to render other events that are part of a grouped event

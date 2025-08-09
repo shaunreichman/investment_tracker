@@ -18,7 +18,7 @@ interface SectionProps {
 /**
  * Unit Price Chart Section - NAV performance chart for NAV-based funds
  */
-const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events }) => {
+const UnitPriceChartSectionComponent: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events }) => {
   // Only show for NAV-based funds
   if (fund.tracking_type !== 'nav_based') {
     return null;
@@ -243,4 +243,4 @@ const UnitPriceChartSection: React.FC<SectionProps> = ({ fund, formatCurrency, f
   );
 };
 
-export default UnitPriceChartSection; 
+export default React.memo(UnitPriceChartSectionComponent);

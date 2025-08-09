@@ -3,66 +3,10 @@
  */
 
 import { EVENT_TYPE_COLORS } from './constants';
+import { ExtendedFundEvent, ExtendedFund, FundStatus } from '../types/api';
+export type { ExtendedFundEvent, ExtendedFund } from '../types/api';
 
-/**
- * Extended fund event interface for component-specific data
- */
-export interface ExtendedFundEvent {
-  id: number;
-  fund_id: number;
-  event_type: string;
-  event_date: string;
-  amount: number | null;
-  distribution_type?: string;
-  sub_distribution_type?: string;
-  units_purchased?: number | null;
-  units_sold?: number | null;
-  unit_price?: number | null;
-  nav_per_share?: number | null;
-  brokerage_fee?: number | null;
-  tax_payment_type?: string;
-  description?: string;
-  reference_number?: string;
-  // Additional fields for component display
-  displayAmount?: string;
-  formattedDate?: string;
-  isEditable?: boolean;
-  has_withholding_tax?: boolean;
-  withholding_amount?: number | null;
-  withholding_rate?: number | null;
-  net_interest?: number | null;
-}
-
-/**
- * Extended fund interface for component-specific data
- */
-export interface ExtendedFund {
-  id: number;
-  name: string;
-  fund_type?: string;
-  tracking_type: 'nav_based' | 'cost_based';
-  description?: string;
-  currency: string;
-  commitment_amount?: number | null;
-  expected_irr?: number | null;
-  expected_duration_months?: number | null;
-  current_equity_balance: number | null;
-  average_equity_balance: number | null;
-  status: string;
-  end_date?: string | null;
-  irr_gross?: number | null;
-  irr_after_tax?: number | null;
-  irr_real?: number | null;
-  current_units?: number | null;
-  current_unit_price?: number | null;
-  current_nav_total?: number | null;
-  investment_company_id: number;
-  entity_id: number;
-  created_at: string;
-  updated_at: string;
-  // Additional fields for component display
-  isActiveNavFund?: boolean;
-}
+// Types are sourced from '../types/api' to avoid duplication
 
 /**
  * Get event type color for consistent styling
@@ -197,7 +141,7 @@ export const getStatusColor = (status: string): string => {
  * @returns True if fund is active and NAV-based
  */
 export const isActiveNavFund = (fund: ExtendedFund): boolean => {
-  return fund.tracking_type === 'nav_based' && fund.status === 'ACTIVE';
+  return fund.tracking_type === 'nav_based' && fund.status === FundStatus.ACTIVE;
 };
 
 /**

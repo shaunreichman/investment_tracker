@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
   Box,
   Card,
@@ -28,10 +28,10 @@ import {
   Add as AddIcon
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import CreateFundModal from './companies/create-fund/CreateFundModal';
 import { useCompanyFunds } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
 import { getTrackingTypeColor, getStatusTooltip, getStatusColor } from '../utils/helpers';
+const CreateFundModal = React.lazy(() => import('./companies/create-fund/CreateFundModal'));
 
 interface Company {
   id: number;
@@ -339,13 +339,15 @@ const CompaniesPage: React.FC = () => {
       )}
 
       {/* Create Fund Modal */}
-      <CreateFundModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onFundCreated={handleFundCreated}
-        companyId={parseInt(companyId!)}
-        companyName={company.name}
-      />
+      <Suspense fallback={null}>
+        <CreateFundModal
+          open={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onFundCreated={handleFundCreated}
+          companyId={parseInt(companyId!)}
+          companyName={company.name}
+        />
+      </Suspense>
     </Box>
   );
 };
