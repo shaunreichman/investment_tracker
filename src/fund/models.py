@@ -5,7 +5,7 @@ This module contains the core fund models including Fund, FundEvent, and related
 """
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, func
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime, date, timezone
 from dateutil.relativedelta import relativedelta
@@ -2493,7 +2493,7 @@ class FundEvent(Base):
     brokerage_fee = Column(Float, default=0.0)  # (MANUAL) brokerage fee for unit transactions
     description = Column(Text)  # (MANUAL) event description
     reference_number = Column(String(100))  # (MANUAL) external reference number
-    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
     current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event (set only on capital events). For cost-based funds: net capital after this event (set only on capital events).
     has_withholding_tax = Column(Boolean, default=False)  # (MANUAL) flag for distributions with associated withholding tax
     is_cash_flow_complete = Column(Boolean, default=False)  # (SYSTEM) auto-managed flag set by reconciliation logic
