@@ -153,6 +153,17 @@ class FundStatus(enum.Enum):
     COMPLETED = "completed"
 
 
+class GroupType(enum.Enum):
+    """Enumeration for event grouping types.
+    
+    Business definitions:
+    - INTEREST_WITHHOLDING: Interest distribution events paired with withholding tax events
+    - TAX_STATEMENT: Tax statement events grouped by financial year (future implementation)
+    """
+    INTEREST_WITHHOLDING = "interest_withholding"
+    TAX_STATEMENT = "tax_statement"
+
+
 class Fund(Base):
     """Model representing an investment fund.
     
