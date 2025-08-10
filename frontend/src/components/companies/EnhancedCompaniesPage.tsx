@@ -13,11 +13,11 @@ import { ErrorDisplay } from '../ErrorDisplay';
 import { ErrorType, ErrorSeverity, createErrorInfo } from '../../types/errors';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { TabNavigation, Tab } from './TabNavigation';
-import { OverviewTab } from './OverviewTab';
-import { FundsTab } from './FundsTab';
-import { CompanyDetailsTab } from './CompanyDetailsTab';
-import { AnalysisTab } from './AnalysisTab';
-import { ActivityTab } from './ActivityTab';
+import { OverviewTab } from './overview-tab';
+import { FundsTab } from './funds-tab';
+import { CompanyDetailsTab } from './company-details-tab';
+import { AnalysisTab } from './analysis-tab';
+import { ActivityTab } from './activity-tab';
 import {
   useCompanyOverview,
   useEnhancedFunds,

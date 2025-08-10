@@ -4,11 +4,11 @@
 
 export { EnhancedCompaniesPage } from './EnhancedCompaniesPage';
 export { TabNavigation } from './TabNavigation';
-export { OverviewTab } from './OverviewTab';
-export { FundsTab } from './FundsTab';
-export { CompanyDetailsTab } from './CompanyDetailsTab';
-export { AnalysisTab } from './AnalysisTab';
-export { ActivityTab } from './ActivityTab';
+export { OverviewTab } from './overview-tab';
+export { FundsTab } from './funds-tab';
+export { CompanyDetailsTab } from './company-details-tab';
+export { AnalysisTab } from './analysis-tab';
+export { ActivityTab } from './activity-tab';
 
 // Legacy components (for backward compatibility)
 export { default as CompaniesPage } from '../CompaniesPage';
