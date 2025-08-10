@@ -6,6 +6,14 @@
 
 **Next Milestone**: Begin Phase 3B - Test Coverage & Quality Analysis
 
+**Overall Progress**: 
+- Phase 0: Project Setup ✅ COMPLETE
+- Phase 1: Unit Tests ✅ COMPLETE  
+- Phase 2: Domain Integration Tests ✅ COMPLETE (40/40 tests)
+- Phase 3A: SQLAlchemy 2.0 Migration ✅ COMPLETE (0 warnings)
+- Phase 3B: Test Coverage & Quality 🔄 NEXT
+- Phase 3C: CI/CD Integration 📋 PLANNED
+
 ---
 
 ### Title
@@ -109,16 +117,16 @@ Backend Testing Suite — Professional, Layered, and Fast
 - Optionally instantiate minimal records via factories to ensure ORM compatibility
 
 ### Phases and Tasks
-- **Phase 0 — Project Setup**
-  - [ ] Add test dependencies to `requirements.txt`: pytest, pytest-cov, factory_boy, Faker, hypothesis, freezegun (optional), pytest-xdist (optional)
-  - [ ] Create `tests/conftest.py` with engine/session/app/client fixtures
-  - [ ] Add `tests/factories.py` for core models
-  - [ ] Establish pytest.ini or pyproject config for markers, hypothesis settings, and coverage
+- **Phase 0 — Project Setup ✅ COMPLETE**
+  - ✅ Add test dependencies to `requirements.txt`: pytest, pytest-cov, factory_boy, Faker, hypothesis, freezegun (optional), pytest-xdist (optional)
+  - ✅ Create `tests/conftest.py` with engine/session/app/client fixtures
+  - ✅ Add `tests/factories.py` for core models
+  - ✅ Establish pytest.ini or pyproject config for markers, hypothesis settings, and coverage
 
-- **Phase 1 — Unit Tests (Pure Calculations)**
-  - [ ] Cover functions in `src/*/calculations.py` (entity, fund, tax, rates)
-  - [ ] Add tolerance-aware assertions for IRR and monetary calculations
-  - [ ] Introduce initial property tests for IRR invariants (modest example count)
+- **Phase 1 — Unit Tests (Pure Calculations) ✅ COMPLETE**
+  - ✅ Cover functions in `src/*/calculations.py` (entity, fund, tax, rates)
+  - ✅ Add tolerance-aware assertions for IRR and monetary calculations
+  - ✅ Introduce initial property tests for IRR invariants (modest example count)
 
 ## Phase 2: Domain Integration Tests ✅ **COMPLETE (40/40 tests passing)**
 
