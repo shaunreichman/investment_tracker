@@ -46,7 +46,8 @@ All endpoints are relative to `/api/companies/{company_id}` where `{company_id}`
     "fund_status_breakdown": {
       "active": "number",
       "completed": "number",
-      "suspended": "number"
+      "suspended": "number",
+      "realized": "number"
     }
   },
   "performance_summary": {

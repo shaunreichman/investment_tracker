@@ -12,6 +12,7 @@ export enum FundType {
 
 export enum FundStatus {
   ACTIVE = 'active',
+  SUSPENDED = 'suspended',
   REALIZED = 'realized',
   COMPLETED = 'completed'
 }
@@ -435,6 +436,7 @@ export interface CompanyOverviewResponse {
       active: number;
       completed: number;
       suspended: number;
+      realized: number;
     };
   };
   performance_summary: {
