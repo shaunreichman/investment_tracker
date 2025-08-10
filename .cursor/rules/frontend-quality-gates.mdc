@@ -2,7 +2,7 @@
 
 ## Rule
 Before considering frontend changes complete, the following must always be verified:
-1. **No TypeScript errors** — run `tsc` and confirm it passes without errors or warnings.
+1. **No TypeScript errors** — run `npx tsc --noEmit` and confirm it passes without errors or warnings.
 2. **No lint issues** — run the linter and ensure it passes without errors or warnings.
 3. **All frontend checks pass** — all automated checks/tests for the frontend must succeed (both failures and warnings).
 

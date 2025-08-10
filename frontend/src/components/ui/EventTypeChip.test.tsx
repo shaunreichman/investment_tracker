@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { EventTypeChip } from '../EventTypeChip';
+import { EventTypeChip } from './EventTypeChip';
 
 describe('EventTypeChip', () => {
   it('renders event type label with aria label', () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import TemplateSelectionSection, { FundTemplate } from '../TemplateSelectionSection';
+import TemplateSelectionSection, { FundTemplate } from './TemplateSelectionSection';
 
 const theme = createTheme();
 const renderWithTheme = (ui: React.ReactElement) => render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);

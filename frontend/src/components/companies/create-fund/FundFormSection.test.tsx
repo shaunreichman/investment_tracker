@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import FundFormSection, { CreateFundFormData, ValidationErrors } from '../FundFormSection';
+import FundFormSection, { CreateFundFormData, ValidationErrors } from './FundFormSection';
 
 const theme = createTheme();
 const renderWithTheme = (ui: React.ReactElement) => render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);

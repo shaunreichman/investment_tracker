@@ -59,7 +59,7 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
         
         {/* Type Column */}
         <TableCell>
-        <EventTypeChip eventType="DISTRIBUTION" size="small" />
+        <EventTypeChip eventType={interestEvent?.event_type || "DISTRIBUTION"} size="small" />
         </TableCell>
         
         {/* Description Column */}

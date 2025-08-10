@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { TrackingTypeChip } from '../TrackingTypeChip';
+import { TrackingTypeChip } from './TrackingTypeChip';
 
 describe('TrackingTypeChip', () => {
   it('renders nav_based label', () => {

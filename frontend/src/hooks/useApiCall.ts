@@ -62,14 +62,19 @@ export function useApiCall<T>(
       return;
     }
 
-    await withErrorHandling(async () => {
+    try {
       setLoading(true);
-      const data = await apiCallRef.current();
-      setData(data);
-      return data;
-    });
-
-    setLoading(false);
+      const data = await withErrorHandling(async () => {
+        const result = await apiCallRef.current();
+        return result;
+      });
+      
+      if (data !== null) {
+        setData(data);
+      }
+    } finally {
+      setLoading(false);
+    }
   }, [enabled, withErrorHandling]);
 
   // Initial API call

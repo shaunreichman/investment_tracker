@@ -20,8 +20,8 @@ import {
   throttle,
   deepClone,
   deepEqual,
-} from '../helpers';
-import { EventType, DistributionType, TaxPaymentType, FundType, FundStatus, ExtendedFundEvent, ExtendedFund } from '../../types/api';
+} from './helpers';
+import { EventType, DistributionType, TaxPaymentType, FundType, FundStatus, ExtendedFundEvent, ExtendedFund } from '../types/api';
 
 describe('helpers', () => {
   describe('getEventTypeColor', () => {

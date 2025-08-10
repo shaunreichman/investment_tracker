@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useFormState } from '../useFormState';
+import { useFormState } from './useFormState';
 
 describe('useFormState', () => {
   it('updates values and marks fields as touched', () => {

@@ -8,7 +8,7 @@ import {
   eventValidators,
   fundValidators,
   validateField,
-} from '../validators';
+} from './validators';
 
 describe('validators', () => {
   describe('createValidator', () => {

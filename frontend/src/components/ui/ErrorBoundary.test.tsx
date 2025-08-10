@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { ErrorBoundary } from './ErrorBoundary';
 
 // Component that intentionally throws an error for testing
 const Boom: React.FC = () => {
