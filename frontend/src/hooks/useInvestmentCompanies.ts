@@ -40,4 +40,52 @@ export function useCompanyFunds(companyId: number, options?: { refetchOnWindowFo
     [companyId],
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
+}
+
+// ============================================================================
+// ENHANCED COMPANIES UI HOOKS
+// ============================================================================
+
+/**
+ * Hook to get company overview data for the Overview tab
+ */
+export function useCompanyOverview(companyId: number, options?: { refetchOnWindowFocus?: boolean }) {
+  return useApiCallWithDeps(
+    (companyId: number) => apiClient.getCompanyOverview(companyId),
+    [companyId],
+    { refetchOnWindowFocus: options?.refetchOnWindowFocus }
+  );
+}
+
+/**
+ * Hook to get enhanced funds data for the Funds tab
+ */
+export function useEnhancedFunds(
+  companyId: number,
+  params: {
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
+    status_filter?: 'all' | 'active' | 'completed' | 'suspended';
+    search?: string;
+    page?: number;
+    per_page?: number;
+  } = {},
+  options?: { refetchOnWindowFocus?: boolean }
+) {
+  return useApiCallWithDeps(
+    (companyId: number, params: any) => apiClient.getEnhancedFunds(companyId, params),
+    [companyId, params],
+    { refetchOnWindowFocus: options?.refetchOnWindowFocus }
+  );
+}
+
+/**
+ * Hook to get company details for the Company Details tab
+ */
+export function useCompanyDetails(companyId: number, options?: { refetchOnWindowFocus?: boolean }) {
+  return useApiCallWithDeps(
+    (companyId: number) => apiClient.getCompanyDetails(companyId),
+    [companyId],
+    { refetchOnWindowFocus: options?.refetchOnWindowFocus }
+  );
 } 

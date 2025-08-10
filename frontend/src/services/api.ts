@@ -27,7 +27,10 @@ import {
   FundEventListResponse,
   TaxStatementListResponse,
   InvestmentCompanyListResponse,
-  EntityListResponse
+  EntityListResponse,
+  CompanyOverviewResponse,
+  EnhancedFundsResponse,
+  CompanyDetailsResponse
 } from '../types/api';
 
 import { getApiBaseUrl } from '../config/environment';
@@ -203,6 +206,44 @@ class ApiClient {
 
   async getCompanyFunds(companyId: number): Promise<{ company: InvestmentCompany; funds: Fund[] }> {
     return this.request<{ company: InvestmentCompany; funds: Fund[] }>(`/api/companies/${companyId}/funds`);
+  }
+
+  // ============================================================================
+  // COMPANIES UI ENHANCED API
+  // ============================================================================
+
+  async getCompanyOverview(companyId: number): Promise<CompanyOverviewResponse> {
+    return this.request<CompanyOverviewResponse>(`/api/companies/${companyId}/overview`);
+  }
+
+  async getEnhancedFunds(
+    companyId: number,
+    params: {
+      sort_by?: string;
+      sort_order?: 'asc' | 'desc';
+      status_filter?: 'all' | 'active' | 'completed' | 'suspended';
+      search?: string;
+      page?: number;
+      per_page?: number;
+    } = {}
+  ): Promise<EnhancedFundsResponse> {
+    const searchParams = new URLSearchParams();
+    
+    if (params.sort_by) searchParams.append('sort_by', params.sort_by);
+    if (params.sort_order) searchParams.append('sort_order', params.sort_order);
+    if (params.status_filter) searchParams.append('status_filter', params.status_filter);
+    if (params.search) searchParams.append('search', params.search);
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.per_page) searchParams.append('per_page', params.per_page.toString());
+
+    const queryString = searchParams.toString();
+    const endpoint = `/api/companies/${companyId}/funds/enhanced${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request<EnhancedFundsResponse>(endpoint);
+  }
+
+  async getCompanyDetails(companyId: number): Promise<CompanyDetailsResponse> {
+    return this.request<CompanyDetailsResponse>(`/api/companies/${companyId}/details`);
   }
 
   // ============================================================================
