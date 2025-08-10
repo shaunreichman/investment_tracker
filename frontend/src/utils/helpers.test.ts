@@ -7,7 +7,6 @@ import {
   getEventTypeLabel,
   getStatusInfo,
   isActiveNavFund,
-  combineInterestWithholdingEvents,
   prepareChartData,
   calculateDateRange,
   generateChartTicks,
@@ -167,73 +166,6 @@ describe('helpers', () => {
         final_tax_statement_received: true,
       };
       expect(isActiveNavFund(fund)).toBe(false);
-    });
-  });
-
-  describe('combineInterestWithholdingEvents', () => {
-    const interestEvent: ExtendedFundEvent = {
-      id: 1,
-      fund_id: 1,
-      event_type: EventType.DISTRIBUTION,
-      event_date: '2023-06-30',
-      amount: 1000,
-      distribution_type: DistributionType.INTEREST,
-      created_at: '2023-01-01',
-      updated_at: '2023-01-01',
-    };
-
-    const withholdingEvent: ExtendedFundEvent = {
-      id: 2,
-      fund_id: 1,
-      event_type: EventType.TAX_PAYMENT,
-      event_date: '2023-06-30',
-      amount: 100,
-      tax_payment_type: TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING,
-      created_at: '2023-01-01',
-      updated_at: '2023-01-01',
-    };
-
-    it('should combine interest and withholding events on same date', () => {
-      const events = [interestEvent, withholdingEvent];
-      const combined = combineInterestWithholdingEvents(events);
-
-      expect(combined).toHaveLength(1);
-      expect(combined[0]).toEqual({
-        ...interestEvent,
-        has_withholding_tax: true,
-        withholding_amount: 100,
-        withholding_rate: 10,
-        net_interest: 900,
-      });
-    });
-
-    it('should not combine events on different dates', () => {
-      const differentDateWithholding: ExtendedFundEvent = {
-        ...withholdingEvent,
-        event_date: '2023-07-01',
-      };
-      const events = [interestEvent, differentDateWithholding];
-      const combined = combineInterestWithholdingEvents(events);
-
-      expect(combined).toHaveLength(2);
-      expect(combined[0]).toEqual(interestEvent);
-      expect(combined[1]).toEqual(differentDateWithholding);
-    });
-
-    it('should handle events without matching withholding tax', () => {
-      const events = [interestEvent];
-      const combined = combineInterestWithholdingEvents(events);
-
-      expect(combined).toHaveLength(1);
-      expect(combined[0]).toEqual(interestEvent);
-    });
-
-    it('should handle withholding events without matching interest', () => {
-      const events = [withholdingEvent];
-      const combined = combineInterestWithholdingEvents(events);
-
-      expect(combined).toHaveLength(1);
-      expect(combined[0]).toEqual(withholdingEvent);
     });
   });
 

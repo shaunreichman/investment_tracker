@@ -146,11 +146,11 @@ describe('TableBody', () => {
     };
 
     const individualEvent = {
-      events: [mockEvents[0]], // Capital call
+      events: [mockEvents[0]!], // Capital call - use non-null assertion
       isGrouped: false,
-      displayDate: mockEvents[0].event_date,
-      displayAmount: mockEvents[0].amount || 0,
-      displayDescription: mockEvents[0].description || 'Test Event'
+      displayDate: mockEvents[0]!.event_date,
+      displayAmount: mockEvents[0]!.amount || 0,
+      displayDescription: mockEvents[0]!.description || 'Test Event'
     };
 
     mockUseEventGrouping.mockReturnValue([groupedEvent, individualEvent]);
@@ -170,11 +170,11 @@ describe('TableBody', () => {
   it('should pass correct props to EventRow components', () => {
     // Mock the new flag-based grouping interface
     const individualEvent = {
-      events: [mockEvents[0]],
+      events: [mockEvents[0]!], // Use non-null assertion
       isGrouped: false,
-      displayDate: mockEvents[0].event_date,
-      displayAmount: mockEvents[0].amount || 0,
-      displayDescription: mockEvents[0].description || 'Test Event'
+      displayDate: mockEvents[0]!.event_date,
+      displayAmount: mockEvents[0]!.amount || 0,
+      displayDescription: mockEvents[0]!.description || 'Test Event'
     };
 
     mockUseEventGrouping.mockReturnValue([individualEvent]);
@@ -243,12 +243,7 @@ describe('TableBody', () => {
       ...mockHandlers
     });
 
-    expect(mockUseEventGrouping).toHaveBeenCalledWith(
-      mockEvents,
-      mockFund,
-      false,
-      true
-    );
+    expect(mockUseEventGrouping).toHaveBeenCalledWith(mockEvents);
   });
 
 

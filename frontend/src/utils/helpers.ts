@@ -4,7 +4,7 @@
 
 import { EVENT_TYPE_COLORS } from './constants';
 // Types are re-exported from this module; avoid importing here to prevent unused warnings
-import { getEventTypeLabel as _getEventTypeLabel, getEventTypeLabelSimple as _getEventTypeLabelSimple, combineInterestWithholdingEvents as _combineInterestWithholdingEvents } from './transformers/eventTransformers';
+import { getEventTypeLabel as _getEventTypeLabel, getEventTypeLabelSimple as _getEventTypeLabelSimple } from './transformers/eventTransformers';
 import { prepareChartData as _prepareChartData, calculateDateRange as _calculateDateRange, generateChartTicks as _generateChartTicks } from './transformers/chartDataTransformers';
 import { isActiveNavFund as _isActiveNavFund, getStatusInfo as _getStatusInfo, getStatusTooltip as _getStatusTooltip, getTrackingTypeColor as _getTrackingTypeColor } from './transformers/fundTransformers';
 export type { ExtendedFundEvent, ExtendedFund } from '../types/api';
@@ -56,13 +56,6 @@ export const getStatusTooltip = _getStatusTooltip;
  * @returns True if fund is active and NAV-based
  */
 export const isActiveNavFund = _isActiveNavFund;
-
-/**
- * Combine interest and withholding tax events for display
- * @param events - Array of fund events
- * @returns Array of events with combined interest/withholding tax
- */
-export const combineInterestWithholdingEvents = _combineInterestWithholdingEvents;
 
 /**
  * Prepare chart data for NAV performance visualization

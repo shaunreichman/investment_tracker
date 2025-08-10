@@ -34,7 +34,7 @@ export const useEventGrouping = (events: EventWithGrouping[]): GroupedEvent[] =>
           continue;
         }
 
-        // CALCULATED: Find all events in this group
+        // CALCULATED: Find all events in this group using simple flag-based logic
         const groupEvents = sortedEvents.filter(e => 
           e.group_id === event.group_id && e.is_grouped
         );
@@ -75,15 +75,16 @@ export const useEventGrouping = (events: EventWithGrouping[]): GroupedEvent[] =>
   }, [events]);
 };
 
-// CALCULATED: Generate descriptive text for grouped events
+// CALCULATED: Generate descriptive text for grouped events using simple flag-based logic
 const getGroupDescription = (groupType: GroupType, events: EventWithGrouping[]): string => {
   switch (groupType) {
     case GroupType.INTEREST_WITHHOLDING:
-      const interestEvent = events.find(e => e.event_type === 'DISTRIBUTION');
-      const withholdingEvent = events.find(e => e.event_type === 'TAX_PAYMENT');
+      // SYSTEM: Use group_position for ordering instead of complex event type detection
+      const firstEvent = events.find(e => e.group_position === 0);
+      const secondEvent = events.find(e => e.group_position === 1);
       
-      if (interestEvent && withholdingEvent) {
-        return `Interest Distribution + Withholding Tax (${interestEvent.amount || 0} + ${withholdingEvent.amount || 0})`;
+      if (firstEvent && secondEvent) {
+        return `Interest Distribution + Withholding Tax (${firstEvent.amount || 0} + ${secondEvent.amount || 0})`;
       }
       return 'Interest + Withholding Tax Group';
       

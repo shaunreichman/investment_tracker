@@ -38,7 +38,7 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
   onDeleteEvent
 }) => {
   // CALCULATED: Extract events from the grouped event
-  const { events, displayDate, displayAmount, displayDescription, groupType } = groupedEvent;
+  const { events, displayDate, displayDescription } = groupedEvent;
   const isNavBased = fund.tracking_type === 'nav_based';
 
   // CALCULATED: Find specific event types for display
