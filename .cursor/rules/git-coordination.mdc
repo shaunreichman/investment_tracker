@@ -1,0 +1,49 @@
+# Git Coordination Rules - Multi-Agent Environment
+
+## 🚨 CRITICAL: Multiple agents/devs working simultaneously
+
+**NEVER work on main branch. ALWAYS create/switch to feature branch first.**
+
+### Before Any Git Operations:
+```bash
+git status                    # Check current state
+git checkout -b feature/name  # Create new branch OR
+git checkout feature/name     # Switch to existing branch
+git pull origin main         # Get latest changes
+```
+
+### During Development:
+- Commit frequently: `git commit -m "feat: description"`
+- Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
+- NEVER force push or rewrite history
+
+### Before Pushing:
+```bash
+git fetch origin
+git rebase origin/main       # Resolve conflicts before pushing
+```
+
+### Branch Naming:
+- `feature/descriptive-name`
+- `fix/issue-description` 
+- `refactor/component-name`
+- `docs/topic-description`
+
+### If Conflicts Occur:
+1. Resolve manually
+2. Test functionality
+3. Continue: `git rebase --continue`
+4. If stuck: `git rebase --abort` and coordinate
+
+### Emergency: Broken State
+- STOP immediately
+- Create backup: `git branch backup/issue-description`
+- Document problem
+- Coordinate with team
+
+**Remember: This is shared workspace. Coordinate first, code second.**
+
+---
+description: Git coordination rules for multi-agent development environment
+globs: []
+alwaysApply: true
