@@ -29,19 +29,128 @@ This specification defines the frontend implementation for the enhanced Companie
 - Portfolio cards use visual hierarchy to emphasize key numbers
 - Responsive design stacks vertically on mobile, horizontal on larger screens
 
-### **Phase 2: Enhanced Funds Tab**
+### **Phase 2: Enhanced Funds Tab** ✅ **COMPLETED**
 **Goal**: Implement comprehensive fund comparison table with sorting, filtering, and standardized metrics
 **Tasks**:
-- [ ] Create fund comparison table with grouped column sections
-- [ ] Implement sorting functionality on all sortable columns
-- [ ] Add filtering options for status, currency, and fund type
-- [ ] Create responsive table design (desktop table, mobile cards)
-- [ ] Add search functionality across fund names and descriptions
+- [x] Create fund comparison table with grouped column sections
+- [x] Implement sorting functionality on all sortable columns
+- [x] Add filtering options for status, currency, and fund type
+- [x] Create responsive table design (desktop table, mobile cards)
+- [x] Add search functionality across fund names and descriptions
 **Design Principles**:
 - Table columns are logically grouped for easy comparison
 - All metrics are standardized between NAV-based and cost-based funds
 - Sorting defaults to start date (newest first) for most relevant view
 - Mobile experience uses card layout for better touch interaction
+
+### **Phase 2A: Component Architecture Refactoring** 🔄 **IN PROGRESS**
+**Goal**: Break down large tab components into maintainable, focused components with improved architecture
+**Tasks**:
+- [ ] Refactor FundsTab into folder structure with focused components
+- [ ] Extract company-wide hooks for filtering, sorting, pagination
+- [ ] Create shared utility hooks for common functionality
+- [ ] Apply same pattern to other tabs (Overview, Analysis, Activity)
+- [ ] Update imports and ensure all functionality works correctly
+**Design Principles**:
+- Single responsibility principle for each component
+- Business logic separated into reusable hooks
+- Domain-driven organization for maintainability
+- Improved testability and code organization
+**Benefits**:
+- Better maintainability and scalability
+- Easier testing and debugging
+- Reusable components across tabs
+- Professional, enterprise-level architecture
+**Timeline**: 1-2 weeks (foundational improvement)
+
+#### **Current Architecture (Before Refactoring)**
+```
+frontend/src/components/companies/
+├── FundsTab.tsx (612 lines - too large)
+├── CompanyDetailsTab.tsx (198 lines)
+├── OverviewTab.tsx (223 lines)
+├── AnalysisTab.tsx (127 lines)
+├── ActivityTab.tsx (127 lines)
+├── EnhancedCompaniesPage.tsx (267 lines)
+├── TabNavigation.tsx (97 lines)
+└── create-fund/ (already properly structured)
+    ├── CreateFundModal.tsx
+    ├── FundFormSection.tsx
+    └── TemplateSelectionSection.tsx
+
+frontend/src/hooks/
+├── useFunds.ts
+├── useInvestmentCompanies.ts
+└── useApiCall.ts
+```
+
+#### **Proposed Architecture (After Phase 2A)**
+```
+frontend/src/components/companies/
+├── funds-tab/
+│   ├── index.ts
+│   ├── FundsTab.tsx (main orchestrator, ~50-80 lines)
+│   ├── components/
+│   │   ├── FundsTable.tsx
+│   │   ├── FundsCards.tsx
+│   │   ├── FundsFilters.tsx
+│   │   ├── FundsPagination.tsx
+│   │   └── FundRow.tsx
+│   └── types/
+│       └── funds-tab.types.ts
+├── overview-tab/
+│   ├── index.ts
+│   ├── OverviewTab.tsx (main orchestrator)
+│   ├── components/
+│   │   ├── PortfolioSummaryCards.tsx
+│   │   ├── QuickStatsGrid.tsx
+│   │   └── PerformanceSummary.tsx
+│   └── types/
+│       └── overview-tab.types.ts
+├── analysis-tab/
+│   ├── index.ts
+│   ├── AnalysisTab.tsx (main orchestrator)
+│   └── components/
+│       └── AnalysisStub.tsx
+├── activity-tab/
+│   ├── index.ts
+│   ├── ActivityTab.tsx (main orchestrator)
+│   └── components/
+│       └── ActivityStub.tsx
+├── company-details-tab/
+│   ├── index.ts
+│   ├── CompanyDetailsTab.tsx (main orchestrator)
+│   └── components/
+│       ├── CompanyInfo.tsx
+│       ├── ContactInfo.tsx
+│       └── BusinessDetails.tsx
+├── EnhancedCompaniesPage.tsx
+└── TabNavigation.tsx
+
+frontend/src/hooks/
+├── companies/
+│   ├── useCompaniesFilters.ts
+│   ├── useCompaniesSorting.ts
+│   ├── useCompaniesPagination.ts
+│   └── useCompaniesViewMode.ts
+├── funds/
+│   ├── useFundsFilters.ts
+│   ├── useFundsSorting.ts
+│   └── useFundsPagination.ts
+├── shared/
+│   ├── useDebouncedSearch.ts
+│   ├── useResponsiveView.ts
+│   └── useTableSorting.ts
+├── useFunds.ts
+├── useInvestmentCompanies.ts
+└── useApiCall.ts
+```
+
+#### **Component Breakdown Strategy**
+- **Main Tab Components**: Act as orchestrators, managing state and layout
+- **Sub-Components**: Handle specific rendering responsibilities (table, cards, filters)
+- **Hooks**: Manage business logic and state (filtering, sorting, pagination)
+- **Types**: Define interfaces specific to each tab's data requirements
 
 ### **Phase 3: Company Details & Polish**
 **Goal**: Complete the remaining tabs and polish the overall user experience
@@ -303,9 +412,10 @@ This specification defines the frontend implementation for the enhanced Companie
 
 ## **Next Steps**
 
-1. **User Testing**: Test the new interface with real users and collect feedback
-2. **Performance Monitoring**: Track tab switching performance and user engagement
-3. **Phase 2 Planning**: Begin planning for enhanced analytics and advanced features
-4. **Accessibility Audit**: Conduct comprehensive accessibility testing
-5. **Performance Optimization**: Implement code splitting and lazy loading for tabs
-6. **Feature Enhancement**: Add advanced filtering and search capabilities
+1. **Phase 2A Implementation**: Begin component architecture refactoring for improved maintainability
+2. **User Testing**: Test the new interface with real users and collect feedback
+3. **Performance Monitoring**: Track tab switching performance and user engagement
+4. **Phase 3 Planning**: Begin planning for enhanced analytics and advanced features
+5. **Accessibility Audit**: Conduct comprehensive accessibility testing
+6. **Performance Optimization**: Implement code splitting and lazy loading for tabs
+7. **Feature Enhancement**: Add advanced filtering and search capabilities

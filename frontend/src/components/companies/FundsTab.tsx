@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -29,6 +29,8 @@ import {
   TrendingUp,
   TrendingDown,
   UnfoldMore,
+  ViewList,
+  ViewModule,
 } from '@mui/icons-material';
 import { EnhancedFund, EnhancedFundsResponse } from '../../types/api';
 import { formatCurrency, formatPercentage } from '../../utils/formatters';
@@ -60,6 +62,27 @@ export const FundsTab: React.FC<FundsTabProps> = ({
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState(currentParams.search || '');
   const [statusFilter, setStatusFilter] = useState(currentParams.status_filter || 'all');
+  const [currencyFilter, setCurrencyFilter] = useState(currentParams.currency_filter || 'all');
+  const [fundTypeFilter, setFundTypeFilter] = useState(currentParams.fund_type_filter || 'all');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+
+  // Auto-switch to card view on mobile devices
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setViewMode('cards');
+      } else {
+        setViewMode('table');
+      }
+    };
+
+    // Set initial view mode
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Handle search with debouncing
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +101,18 @@ export const FundsTab: React.FC<FundsTabProps> = ({
     const value = event.target.value;
     setStatusFilter(value);
     onParamsChange({ ...currentParams, status_filter: value, page: 1 });
+  };
+
+  const handleCurrencyFilterChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    setCurrencyFilter(value);
+    onParamsChange({ ...currentParams, currency_filter: value, page: 1 });
+  };
+
+  const handleFundTypeFilterChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    setFundTypeFilter(value);
+    onParamsChange({ ...currentParams, fund_type_filter: value, page: 1 });
   };
 
   const handleSort = (field: string) => {
@@ -185,7 +220,109 @@ export const FundsTab: React.FC<FundsTabProps> = ({
                 <MenuItem value="suspended">Suspended</MenuItem>
               </Select>
             </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Currency Filter</InputLabel>
+              <Select
+                value={currencyFilter}
+                label="Currency Filter"
+                onChange={handleCurrencyFilterChange}
+              >
+                <MenuItem value="all">All Currencies</MenuItem>
+                <MenuItem value="AUD">AUD</MenuItem>
+                <MenuItem value="USD">USD</MenuItem>
+                <MenuItem value="EUR">EUR</MenuItem>
+                <MenuItem value="GBP">GBP</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Fund Type Filter</InputLabel>
+              <Select
+                value={fundTypeFilter}
+                label="Fund Type Filter"
+                onChange={handleFundTypeFilterChange}
+              >
+                <MenuItem value="all">All Types</MenuItem>
+                <MenuItem value="venture_capital">Venture Capital</MenuItem>
+                <MenuItem value="private_equity">Private Equity</MenuItem>
+                <MenuItem value="real_estate">Real Estate</MenuItem>
+                <MenuItem value="infrastructure">Infrastructure</MenuItem>
+                <MenuItem value="debt">Debt</MenuItem>
+              </Select>
+            </FormControl>
+
+              {/* View Toggle */}
+              <Box display="flex" alignItems="center" gap={1}>
+                <Tooltip title="Table View">
+                  <IconButton
+                    size="small"
+                    onClick={() => setViewMode('table')}
+                    color={viewMode === 'table' ? 'primary' : 'default'}
+                  >
+                    <ViewList />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Card View">
+                  <IconButton
+                    size="small"
+                    onClick={() => setViewMode('cards')}
+                    color={viewMode === 'cards' ? 'primary' : 'default'}
+                  >
+                    <ViewModule />
+                  </IconButton>
+                </Tooltip>
+              </Box>
           </Box>
+          
+          {/* Active Filters Summary */}
+          {(statusFilter !== 'all' || currencyFilter !== 'all' || fundTypeFilter !== 'all' || searchTerm) && (
+            <Box mt={2} display="flex" gap={1} flexWrap="wrap" alignItems="center">
+              <Typography variant="caption" color="textSecondary">
+                Active filters:
+              </Typography>
+              {statusFilter !== 'all' && (
+                <Chip
+                  label={`Status: ${statusFilter}`}
+                  size="small"
+                  onDelete={() => {
+                    setStatusFilter('all');
+                    onParamsChange({ ...currentParams, status_filter: 'all', page: 1 });
+                  }}
+                />
+              )}
+              {currencyFilter !== 'all' && (
+                <Chip
+                  label={`Currency: ${currencyFilter}`}
+                  size="small"
+                  onDelete={() => {
+                    setCurrencyFilter('all');
+                    onParamsChange({ ...currentParams, currency_filter: 'all', page: 1 });
+                  }}
+                />
+              )}
+              {fundTypeFilter !== 'all' && (
+                <Chip
+                  label={`Type: ${fundTypeFilter}`}
+                  size="small"
+                  onDelete={() => {
+                    setFundTypeFilter('all');
+                    onParamsChange({ ...currentParams, fund_type_filter: 'all', page: 1 });
+                  }}
+                />
+              )}
+              {searchTerm && (
+                <Chip
+                  label={`Search: "${searchTerm}"`}
+                  size="small"
+                  onDelete={() => {
+                    setSearchTerm('');
+                    onParamsChange({ ...currentParams, search: '', page: 1 });
+                  }}
+                />
+              )}
+            </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -345,6 +482,114 @@ export const FundsTab: React.FC<FundsTabProps> = ({
               </TableBody>
             </Table>
           </TableContainer>
+          
+          {/* Mobile Card View */}
+          {viewMode === 'cards' && (
+            <Box sx={{ p: 2 }}>
+              <Box display="grid" gap={2} sx={{ 
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }
+              }}>
+                {data.funds.map((fund) => (
+                  <Card key={fund.id} variant="outlined" sx={{ height: 'fit-content' }}>
+                    <CardContent>
+                      {/* Fund Header */}
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                        <Box>
+                          <Link
+                            component="button"
+                            variant="h6"
+                            onClick={() => navigate(`/funds/${fund.id}`)}
+                            sx={{ textDecoration: 'none', cursor: 'pointer', textAlign: 'left' }}
+                          >
+                            {fund.name}
+                          </Link>
+                          {fund.description && (
+                            <Typography variant="body2" color="textSecondary" mt={1}>
+                              {fund.description}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box display="flex" gap={1}>
+                          <StatusChip status={fund.status} />
+                          <TrackingTypeChip trackingType={fund.tracking_type} />
+                        </Box>
+                      </Box>
+
+                      {/* Fund Details Grid */}
+                      <Box display="grid" gap={2} sx={{ gridTemplateColumns: '1fr 1fr' }}>
+                        {/* Basic Info */}
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Type</Typography>
+                          <Typography variant="body2">{fund.fund_type}</Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Currency</Typography>
+                          <Typography variant="body2">{fund.currency}</Typography>
+                        </Box>
+                        
+                        {/* Performance */}
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Expected IRR</Typography>
+                          <Typography variant="body2">
+                            {fund.estimated_return.expected_irr !== null
+                              ? formatPercentage(fund.estimated_return.expected_irr)
+                              : '-'}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Current Value</Typography>
+                          <Typography variant="body2">
+                            {formatCurrency(fund.equity.current_value)}
+                          </Typography>
+                        </Box>
+
+                        {/* Dates */}
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Start Date</Typography>
+                          <Typography variant="body2">
+                            {new Date(fund.fund_details.start_date).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Days Since Activity</Typography>
+                          <Typography variant="body2">
+                            {fund.fund_details.days_since_last_activity}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {/* Performance Summary */}
+                      <Box mt={2} p={1.5} sx={{ bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="caption" color="textSecondary" display="block" mb={1}>
+                          Performance Summary
+                        </Typography>
+                        <Box display="flex" justifyContent="space-between">
+                          <Box>
+                            <Typography variant="caption" color="textSecondary">Total P/L</Typography>
+                            <Typography 
+                              variant="body2" 
+                              color={fund.performance.total_profit_loss >= 0 ? 'success.main' : 'error.main'}
+                              fontWeight="bold"
+                            >
+                              {formatCurrency(fund.performance.total_profit_loss)}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="caption" color="textSecondary">Completed IRR</Typography>
+                            <Typography variant="body2">
+                              {fund.returns.completed_irr !== null
+                                ? formatPercentage(fund.returns.completed_irr)
+                                : '-'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            </Box>
+          )}
           
           {/* Pagination */}
           <TablePagination
