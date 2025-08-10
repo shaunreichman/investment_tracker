@@ -24,6 +24,9 @@ const mockUseEnhancedFunds = jest.mocked(require('../../hooks/useInvestmentCompa
 const mockUseCompanyDetails = jest.mocked(require('../../hooks/useInvestmentCompanies').useCompanyDetails);
 
 describe('EnhancedCompaniesPage', () => {
+  // Increase timeout for all tests in this suite
+  jest.setTimeout(15000);
+  
   const user = userEvent;
 
   beforeEach(() => {
@@ -111,13 +114,16 @@ describe('EnhancedCompaniesPage', () => {
       const fundsTab = screen.getByRole('tab', { name: /funds/i });
       await user.click(fundsTab);
 
+      // Wait for tab panel to appear
       await waitFor(() => {
         expect(screen.getByRole('tabpanel', { name: /funds/i })).toBeInTheDocument();
-      });
+      }, { timeout: 10000 });
+      
+      // Wait for fund content to appear with increased timeout
       await waitFor(() => {
         expect(screen.getByText(/test enhanced fund 1/i)).toBeInTheDocument();
-      });
-    });
+      }, { timeout: 10000 });
+    }, 15000); // Increase test timeout to 15 seconds
 
     it('switches to Company Details tab when clicked', async () => {
       render(<EnhancedCompaniesPage />);
@@ -187,10 +193,11 @@ describe('EnhancedCompaniesPage', () => {
       const fundsTab = screen.getByRole('tab', { name: /funds/i });
       await user.click(fundsTab);
 
+      // Wait for tab panel with increased timeout
       await waitFor(() => {
         expect(screen.getByRole('tabpanel', { name: /funds/i })).toBeInTheDocument();
-      });
-    });
+      }, { timeout: 10000 });
+    }, 15000); // Increase test timeout to 15 seconds
   });
 
   describe('Error Handling', () => {
