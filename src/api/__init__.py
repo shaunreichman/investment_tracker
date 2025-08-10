@@ -335,20 +335,249 @@ def create_app(db_config=None):
                 # Get funds with summary data using domain methods
                 funds_data = company.get_funds_with_summary(session=session)
                 
-                # Include company information
+                # Include company information with updated structure
                 company_data = {
                     "id": company.id,
                     "name": company.name,
                     "description": company.description,
                     "website": company.website,
-                    "contact_email": company.contact_email,
-                    "contact_phone": company.contact_phone
+                    "company_type": company.company_type,
+                    "business_address": company.business_address,
+                    "contacts": [
+                        {
+                            "id": contact.id,
+                            "name": contact.name,
+                            "title": contact.title,
+                            "direct_number": contact.direct_number,
+                            "direct_email": contact.direct_email,
+                            "notes": contact.notes
+                        }
+                        for contact in company.contacts
+                    ]
                 }
                 
                 return jsonify({
                     "company": company_data,
                     "funds": funds_data
                 }), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/companies/<int:company_id>/overview', methods=['GET'])
+    def company_overview(company_id):
+        """Get company overview with portfolio summary for the Overview tab"""
+        try:
+            session = get_db_session()
+            
+            try:
+                # Use domain methods to get company
+                company = InvestmentCompany.get_by_id(company_id, session=session)
+                
+                if not company:
+                    return jsonify({"error": "Investment company not found"}), 404
+                
+                # Get comprehensive company summary data using domain methods
+                summary_data = company.get_company_summary_data(session=session)
+                
+                return jsonify(summary_data), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/companies/<int:company_id>/details', methods=['GET'])
+    def company_details(company_id):
+        """Get company details information for the Company Details tab"""
+        try:
+            session = get_db_session()
+            
+            try:
+                # Use domain methods to get company
+                company = InvestmentCompany.get_by_id(company_id, session=session)
+                
+                if not company:
+                    return jsonify({"error": "Investment company not found"}), 404
+                
+                # Return company details with contacts
+                company_data = {
+                    "company": {
+                        "id": company.id,
+                        "name": company.name,
+                        "company_type": company.company_type,
+                        "business_address": company.business_address,
+                        "website": company.website,
+                        "contacts": [
+                            {
+                                "id": contact.id,
+                                "name": contact.name,
+                                "title": contact.title,
+                                "direct_number": contact.direct_number,
+                                "direct_email": contact.direct_email,
+                                "notes": contact.notes
+                            }
+                            for contact in company.contacts
+                        ]
+                    }
+                }
+                
+                return jsonify(company_data), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/companies/<int:company_id>/funds/enhanced', methods=['GET'])
+    def company_enhanced_funds(company_id):
+        """Get enhanced fund comparison data for the Funds tab with sorting, filtering, and pagination"""
+        try:
+            session = get_db_session()
+            
+            try:
+                # Use domain methods to get company
+                company = InvestmentCompany.get_by_id(company_id, session=session)
+                
+                if not company:
+                    return jsonify({"error": "Investment company not found"}), 404
+                
+                # Get query parameters
+                sort_by = request.args.get('sort_by', 'start_date')
+                sort_order = request.args.get('sort_order', 'desc')
+                status_filter = request.args.get('status_filter', 'all')
+                search = request.args.get('search', '')
+                page = int(request.args.get('page', 1))
+                per_page = min(int(request.args.get('per_page', 25)), 100)  # Cap at 100
+                
+                # Get all funds for this company
+                all_funds = company.funds
+                
+                # Apply status filter
+                if status_filter != 'all':
+                    from src.fund.models import FundStatus
+                    status_map = {
+                        'active': FundStatus.ACTIVE,
+                        'completed': FundStatus.COMPLETED,
+                        'suspended': FundStatus.REALIZED
+                    }
+                    if status_filter in status_map:
+                        all_funds = [f for f in all_funds if f.status == status_map[status_filter]]
+                
+                # Apply search filter
+                if search:
+                    search_lower = search.lower()
+                    all_funds = [f for f in all_funds if 
+                               search_lower in f.name.lower() or 
+                               (f.description and search_lower in f.description.lower())]
+                
+                # Apply sorting
+                if sort_by == 'start_date':
+                    all_funds.sort(key=lambda x: x.start_date or date.min, reverse=(sort_order == 'desc'))
+                elif sort_by == 'name':
+                    all_funds.sort(key=lambda x: x.name.lower(), reverse=(sort_order == 'desc'))
+                elif sort_by == 'status':
+                    all_funds.sort(key=lambda x: x.status.value, reverse=(sort_order == 'desc'))
+                elif sort_by == 'commitment_amount':
+                    all_funds.sort(key=lambda x: x.commitment_amount or 0, reverse=(sort_order == 'desc'))
+                elif sort_by == 'current_equity_balance':
+                    all_funds.sort(key=lambda x: x.current_equity_balance or 0, reverse=(sort_order == 'desc'))
+                
+                # Apply pagination
+                total_funds = len(all_funds)
+                total_pages = (total_funds + per_page - 1) // per_page
+                start_idx = (page - 1) * per_page
+                end_idx = start_idx + per_page
+                paginated_funds = all_funds[start_idx:end_idx]
+                
+                # Build enhanced fund data
+                funds_data = []
+                for fund in paginated_funds:
+                    # Get enhanced fund metrics
+                    enhanced_metrics = fund.get_enhanced_fund_metrics()
+                    distribution_summary = fund.get_distribution_summary()
+                    
+                    # Calculate days since last activity
+                    days_since_last_activity = None
+                    if fund.fund_events:
+                        last_event_date = max(event.event_date for event in fund.fund_events if event.event_date)
+                        if last_event_date:
+                            days_since_last_activity = (date.today() - last_event_date).days
+                    
+                    # Calculate performance vs expected
+                    performance_vs_expected = None
+                    if fund.irr_gross is not None and fund.expected_irr is not None:
+                        performance_vs_expected = fund.irr_gross - fund.expected_irr
+                    
+                    fund_data = {
+                        "id": fund.id,
+                        "name": fund.name,
+                        "description": fund.description,
+                        "currency": fund.currency,
+                        "fund_type": fund.fund_type,
+                        "status": fund.status.value,
+                        "tracking_type": fund.tracking_type.value,
+                        
+                        "fund_details": {
+                            "start_date": fund.start_date.isoformat() if fund.start_date else None,
+                            "end_date": fund.end_date.isoformat() if fund.end_date else None,
+                            "actual_duration_days": (fund.end_date - fund.start_date).days if (fund.start_date and fund.end_date) else None,
+                            "days_since_last_activity": days_since_last_activity
+                        },
+                        
+                        "equity": {
+                            "commitment": fund.commitment_amount or 0,
+                            "invested_capital": fund.current_equity_balance or 0,
+                            "current_value": fund.current_equity_balance or 0,
+                            "current_equity_balance": fund.current_equity_balance or 0
+                        },
+                        
+                        "estimated_return": {
+                            "expected_irr": fund.expected_irr,
+                            "duration_months": fund.expected_duration_months
+                        },
+                        
+                        "distributions": {
+                            "distribution_count": distribution_summary["distribution_count"],
+                            "total_distribution_amount": distribution_summary["total_distribution_amount"],
+                            "last_distribution_date": distribution_summary["last_distribution_date"],
+                            "distribution_frequency_months": distribution_summary["distribution_frequency_months"]
+                        },
+                        
+                        "returns": {
+                            "completed_irr": fund.irr_gross,
+                            "performance_vs_expected": performance_vs_expected
+                        },
+                        
+                        "performance": {
+                            "unrealized_gains_losses": enhanced_metrics["unrealized_gains_losses"],
+                            "realized_gains_losses": enhanced_metrics["realized_gains_losses"],
+                            "total_profit_loss": enhanced_metrics["total_profit_loss"]
+                        }
+                    }
+                    funds_data.append(fund_data)
+                
+                # Build response
+                response_data = {
+                    "funds": funds_data,
+                    "pagination": {
+                        "current_page": page,
+                        "total_pages": total_pages,
+                        "total_funds": total_funds,
+                        "per_page": per_page
+                    },
+                    "filters": {
+                        "applied_status_filter": status_filter,
+                        "applied_search": search if search else None
+                    }
+                }
+                
+                return jsonify(response_data), 200
                 
             finally:
                 session.close()
