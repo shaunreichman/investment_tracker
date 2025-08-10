@@ -137,16 +137,18 @@ Matching strategy for withholding tax payments:
 - [x] Implement withholding matching via a centralized helper: same-date interest-withholding pairing only
 - [ ] Unit tests for reconciliation and withholding scenarios (pending backend test framework)
 
+- [x] Unit tests for reconciliation and withholding scenarios (completed in Phase 2A)
+
 Notes:
 - Cash flow direction is automatically inferred from `FundEvent.event_type` (outflow: CAPITAL_CALL, UNIT_PURCHASE; inflow: RETURN_OF_CAPITAL, DISTRIBUTION, UNIT_SALE). No manual direction input.
 - `distribution_type` is required for distribution creation and validated.
 
 ### Phase 2A: Testing Suite Implementation
-- [ ] Add `BankFactory` and `BankAccountFactory` to test factories
-- [ ] Add `FundEventCashFlowFactory` to test factories
-- [ ] Create domain logic tests for cash flow reconciliation
-- [ ] Create domain logic tests for withholding tax matching
-- [ ] Create domain logic tests for completion flag management
+- [x] Add `BankFactory` and `BankAccountFactory` to test factories
+- [x] Add `FundEventCashFlowFactory` to test factories
+- [x] Create domain logic tests for cash flow reconciliation
+- [x] Create domain logic tests for withholding tax matching
+- [x] Create domain logic tests for completion flag management
 - [ ] Create API endpoint tests for bank CRUD operations
 - [ ] Create API endpoint tests for bank account CRUD operations
 - [ ] Create API endpoint tests for fund event cash flows CRUD operations
