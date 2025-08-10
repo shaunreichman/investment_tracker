@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Box, Button, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
@@ -27,6 +27,9 @@ const TabContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   borderBottom: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.background.paper,
+  '&.tab-navigation': {
+    // Additional custom styles if needed
+  },
   [theme.breakpoints.down('md')]: {
     flexDirection: 'column',
     borderBottom: 'none',
@@ -71,20 +74,68 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   onTabChange,
 }) => {
   const isMobile = false; // TODO: Implement responsive breakpoint detection
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Handle tab click - prevent calling onTabChange if already active
+  const handleTabClick = useCallback((tabId: string) => {
+    if (tabId !== activeTab) {
+      onTabChange(tabId);
+    }
+  }, [activeTab, onTabChange]);
+
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback((event: React.KeyboardEvent, tabIndex: number) => {
+    let nextTabIndex = tabIndex;
+    
+    switch (event.key) {
+      case 'ArrowRight':
+        nextTabIndex = (tabIndex + 1) % tabs.length;
+        break;
+      case 'ArrowLeft':
+        nextTabIndex = tabIndex === 0 ? tabs.length - 1 : tabIndex - 1;
+        break;
+      case 'Home':
+        nextTabIndex = 0;
+        break;
+      case 'End':
+        nextTabIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+    
+    event.preventDefault();
+    const nextTab = tabs[nextTabIndex];
+    if (nextTab && !nextTab.disabled) {
+      onTabChange(nextTab.id);
+      tabRefs.current[nextTabIndex]?.focus();
+    }
+  }, [tabs, onTabChange]);
+
+  // Set up tab refs array
+  React.useEffect(() => {
+    tabRefs.current = tabRefs.current.slice(0, tabs.length);
+  }, [tabs.length]);
 
   return (
-    <TabContainer>
-      {tabs.map((tab) => (
+    <TabContainer role="tablist" aria-label="Company navigation tabs" className="tab-navigation">
+      {tabs.map((tab, index) => (
         <TabButton
           key={tab.id}
+          ref={(el) => {
+            tabRefs.current[index] = el;
+          }}
           active={activeTab === tab.id}
           isMobile={isMobile}
           disabled={tab.disabled || false}
-          onClick={() => onTabChange(tab.id)}
+          onClick={() => handleTabClick(tab.id)}
+          onKeyDown={(e) => handleKeyDown(e, index)}
           startIcon={tab.icon}
           aria-label={tab.label}
           aria-selected={activeTab === tab.id}
           role="tab"
+          tabIndex={activeTab === tab.id ? 0 : -1}
+          id={`${tab.id}-tab`}
         >
           <Typography variant="body2" component="span">
             {tab.label}

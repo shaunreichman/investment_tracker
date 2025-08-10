@@ -18,20 +18,27 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, loading }) => {
     );
   }
 
+  if (!data) {
+    return (
+      <Box p={3}>
+        <Typography>No overview data available</Typography>
+      </Box>
+    );
+  }
+
   const { portfolio_summary, performance_summary, last_activity } = data;
 
   return (
-    <Box p={3}>
-      {/* Portfolio Summary Cards */}
+    <Box p={3} className="overview-tab">
+      <Typography variant="h4" gutterBottom>
+        Portfolio Overview
+      </Typography>
+      
       <PortfolioSummaryCards portfolioSummary={portfolio_summary} />
-
-      {/* Quick Stats Grid */}
       <QuickStatsGrid 
         portfolioSummary={portfolio_summary}
         lastActivity={last_activity}
       />
-
-      {/* Performance Summary */}
       <PerformanceSummary performanceSummary={performance_summary} />
     </Box>
   );

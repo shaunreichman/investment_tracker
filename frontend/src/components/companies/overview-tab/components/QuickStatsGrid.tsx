@@ -15,14 +15,10 @@ import { QuickStatsGridProps } from '../types/overview-tab.types';
 
 export const QuickStatsGrid: React.FC<QuickStatsGridProps> = ({ portfolioSummary, lastActivity }) => {
   return (
-    <Box 
-      display="grid" 
-      gap={3} 
-      sx={{ 
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
-        mb: 4 
-      }}
-    >
+    <Box data-testid="quick-stats-grid" mb={3}>
+      <Typography variant="h6" gutterBottom>
+        Quick Stats
+      </Typography>
       {/* Fund Counts */}
       <Card>
         <CardContent>

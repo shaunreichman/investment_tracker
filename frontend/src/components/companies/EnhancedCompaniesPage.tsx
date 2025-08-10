@@ -123,7 +123,15 @@ export const EnhancedCompaniesPage: React.FC = () => {
     // Handle errors from any of the API calls
     if (overviewError || fundsError || detailsError) {
       const errorMessage = overviewError || fundsError || detailsError || 'Unknown error';
-      const errorInfo = createErrorInfo(typeof errorMessage === 'string' ? errorMessage : 'Unknown error');
+      
+      // Check if the error is already an ErrorInfo object
+      let errorInfo;
+      if (typeof errorMessage === 'object' && errorMessage !== null && 'retryable' in errorMessage) {
+        errorInfo = errorMessage;
+      } else {
+        errorInfo = createErrorInfo(typeof errorMessage === 'string' ? errorMessage : 'Unknown error');
+      }
+      
       return (
         <Box p={3}>
           <ErrorDisplay
@@ -219,34 +227,69 @@ export const EnhancedCompaniesPage: React.FC = () => {
       {/* Tab Content */}
       <Box>
         {activeTab === 'overview' && (
-          <OverviewTab
-            data={overviewData}
-            loading={overviewLoading}
-          />
+          <Box
+            role="tabpanel"
+            id="overview-tabpanel"
+            aria-labelledby="overview-tab"
+            hidden={activeTab !== 'overview'}
+          >
+            <OverviewTab
+              data={overviewData}
+              loading={overviewLoading}
+            />
+          </Box>
         )}
 
         {activeTab === 'funds' && (
-          <FundsTab
-            data={fundsData}
-            loading={fundsLoading}
-            onParamsChange={handleFundsParamsChange}
-            currentParams={fundsParams}
-          />
+          <Box
+            role="tabpanel"
+            id="funds-tabpanel"
+            aria-labelledby="funds-tab"
+            hidden={activeTab !== 'funds'}
+          >
+            <FundsTab
+              data={fundsData}
+              loading={fundsLoading}
+              onParamsChange={handleFundsParamsChange}
+              currentParams={fundsParams}
+            />
+          </Box>
         )}
 
         {activeTab === 'analysis' && (
-          <AnalysisTab />
+          <Box
+            role="tabpanel"
+            id="analysis-tabpanel"
+            aria-labelledby="analysis-tab"
+            hidden={activeTab !== 'analysis'}
+          >
+            <AnalysisTab />
+          </Box>
         )}
 
         {activeTab === 'activity' && (
-          <ActivityTab />
+          <Box
+            role="tabpanel"
+            id="activity-tabpanel"
+            aria-labelledby="activity-tab"
+            hidden={activeTab !== 'activity'}
+          >
+            <ActivityTab />
+          </Box>
         )}
 
         {activeTab === 'details' && (
-          <CompanyDetailsTab
-            data={detailsData!}
-            loading={detailsLoading}
-          />
+          <Box
+            role="tabpanel"
+            id="details-tabpanel"
+            aria-labelledby="details-tab"
+            hidden={activeTab !== 'details'}
+          >
+            <CompanyDetailsTab
+              data={detailsData!}
+              loading={detailsLoading}
+            />
+          </Box>
         )}
       </Box>
 

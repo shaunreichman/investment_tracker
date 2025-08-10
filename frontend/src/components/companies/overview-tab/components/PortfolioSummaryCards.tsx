@@ -19,14 +19,10 @@ export const PortfolioSummaryCards: React.FC<PortfolioSummaryCardsProps> = ({ po
     (portfolioSummary.fund_status_breakdown.suspended || 0);
 
   return (
-    <Box 
-      display="grid" 
-      gap={3} 
-      sx={{ 
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
-        mb: 4 
-      }}
-    >
+    <Box data-testid="portfolio-summary-cards" mb={3}>
+      <Typography variant="h6" gutterBottom>
+        Portfolio Summary
+      </Typography>
       {/* Total Committed Capital */}
       <Card>
         <CardContent>
