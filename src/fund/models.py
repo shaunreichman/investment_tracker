@@ -2413,23 +2413,92 @@ class Fund(Base):
     @with_session
     def get_total_unit_sales(self, session=None):
         """
-        Get the total amount of unit sales for NAV-based funds.
-        
-        Args:
-            session (Session): Database session
+        Get total units sold across all unit sale events.
         
         Returns:
-            float: Total unit sales amount
+            float: Total units sold
         """
-        if self.tracking_type != FundType.NAV_BASED:
-            return 0.0
-            
-        sale_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.UNIT_SALE
-        ).all()
+        unit_sale_events = [event for event in self.fund_events if event.event_type == EventType.UNIT_SALE]
+        return sum(event.units_sold or 0 for event in unit_sale_events)
+    
+    @with_session
+    def get_enhanced_fund_metrics(self, session=None):
+        """
+        Get enhanced fund metrics for Companies UI as specified in the API contract.
         
-        return sum(event.amount for event in sale_events if event.amount)
+        This method provides the performance metrics needed for fund comparison:
+        - unrealized_gains_losses
+        - realized_gains_losses  
+        - total_profit_loss
+        
+        Returns:
+            dict: Enhanced fund metrics matching the API contract structure
+        """
+        # Calculate unrealized gains/losses
+        if self.tracking_type == FundType.NAV_BASED:
+            # For NAV-based funds: current NAV value - total cost basis
+            total_cost_basis = self.get_total_unit_purchases(session=session)
+            current_nav_value = self.get_current_nav_fund_value(session=session)
+            unrealized_gains_losses = (current_nav_value or 0) - (total_cost_basis or 0)
+        else:
+            # For cost-based funds: current equity balance - total capital called
+            total_capital_called = self.get_total_capital_calls(session=session)
+            current_equity = self.current_equity_balance or 0
+            unrealized_gains_losses = current_equity - (total_capital_called or 0)
+        
+        # Calculate realized gains/losses from distributions
+        total_distributions = self.get_total_distributions(session=session) or 0
+        
+        # Calculate total profit/loss
+        total_profit_loss = unrealized_gains_losses + total_distributions
+        
+        return {
+            "unrealized_gains_losses": unrealized_gains_losses,
+            "realized_gains_losses": total_distributions,
+            "total_profit_loss": total_profit_loss
+        }
+    
+    @with_session
+    def get_distribution_summary(self, session=None):
+        """
+        Get distribution summary for Companies UI as specified in the API contract.
+        
+        Returns:
+            dict: Distribution summary data
+        """
+        # Get all distribution events
+        distribution_events = [event for event in self.fund_events if event.event_type == EventType.DISTRIBUTION]
+        
+        if not distribution_events:
+            return {
+                "distribution_count": 0,
+                "total_distribution_amount": 0,
+                "last_distribution_date": None,
+                "distribution_frequency_months": None
+            }
+        
+        # Calculate distribution metrics
+        distribution_count = len(distribution_events)
+        total_distribution_amount = sum(event.amount or 0 for event in distribution_events)
+        
+        # Find last distribution date
+        last_distribution_date = max(event.event_date for event in distribution_events)
+        
+        # Calculate distribution frequency (months between first and last distribution)
+        if distribution_count > 1:
+            first_distribution_date = min(event.event_date for event in distribution_events)
+            from dateutil.relativedelta import relativedelta
+            delta = relativedelta(last_distribution_date, first_distribution_date)
+            distribution_frequency_months = delta.months + (delta.years * 12)
+        else:
+            distribution_frequency_months = None
+        
+        return {
+            "distribution_count": distribution_count,
+            "total_distribution_amount": total_distribution_amount,
+            "last_distribution_date": last_distribution_date.isoformat() if last_distribution_date else None,
+            "distribution_frequency_months": distribution_frequency_months
+        }
 
     @with_session
     def get_total_capital_calls(self, session=None):

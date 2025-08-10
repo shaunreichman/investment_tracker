@@ -3,7 +3,7 @@ from faker import Faker
 from datetime import datetime
 
 from src.entity.models import Entity
-from src.investment_company.models import InvestmentCompany
+from src.investment_company.models import InvestmentCompany, Contact
 from src.fund.models import Fund, FundType, FundEvent, EventType, DistributionType, TaxPaymentType, FundEventCashFlow, CashFlowDirection
 from src.tax.models import TaxStatement
 from src.rates.models import RiskFreeRate
@@ -25,6 +25,7 @@ def set_session(session):
     FundFactory._meta.sqlalchemy_session = session
     EntityFactory._meta.sqlalchemy_session = session
     InvestmentCompanyFactory._meta.sqlalchemy_session = session
+    ContactFactory._meta.sqlalchemy_session = session
     FundEventFactory._meta.sqlalchemy_session = session
     TaxStatementFactory._meta.sqlalchemy_session = session
     RiskFreeRateFactory._meta.sqlalchemy_session = session
@@ -72,6 +73,17 @@ class EntityFactory(SessionedFactory):
     tax_jurisdiction = "AU"
 
 
+class ContactFactory(SessionedFactory):
+    class Meta:
+        model = Contact
+
+    name = factory.LazyAttribute(lambda _: fake.name())
+    title = factory.LazyAttribute(lambda _: fake.job())
+    direct_number = factory.LazyAttribute(lambda _: fake.phone_number())
+    direct_email = factory.LazyAttribute(lambda _: fake.email())
+    notes = factory.LazyAttribute(lambda _: fake.sentence())
+
+
 class InvestmentCompanyFactory(SessionedFactory):
     class Meta:
         model = InvestmentCompany
@@ -79,8 +91,8 @@ class InvestmentCompanyFactory(SessionedFactory):
     name = factory.Sequence(lambda n: f"Company {n:04d}")
     description = factory.LazyAttribute(lambda _: fake.bs())
     website = factory.LazyAttribute(lambda _: fake.url())
-    contact_email = factory.LazyAttribute(lambda _: fake.company_email())
-    contact_phone = factory.LazyAttribute(lambda _: fake.phone_number())
+    company_type = factory.LazyAttribute(lambda _: fake.random_element(elements=["Private Equity", "Venture Capital", "Private Debt", "Real Estate"]))
+    business_address = factory.LazyAttribute(lambda _: fake.address())
 
 
 class FundFactory(SessionedFactory):
