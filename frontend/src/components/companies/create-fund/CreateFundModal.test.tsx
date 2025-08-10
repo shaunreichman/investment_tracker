@@ -2,12 +2,12 @@ import React from 'react';
 import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { createErrorInfo, ErrorType } from '../../../../types/errors';
-import CreateFundModal from '../CreateFundModal';
+
+import CreateFundModal from './CreateFundModal';
 import userEvent from '@testing-library/user-event';
 
-jest.mock('../../../../hooks/useEntities', () => {
-  const actual = jest.requireActual('../../../../hooks/useEntities');
+jest.mock('../../../hooks/useEntities', () => {
+  const actual = jest.requireActual('../../../hooks/useEntities');
   return {
     ...actual,
     useEntities: () => ({ data: [{ id: 1, name: 'Entity A' }], loading: false, error: null }),
@@ -17,7 +17,7 @@ jest.mock('../../../../hooks/useEntities', () => {
 
 const mockMutate = jest.fn().mockImplementation(() => Promise.resolve());
 const mockErrorState: { error: any } = { error: null };
-jest.mock('../../../../hooks/useFunds', () => ({
+jest.mock('../../../hooks/useFunds', () => ({
   useCreateFund: () => ({ 
     mutate: mockMutate, 
     loading: false, 
@@ -122,7 +122,7 @@ describe('CreateFundModal (orchestrator)', () => {
     await userEvent.click(submitBtn);
 
     // Wait for the error to be displayed through the hook's error handling
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    await expect(screen.findByRole('alert')).resolves.toBeInTheDocument();
   });
 
   it('has no obvious accessibility violations (axe smoke)', async () => {

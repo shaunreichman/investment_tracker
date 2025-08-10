@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useFormValidation } from '../useFormValidation';
+import { useFormValidation } from './useFormValidation';
 
 describe('useFormValidation', () => {
   it('validates fields and full form', () => {

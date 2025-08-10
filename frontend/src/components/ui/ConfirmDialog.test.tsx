@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ConfirmDialog } from '../ConfirmDialog';
+import { ConfirmDialog } from './ConfirmDialog';
 
 describe('ConfirmDialog', () => {
   it('calls handlers on actions', async () => {
@@ -22,6 +22,8 @@ describe('ConfirmDialog', () => {
     // Wait for Material-UI components to fully render and stabilize
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    });
+    await waitFor(() => {
       expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     });
 

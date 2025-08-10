@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { FormSection } from '../FormSection';
+import { FormSection } from './FormSection';
 
 describe('FormSection', () => {
   it('renders title and children', () => {

@@ -1,0 +1,38 @@
+# Test Organization Standards
+
+## Rule
+Tests should be co-located with their production code files for better maintainability and discoverability.
+
+## Test File Placement
+- **Test files should be placed alongside their production files** (e.g., `Component.tsx` and `Component.test.tsx` in the same directory)
+- **Use relative imports** from the test file to the production file (e.g., `import Component from './Component'`)
+- **Update import paths** when moving tests to ensure they reference the correct relative locations
+
+## Import Path Guidelines
+- For tests in the same directory as production files: use `./` for same-directory imports
+- For tests accessing types/services: use relative paths from the test file's location
+- **Always verify import paths** after reorganizing test files by running `npx tsc --noEmit`
+
+## Enforcement
+- When reorganizing tests, immediately fix all import path issues
+- Run TypeScript compilation check before considering the reorganization complete
+- Follow the principle: "tests live with their code"
+
+## Example
+```
+src/components/Button/
+├── Button.tsx
+├── Button.test.tsx  # Test file alongside production file
+└── Button.styles.ts
+
+# In Button.test.tsx:
+import Button from './Button';  # Relative import to same directory
+import { ButtonProps } from '../types';  # Relative import to parent types
+```
+
+description: Test files should be co-located with production code and use correct relative import paths
+globs:
+  - "frontend/src/**/*.test.ts"
+  - "frontend/src/**/*.test.tsx"
+alwaysApply: true
+---

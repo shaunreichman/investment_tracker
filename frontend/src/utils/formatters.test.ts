@@ -9,7 +9,7 @@ import {
   formatNumber,
   formatPercentage,
   formatLargeNumber,
-} from '../formatters';
+} from './formatters';
 
 describe('formatters', () => {
   describe('formatCurrency', () => {

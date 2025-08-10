@@ -410,39 +410,83 @@ describe('validators', () => {
 
 ## Test Organization
 
-### 1. File Structure
+### 1. File Structure - **CO-LOCATION APPROACH** ✅
+**Principle**: "Tests live with their code" - Test files are placed alongside their production code files for better maintainability and discoverability.
+
 ```
 src/
 ├── components/
 │   ├── fund-detail/
 │   │   ├── EquitySection.tsx
-│   │   ├── EquitySection.test.tsx
+│   │   ├── EquitySection.test.tsx          # Test alongside production file
 │   │   ├── FundDetailTable/
 │   │   │   ├── TableContainer.tsx
-│   │   │   ├── TableContainer.test.tsx
+│   │   │   ├── TableContainer.test.tsx     # Test alongside production file
 │   │   │   ├── useEventGrouping.ts
-│   │   │   └── useEventGrouping.test.ts
+│   │   │   └── useEventGrouping.test.ts    # Test alongside production file
 │   │   └── index.ts
 │   └── modals/
 │       ├── CreateFundEventModal.tsx
-│       └── CreateFundEventModal.test.tsx
+│       └── CreateFundEventModal.test.tsx   # Test alongside production file
 ├── utils/
 │   ├── formatters.ts
-│   ├── formatters.test.ts
+│   ├── formatters.test.ts                  # Test alongside production file
 │   ├── validators.ts
-│   ├── validators.test.ts
+│   ├── validators.test.ts                  # Test alongside production file
 │   ├── helpers.ts
-│   ├── helpers.test.ts
-│   ├── constants.ts
-│   └── constants.test.ts
-└── __tests__/
-    ├── integration/
-    │   └── FundDetail.integration.test.tsx
-    └── setup/
-        └── test-utils.tsx
+│   ├── helpers.test.ts                     # Test alongside production file
+│   └── constants.ts
+├── hooks/
+│   ├── useFunds.ts
+│   ├── useFunds.test.ts                    # Test alongside production file
+│   ├── useEntities.ts
+│   └── useEntities.test.ts                 # Test alongside production file
+└── services/
+    ├── api.ts
+    └── api.test.ts                         # Test alongside production file
 ```
 
-### 2. Test Naming Conventions
+**Benefits of Co-location**:
+- **Maintainability**: Tests and production code change together
+- **Discoverability**: Developers easily find related test files
+- **Import Simplicity**: Relative imports use `./` for same-directory files
+- **Refactoring Safety**: Moving files automatically moves tests
+
+### 2. Import Path Guidelines
+**When tests are co-located with production files**:
+- **Same directory imports**: Use `./` (e.g., `import Component from './Component'`)
+- **Parent directory imports**: Use `../` (e.g., `import { types } from '../types'`)
+- **Shared types/services**: Use relative paths from test file location to shared resources
+
+**Example import patterns**:
+```typescript
+// In Component.test.tsx (co-located with Component.tsx)
+import Component from './Component';                    // Same directory
+import { ComponentProps } from '../types';             // Parent directory
+import { useHook } from '../../hooks/useHook';         // Two levels up
+import { testUtils } from '../../../utils/testUtils';   // Three levels up
+```
+
+**Verification**: Always run `npx tsc --noEmit` after reorganizing tests to ensure import paths are correct.
+
+### 3. Quality Gates & Automated Checks
+**TypeScript Compilation**: 
+- Run `npx tsc --noEmit` to verify zero compilation errors
+- This ensures all import paths are correct and types are valid
+
+**Linting Standards**:
+- Run `npm run lint` to ensure zero ESLint warnings/errors
+- Follow Testing Library best practices (prefer-find-by, no-node-access, etc.)
+
+**Test Execution**:
+- Run `npm test` to ensure all tests pass with zero failures
+- Verify no console warnings or errors in test output
+
+**Automated Enforcement**:
+- Cursor rules automatically enforce TypeScript checks and test organization
+- Quality gates prevent committing code with compilation or linting errors
+
+### 4. Test Naming Conventions
 - **Unit Tests**: `ComponentName.test.tsx`
 - **Integration Tests**: `ComponentName.integration.test.tsx`
 - **Utility Tests**: `utilityName.test.ts`

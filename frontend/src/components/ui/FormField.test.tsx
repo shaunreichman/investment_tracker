@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { TextField } from '@mui/material';
-import { FormField } from '../FormField';
+import { FormField } from './FormField';
 
 describe('FormField', () => {
   it('associates label and helper text', () => {
