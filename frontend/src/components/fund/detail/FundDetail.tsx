@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { ExtendedFundEvent } from '../../../types/api';
 import { useFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
+import { useSidebarState, useTableFilters } from '../../../store';
 
 // Import all the extracted section components
 import {
@@ -38,21 +39,9 @@ const FundDetail: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<ExtendedFundEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
 
-  // Table filter state
-  const [showTaxEvents, setShowTaxEvents] = useState(true);
-  const [showNavUpdates, setShowNavUpdates] = useState(true);
-
-  // Sidebar toggle state with localStorage persistence
-  const [sidebarVisible, setSidebarVisible] = useState(() => {
-    const saved = localStorage.getItem('fundDetailSidebarVisible');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  const toggleSidebar = () => {
-    const newState = !sidebarVisible;
-    setSidebarVisible(newState);
-    localStorage.setItem('fundDetailSidebarVisible', JSON.stringify(newState));
-  };
+  // Centralized state management using Zustand store
+  const { isVisible: sidebarVisible, toggle: toggleSidebar } = useSidebarState('fundDetail');
+  const { filters: tableFilters, updateFilters } = useTableFilters();
 
   // Centralized API hooks
   const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
@@ -217,12 +206,11 @@ const FundDetail: React.FC = () => {
           <TableContainer
             fund={fund}
             events={events}
-            showTaxEvents={showTaxEvents}
-            showNavUpdates={showNavUpdates}
-            onShowTaxEventsChange={setShowTaxEvents}
-            onShowNavUpdatesChange={setShowNavUpdates}
+            showTaxEvents={tableFilters.showTaxEvents}
+            showNavUpdates={tableFilters.showNavUpdates}
+            onShowTaxEventsChange={(value) => updateFilters({ showTaxEvents: value })}
+            onShowNavUpdatesChange={(value) => updateFilters({ showNavUpdates: value })}
             onAddEvent={openEventModal}
-
             onDeleteEvent={handleDeleteEvent}
           />
         </Box>
