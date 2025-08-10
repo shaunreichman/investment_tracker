@@ -12,6 +12,12 @@ git checkout feature/name     # Switch to existing branch
 git pull origin main         # Get latest changes
 ```
 
+### When Switching Back to Main:
+```bash
+git checkout main            # Switch to main branch
+git pull origin main         # ALWAYS pull latest changes
+```
+
 ### During Development:
 - Commit frequently: `git commit -m "feat: description"`
 - Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
