@@ -2,27 +2,10 @@
 // FUND DETAIL TABLE COMPONENTS
 // ============================================================================
 
-// Phase 2B.1: Debug utilities (safe, no UI changes)
-export {
-  createTableDebugReport,
-  debugTableRendering,
-  compareTableRendering,
-  logEventGrouping,
-  validateTableStructure,
-  logTablePerformance,
-  type TableDebugInfo,
-  type EventGroupingDebugInfo
-} from './debug';
-
 // Phase 2B.2: Event grouping logic hook (safe, isolated logic)
 export {
   useEventGrouping,
-  shouldShowEvent,
-  isEquityEvent,
-  isDistributionEvent,
-  isOtherEvent,
-  type GroupedEvent,
-  type EventGroupingResult
+  type GroupedEvent
 } from './useEventGrouping';
 
 // Phase 2B.3: Row rendering components (safe, isolated components)

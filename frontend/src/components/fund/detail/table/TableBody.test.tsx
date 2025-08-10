@@ -21,8 +21,8 @@ jest.mock('./EventRow', () => ({
 
 jest.mock('./GroupedEventRow', () => ({
   GroupedEventRow: ({ groupedEvent }: { groupedEvent: any }) => (
-    <tr data-testid={`grouped-row-${groupedEvent.date}`}>
-      <td>Grouped Row: {groupedEvent.date}</td>
+    <tr data-testid={`grouped-row-${groupedEvent.groupId}`}>
+      <td>Grouped Row: {groupedEvent.displayDate}</td>
     </tr>
   )
 }));
@@ -109,14 +109,16 @@ describe('TableBody', () => {
   });
 
   it('should render individual events when no grouped events', () => {
-    mockUseEventGrouping.mockReturnValue({
-      groupedEvents: [],
-      individualEvents: mockEvents.slice(0, 2), // First two events
-      sortedEvents: mockEvents.slice(0, 2),
-      totalEvents: 2,
-      totalGroups: 0,
-      interestWithholdingPairs: 0
-    });
+    // Mock the new flag-based grouping interface
+    const individualEvents = mockEvents.slice(0, 2).map(event => ({
+      events: [event],
+      isGrouped: false,
+      displayDate: event.event_date,
+      displayAmount: event.amount || 0,
+      displayDescription: event.description || 'Test Event'
+    }));
+
+    mockUseEventGrouping.mockReturnValue(individualEvents);
 
     renderTableBody({
       events: mockEvents,
@@ -132,23 +134,26 @@ describe('TableBody', () => {
   });
 
   it('should render grouped events when interest + withholding pairs exist', () => {
-    const groupedEvents = [{
-      date: '2023-06-30',
+    // Mock the new flag-based grouping interface
+    const groupedEvent = {
       events: mockEvents.slice(1, 3), // Interest + withholding events
-      hasInterestWithholdingPair: true,
-      interestEvent: mockEvents[1],
-      withholdingEvent: mockEvents[2],
-      otherEvents: []
-    }];
+      isGrouped: true,
+      groupType: 'interest_withholding',
+      groupId: 1,
+      displayDate: '2023-06-30',
+      displayAmount: 5500, // 5000 + 500
+      displayDescription: 'Interest Distribution + Withholding Tax (5000 + 500)'
+    };
 
-    mockUseEventGrouping.mockReturnValue({
-      groupedEvents,
-      individualEvents: mockEvents.slice(0, 1), // Only capital call
-      sortedEvents: [groupedEvents[0], ...mockEvents.slice(0, 1)],
-      totalEvents: 3,
-      totalGroups: 1,
-      interestWithholdingPairs: 1
-    });
+    const individualEvent = {
+      events: [mockEvents[0]], // Capital call
+      isGrouped: false,
+      displayDate: mockEvents[0].event_date,
+      displayAmount: mockEvents[0].amount || 0,
+      displayDescription: mockEvents[0].description || 'Test Event'
+    };
+
+    mockUseEventGrouping.mockReturnValue([groupedEvent, individualEvent]);
 
     renderTableBody({
       events: mockEvents,
@@ -158,19 +163,21 @@ describe('TableBody', () => {
       ...mockHandlers
     });
 
-    expect(screen.getByTestId('grouped-row-2023-06-30')).toBeInTheDocument();
+    expect(screen.getByTestId('grouped-row-1')).toBeInTheDocument();
     expect(screen.getByTestId('event-row-1')).toBeInTheDocument();
   });
 
   it('should pass correct props to EventRow components', () => {
-    mockUseEventGrouping.mockReturnValue({
-      groupedEvents: [],
-      individualEvents: mockEvents.slice(0, 1),
-      sortedEvents: mockEvents.slice(0, 1),
-      totalEvents: 1,
-      totalGroups: 0,
-      interestWithholdingPairs: 0
-    });
+    // Mock the new flag-based grouping interface
+    const individualEvent = {
+      events: [mockEvents[0]],
+      isGrouped: false,
+      displayDate: mockEvents[0].event_date,
+      displayAmount: mockEvents[0].amount || 0,
+      displayDescription: mockEvents[0].description || 'Test Event'
+    };
+
+    mockUseEventGrouping.mockReturnValue([individualEvent]);
 
     renderTableBody({
       events: mockEvents,
@@ -185,23 +192,18 @@ describe('TableBody', () => {
   });
 
   it('should pass correct props to GroupedEventRow components', () => {
-    const groupedEvents = [{
-      date: '2023-06-30',
+    // Mock the new flag-based grouping interface
+    const groupedEvent = {
       events: mockEvents.slice(1, 3),
-      hasInterestWithholdingPair: true,
-      interestEvent: mockEvents[1],
-      withholdingEvent: mockEvents[2],
-      otherEvents: []
-    }];
+      isGrouped: true,
+      groupType: 'interest_withholding',
+      groupId: 1,
+      displayDate: '2023-06-30',
+      displayAmount: 5500,
+      displayDescription: 'Interest Distribution + Withholding Tax (5000 + 500)'
+    };
 
-    mockUseEventGrouping.mockReturnValue({
-      groupedEvents,
-      individualEvents: [],
-      sortedEvents: groupedEvents,
-      totalEvents: 2,
-      totalGroups: 1,
-      interestWithholdingPairs: 1
-    });
+    mockUseEventGrouping.mockReturnValue([groupedEvent]);
 
     renderTableBody({
       events: mockEvents,
@@ -212,18 +214,11 @@ describe('TableBody', () => {
     });
 
     // Verify GroupedEventRow is rendered
-    expect(screen.getByTestId('grouped-row-2023-06-30')).toBeInTheDocument();
+    expect(screen.getByTestId('grouped-row-1')).toBeInTheDocument();
   });
 
   it('should handle empty events array', () => {
-    mockUseEventGrouping.mockReturnValue({
-      groupedEvents: [],
-      individualEvents: [],
-      sortedEvents: [],
-      totalEvents: 0,
-      totalGroups: 0,
-      interestWithholdingPairs: 0
-    });
+    mockUseEventGrouping.mockReturnValue([]);
 
     renderTableBody({
       events: [],
@@ -238,14 +233,7 @@ describe('TableBody', () => {
   });
 
   it('should call useEventGrouping with correct parameters', () => {
-    mockUseEventGrouping.mockReturnValue({
-      groupedEvents: [],
-      individualEvents: [],
-      sortedEvents: [],
-      totalEvents: 0,
-      totalGroups: 0,
-      interestWithholdingPairs: 0
-    });
+    mockUseEventGrouping.mockReturnValue([]);
 
     renderTableBody({
       events: mockEvents,

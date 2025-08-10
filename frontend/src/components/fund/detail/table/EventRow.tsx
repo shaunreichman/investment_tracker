@@ -11,7 +11,6 @@ import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
 import { formatCurrency, formatBrokerageFee, formatDate } from '../../../../utils/formatters';
 // event type label is now rendered via EventTypeChip
 import { EventTypeChip } from '../../../ui/EventTypeChip';
-import { isEquityEvent, isDistributionEvent, isOtherEvent } from './useEventGrouping';
 
 // ============================================================================
 // EVENT ROW COMPONENT
@@ -28,7 +27,7 @@ export interface EventRowProps {
 
 /**
  * Component to render individual event rows in the fund detail table
- * Extracted from FundDetail.tsx lines 808-1043 for reusability and testing
+ * Updated to work with new flag-based grouping approach
  */
 const EventRowComponent: React.FC<EventRowProps> = ({
   event,
@@ -39,11 +38,14 @@ const EventRowComponent: React.FC<EventRowProps> = ({
   onDeleteEvent
 }) => {
   const isNavBased = fund.tracking_type === 'nav_based';
-  const isEquity = isEquityEvent(event, fund);
-  const isDistribution = isDistributionEvent(event);
-  const isOther = isOtherEvent(event, fund);
+  
+  // CALCULATED: Event type classification for display logic
+  const isEquity = event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE' || 
+                   event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL';
+  const isDistribution = event.event_type === 'DISTRIBUTION';
+  const isOther = !isEquity && !isDistribution;
 
-  // Determine if this event should show edit/delete buttons
+  // CALCULATED: Determine if this event should show edit/delete buttons
   const isEditable = ![
     'TAX_PAYMENT', 
     'DAILY_RISK_FREE_INTEREST_CHARGE', 

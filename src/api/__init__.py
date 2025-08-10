@@ -395,7 +395,12 @@ def create_app(db_config=None):
                         "nav_change_percentage": float(event.nav_change_percentage) if event.nav_change_percentage else None,
                         "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None,
                         "has_withholding_tax": bool(event.has_withholding_tax) if event.has_withholding_tax is not None else None,
-                        "created_at": event.created_at.isoformat() if event.created_at else None
+                        "created_at": event.created_at.isoformat() if event.created_at else None,
+                        # CALCULATED: Grouping flags set by backend when creating events
+                        "is_grouped": bool(event.is_grouped) if event.is_grouped is not None else False,
+                        "group_id": event.group_id,
+                        "group_type": event.group_type.value if event.group_type else None,
+                        "group_position": event.group_position
                     }
                     
                     # Add tax statement fields for TAX_PAYMENT and EOFY_DEBT_COST events
@@ -466,6 +471,11 @@ def create_app(db_config=None):
                     }
                     tax_statements_data.append(statement_data)
                 
+                # Calculate grouping metadata
+                grouped_events = [e for e in events_data if e["is_grouped"]]
+                total_groups = len(set(e["group_id"] for e in grouped_events if e["group_id"] is not None))
+                group_types_present = list(set(e["group_type"] for e in grouped_events if e["group_type"] is not None))
+                
                 # Structure response to match frontend expectations
                 response_data = {
                     "fund": fund_data,
@@ -483,7 +493,11 @@ def create_app(db_config=None):
                         "total_distributions": sum([e["amount"] for e in events_data if e["event_type"] == "DISTRIBUTION" and e["amount"] is not None]),
                         "first_event_date": min([e["event_date"] for e in events_data if e["event_date"]]) if events_data else None,
                         "last_event_date": max([e["event_date"] for e in events_data if e["event_date"]]) if events_data else None,
-                        "total_tax_statements": len(tax_statements_data)
+                        "total_tax_statements": len(tax_statements_data),
+                        # CALCULATED: Grouping metadata for frontend
+                        "total_groups": total_groups,
+                        "grouped_events_count": len(grouped_events),
+                        "group_types_present": group_types_present
                     }
                 }
                 

@@ -47,6 +47,11 @@ export enum TaxPaymentType {
   DIVIDENDS_UNFRANKED_TAX = 'DIVIDENDS_UNFRANKED_TAX'
 }
 
+export enum GroupType {
+  INTEREST_WITHHOLDING = 'interest_withholding',
+  TAX_STATEMENT = 'tax_statement'
+}
+
 // ============================================================================
 // CORE ENTITY INTERFACES
 // ============================================================================
@@ -124,6 +129,12 @@ export interface FundEvent {
   cost_of_units?: number;
   created_at: string;
   updated_at: string;
+  
+  // CALCULATED: Grouping flags set by backend when creating events
+  is_grouped?: boolean;  // (CALCULATED) whether this event is part of a group
+  group_id?: number;     // (CALCULATED) unique identifier for the group (auto-generated)
+  group_type?: GroupType; // (CALCULATED) type of grouping (INTEREST_WITHHOLDING, TAX_STATEMENT, etc.)
+  group_position?: number; // (CALCULATED) position within group for ordering (0=first, 1=second, etc.)
 }
 
 export interface TaxStatement {
@@ -334,6 +345,12 @@ export interface ExtendedFundEvent extends Omit<FundEvent, 'amount'> {
   withholding_amount?: number | null;
   withholding_rate?: number | null;
   net_interest?: number | null;
+  
+  // CALCULATED: Grouping flags set by backend when creating events
+  is_grouped?: boolean;  // (CALCULATED) whether this event is part of a group
+  group_id?: number;     // (CALCULATED) unique identifier for the group (auto-generated)
+  group_type?: GroupType; // (CALCULATED) type of grouping (INTEREST_WITHHOLDING, TAX_STATEMENT, etc.)
+  group_position?: number; // (CALCULATED) position within group for ordering (0=first, 1=second, etc.)
 }
 
 /**

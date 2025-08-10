@@ -23,8 +23,8 @@ export interface TableBodyProps {
  * Extracted from FundDetail.tsx lines 650-1084 for reusability and testing
  * 
  * This component:
- * 1. Uses useEventGrouping hook to process events
- * 2. Renders GroupedEventRow for interest + withholding combinations
+ * 1. Uses useEventGrouping hook to process events with flag-based grouping
+ * 2. Renders GroupedEventRow for grouped events (interest + withholding, tax statements)
  * 3. Renders EventRow for individual events
  * 4. Maintains all existing styling and responsive behavior
  */
@@ -36,13 +36,8 @@ export const TableBody: React.FC<TableBodyProps> = ({
 
   onDeleteEvent
 }) => {
-  // Use the event grouping hook to process events
-  const { sortedEvents } = useEventGrouping(
-    events,
-    fund,
-    showTaxEvents,
-    showNavUpdates
-  );
+  // CALCULATED: Use the new flag-based event grouping hook
+  const groupedEvents = useEventGrouping(events);
 
   return (
     <MuiTableBody sx={{ 
@@ -66,14 +61,14 @@ export const TableBody: React.FC<TableBodyProps> = ({
         }
       }
     }}>
-      {/* Render events in chronological order */}
-      {sortedEvents?.map((item) => {
-        // Check if this is a grouped event or individual event
-        if ('hasInterestWithholdingPair' in item) {
-          // This is a GroupedEvent
+      {/* Render grouped events and individual events */}
+      {groupedEvents.map((item) => {
+        // CALCULATED: Check if this is a grouped event or individual event
+        if (item.isGrouped) {
+          // This is a GroupedEvent (interest + withholding, tax statement, etc.)
           return (
             <GroupedEventRow
-              key={`${item.date}-combined`}
+              key={`group-${item.groupId}-${item.displayDate}`}
               groupedEvent={item}
               fund={fund}
               showTaxEvents={showTaxEvents}
@@ -82,17 +77,22 @@ export const TableBody: React.FC<TableBodyProps> = ({
             />
           );
         } else {
-          // This is an ExtendedFundEvent
-          return (
-            <EventRow
-              key={item.id}
-              event={item}
-              fund={fund}
-              showTaxEvents={showTaxEvents}
-              showNavUpdates={showNavUpdates}
-              onDeleteEvent={onDeleteEvent}
-            />
-          );
+          // This is an individual ExtendedFundEvent
+          const firstEvent = item.events[0];
+          if (firstEvent) {
+            return (
+              <EventRow
+                key={firstEvent.id}
+                event={firstEvent as ExtendedFundEvent}
+                fund={fund}
+                showTaxEvents={showTaxEvents}
+                showNavUpdates={showNavUpdates}
+                onDeleteEvent={onDeleteEvent}
+              />
+            );
+          }
+          // Return null if no valid event found (shouldn't happen in practice)
+          return null;
         }
       })}
     </MuiTableBody>

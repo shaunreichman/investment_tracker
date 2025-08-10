@@ -10,7 +10,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime, date, timezone
 from dateutil.relativedelta import relativedelta
 import enum
-from sqlalchemy import func
+import sqlalchemy as sa
 import numpy as np
 import numpy_financial as npf
 from sqlalchemy import event
@@ -1200,6 +1200,12 @@ class Fund(Base):
                     tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
                 )
                 session.add(tax_event)
+            
+            # Group the interest distribution with its withholding tax event
+            if tax_event:
+                group_id = FundEvent.get_next_group_id(session)
+                distribution_event.set_grouping(group_id, GroupType.INTEREST_WITHHOLDING, 0)
+                tax_event.set_grouping(group_id, GroupType.INTEREST_WITHHOLDING, 1)
             
             # Calculate end_date (may affect status)
             self.calculate_end_date(session=session)
@@ -2675,10 +2681,27 @@ class FundEvent(Base):
     has_withholding_tax = Column(Boolean, default=False)  # (MANUAL) flag for distributions with associated withholding tax
     is_cash_flow_complete = Column(Boolean, default=False)  # (SYSTEM) auto-managed flag set by reconciliation logic
     
+    # CALCULATED: Grouping flags set by backend when creating events
+    is_grouped = Column(Boolean, default=False, nullable=False)  # (CALCULATED) whether this event is part of a group
+    group_id = Column(Integer, nullable=True, index=True)  # (CALCULATED) unique identifier for the group (auto-generated)
+    group_type = Column(Enum(GroupType), nullable=True)  # (CALCULATED) type of grouping (INTEREST_WITHHOLDING, TAX_STATEMENT, etc.)
+    group_position = Column(Integer, nullable=True)  # (CALCULATED) position within group for ordering (0=first, 1=second, etc.)
+    
     # Relationships
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
     tax_statement = relationship("TaxStatement", lazy='selectin')  # Eager load for tax statement data
     cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan", lazy='selectin')
+    
+    def __init__(self, **kwargs):
+        """Initialize FundEvent with default values for grouping fields."""
+        # Set default values for grouping fields
+        self.is_grouped = False
+        self.group_id = None
+        self.group_type = None
+        self.group_position = None
+        
+        # Call parent constructor with remaining kwargs
+        super().__init__(**kwargs)
     
     def __repr__(self):
         """Return a string representation of the FundEvent instance for debugging/logging."""
@@ -2849,5 +2872,80 @@ class FundEvent(Base):
         total = sum(float(cf.amount or 0.0) for cf in flows)
         self.is_cash_flow_complete = abs(total - target) <= 0.01
     
-
-
+    # Grouping validation methods
+    def validate_grouping_consistency(self):
+        """Validate that grouping fields are consistent with business rules.
+        
+        Business rules:
+        1. If is_grouped=True, all grouping fields must be set
+        2. If is_grouped=False, all grouping fields must be NULL
+        3. group_position must be >= 0 when set
+        """
+        if self.is_grouped:
+            if self.group_id is None:
+                raise ValueError("Grouped events must have a group_id")
+            if self.group_type is None:
+                raise ValueError("Grouped events must have a group_type")
+            if self.group_position is None:
+                raise ValueError("Grouped events must have a group_position")
+            if self.group_position < 0:
+                raise ValueError("group_position must be >= 0")
+        else:
+            if self.group_id is not None:
+                raise ValueError("Non-grouped events must not have a group_id")
+            if self.group_type is not None:
+                raise ValueError("Non-grouped events must not have a group_type")
+            if self.group_position is not None:
+                raise ValueError("Non-grouped events must not have a group_position")
+    
+    @classmethod
+    def validate_group_date_consistency(cls, session, group_id: int, event_date: date):
+        """Validate that all events in a group share the same event_date.
+        
+        Args:
+            session: Database session
+            group_id: Group identifier to validate
+            event_date: Expected event date for all events in the group
+            
+        Raises:
+            ValueError: If any event in the group has a different date
+        """
+        events = session.query(cls).filter(cls.group_id == group_id).all()
+        for event in events:
+            if event.event_date != event_date:
+                raise ValueError(
+                    f"All events in group {group_id} must have the same event_date. "
+                    f"Event {event.id} has date {event.event_date}, expected {event_date}"
+                )
+    
+    @classmethod
+    def get_next_group_id(cls, session) -> int:
+        """Get the next available group ID for creating new groups.
+        
+        Returns:
+            Next available group ID (auto-incrementing)
+        """
+        result = session.query(sa.func.max(cls.group_id)).scalar()
+        return (result or 0) + 1
+    
+    def set_grouping(self, group_id: int, group_type: GroupType, group_position: int):
+        """Set grouping information for this event.
+        
+        Args:
+            group_id: Unique group identifier
+            group_type: Type of grouping
+            group_position: Position within group (0=first, 1=second, etc.)
+        """
+        self.is_grouped = True
+        self.group_id = group_id
+        self.group_type = group_type
+        self.group_position = group_position
+        # Note: Validation is not called automatically to allow testing validation logic separately
+    
+    def clear_grouping(self):
+        """Clear grouping information from this event."""
+        self.is_grouped = False
+        self.group_id = None
+        self.group_type = None
+        self.group_position = None
+        self.validate_grouping_consistency()

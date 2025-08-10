@@ -27,7 +27,7 @@ export interface GroupedEventRowProps {
 
 /**
  * Component to render grouped event rows (interest + withholding tax combinations)
- * Extracted from FundDetail.tsx lines 684-773 for reusability and testing
+ * Updated to work with new flag-based grouping approach
  */
 const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
   groupedEvent,
@@ -37,10 +37,18 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
 
   onDeleteEvent
 }) => {
-  const { date, interestEvent, withholdingEvent, otherEvents } = groupedEvent;
+  // CALCULATED: Extract events from the grouped event
+  const { events, displayDate, displayAmount, displayDescription, groupType } = groupedEvent;
   const isNavBased = fund.tracking_type === 'nav_based';
 
-  // Determine if the interest event should show edit/delete buttons
+  // CALCULATED: Find specific event types for display
+  const interestEvent = events.find(e => e.event_type === 'DISTRIBUTION') as ExtendedFundEvent | undefined;
+  const withholdingEvent = events.find(e => e.event_type === 'TAX_PAYMENT') as ExtendedFundEvent | undefined;
+  const otherEvents = events.filter(e => 
+    e.event_type !== 'DISTRIBUTION' && e.event_type !== 'TAX_PAYMENT'
+  );
+
+  // CALCULATED: Determine if the interest event should show edit/delete buttons
   const isEditable = interestEvent && ![
     'TAX_PAYMENT', 
     'DAILY_RISK_FREE_INTEREST_CHARGE', 
@@ -55,7 +63,7 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
       {/* Combined interest + withholding row */}
       <TableRow hover>
         {/* Date Column */}
-        <TableCell>{formatDate(date)}</TableCell>
+        <TableCell>{formatDate(displayDate)}</TableCell>
         
         {/* Type Column */}
         <TableCell>
@@ -65,11 +73,13 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
         {/* Description Column */}
         <TableCell>
           <Typography variant="body2">
-            {interestEvent?.description || '-'}
+            {displayDescription}
           </Typography>
-          <Typography variant="caption" color="error.main">
-            Withholding: {formatCurrency(-(withholdingEvent?.amount || 0), fund.currency)}
-          </Typography>
+          {withholdingEvent && (
+            <Typography variant="caption" color="error.main">
+              Withholding: {formatCurrency(-(withholdingEvent.amount || 0), fund.currency)}
+            </Typography>
+          )}
         </TableCell>
         
         {/* Equity Column */}
@@ -85,11 +95,13 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
           {interestEvent && (
             <Box>
               <Typography variant="body2">
-                {formatCurrency(interestEvent.amount, fund.currency)}
+                {formatCurrency(interestEvent.amount || 0, fund.currency)}
               </Typography>
-              <Typography variant="caption" color="error.main">
-                {formatCurrency(-(withholdingEvent?.amount || 0), fund.currency)}
-              </Typography>
+              {withholdingEvent && (
+                <Typography variant="caption" color="error.main">
+                  {formatCurrency(-(withholdingEvent.amount || 0), fund.currency)}
+                </Typography>
+              )}
             </Box>
           )}
         </TableCell>
@@ -133,7 +145,7 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
       {otherEvents.map((event) => (
         <OtherEventRow
           key={event.id}
-          event={event}
+          event={event as ExtendedFundEvent}
           fund={fund}
           showTaxEvents={showTaxEvents}
           showNavUpdates={showNavUpdates}
@@ -147,11 +159,14 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
 /**
  * Custom comparator for React.memo to only compare fields that affect rendering
  * This prevents unnecessary re-renders when irrelevant fields change
+ * Updated to work with new flag-based grouping interface
  */
 const groupedEventRowPropsAreEqual = (prevProps: GroupedEventRowProps, nextProps: GroupedEventRowProps): boolean => {
   // Compare primitive values that affect rendering
   if (
-    prevProps.groupedEvent.date !== nextProps.groupedEvent.date ||
+    prevProps.groupedEvent.displayDate !== nextProps.groupedEvent.displayDate ||
+    prevProps.groupedEvent.groupId !== nextProps.groupedEvent.groupId ||
+    prevProps.groupedEvent.groupType !== nextProps.groupedEvent.groupType ||
     prevProps.fund.id !== nextProps.fund.id ||
     prevProps.fund.tracking_type !== nextProps.fund.tracking_type ||
     prevProps.fund.currency !== nextProps.fund.currency ||
@@ -161,39 +176,17 @@ const groupedEventRowPropsAreEqual = (prevProps: GroupedEventRowProps, nextProps
     return false;
   }
   
-  // Compare interest event fields that affect rendering
-  const prevInterest = prevProps.groupedEvent.interestEvent;
-  const nextInterest = nextProps.groupedEvent.interestEvent;
-  if (
-    prevInterest?.id !== nextInterest?.id ||
-    prevInterest?.amount !== nextInterest?.amount ||
-    prevInterest?.description !== nextInterest?.description ||
-    prevInterest?.event_type !== nextInterest?.event_type
-  ) {
+  // Compare events array length and key fields
+  const prevEvents = prevProps.groupedEvent.events;
+  const nextEvents = nextProps.groupedEvent.events;
+  if (prevEvents.length !== nextEvents.length) {
     return false;
   }
   
-  // Compare withholding event fields that affect rendering
-  const prevWithholding = prevProps.groupedEvent.withholdingEvent;
-  const nextWithholding = nextProps.groupedEvent.withholdingEvent;
-  if (
-    prevWithholding?.id !== nextWithholding?.id ||
-    prevWithholding?.amount !== nextWithholding?.amount
-  ) {
-    return false;
-  }
-  
-  // Compare other events array length and key fields
-  const prevOthers = prevProps.groupedEvent.otherEvents;
-  const nextOthers = nextProps.groupedEvent.otherEvents;
-  if (prevOthers.length !== nextOthers.length) {
-    return false;
-  }
-  
-  // Check if any other events have changed (simplified check)
-  for (let i = 0; i < prevOthers.length; i++) {
-    const prev = prevOthers[i];
-    const next = nextOthers[i];
+  // Check if any events have changed (simplified check)
+  for (let i = 0; i < prevEvents.length; i++) {
+    const prev = prevEvents[i];
+    const next = nextEvents[i];
     if (!prev || !next) continue;
     if (
       prev.id !== next.id ||
