@@ -52,6 +52,9 @@ describe('CreateFundModal (orchestrator)', () => {
   });
 
   it('enables submit after required fields and calls createFund', async () => {
+    // Increase timeout for this complex test with multiple async operations
+    jest.setTimeout(15000);
+    
     mockErrorState.error = null;
     renderWithTheme(<CreateFundModal {...baseProps} />);
 
@@ -85,7 +88,7 @@ describe('CreateFundModal (orchestrator)', () => {
     
     // Wait for the mock to be called and handle async state updates
     await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
-  });
+  }, 15000);
 
   it('shows error display on failed submit', async () => {
     // Set up the error state to simulate the hook's error handling

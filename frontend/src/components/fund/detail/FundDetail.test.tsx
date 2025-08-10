@@ -135,7 +135,12 @@ jest.mock('./table/TableContainer', () => {
 
 const renderFundDetail = () => {
   return render(
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <FundDetail />
     </BrowserRouter>
   );
