@@ -1187,6 +1187,76 @@ def create_app(db_config=None):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+    @app.route('/api/banks/<int:bank_id>', methods=['PUT'])
+    def update_bank(bank_id):
+        """Update a bank"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
+            
+            session = get_db_session()
+            
+            try:
+                bank = session.query(Bank).filter(Bank.id == bank_id).first()
+                if not bank:
+                    return jsonify({"error": "Bank not found"}), 404
+                
+                # Update allowed fields
+                if 'name' in data:
+                    bank.name = data['name'].strip()
+                if 'country' in data:
+                    # Validate country code format
+                    if len(data['country']) != 2:
+                        return jsonify({"error": "Country must be a 2-letter ISO code"}), 400
+                    bank.country = data['country'].upper()
+                if 'swift_bic' in data:
+                    bank.swift_bic = data['swift_bic']
+                
+                session.commit()
+                
+                response_data = {
+                    "id": bank.id,
+                    "name": bank.name,
+                    "country": bank.country,
+                    "swift_bic": bank.swift_bic,
+                    "message": "Bank updated successfully"
+                }
+                
+                return jsonify(response_data), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/banks/<int:bank_id>', methods=['DELETE'])
+    def delete_bank(bank_id):
+        """Delete a bank"""
+        try:
+            session = get_db_session()
+            
+            try:
+                bank = session.query(Bank).filter(Bank.id == bank_id).first()
+                if not bank:
+                    return jsonify({"error": "Bank not found"}), 404
+                
+                # Check if bank has associated accounts
+                if bank.accounts:
+                    return jsonify({"error": "Cannot delete bank with associated accounts"}), 409
+                
+                session.delete(bank)
+                session.commit()
+                
+                return jsonify({"message": "Bank deleted successfully"}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
     @app.route('/api/bank-accounts', methods=['GET'])
     def get_bank_accounts():
         """Get all bank accounts with optional filtering"""
@@ -1329,6 +1399,11 @@ def create_app(db_config=None):
                     account.account_name = data['account_name'].strip()
                 if 'is_active' in data:
                     account.is_active = bool(data['is_active'])
+                if 'currency' in data:
+                    # Validate currency format
+                    if len(data['currency']) != 3:
+                        return jsonify({"error": "Currency must be a 3-letter ISO code"}), 400
+                    account.currency = data['currency'].upper()
                 
                 session.commit()
                 
@@ -1345,6 +1420,28 @@ def create_app(db_config=None):
                 }
                 
                 return jsonify(response_data), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/bank-accounts/<int:account_id>', methods=['DELETE'])
+    def delete_bank_account(account_id):
+        """Delete a bank account"""
+        try:
+            session = get_db_session()
+            
+            try:
+                account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
+                if not account:
+                    return jsonify({"error": "Bank account not found"}), 404
+                
+                session.delete(account)
+                session.commit()
+                
+                return jsonify({"message": "Bank account deleted successfully"}), 200
                 
             finally:
                 session.close()
