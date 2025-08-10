@@ -1,5 +1,10 @@
 # Fund Event Cash Flows Specification
 
+> **STATUS: COMPLETED** ✅  
+> **COMPLETION DATE**: December 2024  
+> **PHASES COMPLETED**: 1, 2, 2A, 3 (All Backend + API)  
+> **NEXT STEPS**: Frontend implementation (Phases 4-5) when needed
+
 ## Overview
 Add the ability to record actual bank transfers for fund cash-flow events. Each `FundEvent` can have zero or more `FundEventCashFlow` records that capture real transfers (date, bank account, currency, amount). Event dates remain canonical for IRR and calculations; transfer dates are informational for now. Only investor-owned bank accounts are modeled.
 
