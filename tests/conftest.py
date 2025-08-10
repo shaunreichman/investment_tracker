@@ -63,17 +63,57 @@ def _seed_random():
 def db_session(SessionFactory):
     Session = scoped_session(SessionFactory)
     session = Session()
+    
     try:
         yield session
-        session.rollback()
+    finally:
+        # Rollback all changes
+        try:
+            session.rollback()
+        except Exception:
+            pass  # Session might be in invalid state
+        
+        # Close the session
+        session.close()
+        Session.remove()
+
+
+@pytest.fixture(autouse=True)
+def clean_database(SessionFactory):
+    """Clean the database before each test by truncating all tables"""
+    # Create a separate session for cleaning
+    Session = scoped_session(SessionFactory)
+    session = Session()
+    
+    try:
+        # Get all table names
+        from sqlalchemy import inspect, text
+        inspector = inspect(session.bind)
+        table_names = inspector.get_table_names()
+        
+        # Disable foreign key constraints temporarily
+        session.execute(text("PRAGMA foreign_keys=OFF"))
+        
+        # Truncate all tables
+        for table_name in table_names:
+            session.execute(text(f"DELETE FROM {table_name}"))
+        
+        # Re-enable foreign key constraints
+        session.execute(text("PRAGMA foreign_keys=ON"))
+        
+        # Commit the cleanup
+        session.commit()
     finally:
         session.close()
         Session.remove()
 
 
 @pytest.fixture(scope="session")
-def app():
-    app = create_app()
+def app(engine):
+    # Create test database URL for the API
+    db_url = f"sqlite:///{engine.url.database}"
+    
+    app = create_app(db_config={'database_url': db_url})
     app.config.update({
         "TESTING": True,
     })
@@ -81,7 +121,30 @@ def app():
 
 
 @pytest.fixture()
-def client(app):
-    return app.test_client()
+def client(app, db_session):
+    """Test client with database session injected into app context"""
+    with app.test_client() as test_client:
+        # Inject the test session into the app context
+        app.config['TEST_DB_SESSION'] = db_session
+        yield test_client
+
+
+@pytest.fixture(autouse=True)
+def setup_factories(db_session):
+    """Automatically set the database session for all factories before each test"""
+    from tests.factories import set_session
+    set_session(db_session)
+    yield
+    # No need to manually rollback - nested transaction handles it automatically
+
+
+class BaseTestCase:
+    """Base test class that provides database session access"""
+    
+    @pytest.fixture(autouse=True)
+    def setup_session(self, db_session):
+        """Automatically inject database session into test methods"""
+        self.db_session = db_session
+        yield
 
 

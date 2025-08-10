@@ -18,14 +18,27 @@ from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
 from src.fund.models import Fund, FundType, FundEvent, FundStatus
 
-def create_app():
+def create_app(db_config=None):
     app = Flask(__name__)
     CORS(app)
 
     # Direct database setup to avoid import issues
     def get_db_session():
-        db_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'investment_tracker.db')
-        engine = create_engine(f'sqlite:///{db_path}')
+        # Check if we're in test mode and have a test session
+        from flask import current_app
+        try:
+            if current_app.config.get('TEST_DB_SESSION'):
+                return current_app.config['TEST_DB_SESSION']
+        except:
+            pass
+        
+        if db_config and 'database_url' in db_config:
+            # Use test database if configured
+            engine = create_engine(db_config['database_url'])
+        else:
+            # Use production database path
+            db_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'investment_tracker.db')
+            engine = create_engine(f'sqlite:///{db_path}')
         Session = sessionmaker(bind=engine)
         return scoped_session(Session)
 
@@ -242,7 +255,17 @@ def create_app():
             session = get_db_session()
             
             try:
-                data = request.get_json()
+                # Check if request has valid JSON
+                if not request.is_json:
+                    return jsonify({"error": "Content-Type must be application/json"}), 400
+                
+                try:
+                    data = request.get_json()
+                except Exception:
+                    return jsonify({"error": "Invalid JSON format"}), 400
+                
+                if data is None:
+                    return jsonify({"error": "Request body is required"}), 400
                 
                 # Validate required fields
                 required_fields = ['name']
@@ -738,7 +761,7 @@ def create_app():
                     units = data.get('units_sold')
                     price = data.get('unit_price')
                     if units is None or price is None:
-                        return jsonify({"error": "Missing required fields: units_sold and unit_price for unit sale"}), 400
+                        return jsonify({"error": "Missing required field: units_sold and unit_price for unit sale"}), 400
                     created_event = fund.add_unit_sale(
                         units=units,
                         price=price,
@@ -772,7 +795,13 @@ def create_app():
                     )
                 else:
                     return jsonify({"error": f"Unsupported event_type '{event_type}' for fund tracking type '{fund.tracking_type.value}'"}), 400
+                
+                # Only commit if an event was successfully created
+                if created_event is None:
+                    return jsonify({"error": "Failed to create event"}), 500
+                
                 session.commit()
+                
                 # Serialize event for response
                 event_response = {
                     "id": created_event.id,

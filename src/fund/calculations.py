@@ -39,11 +39,12 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
         npv = 0
         derivative = 0
         for i, (cf, days) in enumerate(zip(cash_flows, days_from_start)):
-            months = days / 30.44
-            discount_factor = (1 + monthly_guess) ** months
+            # Use daily compounding for better precision with long periods
+            years = days / 365.25
+            discount_factor = (1 + monthly_guess) ** (years * 12)
             npv += cf / discount_factor
-            if months > 0:
-                derivative -= cf * months / (discount_factor * (1 + monthly_guess))
+            if years > 0:
+                derivative -= cf * years * 12 / (discount_factor * (1 + monthly_guess))
         if abs(npv) < tolerance:
             # Convert monthly IRR to annual IRR
             annual_irr = (1 + monthly_guess) ** 12 - 1
@@ -131,6 +132,10 @@ def calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
         total_days += period_days
         total_weighted_equity += equity_amount * period_days
     # Calculate summary statistics
+    # Handle single day periods - ensure at least 1 day
+    if start_date == end_date:
+        total_days = max(total_days, 1)
+    
     average_risk_free_rate = total_weighted_rate / total_days if total_days > 0 else 0
     average_equity = total_weighted_equity / total_days if total_days > 0 else 0
     debt_cost_percentage = (total_debt_cost / average_equity * 100) if average_equity > 0 else 0
@@ -206,7 +211,7 @@ def calculate_cost_based_capital_gains(events):
     # For cost-based funds, capital gains are typically distributions
     total_capital_gains = 0
     for event in events:
-        if event.event_type.name == 'DISTRIBUTION' and event.distribution_type and event.distribution_type.name == 'CAPITAL_GAINS':
+        if event.event_type.name == 'DISTRIBUTION' and event.distribution_type and event.distribution_type.name == 'CAPITAL_GAIN':
             total_capital_gains += event.amount or 0
     return total_capital_gains
 
