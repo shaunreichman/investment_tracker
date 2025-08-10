@@ -78,4 +78,15 @@ const TableHeaderComponent: React.FC<TableHeaderProps> = ({
   );
 };
 
-export default React.memo(TableHeaderComponent);
+/**
+ * Custom comparator for React.memo to only compare fields that affect rendering
+ * This prevents unnecessary re-renders when irrelevant fields change
+ */
+const tableHeaderPropsAreEqual = (prevProps: TableHeaderProps, nextProps: TableHeaderProps): boolean => {
+  return (
+    prevProps.isNavBasedFund === nextProps.isNavBasedFund &&
+    prevProps.showTaxEvents === nextProps.showTaxEvents
+  );
+};
+
+export default React.memo(TableHeaderComponent, tableHeaderPropsAreEqual);

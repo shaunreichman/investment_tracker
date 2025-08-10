@@ -119,7 +119,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       formData.entity_id && formData.name.trim() && formData.fund_type && formData.tracking_type
     );
     return allValid && requiredFieldsValid;
-  }, [formData, validateAll]);
+  }, [formData.entity_id, formData.name, formData.fund_type, formData.tracking_type, validateAll]);
 
   useEffect(() => {
     if (open) {
@@ -127,11 +127,13 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     }
   }, [open, validateForm]);
 
-  useEffect(() => {
-    if (open && !showTemplateSelection) {
-      validateForm();
-    }
-  }, [formData, open, showTemplateSelection, validateForm]);
+  // Remove the problematic useEffect that depends on formData
+  // This was causing infinite loops
+  // useEffect(() => {
+  //   if (open && !showTemplateSelection) {
+  //     validateForm();
+  //   }
+  // }, [formData, open, showTemplateSelection, validateForm]);
 
   const handleInputChange = (field: string, value: string) => {
     setFieldValue(field as keyof typeof initialFormValues, value);

@@ -4,6 +4,7 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { createErrorInfo, ErrorType } from '../../../../types/errors';
 import CreateFundModal from '../CreateFundModal';
+import userEvent from '@testing-library/user-event';
 
 jest.mock('../../../../hooks/useEntities', () => {
   const actual = jest.requireActual('../../../../hooks/useEntities');
@@ -14,7 +15,7 @@ jest.mock('../../../../hooks/useEntities', () => {
   };
 });
 
-const mockMutate = jest.fn();
+const mockMutate = jest.fn().mockResolvedValue(undefined);
 const mockErrorState: { error: any } = { error: null };
 jest.mock('../../../../hooks/useFunds', () => ({
   useCreateFund: () => ({ mutate: mockMutate, loading: false, error: mockErrorState.error })
@@ -67,7 +68,10 @@ describe('CreateFundModal (orchestrator)', () => {
     const submitBtn = screen.getByRole('button', { name: /Create Fund/i });
     expect(submitBtn).toBeEnabled();
 
-    fireEvent.click(submitBtn);
+    // Click submit and wait for the async operation to complete
+    await userEvent.click(submitBtn);
+    
+    // Wait for the mock to be called
     await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
   });
 
@@ -77,7 +81,7 @@ describe('CreateFundModal (orchestrator)', () => {
     mockErrorState.error = createErrorInfo(err, ErrorType.SERVER);
     renderWithTheme(<CreateFundModal {...baseProps} />);
 
-    fireEvent.click(screen.getByText('NAV-Based Fund'));
+    await userEvent.click(screen.getByText('NAV-Based Fund'));
 
     const entityCombobox = screen.getByRole('combobox', { name: /Entity/i });
     fireEvent.mouseDown(entityCombobox);
@@ -92,7 +96,7 @@ describe('CreateFundModal (orchestrator)', () => {
     fireEvent.click(within(typeListbox).getByText('Private Equity'));
 
     const submitBtn = screen.getByRole('button', { name: /Create Fund/i });
-    fireEvent.click(submitBtn);
+    await userEvent.click(submitBtn);
 
     // Expect an error alert to be present
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
