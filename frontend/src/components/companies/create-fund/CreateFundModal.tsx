@@ -86,6 +86,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       
       return () => clearTimeout(timer);
     }
+    return undefined; // Explicit return for noImplicitReturns
   }, [createdFund, onFundCreated, onClose, reset, setErrors]);
 
   // Reset form when modal opens
@@ -97,6 +98,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       setErrors({});
       setSuccess(false);
     }
+    // No cleanup needed for this effect
   }, [open, reset, setErrors]);
 
   // Apply template to form data
@@ -166,10 +168,10 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       fund_type: formData.fund_type,
       tracking_type: formData.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED,
       currency: formData.currency,
-      commitment_amount: formData.commitment_amount ? parseFloat(formData.commitment_amount) : undefined,
-      expected_irr: formData.expected_irr ? parseFloat(formData.expected_irr) : undefined,
-      expected_duration_months: formData.expected_duration_months ? parseInt(formData.expected_duration_months) : undefined,
-      description: formData.description.trim() || undefined
+      ...(formData.commitment_amount && { commitment_amount: parseFloat(formData.commitment_amount) }),
+      ...(formData.expected_irr && { expected_irr: parseFloat(formData.expected_irr) }),
+      ...(formData.expected_duration_months && { expected_duration_months: parseInt(formData.expected_duration_months) }),
+      ...(formData.description && { description: formData.description.trim() })
     };
     
     await createFund(fundData);

@@ -36,7 +36,12 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const descId = description ? 'confirm-dialog-description' : undefined;
 
   return (
-    <Dialog open={open} onClose={onCancel} aria-labelledby={titleId} aria-describedby={descId}>
+    <Dialog 
+      open={open} 
+      onClose={onCancel} 
+      aria-labelledby={titleId} 
+      {...(descId && { 'aria-describedby': descId })}
+    >
       <DialogTitle id={titleId}>{title}</DialogTitle>
       {description && (
         <DialogContent>

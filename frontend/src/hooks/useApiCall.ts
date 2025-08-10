@@ -17,7 +17,7 @@ export interface ApiCallState<T> {
 
 export interface ApiCallOptions {
   enabled?: boolean;
-  refetchOnWindowFocus?: boolean;
+  refetchOnWindowFocus?: boolean | undefined;
   refetchInterval?: number;
 }
 

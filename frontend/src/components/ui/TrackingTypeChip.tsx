@@ -14,10 +14,11 @@ export const TrackingTypeChip: React.FC<TrackingTypeChipProps> = ({ trackingType
 
   return (
     <Chip
+      component="div"
       label={label}
       size={size}
       color={color as any}
-      className={className}
+      className={className || ''}
       aria-label={`tracking: ${label}`}
     />
   );

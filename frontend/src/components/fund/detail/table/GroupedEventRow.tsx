@@ -194,6 +194,7 @@ const groupedEventRowPropsAreEqual = (prevProps: GroupedEventRowProps, nextProps
   for (let i = 0; i < prevOthers.length; i++) {
     const prev = prevOthers[i];
     const next = nextOthers[i];
+    if (!prev || !next) continue;
     if (
       prev.id !== next.id ||
       prev.amount !== next.amount ||

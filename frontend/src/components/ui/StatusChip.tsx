@@ -14,9 +14,10 @@ export const StatusChip: React.FC<StatusChipProps> = ({ status, size = 'small', 
 
   return (
     <Chip
+      component="div"
       label={info.value}
       size={size}
-      className={className}
+      className={className || ''}
       aria-label={`status: ${info.value}`}
       sx={{
         bgcolor: info.color,
