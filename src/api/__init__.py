@@ -17,6 +17,8 @@ from src.database import get_database_session
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
 from src.fund.models import Fund, FundType, FundEvent, FundStatus
+from src.banking.models import Bank, BankAccount
+from src.fund.models import FundEventCashFlow, CashFlowDirection
 
 def create_app(db_config=None):
     app = Flask(__name__)
@@ -1095,6 +1097,593 @@ def create_app(db_config=None):
                     statements_data.append(statement_data)
                 
                 return jsonify({"tax_statements": statements_data}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Banking and Cash Flow API Endpoints
+    
+    @app.route('/api/banks', methods=['GET'])
+    def get_banks():
+        """Get all banks"""
+        try:
+            session = get_db_session()
+            
+            try:
+                banks = session.query(Bank).order_by(Bank.name).all()
+                banks_data = []
+                for bank in banks:
+                    bank_data = {
+                        "id": bank.id,
+                        "name": bank.name,
+                        "country": bank.country,
+                        "swift_bic": bank.swift_bic,
+                        "accounts_count": len(bank.accounts)
+                    }
+                    banks_data.append(bank_data)
+                
+                return jsonify({"banks": banks_data}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/banks', methods=['POST'])
+    def create_bank():
+        """Create a new bank"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
+            
+            required_fields = ['name', 'country']
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    return jsonify({"error": f"Missing required field: {field}"}), 400
+            
+            session = get_db_session()
+            
+            try:
+                # Validate country code format
+                if len(data['country']) != 2:
+                    return jsonify({"error": "Country must be a 2-letter ISO code"}), 400
+                
+                # Check for duplicate bank name in same country
+                existing_bank = session.query(Bank).filter(
+                    Bank.name == data['name'].strip(),
+                    Bank.country == data['country'].upper()
+                ).first()
+                
+                if existing_bank:
+                    return jsonify({"error": "Bank with this name already exists in this country"}), 409
+                
+                bank = Bank.create(
+                    name=data['name'].strip(),
+                    country=data['country'].upper(),
+                    swift_bic=data.get('swift_bic'),
+                    session=session
+                )
+                
+                session.commit()
+                
+                response_data = {
+                    "id": bank.id,
+                    "name": bank.name,
+                    "country": bank.country,
+                    "swift_bic": bank.swift_bic,
+                    "message": "Bank created successfully"
+                }
+                
+                return jsonify(response_data), 201
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/banks/<int:bank_id>', methods=['PUT'])
+    def update_bank(bank_id):
+        """Update a bank"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
+            
+            session = get_db_session()
+            
+            try:
+                bank = session.query(Bank).filter(Bank.id == bank_id).first()
+                if not bank:
+                    return jsonify({"error": "Bank not found"}), 404
+                
+                # Update allowed fields
+                if 'name' in data:
+                    bank.name = data['name'].strip()
+                if 'country' in data:
+                    # Validate country code format
+                    if len(data['country']) != 2:
+                        return jsonify({"error": "Country must be a 2-letter ISO code"}), 400
+                    bank.country = data['country'].upper()
+                if 'swift_bic' in data:
+                    bank.swift_bic = data['swift_bic']
+                
+                session.commit()
+                
+                response_data = {
+                    "id": bank.id,
+                    "name": bank.name,
+                    "country": bank.country,
+                    "swift_bic": bank.swift_bic,
+                    "message": "Bank updated successfully"
+                }
+                
+                return jsonify(response_data), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/banks/<int:bank_id>', methods=['DELETE'])
+    def delete_bank(bank_id):
+        """Delete a bank"""
+        try:
+            session = get_db_session()
+            
+            try:
+                bank = session.query(Bank).filter(Bank.id == bank_id).first()
+                if not bank:
+                    return jsonify({"error": "Bank not found"}), 404
+                
+                # Check if bank has associated accounts
+                if bank.accounts:
+                    return jsonify({"error": "Cannot delete bank with associated accounts"}), 409
+                
+                session.delete(bank)
+                session.commit()
+                
+                return jsonify({"message": "Bank deleted successfully"}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/bank-accounts', methods=['GET'])
+    def get_bank_accounts():
+        """Get all bank accounts with optional filtering"""
+        try:
+            session = get_db_session()
+            
+            try:
+                # Get query parameters for filtering
+                entity_id = request.args.get('entity_id', type=int)
+                bank_id = request.args.get('bank_id', type=int)
+                currency = request.args.get('currency')
+                is_active = request.args.get('is_active', type=lambda v: v.lower() == 'true' if v else None)
+                
+                query = session.query(BankAccount)
+                
+                # Apply filters
+                if entity_id:
+                    query = query.filter(BankAccount.entity_id == entity_id)
+                if bank_id:
+                    query = query.filter(BankAccount.bank_id == bank_id)
+                if currency:
+                    query = query.filter(BankAccount.currency == currency.upper())
+                if is_active is not None:
+                    query = query.filter(BankAccount.is_active == is_active)
+                
+                bank_accounts = query.order_by(BankAccount.account_name).all()
+                
+                accounts_data = []
+                for account in bank_accounts:
+                    account_data = {
+                        "id": account.id,
+                        "entity_id": account.entity_id,
+                        "bank_id": account.bank_id,
+                        "bank_name": account.bank.name,
+                        "account_name": account.account_name,
+                        "account_number": account.account_number,
+                        "currency": account.currency,
+                        "is_active": account.is_active
+                    }
+                    accounts_data.append(account_data)
+                
+                return jsonify({"bank_accounts": accounts_data}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/bank-accounts', methods=['POST'])
+    def create_bank_account():
+        """Create a new bank account"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
+            
+            required_fields = ['entity_id', 'bank_id', 'account_name', 'account_number', 'currency']
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    return jsonify({"error": f"Missing required field: {field}"}), 400
+            
+            session = get_db_session()
+            
+            try:
+                # Validate entity exists
+                entity = session.query(Entity).filter(Entity.id == data['entity_id']).first()
+                if not entity:
+                    return jsonify({"error": "Entity not found"}), 404
+                
+                # Validate bank exists
+                bank = session.query(Bank).filter(Bank.id == data['bank_id']).first()
+                if not bank:
+                    return jsonify({"error": "Bank not found"}), 404
+                
+                # Validate currency format
+                if len(data['currency']) != 3:
+                    return jsonify({"error": "Currency must be a 3-letter ISO code"}), 400
+                
+                # Check for duplicate account
+                existing_account = BankAccount.get_by_unique(
+                    entity_id=data['entity_id'],
+                    bank_id=data['bank_id'],
+                    account_number=data['account_number'].strip(),
+                    session=session
+                )
+                
+                if existing_account:
+                    return jsonify({"error": "Bank account with this number already exists for this entity and bank"}), 409
+                
+                account = BankAccount.create(
+                    entity_id=data['entity_id'],
+                    bank_id=data['bank_id'],
+                    account_name=data['account_name'].strip(),
+                    account_number=data['account_number'].strip(),
+                    currency=data['currency'].upper(),
+                    is_active=data.get('is_active', True),
+                    session=session
+                )
+                
+                session.commit()
+                
+                response_data = {
+                    "id": account.id,
+                    "entity_id": account.entity_id,
+                    "bank_id": account.bank_id,
+                    "bank_name": account.bank.name,
+                    "account_name": account.account_name,
+                    "account_number": account.account_number,
+                    "currency": account.currency,
+                    "is_active": account.is_active,
+                    "message": "Bank account created successfully"
+                }
+                
+                return jsonify(response_data), 201
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/bank-accounts/<int:account_id>', methods=['PUT'])
+    def update_bank_account(account_id):
+        """Update a bank account"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
+            
+            session = get_db_session()
+            
+            try:
+                account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
+                if not account:
+                    return jsonify({"error": "Bank account not found"}), 404
+                
+                # Update allowed fields
+                if 'account_name' in data:
+                    account.account_name = data['account_name'].strip()
+                if 'is_active' in data:
+                    account.is_active = bool(data['is_active'])
+                if 'currency' in data:
+                    # Validate currency format
+                    if len(data['currency']) != 3:
+                        return jsonify({"error": "Currency must be a 3-letter ISO code"}), 400
+                    account.currency = data['currency'].upper()
+                
+                session.commit()
+                
+                response_data = {
+                    "id": account.id,
+                    "entity_id": account.entity_id,
+                    "bank_id": account.bank_id,
+                    "bank_name": account.bank.name,
+                    "account_name": account.account_name,
+                    "account_number": account.account_number,
+                    "currency": account.currency,
+                    "is_active": account.is_active,
+                    "message": "Bank account updated successfully"
+                }
+                
+                return jsonify(response_data), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/bank-accounts/<int:account_id>', methods=['DELETE'])
+    def delete_bank_account(account_id):
+        """Delete a bank account"""
+        try:
+            session = get_db_session()
+            
+            try:
+                account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
+                if not account:
+                    return jsonify({"error": "Bank account not found"}), 404
+                
+                session.delete(account)
+                session.commit()
+                
+                return jsonify({"message": "Bank account deleted successfully"}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows', methods=['GET'])
+    def get_fund_event_cash_flows(fund_id, event_id):
+        """Get all cash flows for a specific fund event"""
+        try:
+            session = get_db_session()
+            
+            try:
+                # Validate fund exists
+                fund = Fund.get_by_id(fund_id, session=session)
+                if not fund:
+                    return jsonify({"error": "Fund not found"}), 404
+                
+                # Validate event exists and belongs to fund
+                event = session.query(FundEvent).filter(
+                    FundEvent.id == event_id,
+                    FundEvent.fund_id == fund_id
+                ).first()
+                
+                if not event:
+                    return jsonify({"error": "Fund event not found"}), 404
+                
+                cash_flows_data = []
+                for cf in event.cash_flows:
+                    cf_data = {
+                        "id": cf.id,
+                        "bank_account_id": cf.bank_account_id,
+                        "bank_name": cf.bank_account.bank.name,
+                        "account_name": cf.bank_account.account_name,
+                        "direction": cf.direction.value,
+                        "transfer_date": cf.transfer_date.isoformat(),
+                        "currency": cf.currency,
+                        "amount": float(cf.amount),
+                        "reference": cf.reference,
+                        "notes": cf.notes
+                    }
+                    cash_flows_data.append(cf_data)
+                
+                response_data = {
+                    "fund_id": fund_id,
+                    "event_id": event_id,
+                    "event_type": event.event_type.value,
+                    "event_date": event.event_date.isoformat(),
+                    "event_amount": float(event.amount) if event.amount else None,
+                    "is_cash_flow_complete": event.is_cash_flow_complete,
+                    "cash_flows": cash_flows_data
+                }
+                
+                return jsonify(response_data), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows', methods=['POST'])
+    def add_fund_event_cash_flow(fund_id, event_id):
+        """Add a cash flow to a fund event"""
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
+            
+            required_fields = ['bank_account_id', 'transfer_date', 'currency', 'amount']
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    return jsonify({"error": f"Missing required field: {field}"}), 400
+            
+            session = get_db_session()
+            
+            try:
+                # Validate fund exists
+                fund = Fund.get_by_id(fund_id, session=session)
+                if not fund:
+                    return jsonify({"error": "Fund not found"}), 404
+                
+                # Validate event exists and belongs to fund
+                event = session.query(FundEvent).filter(
+                    FundEvent.id == event_id,
+                    FundEvent.fund_id == fund_id
+                ).first()
+                
+                if not event:
+                    return jsonify({"error": "Fund event not found"}), 404
+                
+                # Validate bank account exists
+                bank_account = session.query(BankAccount).filter(BankAccount.id == data['bank_account_id']).first()
+                if not bank_account:
+                    return jsonify({"error": "Bank account not found"}), 404
+                
+                # Validate currency matches bank account
+                if data['currency'].upper() != bank_account.currency.upper():
+                    return jsonify({"error": "Cash flow currency must match bank account currency"}), 400
+                
+                # Parse transfer date
+                try:
+                    from datetime import datetime
+                    transfer_date = datetime.strptime(data['transfer_date'], '%Y-%m-%d').date()
+                except ValueError:
+                    return jsonify({"error": "Invalid transfer_date format. Use YYYY-MM-DD"}), 400
+                
+                # Add cash flow using domain method
+                cash_flow = event.add_cash_flow(
+                    bank_account_id=data['bank_account_id'],
+                    transfer_date=transfer_date,
+                    currency=data['currency'],
+                    amount=float(data['amount']),
+                    reference=data.get('reference'),
+                    notes=data.get('notes'),
+                    session=session
+                )
+                
+                session.commit()
+                
+                response_data = {
+                    "id": cash_flow.id,
+                    "fund_event_id": cash_flow.fund_event_id,
+                    "bank_account_id": cash_flow.bank_account_id,
+                    "bank_name": bank_account.bank.name,
+                    "account_name": bank_account.account_name,
+                    "direction": cash_flow.direction.value,
+                    "transfer_date": cash_flow.transfer_date.isoformat(),
+                    "currency": cash_flow.currency,
+                    "amount": float(cash_flow.amount),
+                    "reference": cash_flow.reference,
+                    "notes": cash_flow.notes,
+                    "message": "Cash flow added successfully"
+                }
+                
+                return jsonify(response_data), 201
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows/<int:cash_flow_id>', methods=['DELETE'])
+    def remove_fund_event_cash_flow(fund_id, event_id, cash_flow_id):
+        """Remove a cash flow from a fund event"""
+        try:
+            session = get_db_session()
+            
+            try:
+                # Validate fund exists
+                fund = Fund.get_by_id(fund_id, session=session)
+                if not fund:
+                    return jsonify({"error": "Fund not found"}), 404
+                
+                # Validate event exists and belongs to fund
+                event = session.query(FundEvent).filter(
+                    FundEvent.id == event_id,
+                    FundEvent.fund_id == fund_id
+                ).first()
+                
+                if not event:
+                    return jsonify({"error": "Fund event not found"}), 404
+                
+                # Remove cash flow using domain method
+                event.remove_cash_flow(cash_flow_id, session=session)
+                session.commit()
+                
+                return jsonify({"message": "Cash flow removed successfully"}), 200
+                
+            finally:
+                session.close()
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/cash-flows', methods=['GET'])
+    def get_cash_flows():
+        """Get cash flows with optional filtering"""
+        try:
+            session = get_db_session()
+            
+            try:
+                # Get query parameters for filtering
+                fund_id = request.args.get('fund_id', type=int)
+                bank_account_id = request.args.get('bank_account_id', type=int)
+                start_date = request.args.get('start_date')
+                end_date = request.args.get('end_date')
+                currency = request.args.get('currency')
+                
+                query = session.query(FundEventCashFlow).join(FundEvent)
+                
+                # Apply filters
+                if fund_id:
+                    query = query.filter(FundEvent.fund_id == fund_id)
+                if bank_account_id:
+                    query = query.filter(FundEventCashFlow.bank_account_id == bank_account_id)
+                if currency:
+                    query = query.filter(FundEventCashFlow.currency == currency.upper())
+                
+                # Date filtering
+                if start_date:
+                    try:
+                        from datetime import datetime
+                        start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
+                        query = query.filter(FundEventCashFlow.transfer_date >= start_dt)
+                    except ValueError:
+                        return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
+                
+                if end_date:
+                    try:
+                        from datetime import datetime
+                        end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+                        query = query.filter(FundEventCashFlow.transfer_date <= end_dt)
+                    except ValueError:
+                        return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
+                
+                cash_flows = query.order_by(FundEventCashFlow.transfer_date.desc()).all()
+                
+                flows_data = []
+                for cf in cash_flows:
+                    cf_data = {
+                        "id": cf.id,
+                        "fund_event_id": cf.fund_event_id,
+                        "fund_id": cf.fund_event.fund_id,
+                        "fund_name": cf.fund_event.fund.name,
+                        "event_type": cf.fund_event.event_type.value,
+                        "event_date": cf.fund_event.event_date.isoformat(),
+                        "bank_account_id": cf.bank_account_id,
+                        "bank_name": cf.bank_account.bank.name,
+                        "account_name": cf.bank_account.account_name,
+                        "direction": cf.direction.value,
+                        "transfer_date": cf.transfer_date.isoformat(),
+                        "currency": cf.currency,
+                        "amount": float(cf.amount),
+                        "reference": cf.reference,
+                        "notes": cf.notes
+                    }
+                    flows_data.append(cf_data)
+                
+                return jsonify({"cash_flows": flows_data}), 200
                 
             finally:
                 session.close()

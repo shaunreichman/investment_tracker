@@ -4,9 +4,10 @@ from datetime import datetime
 
 from src.entity.models import Entity
 from src.investment_company.models import InvestmentCompany
-from src.fund.models import Fund, FundType, FundEvent, EventType, DistributionType, TaxPaymentType
+from src.fund.models import Fund, FundType, FundEvent, EventType, DistributionType, TaxPaymentType, FundEventCashFlow, CashFlowDirection
 from src.tax.models import TaxStatement
 from src.rates.models import RiskFreeRate
+from src.banking.models import Bank, BankAccount
 
 
 fake = Faker()
@@ -27,6 +28,9 @@ def set_session(session):
     FundEventFactory._meta.sqlalchemy_session = session
     TaxStatementFactory._meta.sqlalchemy_session = session
     RiskFreeRateFactory._meta.sqlalchemy_session = session
+    BankFactory._meta.sqlalchemy_session = session
+    BankAccountFactory._meta.sqlalchemy_session = session
+    FundEventCashFlowFactory._meta.sqlalchemy_session = session
 
 
 class SessionedFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -148,6 +152,49 @@ class TaxStatementFactory(SessionedFactory):
     
     # Other fields
     accountant = factory.LazyAttribute(lambda _: fake.name())
+    notes = factory.LazyAttribute(lambda _: fake.sentence())
+
+
+class BankFactory(SessionedFactory):
+    class Meta:
+        model = Bank
+
+    name = factory.LazyAttribute(lambda _: fake.company())
+    country = "AU"  # Default to Australia
+    swift_bic = factory.LazyAttribute(lambda _: fake.bothify(text='????AU2X', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'))
+
+
+class BankAccountFactory(SessionedFactory):
+    class Meta:
+        model = BankAccount
+
+    # Create required relationships automatically
+    entity = factory.SubFactory(EntityFactory)
+    bank = factory.SubFactory(BankFactory)
+    
+    account_name = factory.LazyAttribute(lambda _: fake.bothify(text='Account ????', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'))
+    account_number = factory.LazyAttribute(lambda _: fake.bothify(text='????-????-????-????', letters='0123456789'))
+    currency = "AUD"  # Default to AUD
+    is_active = True
+
+
+class FundEventCashFlowFactory(SessionedFactory):
+    class Meta:
+        model = FundEventCashFlow
+
+    # Create required relationships automatically
+    fund_event = factory.SubFactory(FundEventFactory)
+    bank_account = factory.SubFactory(BankAccountFactory)
+    
+    # Direction will be inferred from event type, but we can override
+    direction = factory.LazyAttribute(lambda obj: 
+        CashFlowDirection.OUTFLOW if obj.fund_event.event_type in [EventType.CAPITAL_CALL, EventType.UNIT_PURCHASE]
+        else CashFlowDirection.INFLOW
+    )
+    transfer_date = factory.LazyAttribute(lambda _: fake.date_between(start_date='-1y', end_date='today'))
+    currency = factory.LazyAttribute(lambda obj: obj.bank_account.currency)
+    amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=100, max_value=50000, right_digits=2))
+    reference = factory.LazyAttribute(lambda _: fake.bothify(text='REF-????-????', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'))
     notes = factory.LazyAttribute(lambda _: fake.sentence())
 
 
