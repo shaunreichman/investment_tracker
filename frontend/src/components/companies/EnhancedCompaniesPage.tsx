@@ -1,18 +1,17 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import {
   Box,
   Typography,
   Link,
   Breadcrumbs,
   Button,
-  Alert,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ErrorDisplay } from '../ErrorDisplay';
 import { ErrorType, ErrorSeverity, createErrorInfo } from '../../types/errors';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { TabNavigation, Tab } from './TabNavigation';
+import { TabNavigation } from './TabNavigation';
 import { OverviewTab } from './overview-tab';
 import { FundsTab } from './funds-tab';
 import { CompanyDetailsTab } from './company-details-tab';
@@ -94,32 +93,32 @@ export const EnhancedCompaniesPage: React.FC = () => {
     // Note: The enhanced funds data will refresh automatically due to the params change
   };
 
-  // Error handling
-  const getActiveTabError = () => {
-    switch (activeTab) {
-      case 'overview':
-        return overviewError;
-      case 'funds':
-        return fundsError;
-      case 'details':
-        return detailsError;
-      default:
-        return null;
-    }
-  };
+  // Error handling - these functions are kept for future use when implementing tab-specific error/loading states
+  // const getActiveTabError = () => {
+  //   switch (activeTab) {
+  //     case 'overview':
+  //       return overviewError;
+  //     case 'funds':
+  //       return fundsError;
+  //     case 'details':
+  //       return detailsError;
+  //     default:
+  //       return null;
+  //   }
+  // };
 
-  const getActiveTabLoading = () => {
-    switch (activeTab) {
-      case 'overview':
-        return overviewLoading;
-      case 'funds':
-        return fundsLoading;
-      case 'details':
-        return detailsLoading;
-      default:
-        return false;
-    }
-  };
+  // const getActiveTabLoading = () => {
+  //   switch (activeTab) {
+  //     case 'overview':
+  //       return overviewLoading;
+  //     case 'funds':
+  //       return fundsLoading;
+  //     case 'details':
+  //       return detailsLoading;
+  //     default:
+  //       return false;
+  //   }
+  // };
 
     // Handle errors from any of the API calls
     if (overviewError || fundsError || detailsError) {

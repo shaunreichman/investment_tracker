@@ -4,7 +4,7 @@ import {
   Typography,
   Divider,
 } from '@mui/material';
-import { LocationOn, Description } from '@mui/icons-material';
+import { LocationOn } from '@mui/icons-material';
 import { BusinessDetailsProps } from '../types/company-details-tab.types';
 
 export const BusinessDetails: React.FC<BusinessDetailsProps> = ({ company }) => {

@@ -52,7 +52,6 @@ export const FundsTab: React.FC<FundsTabProps> = ({
   const {
     handlePageChange,
     handleRowsPerPageChange,
-    muiPage,
   } = useFundsPaginationHook({
     currentPage: currentParams.page || 1,
     perPage: currentParams.per_page || 25,
