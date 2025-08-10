@@ -43,7 +43,7 @@ export const createMockCompanyOverview = (overrides: Partial<CompanyOverviewResp
     total_invested_capital: 4500000,
     active_funds_count: 3,
     completed_funds_count: 2,
-    fund_status_breakdown: { active: 3, completed: 2, suspended: 0 }
+    fund_status_breakdown: { active: 3, completed: 2, suspended: 0, realized: 0 }
   },
   performance_summary: {
     average_completed_irr: 15.5,
@@ -253,7 +253,7 @@ export const createMockEmptyCompany = () => ({
       total_invested_capital: 0,
       active_funds_count: 0,
       completed_funds_count: 0,
-      fund_status_breakdown: { active: 0, completed: 0, suspended: 0 }
+      fund_status_breakdown: { active: 0, completed: 0, suspended: 0, realized: 0 }
     },
     performance_summary: {
       average_completed_irr: 0,
@@ -283,7 +283,7 @@ export const mockTestScenarios = {
         total_invested_capital: 900000,
         active_funds_count: 1, 
         completed_funds_count: 0,
-        fund_status_breakdown: { active: 1, completed: 0, suspended: 0 }
+        fund_status_breakdown: { active: 1, completed: 0, suspended: 0, realized: 0 }
       }
     }),
     funds: [createMockFund()],
@@ -299,7 +299,7 @@ export const mockTestScenarios = {
         total_invested_capital: 2250000,
         active_funds_count: 3,
         completed_funds_count: 0,
-        fund_status_breakdown: { active: 3, completed: 0, suspended: 0 }
+        fund_status_breakdown: { active: 3, completed: 0, suspended: 0, realized: 0 }
       }
     }),
     funds: [
@@ -319,7 +319,7 @@ export const mockTestScenarios = {
         total_invested_capital: 2700000,
         active_funds_count: 0,
         completed_funds_count: 3,
-        fund_status_breakdown: { active: 0, completed: 3, suspended: 0 }
+        fund_status_breakdown: { active: 0, completed: 3, suspended: 0, realized: 0 }
       },
       performance_summary: {
         average_completed_irr: 25.5,
@@ -349,7 +349,7 @@ export const mockTestScenarios = {
         total_invested_capital: 1500000,
         active_funds_count: 2,
         completed_funds_count: 0,
-        fund_status_breakdown: { active: 2, completed: 0, suspended: 0 }
+        fund_status_breakdown: { active: 2, completed: 0, suspended: 0, realized: 0 }
       }
     }),
     funds: [

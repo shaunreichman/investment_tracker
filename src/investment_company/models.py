@@ -284,12 +284,14 @@ class InvestmentCompany(Base):
         # Count funds by status
         active_funds_count = sum(1 for fund in funds if fund.status == FundStatus.ACTIVE)
         completed_funds_count = sum(1 for fund in funds if fund.status == FundStatus.COMPLETED)
-        suspended_funds_count = sum(1 for fund in funds if fund.status == FundStatus.REALIZED)
+        suspended_funds_count = sum(1 for fund in funds if fund.status == FundStatus.SUSPENDED)
+        realized_funds_count = sum(1 for fund in funds if fund.status == FundStatus.REALIZED)
         
         fund_status_breakdown = {
-            "active_funds_count": active_funds_count,
-            "completed_funds_count": completed_funds_count,
-            "suspended_funds_count": suspended_funds_count
+            "active": active_funds_count,
+            "completed": completed_funds_count,
+            "suspended": suspended_funds_count,
+            "realized": realized_funds_count
         }
         
         # Calculate performance summary (only for completed funds)
@@ -348,9 +350,9 @@ class InvestmentCompany(Base):
                 "total_current_value": total_current_value,
                 "total_invested_capital": total_invested_capital,
                 "active_funds_count": active_funds_count,  # (SYSTEM) kept for test compatibility
-                "completed_funds_count": completed_funds_count  # (SYSTEM) kept for test compatibility
+                "completed_funds_count": completed_funds_count,  # (SYSTEM) kept for test compatibility
+                "fund_status_breakdown": fund_status_breakdown
             },
-            "fund_status_breakdown": fund_status_breakdown,  # (SYSTEM) also at root level for API compatibility
             "performance_summary": {
                 "average_completed_irr": average_completed_irr,
                 "total_realized_gains": total_realized_gains,

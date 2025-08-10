@@ -145,10 +145,12 @@ class FundStatus(enum.Enum):
     
     Business definitions:
     - ACTIVE: Equity balance > 0 (fund still invested, has capital at risk)
+    - SUSPENDED: Fund temporarily suspended/on hold (equity balance may be > 0 but no new activity)
     - REALIZED: Equity balance = 0 (all capital returned, may still receive distributions)
     - COMPLETED: Final tax statement received after equity balance = 0 (fully realized AND all tax obligations complete)
     """
     ACTIVE = "active"
+    SUSPENDED = "suspended"
     REALIZED = "realized"
     COMPLETED = "completed"
 
