@@ -16,7 +16,7 @@ export const FormField: React.FC<FormFieldProps> = ({ id, label, error, hint, re
 
   return (
     <FormControl fullWidth error={isError} aria-invalid={isError} aria-describedby={helperId}>
-      <FormLabel htmlFor={id} required={required}>{label}</FormLabel>
+      <FormLabel htmlFor={id} required={required || false}>{label}</FormLabel>
       {children}
       {(hint || error) && (
         <FormHelperText id={helperId}>{error || hint}</FormHelperText>

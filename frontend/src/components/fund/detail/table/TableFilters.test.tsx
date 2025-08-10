@@ -45,7 +45,9 @@ describe('TableFilters', () => {
     // Find the switch by looking for the checkbox input within the Switch component
     const switches = screen.getAllByRole('checkbox');
     const taxSwitch = switches[0]; // First switch should be tax events
-    fireEvent.click(taxSwitch);
+    if (taxSwitch) {
+      fireEvent.click(taxSwitch);
+    }
     expect(onShowTaxEventsChange).toHaveBeenCalledWith(true);
   });
 
@@ -62,7 +64,9 @@ describe('TableFilters', () => {
     // Find the switch by looking for the checkbox input within the Switch component
     const switches = screen.getAllByRole('checkbox');
     const navSwitch = switches[1]; // Second switch should be NAV updates
-    fireEvent.click(navSwitch);
+    if (navSwitch) {
+      fireEvent.click(navSwitch);
+    }
     expect(onShowNavUpdatesChange).toHaveBeenCalledWith(true);
   });
 

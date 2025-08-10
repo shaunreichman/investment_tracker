@@ -62,7 +62,10 @@ export const debugTableRendering = (
     if (!groupedEvents[dateKey]) {
       groupedEvents[dateKey] = [];
     }
-    groupedEvents[dateKey].push(event);
+    const dateEvents = groupedEvents[dateKey];
+    if (dateEvents) {
+      dateEvents.push(event);
+    }
   });
 
   // Analyze table structure based on fund type and toggles
@@ -178,7 +181,10 @@ export const logEventGrouping = (
     if (!dateGroups[dateKey]) {
       dateGroups[dateKey] = [];
     }
-    dateGroups[dateKey].push(event);
+    const dateEvents = dateGroups[dateKey];
+    if (dateEvents) {
+      dateEvents.push(event);
+    }
   });
 
   console.log('📅 Events grouped by date:', dateGroups);

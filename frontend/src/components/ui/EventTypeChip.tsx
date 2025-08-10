@@ -23,10 +23,11 @@ export const EventTypeChip: React.FC<EventTypeChipProps> = ({
 
   return (
     <Chip
+      component="div"
       label={label}
       size={size}
       color={color}
-      className={className}
+      className={className || ''}
       aria-label={`event type: ${label}`}
     />
   );

@@ -205,6 +205,7 @@ export const deepEqual = (obj1: any, obj2: any): boolean => {
 export const calculateTaxPaymentDate = (financialYear: string): string => {
   if (!financialYear) return '';
   const [startYear] = financialYear.split('-');
+  if (!startYear) return '';
   const endYear = parseInt(startYear) + 1;
   return `${endYear}-06-30`; // Last day of financial year (June 30)
 };

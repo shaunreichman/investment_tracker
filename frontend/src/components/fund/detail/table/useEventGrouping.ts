@@ -49,7 +49,10 @@ export const useEventGrouping = (
       if (!groupedByDate[dateKey]) {
         groupedByDate[dateKey] = [];
       }
-      groupedByDate[dateKey].push(event);
+      const dateEvents = groupedByDate[dateKey];
+      if (dateEvents) {
+        dateEvents.push(event);
+      }
     });
 
     // Sort dates in chronological order (oldest first)
@@ -62,6 +65,7 @@ export const useEventGrouping = (
 
     initialSortedDates.forEach(date => {
       const dateEvents = groupedByDate[date];
+      if (!dateEvents) return;
       
       // Find interest distribution with withholding tax using the flag
       // Fallback to date-based matching for events without flag data
@@ -89,7 +93,7 @@ export const useEventGrouping = (
 
           groupedEvents.push({
             date,
-            events: dateEvents,
+            events: dateEvents as ExtendedFundEvent[],
             hasInterestWithholdingPair: true,
             interestEvent,
             withholdingEvent,

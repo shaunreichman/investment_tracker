@@ -383,43 +383,43 @@ export const validateField = (
       if (eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') {
         return eventValidators.amount(value);
       }
-      break;
+      return undefined;
       
     case 'distribution_type':
       if (eventType === 'DISTRIBUTION' && !distributionType) {
         return eventValidators.distributionType(value);
       }
-      break;
+      return undefined;
       
     case 'sub_distribution_type':
       if ((distributionType === 'DIVIDEND_FRANKED' || distributionType === 'DIVIDEND_UNFRANKED') && !value) {
         return eventValidators.subDistributionType(value);
       }
-      break;
+      return undefined;
       
     case 'units_purchased':
       if (eventType === 'UNIT_PURCHASE') {
         return eventValidators.unitsPurchased(value);
       }
-      break;
+      return undefined;
       
     case 'units_sold':
       if (eventType === 'UNIT_SALE') {
         return eventValidators.unitsSold(value);
       }
-      break;
+      return undefined;
       
     case 'unit_price':
       if (eventType === 'UNIT_PURCHASE' || eventType === 'UNIT_SALE' || eventType === 'NAV_UPDATE') {
         return eventValidators.unitPrice(value);
       }
-      break;
+      return undefined;
       
     case 'nav_per_share':
       if (eventType === 'NAV_UPDATE') {
         return eventValidators.navPerShare(value);
       }
-      break;
+      return undefined;
       
     case 'brokerage_fee':
       return eventValidators.brokerageFee(value);
@@ -430,32 +430,32 @@ export const validateField = (
       if (distributionType === 'INTEREST' && eventType === 'DISTRIBUTION') {
         return eventValidators.grossAmount(value);
       }
-      break;
+      return undefined;
       
     case 'withholding_tax_rate':
       if (distributionType === 'INTEREST' && eventType === 'DISTRIBUTION') {
         return eventValidators.withholdingTaxRate(value);
       }
-      break;
+      return undefined;
       
     // Tax Statement validation
     case 'financial_year':
       if (eventType === 'TAX_STATEMENT') {
         return eventValidators.financialYear(value);
       }
-      break;
+      return undefined;
       
     case 'statement_date':
       if (eventType === 'TAX_STATEMENT') {
         return eventValidators.statementDate(value);
       }
-      break;
+      return undefined;
       
     case 'eofy_debt_interest_deduction_rate':
       if (eventType === 'TAX_STATEMENT') {
         return eventValidators.debtInterestDeductionRate(value);
       }
-      break;
+      return undefined;
       
     case 'interest_received_in_cash':
     case 'interest_receivable_this_fy':
@@ -467,7 +467,7 @@ export const validateField = (
       if (eventType === 'TAX_STATEMENT' && value) {
         return eventValidators.interestIncome(value);
       }
-      break;
+      return undefined;
       
     case 'interest_income_tax_rate':
     case 'dividend_franked_income_tax_rate':
@@ -476,7 +476,7 @@ export const validateField = (
       if (eventType === 'TAX_STATEMENT' && value) {
         return eventValidators.taxRate(value);
       }
-      break;
+      return undefined;
       
     // Fund validation
     case 'name':

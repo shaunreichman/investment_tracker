@@ -28,9 +28,12 @@ export const calculateDateRange = (events: ExtendedFundEvent[]) => {
   if (events.length === 0) {
     const today = new Date();
     const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+    const startDateStr = sixMonthsAgo.toISOString().split('T')[0];
+    const endDateStr = today.toISOString().split('T')[0];
+    if (!startDateStr || !endDateStr) return { startDate: '', endDate: '' };
     return {
-      startDate: sixMonthsAgo.toISOString().split('T')[0],
-      endDate: today.toISOString().split('T')[0],
+      startDate: startDateStr,
+      endDate: endDateStr,
     } as const;
   }
 
@@ -41,9 +44,13 @@ export const calculateDateRange = (events: ExtendedFundEvent[]) => {
   startDate.setMonth(startDate.getMonth() - 1);
   endDate.setMonth(endDate.getMonth() + 1);
 
+  const startDateStr = startDate.toISOString().split('T')[0];
+  const endDateStr = endDate.toISOString().split('T')[0];
+  if (!startDateStr || !endDateStr) return { startDate: '', endDate: '' };
+
   return {
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0],
+    startDate: startDateStr,
+    endDate: endDateStr,
   } as const;
 };
 
@@ -54,7 +61,10 @@ export const generateChartTicks = (startDate: string, endDate: string): string[]
 
   const current = new Date(start);
   while (current <= end) {
-    ticks.push(current.toISOString().split('T')[0]);
+    const dateStr = current.toISOString().split('T')[0];
+    if (dateStr) {
+      ticks.push(dateStr);
+    }
     current.setMonth(current.getMonth() + 1);
   }
 

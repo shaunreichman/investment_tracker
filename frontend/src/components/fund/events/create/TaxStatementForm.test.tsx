@@ -333,7 +333,9 @@ describe('TaxStatementForm', () => {
       // Find and click hybrid field buttons
       const autoButtons = screen.getAllByText('Auto');
       expect(autoButtons.length).toBeGreaterThan(0);
-      fireEvent.click(autoButtons[0]);
+      if (autoButtons[0]) {
+        fireEvent.click(autoButtons[0]);
+      }
       expect(mockOnHybridFieldToggle).toHaveBeenCalled();
     });
 

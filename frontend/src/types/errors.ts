@@ -62,7 +62,7 @@ export interface ErrorInfo {
   userMessage: string;
   
   /** Original error stack trace (for debugging) */
-  stack?: string;
+  stack?: string | undefined;
   
   /** Error ID for tracking and analytics */
   id?: string;

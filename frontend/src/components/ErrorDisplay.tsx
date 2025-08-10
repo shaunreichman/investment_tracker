@@ -218,6 +218,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
         if (timer) clearTimeout(timer);
       };
     }
+    return undefined; // Explicit return for noImplicitReturns
   }, [autoDismiss, error, dismissDelay, onDismiss]);
 
   // ============================================================================

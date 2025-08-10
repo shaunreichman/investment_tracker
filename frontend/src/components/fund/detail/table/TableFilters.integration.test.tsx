@@ -56,11 +56,15 @@ describe('TableFilters Integration', () => {
 
     // Test Tax Events switch
     const switches = screen.getAllByRole('checkbox');
-    fireEvent.click(switches[0]);
+    if (switches[0]) {
+      fireEvent.click(switches[0]);
+    }
     expect(onShowTaxEventsChange).toHaveBeenCalledWith(true);
 
     // Test NAV Updates switch
-    fireEvent.click(switches[1]);
+    if (switches[1]) {
+      fireEvent.click(switches[1]);
+    }
     expect(onShowNavUpdatesChange).toHaveBeenCalledWith(true);
   });
 

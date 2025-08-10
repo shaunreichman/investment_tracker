@@ -113,7 +113,7 @@ export interface FundEvent {
   amount?: number;
   description?: string;
   reference_number?: string;
-  distribution_type?: DistributionType;
+  distribution_type?: DistributionType | undefined;
   units_purchased?: number;
   units_sold?: number;
   unit_price?: number;
