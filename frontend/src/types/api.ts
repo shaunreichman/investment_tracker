@@ -406,6 +406,128 @@ export interface FundDetailData {
 }
 
 // ============================================================================
+// COMPANIES UI ENHANCED API INTERFACES
+// ============================================================================
+
+export interface CompanyOverviewResponse {
+  company: {
+    id: number;
+    name: string;
+    company_type: string | null;
+    business_address: string | null;
+    website: string | null;
+    contacts: Array<{
+      id: number;
+      name: string;
+      title: string | null;
+      direct_number: string | null;
+      direct_email: string | null;
+      notes: string | null;
+    }>;
+  };
+  portfolio_summary: {
+    total_committed_capital: number;
+    total_current_value: number;
+    total_invested_capital: number;
+    active_funds_count: number;
+    completed_funds_count: number;
+    fund_status_breakdown: {
+      active: number;
+      completed: number;
+      suspended: number;
+    };
+  };
+  performance_summary: {
+    average_completed_irr: number | null;
+    total_realized_gains: number | null;
+    total_realized_losses: number | null;
+  };
+  last_activity: {
+    last_activity_date: string | null;
+    days_since_last_activity: number | null;
+  };
+}
+
+export interface EnhancedFund {
+  id: number;
+  name: string;
+  description: string | null;
+  currency: string;
+  fund_type: string;
+  status: string;
+  tracking_type: string;
+  
+  fund_details: {
+    start_date: string;
+    end_date: string | null;
+    actual_duration_days: number | null;
+    days_since_last_activity: number;
+  };
+  
+  equity: {
+    commitment: number;
+    invested_capital: number;
+    current_value: number;
+    current_equity_balance: number;
+  };
+  
+  estimated_return: {
+    expected_irr: number | null;
+    duration_months: number | null;
+  };
+  
+  distributions: {
+    distribution_count: number;
+    total_distribution_amount: number;
+    last_distribution_date: string | null;
+    distribution_frequency_months: number | null;
+  };
+  
+  returns: {
+    completed_irr: number | null;
+    performance_vs_expected: number | null;
+  };
+  
+  performance: {
+    unrealized_gains_losses: number;
+    realized_gains_losses: number;
+    total_profit_loss: number;
+  };
+}
+
+export interface EnhancedFundsResponse {
+  funds: EnhancedFund[];
+  pagination: {
+    current_page: number;
+    total_pages: number;
+    total_funds: number;
+    per_page: number;
+  };
+  filters: {
+    applied_status_filter: string;
+    applied_search: string | null;
+  };
+}
+
+export interface CompanyDetailsResponse {
+  company: {
+    id: number;
+    name: string;
+    company_type: string | null;
+    business_address: string | null;
+    website: string | null;
+    contacts: Array<{
+      id: number;
+      name: string;
+      title: string | null;
+      direct_number: string | null;
+      direct_email: string | null;
+      notes: string | null;
+    }>;
+  };
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
