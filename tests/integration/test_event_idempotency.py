@@ -44,7 +44,7 @@ class TestEventIdempotency:
         db_session.commit()
         
         # Verify no change in state
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_equity_balance == after_first_call_balance
         assert len(fund.get_all_fund_events()) == after_first_call_events
         
@@ -86,7 +86,7 @@ class TestEventIdempotency:
         db_session.commit()
         
         # Verify no change in event count
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert len(fund.get_all_fund_events()) == after_first_nav_events
         
         # Verify only one NAV event was created
@@ -129,7 +129,7 @@ class TestEventIdempotency:
         db_session.commit()
         
         # Verify no change in event count
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert len(fund.get_all_fund_events()) == after_first_dist_events
         
         # Verify only one distribution event was created

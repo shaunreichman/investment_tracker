@@ -39,7 +39,7 @@ class TestFundDerivedFields:
         db_session.commit()
         
         # Verify total capital called
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.total_capital_called == 50000.0
         
         # Verify remaining commitment
@@ -71,7 +71,7 @@ class TestFundDerivedFields:
         db_session.commit()
         
         # Calculate IRR from events
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         events = fund.get_all_fund_events()
         
         # Extract cash flows and dates for IRR calculation
@@ -113,7 +113,7 @@ class TestFundDerivedFields:
         db_session.commit()
         
         # Status should remain ACTIVE
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.status == FundStatus.ACTIVE
         
         # Return all capital
@@ -121,7 +121,7 @@ class TestFundDerivedFields:
         db_session.commit()
         
         # Status should change to REALIZED
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.status == FundStatus.REALIZED
 
     def test_fund_current_nav_total_calculated(self, db_session):
@@ -149,7 +149,7 @@ class TestFundDerivedFields:
         db_session.commit()
         
         # NAV total should be units * price
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_nav_total == 10000.0
         
         # Update NAV
@@ -162,7 +162,7 @@ class TestFundDerivedFields:
         db_session.commit()
         
         # NAV total should update to new price * units
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_nav_total == 12000.0
 
 

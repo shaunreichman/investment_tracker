@@ -35,7 +35,7 @@ class TestCostBasedFundFlows:
         db_session.commit()
         
         # Verify equity balance updated
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_equity_balance == 50000.0
         
         # Verify event was created
@@ -60,7 +60,7 @@ class TestCostBasedFundFlows:
         db_session.commit()
         
         # Verify initial state
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_equity_balance == 50000.0
         
         # Add capital return
@@ -68,7 +68,7 @@ class TestCostBasedFundFlows:
         db_session.commit()
         
         # Verify equity balance reduced
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_equity_balance == 20000.0
         
         # Verify both events exist
@@ -95,7 +95,7 @@ class TestCostBasedFundFlows:
         db_session.commit()
         
         # Record equity balance before distribution
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         equity_before_distribution = fund.current_equity_balance
         
         # Add distribution
@@ -109,7 +109,7 @@ class TestCostBasedFundFlows:
         db_session.commit()
         
         # Verify equity balance unchanged
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_equity_balance == equity_before_distribution
         
         # Verify distribution event was created
@@ -134,7 +134,7 @@ class TestCostBasedFundFlows:
         db_session.commit()
         
         # Verify total equity balance
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_equity_balance == 50000.0
         
         # Add capital return
@@ -142,7 +142,7 @@ class TestCostBasedFundFlows:
         db_session.commit()
         
         # Verify final equity balance
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_equity_balance == 25000.0
         
         # Verify all events exist
@@ -183,7 +183,7 @@ class TestNAVBasedFundFlows:
         db_session.commit()
         
         # Verify units and cost updated
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_units == 1000.0
         assert fund.current_unit_price == 10.0
         
@@ -216,7 +216,7 @@ class TestNAVBasedFundFlows:
         db_session.commit()
         
         # Verify initial state
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_units == 1000.0
         
         # Add unit sale
@@ -230,7 +230,7 @@ class TestNAVBasedFundFlows:
         db_session.commit()
         
         # Verify units reduced
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_units == 600.0
         
         # Verify both events exist
@@ -261,7 +261,7 @@ class TestFundStatusUpdates:
         db_session.commit()
         
         # Verify status is ACTIVE
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.status.value == "active"
         assert fund.current_equity_balance > 0
 
@@ -281,7 +281,7 @@ class TestFundStatusUpdates:
         db_session.commit()
         
         # Verify initial state
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.current_equity_balance == 50000.0
         
         # Return all capital
@@ -289,6 +289,6 @@ class TestFundStatusUpdates:
         db_session.commit()
         
         # Verify status is REALIZED
-        fund = db_session.query(Fund).get(fund.id)
+        fund = db_session.get(Fund, fund.id)
         assert fund.status.value == "realized"
         assert fund.current_equity_balance == 0.0
