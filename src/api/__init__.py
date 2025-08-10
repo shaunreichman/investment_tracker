@@ -1,11 +1,13 @@
 import sys
 import os
 from datetime import datetime, date, timedelta
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from sqlalchemy import text, func, create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.orm import joinedload
+import logging
+from contextlib import contextmanager
 
 # Add the project root to Python path to enable domain method imports
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -234,8 +236,8 @@ def create_app(db_config=None):
                         "name": company.name,
                         "description": company.description,
                         "website": company.website,
-                        "contact_email": company.contact_email,
-                        "contact_phone": company.contact_phone,
+                        "company_type": company.company_type,
+                        "business_address": company.business_address,
                         "fund_count": total_funds,  # Match frontend expectation
                         "active_funds": active_funds,
                         "total_commitments": float(total_commitments) if total_commitments else 0.0,
@@ -292,8 +294,8 @@ def create_app(db_config=None):
                     name=data['name'].strip(),
                     description=data.get('description', ''),
                     website=data.get('website', ''),
-                    contact_email=data.get('contact_email', ''),
-                    contact_phone=data.get('contact_phone', ''),
+                    company_type=data.get('company_type'),
+                    business_address=data.get('business_address'),
                     session=session
                 )
                 
@@ -305,8 +307,8 @@ def create_app(db_config=None):
                     "name": company.name,
                     "description": company.description,
                     "website": company.website,
-                    "contact_email": company.contact_email,
-                    "contact_phone": company.contact_phone,
+                    "company_type": company.company_type,
+                    "business_address": company.business_address,
                     "created_at": company.created_at.isoformat() if company.created_at else None,
                     "updated_at": company.updated_at.isoformat() if company.updated_at else None
                 }
@@ -447,13 +449,27 @@ def create_app(db_config=None):
                 if not company:
                     return jsonify({"error": "Investment company not found"}), 404
                 
-                # Get query parameters
+                # Get query parameters with validation
                 sort_by = request.args.get('sort_by', 'start_date')
                 sort_order = request.args.get('sort_order', 'desc')
                 status_filter = request.args.get('status_filter', 'all')
                 search = request.args.get('search', '')
-                page = int(request.args.get('page', 1))
-                per_page = min(int(request.args.get('per_page', 25)), 100)  # Cap at 100
+                
+                # Validate and parse numeric parameters with fallbacks
+                try:
+                    page = int(request.args.get('page', 1))
+                    # Don't validate page - accept any value and handle edge cases gracefully
+                except (ValueError, TypeError):
+                    page = 1
+                
+                try:
+                    per_page = int(request.args.get('per_page', 25))
+                    if per_page < 1:
+                        per_page = 25
+                    elif per_page > 100:
+                        per_page = 100
+                except (ValueError, TypeError):
+                    per_page = 25
                 
                 # Get all funds for this company
                 all_funds = company.funds
@@ -466,6 +482,7 @@ def create_app(db_config=None):
                         'completed': FundStatus.COMPLETED,
                         'suspended': FundStatus.REALIZED
                     }
+                    # Only apply filter if status_filter is valid, otherwise ignore it
                     if status_filter in status_map:
                         all_funds = [f for f in all_funds if f.status == status_map[status_filter]]
                 
@@ -476,7 +493,15 @@ def create_app(db_config=None):
                                search_lower in f.name.lower() or 
                                (f.description and search_lower in f.description.lower())]
                 
-                # Apply sorting
+                # Apply sorting with validation
+                valid_sort_fields = ['start_date', 'name', 'status', 'commitment_amount', 'current_equity_balance']
+                if sort_by not in valid_sort_fields:
+                    sort_by = 'start_date'  # Default to start_date if invalid
+                
+                valid_sort_orders = ['asc', 'desc']
+                if sort_order not in valid_sort_orders:
+                    sort_order = 'desc'  # Default to desc if invalid
+                
                 if sort_by == 'start_date':
                     all_funds.sort(key=lambda x: x.start_date or date.min, reverse=(sort_order == 'desc'))
                 elif sort_by == 'name':
@@ -488,25 +513,35 @@ def create_app(db_config=None):
                 elif sort_by == 'current_equity_balance':
                     all_funds.sort(key=lambda x: x.current_equity_balance or 0, reverse=(sort_order == 'desc'))
                 
-                # Apply pagination
+                # Apply pagination with graceful handling of edge cases
                 total_funds = len(all_funds)
-                total_pages = (total_funds + per_page - 1) // per_page
-                start_idx = (page - 1) * per_page
-                end_idx = start_idx + per_page
-                paginated_funds = all_funds[start_idx:end_idx]
+                total_pages = (total_funds + per_page - 1) // per_page if per_page > 0 else 0
+                
+                # Handle edge cases gracefully
+                if page <= 0 or per_page <= 0:
+                    # Invalid page or per_page results in empty results
+                    start_idx = 0
+                    end_idx = 0
+                    paginated_funds = []
+                else:
+                    start_idx = (page - 1) * per_page
+                    end_idx = start_idx + per_page
+                    paginated_funds = all_funds[start_idx:end_idx]
                 
                 # Build enhanced fund data
                 funds_data = []
                 for fund in paginated_funds:
                     # Get enhanced fund metrics
-                    enhanced_metrics = fund.get_enhanced_fund_metrics()
-                    distribution_summary = fund.get_distribution_summary()
+                    enhanced_metrics = fund.get_enhanced_fund_metrics(session=session)
+                    distribution_summary = fund.get_distribution_summary(session=session)
                     
                     # Calculate days since last activity
                     days_since_last_activity = None
                     if fund.fund_events:
-                        last_event_date = max(event.event_date for event in fund.fund_events if event.event_date)
-                        if last_event_date:
+                        # Filter out events with None dates and get the latest event date
+                        valid_event_dates = [event.event_date for event in fund.fund_events if event.event_date is not None]
+                        if valid_event_dates:
+                            last_event_date = max(valid_event_dates)
                             days_since_last_activity = (date.today() - last_event_date).days
                     
                     # Calculate performance vs expected
@@ -522,6 +557,7 @@ def create_app(db_config=None):
                         "fund_type": fund.fund_type,
                         "status": fund.status.value,
                         "tracking_type": fund.tracking_type.value,
+                        "expected_irr": fund.expected_irr,  # Add at top level for test compatibility
                         
                         "fund_details": {
                             "start_date": fund.start_date.isoformat() if fund.start_date else None,

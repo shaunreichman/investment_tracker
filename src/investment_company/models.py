@@ -287,9 +287,9 @@ class InvestmentCompany(Base):
         suspended_funds_count = sum(1 for fund in funds if fund.status == FundStatus.REALIZED)
         
         fund_status_breakdown = {
-            "active": active_funds_count,
-            "completed": completed_funds_count,
-            "suspended": suspended_funds_count
+            "active_funds_count": active_funds_count,
+            "completed_funds_count": completed_funds_count,
+            "suspended_funds_count": suspended_funds_count
         }
         
         # Calculate performance summary (only for completed funds)
@@ -304,8 +304,8 @@ class InvestmentCompany(Base):
             total_realized_losses = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross < 0)
         else:
             average_completed_irr = None
-            total_realized_gains = None
-            total_realized_losses = None
+            total_realized_gains = 0  # (SYSTEM) return 0 instead of None for test compatibility
+            total_realized_losses = 0  # (SYSTEM) return 0 instead of None for test compatibility
         
         # Calculate last activity across all funds
         last_activity_date = None
@@ -347,10 +347,10 @@ class InvestmentCompany(Base):
                 "total_committed_capital": total_committed_capital,
                 "total_current_value": total_current_value,
                 "total_invested_capital": total_invested_capital,
-                "active_funds_count": active_funds_count,
-                "completed_funds_count": completed_funds_count,
-                "fund_status_breakdown": fund_status_breakdown
+                "active_funds_count": active_funds_count,  # (SYSTEM) kept for test compatibility
+                "completed_funds_count": completed_funds_count  # (SYSTEM) kept for test compatibility
             },
+            "fund_status_breakdown": fund_status_breakdown,  # (SYSTEM) also at root level for API compatibility
             "performance_summary": {
                 "average_completed_irr": average_completed_irr,
                 "total_realized_gains": total_realized_gains,
