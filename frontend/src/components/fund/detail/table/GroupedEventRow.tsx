@@ -144,7 +144,71 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
   );
 };
 
-export const GroupedEventRow = React.memo(GroupedEventRowComponent);
+/**
+ * Custom comparator for React.memo to only compare fields that affect rendering
+ * This prevents unnecessary re-renders when irrelevant fields change
+ */
+const groupedEventRowPropsAreEqual = (prevProps: GroupedEventRowProps, nextProps: GroupedEventRowProps): boolean => {
+  // Compare primitive values that affect rendering
+  if (
+    prevProps.groupedEvent.date !== nextProps.groupedEvent.date ||
+    prevProps.fund.id !== nextProps.fund.id ||
+    prevProps.fund.tracking_type !== nextProps.fund.tracking_type ||
+    prevProps.fund.currency !== nextProps.fund.currency ||
+    prevProps.showTaxEvents !== nextProps.showTaxEvents ||
+    prevProps.showNavUpdates !== nextProps.showNavUpdates
+  ) {
+    return false;
+  }
+  
+  // Compare interest event fields that affect rendering
+  const prevInterest = prevProps.groupedEvent.interestEvent;
+  const nextInterest = nextProps.groupedEvent.interestEvent;
+  if (
+    prevInterest?.id !== nextInterest?.id ||
+    prevInterest?.amount !== nextInterest?.amount ||
+    prevInterest?.description !== nextInterest?.description ||
+    prevInterest?.event_type !== nextInterest?.event_type
+  ) {
+    return false;
+  }
+  
+  // Compare withholding event fields that affect rendering
+  const prevWithholding = prevProps.groupedEvent.withholdingEvent;
+  const nextWithholding = nextProps.groupedEvent.withholdingEvent;
+  if (
+    prevWithholding?.id !== nextWithholding?.id ||
+    prevWithholding?.amount !== nextWithholding?.amount
+  ) {
+    return false;
+  }
+  
+  // Compare other events array length and key fields
+  const prevOthers = prevProps.groupedEvent.otherEvents;
+  const nextOthers = nextProps.groupedEvent.otherEvents;
+  if (prevOthers.length !== nextOthers.length) {
+    return false;
+  }
+  
+  // Check if any other events have changed (simplified check)
+  for (let i = 0; i < prevOthers.length; i++) {
+    const prev = prevOthers[i];
+    const next = nextOthers[i];
+    if (
+      prev.id !== next.id ||
+      prev.amount !== next.amount ||
+      prev.description !== next.description ||
+      prev.event_type !== next.event_type
+    ) {
+      return false;
+    }
+  }
+  
+  // Functions are reference-based, so we need to check if they're the same
+  return prevProps.onDeleteEvent === nextProps.onDeleteEvent;
+};
+
+export const GroupedEventRow = React.memo(GroupedEventRowComponent, groupedEventRowPropsAreEqual);
 
 /**
  * Component to render other events that are part of a grouped event

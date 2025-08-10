@@ -384,6 +384,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   
   return (
     <Alert
+      role="alert"
       severity={errorColor}
       icon={severityIcon}
       action={

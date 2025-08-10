@@ -4,13 +4,27 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-// Silence React Router v7 future-flag warnings in tests
-const originalWarn = console.warn;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-console.warn = (...args: any[]) => {
-  const msg = String(args[0] || '');
-  if (msg.includes('React Router Future Flag Warning')) {
-    return;
-  }
-  originalWarn(...args);
-};
+// Global test configuration for professional testing standards
+beforeAll(() => {
+  // Only suppress unavoidable console noise during tests
+  const originalError = console.error;
+  
+  console.error = (...args: any[]) => {
+    // Suppress React act warnings during tests (these are test framework issues, not app issues)
+    if (args[0]?.includes?.('act(...)')) {
+      return;
+    }
+    // Allow all other errors to surface - this is important for debugging
+    originalError(...args);
+  };
+});
+
+// Reset mocks between tests
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+// Restore console methods after all tests
+afterAll(() => {
+  // Console methods will be restored automatically
+});

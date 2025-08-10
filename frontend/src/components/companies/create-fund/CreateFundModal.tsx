@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, CircularProgress, Typography, Paper } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { Add as AddIcon } from '@mui/icons-material';
@@ -14,6 +14,19 @@ import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { SuccessBanner } from '../../ui/SuccessBanner';
 import { useFormState } from '../../../hooks/forms/useFormState';
 import { useFormValidation } from '../../../hooks/forms/useFormValidation';
+
+// Form fields - constant values that don't change
+const initialFormValues = {
+  entity_id: '',
+  name: '',
+  fund_type: '',
+  tracking_type: '',
+  currency: 'AUD',
+  commitment_amount: '',
+  expected_irr: '',
+  expected_duration_months: '',
+  description: ''
+};
 
 interface CreateFundModalProps {
   open: boolean;
@@ -34,24 +47,12 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   companyId,
   companyName
 }) => {
-  const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showEntityModal, setShowEntityModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<FundTemplate | null>(null);
   const [showTemplateSelection, setShowTemplateSelection] = useState(true);
 
-  // Form fields
-  const initialFormValues = useMemo(() => ({
-    entity_id: '',
-    name: '',
-    fund_type: '',
-    tracking_type: '',
-    currency: 'AUD',
-    commitment_amount: '',
-    expected_irr: '',
-    expected_duration_months: '',
-    description: ''
-  }), []);
+
   const { values: formData, setFieldValue, setValues, reset } = useFormState(initialFormValues);
 
   // Validation using centralized validators
@@ -69,7 +70,23 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 
   // Centralized API hooks
   const { data: entities, loading, error: entitiesError } = useEntities({ refetchOnWindowFocus: true });
-  const { mutate: createFund, error: submitError } = useCreateFund();
+  const { mutate: createFund, loading: isSubmitting, error: submitError, data: createdFund } = useCreateFund();
+
+  // Handle success flow when fund is created
+  useEffect(() => {
+    if (createdFund) {
+      setSuccess(true);
+      const timer = setTimeout(() => {
+        onFundCreated();
+        onClose();
+        setSuccess(false);
+        reset(initialFormValues);
+        setErrors({});
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [createdFund, onFundCreated, onClose, reset, setErrors]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -79,9 +96,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       setShowTemplateSelection(true);
       setErrors({});
       setSuccess(false);
-      setSubmitting(false);
     }
-  }, [open, reset, setErrors, initialFormValues]);
+  }, [open, reset, setErrors]);
 
   // Apply template to form data
   const applyTemplate = (template: FundTemplate) => {
@@ -127,11 +143,13 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     }
   }, [open, validateForm]);
 
-  useEffect(() => {
-    if (open && !showTemplateSelection) {
-      validateForm();
-    }
-  }, [formData, open, showTemplateSelection, validateForm]);
+  // Remove the problematic useEffect that depends on formData
+  // This was causing infinite loops
+  // useEffect(() => {
+  //   if (open && !showTemplateSelection) {
+  //     validateForm();
+  //   }
+  // }, [formData, open, showTemplateSelection, validateForm]);
 
   const handleInputChange = (field: string, value: string) => {
     setFieldValue(field as keyof typeof initialFormValues, value);
@@ -140,39 +158,25 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-    try {
-      setSubmitting(true);
-      const fundData = {
-        investment_company_id: companyId,
-        entity_id: parseInt(formData.entity_id),
-        name: formData.name.trim(),
-        fund_type: formData.fund_type,
-        tracking_type: formData.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED,
-        currency: formData.currency,
-        commitment_amount: formData.commitment_amount ? parseFloat(formData.commitment_amount) : undefined,
-        expected_irr: formData.expected_irr ? parseFloat(formData.expected_irr) : undefined,
-        expected_duration_months: formData.expected_duration_months ? parseInt(formData.expected_duration_months) : undefined,
-        description: formData.description.trim() || undefined
-      };
-      await createFund(fundData);
-      setSuccess(true);
-      setTimeout(() => {
-        onFundCreated();
-        onClose();
-        setSuccess(false);
-        reset(initialFormValues);
-        setErrors({});
-      }, 2000);
-    } catch (err) {
-      // handled by hook
-      console.error('Failed to create fund:', err);
-    } finally {
-      setSubmitting(false);
-    }
+    
+    const fundData = {
+      investment_company_id: companyId,
+      entity_id: parseInt(formData.entity_id),
+      name: formData.name.trim(),
+      fund_type: formData.fund_type,
+      tracking_type: formData.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED,
+      currency: formData.currency,
+      commitment_amount: formData.commitment_amount ? parseFloat(formData.commitment_amount) : undefined,
+      expected_irr: formData.expected_irr ? parseFloat(formData.expected_irr) : undefined,
+      expected_duration_months: formData.expected_duration_months ? parseInt(formData.expected_duration_months) : undefined,
+      description: formData.description.trim() || undefined
+    };
+    
+    await createFund(fundData);
   };
 
   const handleClose = () => {
-    if (!submitting) {
+    if (!isSubmitting) { // Use isSubmitting from hook
       onClose();
       setSuccess(false);
       setErrors({});
@@ -225,7 +229,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
             <AddIcon sx={{ mr: 1, color: 'primary.main' }} />
             <Typography variant="h6">Create New Fund</Typography>
           </Box>
-          {submitting && (
+          {isSubmitting && ( // Use isSubmitting from hook
             <Box display="flex" alignItems="center">
               <CircularProgress size={20} sx={{ mr: 1 }} />
               <Typography variant="body2" color="text.secondary">
@@ -353,23 +357,23 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         {!showTemplateSelection && selectedTemplate && (
-          <Button onClick={() => setShowTemplateSelection(true)} variant="outlined" disabled={submitting} startIcon={<AddIcon />}>
+          <Button onClick={() => setShowTemplateSelection(true)} variant="outlined" disabled={isSubmitting} startIcon={<AddIcon />}>
             Back to Templates
           </Button>
         )}
-        <Button onClick={handleClose} disabled={submitting} variant="outlined">
+        <Button onClick={handleClose} disabled={isSubmitting} variant="outlined">
           Cancel
         </Button>
         {!showTemplateSelection && (
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={submitting || !isFormValid()}
-            startIcon={submitting ? <CircularProgress size={20} /> : <AddIcon />}
+            disabled={isSubmitting || !isFormValid()}
+            startIcon={isSubmitting ? <CircularProgress size={20} /> : <AddIcon />}
             sx={{ minWidth: 120 }}
             title={!isFormValid() ? 'Please fill in all required fields and fix any validation errors' : ''}
           >
-            {submitting ? 'Creating...' : 'Create Fund'}
+            {isSubmitting ? 'Creating...' : 'Create Fund'}
           </Button>
         )}
       </DialogActions>

@@ -32,7 +32,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint 'src/**/*.{ts,tsx}' --ignore-pattern 'src/**/__tests__/**'"
+    "lint": "eslint 'src/**/*.{ts,tsx}' --ignore-pattern 'src/**/__tests__/**'",
+    "check-bundle-size": "node scripts/check-bundle-size.js"
   },
   "eslintConfig": {
     "extends": [

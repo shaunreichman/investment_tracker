@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Box,
   Button,
@@ -24,6 +24,15 @@ const TableFiltersComponent: React.FC<TableFiltersProps> = ({
   onShowNavUpdatesChange,
   onAddEventClick
 }) => {
+  // Stabilize onChange callbacks to prevent unnecessary re-renders
+  const handleTaxEventsChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onShowTaxEventsChange(e.target.checked);
+  }, [onShowTaxEventsChange]);
+
+  const handleNavUpdatesChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onShowNavUpdatesChange(e.target.checked);
+  }, [onShowNavUpdatesChange]);
+
   return (
     <Box sx={{ 
       display: 'flex', 
@@ -63,7 +72,7 @@ const TableFiltersComponent: React.FC<TableFiltersProps> = ({
           </Typography>
           <Switch
             checked={showTaxEvents}
-            onChange={(e) => onShowTaxEventsChange(e.target.checked)}
+            onChange={handleTaxEventsChange}
             size="small"
             sx={{
               '& .MuiSwitch-switchBase': {
@@ -89,7 +98,7 @@ const TableFiltersComponent: React.FC<TableFiltersProps> = ({
             </Typography>
             <Switch
               checked={showNavUpdates}
-              onChange={(e) => onShowNavUpdatesChange(e.target.checked)}
+              onChange={handleNavUpdatesChange}
               size="small"
               sx={{
                 '& .MuiSwitch-switchBase': {
@@ -114,4 +123,19 @@ const TableFiltersComponent: React.FC<TableFiltersProps> = ({
   );
 };
 
-export default React.memo(TableFiltersComponent);
+/**
+ * Custom comparator for React.memo to only compare fields that affect rendering
+ * This prevents unnecessary re-renders when irrelevant fields change
+ */
+const tableFiltersPropsAreEqual = (prevProps: TableFiltersProps, nextProps: TableFiltersProps): boolean => {
+  return (
+    prevProps.showTaxEvents === nextProps.showTaxEvents &&
+    prevProps.showNavUpdates === nextProps.showNavUpdates &&
+    prevProps.isNavBasedFund === nextProps.isNavBasedFund &&
+    prevProps.onShowTaxEventsChange === nextProps.onShowTaxEventsChange &&
+    prevProps.onShowNavUpdatesChange === nextProps.onShowNavUpdatesChange &&
+    prevProps.onAddEventClick === nextProps.onAddEventClick
+  );
+};
+
+export default React.memo(TableFiltersComponent, tableFiltersPropsAreEqual);
