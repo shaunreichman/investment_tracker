@@ -276,13 +276,30 @@ This specification defines the frontend implementation for the enhanced Companie
 - **Professional Tabbed Interface**: GitHub-style navigation with smooth transitions
 - **Comprehensive Overview Tab**: Portfolio summary cards, performance metrics, and responsive design
 - **Enhanced Funds Tab**: Advanced fund comparison table with sorting, filtering, and search
-- **Company Details Tab**: Complete company information display
+- **Company Details Tab**: Complete company information display with new contacts array support
 - **Future-Ready Stubs**: Professional placeholder content for Analysis and Activity tabs
 - **Responsive Design**: Works seamlessly across desktop, tablet, and mobile devices
 - **Error Handling**: Comprehensive error states and loading indicators
 - **Accessibility**: ARIA support and keyboard navigation
+- **API Contract Compliance**: Updated to match latest backend contract changes (PR #62)
 
 **Current Status**: The enhanced interface is now the default for company pages, replacing the old single-page layout.
+
+## **Contract Changes Handled** ✅
+
+**Backend PR #62 Integration**: Successfully updated frontend to match new API contract structure:
+
+- **Contact Model Restructure**: Replaced direct contact fields with new `contacts` array
+- **Type Safety Updates**: Updated TypeScript interfaces for `CompanyOverviewResponse` and `CompanyDetailsResponse`
+- **Component Updates**: Modified `CompanyDetailsTab` to display contact information from new structure
+- **Backward Compatibility**: Maintained existing functionality while supporting new contract
+- **Testing**: Verified TypeScript compilation and application functionality
+
+**Changes Applied**:
+- ❌ Removed: `direct_emails`, `direct_numbers`, `contracts` fields
+- ✅ Added: `contacts` array with structured contact objects
+- ✅ Added: `company_type`, `business_address` fields
+- 🔄 Updated: Company details display to use new contact structure
 
 ## **Next Steps**
 
