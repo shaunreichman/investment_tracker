@@ -65,7 +65,7 @@ This specification defines the frontend implementation for the enhanced Companie
 
 ### **Phase 2B: Frontend Testing Implementation** 🧪 **READY TO BEGIN**
 **Goal**: Implement comprehensive frontend testing suite for all companies UI components and business logic
-**Timeline**: 3 weeks (3 sub-phases)
+**Timeline**: 4-5 weeks (4 sub-phases)
 
 #### **Sub-Phase 2B.1: Core Component Testing Foundation** (Week 1)
 **Goal**: Establish testing infrastructure and test core tab components
@@ -75,6 +75,7 @@ This specification defines the frontend implementation for the enhanced Companie
   - [ ] Establish mock API service patterns for isolated component testing
   - [ ] Create test data factories for companies, funds, and events
   - [ ] Set up accessibility testing with jest-axe (already in dependencies)
+  - [ ] Configure test environment for React Testing Library and Jest
 
 - [ ] **Test Main Tab Components**
   - [ ] `EnhancedCompaniesPage.test.tsx` - Main page integration
@@ -121,17 +122,38 @@ This specification defines the frontend implementation for the enhanced Companie
   - [ ] Company navigation and data flow testing
   - [ ] Error handling and recovery testing
 
-- [ ] **User Experience Testing**
-  - [ ] Accessibility compliance testing (ARIA, keyboard navigation)
-  - [ ] Performance testing (render times, memory usage)
-  - [ ] Cross-browser compatibility testing
-  - [ ] Mobile responsiveness testing
-
 - [ ] **API Integration Testing**
   - [ ] Mock API response handling
   - [ ] Error state management
   - [ ] Loading state transitions
   - [ ] Data transformation and display
+
+**Testing Focus**:
+- End-to-end user workflows
+- Component interaction patterns
+- Data flow between components
+- Error handling and recovery scenarios
+
+#### **Sub-Phase 2B.4: Accessibility, Performance & Polish** (Week 4-5)
+**Goal**: Complete accessibility compliance, performance testing, and final polish
+**Tasks**:
+- [ ] **Accessibility Testing**
+  - [ ] ARIA compliance testing with jest-axe
+  - [ ] Keyboard navigation testing
+  - [ ] Screen reader compatibility testing
+  - [ ] Color contrast and visual accessibility
+
+- [ ] **Performance Testing**
+  - [ ] Component render performance testing
+  - [ ] Memory usage monitoring
+  - [ ] Bundle size analysis
+  - [ ] Tab switching performance metrics
+
+- [ ] **Cross-Browser & Mobile Testing**
+  - [ ] Cross-browser compatibility testing
+  - [ ] Mobile responsiveness testing
+  - [ ] Touch interaction testing
+  - [ ] Breakpoint behavior validation
 
 **Testing Strategy Benefits**:
 - **Immediate Benefits**: Bug prevention, code quality improvement, component documentation
