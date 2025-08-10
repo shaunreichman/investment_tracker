@@ -1,0 +1,68 @@
+# Testing Best Practices
+
+## Core Principle: Test the System, Don't Change the System
+
+**Production code is presumed correct.** Only modify it when you're "extra extra sure" it's genuinely wrong.
+
+## When to Modify Production Code
+
+**Only** when you have clear evidence of:
+- Logical errors or bugs
+- Business logic mismatches
+- Performance issues
+- Security vulnerabilities
+- Edge case failures on valid inputs
+
+## Before Changing Production Code
+
+Ask yourself:
+- [ ] Is this change necessary for the system to work correctly?
+- [ ] Or am I just trying to make tests pass?
+- [ ] Have I verified my test assumptions are correct?
+- [ ] Have I tested with realistic data and scenarios?
+
+## Focus on Test Quality Instead
+
+### Test Data
+- Use realistic, edge-case test data
+- Ensure proper test environment setup
+- Use factories and fixtures for consistency
+
+### Test Logic
+- Verify test assumptions are correct
+- Check test isolation and cleanup
+- Ensure tests match production behavior
+
+## Anti-Patterns to Avoid
+
+❌ **Don't** add try-catch blocks just to make tests pass
+❌ **Don't** change function signatures for test convenience  
+❌ **Don't** relax validation rules for test data
+❌ **Don't** add test-specific logic to production code
+
+## Good Examples
+
+✅ **Do** fix actual calculation errors
+✅ **Do** handle legitimate edge cases
+✅ **Do** improve error messages for debugging
+
+## Test Quality Checklist
+
+Before considering code changes, ensure tests are:
+- [ ] Isolated and deterministic
+- [ ] Fast and comprehensive
+- [ ] Clear in purpose and expectations
+- [ ] Using realistic data and scenarios
+
+## Remember
+
+**Tests verify system correctness, they don't justify changing the system.**
+
+If tests fail, first ask: "What am I testing incorrectly?" before asking "What's wrong with the code?"
+
+When in doubt, **keep production code unchanged** and improve test quality instead.
+
+---
+description: Testing best practices - always reference when working on tests
+globs: ["**/test_*.py", "**/tests/**/*.py", "**/conftest.py", "**/*test*.py"]
+alwaysApply: true

@@ -142,3 +142,8 @@ class Entity(Base):
         """
         from .calculations import get_financial_years_for_fund_period
         return get_financial_years_for_fund_period(start_date, end_date, self) 
+
+    @property
+    def total_funds_under_management(self):
+        """Calculate total funds under management (sum of commitment amounts)."""
+        return sum(fund.commitment_amount or 0.0 for fund in self.funds) 

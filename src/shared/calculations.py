@@ -83,8 +83,17 @@ def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
         tax_jurisdiction (str): Jurisdiction code (e.g., 'AU').
     Returns:
         tuple: (start_date, end_date) as datetime.date objects.
+    Raises:
+        ValueError: If financial_year is None, empty, or invalid format.
     """
     from datetime import date
+    
+    # Validate input
+    if financial_year is None:
+        raise ValueError("Financial year cannot be None")
+    if not financial_year:
+        raise ValueError("Financial year cannot be empty")
+    
     if '-' in financial_year:
         start_year, end_year = financial_year.split('-')
         start_year = int(start_year)
@@ -99,7 +108,11 @@ def get_financial_year_dates(financial_year, tax_jurisdiction="AU"):
             fy_start = date(start_year, 1, 1)
             fy_end = date(start_year, 12, 31)
     else:
-        year = int(financial_year)
+        try:
+            year = int(financial_year)
+        except ValueError:
+            raise ValueError(f"Invalid financial year format: {financial_year}")
+        
         if tax_jurisdiction == "AU":
             fy_start = date(year, 7, 1)
             fy_end = date(year + 1, 6, 30)

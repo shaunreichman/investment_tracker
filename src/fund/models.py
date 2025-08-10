@@ -5,7 +5,7 @@ This module contains the core fund models including Fund, FundEvent, and related
 """
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, func
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime, date, timezone
 from dateutil.relativedelta import relativedelta
@@ -1070,6 +1070,9 @@ class Fund(Base):
         - Interest distributions with withholding tax (gross/net + tax amount/rate)
         - Interest distributions without withholding tax
         
+        **IDEMPOTENT BEHAVIOR**: If a distribution with the same date, type, amount, and reference_number already exists,
+        the existing event is returned without creating duplicates.
+        
         Args:
             event_date: Distribution date
             distribution_type: Type of distribution (DistributionType enum)
@@ -1098,6 +1101,42 @@ class Fund(Base):
             withholding_tax_rate=withholding_tax_rate,
             session=session
         )
+        
+        # Check for existing duplicate event (idempotent behavior)
+        if has_withholding_tax:
+            # For withholding tax distributions, check by date, type, and reference
+            existing_event = session.query(FundEvent).filter(
+                FundEvent.fund_id == self.id,
+                FundEvent.event_type == EventType.DISTRIBUTION,
+                FundEvent.event_date == event_date,
+                FundEvent.distribution_type == DistributionType.INTEREST,
+                FundEvent.reference_number == reference_number,
+                FundEvent.has_withholding_tax == True
+            ).first()
+        else:
+            # For simple distributions, check by date, type, amount, and reference
+            existing_event = session.query(FundEvent).filter(
+                FundEvent.fund_id == self.id,
+                FundEvent.event_type == EventType.DISTRIBUTION,
+                FundEvent.event_date == event_date,
+                FundEvent.distribution_type == distribution_type,
+                FundEvent.amount == distribution_amount,
+                FundEvent.reference_number == reference_number
+            ).first()
+        
+        if existing_event:
+            # Return existing event without creating duplicate
+            # For withholding tax distributions, also find and return the tax event
+            if has_withholding_tax:
+                tax_event = session.query(FundEvent).filter(
+                    FundEvent.fund_id == self.id,
+                    FundEvent.event_type == EventType.TAX_PAYMENT,
+                    FundEvent.event_date == event_date,
+                    FundEvent.reference_number == f"{reference_number}_TAX" if reference_number else None
+                ).first()
+                return existing_event, tax_event
+            else:
+                return existing_event, None
         
         # Business logic implementation
         if has_withholding_tax:
@@ -1222,9 +1261,24 @@ class Fund(Base):
     def add_nav_update(self, nav_per_share, date, description=None, reference_number=None, session=None):
         """
         Add a NAV update event. If this is the latest NAV_UPDATE event, update NAV-specific fund summary fields.
+        
+        **IDEMPOTENT BEHAVIOR**: If a NAV update with the same date and reference_number already exists,
+        the existing event is returned without creating duplicates.
         """
         if self.tracking_type != FundType.NAV_BASED:
             raise ValueError("NAV updates are only applicable for NAV-based funds")
+        
+        # Check for existing duplicate event (idempotent behavior)
+        existing_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.NAV_UPDATE,
+            FundEvent.event_date == date,
+            FundEvent.reference_number == reference_number
+        ).first()
+        
+        if existing_event:
+            # Return existing event without creating duplicate
+            return existing_event
         
         # Calculate NAV change fields
         previous_nav_per_share, nav_change_absolute, nav_change_percentage = self._calculate_nav_change_fields(
@@ -1630,6 +1684,32 @@ class Fund(Base):
             return first_event.event_date
         return None
 
+    @property
+    def total_capital_called(self):
+        """Return the total amount of capital calls for cost-based funds."""
+        from sqlalchemy.orm import object_session
+        session = object_session(self)
+        if session is None:
+            return 0.0
+        
+        if self.tracking_type != FundType.COST_BASED:
+            return 0.0
+            
+        call_events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.CAPITAL_CALL
+        ).all()
+        
+        return sum(event.amount for event in call_events if event.amount)
+
+    @property
+    def remaining_commitment(self):
+        """Return the remaining commitment amount for cost-based funds."""
+        if self.tracking_type != FundType.COST_BASED or not self.commitment_amount:
+            return 0.0
+        
+        return self.commitment_amount - self.total_capital_called
+
     def calculate_end_date(self, session=None):
         """Calculate and set the fund's end date based on current events.
         
@@ -1920,6 +2000,9 @@ class Fund(Base):
         This method is part of the unified capital event handling system for cost-based funds. It creates a capital call
         event and automatically recalculates all subsequent capital events to maintain data consistency.
         
+        **IDEMPOTENT BEHAVIOR**: If a capital call with the same date, amount, and reference_number already exists,
+        the existing event is returned without creating duplicates.
+        
         Args:
             amount (float): Capital call amount (must be positive)
             date (date): Date of the capital call
@@ -1928,7 +2011,7 @@ class Fund(Base):
             session (Session): Database session (required - managed by outermost backend layer)
         
         Returns:
-            FundEvent: The created capital call event
+            FundEvent: The created capital call event (or existing event if duplicate)
             
         Raises:
             ValueError: If fund is not cost-based, or if amount is invalid
@@ -1952,6 +2035,20 @@ class Fund(Base):
         if not date:
             raise ValueError("Date is required")
         
+        # Check for existing duplicate event (idempotent behavior)
+        existing_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.CAPITAL_CALL,
+            FundEvent.event_date == date,
+            FundEvent.amount == amount,
+            FundEvent.reference_number == reference_number
+        ).first()
+        
+        if existing_event:
+            # Return existing event without creating duplicate
+            return existing_event
+        
+        # Create new event if no duplicate exists
         event = FundEvent(
             fund_id=self.id,
             event_type=EventType.CAPITAL_CALL,
@@ -2493,7 +2590,7 @@ class FundEvent(Base):
     brokerage_fee = Column(Float, default=0.0)  # (MANUAL) brokerage fee for unit transactions
     description = Column(Text)  # (MANUAL) event description
     reference_number = Column(String(100))  # (MANUAL) external reference number
-    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) timestamp when record was created
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
     current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event (set only on capital events). For cost-based funds: net capital after this event (set only on capital events).
     has_withholding_tax = Column(Boolean, default=False)  # (MANUAL) flag for distributions with associated withholding tax
     is_cash_flow_complete = Column(Boolean, default=False)  # (SYSTEM) auto-managed flag set by reconciliation logic
