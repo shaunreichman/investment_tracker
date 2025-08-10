@@ -41,10 +41,9 @@ class FundFactory(SessionedFactory):
     class Meta:
         model = Fund
 
+    # Create required relationships automatically
     investment_company = factory.SubFactory(InvestmentCompanyFactory)
     entity = factory.SubFactory(EntityFactory)
-    investment_company_id = factory.SelfAttribute("investment_company.id")
-    entity_id = factory.SelfAttribute("entity.id")
 
     name = factory.LazyAttribute(lambda _: f"Fund {fake.unique.color_name()} {fake.random_int(1, 9999)}")
     fund_type = "Private Debt"
@@ -60,21 +59,24 @@ class TaxStatementFactory(SessionedFactory):
     class Meta:
         model = TaxStatement
 
+    # Create required relationships automatically
     fund = factory.SubFactory(FundFactory)
-    fund_id = factory.SelfAttribute("fund.id")
+    entity = factory.SubFactory(EntityFactory)
     
     statement_date = factory.LazyAttribute(lambda _: fake.date_between(start_date='-2y', end_date='today'))
     financial_year = factory.LazyAttribute(lambda obj: f"{obj.statement_date.year}-{obj.statement_date.year + 1}")
     
-    # Income fields
-    dividend_income = factory.LazyAttribute(lambda _: fake.random_float(min=0, max=10000, precision=2))
-    interest_income = factory.LazyAttribute(lambda _: fake.random_float(min=0, max=10000, precision=2))
-    capital_gains = factory.LazyAttribute(lambda _: fake.random_float(min=0, max=10000, precision=2))
+    # Income fields - use correct field names from the model
+    dividend_franked_income_amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=10000, right_digits=2))
+    dividend_unfranked_income_amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=10000, right_digits=2))
+    interest_income_amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=10000, right_digits=2))
+    capital_gain_income_amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=10000, right_digits=2))
     
-    # Tax fields
-    dividend_tax_amount = factory.LazyAttribute(lambda _: fake.random_float(min=0, max=5000, precision=2))
-    interest_tax_amount = factory.LazyAttribute(lambda _: fake.random_float(min=0, max=5000, precision=2))
-    capital_gains_tax_amount = factory.LazyAttribute(lambda _: fake.random_float(min=0, max=5000, precision=2))
+    # Tax rate fields
+    dividend_franked_income_tax_rate = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=50, right_digits=1))
+    dividend_unfranked_income_tax_rate = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=50, right_digits=1))
+    interest_income_tax_rate = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=50, right_digits=1))
+    capital_gain_income_tax_rate = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=50, right_digits=1))
     
     # Other fields
     accountant = factory.LazyAttribute(lambda _: fake.name())

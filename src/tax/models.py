@@ -164,6 +164,16 @@ class TaxStatement(Base):
         """Calculate the difference between tax withheld from statement and already withheld."""
         return (self.interest_non_resident_withholding_tax_from_statement or 0.0) - (self.interest_non_resident_withholding_tax_already_withheld or 0.0)
     
+    @property
+    def total_income(self):
+        """Calculate total income from all sources."""
+        return (
+            (self.dividend_franked_income_amount or 0.0) +
+            (self.dividend_unfranked_income_amount or 0.0) +
+            (self.interest_income_amount or 0.0) +
+            (self.capital_gain_income_amount or 0.0)
+        )
+    
     def calculate_interest_income_amount(self, session=None):
         """Calculate interest income amount from manual inputs."""
         self.interest_income_amount = (
