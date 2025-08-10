@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { axe, toHaveNoViolations } from 'jest-axe';
 import CreateFundEventModal from './CreateFundEventModal';
 
 // Mock the hooks
@@ -92,6 +93,9 @@ const mockUseEventSubmission = {
 
 
 describe('CreateFundEventModal', () => {
+  // Add jest-axe matcher
+  expect.extend(toHaveNoViolations);
+
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
@@ -289,6 +293,14 @@ describe('CreateFundEventModal', () => {
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalled();
       }, { timeout: 1500 });
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('has no obvious accessibility violations (axe smoke)', async () => {
+      const { container } = renderComponent();
+      const results = await axe(container);
+      expect(results).toHaveNoViolations();
     });
   });
 }); 

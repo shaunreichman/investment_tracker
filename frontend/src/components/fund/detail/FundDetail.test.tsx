@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { axe, toHaveNoViolations } from 'jest-axe';
 import FundDetail from './FundDetail';
 
 // Mock the API hooks
@@ -141,6 +142,9 @@ const renderFundDetail = () => {
 };
 
 describe('FundDetail Copy Component', () => {
+  // Add jest-axe matcher
+  expect.extend(toHaveNoViolations);
+
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
@@ -248,5 +252,13 @@ describe('FundDetail Copy Component', () => {
     // This test would require more complex mocking setup
     // For now, we'll skip it as the main functionality is working
     expect(true).toBe(true);
+  });
+
+  describe('Accessibility', () => {
+    it('has no obvious accessibility violations (axe smoke)', async () => {
+      const { container } = renderFundDetail();
+      const results = await axe(container);
+      expect(results).toHaveNoViolations();
+    });
   });
 }); 

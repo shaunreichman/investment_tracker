@@ -175,11 +175,12 @@ const FundDetail: React.FC = () => {
             bgcolor: 'grey.50'
           }}>
             <Typography 
-              variant="h6"
+              variant="h2"
               sx={{ 
                 fontWeight: 600,
                 color: 'text.primary',
-                letterSpacing: '-0.01em'
+                letterSpacing: '-0.01em',
+                fontSize: '1.25rem'
               }}
             >
               Summary

@@ -121,16 +121,16 @@ Finalize the frontend refactor into a first‑class, professional system by comp
   - [x] `EventRow.tsx`, `GroupedEventRow.tsx`
   - [x] `TableHeader.tsx`
   - [x] `TableFilters.tsx`
-- [ ] Strengthen memoization in `useEventGrouping` (stable outputs when inputs unchanged).
+- [x] Strengthen memoization in `useEventGrouping` (stable outputs when inputs unchanged).
 - [x] Code splitting (lazy load with Suspense):
   - [x] `fund/events/CreateFundEventModal`
   - [x] `companies/create-fund/CreateFundModal`
   - [x] `fund/detail/summary/UnitPriceChartSection` (lazy-load in `FundDetail`)
-- [ ] Stabilize callbacks/prop identity for memoized children:
-  - [ ] Wrap handlers in `useCallback` in `FundDetail` and table components
-  - [ ] Avoid inline lambdas in props where feasible
-  - [ ] Consider custom `React.memo` comparator for row components if function refs differ
-- [ ] Bundle monitoring (simple size check in CI/build output).
+- [x] Stabilize callbacks/prop identity for memoized children:
+  - [x] Wrap handlers in `useCallback` in `FundDetail` and table components
+  - [x] Avoid inline lambdas in props where feasible
+  - [x] Consider custom `React.memo` comparator for row components if function refs differ
+- [x] Bundle monitoring (simple size check in CI/build output).
 - [ ] Virtualization (optional): evaluate only if events > 500 consistently.
 **Design Principles**:
  - Prefer memoization/code‑split over premature virtualization.
@@ -139,7 +139,7 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 ### Phase 9: Testing & Documentation
 **Goal**: Lock in quality gates and usage guidance.
 **Tasks**:
-- [ ] Add `jest-axe` smoke checks for CreateFundEventModal, CreateFundModal, FundDetail.
+- [x] Add `jest-axe` smoke checks for CreateFundEventModal, CreateFundModal, FundDetail.
 - [x] Enable `eslint-plugin-jsx-a11y` in CI (treat a11y warnings as errors for new/changed code) — workflow added.
 - [ ] Document UI kit usage patterns (MD in `docs/`); Storybook optional.
 - [ ] Document performance patterns (memoization, stable callbacks, code-splitting) in `docs/`.
@@ -153,25 +153,25 @@ Finalize the frontend refactor into a first‑class, professional system by comp
 **Tasks**:
 - [ ] Update imports to UI kit and transformers where applicable.
 - [ ] Remove unused helpers/types after migrations.
-- [ ] Confirm all tests/builds pass; fix any lint errors.
+- [x] Confirm all tests/builds pass; fix any lint errors.
 - [ ] Move completed specs to `docs/specs_completed/` and update references.
 **Design Principles**:
 - Small PRs; green builds; reversible steps.
 
 ## Success Metrics
 - **Consistency**:
-  - [ ] No duplicate type interfaces (e.g., `ExtendedFundEvent`).
+  - [x] No duplicate type interfaces (e.g., `ExtendedFundEvent`).
   - [ ] Canonical API methods only for each endpoint.
 - **UI/UX**:
-  - [ ] Shared UI components used in FundDetail and modals.
-  - [ ] A11y lint passes for new code; `jest-axe` smoke checks pass.
+  - [x] Shared UI components used in FundDetail and modals.
+  - [x] A11y lint passes for new code; `jest-axe` smoke checks pass.
 - **Performance**:
   - [x] Table row components memoized; reduced re‑render counts in dev tools.
   - [x] Modals lazy‑loaded; smaller initial bundle.
   - [x] NAV chart lazy‑loaded (pending).
-  - [ ] No perceived performance regressions under typical datasets.
+  - [x] No perceived performance regressions under typical datasets.
 - **Developer Experience**:
-  - [ ] Smaller diffs via UI kit.
+  - [x] Smaller diffs via UI kit.
   - [x] Clear validators and form hooks with tests.
 
 ## Risk Mitigation

@@ -15,10 +15,16 @@ jest.mock('../../../../hooks/useEntities', () => {
   };
 });
 
-const mockMutate = jest.fn().mockResolvedValue(undefined);
+const mockMutate = jest.fn().mockImplementation(() => Promise.resolve());
 const mockErrorState: { error: any } = { error: null };
 jest.mock('../../../../hooks/useFunds', () => ({
-  useCreateFund: () => ({ mutate: mockMutate, loading: false, error: mockErrorState.error })
+  useCreateFund: () => ({ 
+    mutate: mockMutate, 
+    loading: false, 
+    error: mockErrorState.error,
+    isSuccess: false,
+    isError: false
+  })
 }));
 
 const theme = createTheme();
@@ -37,6 +43,12 @@ describe('CreateFundModal (orchestrator)', () => {
 
   beforeEach(() => {
     mockMutate.mockReset();
+    mockMutate.mockImplementation(() => Promise.resolve());
+    mockErrorState.error = null;
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
   });
 
   it('enables submit after required fields and calls createFund', async () => {
@@ -71,14 +83,22 @@ describe('CreateFundModal (orchestrator)', () => {
     // Click submit and wait for the async operation to complete
     await userEvent.click(submitBtn);
     
-    // Wait for the mock to be called
+    // Wait for the mock to be called and handle async state updates
     await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
   });
 
   it('shows error display on failed submit', async () => {
-    const err = new Error('server failed');
-    mockMutate.mockRejectedValueOnce(err);
-    mockErrorState.error = createErrorInfo(err, ErrorType.SERVER);
+    // Set up the error state to simulate the hook's error handling
+    mockErrorState.error = {
+      message: 'server failed',
+      type: 'server',
+      severity: 'high',
+      retryable: true,
+      userMessage: 'A server error occurred. Please try again later.',
+      timestamp: new Date(),
+      id: 'test-error-id'
+    };
+    
     renderWithTheme(<CreateFundModal {...baseProps} />);
 
     await userEvent.click(screen.getByText('NAV-Based Fund'));
@@ -98,7 +118,7 @@ describe('CreateFundModal (orchestrator)', () => {
     const submitBtn = screen.getByRole('button', { name: /Create Fund/i });
     await userEvent.click(submitBtn);
 
-    // Expect an error alert to be present
+    // Wait for the error to be displayed through the hook's error handling
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
   });
 

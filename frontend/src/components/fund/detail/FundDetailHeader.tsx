@@ -50,6 +50,7 @@ const FundDetailHeader: React.FC<FundDetailHeaderProps> = ({ fund, sidebarVisibl
         </Typography>
         <Typography 
           variant="subtitle1" 
+          component="p"
           color="text.secondary" 
           gutterBottom
           sx={{ 
