@@ -249,7 +249,7 @@ describe('CompanyDetailsTab', () => {
 
   describe('Responsive Behavior', () => {
     it('adapts to different screen sizes', () => {
-      const { container } = render(
+      render(
         <CompanyDetailsTab
           data={mockData}
           loading={false}

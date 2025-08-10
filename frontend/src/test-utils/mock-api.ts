@@ -1,13 +1,12 @@
 import { 
-  CompanyOverviewResponse, 
-  CompanyDetailsResponse, 
-  EnhancedFundsResponse 
+  FundStatus
 } from '../types/api';
 import { 
   createMockCompanyOverview, 
   createMockCompanyDetails, 
-  createMockEnhancedFundsResponse,
-  createMockEnhancedFund
+  createMockEnhancedFund,
+  createMockFund,
+  createMockEnhancedFundsResponse
 } from './mock-data';
 
 // ============================================================================
@@ -145,9 +144,18 @@ export const mockApiResponses = {
     }),
     completedFunds: createMockEnhancedFundsResponse({
       funds: [
-        createMockEnhancedFund({ status: 'completed', end_date: '2023-12-31' }),
-        createMockEnhancedFund({ status: 'completed', end_date: '2023-06-30' }),
-        createMockEnhancedFund({ status: 'completed', end_date: '2023-03-31' })
+        createMockEnhancedFund({ 
+          status: 'completed', 
+          fund_details: { ...createMockEnhancedFund().fund_details, end_date: '2023-12-31' }
+        }),
+        createMockEnhancedFund({ 
+          status: 'completed', 
+          fund_details: { ...createMockEnhancedFund().fund_details, end_date: '2023-06-30' }
+        }),
+        createMockEnhancedFund({ 
+          status: 'completed', 
+          fund_details: { ...createMockEnhancedFund().fund_details, end_date: '2023-03-31' }
+        })
       ]
     }),
     highPerformance: createMockEnhancedFundsResponse({
@@ -165,7 +173,10 @@ export const mockApiResponses = {
     mixedStatus: createMockEnhancedFundsResponse({
       funds: [
         createMockEnhancedFund({ status: 'active' }),
-        createMockEnhancedFund({ status: 'completed', end_date: '2023-12-31' }),
+        createMockEnhancedFund({ 
+          status: 'completed', 
+          fund_details: { ...createMockEnhancedFund().fund_details, end_date: '2023-12-31' }
+        }),
         createMockEnhancedFund({ status: 'suspended' })
       ]
     })
@@ -235,69 +246,93 @@ export const createMockApiServiceWithScenario = (scenario: 'singleFund' | 'multi
     case 'singleFund':
       testData = {
         company: createMockCompanyOverview({
-          portfolio_summary: { active_funds_count: 1, completed_funds_count: 0 }
+          portfolio_summary: { 
+            total_committed_capital: 1000000,
+            total_current_value: 1100000,
+            total_invested_capital: 900000,
+            active_funds_count: 1, 
+            completed_funds_count: 0,
+            fund_status_breakdown: { active: 1, completed: 0, suspended: 0 }
+          }
         }),
         funds: [createMockFund()]
       };
       break;
+      
     case 'multiCurrency':
       testData = {
         company: createMockCompanyOverview({
-          currency_breakdown: { AUD: 1500000, USD: 800000, EUR: 200000 }
+          portfolio_summary: { 
+            total_committed_capital: 2500000,
+            total_current_value: 2750000,
+            total_invested_capital: 2250000,
+            active_funds_count: 3, 
+            completed_funds_count: 0,
+            fund_status_breakdown: { active: 3, completed: 0, suspended: 0 }
+          }
         }),
         funds: [
-          createMockFund({ currency: 'AUD', committed_capital: 1500000 }),
-          createMockFund({ currency: 'USD', committed_capital: 800000 }),
-          createMockFund({ currency: 'EUR', committed_capital: 200000 })
+          createMockFund({ currency: 'AUD', commitment_amount: 1500000 }),
+          createMockFund({ currency: 'USD', commitment_amount: 800000 }),
+          createMockFund({ currency: 'EUR', commitment_amount: 200000 })
         ]
       };
       break;
+      
     case 'completedFunds':
       testData = {
         company: createMockCompanyOverview({
           portfolio_summary: {
+            total_committed_capital: 3000000,
+            total_current_value: 3750000,
+            total_invested_capital: 3000000,
             active_funds_count: 0,
-            completed_funds_count: 3
+            completed_funds_count: 3,
+            fund_status_breakdown: { active: 0, completed: 3, suspended: 0 }
           },
           performance_summary: {
-            total_return_percentage: 25.5
+            average_completed_irr: 25.5,
+            total_realized_gains: 750000,
+            total_realized_losses: 0
           }
         }),
         funds: [
-          createMockFund({ status: 'COMPLETED', end_date: '2023-12-31' }),
-          createMockFund({ status: 'COMPLETED', end_date: '2023-06-30' }),
-          createMockFund({ status: 'COMPLETED', end_date: '2023-03-31' })
+          createMockFund({ status: FundStatus.COMPLETED }),
+          createMockFund({ status: FundStatus.COMPLETED }),
+          createMockFund({ status: FundStatus.COMPLETED })
         ]
       };
       break;
+      
     case 'highPerformance':
       testData = {
         company: createMockCompanyOverview({
-          performance_summary: {
-            total_return_percentage: 45.2
-          },
           portfolio_summary: {
-            total_current_value: 2000000
+            total_committed_capital: 2000000,
+            total_current_value: 2900000,
+            total_invested_capital: 2000000,
+            active_funds_count: 2,
+            completed_funds_count: 0,
+            fund_status_breakdown: { active: 2, completed: 0, suspended: 0 }
+          },
+          performance_summary: {
+            average_completed_irr: 45.2,
+            total_realized_gains: 900000,
+            total_realized_losses: 0
           }
         }),
         funds: [
-          createMockFund({ expected_irr: 25.0, unrealized_gains: 300000 }),
-          createMockFund({ expected_irr: 20.0, unrealized_gains: 200000 })
+          createMockFund({ expected_irr: 25.0 }),
+          createMockFund({ expected_irr: 20.0 })
         ]
       };
       break;
   }
   
   return {
-    getCompanyOverview: jest.fn().mockResolvedValue(testData.company),
-    getCompanyDetails: jest.fn().mockResolvedValue(mockApiResponses.companyDetails.success),
-    getEnhancedFunds: jest.fn().mockResolvedValue({
-      funds: testData.funds,
-      total_count: testData.funds.length,
-      page: 1,
-      page_size: 10,
-      total_pages: 1
-    })
+    getCompanyOverview: jest.fn().mockResolvedValue(testData),
+    getCompanyDetails: jest.fn().mockResolvedValue(createMockCompanyDetails()),
+    getEnhancedFunds: jest.fn().mockResolvedValue(createMockEnhancedFundsResponse())
   };
 };
 

@@ -29,7 +29,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, loading }) => {
   const { portfolio_summary, performance_summary, last_activity } = data;
 
   return (
-    <Box p={3} className="overview-tab">
+    <Box p={3} className="overview-tab" data-testid="overview-tab">
       <Typography variant="h4" gutterBottom>
         Portfolio Overview
       </Typography>

@@ -3,8 +3,7 @@
 // ============================================================================
 
 import React from 'react';
-import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { screen } from '@testing-library/react';
 import { render } from '../../../test-utils';
 import { FundsTab } from './FundsTab';
 import { createMockEnhancedFundsResponse } from '../../../test-utils/mock-data';
@@ -29,7 +28,6 @@ const mockUseFundsFilters = jest.mocked(require('../../../hooks/funds').useFunds
 const mockUseFundsPagination = jest.mocked(require('../../../hooks/funds').useFundsPagination);
 
 describe('FundsTab', () => {
-  const user = userEvent;
   const mockData = createMockEnhancedFundsResponse();
   const mockOnParamsChange = jest.fn();
   const mockCurrentParams = {
@@ -224,7 +222,7 @@ describe('FundsTab', () => {
     });
 
     it('passes correct props to sub-components', () => {
-      const { container } = render(
+      render(
         <FundsTab
           data={mockData}
           loading={false}

@@ -70,9 +70,17 @@ describe('EnhancedCompaniesPage', () => {
       
       await waitFor(() => {
         expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByRole('tab', { name: /funds/i })).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByRole('tab', { name: /analysis/i })).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByRole('tab', { name: /activity/i })).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByRole('tab', { name: /company details/i })).toBeInTheDocument();
       });
     });
@@ -82,7 +90,11 @@ describe('EnhancedCompaniesPage', () => {
       
       await waitFor(() => {
         expect(screen.getByRole('tabpanel', { name: /overview/i })).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByText(/total committed/i)).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByText(/current value/i)).toBeInTheDocument();
       });
     });
@@ -101,6 +113,8 @@ describe('EnhancedCompaniesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('tabpanel', { name: /funds/i })).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByText(/test enhanced fund 1/i)).toBeInTheDocument();
       });
     });
@@ -117,7 +131,11 @@ describe('EnhancedCompaniesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('tabpanel', { name: /company details/i })).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByText(/john doe/i)).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByText(/investment manager/i)).toBeInTheDocument();
       });
     });
@@ -134,6 +152,8 @@ describe('EnhancedCompaniesPage', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('tab', { name: /funds/i })).toHaveAttribute('aria-selected', 'true');
+      });
+      await waitFor(() => {
         expect(screen.getByRole('tab', { name: /overview/i })).toHaveAttribute('aria-selected', 'false');
       });
     });
@@ -234,8 +254,8 @@ describe('EnhancedCompaniesPage', () => {
       });
 
       // Check that the layout is responsive by looking for the main container
-      const container = screen.getByRole('heading', { name: 'Test Investment Company' }).closest('div');
-      expect(container).toBeInTheDocument();
+      const mainContainer = screen.getByRole('main');
+      expect(mainContainer).toBeInTheDocument();
     });
   });
 });

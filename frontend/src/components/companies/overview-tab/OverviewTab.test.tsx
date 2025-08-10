@@ -204,7 +204,7 @@ describe('OverviewTab', () => {
     });
 
     it('passes correct data to sub-components', () => {
-      const { container } = render(
+      render(
         <OverviewTab
           data={mockData}
           loading={false}
@@ -212,15 +212,15 @@ describe('OverviewTab', () => {
       );
 
       // Verify the component structure
-      expect(container.querySelector('[data-testid="portfolio-summary-cards"]')).toBeInTheDocument();
-      expect(container.querySelector('[data-testid="quick-stats-grid"]')).toBeInTheDocument();
-      expect(container.querySelector('[data-testid="performance-summary"]')).toBeInTheDocument();
+      expect(screen.getByTestId('portfolio-summary-cards')).toBeInTheDocument();
+      expect(screen.getByTestId('quick-stats-grid')).toBeInTheDocument();
+      expect(screen.getByTestId('performance-summary')).toBeInTheDocument();
     });
   });
 
   describe('Responsive Behavior', () => {
     it('adapts to different screen sizes', () => {
-      const { container } = render(
+      render(
         <OverviewTab
           data={mockData}
           loading={false}
@@ -228,7 +228,8 @@ describe('OverviewTab', () => {
       );
 
       // Check that responsive classes or styles are applied
-      expect(container.firstChild).toHaveClass('overview-tab');
+      const overviewTab = screen.getByTestId('overview-tab');
+      expect(overviewTab).toBeInTheDocument();
     });
 
     it('maintains layout integrity on mobile', () => {

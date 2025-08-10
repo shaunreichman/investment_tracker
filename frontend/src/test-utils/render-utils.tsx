@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { render as originalRender, RenderOptions } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { BrowserRouter } from 'react-router-dom';
 import { AppStoreProvider } from '../store/AppStoreProvider';
@@ -20,7 +20,12 @@ const theme = createTheme({
 // Base render function with common providers
 const AllTheProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <ThemeProvider theme={theme}>
         <AppStoreProvider>
           {children}
@@ -34,7 +39,7 @@ const AllTheProviders: React.FC<{ children: React.ReactNode }> = ({ children }) 
 const customRender = (
   ui: React.ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { wrapper: AllTheProviders, ...options });
+) => originalRender(ui, { wrapper: AllTheProviders, ...options });
 
 // Render with only theme provider (for components that don't need router/store)
 const renderWithTheme = (
@@ -47,7 +52,7 @@ const renderWithTheme = (
     </ThemeProvider>
   );
   
-  return render(ui, { wrapper: ThemeWrapper, ...options });
+  return originalRender(ui, { wrapper: ThemeWrapper, ...options });
 };
 
 // Render with only router (for components that need routing but not store)
@@ -56,14 +61,19 @@ const renderWithRouter = (
   options?: Omit<RenderOptions, 'wrapper'>
 ) => {
   const RouterWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <ThemeProvider theme={theme}>
         {children}
       </ThemeProvider>
     </BrowserRouter>
   );
   
-  return render(ui, { wrapper: RouterWrapper, ...options });
+  return originalRender(ui, { wrapper: RouterWrapper, ...options });
 };
 
 // Export all render functions
@@ -75,6 +85,38 @@ export {
   theme,
 };
 
-// Re-export testing library utilities for convenience
-export * from '@testing-library/react';
+// Table-specific render functions
+export const renderTableComponent = (
+  ui: React.ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>
+) => {
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <table>
+      <tbody>
+        {children}
+      </tbody>
+    </table>
+  );
+
+  return originalRender(ui, { wrapper: Wrapper, ...options });
+};
+
+export const renderTableComponentWithCustomWrapper = (
+  ui: React.ReactElement,
+  wrapperProps?: React.HTMLAttributes<HTMLTableElement>,
+  options?: Omit<RenderOptions, 'wrapper'>
+) => {
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <table {...wrapperProps}>
+      <tbody>
+        {children}
+      </tbody>
+    </table>
+  );
+
+  return originalRender(ui, { wrapper: Wrapper, ...options });
+};
+
+// Re-export testing library utilities for convenience (but not render to avoid conflict)
 export * from '@testing-library/user-event';
+export { screen, waitFor, fireEvent, within, waitForElementToBeRemoved } from '@testing-library/react';

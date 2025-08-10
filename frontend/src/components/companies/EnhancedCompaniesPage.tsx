@@ -180,7 +180,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
   const company = overviewData.company;
 
   return (
-    <Box>
+    <Box component="main">
       {/* Breadcrumb Navigation */}
       <Box p={3} pb={0}>
         <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
