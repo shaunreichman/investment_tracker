@@ -18,25 +18,28 @@ export const useEventGrouping = (events: EventWithGrouping[]): GroupedEvent[] =>
   return useMemo(() => {
     if (!events || events.length === 0) return [];
 
-    // SYSTEM: Sort events by date (newest first) for consistent display
+    // SYSTEM: Sort events by date (oldest first) to match backend order and user preference
     const sortedEvents = [...events].sort((a, b) => 
-      new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+      new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
     );
 
     const groupedEvents: GroupedEvent[] = [];
-    const processedGroupIds = new Set<number>();
+    const processedGroupKeys = new Set<string>();
 
     for (const event of sortedEvents) {
       // CALCULATED: Check if this event is part of a group
       if (event.is_grouped && event.group_id && event.group_type) {
-        // SYSTEM: Skip if we've already processed this group
-        if (processedGroupIds.has(event.group_id)) {
+        // SYSTEM: Skip if we've already processed this group with this date
+        const groupKey = `${event.group_id}_${event.event_date}`;
+        if (processedGroupKeys.has(groupKey)) {
           continue;
         }
 
-        // CALCULATED: Find all events in this group using simple flag-based logic
+        // CALCULATED: Find all events in this group with the same date using simple flag-based logic
         const groupEvents = sortedEvents.filter(e => 
-          e.group_id === event.group_id && e.is_grouped
+          e.group_id === event.group_id && 
+          e.is_grouped && 
+          e.event_date === event.event_date
         );
 
         // SYSTEM: Sort group events by position for proper ordering
@@ -56,7 +59,7 @@ export const useEventGrouping = (events: EventWithGrouping[]): GroupedEvent[] =>
         };
 
         groupedEvents.push(groupedEvent);
-        processedGroupIds.add(event.group_id);
+        processedGroupKeys.add(groupKey);
       } else {
         // CALCULATED: Single event (not grouped)
         const singleEvent: GroupedEvent = {
@@ -84,7 +87,14 @@ const getGroupDescription = (groupType: GroupType, events: EventWithGrouping[]):
       const secondEvent = events.find(e => e.group_position === 1);
       
       if (firstEvent && secondEvent) {
-        return `Interest Distribution + Withholding Tax (${firstEvent.amount || 0} + ${secondEvent.amount || 0})`;
+        // CALCULATED: Format amounts properly for display
+        const firstAmount = firstEvent.amount || 0;
+        const secondAmount = secondEvent.amount || 0;
+        const firstFormatted = firstAmount.toFixed(2);
+        const secondFormatted = Math.abs(secondAmount).toFixed(2);
+        const secondSign = secondAmount < 0 ? '-' : '+';
+        
+        return `Interest Distribution + Withholding Tax (${firstFormatted} ${secondSign} ${secondFormatted})`;
       }
       return 'Interest + Withholding Tax Group';
       

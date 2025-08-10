@@ -62,7 +62,14 @@ const EventRowComponent: React.FC<EventRowProps> = ({
       
       {/* Type Column */}
       <TableCell>
-        <EventTypeChip eventType={event.event_type} size="small" />
+        {isDistribution && event.distribution_type ? (
+          <EventTypeChip 
+            eventType={event.distribution_type} 
+            size="small" 
+          />
+        ) : (
+          <EventTypeChip eventType={event.event_type} size="small" />
+        )}
       </TableCell>
       
       {/* Description Column */}

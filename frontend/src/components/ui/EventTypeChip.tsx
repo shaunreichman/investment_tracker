@@ -5,7 +5,7 @@ import { getEventTypeColor } from '../../utils/helpers';
 import { getEventTypeLabelSimple } from '../../utils/transformers/eventTransformers';
 
 export interface EventTypeChipProps {
-  eventType: EventType | string;
+  eventType: EventType | DistributionType | string;
   distributionType?: DistributionType | string;
   size?: 'small' | 'medium';
   className?: string;
@@ -17,8 +17,13 @@ export const EventTypeChip: React.FC<EventTypeChipProps> = ({
   size = 'small',
   className,
 }) => {
-  const baseLabel = getEventTypeLabelSimple(String(eventType));
-  const label = distributionType ? `${baseLabel}` : baseLabel;
+  // CALCULATED: Determine if this is a distribution type or event type
+  const isDistributionType = ['INTEREST', 'DIVIDEND', 'OTHER'].includes(eventType);
+  
+  // CALCULATED: Get the appropriate label
+  const label = isDistributionType ? eventType : getEventTypeLabelSimple(String(eventType));
+  
+  // CALCULATED: Get the appropriate color
   const color = getEventTypeColor(String(eventType)) as any;
 
   return (

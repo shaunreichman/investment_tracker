@@ -214,6 +214,10 @@ export const EVENT_TYPE_COLORS: Record<string, 'primary' | 'success' | 'warning'
   'UNIT_SALE': 'warning',
   'TAX_PAYMENT': 'error',
   'TAX_STATEMENT': 'info',
+  // Distribution type colors
+  'INTEREST': 'success',
+  'DIVIDEND': 'success',
+  'OTHER': 'default',
 };
 
 /**

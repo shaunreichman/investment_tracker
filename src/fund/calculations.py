@@ -12,7 +12,7 @@ from src.shared.calculations import get_equity_change_for_event
 # IRR calculation utility
 def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
     """
-    Calculate annual IRR using daily precision with the Newton-Raphson method.
+    Calculate annual IRR using monthly compounding with the Newton-Raphson method.
     
     Args:
         cash_flows (list[float]): List of cash flow amounts (negative for outflows, positive for inflows).
@@ -24,7 +24,7 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
         float or None: The annual IRR as a decimal (e.g., 0.12 for 12%), or None if not computable.
     
     Business context:
-        Used for IRR calculations in Fund models, supporting daily-precision cash flows and non-uniform timing.
+        Used for IRR calculations in Fund models, supporting monthly compounding for investment fund accuracy.
     """
     # Initial guess: simple rate of return
     total_investment = abs(cash_flows[0]) if cash_flows[0] < 0 else 0
@@ -39,12 +39,12 @@ def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=2
         npv = 0
         derivative = 0
         for i, (cf, days) in enumerate(zip(cash_flows, days_from_start)):
-            # Use daily compounding for better precision with long periods
-            years = days / 365.25
-            discount_factor = (1 + monthly_guess) ** (years * 12)
+            # Use monthly compounding for investment fund accuracy
+            months = days / 30.44  # Average days per month
+            discount_factor = (1 + monthly_guess) ** months
             npv += cf / discount_factor
-            if years > 0:
-                derivative -= cf * years * 12 / (discount_factor * (1 + monthly_guess))
+            if months > 0:
+                derivative -= cf * months / (discount_factor * (1 + monthly_guess))
         if abs(npv) < tolerance:
             # Convert monthly IRR to annual IRR
             annual_irr = (1 + monthly_guess) ** 12 - 1

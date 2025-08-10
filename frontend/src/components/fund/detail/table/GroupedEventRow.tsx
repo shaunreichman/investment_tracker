@@ -67,7 +67,10 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
         
         {/* Type Column */}
         <TableCell>
-        <EventTypeChip eventType={interestEvent?.event_type || "DISTRIBUTION"} size="small" />
+          <EventTypeChip 
+            eventType={interestEvent?.distribution_type || "INTEREST"} 
+            size="small" 
+          />
         </TableCell>
         
         {/* Description Column */}
@@ -75,11 +78,6 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
           <Typography variant="body2">
             {displayDescription}
           </Typography>
-          {withholdingEvent && (
-            <Typography variant="caption" color="error.main">
-              Withholding: {formatCurrency(-(withholdingEvent.amount || 0), fund.currency)}
-            </Typography>
-          )}
         </TableCell>
         
         {/* Equity Column */}
@@ -238,7 +236,11 @@ const OtherEventRow: React.FC<{
       
       {/* Type Column */}
       <TableCell>
-        <EventTypeChip eventType={event.event_type} size="small" />
+        {isDistribution && event.distribution_type ? (
+          <EventTypeChip eventType={event.distribution_type} size="small" />
+        ) : (
+          <EventTypeChip eventType={event.event_type} size="small" />
+        )}
       </TableCell>
       
       {/* Description Column */}
