@@ -87,22 +87,43 @@ export const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ data, load
                 </Box>
               )}
 
-              {company.direct_emails && (
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Email sx={{ mr: 2, color: 'text.secondary' }} />
-                  <Typography variant="body2">
-                    {company.direct_emails}
-                  </Typography>
-                </Box>
-              )}
-
-              {company.direct_numbers && (
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Phone sx={{ mr: 2, color: 'text.secondary' }} />
-                  <Typography variant="body2">
-                    {company.direct_numbers}
-                  </Typography>
-                </Box>
+              {company.contacts && company.contacts.length > 0 && (
+                <>
+                  {company.contacts.map((contact, index) => (
+                    <Box key={contact.id} mb={2}>
+                      {contact.name && (
+                        <Typography variant="subtitle2" gutterBottom>
+                          {contact.name}
+                          {contact.title && ` - ${contact.title}`}
+                        </Typography>
+                      )}
+                      
+                      {contact.direct_email && (
+                        <Box display="flex" alignItems="center" mb={1}>
+                          <Email sx={{ mr: 2, color: 'text.secondary' }} />
+                          <Typography variant="body2">
+                            {contact.direct_email}
+                          </Typography>
+                        </Box>
+                      )}
+                      
+                      {contact.direct_number && (
+                        <Box display="flex" alignItems="center" mb={1}>
+                          <Phone sx={{ mr: 2, color: 'text.secondary' }} />
+                          <Typography variant="body2">
+                            {contact.direct_number}
+                          </Typography>
+                        </Box>
+                      )}
+                      
+                      {contact.notes && (
+                        <Typography variant="body2" color="textSecondary" sx={{ ml: 4 }}>
+                          {contact.notes}
+                        </Typography>
+                      )}
+                    </Box>
+                  ))}
+                </>
               )}
 
               {company.business_address && (
@@ -121,19 +142,7 @@ export const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ data, load
                 Additional Information
               </Typography>
               
-              {company.contracts && (
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Description sx={{ mr: 2, color: 'text.secondary' }} />
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Contract Information
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {company.contracts}
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
+              {/* Contract information moved to contacts array */}
 
               {/* Company Statistics */}
               <Box mt={3}>
@@ -167,8 +176,8 @@ export const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ data, load
       </Card>
 
       {/* Empty State for No Additional Data */}
-      {!company.website && !company.direct_emails && !company.direct_numbers && 
-       !company.business_address && !company.contracts && (
+      {!company.website && (!company.contacts || company.contacts.length === 0) && 
+       !company.business_address && (
         <Card>
           <CardContent>
             <Box textAlign="center" py={4}>

@@ -416,9 +416,14 @@ export interface CompanyOverviewResponse {
     company_type: string | null;
     business_address: string | null;
     website: string | null;
-    contracts: string | null;
-    direct_numbers: string | null;
-    direct_emails: string | null;
+    contacts: Array<{
+      id: number;
+      name: string;
+      title: string | null;
+      direct_number: string | null;
+      direct_email: string | null;
+      notes: string | null;
+    }>;
   };
   portfolio_summary: {
     total_committed_capital: number;
@@ -511,9 +516,14 @@ export interface CompanyDetailsResponse {
     company_type: string | null;
     business_address: string | null;
     website: string | null;
-    contracts: string | null;
-    direct_numbers: string | null;
-    direct_emails: string | null;
+    contacts: Array<{
+      id: number;
+      name: string;
+      title: string | null;
+      direct_number: string | null;
+      direct_email: string | null;
+      notes: string | null;
+    }>;
   };
 }
 
