@@ -59,23 +59,23 @@ export enum GroupType {
 export interface InvestmentCompany {
   id: number;
   name: string;
-  description?: string;
-  website?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  fund_count?: number;
-  active_funds?: number;
-  total_commitments?: number;
-  total_equity_balance?: number;
+  description?: string | undefined;
+  website?: string | undefined;
+  contact_email?: string | undefined;
+  contact_phone?: string | undefined;
+  fund_count?: number | undefined;
+  active_funds?: number | undefined;
+  total_commitments?: number | undefined;
+  total_equity_balance?: number | undefined;
   created_at: string;
   updated_at: string;
-  funds_count?: number;
+  funds_count?: number | undefined;
 }
 
 export interface Entity {
   id: number;
   name: string;
-  description?: string;
+  description?: string | undefined;
   created_at: string;
   updated_at: string;
 }
@@ -83,31 +83,31 @@ export interface Entity {
 export interface Fund {
   id: number;
   name: string;
-  fund_type?: string;
+  fund_type?: string | undefined;
   tracking_type: FundType;
-  description?: string;
+  description?: string | undefined;
   currency: string;
-  commitment_amount?: number;
-  expected_irr?: number;
-  expected_duration_months?: number;
+  commitment_amount?: number | undefined;
+  expected_irr?: number | undefined;
+  expected_duration_months?: number | undefined;
   investment_company_id: number;
   entity_id: number;
   current_equity_balance: number;
   average_equity_balance: number;
   status: FundStatus;
   final_tax_statement_received: boolean;
-  current_units?: number;
-  current_unit_price?: number;
-  current_nav_total?: number;
-  total_cost_basis?: number;
+  current_units?: number | undefined;
+  current_unit_price?: number | undefined;
+  current_nav_total?: number | undefined;
+  total_cost_basis?: number | undefined;
   created_at: string;
   updated_at: string;
   // Related data
-  investment_company?: InvestmentCompany;
-  entity?: Entity;
-  events?: FundEvent[];
-  tax_statements?: TaxStatement[];
-  statistics?: FundStatistics;
+  investment_company?: InvestmentCompany | undefined;
+  entity?: Entity | undefined;
+  events?: FundEvent[] | undefined;
+  tax_statements?: TaxStatement[] | undefined;
+  statistics?: FundStatistics | undefined;
 }
 
 export interface FundEvent {
@@ -115,26 +115,26 @@ export interface FundEvent {
   fund_id: number;
   event_type: EventType;
   event_date: string;
-  amount?: number;
-  description?: string;
-  reference_number?: string;
+  amount?: number | undefined;
+  description?: string | undefined;
+  reference_number?: string | undefined;
   distribution_type?: DistributionType | undefined;
-  units_purchased?: number;
-  units_sold?: number;
-  unit_price?: number;
-  nav_per_share?: number;
-  brokerage_fee?: number;
-  tax_payment_type?: TaxPaymentType;
-  units_owned?: number;
-  cost_of_units?: number;
+  units_purchased?: number | undefined;
+  units_sold?: number | undefined;
+  unit_price?: number | undefined;
+  nav_per_share?: number | undefined;
+  brokerage_fee?: number | undefined;
+  tax_payment_type?: TaxPaymentType | undefined;
+  units_owned?: number | undefined;
+  cost_of_units?: number | undefined;
   created_at: string;
   updated_at: string;
   
   // CALCULATED: Grouping flags set by backend when creating events
-  is_grouped?: boolean;  // (CALCULATED) whether this event is part of a group
-  group_id?: number;     // (CALCULATED) unique identifier for the group (auto-generated)
-  group_type?: GroupType; // (CALCULATED) type of grouping (INTEREST_WITHHOLDING, TAX_STATEMENT, etc.)
-  group_position?: number; // (CALCULATED) position within group for ordering (0=first, 1=second, etc.)
+  is_grouped?: boolean | undefined;  // (CALCULATED) whether this event is part of a group
+  group_id?: number | undefined;     // (CALCULATED) unique identifier for the group (auto-generated)
+  group_type?: GroupType | undefined; // (CALCULATED) type of grouping (INTEREST_WITHHOLDING, TAX_STATEMENT, etc.)
+  group_position?: number | undefined; // (CALCULATED) position within group for ordering (0=first, 1=second, etc.)
 }
 
 export interface TaxStatement {
@@ -192,9 +192,9 @@ export interface FundStatistics {
   recent_events_count: number;
   current_equity_balance: number;
   average_equity_balance: number;
-  total_units_owned?: number;
-  current_unit_price?: number;
-  total_cost_basis?: number;
+  total_units_owned?: number | undefined;
+  current_unit_price?: number | undefined;
+  total_cost_basis?: number | undefined;
 }
 
 export interface DashboardData {

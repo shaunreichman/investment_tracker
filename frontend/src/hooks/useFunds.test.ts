@@ -11,7 +11,7 @@ import {
   useCreateTaxStatement,
   useFundDetail 
 } from './useFunds';
-import { Fund, FundEvent, FundType, FundStatus, EventType } from '../types/api';
+import { Fund, FundEvent, FundType, FundStatus, EventType, ExtendedFundEvent } from '../types/api';
 import { apiClient } from '../services/api';
 
 // ============================================================================
@@ -44,6 +44,40 @@ const createMockFundEvent = (overrides: Partial<FundEvent> = {}): FundEvent => (
   amount: 100000,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
+  ...overrides
+});
+
+// MANUAL: Helper function to create ExtendedFundEvent objects for testing
+const createMockExtendedFundEvent = (overrides: Partial<ExtendedFundEvent> = {}): ExtendedFundEvent => ({
+  id: 1,
+  fund_id: 1,
+  event_type: EventType.DISTRIBUTION,
+  event_date: '2024-01-01',
+  amount: 100000, // Required in ExtendedFundEvent
+  description: 'Test distribution',
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+  // ExtendedFundEvent specific properties
+  is_grouped: false,
+  // Optional ExtendedFundEvent properties - use null for nullable, omit for optional
+  previous_nav_per_share: null,
+  nav_change_absolute: null,
+  nav_change_percentage: null,
+  interest_income_amount: null,
+  interest_income_tax_rate: null,
+  dividend_franked_income_amount: null,
+  dividend_franked_income_tax_rate: null,
+  dividend_unfranked_income_amount: null,
+  dividend_unfranked_income_tax_rate: null,
+  capital_gain_income_amount: null,
+  capital_gain_income_tax_rate: null,
+  eofy_debt_interest_deduction_sum_of_daily_interest: null,
+  eofy_debt_interest_deduction_rate: null,
+  eofy_debt_interest_deduction_total_deduction: null,
+  has_withholding_tax: false,
+  withholding_amount: null,
+  withholding_rate: null,
+  net_interest: null,
   ...overrides
 });
 
@@ -325,10 +359,7 @@ describe('useFunds', () => {
           investment_company: 'Test Company',
           entity: 'Test Entity'
         }, 
-        events: [{
-          ...createMockFundEvent(),
-          amount: 100000 // Ensure amount is not undefined
-        }],
+        events: [createMockExtendedFundEvent()],
         statistics: {
           total_events: 1,
           total_tax_statements: 0,

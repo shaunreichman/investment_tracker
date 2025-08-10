@@ -9,7 +9,7 @@ from src.database import get_global_session
 from src.fund.models import Fund, FundEvent, EventType, DistributionType, TaxPaymentType, GroupType
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
-from datetime import date
+from datetime import date, datetime
 
 def test_grouping_api():
     """Test that the API returns grouping fields correctly."""
@@ -24,7 +24,7 @@ def test_grouping_api():
         
         # Create investment company
         company = InvestmentCompany(
-            name="Test Company",
+            name=f"Test Company {datetime.now().timestamp()}",
             description="Test company for grouping API test"
         )
         session.add(company)
@@ -32,7 +32,7 @@ def test_grouping_api():
         
         # Create entity
         entity = Entity(
-            name="Test Entity",
+            name=f"Test Entity {datetime.now().timestamp()}",
             description="Test entity for grouping API test"
         )
         session.add(entity)
@@ -40,7 +40,7 @@ def test_grouping_api():
         
         # Create fund
         fund = Fund(
-            name="Test Fund",
+            name=f"Test Fund {datetime.now().timestamp()}",
             description="Test fund for grouping API test",
             investment_company_id=company.id,
             entity_id=entity.id,
@@ -54,9 +54,10 @@ def test_grouping_api():
         print("Creating interest distribution with withholding tax...")
         distribution_event, tax_event = fund.add_distribution(
             event_date=date(2024, 1, 15),
-            amount=1000.0,
             distribution_type=DistributionType.INTEREST,
+            gross_interest_amount=1000.0,
             has_withholding_tax=True,
+            withholding_tax_rate=0.10,  # 10% withholding tax rate
             reference_number="TEST001",
             session=session
         )
@@ -124,7 +125,7 @@ def test_grouping_api():
         # Verify the grouping worked correctly
         assert len(grouped_events) == 2, f"Expected 2 grouped events, got {len(grouped_events)}"
         assert total_groups == 1, f"Expected 1 group, got {total_groups}"
-        assert "INTEREST_WITHHOLDING" in group_types_present, f"Expected INTEREST_WITHHOLDING in group types, got {group_types_present}"
+        assert "interest_withholding" in group_types_present, f"Expected interest_withholding in group types, got {group_types_present}"
         
         print("\n✅ All tests passed! The grouping API is working correctly.")
         

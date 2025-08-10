@@ -438,7 +438,7 @@ class Fund(Base):
             "current_equity_balance": float(self.current_equity_balance) if self.current_equity_balance else 0.0,
             "average_equity_balance": float(self.average_equity_balance) if self.average_equity_balance else 0.0,
 
-            "status": self.status.value if self.status else FundStatus.ACTIVE.value,
+            "status": self.status.value if hasattr(self.status, 'value') else (self.status or FundStatus.ACTIVE.value),
             "commitment_amount": float(self.commitment_amount) if self.commitment_amount else None,
             "expected_irr": float(self.expected_irr) if self.expected_irr else None,
             "expected_duration_months": self.expected_duration_months,
@@ -1206,6 +1206,9 @@ class Fund(Base):
                 group_id = FundEvent.get_next_group_id(session)
                 distribution_event.set_grouping(group_id, GroupType.INTEREST_WITHHOLDING, 0)
                 tax_event.set_grouping(group_id, GroupType.INTEREST_WITHHOLDING, 1)
+            
+            # Flush to ensure all events are persisted before calculations
+            session.flush()
             
             # Calculate end_date (may affect status)
             self.calculate_end_date(session=session)
@@ -2232,10 +2235,10 @@ class Fund(Base):
         for i in range(start_idx, len(events)):
             e = events[i]
             if e.event_type == EventType.CAPITAL_CALL:
-                balance += e.amount or 0.0
+                balance += float(e.amount or 0.0)
                 e.current_equity_balance = balance
             elif e.event_type == EventType.RETURN_OF_CAPITAL:
-                balance -= e.amount or 0.0
+                balance -= float(e.amount or 0.0)
                 e.current_equity_balance = balance
             else:
                 e.current_equity_balance = balance
