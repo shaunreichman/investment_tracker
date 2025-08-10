@@ -1,0 +1,117 @@
+# CI Configuration for Backend Testing Suite
+# This file defines test profiles, parallelization settings, and quality thresholds
+
+# Test Profiles
+test_profiles:
+  fast:
+    description: "Fast test run for PR validation (excludes slow tests)"
+    markers: "not slow"
+    coverage_threshold: 70
+    max_execution_time: "2m"
+    parallel_workers: 4
+    
+  full:
+    description: "Full test suite including slow tests"
+    markers: "all"
+    coverage_threshold: 70
+    max_execution_time: "5m"
+    parallel_workers: 2
+    
+  nightly:
+    description: "Comprehensive test suite for nightly runs"
+    markers: "all"
+    coverage_threshold: 75
+    max_execution_time: "10m"
+    parallel_workers: 1
+    hypothesis_profile: "thorough"
+
+# Quality Gates
+quality_gates:
+  coverage:
+    minimum: 70
+    target: 80
+    critical: 65
+    
+  test_execution:
+    max_time_fast: "2m"
+    max_time_full: "5m"
+    max_time_nightly: "10m"
+    
+  test_stability:
+    max_flaky_tests: 0
+    max_test_failures: 0
+    require_all_tests_pass: true
+
+# Parallelization Settings
+parallelization:
+  pytest_xdist:
+    enabled: true
+    workers: "auto"
+    max_workers: 4
+    
+  database:
+    strategy: "file_per_worker"
+    cleanup: "transaction_rollback"
+    isolation: "per_test"
+
+# Coverage Configuration
+coverage:
+  sources: ["src"]
+  exclude_patterns:
+    - "*/tests/*"
+    - "*/migrations/*"
+    - "*/__pycache__/*"
+    - "*/venv/*"
+    - "*/\.venv/*"
+    
+  report_formats:
+    - "xml"
+    - "html"
+    - "term-missing"
+    
+  thresholds:
+    global: 70
+    critical_modules:
+      - "fund/calculations.py": 90
+      - "fund/models.py": 70
+      - "tax/models.py": 70
+      - "shared/calculations.py": 85
+
+# Test Categories
+test_categories:
+  unit:
+    path: "tests/unit"
+    description: "Pure function tests (no database)"
+    execution_time: "fast"
+    
+  domain:
+    path: "tests/domain"
+    description: "Model and domain logic tests"
+    execution_time: "medium"
+    
+  api:
+    path: "tests/api"
+    description: "Flask endpoint tests"
+    execution_time: "medium"
+    
+  property:
+    path: "tests/property"
+    description: "Property-based tests with Hypothesis"
+    execution_time: "slow"
+    
+  integration:
+    path: "tests/integration"
+    description: "End-to-end integration tests"
+    execution_time: "slow"
+
+# CI Environment
+ci_environment:
+  python_versions: ["3.9", "3.10", "3.11", "3.12"]
+  operating_systems: ["ubuntu-latest"]
+  database: "sqlite"
+  
+  environment_variables:
+    PYTHONPATH: "${{ github.workspace }}/src"
+    TESTING: "true"
+    COVERAGE: "true"
+    PYTEST_ADDOPTS: "--strict-markers --strict-config"
