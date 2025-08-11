@@ -9,7 +9,7 @@ import {
 import { Add as AddIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ErrorDisplay } from '../ErrorDisplay';
-import { ErrorType, ErrorSeverity, createErrorInfo } from '../../types/errors';
+import { ErrorType, ErrorSeverity, createErrorInfo, getUserFriendlyMessage } from '../../types/errors';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { TabNavigation } from './TabNavigation';
 import { OverviewTab } from './overview-tab';
@@ -128,8 +128,21 @@ export const EnhancedCompaniesPage: React.FC = () => {
       let errorInfo;
       if (typeof errorMessage === 'object' && errorMessage !== null && 'retryable' in errorMessage) {
         errorInfo = errorMessage;
+        // Add context if not already present
+        if (!errorInfo.details?.context) {
+          errorInfo.details = { ...errorInfo.details, context: 'company_details' };
+          // Update user message with context
+          if (errorInfo.code) {
+            errorInfo.userMessage = getUserFriendlyMessage(errorInfo.type, errorInfo.message, errorInfo.code, 'company_details');
+          }
+        }
       } else {
         errorInfo = createErrorInfo(typeof errorMessage === 'string' ? errorMessage : 'Unknown error');
+        // Add context and update user message
+        errorInfo.details = { context: 'company_details' };
+        if (errorInfo.code) {
+          errorInfo.userMessage = getUserFriendlyMessage(errorInfo.type, errorInfo.message, errorInfo.code, 'company_details');
+        }
       }
       
       return (

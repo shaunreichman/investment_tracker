@@ -67,7 +67,7 @@ export function useApiCall<T>(
       const data = await withErrorHandling(async () => {
         const result = await apiCallRef.current();
         return result;
-      });
+      }, true, 'api_call');
       
       if (data !== null) {
         setData(data);
@@ -147,16 +147,19 @@ export function useMutation<T, R>(
   const { onSuccess } = options;
 
   const mutate = useCallback(async (data: T): Promise<R | undefined> => {
-    const result = await withErrorHandling(async () => {
-      setLoading(true);
-      const result = await mutationFn(data);
-      setData(result);
-      onSuccess?.(result);
-      return result;
-    }, { clearOnStart: true });
-
-    setLoading(false);
-    return result || undefined;
+    try {
+      const result = await withErrorHandling(async () => {
+        return await mutationFn(data);
+      }, true, 'api_mutation');
+      
+      if (result && onSuccess) {
+        onSuccess(result);
+      }
+      
+      return result || undefined;
+    } catch (error) {
+      return undefined;
+    }
   }, [mutationFn, onSuccess, withErrorHandling]);
 
   return {

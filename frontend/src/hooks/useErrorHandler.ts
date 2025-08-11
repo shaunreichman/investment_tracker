@@ -42,24 +42,18 @@ export interface ErrorHandlerState {
 export interface ErrorHandlerOptions {
   /** Maximum number of retry attempts (default: 3) */
   maxRetries?: number;
-  
   /** Delay between retry attempts in milliseconds (default: 1000) */
   retryDelay?: number;
-  
   /** Whether to enable exponential backoff (default: true) */
   enableExponentialBackoff?: boolean;
-  
   /** Whether to persist errors across component unmounts (default: false) */
   persistErrors?: boolean;
-  
   /** Whether to log errors to console (default: true) */
   enableLogging?: boolean;
-  
   /** Custom error categorization function */
   categorizeError?: (error: Error | string) => ErrorType;
-  
   /** Custom user-friendly message generator */
-  getUserMessage?: (type: ErrorType, message: string) => string;
+  getUserMessage?: (type: ErrorType, message: string, statusCode?: number, context?: string) => string;
 }
 
 // ============================================================================
@@ -121,11 +115,11 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
   /**
    * Generates user-friendly error message using custom or default generator
    */
-  const getUserMessageWithCustom = useCallback((type: ErrorType, message: string): string => {
+  const getUserMessageWithCustom = useCallback((type: ErrorType, message: string, statusCode?: number, context?: string): string => {
     if (customGetUserMessage) {
-      return customGetUserMessage(type, message);
+      return customGetUserMessage(type, message, statusCode, context);
     }
-    return getUserFriendlyMessage(type, message);
+    return getUserFriendlyMessage(type, message, statusCode, context);
   }, [customGetUserMessage]);
 
   // ============================================================================
@@ -135,7 +129,7 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
   /**
    * Sets an error with automatic categorization and logging
    */
-  const setError = useCallback((error: Error | string | ErrorInfo) => {
+  const setError = useCallback((error: Error | string | ErrorInfo, context?: string) => {
     let errorInfo: ErrorInfo;
     
     if (typeof error === 'string') {
@@ -145,21 +139,36 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
     } else if (error instanceof Error) {
       // Error object - create ErrorInfo
       const type = categorizeErrorWithCustom(error);
-      errorInfo = createErrorInfo(error, type);
+      
+      // Check if this is an ApiError with status code
+      let statusCode: number | undefined;
+      if ('status' in error) {
+        statusCode = (error as any).status;
+      }
+      
+      errorInfo = createErrorInfo(error, type, statusCode);
     } else {
       // Already ErrorInfo object
       errorInfo = error;
     }
 
-    // Update user message if not already set
+    // Update user message with context if not already set
     if (!errorInfo.userMessage) {
-      errorInfo.userMessage = getUserMessageWithCustom(errorInfo.type, errorInfo.message);
+      errorInfo.userMessage = getUserMessageWithCustom(errorInfo.type, errorInfo.message, errorInfo.code, context);
+    }
+
+    // Add context to error details for debugging
+    if (context && !errorInfo.details) {
+      errorInfo.details = { context };
+    } else if (context && errorInfo.details) {
+      errorInfo.details = { ...errorInfo.details, context };
     }
 
     // Log error if enabled
     if (enableLogging) {
       console.error(`[ErrorHandler] ${errorInfo.type.toUpperCase()}: ${errorInfo.message}`, {
         error: errorInfo,
+        context,
         timestamp: errorInfo.timestamp,
         retryable: errorInfo.retryable
       });
@@ -283,19 +292,15 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
   // ============================================================================
   
   /**
-   * Wraps an async function with error handling
+   * Executes an async function with automatic error handling
    */
   const withErrorHandling = useCallback(async <T>(
-    asyncFunction: () => Promise<T>,
-    options?: {
-      clearOnStart?: boolean;
-      retryable?: boolean;
-    }
+    asyncFunction: () => Promise<T>, 
+    retryable?: boolean,
+    context?: string
   ): Promise<T | null> => {
-    const { clearOnStart = true, retryable = true } = options || {};
-    
     try {
-      if (clearOnStart) {
+      if (state.error) {
         clearError();
       }
       
@@ -308,19 +313,29 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
       
       return result;
     } catch (error) {
-      const errorInfo = createErrorInfo(error instanceof Error ? error : new Error(String(error)));
+      // Check if this is an ApiError with status code
+      let statusCode: number | undefined;
+      if (error && typeof error === 'object' && 'status' in error) {
+        statusCode = (error as any).status;
+      }
+      
+      const errorInfo = createErrorInfo(
+        error instanceof Error ? error : new Error(String(error)),
+        undefined,
+        statusCode
+      );
       
       // Override retryable flag if specified
       if (retryable !== undefined) {
         errorInfo.retryable = retryable;
       }
       
-      setError(errorInfo);
+      setError(errorInfo, context);
       return null;
     } finally {
       setState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [clearError, setError]);
+  }, [clearError, setError, state.error]);
 
   // ============================================================================
   // ERROR PERSISTENCE
