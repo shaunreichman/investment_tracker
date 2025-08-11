@@ -99,11 +99,51 @@ const getGroupDescription = (groupType: GroupType, events: EventWithGrouping[]):
       return 'Interest + Withholding Tax Group';
       
     case GroupType.TAX_STATEMENT:
-      return 'Tax Statement Group';
+      // CALCULATED: Generate descriptive text for tax statement groups
+      const taxEvents = events.filter(e => e.event_type === 'TAX_PAYMENT');
+      const debtCostEvents = events.filter(e => e.event_type === 'EOFY_DEBT_COST');
+      
+      // Calculate total tax impact (tax payments are negative, debt cost benefits are positive)
+      const totalTaxImpact = events.reduce((sum, e) => sum + (e.amount || 0), 0);
+      
+      // Get financial year from tax statement (if available)
+      const firstTaxEvent = taxEvents[0] as ExtendedFundEvent | undefined;
+      const financialYear = firstTaxEvent?.tax_statement?.financial_year;
+      
+      // Build description components
+      const components: string[] = [];
+      
+      if (financialYear) {
+        components.push(`FY ${financialYear}`);
+      }
+      
+      if (taxEvents.length > 0) {
+        components.push(`${taxEvents.length} tax payment${taxEvents.length > 1 ? 's' : ''}`);
+      }
+      
+      if (debtCostEvents.length > 0) {
+        components.push(`${debtCostEvents.length} debt cost benefit${debtCostEvents.length > 1 ? 's' : ''}`);
+      }
+      
+      const componentText = components.length > 0 ? ` - ${components.join(', ')}` : '';
+      const totalText = ` (${formatCurrency(totalTaxImpact)})`;
+      
+      return `Tax Statement${componentText}${totalText}`;
       
     default:
       return 'Grouped Events';
   }
+};
+
+// CALCULATED: Helper function to format currency for group descriptions
+const formatCurrency = (amount: number): string => {
+  if (amount === 0) return '0.00';
+  
+  const absAmount = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+  const formatted = absAmount.toFixed(2);
+  
+  return `${sign}${formatted}`;
 };
 
 // CALCULATED: Generate description for single events
