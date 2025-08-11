@@ -20,17 +20,14 @@ def clear_database_except_rates(session):
     engine = session.bind
     
     with engine.connect() as conn:
-        # Disable foreign key constraints temporarily
-        conn.execute(text("PRAGMA foreign_keys=OFF;"))
-        
-        # Clear all tables except risk_free_rates
+        # Clear all tables except risk_free_rates (reference data)
         tables = ['tax_statements', 'fund_events', 'funds', 'entities', 'investment_companies']
+        
         for table in tables:
-            conn.execute(text(f"DELETE FROM {table};"))
+            # Use PostgreSQL TRUNCATE with CASCADE to handle foreign key constraints
+            conn.execute(text(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE"))
             print(f"Cleared {table}")
         
-        # Re-enable foreign key constraints
-        conn.execute(text("PRAGMA foreign_keys=ON;"))
         conn.commit()
     
     print("Database cleared (Risk Free Rates preserved)")

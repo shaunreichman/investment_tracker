@@ -2,7 +2,7 @@
 """
 Database initialization script for the investment tracker.
 
-This script creates the SQLite database and all necessary tables.
+This script creates the PostgreSQL database and all necessary tables.
 Run this script from the project root directory.
 """
 

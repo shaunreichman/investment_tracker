@@ -124,7 +124,7 @@ Local CI testing script for development and debugging.
 - **Coverage Data**: Persistent coverage database
 
 ### Database Optimization
-- **SQLite**: Fast in-memory/file databases
+- **PostgreSQL**: Optimized test databases with connection pooling
 - **Transaction Rollback**: Fast cleanup between tests
 - **Schema Caching**: Reuse schema across test session
 
