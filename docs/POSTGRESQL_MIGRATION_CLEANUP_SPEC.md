@@ -19,7 +19,7 @@ Complete the migration from SQLite to PostgreSQL by removing all remaining SQLit
 - [x] Replace SQLite-specific `PRAGMA` commands with PostgreSQL equivalents
 - [x] Update test database cleanup procedures for PostgreSQL
 - [x] Modify test database isolation strategy for PostgreSQL
-- [ ] Update CI configuration to use PostgreSQL instead of SQLite
+- [x] Update CI configuration to use PostgreSQL instead of SQLite
 
 **Design Principles**:
 - **Production-Like Testing**: Tests should use the same database technology as production
@@ -33,7 +33,7 @@ Complete the migration from SQLite to PostgreSQL by removing all remaining SQLit
 - ✅ **Database Cleanup Modernized**: Uses PostgreSQL-specific cleanup procedures
 - ✅ **Test Isolation Implemented**: Unique test databases for each test session
 - ✅ **Functionality Verified**: Tests run successfully with PostgreSQL test databases
-- ⚠️ **CI Configuration Pending**: Still need to update CI to use PostgreSQL
+- ✅ **CI Configuration Updated**: CI now specifies PostgreSQL instead of SQLite
 
 ### Phase 2: Core Database Module Cleanup
 **Goal**: Remove SQLite fallbacks and optimize for PostgreSQL-only operation

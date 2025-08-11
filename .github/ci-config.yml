@@ -108,7 +108,7 @@ test_categories:
 ci_environment:
   python_versions: ["3.9", "3.10", "3.11", "3.12"]
   operating_systems: ["ubuntu-latest"]
-  database: "sqlite"
+  database: "postgresql"
   
   environment_variables:
     PYTHONPATH: "${{ github.workspace }}/src"
