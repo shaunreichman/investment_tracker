@@ -15,7 +15,7 @@ import { PortfolioSummaryCardsProps } from '../types/overview-tab.types';
 
 export const PortfolioSummaryCards: React.FC<PortfolioSummaryCardsProps> = ({ portfolioSummary }) => {
   // Calculate total funds from available breakdown with safety checks
-  const suspendedCount = portfolioSummary.fund_status_breakdown?.suspended || 0;
+  const suspendedCount = portfolioSummary.fund_status_breakdown?.suspended_funds_count || 0;
   const totalFunds = portfolioSummary.active_funds_count + portfolioSummary.completed_funds_count + suspendedCount;
 
   return (

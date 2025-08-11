@@ -25,7 +25,7 @@ export const mockApiResponses = {
         total_invested_capital: 0,
         active_funds_count: 0,
         completed_funds_count: 0,
-        fund_status_breakdown: { active: 0, completed: 0, suspended: 0, realized: 0 }
+        fund_status_breakdown: { active_funds_count: 0, completed_funds_count: 0, suspended_funds_count: 0, realized_funds_count: 0 }
       },
       performance_summary: {
         average_completed_irr: null,
@@ -44,7 +44,7 @@ export const mockApiResponses = {
         total_invested_capital: 2250000,
         active_funds_count: 3,
         completed_funds_count: 0,
-        fund_status_breakdown: { active: 3, completed: 0, suspended: 0, realized: 0 }
+        fund_status_breakdown: { active_funds_count: 3, completed_funds_count: 0, suspended_funds_count: 0, realized_funds_count: 0 }
       }
     }),
     completedFunds: createMockCompanyOverview({
@@ -54,7 +54,7 @@ export const mockApiResponses = {
         total_invested_capital: 3000000,
         active_funds_count: 0,
         completed_funds_count: 3,
-        fund_status_breakdown: { active: 0, completed: 3, suspended: 0, realized: 0 }
+        fund_status_breakdown: { active_funds_count: 0, completed_funds_count: 3, suspended_funds_count: 0, realized_funds_count: 0 }
       },
       performance_summary: {
         average_completed_irr: 25.5,
@@ -74,7 +74,7 @@ export const mockApiResponses = {
         total_invested_capital: 2000000,
         active_funds_count: 1,
         completed_funds_count: 0,
-        fund_status_breakdown: { active: 1, completed: 0, suspended: 0, realized: 0 }
+        fund_status_breakdown: { active_funds_count: 1, completed_funds_count: 0, suspended_funds_count: 0, realized_funds_count: 0 }
       }
     })
   },
@@ -252,7 +252,7 @@ export const createMockApiServiceWithScenario = (scenario: 'singleFund' | 'multi
             total_invested_capital: 900000,
             active_funds_count: 1, 
             completed_funds_count: 0,
-            fund_status_breakdown: { active: 1, completed: 0, suspended: 0, realized: 0 }
+            fund_status_breakdown: { active_funds_count: 1, completed_funds_count: 0, suspended_funds_count: 0, realized_funds_count: 0 }
           }
         }),
         funds: [createMockFund()]
@@ -268,7 +268,7 @@ export const createMockApiServiceWithScenario = (scenario: 'singleFund' | 'multi
             total_invested_capital: 2250000,
             active_funds_count: 3, 
             completed_funds_count: 0,
-            fund_status_breakdown: { active: 3, completed: 0, suspended: 0, realized: 0 }
+            fund_status_breakdown: { active_funds_count: 3, completed_funds_count: 0, suspended_funds_count: 0, realized_funds_count: 0 }
           }
         }),
         funds: [
@@ -288,7 +288,7 @@ export const createMockApiServiceWithScenario = (scenario: 'singleFund' | 'multi
             total_invested_capital: 3000000,
             active_funds_count: 0,
             completed_funds_count: 3,
-            fund_status_breakdown: { active: 0, completed: 3, suspended: 0, realized: 0 }
+            fund_status_breakdown: { active_funds_count: 0, completed_funds_count: 3, suspended_funds_count: 0, realized_funds_count: 0 }
           },
           performance_summary: {
             average_completed_irr: 25.5,
@@ -313,7 +313,7 @@ export const createMockApiServiceWithScenario = (scenario: 'singleFund' | 'multi
             total_invested_capital: 2000000,
             active_funds_count: 2,
             completed_funds_count: 0,
-            fund_status_breakdown: { active: 2, completed: 0, suspended: 0, realized: 0 }
+            fund_status_breakdown: { active_funds_count: 2, completed_funds_count: 0, suspended_funds_count: 0, realized_funds_count: 0 }
           },
           performance_summary: {
             average_completed_irr: 45.2,

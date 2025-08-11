@@ -46,13 +46,17 @@ class TestCompaniesUIWorkflows:
         assert portfolio['total_current_value'] == expected_current
         assert portfolio['total_invested_capital'] == expected_current
         
-        # Verify fund status breakdown matches actual fund counts
+                # Verify fund status breakdown matches actual fund counts
         status_breakdown = summary_data['fund_status_breakdown']
         active_funds = [f for f in company.funds if f.status == FundStatus.ACTIVE]
         completed_funds = [f for f in company.funds if f.status == FundStatus.COMPLETED]
-        
+    
         assert status_breakdown['active_funds_count'] == len(active_funds)
         assert status_breakdown['completed_funds_count'] == len(completed_funds)
+        
+        # Verify individual counts in portfolio summary
+        assert portfolio['active_funds_count'] == len(active_funds)
+        assert portfolio['completed_funds_count'] == len(completed_funds)
     
     def test_fund_metrics_rollup_to_company(self, db_session):
         """Test that individual fund metrics correctly roll up to company totals"""
@@ -154,7 +158,8 @@ class TestCompaniesUIWorkflows:
         
         assert initial_portfolio['total_committed_capital'] == 100000
         assert initial_status['active_funds_count'] == 1
-        assert initial_status['completed_funds_count'] == 0
+        assert initial_portfolio['active_funds_count'] == 1
+        assert initial_portfolio['completed_funds_count'] == 0
         
         # Transition fund to completed status
         fund.status = FundStatus.COMPLETED
@@ -173,6 +178,8 @@ class TestCompaniesUIWorkflows:
         # Status breakdown should change
         assert updated_status['active_funds_count'] == 0
         assert updated_status['completed_funds_count'] == 1
+        assert updated_portfolio['active_funds_count'] == 0
+        assert updated_portfolio['completed_funds_count'] == 1
         
         # Performance summary should now include IRR
         performance = updated_summary['performance_summary']
@@ -213,6 +220,10 @@ class TestCompaniesUIWorkflows:
         
         assert status_breakdown['active_funds_count'] == 70
         assert status_breakdown['completed_funds_count'] == 30
+        
+        # Verify individual counts in portfolio summary
+        assert portfolio['active_funds_count'] == 70
+        assert portfolio['completed_funds_count'] == 30
         
         # Verify portfolio totals
         expected_committed = sum(f.commitment_amount for f in funds)
