@@ -4,8 +4,8 @@
 -- First, let's check what values currently exist
 SELECT DISTINCT distribution_type FROM fund_events;
 
--- For SQLite, we need to recreate the table with the updated enum
--- This is a manual migration approach for SQLite enum limitations
+-- For PostgreSQL, we can use ALTER TYPE to add new enum values
+-- This is the preferred approach for PostgreSQL enum modifications
 
 -- Step 1: Create new table with updated enum
 CREATE TABLE fund_events_new (
