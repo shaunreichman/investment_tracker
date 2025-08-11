@@ -30,6 +30,7 @@ rpds-py==0.25.1
 six==1.17.0
 smmap==5.0.2
 SQLAlchemy==2.0.41
+psycopg2-binary==2.9.10
 Flask==3.0.3
 Flask-Cors==5.0.0
 streamlit==1.46.1

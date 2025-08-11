@@ -16,9 +16,10 @@ from src.rates.models import RiskFreeRate
 def import_risk_free_rates(csv_file='rfr.csv'):
     """Import risk-free rates from CSV file into database."""
     
-    # Create database connection
-    engine = create_engine('sqlite:///data/investment_tracker.db')
-    Session = sessionmaker(bind=engine)
+    # Create database connection using centralized PostgreSQL configuration
+    from src.database import create_database_engine, create_session_factory
+    engine = create_database_engine()
+    Session = create_session_factory(engine)
     session = Session()
     
     print(f"Importing risk-free rates from {csv_file}...")

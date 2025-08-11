@@ -40,9 +40,9 @@ def create_app(db_config=None):
             # Use test database if configured
             engine = create_engine(db_config['database_url'])
         else:
-            # Use production database path
-            db_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'investment_tracker.db')
-            engine = create_engine(f'sqlite:///{db_path}')
+            # Use centralized PostgreSQL database by default
+            from src.database import create_database_engine
+            engine = create_database_engine()
         Session = sessionmaker(bind=engine)
         return scoped_session(Session)
 
