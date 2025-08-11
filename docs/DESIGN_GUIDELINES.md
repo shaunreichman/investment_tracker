@@ -330,6 +330,87 @@ REACT_APP_API_BASE_URL=http://localhost:5001
 
 ---
 
+## Database Architecture
+
+### **PostgreSQL-Based System**
+
+#### **Core Database Principles**
+- **Centralized PostgreSQL**: Single PostgreSQL instance with connection pooling
+- **Direct Schema Management**: No migration files, direct table creation
+- **Connection Health Checks**: Built-in connection validation and pooling
+- **Environment Configuration**: Flexible configuration via environment variables
+
+#### **Database Configuration Files**
+```python
+# database_config.py - Centralized configuration
+DATABASE_URL = "postgresql://postgres:development_password@localhost:5432/investment_tracker"
+
+# src/config.py - Enhanced configuration with environment support
+class DatabaseConfig:
+    @classmethod
+    def get_database_url(cls) -> str:
+        env_url = os.getenv("DATABASE_URL")
+        if env_url:
+            return env_url
+        # Fall back to individual environment variables
+        host = os.getenv("POSTGRES_HOST", cls.DEFAULT_HOST)
+        # ... other configuration
+```
+
+#### **Database Connection Management**
+```python
+# src/database.py - Enhanced connection management
+def create_database_engine(database_url=None):
+    """Create SQLAlchemy engine with PostgreSQL optimization"""
+    if database_url is None:
+        database_url = get_database_url()
+    
+    engine = create_engine(
+        database_url,
+        echo=False,
+        pool_pre_ping=True,      # Connection health checks
+        pool_recycle=3600,       # Recycle connections every hour
+    )
+    return engine
+
+def get_global_session():
+    """Get global database session with lazy initialization"""
+    global _engine, _session_factory, _scoped_session
+    if _scoped_session is None:
+        _engine, _session_factory, _scoped_session = get_database_session()
+    return _scoped_session
+```
+
+#### **Database Health and Verification**
+```bash
+# Schema verification
+python check_database_schema.py  # Check all tables and record counts
+
+# Connection testing
+python simple_db_test.py         # Test PostgreSQL connectivity
+
+# Database queries
+python test_db_query.py          # Test query execution
+```
+
+#### **Expected Database Schema**
+The system expects these core tables:
+- `entities`, `investment_companies`, `funds`, `fund_events`
+- `fund_event_types`, `fund_statuses`, `risk_free_rates`
+- `tax_statements`, `fund_tax_statements`, `fund_performance_metrics`
+- `fund_irr_calculations`
+
+#### **Connection Pool Configuration**
+```python
+# Optimized connection pooling
+DB_POOL_SIZE = 10           # Base pool size
+DB_MAX_OVERFLOW = 20        # Additional connections when needed
+DB_POOL_TIMEOUT = 30        # Connection timeout in seconds
+DB_POOL_RECYCLE = 3600      # Recycle connections every hour
+```
+
+---
+
 ## Session Management
 
 ### **Rule: Backend Owns Sessions**
@@ -1088,8 +1169,22 @@ npm start  # Starts development server on port 3000
 
 #### **Database Setup**
 ```bash
-# ✅ CORRECT: Database initialization
-python scripts/init_database.py
+# ✅ CORRECT: PostgreSQL setup and verification
+# Install PostgreSQL (macOS)
+brew install postgresql
+brew services start postgresql
+
+# Install PostgreSQL (Ubuntu)
+sudo apt-get install postgresql postgresql-contrib
+sudo systemctl start postgresql
+
+# Create database and user
+createdb investment_tracker
+psql -d investment_tracker -c "CREATE USER postgres WITH PASSWORD 'development_password';"
+
+# Verify setup
+python check_database_schema.py  # Check schema
+python simple_db_test.py         # Test connection
 ```
 
 ### **Environment Variables**
@@ -1098,7 +1193,11 @@ python scripts/init_database.py
 ```bash
 FLASK_APP=src/api.py
 FLASK_ENV=development
-DATABASE_URL=sqlite:///data/investment_tracker.db
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=investment_tracker
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=development_password
 ```
 
 #### **Frontend (.env)**
@@ -1131,6 +1230,10 @@ pkill -f "react-scripts"  # Kill frontend
 # Health checks
 curl http://localhost:5001/api/health  # Backend
 curl http://localhost:3000              # Frontend
+
+# Database connection issues
+python simple_db_test.py               # Test PostgreSQL connection
+python check_database_schema.py        # Verify database schema
 ```
 
 #### **Production Mode**
@@ -1146,12 +1249,17 @@ gunicorn -w 4 -b 0.0.0.0:5001 "src.api:app"
 
 #### **Common Issues**
 ```bash
-# Database issues
-python scripts/init_database.py
+# Database connection issues
+python simple_db_test.py               # Test PostgreSQL connection
+python check_database_schema.py        # Verify schema integrity
 
 # Dependency issues  
 pip install -r requirements.txt  # Backend
 cd frontend && npm install      # Frontend
+
+# PostgreSQL service issues
+brew services restart postgresql  # macOS
+sudo systemctl restart postgresql  # Ubuntu
 ```
 
 ---
