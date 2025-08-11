@@ -12,33 +12,47 @@ except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__)))
     from shared.base import Base
 
+# Import configuration
+try:
+    from config import get_database_url
+except ImportError:
+    # Fallback for when running as script
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__)))
+    from config import get_database_url
+
 
 def create_database_engine(database_url=None):
     """
     Create a SQLAlchemy engine for the database.
     
     Args:
-        database_url (str): Database URL. If None, uses SQLite in the data directory.
+        database_url (str): Database URL. If None, uses centralized PostgreSQL database.
     
     Returns:
         sqlalchemy.engine.Engine: The database engine
     """
     if database_url is None:
-        # Create data directory if it doesn't exist
-        data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
-        os.makedirs(data_dir, exist_ok=True)
-        
-        # Use SQLite database in the data directory
-        db_path = os.path.join(data_dir, 'investment_tracker.db')
-        database_url = f"sqlite:///{db_path}"
+        # Use centralized PostgreSQL database by default
+        database_url = get_database_url()
     
     # Create engine with appropriate configuration
-    engine = create_engine(
-        database_url,
-        echo=False,  # Set to True for SQL query logging
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False} if "sqlite" in database_url else {}
-    )
+    if "postgresql" in database_url:
+        # PostgreSQL configuration
+        engine = create_engine(
+            database_url,
+            echo=False,  # Set to True for SQL query logging
+            pool_pre_ping=True,  # Enable connection health checks
+            pool_recycle=3600,   # Recycle connections every hour
+        )
+    else:
+        # SQLite configuration (fallback)
+        engine = create_engine(
+            database_url,
+            echo=False,  # Set to True for SQL query logging
+            poolclass=StaticPool,
+            connect_args={"check_same_thread": False}
+        )
     
     return engine
 

@@ -28,13 +28,15 @@ from datetime import date, timedelta
 def init_database():
     """Initialize the database with all tables."""
     
-    # Create database engine
-    engine = create_engine('sqlite:///data/investment_tracker.db')
+    # Create database engine using centralized PostgreSQL configuration
+    from src.database import create_database_engine
+    engine = create_database_engine()
     
     # Create all tables
     Base.metadata.create_all(engine)
     
     print("Database initialized successfully!")
+    print(f"Database URL: {engine.url}")
     print("Created tables:")
     print("- investment_companies")
     print("- entities") 
