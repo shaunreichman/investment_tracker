@@ -268,6 +268,7 @@ describe('useEventGrouping', () => {
       const taxEvent1 = createMockEvent({
         event_type: EventType.TAX_PAYMENT,
         event_date: '2024-01-01',
+        amount: 0,
         is_grouped: true,
         group_id: 1,
         group_type: GroupType.TAX_STATEMENT,
@@ -276,6 +277,7 @@ describe('useEventGrouping', () => {
       const taxEvent2 = createMockEvent({
         event_type: EventType.TAX_PAYMENT,
         event_date: '2024-01-01',
+        amount: 0,
         is_grouped: true,
         group_id: 1,
         group_type: GroupType.TAX_STATEMENT,
@@ -286,7 +288,7 @@ describe('useEventGrouping', () => {
       const { result } = renderHook(() => useEventGrouping(events));
 
       const firstGroup = result.current[0];
-      expect(firstGroup?.displayDescription).toBe('Tax Statement Group');
+      expect(firstGroup?.displayDescription).toBe('Tax Statement - 2 tax payments (0.00)');
     });
 
     it('should generate fallback description for unknown group types', () => {
