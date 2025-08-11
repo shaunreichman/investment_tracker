@@ -22,6 +22,15 @@ The system follows a domain-driven design with clear separation of concerns:
 - **Tax Domain:** Tax statements and tax payment events
 - **Rates Domain:** Market data and risk-free rates
 - **Web UI:** React frontend with Flask API backend
+- **Database:** PostgreSQL with centralized configuration and connection pooling
+
+### Database System
+
+The application now uses a **PostgreSQL-based database system** with:
+- **Centralized Configuration**: Single configuration file (`database_config.py`) with environment variable support
+- **Connection Pooling**: Optimized connection management with health checks
+- **Direct Schema Management**: No migration files, direct table creation and verification
+- **Enhanced Session Management**: Improved database session handling with global session support
 
 ### Domain-Driven Design
 
@@ -64,7 +73,7 @@ All model methods that require a database session use the `@with_session` decora
 
 - Python 3.8+
 - Node.js 18+ (for web UI)
-- SQLite (included with Python)
+- PostgreSQL 12+ (required)
 
 ### Installation
 
@@ -81,12 +90,28 @@ All model methods that require a database session use the `@with_session` decora
    pip install -r requirements.txt
    ```
 
-3. **Set up database:**
+3. **Set up PostgreSQL database:**
    ```bash
-   python scripts/init_database.py
+   # macOS
+   brew install postgresql
+   brew services start postgresql
+   
+   # Ubuntu
+   sudo apt-get install postgresql postgresql-contrib
+   sudo systemctl start postgresql
+   
+   # Create database and user
+   createdb investment_tracker
+   psql -d investment_tracker -c "CREATE USER postgres WITH PASSWORD 'development_password';"
    ```
 
-4. **Set up web UI:**
+4. **Verify database setup:**
+   ```bash
+   python check_database_schema.py  # Check schema integrity
+   python simple_db_test.py         # Test database connection
+   ```
+
+5. **Set up web UI:**
    ```bash
    cd frontend
    npm install
@@ -176,19 +201,22 @@ investment_tracker/
 │   ├── investment_company/    # Investment company domain
 │   ├── rates/                 # Risk-free rates and related logic
 │   ├── shared/                # Shared utilities and base classes
+│   ├── config.py              # Enhanced configuration management
 │   └── database.py            # Database setup and session management
 ├── frontend/                  # React frontend
 │   ├── src/                   # React source code
 │   └── public/                # Static assets
 ├── tests/                     # Test suite (unit, integration, system)
 │   └── output/                # Test output artifacts
-├── scripts/                   # Utility and migration scripts
+├── scripts/                   # Utility and database scripts
 ├── docs/                      # Documentation
 │   ├── DESIGN_GUIDELINES.md   # Core development/design patterns
 │   ├── PROJECT_CONTEXT.md     # Project context and onboarding
+│   ├── TANSTACK_TABLE_MIGRATION_SPEC.md  # Frontend table migration plan
 │   └── refactor_plans/        # Refactoring and migration plans
-├── alembic/                   # Database migrations (Alembic)
-├── data/                      # Data files and backups
+├── database_config.py         # Centralized PostgreSQL configuration
+├── check_database_schema.py   # Database schema verification
+├── simple_db_test.py          # Database connection testing
 ├── requirements.txt           # Python dependencies
 ├── pyproject.toml             # Project configuration
 ├── README.md                  # User-facing documentation
@@ -227,66 +255,103 @@ The system includes comprehensive tests for:
 
 ## Example Usage
 
+### Database Setup
+The system now uses PostgreSQL with a centralized configuration. Before running examples, ensure:
+1. PostgreSQL is installed and running
+2. Database `investment_tracker` exists
+3. User `postgres` with password `development_password` is configured
+4. Run `python check_database_schema.py` to verify schema
+
 ### NAV-Based Fund Example
 ```python
 from src.fund.models import Fund, FundEvent, EventType, DistributionType
+from src.database import get_database_session
 from datetime import date
 
-# 1. Create NAV-based fund (minimal manual fields)
-fund = Fund(
-    name="ABC Ltd",
-    tracking_type=FundType.NAV_BASED,
-    fund_type="Equity - Consumer Discretionary",
-    currency="AUD"
-)
+# Get database session
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
 
-# 2. Add unit purchase (amount calculated automatically)
-purchase_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.UNIT_PURCHASE,
-    event_date=date(2023, 3, 28),
-    units_purchased=85.0,
-    unit_price=58.00,
-    brokerage_fee=19.95,
-    description="Initial unit purchase"
-)
-# amount will be calculated as: (85.0 * 58.00) + 19.95 = 4,949.95
+try:
+    # 1. Create NAV-based fund (minimal manual fields)
+    fund = Fund(
+        name="ABC Ltd",
+        tracking_type=FundType.NAV_BASED,
+        fund_type="Equity - Consumer Discretionary",
+        currency="AUD"
+    )
+    session.add(fund)
+    session.flush()  # Get fund ID
 
-# 3. Add NAV update (shares_owned calculated automatically)
-nav_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.NAV_UPDATE,
-    event_date=date(2023, 3, 31),
-    nav_per_share=57.20,
-    description="March 2023 NAV update"
-)
+    # 2. Add unit purchase (amount calculated automatically)
+    purchase_event = FundEvent(
+        fund_id=fund.id,
+        event_type=EventType.UNIT_PURCHASE,
+        event_date=date(2023, 3, 28),
+        units_purchased=85.0,
+        unit_price=58.00,
+        brokerage_fee=19.95,
+        description="Initial unit purchase"
+    )
+    # amount will be calculated as: (85.0 * 58.00) + 19.95 = 4,949.95
+    session.add(purchase_event)
+    
+    # 3. Add NAV update (shares_owned calculated automatically)
+    nav_event = FundEvent(
+        fund_id=fund.id,
+        event_type=EventType.NAV_UPDATE,
+        event_date=date(2023, 3, 31),
+        nav_per_share=57.20,
+        description="March 2023 NAV update"
+    )
+    session.add(nav_event)
+    
+    session.commit()
+finally:
+    session.close()
 ```
 
 ### Cost-Based Fund Example
 ```python
-# Create cost-based fund
-fund = Fund(
-    name="Private Equity Fund",
-    tracking_type=FundType.COST_BASED,
-    commitment_amount=1000000.0,
-    expected_irr=15.0,
-    expected_duration_months=120
-)
+from src.fund.models import Fund, FundEvent, EventType
+from src.database import get_database_session
+from datetime import date
 
-# Add capital call
-call_event = FundEvent(
-    fund_id=fund.id,
-    event_type=EventType.CAPITAL_CALL,
-    event_date=date(2023, 1, 1),
-    amount=500000.0
-)
+# Get database session
+engine, session_factory, scoped_session = get_database_session()
+session = scoped_session()
 
-# Update calculated fields
-fund.update_current_equity_balance()
-fund.update_total_cost_basis()
+try:
+    # Create cost-based fund
+    fund = Fund(
+        name="Private Equity Fund",
+        tracking_type=FundType.COST_BASED,
+        commitment_amount=1000000.0,
+        expected_irr=15.0,
+        expected_duration_months=120
+    )
+    session.add(fund)
+    session.flush()
 
-# Calculate IRR
-irr = fund.calculate_irr()
+    # Add capital call
+    call_event = FundEvent(
+        fund_id=fund.id,
+        event_type=EventType.CAPITAL_CALL,
+        event_date=date(2023, 1, 1),
+        amount=500000.0
+    )
+    session.add(call_event)
+    
+    # Update calculated fields
+    fund.update_current_equity_balance()
+    fund.update_total_cost_basis()
+    
+    # Calculate IRR
+    irr = fund.calculate_irr()
+    
+    session.commit()
+finally:
+    session.close()
 ```
 
 ## Troubleshooting
@@ -298,10 +363,12 @@ irr = fund.calculate_irr()
 - Check that `REACT_APP_API_BASE_URL` is set correctly in frontend/.env
 - Verify CORS is enabled in the Flask app
 
-**Database errors:**
-- Run `python scripts/init_database.py` to reset the database
-- Check that SQLite is working properly
-- Verify all migrations have been applied
+**Database connection errors:**
+- Verify PostgreSQL is running: `brew services list` (macOS) or `sudo systemctl status postgresql` (Ubuntu)
+- Test database connection: `python simple_db_test.py`
+- Check database schema: `python check_database_schema.py`
+- Verify connection settings in `database_config.py`
+- Ensure database and user exist: `psql -l` to list databases
 
 **Import errors:**
 - Ensure you're using the domain-driven imports (e.g., `from src.fund.models import Fund`)
@@ -309,8 +376,9 @@ irr = fund.calculate_irr()
 - Verify all dependencies are installed with `pip install -r requirements.txt`
 
 **Test failures:**
-- Clear the database and reinitialize: `python scripts/init_database.py`
-- Check that all test dependencies are installed
+- Verify database connection: `python simple_db_test.py`
+- Check database schema integrity: `python check_database_schema.py`
+- Ensure PostgreSQL service is running and accessible
 - Verify the test database is not corrupted
 
 ## Contributing
@@ -370,6 +438,9 @@ irr = fund.calculate_irr()
 
 ## Recent Improvements
 
+- **2024: Database Centralization Complete** - Migrated from SQLite to PostgreSQL with centralized configuration and connection pooling
+- **2024: TanStack Table Migration Foundation** - Comprehensive specification for migrating from Material-UI tables to TanStack Table for enhanced performance
+- **2024: Enhanced Database Management** - Direct schema management without migration files, improved connection health checks
 - **Standardized date conventions**: All calculations now use inclusive start dates and exclusive end dates for consistency
 - **Automatic event listeners**: NAV-based funds automatically update current units after unit purchase/sale events
 - **Enhanced FIFO tracking**: NAV-based funds use FIFO cost basis for accurate equity balance calculations
