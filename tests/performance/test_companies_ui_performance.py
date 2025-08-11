@@ -90,7 +90,7 @@ class TestCompaniesUIPerformance:
         
         # Verify calculations are correct
         assert enhanced_metrics['unrealized_gains_losses'] == -50000  # 950k - 1000k
-        assert enhanced_metrics['realized_gains_losses'] > 0
+        assert enhanced_metrics['realized_gains_losses'] == 0  # Active funds have no realized gains/losses yet
     
     def test_distribution_summary_performance(self, db_session):
         """Test performance of distribution summary calculation"""

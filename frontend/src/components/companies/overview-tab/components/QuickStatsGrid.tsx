@@ -45,11 +45,11 @@ export const QuickStatsGrid: React.FC<QuickStatsGridProps> = ({ portfolioSummary
                 variant="outlined"
               />
             </Box>
-            {portfolioSummary.fund_status_breakdown?.suspended > 0 && (
+            {portfolioSummary.fund_status_breakdown?.suspended_funds_count > 0 && (
               <Box display="flex" justifyContent="space-between">
                 <Typography variant="body2">Suspended:</Typography>
                 <Chip 
-                  label={portfolioSummary.fund_status_breakdown.suspended} 
+                  label={portfolioSummary.fund_status_breakdown.suspended_funds_count} 
                   color="warning" 
                   size="small" 
                   variant="outlined"

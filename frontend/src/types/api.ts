@@ -433,10 +433,10 @@ export interface CompanyOverviewResponse {
     active_funds_count: number;
     completed_funds_count: number;
     fund_status_breakdown: {
-      active: number;
-      completed: number;
-      suspended: number;
-      realized: number;
+      active_funds_count: number;
+      completed_funds_count: number;
+      suspended_funds_count: number;
+      realized_funds_count: number;
     };
   };
   performance_summary: {

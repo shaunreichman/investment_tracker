@@ -32,6 +32,10 @@ class TestCompanyPortfolioCalculations:
         assert status_breakdown['completed_funds_count'] == 0
         assert status_breakdown['suspended_funds_count'] == 0
         
+        # Verify individual counts in portfolio summary
+        assert portfolio['active_funds_count'] == 0
+        assert portfolio['completed_funds_count'] == 0
+        
         # Verify performance summary
         performance = summary_data['performance_summary']
         assert performance['average_completed_irr'] is None
@@ -58,6 +62,10 @@ class TestCompanyPortfolioCalculations:
         status_breakdown = summary_data['fund_status_breakdown']
         assert status_breakdown['active_funds_count'] == 1
         assert status_breakdown['completed_funds_count'] == 0
+        
+        # Verify individual counts in portfolio summary
+        assert portfolio['active_funds_count'] == 1
+        assert portfolio['completed_funds_count'] == 0
     
     def test_get_company_summary_data_multiple_funds(self, db_session):
         """Test company summary with multiple funds"""
@@ -98,7 +106,11 @@ class TestCompanyPortfolioCalculations:
         status_breakdown = summary_data['fund_status_breakdown']
         assert status_breakdown['active_funds_count'] == 1
         assert status_breakdown['completed_funds_count'] == 1
-        assert status_breakdown['suspended_funds_count'] == 1
+        assert status_breakdown['realized_funds_count'] == 1  # Note: this fund has REALIZED status, not suspended
+        
+        # Verify individual counts in portfolio summary
+        assert portfolio['active_funds_count'] == 1
+        assert portfolio['completed_funds_count'] == 1
         
         performance = summary_data['performance_summary']
         assert performance['average_completed_irr'] == 15.5
@@ -145,6 +157,10 @@ class TestCompanyPortfolioCalculations:
         status_breakdown = summary_data['fund_status_breakdown']
         assert status_breakdown['active_funds_count'] == 5
         assert status_breakdown['completed_funds_count'] == 3
+        
+        # Verify individual counts in portfolio summary
+        assert portfolio['active_funds_count'] == 5
+        assert portfolio['completed_funds_count'] == 3
         
         performance = summary_data['performance_summary']
         # Average IRR: (10 + 15 + 20) / 3 = 15.0
