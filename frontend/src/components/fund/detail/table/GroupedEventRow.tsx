@@ -7,7 +7,7 @@ import {
   IconButton
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
-import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
+import { ExtendedFundEvent, ExtendedFund, GroupType } from '../../../../types/api';
 import { formatCurrency, formatDate } from '../../../../utils/formatters';
 import { EventTypeChip } from '../../../ui/EventTypeChip';
 import { GroupedEvent } from './useEventGrouping';
@@ -27,7 +27,7 @@ export interface GroupedEventRowProps {
 
 /**
  * Component to render grouped event rows (interest + withholding tax combinations)
- * Updated to work with new flag-based grouping approach
+ * Updated to work with new flag-based grouping approach and handle TAX_STATEMENT groups
  */
 const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
   groupedEvent,
@@ -38,10 +38,25 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
   onDeleteEvent
 }) => {
   // CALCULATED: Extract events from the grouped event
-  const { events, displayDate, displayDescription } = groupedEvent;
+  const { events, displayDate, displayDescription, groupType } = groupedEvent;
   const isNavBased = fund.tracking_type === 'nav_based';
 
-  // CALCULATED: Find specific event types for display
+  // CALCULATED: Handle different group types
+  if (groupType === GroupType.TAX_STATEMENT) {
+    return (
+      <TaxStatementGroupRow
+        events={events as ExtendedFundEvent[]}
+        fund={fund}
+        showTaxEvents={showTaxEvents}
+        showNavUpdates={showNavUpdates}
+        displayDate={displayDate}
+        displayDescription={displayDescription}
+        onDeleteEvent={onDeleteEvent}
+      />
+    );
+  }
+
+  // CALCULATED: Handle INTEREST_WITHHOLDING groups (existing logic)
   const interestEvent = events.find(e => e.event_type === 'DISTRIBUTION') as ExtendedFundEvent | undefined;
   const withholdingEvent = events.find(e => e.event_type === 'TAX_PAYMENT') as ExtendedFundEvent | undefined;
   const otherEvents = events.filter(e => 
@@ -201,6 +216,297 @@ const groupedEventRowPropsAreEqual = (prevProps: GroupedEventRowProps, nextProps
 };
 
 export const GroupedEventRow = React.memo(GroupedEventRowComponent, groupedEventRowPropsAreEqual);
+
+/**
+ * Component to render tax statement group rows
+ * Shows financial year, total tax impact, and breakdown of tax components
+ */
+const TaxStatementGroupRow: React.FC<{
+  events: ExtendedFundEvent[];
+  fund: ExtendedFund;
+  showTaxEvents: boolean;
+  showNavUpdates: boolean;
+  displayDate: string;
+  displayDescription: string;
+  onDeleteEvent: (event: ExtendedFundEvent) => void;
+}> = ({ events, fund, showTaxEvents, showNavUpdates, displayDate, displayDescription, onDeleteEvent }) => {
+  const isNavBased = fund.tracking_type === 'nav_based';
+  
+  // CALCULATED: Categorize events by type for display
+  const taxPaymentEvents = events.filter(e => e.event_type === 'TAX_PAYMENT') as ExtendedFundEvent[];
+  const debtCostEvents = events.filter(e => e.event_type === 'EOFY_DEBT_COST') as ExtendedFundEvent[];
+  
+  // CALCULATED: Calculate totals for display
+  const totalTaxPayments = taxPaymentEvents.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const totalDebtCostBenefits = debtCostEvents.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const netTaxImpact = totalTaxPayments + totalDebtCostBenefits;
+  
+  // CALCULATED: Get financial year from first tax event
+  const firstTaxEvent = taxPaymentEvents[0];
+  const financialYear = firstTaxEvent?.tax_statement?.financial_year;
+  
+  // CALCULATED: Determine if any events are editable
+  const hasEditableEvents = events.some(e => ![
+    'TAX_PAYMENT', 
+    'DAILY_RISK_FREE_INTEREST_CHARGE', 
+    'EOFY_DEBT_COST', 
+    'MANAGEMENT_FEE', 
+    'CARRIED_INTEREST', 
+    'OTHER'
+  ].includes(e.event_type));
+
+  return (
+    <React.Fragment>
+      {/* Main tax statement summary row */}
+      <TableRow hover sx={{ backgroundColor: 'action.hover' }}>
+        {/* Date Column */}
+        <TableCell>{formatDate(displayDate)}</TableCell>
+        
+        {/* Type Column */}
+        <TableCell>
+          <EventTypeChip 
+            eventType="TAX_STATEMENT" 
+            size="small" 
+          />
+        </TableCell>
+        
+        {/* Description Column */}
+        <TableCell>
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              {displayDescription}
+            </Typography>
+            {financialYear && (
+              <Typography variant="caption" color="text.secondary">
+                Financial Year {financialYear}
+              </Typography>
+            )}
+          </Box>
+        </TableCell>
+        
+        {/* Equity Column */}
+        <TableCell align="right"></TableCell>
+        
+        {/* NAV Update Column (only for NAV-based funds) */}
+        {isNavBased && (
+          <TableCell align="right"></TableCell>
+        )}
+        
+        {/* Distributions Column */}
+        <TableCell align="right">
+          {/* Show net tax impact */}
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              {formatCurrency(netTaxImpact, fund.currency)}
+            </Typography>
+            {taxPaymentEvents.length > 0 && (
+              <Typography variant="caption" color="error.main">
+                Tax: {formatCurrency(totalTaxPayments, fund.currency)}
+              </Typography>
+            )}
+            {debtCostEvents.length > 0 && (
+              <Typography variant="caption" color="success.main">
+                Benefits: {formatCurrency(totalDebtCostBenefits, fund.currency)}
+              </Typography>
+            )}
+          </Box>
+        </TableCell>
+        
+        {/* Tax Column */}
+        {showTaxEvents && (
+          <TableCell align="right">
+            {/* Show breakdown in tax column */}
+            <Box>
+              <Typography variant="body2" fontWeight="medium">
+                {formatCurrency(netTaxImpact, fund.currency)}
+              </Typography>
+              {taxPaymentEvents.length > 0 && (
+                <Typography variant="caption" color="error.main">
+                  {taxPaymentEvents.length} payment{taxPaymentEvents.length > 1 ? 's' : ''}
+                </Typography>
+              )}
+            </Box>
+          </TableCell>
+        )}
+        
+        {/* Actions Column */}
+        <TableCell align="right" sx={{ 
+          minWidth: { xs: 80, sm: 120 }, 
+          px: { xs: 1, sm: 2 } 
+        }}>
+          <Box display="flex" gap={{ xs: 0.5, sm: 1.5 }} justifyContent="flex-end" alignItems="center">
+            {hasEditableEvents && (
+              <IconButton
+                size="small"
+                onClick={() => {
+                  // Find first editable event for delete action
+                  const editableEvent = events.find(e => ![
+                    'TAX_PAYMENT', 
+                    'DAILY_RISK_FREE_INTEREST_CHARGE', 
+                    'EOFY_DEBT_COST', 
+                    'MANAGEMENT_FEE', 
+                    'CARRIED_INTEREST', 
+                    'OTHER'
+                  ].includes(e.event_type));
+                  if (editableEvent) {
+                    onDeleteEvent(editableEvent as ExtendedFundEvent);
+                  }
+                }}
+                sx={{
+                  color: 'error.main',
+                  p: 1,
+                  borderRadius: 1,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    bgcolor: 'error.light',
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }
+                }}
+                title="Delete tax statement group"
+              >
+                <DeleteIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            )}
+          </Box>
+        </TableCell>
+      </TableRow>
+      
+      {/* Render individual tax events as detail rows */}
+      {events.map((event) => (
+        <TaxStatementDetailRow
+          key={event.id}
+          event={event as ExtendedFundEvent}
+          fund={fund}
+          showTaxEvents={showTaxEvents}
+          showNavUpdates={showNavUpdates}
+          onDeleteEvent={onDeleteEvent}
+        />
+      ))}
+    </React.Fragment>
+  );
+};
+
+/**
+ * Component to render individual tax events within a tax statement group
+ * Shows detailed breakdown of each tax component
+ */
+const TaxStatementDetailRow: React.FC<{
+  event: ExtendedFundEvent;
+  fund: ExtendedFund;
+  showTaxEvents: boolean;
+  showNavUpdates: boolean;
+  onDeleteEvent: (event: ExtendedFundEvent) => void;
+}> = ({ event, fund, showTaxEvents, showNavUpdates, onDeleteEvent }) => {
+  const isNavBased = fund.tracking_type === 'nav_based';
+  
+  // CALCULATED: Determine if this event is editable
+  const isEditable = ![
+    'TAX_PAYMENT', 
+    'DAILY_RISK_FREE_INTEREST_CHARGE', 
+    'EOFY_DEBT_COST', 
+    'MANAGEMENT_FEE', 
+    'CARRIED_INTEREST', 
+    'OTHER'
+  ].includes(event.event_type);
+
+  return (
+    <TableRow hover sx={{ backgroundColor: 'background.default' }}>
+      {/* Date Column - Empty for detail rows */}
+      <TableCell></TableCell>
+      
+      {/* Type Column */}
+      <TableCell>
+        <EventTypeChip 
+          eventType={event.event_type} 
+          size="small" 
+        />
+      </TableCell>
+      
+      {/* Description Column */}
+      <TableCell>
+        <Box sx={{ pl: 2 }}>
+          <Typography variant="body2">
+            {event.description || getTaxEventDescription(event)}
+          </Typography>
+          {event.tax_payment_type && (
+            <Typography variant="caption" color="text.secondary">
+              {event.tax_payment_type.replace(/_/g, ' ')}
+            </Typography>
+          )}
+        </Box>
+      </TableCell>
+      
+      {/* Equity Column */}
+      <TableCell align="right"></TableCell>
+      
+      {/* NAV Update Column (only for NAV-based funds) */}
+      {isNavBased && (
+        <TableCell align="right"></TableCell>
+      )}
+      
+      {/* Distributions Column */}
+      <TableCell align="right">
+        {formatCurrency(event.amount || 0, fund.currency)}
+      </TableCell>
+      
+      {/* Tax Column */}
+      {showTaxEvents && (
+        <TableCell align="right">
+          {event.event_type === 'TAX_PAYMENT' && (
+            <TaxCellContent event={event} fund={fund} />
+          )}
+          {event.event_type === 'EOFY_DEBT_COST' && (
+            <TaxCellContent event={event} fund={fund} />
+          )}
+        </TableCell>
+      )}
+      
+      {/* Actions Column */}
+      <TableCell align="right" sx={{ 
+        minWidth: { xs: 80, sm: 120 }, 
+        px: { xs: 1, sm: 2 } 
+      }}>
+        <Box display="flex" gap={{ xs: 0.5, sm: 1.5 }} justifyContent="flex-end" alignItems="center">
+          {isEditable && (
+            <IconButton
+              size="small"
+              onClick={() => onDeleteEvent(event)}
+              sx={{
+                color: 'error.main',
+                p: 1,
+                borderRadius: 1,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  bgcolor: 'error.light',
+                  transform: 'scale(1.05)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }
+              }}
+              title="Delete event"
+            >
+              <DeleteIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          )}
+        </Box>
+      </TableCell>
+    </TableRow>
+  );
+};
+
+/**
+ * Helper function to generate descriptions for tax events
+ */
+const getTaxEventDescription = (event: ExtendedFundEvent): string => {
+  switch (event.event_type) {
+    case 'TAX_PAYMENT':
+      return 'Tax Payment';
+    case 'EOFY_DEBT_COST':
+      return 'EOFY Debt Interest Deduction';
+    default:
+      return event.event_type.replace(/_/g, ' ');
+  }
+};
 
 /**
  * Component to render other events that are part of a grouped event

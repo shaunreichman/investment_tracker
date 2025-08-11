@@ -3,7 +3,7 @@ Tax event creation framework for standardized tax payment event generation.
 """
 
 from typing import Optional, List
-from src.fund.models import FundEvent, EventType, TaxPaymentType, DistributionType
+from src.fund.models import FundEvent, EventType, TaxPaymentType, DistributionType, GroupType
 from src.tax.models import TaxStatement
 from sqlalchemy.orm import Session
 
@@ -201,13 +201,54 @@ class TaxEventManager:
     """
 
     @staticmethod
+    def _group_tax_statement_events(events: List[FundEvent], tax_statement: TaxStatement, session: Session) -> None:
+        """
+        Group all events created from the same tax statement.
+        Sets grouping flags for events that should be displayed together.
+        
+        Args:
+            events: List of FundEvent objects to group
+            tax_statement: The TaxStatement these events belong to
+            session: Database session for group ID generation
+        """
+        if len(events) <= 1:
+            # Don't group if only one event exists
+            return
+        
+        # Generate unique group ID for this tax statement group
+        group_id = FundEvent.get_next_group_id(session)
+        
+        # Define event type priority for consistent ordering
+        # Lower numbers = higher priority (display first)
+        event_priority = {
+            EventType.TAX_PAYMENT: 0,      # Tax payments first
+            EventType.EOFY_DEBT_COST: 1    # Tax benefits second
+        }
+        
+        # Group events by setting grouping flags
+        for i, event in enumerate(events):
+            # Calculate group position based on event type priority and order
+            base_priority = event_priority.get(event.event_type, 2)  # Default priority for unknown types
+            group_position = base_priority * 10 + i  # Ensures consistent ordering
+            
+            # Set grouping flags
+            event.set_grouping(group_id, GroupType.TAX_STATEMENT, group_position)
+            
+            # Validate that grouped events share the same financial year
+            if hasattr(tax_statement, 'financial_year') and tax_statement.financial_year:
+                FundEvent.validate_group_date_consistency(session, group_id, event.event_date)
+
+    @staticmethod
     def create_or_update_tax_events(tax_statement: TaxStatement, session: Session) -> list:
         """
         Create or update all tax events for a tax statement in the database.
+        Groups related events by tax statement for improved display.
         Returns a list of created or updated FundEvent objects.
         """
         created_or_updated_events = []
         events = TaxEventFactory.create_all_tax_events(tax_statement, session=session)
+        
+        # Process each event for creation/update
         for event in events:
             criteria = TaxEventCriteria(
                 fund_id=event.fund_id,
@@ -243,10 +284,14 @@ class TaxEventManager:
                     updated = True
                 if updated:
                     created_or_updated_events.append(existing)
+        
+        # Group all events from this tax statement if multiple events exist
         if created_or_updated_events:
+            TaxEventManager._group_tax_statement_events(created_or_updated_events, tax_statement, session)
             session.commit()
         else:
             pass # No new or updated tax events to commit.
+        
         return created_or_updated_events
 
     @staticmethod

@@ -352,6 +352,9 @@ export interface ExtendedFundEvent extends Omit<FundEvent, 'amount'> {
   group_id?: number;     // (CALCULATED) unique identifier for the group (auto-generated)
   group_type?: GroupType; // (CALCULATED) type of grouping (INTEREST_WITHHOLDING, TAX_STATEMENT, etc.)
   group_position?: number; // (CALCULATED) position within group for ordering (0=first, 1=second, etc.)
+  
+  // Tax statement relationship for grouped events
+  tax_statement?: TaxStatement | null;
 }
 
 /**

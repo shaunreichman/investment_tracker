@@ -10,20 +10,21 @@ import pytest
 from datetime import date, datetime
 from decimal import Decimal
 
-from src.database import get_global_session
 from src.fund.models import Fund, FundEvent, EventType, DistributionType, TaxPaymentType, GroupType
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
 from src.api import create_app
+from src.tax.models import TaxStatement
+from src.tax.events import TaxEventManager
 
 
 class TestFlagBasedEventGrouping:
     """Test suite for flag-based event grouping integration."""
     
     @pytest.fixture(autouse=True)
-    def setup(self):
-        """Set up test environment."""
-        self.session = get_global_session()
+    def setup(self, db_session):
+        """Set up test environment using conftest.py fixtures."""
+        self.session = db_session
         
         # Configure the app to use our test session
         self.app = create_app()
@@ -60,10 +61,84 @@ class TestFlagBasedEventGrouping:
         
         yield
         
-        # Cleanup
-        self.session.rollback()
-        self.session.close()
-    
+        # Cleanup is handled by conftest.py db_session fixture
+
+    def test_tax_statement_event_grouping_workflow(self):
+        """Test complete workflow for tax statement event grouping."""
+        print("\n🧪 Testing tax statement event grouping workflow...")
+        
+        # Step 1: Create a tax statement with multiple tax events
+        print("  📝 Creating tax statement with multiple tax events...")
+        
+        # Create tax statement
+        tax_statement = TaxStatement(
+            fund_id=self.fund.id,
+            entity_id=self.entity.id,
+            financial_year=2024,
+            interest_income_amount=Decimal("1000.00"),
+            interest_income_tax_rate=Decimal("32.5"),
+            dividend_franked_income_amount=Decimal("500.00"),
+            dividend_franked_income_tax_rate=Decimal("32.5"),
+            dividend_unfranked_income_amount=Decimal("300.00"),
+            dividend_unfranked_income_tax_rate=Decimal("32.5"),
+            capital_gain_income_amount=Decimal("200.00"),
+            capital_gain_income_tax_rate=Decimal("32.5"),
+            eofy_debt_interest_deduction_rate=Decimal("32.5")
+        )
+        self.session.add(tax_statement)
+        self.session.commit()
+        
+        # Step 2: Create tax events using TaxEventManager (this should trigger grouping)
+        print("  🔄 Creating tax events with automatic grouping...")
+        created_events = TaxEventManager.create_or_update_tax_events(tax_statement, self.session)
+        
+        # Step 3: Verify backend grouping logic
+        print("  🔍 Verifying backend grouping logic...")
+        
+        # Get all events for this tax statement
+        tax_events = self.session.query(FundEvent).filter(
+            FundEvent.tax_statement_id == tax_statement.id
+        ).all()
+        
+        print(f"    📊 Created {len(tax_events)} tax events")
+        
+        # Check if events are grouped
+        grouped_events = [e for e in tax_events if e.is_grouped]
+        ungrouped_events = [e for e in tax_events if not e.is_grouped]
+        
+        if len(tax_events) > 1:
+            # Should have grouped events if multiple events exist
+            assert len(grouped_events) > 0, "Should have grouped events when multiple events exist"
+            
+            # All grouped events should have the same group_id and group_type
+            group_ids = set(e.group_id for e in grouped_events)
+            group_types = set(e.group_type for e in grouped_events)
+            
+            assert len(group_ids) == 1, "All grouped events should have the same group_id"
+            assert len(group_types) == 1, "All grouped events should have the same group_type"
+            assert GroupType.TAX_STATEMENT in group_types, "Group type should be TAX_STATEMENT"
+            
+            # Verify group positions are set correctly
+            for event in grouped_events:
+                assert event.group_position is not None, "Group position should be set"
+                assert event.group_position >= 0, "Group position should be non-negative"
+            
+            print(f"    ✅ Group ID: {list(group_ids)[0]}")
+            print(f"    ✅ Group Type: {list(group_types)[0]}")
+            print(f"    ✅ Grouped Events: {len(grouped_events)}")
+            print(f"    ✅ Group Positions: {[e.group_position for e in grouped_events]}")
+            
+            # Verify events are ordered by group position
+            sorted_events = sorted(grouped_events, key=lambda e: e.group_position or 0)
+            print(f"    ✅ Event Order: {[e.event_type.value for e in sorted_events]}")
+            
+        else:
+            # Single event shouldn't be grouped
+            print("    ℹ️  Single event - no grouping applied")
+            assert len(grouped_events) == 0, "Single event should not be grouped"
+        
+        print("    ✅ Tax statement event grouping test passed!")
+
     def test_interest_withholding_tax_grouping_workflow(self):
         """Test complete workflow for interest + withholding tax grouping."""
         print("\n🧪 Testing interest + withholding tax grouping workflow...")
