@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.pool import StaticPool
 import os
 
 # Import Base using absolute import
@@ -24,7 +23,7 @@ except ImportError:
 
 def create_database_engine(database_url=None):
     """
-    Create a SQLAlchemy engine for the database.
+    Create a SQLAlchemy engine for the PostgreSQL database.
     
     Args:
         database_url (str): Database URL. If None, uses centralized PostgreSQL database.
@@ -36,23 +35,16 @@ def create_database_engine(database_url=None):
         # Use centralized PostgreSQL database by default
         database_url = get_database_url()
     
-    # Create engine with appropriate configuration
-    if "postgresql" in database_url:
-        # PostgreSQL configuration
-        engine = create_engine(
-            database_url,
-            echo=False,  # Set to True for SQL query logging
-            pool_pre_ping=True,  # Enable connection health checks
-            pool_recycle=3600,   # Recycle connections every hour
-        )
-    else:
-        # SQLite configuration (fallback)
-        engine = create_engine(
-            database_url,
-            echo=False,  # Set to True for SQL query logging
-            poolclass=StaticPool,
-            connect_args={"check_same_thread": False}
-        )
+    # Create PostgreSQL engine with optimized configuration
+    engine = create_engine(
+        database_url,
+        echo=False,  # Set to True for SQL query logging
+        pool_pre_ping=True,  # Enable connection health checks
+        pool_recycle=3600,   # Recycle connections every hour
+        pool_size=10,        # Base pool size
+        max_overflow=20,     # Additional connections when needed
+        pool_timeout=30,     # Connection timeout in seconds
+    )
     
     return engine
 
