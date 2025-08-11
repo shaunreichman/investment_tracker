@@ -16,6 +16,9 @@ export enum ErrorType {
   AUTHORIZATION = 'authorization',   // Permission issues, access denied
   NOT_FOUND = 'not_found',      // Resource not found (404)
   SERVER = 'server',            // Backend errors (500+)
+  TIMEOUT = 'timeout',          // Request timeouts
+  RATE_LIMIT = 'rate_limit',    // Rate limiting (429)
+  CONFLICT = 'conflict',        // Resource conflicts (409)
   UNKNOWN = 'unknown'           // Unknown or unclassified errors
 }
 
@@ -102,7 +105,20 @@ export interface ErrorDisplayOptions {
 /**
  * Categorizes an error based on its message and properties
  */
-export function categorizeError(error: Error | string): ErrorType {
+export function categorizeError(error: Error | string, statusCode?: number): ErrorType {
+  // If we have a status code, use it as the primary categorization method
+  if (statusCode !== undefined) {
+    if (statusCode === 401) return ErrorType.AUTHENTICATION;
+    if (statusCode === 403) return ErrorType.AUTHORIZATION;
+    if (statusCode === 404) return ErrorType.NOT_FOUND;
+    if (statusCode === 409) return ErrorType.CONFLICT;
+    if (statusCode === 422) return ErrorType.VALIDATION;
+    if (statusCode === 429) return ErrorType.RATE_LIMIT;
+    if (statusCode === 504) return ErrorType.TIMEOUT;
+    if (statusCode >= 500) return ErrorType.SERVER;
+    if (statusCode >= 400) return ErrorType.VALIDATION;
+  }
+
   const message = error instanceof Error ? error.message : error;
   const lowerMessage = message.toLowerCase();
   
@@ -113,6 +129,27 @@ export function categorizeError(error: Error | string): ErrorType {
       lowerMessage.includes('timeout') ||
       lowerMessage.includes('failed to fetch')) {
     return ErrorType.NETWORK;
+  }
+  
+  // Timeout errors
+  if (lowerMessage.includes('timeout') || 
+      lowerMessage.includes('timed out') ||
+      lowerMessage.includes('504')) {
+    return ErrorType.TIMEOUT;
+  }
+  
+  // Rate limit errors
+  if (lowerMessage.includes('rate limit') || 
+      lowerMessage.includes('too many requests') ||
+      lowerMessage.includes('429')) {
+    return ErrorType.RATE_LIMIT;
+  }
+  
+  // Conflict errors
+  if (lowerMessage.includes('conflict') || 
+      lowerMessage.includes('already exists') ||
+      lowerMessage.includes('409')) {
+    return ErrorType.CONFLICT;
   }
   
   // Validation errors
@@ -173,8 +210,16 @@ export function getErrorSeverity(type: ErrorType): ErrorSeverity {
       return ErrorSeverity.MEDIUM; // Resource missing, but not critical
     case ErrorType.SERVER:
       return ErrorSeverity.CRITICAL; // System failure
+    case ErrorType.TIMEOUT:
+      return ErrorSeverity.MEDIUM; // Usually transient
+    case ErrorType.RATE_LIMIT:
+      return ErrorSeverity.MEDIUM; // User can wait and retry
+    case ErrorType.CONFLICT:
+      return ErrorSeverity.MEDIUM; // User can resolve conflict
     case ErrorType.UNKNOWN:
       return ErrorSeverity.MEDIUM; // Default to medium for unknown
+    default:
+      return ErrorSeverity.MEDIUM; // Default fallback
   }
 }
 
@@ -182,50 +227,157 @@ export function getErrorSeverity(type: ErrorType): ErrorSeverity {
  * Determines if an error can be retried
  */
 export function isRetryableError(type: ErrorType): boolean {
-  return type === ErrorType.NETWORK || type === ErrorType.SERVER;
+  return type === ErrorType.NETWORK || 
+         type === ErrorType.SERVER || 
+         type === ErrorType.TIMEOUT || 
+         type === ErrorType.RATE_LIMIT;
 }
 
 /**
- * Generates user-friendly error messages based on error type
+ * Generates user-friendly error messages based on error type and context
  */
-export function getUserFriendlyMessage(type: ErrorType, originalMessage: string): string {
+export function getUserFriendlyMessage(type: ErrorType, originalMessage: string, statusCode?: number, context?: string): string {
+  // Provide context-specific messages when available
+  if (context) {
+    switch (context) {
+      case 'company_details':
+        if (type === ErrorType.SERVER) {
+          return 'Unable to load company details due to a system issue. Our team has been notified and is working to resolve this.';
+        }
+        if (type === ErrorType.NOT_FOUND) {
+          return 'The requested company could not be found. It may have been removed or you may have an outdated link.';
+        }
+        break;
+      case 'fund_details':
+        if (type === ErrorType.SERVER) {
+          return 'Unable to load fund information due to a system issue. Please try again in a few minutes.';
+        }
+        if (type === ErrorType.NOT_FOUND) {
+          return 'The requested fund could not be found. It may have been removed or you may have an outdated link.';
+        }
+        break;
+      case 'api_call':
+        if (type === ErrorType.SERVER) {
+          return 'The service is temporarily unavailable. Please try again in a few minutes.';
+        }
+        if (type === ErrorType.NETWORK) {
+          return 'Unable to connect to the server. Please check your internet connection and try again.';
+        }
+        break;
+      case 'api_mutation':
+        if (type === ErrorType.SERVER) {
+          return 'Unable to save your changes due to a system issue. Please try again in a few minutes.';
+        }
+        if (type === ErrorType.VALIDATION) {
+          return 'Please check your input and try again. Some fields may be invalid or required.';
+        }
+        break;
+      case 'dashboard':
+        if (type === ErrorType.SERVER) {
+          return 'Unable to load dashboard data due to a system issue. Please refresh the page to try again.';
+        }
+        if (type === ErrorType.NETWORK) {
+          return 'Unable to load dashboard information. Please check your connection and try again.';
+        }
+        break;
+      case 'fund_creation':
+        if (type === ErrorType.SERVER) {
+          return 'Unable to create the fund due to a system issue. Please try again in a few minutes.';
+        }
+        if (type === ErrorType.VALIDATION) {
+          return 'Please check your fund details and try again. Some required information may be missing.';
+        }
+        break;
+      case 'event_creation':
+        if (type === ErrorType.SERVER) {
+          return 'Unable to create the event due to a system issue. Please try again in a few minutes.';
+        }
+        if (type === ErrorType.VALIDATION) {
+          return 'Please check your event details and try again. Some required information may be missing.';
+        }
+        break;
+      default:
+        // Fall through to status code and type-based messages
+        break;
+    }
+  }
+
+  // Status code specific messages
+  if (statusCode) {
+    switch (statusCode) {
+      case 500:
+        return 'A server error occurred while processing your request. Our team has been notified and is working to resolve this issue.';
+      case 502:
+        return 'The service is temporarily unavailable. Please try again in a few minutes.';
+      case 503:
+        return 'The service is currently under maintenance. Please try again later.';
+      case 504:
+        return 'The request timed out. Please try again.';
+      case 429:
+        return 'Too many requests. Please wait a moment before trying again.';
+      case 422:
+        return 'The request could not be processed. Please check your input and try again.';
+      case 409:
+        return 'This resource already exists or conflicts with existing data. Please check your information and try again.';
+      default:
+        // Fall through to type-based messages
+        break;
+    }
+  }
+
+  // Type-based messages
   switch (type) {
     case ErrorType.NETWORK:
       return 'Connection failed. Please check your internet connection and try again.';
     case ErrorType.VALIDATION:
       return 'Please check your input and try again.';
     case ErrorType.AUTHENTICATION:
-      return 'Please log in again to continue.';
+      return 'Your session has expired. Please refresh the page to continue.';
     case ErrorType.AUTHORIZATION:
-      return 'You don\'t have permission to perform this action.';
+      return 'You don\'t have permission to perform this action. Please contact your administrator if you believe this is an error.';
     case ErrorType.NOT_FOUND:
-      return 'The requested resource was not found.';
+      return 'The requested resource was not found. It may have been moved or removed.';
     case ErrorType.SERVER:
-      return 'A server error occurred. Please try again later.';
+      return 'A server error occurred. Our team has been notified and is working to resolve this issue. Please try again in a few minutes.';
+    case ErrorType.TIMEOUT:
+      return 'The request timed out. Please try again.';
+    case ErrorType.RATE_LIMIT:
+      return 'Too many requests. Please wait a moment before trying again.';
+    case ErrorType.CONFLICT:
+      return 'This resource already exists or conflicts with existing data. Please check your information and try again.';
     case ErrorType.UNKNOWN:
-      return 'An unexpected error occurred. Please try again.';
+      return 'An unexpected error occurred. Please try again, and if the problem persists, contact support.';
+    default:
+      return 'An unexpected error occurred. Please try again, and if the problem persists, contact support.';
   }
 }
 
 /**
  * Creates a comprehensive ErrorInfo object from an error
  */
-export function createErrorInfo(error: Error | string, type?: ErrorType): ErrorInfo {
-  const errorType = type || categorizeError(error);
+export function createErrorInfo(error: Error | string, type?: ErrorType, statusCode?: number): ErrorInfo {
+  const errorType = type || categorizeError(error, statusCode);
   const severity = getErrorSeverity(errorType);
   const retryable = isRetryableError(errorType);
   const message = error instanceof Error ? error.message : error;
   
-  return {
+  const errorInfo: ErrorInfo = {
     message,
     type: errorType,
     severity,
     retryable,
-    userMessage: getUserFriendlyMessage(errorType, message),
+    userMessage: getUserFriendlyMessage(errorType, message, statusCode),
     timestamp: new Date(),
     stack: error instanceof Error ? error.stack : undefined,
     id: generateErrorId()
   };
+  
+  // Only set code if statusCode is provided
+  if (statusCode !== undefined) {
+    errorInfo.code = statusCode;
+  }
+  
+  return errorInfo;
 }
 
 /**
