@@ -150,7 +150,7 @@ export const dockerThemeWithConfig = {
 - Larger clickable areas for buttons
 - Keyboard navigation supported
 
-## 9. Implementation Strategy
+## 9. Implementation Strategy - UPDATED
 
 ### Phase 1: Docker Theme Foundation (Week 1)
 **Goal**: Establish exact Docker Desktop color scheme and typography system
@@ -178,27 +178,29 @@ export const dockerThemeWithConfig = {
 - Override MUI defaults rather than custom CSS for maintainability
 - Establish spacing system that matches Docker's generous padding approach
 
-### Phase 2: Application Layout Architecture (Week 1-2)
-**Goal**: Implement Docker-style navigation and layout structure
+**Current State**: No theme system exists - this is foundational work
+
+### Phase 2: Basic App Layout Structure (Week 1-2)
+**Goal**: Implement fundamental navigation and layout structure before component styling
 
 **Tasks**:
-- [ ] **Implement Sidebar Navigation**: Create collapsible left sidebar
+- [ ] **Create Main Sidebar Navigation**: Implement collapsible left sidebar
   - Dark background (`#0D1117` to `#161B22` range)
-  - Navigation items with icons and labels
+  - Navigation items with icons and labels (Dashboard, Companies, Funds)
   - Active state highlighting with blue accent (`#007FFF`)
   - Collapse/expand functionality with smooth animation
-- [ ] **Create Top Bar**: Fixed position header with page context
+- [ ] **Implement Top Bar**: Fixed position header with page context
   - Page title and breadcrumbs
   - Action buttons and search (where applicable)
   - Slightly darker background than main content
-- [ ] **Establish Main Content Area**: Card-based layout system
-  - Consistent 24px outer padding
-  - 16px inner padding for cards
-  - Max width constraints for readability
 - [ ] **Update App Structure**: Modify main App.tsx for new layout
   - Wrap with ThemeProvider
   - Implement sidebar + main content structure
   - Ensure responsive behavior
+- [ ] **Establish Layout Foundation**: Create consistent layout system
+  - Consistent 24px outer padding
+  - 16px inner padding for cards
+  - Max width constraints for readability
 
 **Design Principles**:
 - Sidebar should be collapsible for space efficiency
@@ -206,97 +208,67 @@ export const dockerThemeWithConfig = {
 - Main content should use cards and panels for information grouping
 - Layout should be responsive across all screen sizes
 
-### Phase 3: Core Component Modernization (Week 2-3)
-**Goal**: Transform all core components with Docker's professional appearance
+**Current State**: App.tsx is basic routing only - no navigation structure exists
+
+### Phase 3: Component-by-Component Transformation (Week 2-4)
+**Goal**: Transform components one at a time, starting with the most visible ones
 
 **Tasks**:
-- [ ] **Modernize Cards & Panels**: Apply Docker styling to all containers
-  - Background: Slightly lighter dark (`#1B1F23` to `#21262D` range)
-  - Border-radius: 8px
-  - Subtle shadows: `rgba(0,0,0,0.2) 0px 4px 12px`
-  - Consistent 16px padding
-- [ ] **Update Tables**: Transform all table components
-  - Use MUI DataGrid where appropriate
-  - Remove heavy borders and outlines
-  - Implement alternating row backgrounds
-  - Add subtle hover effects
-  - Style pagination controls to match theme
-- [ ] **Enhance Forms & Inputs**: Modernize all form elements
-  - Rounded corners (no sharp edges)
-  - Focus states with blue border glow
-  - Backgrounds slightly lighter than panels
-  - Consistent spacing and typography
-- [ ] **Style Buttons**: Create professional button designs
-  - Primary: Accent blue background (`#007FFF`) with white text
-  - Secondary: Transparent with white border
-  - Hover states with smooth transitions
-  - Consistent sizing and spacing
-
-**Design Principles**:
-- All components should use the new color palette consistently
-- Typography should follow the established scale
-- Spacing should be systematic (16px, 24px)
-- Hover states should be subtle and smooth
-
-### Phase 4: Fund Page Specific Enhancement (Week 3)
-**Goal**: Apply Docker styling specifically to fund page tables and components
-
-**Tasks**:
-- [ ] **Transform TableContainer**: Modernize fund table containers
-  - Deep dark theme with card-based design
-  - Full-width tables for maximum data visibility
-  - Rounded corners and soft shadows
-- [ ] **Enhance Table Headers**: Professional header styling
-  - Uppercase text with proper spacing
-  - Dark backgrounds with high contrast
-  - Subtle column separation
-- [ ] **Modernize Table Rows**: Enhanced row styling
-  - Alternating row backgrounds
-  - Generous padding (16-24px)
-  - Smooth hover transitions
-  - Professional status indicators
-- [ ] **Update Event Rows**: Modernize individual event display
-  - Enhanced status indicators using Docker colors
-  - Professional action button designs
-  - Improved data formatting and hierarchy
-- [ ] **Style Grouped Events**: Sophisticated grouping design
-  - Visual separation for grouped events
-  - Smooth expand/collapse animations
-  - Clear visual hierarchy
-
-**Design Principles**:
-- Tables should achieve professional, enterprise-grade appearance
-- Data readability should be significantly improved
-- Visual hierarchy should guide user attention effectively
-- All interactions should feel smooth and professional
-
-### Phase 5: Dashboard & Overview Modernization (Week 3-4)
-**Goal**: Apply Docker styling to dashboard and overview components
-
-**Tasks**:
-- [ ] **Update OverallDashboard**: Modernize main dashboard
-  - Card-based layout for all sections
-  - Consistent spacing and typography
-  - Professional summary cards
-  - Enhanced data visualization
-- [ ] **Transform Companies Page**: Update companies overview
+- [ ] **Transform OverallDashboard First** (Week 2): Apply Docker styling to main dashboard
+  - Modernize all cards and panels with Docker styling
+  - Update typography and spacing
+  - Implement consistent color scheme
+  - Test and validate before moving to next component
+- [ ] **Transform Companies Page** (Week 2-3): Update companies overview
   - Modern tab navigation
   - Card-based content organization
   - Professional data presentation
   - Consistent styling with main theme
-- [ ] **Enhance Charts & Graphs**: Modernize data visualizations
-  - Chart containers inside cards
-  - Transparent backgrounds with light gray labels
-  - Docker accent colors for data series
-  - Minimal grid lines with subtle opacity
+- [ ] **Transform Fund Detail Page** (Week 3-4): Apply Docker styling to fund page
+  - Modernize fund table containers
+  - Enhance table headers and rows
+  - Update event rows and grouped events
+  - Implement professional status indicators
+- [ ] **Transform UI Components** (Week 4): Update shared components
+  - Modernize all form elements
+  - Style buttons consistently
+  - Update modals and dialogs
+  - Ensure accessibility compliance
 
 **Design Principles**:
-- Dashboard should feel cohesive with the new design system
-- Data visualization should be clear and professional
-- Navigation should be intuitive and visually consistent
-- All components should follow the established design patterns
+- Complete one component fully before moving to the next
+- Test each transformation thoroughly
+- Maintain existing functionality while improving visual design
+- Use the established theme system consistently
 
-### Phase 6: Integration and Polish (Week 4-5)
+**Current State**: Components exist but use basic MUI styling - need systematic transformation
+
+### Phase 4: Enhanced Navigation Sidebar (Week 5) - STRETCH GOAL
+**Goal**: Implement Docker-style contextual navigation sidebar for seamless fund/company switching
+
+**Tasks**:
+- [ ] **Create Fund Navigation Sidebar**: Implement contextual navigation between funds and companies
+  - Company header with company name and logo
+  - Fund list with active state highlighting
+  - Other companies section (collapsible/expandable)
+  - Quick navigation to company overview and other fund pages
+- [ ] **Implement Three-Column Layout**: Restructure fund page layout for optimal information hierarchy
+  - Left: Enhanced navigation sidebar (funds + companies)
+  - Center: Summary section (performance, metrics, quick stats)
+  - Right: Fund events table (smaller, focused on events)
+- [ ] **Integrate with Existing Layout**: Ensure seamless integration
+  - Position sidebar between main sidebar and content
+  - Maintain responsive behavior
+  - Preserve consistent spacing and typography
+
+**Design Principles**:
+- Sidebar should feel like a natural extension of the main navigation
+- Three-column layout should provide clear information hierarchy
+- Maintain visual hierarchy with the main content area
+
+**Current State**: This is an enhancement to the existing fund page - implement after core components are transformed
+
+### Phase 5: Integration and Polish (Week 6)
 **Goal**: Ensure seamless integration and final visual polish
 
 **Tasks**:
@@ -328,7 +300,7 @@ export const dockerThemeWithConfig = {
 - Performance should be maintained or improved with new styling
 - Accessibility should be enhanced, not compromised, by design changes
 
-### Phase 7: Enhanced Navigation Sidebar (Week 5-6) - STRETCH GOAL
+### Phase 6: Enhanced Navigation Sidebar (Week 7-8) - STRETCH GOAL
 **Goal**: Implement Docker-style contextual navigation sidebar for seamless fund/company switching and improved layout
 
 **Tasks**:
@@ -452,16 +424,21 @@ export const dockerThemeWithConfig = {
 - Use `sx` props for one-off overrides
 - Avoid mixing Tailwind or other CSS frameworks in this refactor
 - Create **custom component wrappers** for Card, Table, Chart to enforce design consistency
-- Focus on systematic implementation rather than component-by-component updates
+- **Focus on systematic implementation** - complete one component fully before moving to the next
 - Test each phase thoroughly before proceeding to the next
+- **Build foundation first, then structure, then components**
 
 ## 14. Conclusion
 
-This specification provides a comprehensive roadmap for transforming our entire frontend to match Docker Desktop's professional aesthetic. By following the exact design principles and implementing a systematic approach, we can achieve enterprise-grade visual quality while maintaining all existing functionality.
+This specification provides a comprehensive roadmap for transforming our entire frontend to match Docker Desktop's professional aesthetic. By following the exact design principles and implementing a systematic, foundation-first approach, we can achieve enterprise-grade visual quality while maintaining all existing functionality.
 
-The implementation will create a sophisticated, modern design system that enhances user experience, improves data readability, and establishes a foundation for consistent design across all components. The phased approach ensures systematic progress while minimizing risk and maintaining quality.
+The **updated implementation strategy** prioritizes:
+1. **Foundation First**: Establish the Docker theme system before any component work
+2. **Structure Second**: Implement basic navigation and layout infrastructure
+3. **Components Third**: Transform components one at a time for quality and testing
+4. **Enhancement Last**: Add advanced features like the enhanced navigation sidebar
 
-The outcome will be a frontend that feels as polished and modern as Docker Desktop — clean, responsive, and visually consistent — while remaining fully in the MUI v7 ecosystem.
+This approach ensures systematic progress while minimizing risk and maintaining quality. The outcome will be a frontend that feels as polished and modern as Docker Desktop — clean, responsive, and visually consistent — while remaining fully in the MUI v7 ecosystem.
 
 ## 15. Appendix
 
