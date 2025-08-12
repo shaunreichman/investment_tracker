@@ -6,6 +6,35 @@ Transform our entire frontend to adopt a **modern, clean, and professional UI** 
 
 This implementation will create enterprise-grade UI with deep dark themes, precise color palettes, sophisticated visual hierarchy, and consistent design language across all components while maintaining all existing functionality.
 
+## 1.1 TypeScript Memory Management Principles
+
+> **⚠️ CRITICAL**: Follow these principles to avoid development server memory crashes
+
+**NEVER DO THIS** (causes 2GB+ memory usage and crashes):
+```typescript
+// ❌ PROBLEMATIC: Type intersection with MUI
+} as ThemeOptions & { customSpacing: typeof dockerSpacing });
+```
+
+**ALWAYS DO THIS** (safe, no memory issues):
+```typescript
+// ✅ SOLUTION: Composition pattern
+export const dockerTheme = createTheme({ ... });
+export const dockerThemeWithConfig = {
+  theme: dockerTheme,
+  colors: dockerColors,
+  spacing: dockerSpacing,
+} as const;
+```
+
+**Key Rules:**
+- ✅ **Use composition** instead of type intersections with large libraries
+- ❌ **Never intersect** with MUI, React, or other large framework types
+- ❌ **Never modify** global module declarations of large libraries
+- ✅ **Keep types simple** and focused on your own code
+
+> **📚 For detailed analysis and best practices, see:** `docs/guidlines/TYPESCRIPT_MEMORY_MANAGEMENT.md`
+
 ## 2. Core Design Principles
 
 - **Clean and Minimal**: Avoid clutter; emphasize whitespace and clear visual hierarchy
