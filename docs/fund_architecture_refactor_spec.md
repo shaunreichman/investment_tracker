@@ -441,3 +441,117 @@ The extended timeline (20-21 weeks) ensures that benefits are realized increment
 - **Enhanced performance optimization** with cache invalidation and database optimization
 
 **Next Steps**: Begin Phase 1 implementation with the comprehensive analysis, focusing on understanding the current system complexity before making any architectural changes.
+
+## File Structure Reference
+
+### Current Structure (Monolithic)
+```
+src/fund/
+├── models.py (2,965 lines - everything in one file)
+└── calculations.py (223 lines)
+```
+
+### Refactored Structure (Modular)
+
+#### 1. Event Handling Layer
+```
+src/fund/events/
+├── __init__.py
+├── base_handler.py (BaseFundEventHandler abstract class)
+├── handlers/
+│   ├── __init__.py
+│   ├── capital_call_handler.py
+│   ├── return_of_capital_handler.py
+│   ├── distribution_handler.py
+│   ├── nav_update_handler.py
+│   ├── unit_purchase_handler.py
+│   └── unit_sale_handler.py
+├── registry.py (FundEventHandlerRegistry)
+└── orchestrator.py (FundUpdateOrchestrator)
+```
+
+#### 2. Domain Events System
+```
+src/fund/events/domain/
+├── __init__.py
+├── base_event.py (FundDomainEvent)
+├── equity_balance_changed_event.py
+├── distribution_recorded_event.py
+├── nav_updated_event.py
+├── units_changed_event.py
+└── tax_statement_updated_event.py
+```
+
+#### 3. Business Logic Services
+```
+src/fund/services/
+├── __init__.py
+├── fund_calculation_service.py (FIFO, IRR, equity calculations)
+├── fund_status_service.py (status transitions, business rules)
+├── tax_calculation_service.py (tax withholding, distribution logic)
+└── fund_performance_service.py (performance metrics, benchmarks)
+```
+
+#### 4. Data Access Layer
+```
+src/fund/repositories/
+├── __init__.py
+├── fund_repository.py (fund CRUD operations, caching)
+├── fund_event_repository.py (event persistence, bulk operations)
+└── fund_summary_repository.py (summary data, materialized views)
+```
+
+#### 5. Core Models (Simplified)
+```
+src/fund/models/
+├── __init__.py
+├── fund.py (simplified - under 1,000 lines)
+├── fund_event.py (event model only)
+├── fund_event_cash_flow.py
+└── enums.py (all enums in one place)
+```
+
+#### 6. API Layer
+```
+src/fund/api/
+├── __init__.py
+├── fund_controller.py (REST endpoints)
+├── fund_service.py (business logic coordination)
+└── dto/
+    ├── fund_dto.py
+    ├── fund_event_dto.py
+    └── fund_summary_dto.py
+```
+
+#### 7. Configuration & Utilities
+```
+src/fund/
+├── __init__.py
+├── config.py (fund-specific configuration)
+├── constants.py (business constants, limits)
+├── exceptions.py (fund-specific exceptions)
+└── utils.py (fund-specific utilities)
+```
+
+### Key Benefits of This Structure
+
+1. **Single Responsibility**: Each file has one clear purpose
+2. **Easier Testing**: You can test individual handlers/services in isolation
+3. **Better Maintainability**: Changes to one area don't affect others
+4. **Team Development**: Multiple developers can work on different components
+5. **Clear Dependencies**: Import statements show exactly what each component needs
+
+### File Size Comparison
+
+- **Current**: 1 massive file (2,965 lines)
+- **Refactored**: ~20-25 focused files (50-200 lines each)
+
+### Migration Strategy
+
+The refactor plans to do this incrementally:
+1. **Phase 2**: Extract services first (keep models working)
+2. **Phase 3**: Add event handlers alongside existing code
+3. **Phase 4**: Gradually replace direct model calls with events
+4. **Phase 5**: Optimize and clean up
+
+This ensures the system is never in a completely broken state - it's a gradual evolution from the current monolithic structure to the new modular one.
