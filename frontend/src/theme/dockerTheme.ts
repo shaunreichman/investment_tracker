@@ -182,6 +182,31 @@ export const dockerTheme = createTheme({
         },
       },
     },
+    MuiTableHead: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#161B22', // Darker background for headers
+          '& .MuiTableCell-head': {
+            fontWeight: 600,
+            fontSize: '14px',
+            color: '#FFFFFF',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          },
+        },
+      },
+    },
+    MuiTableBody: {
+      styleOverrides: {
+        root: {
+          '& .MuiTableRow-root:nth-of-type(even)': {
+            backgroundColor: 'rgba(255,255,255,0.02)', // Alternating row background
+          },
+          '& .MuiTableRow-root:hover': {
+            backgroundColor: 'rgba(255,255,255,0.04)', // Subtle hover effect
+          },
+        },
+      },
+    },
   },
 });
 
