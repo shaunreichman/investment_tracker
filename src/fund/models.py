@@ -242,6 +242,24 @@ class Fund(Base):
         """Get the fund calculation service instance."""
         return FundCalculationService()
     
+    @property
+    def status_service(self) -> 'FundStatusService':
+        """Get the fund status service instance."""
+        from .services.fund_status_service import FundStatusService
+        return FundStatusService()
+    
+    @property
+    def tax_service(self) -> 'TaxCalculationService':
+        """Get the fund tax calculation service instance."""
+        from .services.tax_calculation_service import TaxCalculationService
+        return TaxCalculationService()
+    
+    @property
+    def event_service(self) -> 'FundEventService':
+        """Get the fund event service instance."""
+        from .services.fund_event_service import FundEventService
+        return FundEventService()
+    
     @classmethod
     def create(cls, investment_company_id, entity_id, name, fund_type, tracking_type, 
                currency="AUD", description=None, commitment_amount=None, 
@@ -1513,44 +1531,7 @@ class Fund(Base):
         Commits the change to the database if the status changes.
         Also calculates and stores IRRs based on the new status.
         """
-        from sqlalchemy.orm import object_session
-        if session is None:
-            session = object_session(self)
-        
-        # Determine what the status should be based on current equity balance
-        if self.tracking_type == FundType.NAV_BASED:
-            has_equity = self.current_units is not None and self.current_units > 0
-        elif self.tracking_type == FundType.COST_BASED:
-            has_equity = self.current_equity_balance is not None and self.current_equity_balance > 0
-        else:
-            has_equity = False
-        
-        if has_equity:
-            new_status = FundStatus.ACTIVE
-        else:
-            # Fund is realized (equity balance = 0)
-            # Check if it should be COMPLETED based on tax statements
-            if self.is_final_tax_statement_received(session=session):
-                new_status = FundStatus.COMPLETED
-            else:
-                new_status = FundStatus.REALIZED
-        
-        if self.status != new_status:
-            old_status = self.status
-            self.status = new_status
-            
-            # Calculate and store IRRs based on new status
-            self._calculate_and_store_irrs_for_status(new_status, session=session)
-            
-            session.commit()
-            print(f"Fund '{self.name}' status updated: {old_status.value} → {new_status.value}")
-        else:
-            # Status didn't change, but we still need to recalculate IRRs if the fund is REALIZED or COMPLETED
-            # (events may have been modified that affect IRR calculations)
-            if self.status in [FundStatus.REALIZED, FundStatus.COMPLETED]:
-                self._calculate_and_store_irrs_for_status(self.status, session=session)
-                session.commit()
-                print(f"Fund '{self.name}' status unchanged ({self.status.value}) but IRRs recalculated")
+        self.status_service.update_status(self, session)
 
     def _calculate_and_store_irrs_for_status(self, status, session=None):
         """Calculate and store IRRs based on fund status.
@@ -1602,7 +1583,7 @@ class Fund(Base):
         """Update status after equity balance changes (capital calls, returns, unit purchases/sales).
         This is the primary method for automatic status updates.
         """
-        self.update_status(session=session)
+        self.status_service.update_status_after_equity_event(self, session)
 
     @with_session
     def update_status_after_tax_statement(self, session=None):
@@ -1610,40 +1591,7 @@ class Fund(Base):
         This checks if the fund should transition between REALIZED and COMPLETED.
         Also recalculates IRRs when tax statements change.
         """
-        # Only update if fund is not ACTIVE (i.e., REALIZED or COMPLETED)
-        if self.status == FundStatus.ACTIVE:
-            print(f"Fund '{self.name}' tax statement added, but remains {self.status.value}")
-            return
-        
-        # Check if this tax statement makes the fund COMPLETED
-        if self.is_final_tax_statement_received(session=session):
-            if self.status == FundStatus.REALIZED:
-                # Transition from REALIZED to COMPLETED
-                old_status = self.status
-                self.status = FundStatus.COMPLETED
-                # Calculate and store IRRs for COMPLETED status
-                self._calculate_and_store_irrs_for_status(FundStatus.COMPLETED, session=session)
-                session.commit()
-                print(f"Fund '{self.name}' status updated: {old_status.value} → {self.status.value} (final tax statement received)")
-            else:
-                # Already COMPLETED, but tax statement may have changed - recalculate IRRs
-                self._calculate_and_store_irrs_for_status(FundStatus.COMPLETED, session=session)
-                session.commit()
-                print(f"Fund '{self.name}' tax statement added, but already {self.status.value} - IRRs recalculated")
-        else:
-            if self.status == FundStatus.COMPLETED:
-                # Transition from COMPLETED back to REALIZED (tax statement was deleted)
-                old_status = self.status
-                self.status = FundStatus.REALIZED
-                # Calculate and store IRRs for REALIZED status
-                self._calculate_and_store_irrs_for_status(FundStatus.REALIZED, session=session)
-                session.commit()
-                print(f"Fund '{self.name}' status updated: {old_status.value} → {self.status.value} (final tax statement removed)")
-            else:
-                # Already REALIZED, but tax statement may have changed - recalculate IRRs
-                self._calculate_and_store_irrs_for_status(FundStatus.REALIZED, session=session)
-                session.commit()
-                print(f"Fund '{self.name}' tax statement added, but remains {self.status.value} - IRRs recalculated")
+        self.status_service.update_status_after_tax_statement(self, session)
 
     @with_session
     def is_final_tax_statement_received(self, session=None):
@@ -1656,34 +1604,7 @@ class Fund(Base):
         Returns:
             bool: True if final tax statement criteria are met
         """
-        from datetime import date
-        
-        # Only check if fund is not ACTIVE (i.e., REALIZED or COMPLETED)
-        if self.status == FundStatus.ACTIVE:
-            return False
-        
-        # Get fund end date (last event date)
-        end_date = self.end_date
-        if not end_date:
-            return False
-        
-        # Get all tax statements for this fund
-        from ..tax.models import TaxStatement
-        tax_statements = session.query(TaxStatement).filter(
-            TaxStatement.fund_id == self.id
-        ).all()
-        
-        if not tax_statements:
-            return False
-        
-        # Check if any tax statement has a tax_payment_date after the fund end_date
-        # This indicates the final tax statement has been received
-        for statement in tax_statements:
-            tax_payment_date = statement.get_tax_payment_date()
-            if tax_payment_date and tax_payment_date > end_date:
-                return True
-        
-        return False
+        return self.status_service._is_final_tax_statement_received(self, session)
 
 
 
@@ -1746,43 +1667,8 @@ class Fund(Base):
         Sets self.end_date to the date of the final equity or distribution event.
         Only calculates when fund's equity balance is 0.
         """
-        from sqlalchemy.orm import object_session
-        
-        # Check if fund has equity balance > 0
-        has_equity = False
-        if self.tracking_type == FundType.NAV_BASED:
-            has_equity = self.current_units is not None and self.current_units > 0
-        elif self.tracking_type == FundType.COST_BASED:
-            has_equity = self.current_equity_balance is not None and self.current_equity_balance > 0
-        
-        # If fund still has equity balance > 0, no end date yet
-        if has_equity:
-            self.end_date = None
-            return
-        
-        session = object_session(self) if session is None else session
-        if session is None:
-            self.end_date = None
-            return
-        
-        # Get all equity and distribution events, ordered by date (newest first)
-        relevant_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type.in_([
-                EventType.CAPITAL_CALL,
-                EventType.RETURN_OF_CAPITAL, 
-                EventType.UNIT_PURCHASE,
-                EventType.UNIT_SALE,
-                EventType.DISTRIBUTION
-            ])
-        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).all()
-        
-        if not relevant_events:
-            self.end_date = None
-            return
-        
-        # Set end_date to the date of the final equity or distribution event
-        self.end_date = relevant_events[0].event_date
+        end_date = self.status_service.calculate_end_date(self, session)
+        self.end_date = end_date
 
     @with_session
     def _calculate_irr_base(self, include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=None, return_cashflows=False):
