@@ -10,7 +10,16 @@ import {
   Breadcrumbs,
   Link,
   useTheme,
+  InputBase,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import {
+  Search as SearchIcon,
+  Settings as SettingsIcon,
+  Help as HelpIcon,
+  AccountCircle as AccountIcon,
+} from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface TopBarProps {
@@ -73,11 +82,11 @@ const TopBar: React.FC<TopBarProps> = ({ sidebarOpen }) => {
     <AppBar
       position="fixed"
       sx={{
-        width: `calc(100% - ${sidebarOpen ? 280 : 64}px)`,
-        marginLeft: `${sidebarOpen ? 280 : 64}px`,
-        backgroundColor: '#0D1117', // Docker header background
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: 'none',
+        width: '100%', // Full width
+        marginLeft: 0, // No left margin - extends to left edge
+        background: 'linear-gradient(90deg, #051B51 0%, #00298B 100%)', // TopBar gradient background
+        borderBottom: '1px solid #303234', // Updated border color
+        boxShadow: '0px 1px 4px rgba(0,0,0,0.2)', // Subtle shadow for depth
         transition: theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.leavingScreen,
@@ -85,18 +94,47 @@ const TopBar: React.FC<TopBarProps> = ({ sidebarOpen }) => {
         zIndex: theme.zIndex.drawer + 1,
       }}
     >
-      <Toolbar sx={{ minHeight: 64, padding: '0 24px' }}>
+      <Toolbar sx={{ minHeight: 56, padding: '0 24px' }}> {/* 56px height as per spec */}
         {/* Page Title */}
         <Typography
           variant="h6"
           sx={{
-            color: '#FFFFFF',
+            color: '#FFFFFF', // White text as per spec
             fontWeight: 600,
             marginRight: 3,
           }}
         >
           {pageTitle}
         </Typography>
+
+        {/* Search Box */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#1b3d89', // Search bar background
+            borderRadius: '8px',
+            padding: '8px 12px',
+            marginRight: 3,
+            minWidth: 200,
+            '&:hover': {
+              backgroundColor: '#345397', // Search bar hover
+            },
+          }}
+        >
+          <SearchIcon sx={{ color: '#8B949E', marginRight: 1, fontSize: 20 }} />
+          <InputBase
+            placeholder="Search..."
+            sx={{
+              color: '#FFFFFF', // White text
+              fontSize: '14px',
+              '& input::placeholder': {
+                color: '#8B949E', // Placeholder text color
+                opacity: 1,
+              },
+            }}
+          />
+        </Box>
 
         {/* Breadcrumbs */}
         <Box sx={{ flexGrow: 1 }}>
@@ -120,13 +158,13 @@ const TopBar: React.FC<TopBarProps> = ({ sidebarOpen }) => {
               return (
                 <Link
                   key={breadcrumb.path}
-                  color={isLast ? 'inherit' : '#007FFF'}
+                  color={isLast ? 'inherit' : '#2496ED'} // Docker blue for links
                   underline="hover"
                   onClick={() => !isLast && navigate(breadcrumb.path)}
                   sx={{
                     cursor: isLast ? 'default' : 'pointer',
                     '&:hover': {
-                      color: isLast ? '#8B949E' : '#1E90FF',
+                      color: isLast ? '#8B949E' : '#1B7FC4', // Darker blue on hover
                     },
                   }}
                 >
@@ -145,9 +183,49 @@ const TopBar: React.FC<TopBarProps> = ({ sidebarOpen }) => {
           </Breadcrumbs>
         </Box>
 
-        {/* Action Buttons Area - Placeholder for future actions */}
+        {/* Action Buttons Area */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* Future: Add search, notifications, user menu, etc. */}
+          <Tooltip title="Settings">
+            <IconButton
+              sx={{
+                color: '#C9D1D9', // Light grey by default
+                '&:hover': {
+                  backgroundColor: '#19222a', // Dashboard hover row
+                  color: '#FFFFFF', // White on hover
+                },
+              }}
+            >
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Help">
+            <IconButton
+              sx={{
+                color: '#C9D1D9', // Light grey by default
+                '&:hover': {
+                  backgroundColor: '#19222a', // Dashboard hover row
+                  color: '#FFFFFF', // White on hover
+                },
+              }}
+            >
+              <HelpIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="User Profile">
+            <IconButton
+              sx={{
+                color: '#C9D1D9', // Light grey by default
+                '&:hover': {
+                  backgroundColor: '#19222a', // Dashboard hover row
+                  color: '#FFFFFF', // White on hover
+                },
+              }}
+            >
+              <AccountIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Toolbar>
     </AppBar>

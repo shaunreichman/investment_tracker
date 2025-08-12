@@ -1,4 +1,4 @@
-// Docker Spacing System - Separate module to avoid type intersections
+// Docker Spacing System - Updated with new specifications
 // Following TypeScript memory management principles
 
 export const dockerSpacing = {
@@ -29,15 +29,15 @@ export const dockerSpacing = {
     },
   },
   
-  // Layout spacing
+  // Layout spacing - Updated with new specifications
   layout: {
     sidebar: {
-      width: 280,         // Sidebar width
-      collapsedWidth: 64, // Collapsed sidebar width
+      width: 240,         // Sidebar width (updated from 280px)
+      collapsedWidth: 72, // Collapsed sidebar width (updated from 64px)
       padding: 16,        // Sidebar internal padding
     },
     header: {
-      height: 64,         // Header height
+      height: 56,         // Header height (updated from 64px)
       padding: 16,        // Header padding
     },
     content: {

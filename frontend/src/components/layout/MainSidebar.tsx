@@ -72,12 +72,12 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
     <Drawer
       variant="permanent"
       sx={{
-        width: open ? 280 : 64,
+        width: open ? 240 : 72,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
-          width: open ? 280 : 64,
-          backgroundColor: '#161B22', // Docker sidebar background
-          borderRight: '1px solid rgba(255,255,255,0.08)',
+          width: open ? 240 : 72,
+          backgroundColor: '#070b0d', // Navigation sidebar background
+          borderRight: '1px solid #303234',
           transition: theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
@@ -93,16 +93,17 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
           alignItems: 'center',
           justifyContent: open ? 'flex-end' : 'center',
           padding: 2,
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid #303234',
         }}
       >
         <Tooltip title={open ? 'Collapse Sidebar' : 'Expand Sidebar'}>
           <IconButton
             onClick={onToggle}
             sx={{
-              color: '#FFFFFF',
+              color: '#C9D1D9',
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.04)',
+                backgroundColor: '#19222a', // Dashboard hover row
+                color: '#2496ED',
               },
             }}
           >
@@ -121,21 +122,46 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                 onClick={() => handleNavigation(item.path)}
                 sx={{
                   borderRadius: 1,
-                  backgroundColor: active ? 'rgba(0,127,255,0.1)' : 'transparent',
-                  border: active ? '1px solid rgba(0,127,255,0.3)' : 'none',
+                  backgroundColor: active ? '#303234' : 'transparent', // Navigation selection color
+                  border: 'none',
+                  position: 'relative',
                   '&:hover': {
                     backgroundColor: active 
-                      ? 'rgba(0,127,255,0.15)' 
-                      : 'rgba(255,255,255,0.04)',
+                      ? '#303234' 
+                      : '#19222a', // Dashboard hover row
+                    cursor: 'pointer',
                   },
-                  minHeight: 48,
-                  padding: open ? '12px 16px' : '12px 8px',
+                  minHeight: 36, // Reduced from 48px
+                  padding: '8px 12px', // Reduced from 16px
+                  paddingLeft: open ? '12px' : '8px', // Reduced padding
+                  paddingRight: open ? '12px' : '8px', // Reduced padding
                 }}
               >
+                {/* Active Link Indicator - 3px solid bar on the left */}
+                {active && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '3px',
+                      backgroundColor: '#2496ED',
+                      borderRadius: '0 2px 2px 0',
+                    }}
+                  />
+                )}
+                
                 <ListItemIcon
                   sx={{
-                    color: active ? '#007FFF' : '#8B949E',
+                    color: active ? '#FFFFFF' : '#C9D1D9',
                     minWidth: open ? 40 : 32,
+                    '& .MuiSvgIcon-root': {
+                      fontSize: '24px', // 24px icon size as per spec
+                    },
+                    '&:hover': {
+                      color: '#2496ED',
+                    },
                   }}
                 >
                   {item.icon}
@@ -144,7 +170,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                   <ListItemText
                     primary={item.label}
                     sx={{
-                      color: active ? '#FFFFFF' : '#8B949E',
+                      color: active ? '#FFFFFF' : '#C9D1D9',
                       fontWeight: active ? 600 : 400,
                     }}
                   />

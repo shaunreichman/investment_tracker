@@ -1,50 +1,50 @@
-// Docker Color Palette - Separate module to avoid type intersections
+// Docker Color Palette - Updated with new specifications
 // Following TypeScript memory management principles
 
 export const dockerColors = {
   // Primary Background Colors
   background: {
-    main: '#0D1117',        // Deep charcoal/blue-black
-    surface: '#1B1F23',     // Slightly lighter dark
-    panel: '#21262D',       // Panel/card background
-    sidebar: '#161B22',     // Sidebar background
-  },
-  
-  // Header & Navigation
-  header: {
-    primary: '#0066CC',     // Rich gradient blue start
-    secondary: '#004499',   // Deeper navy
-    accent: '#007FFF',      // Bright blue accent
+    primary: '#10151a',        // Main dashboard background
+    secondary: '#070b0d',      // Navigation sidebar background
+    panel: '#1F2937',          // Panel/card background
+    topbar: 'linear-gradient(90deg, #051B51 0%, #00298B 100%)', // TopBar gradient background
+    table: '#10151a',          // Table background color (same as dashboard)
   },
   
   // Accent Colors
   accent: {
-    primary: '#007FFF',     // Primary blue
-    secondary: '#1E90FF',   // Lighter blue
-    success: '#28A745',     // Success green
-    warning: '#FFC107',     // Warning yellow
-    error: '#DC3545',       // Error red
+    primary: '#2496ED',        // Docker blue
+    secondary: '#1B7FC4',      // Slightly darker variant for hover/active states
+    success: '#06a58c',        // Dashboard green success/active colour
+    lightBlue: '#4ca2fa',      // Dashboard light blue text colour
   },
   
   // Text Colors
   text: {
-    primary: '#FFFFFF',     // High-contrast white
-    secondary: '#8B949E',   // Soft gray
-    muted: '#6E7681',       // Muted text
+    primary: '#FFFFFF',        // White
+    secondary: '#C9D1D9',      // Light grey
+    muted: '#8B949E',          // Muted text for section labels
+  },
+  
+  // Status Colors
+  status: {
+    success: '#06a58c',        // Dashboard green success/active colour
+    warning: '#F2C94C',        // Warning yellow
+    error: '#F85149',          // Error red
   },
   
   // Border & Divider Colors
   border: {
-    primary: 'rgba(255,255,255,0.08)',
-    secondary: 'rgba(255,255,255,0.12)',
-    accent: 'rgba(0,127,255,0.3)',
+    primary: '#303234',        // Navigation selection color
+    secondary: 'rgba(36, 150, 237, 0.1)', // Hover state background
   },
   
   // Interactive States
   interactive: {
-    hover: 'rgba(255,255,255,0.04)',
-    active: 'rgba(0,127,255,0.1)',
-    focus: 'rgba(0,127,255,0.2)',
+    hover: '#19222a',          // Dashboard hover row
+    active: 'rgba(27, 127, 196, 0.2)', // Active state background
+    focus: 'rgba(36, 150, 237, 0.2)',  // Focus state
+    selection: '#303234',      // Navigation selection
   },
 } as const;
 
