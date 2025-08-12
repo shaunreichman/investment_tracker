@@ -10,13 +10,21 @@ authors = [{name = "Investment Tracker Team"}]
 requires-python = ">=3.9" 
 
 [tool.pytest.ini_options]
-minversion = "8.0"
-addopts = "-ra --strict-markers"
-testpaths = [
-  "tests"
-]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
 markers = [
-  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "fast: marks tests as fast (select with '-m fast')",
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests", 
+    "performance: marks tests as performance tests",
+    "api: marks tests as API tests",
+    "smoke: marks tests as smoke tests for quick validation"
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning"
 ]
 
 [tool.coverage.run]

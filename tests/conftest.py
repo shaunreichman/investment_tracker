@@ -152,11 +152,25 @@ def clean_database(SessionFactory):
         table_names = inspector.get_table_names()
         
         # Clear all tables except risk_free_rates (reference data)
-        tables_to_clear = ['tax_statements', 'fund_events', 'funds', 'entities', 'investment_companies']
+        # Include ALL tables that might contain test data
+        tables_to_clear = [
+            'tax_statements', 
+            'fund_events', 
+            'funds', 
+            'entities', 
+            'investment_companies',
+            'bank_accounts',  # Add banking tables
+            'banks',
+            'fund_event_cash_flows'  # Add cash flow tables
+        ]
         
         for table_name in tables_to_clear:
             if table_name in table_names:
-                session.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE"))
+                try:
+                    session.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE"))
+                    print(f"Cleared table: {table_name}")
+                except Exception as e:
+                    print(f"Warning: Could not clear table {table_name}: {e}")
         
         # Commit the cleanup
         session.commit()
