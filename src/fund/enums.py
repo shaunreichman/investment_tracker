@@ -4,11 +4,24 @@ Fund Enums Module.
 This module contains all enum definitions for the fund system.
 Following enterprise best practices for clean separation of concerns.
 
-Enums:
+Core Fund Enums:
 - FundStatus: Fund lifecycle status (ACTIVE, REALIZED, COMPLETED)
 - FundType: Fund tracking type (COST_BASED, NAV_BASED)
 - EventType: Fund event types (capital_call, distribution, etc.)
-- DistributionType: Distribution classification types
+- DistributionType: Distribution classification types (including franking credits)
+- CashFlowDirection: Cash flow direction (INFLOW, OUTFLOW)
+- TaxPaymentType: Tax payment classification types
+- GroupType: Event grouping for reporting and analysis
+- TaxJurisdiction: Tax jurisdiction for entities and funds
+
+System & API Enums:
+- SortOrder: Sorting order (ASC, DESC)
+- SortField: Sortable fields (name, date, amount, etc.)
+- Environment: Deployment environment (development, staging, production)
+- Currency: Supported currencies (AUD, USD, EUR, etc.)
+
+This module provides comprehensive type safety and business logic
+encapsulation for the entire investment tracking system.
 """
 
 from enum import Enum
@@ -22,10 +35,12 @@ class FundStatus(Enum):
     
     Values:
         ACTIVE: Fund has capital at risk and is actively managed
+        SUSPENDED: Fund temporarily suspended/on hold (equity balance may be > 0 but no new activity)
         REALIZED: All capital has been returned, fund is realized
         COMPLETED: Fund is realized and all tax obligations are complete
     """
     ACTIVE = 'active'
+    SUSPENDED = 'suspended'
     REALIZED = 'realized'
     COMPLETED = 'completed'
     
@@ -142,16 +157,18 @@ class DistributionType(Enum):
     
     Values:
         INCOME: Ordinary income distribution
-        CAPITAL_GAINS: Capital gains distribution
-        RETURN_OF_CAPITAL: Return of capital distribution
-        DIVIDEND: Dividend distribution
-        INTEREST: Interest distribution
+        DIVIDEND_FRANKED: Dividend with franking credits (reduces tax liability)
+        DIVIDEND_UNFRANKED: Dividend without franking credits (fully taxable)
+        INTEREST: Interest income (fully taxable)
+        RENT: Rental income
+        CAPITAL_GAIN: Capital gains (may have CGT discount)
     """
     INCOME = 'income'
-    CAPITAL_GAINS = 'capital_gains'
-    RETURN_OF_CAPITAL = 'return_of_capital'
-    DIVIDEND = 'dividend'
+    DIVIDEND_FRANKED = 'dividend_franked'
+    DIVIDEND_UNFRANKED = 'dividend_unfranked'
     INTEREST = 'interest'
+    RENT = 'rent'
+    CAPITAL_GAIN = 'capital_gain'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -170,11 +187,106 @@ class DistributionType(Enum):
         """Check if a distribution type is taxable."""
         taxable_types = {
             cls.INCOME,
-            cls.CAPITAL_GAINS,
-            cls.DIVIDEND,
-            cls.INTEREST
+            cls.DIVIDEND_FRANKED,
+            cls.DIVIDEND_UNFRANKED,
+            cls.INTEREST,
+            cls.RENT,
+            cls.CAPITAL_GAIN
         }
         return dist_type in taxable_types
+    
+    @classmethod
+    def has_franking_credits(cls, dist_type: 'DistributionType') -> bool:
+        """Check if a distribution type has franking credits."""
+        return dist_type == cls.DIVIDEND_FRANKED
+
+
+class CashFlowDirection(Enum):
+    """
+    Cash flow direction enum.
+    
+    Indicates the direction of money flow from the investor's perspective.
+    
+    Values:
+        INFLOW: Money received by investor (e.g., distributions, returns)
+        OUTFLOW: Money paid out by investor (e.g., capital calls, fees)
+    """
+    INFLOW = 'inflow'
+    OUTFLOW = 'outflow'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'CashFlowDirection':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid CashFlowDirection: {value}. Must be one of: {[d.value for d in cls]}")
+    
+    @classmethod
+    def is_incoming(cls, direction: 'CashFlowDirection') -> bool:
+        """Check if cash flow direction is incoming to investor."""
+        return direction == cls.INFLOW
+    
+    @classmethod
+    def is_outgoing(cls, direction: 'CashFlowDirection') -> bool:
+        """Check if cash flow direction is outgoing from investor."""
+        return direction == cls.OUTFLOW
+
+
+class TaxPaymentType(Enum):
+    """
+    Tax payment type enum.
+    
+    Classifies different types of tax payments for reporting and calculations.
+    
+    Values:
+        NON_RESIDENT_INTEREST_WITHHOLDING: Non-resident interest withholding tax
+        NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE: Adjustment for withholding tax differences
+        CAPITAL_GAINS_TAX: Capital gains tax payments
+        EOFY_INTEREST_TAX: End of financial year interest tax
+        DIVIDENDS_FRANKED_TAX: Tax on franked dividends
+        DIVIDENDS_UNFRANKED_TAX: Tax on unfranked dividends
+    """
+    NON_RESIDENT_INTEREST_WITHHOLDING = 'non_resident_interest_withholding'
+    NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE = 'non_resident_interest_withholding_difference'
+    CAPITAL_GAINS_TAX = 'capital_gains_tax'
+    EOFY_INTEREST_TAX = 'eofy_interest_tax'
+    DIVIDENDS_FRANKED_TAX = 'dividends_franked_tax'
+    DIVIDENDS_UNFRANKED_TAX = 'dividends_unfranked_tax'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'TaxPaymentType':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid TaxPaymentType: {value}. Must be one of: {[t.value for t in cls]}")
+    
+    @classmethod
+    def is_withholding_tax(cls, tax_type: 'TaxPaymentType') -> bool:
+        """Check if tax payment type is a withholding tax."""
+        withholding_types = {
+            cls.NON_RESIDENT_INTEREST_WITHHOLDING,
+            cls.NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE
+        }
+        return tax_type in withholding_types
+    
+    @classmethod
+    def is_dividend_tax(cls, tax_type: 'TaxPaymentType') -> bool:
+        """Check if tax payment type is related to dividends."""
+        dividend_tax_types = {
+            cls.DIVIDENDS_FRANKED_TAX,
+            cls.DIVIDENDS_UNFRANKED_TAX
+        }
+        return tax_type in dividend_tax_types
 
 
 class GroupType(Enum):
@@ -184,13 +296,11 @@ class GroupType(Enum):
     Defines how events can be grouped together for reporting and analysis.
     
     Values:
-        TAX_STATEMENT: Group events for tax statement purposes
-        PERFORMANCE: Group events for performance calculations
-        CASH_FLOW: Group events for cash flow analysis
+        INTEREST_WITHHOLDING: Interest distribution events paired with withholding tax events
+        TAX_STATEMENT: Tax statement events grouped by financial year (future implementation)
     """
+    INTEREST_WITHHOLDING = 'interest_withholding'
     TAX_STATEMENT = 'tax_statement'
-    PERFORMANCE = 'performance'
-    CASH_FLOW = 'cash_flow'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -203,6 +313,214 @@ class GroupType(Enum):
             return cls(value)
         except ValueError:
             raise ValueError(f"Invalid GroupType: {value}. Must be one of: {[g.value for g in cls]}")
+
+
+class TaxJurisdiction(Enum):
+    """
+    Tax jurisdiction enum.
+    
+    Defines the tax jurisdiction for entities and funds.
+    
+    Values:
+        AU: Australia (with specific tax rules like franking credits)
+        US: United States
+        UK: United Kingdom
+        OTHER: Other jurisdictions
+    """
+    AU = 'AU'
+    US = 'US'
+    UK = 'UK'
+    OTHER = 'OTHER'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'TaxJurisdiction':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid TaxJurisdiction: {value}. Must be one of: {[j.value for j in cls]}")
+    
+    @classmethod
+    def has_franking_credits(cls, jurisdiction: 'TaxJurisdiction') -> bool:
+        """Check if jurisdiction supports franking credits (Australia-specific)."""
+        return jurisdiction == cls.AU
+    
+    @classmethod
+    def has_cgt_discount(cls, jurisdiction: 'TaxJurisdiction') -> bool:
+        """Check if jurisdiction has capital gains tax discount rules."""
+        return jurisdiction in {cls.AU, cls.UK}
+
+
+class SortOrder(Enum):
+    """
+    Sort order enum.
+    
+    Defines the order for sorting operations in APIs and queries.
+    
+    Values:
+        ASC: Ascending order (A-Z, 1-9, oldest to newest)
+        DESC: Descending order (Z-A, 9-1, newest to oldest)
+    """
+    ASC = 'asc'
+    DESC = 'desc'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'SortOrder':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid SortOrder: {value}. Must be one of: {[o.value for o in cls]}")
+    
+    @classmethod
+    def is_reverse(cls, order: 'SortOrder') -> bool:
+        """Check if sort order is reverse/descending."""
+        return order == cls.DESC
+
+
+class SortField(Enum):
+    """
+    Sort field enum.
+    
+    Defines the fields that can be used for sorting in APIs and queries.
+    
+    Values:
+        START_DATE: Sort by fund start date
+        NAME: Sort by fund name
+        STATUS: Sort by fund status
+        COMMITMENT_AMOUNT: Sort by commitment amount
+        CURRENT_EQUITY_BALANCE: Sort by current equity balance
+        CREATED_AT: Sort by creation timestamp
+        UPDATED_AT: Sort by last update timestamp
+    """
+    START_DATE = 'start_date'
+    NAME = 'name'
+    STATUS = 'status'
+    COMMITMENT_AMOUNT = 'commitment_amount'
+    CURRENT_EQUITY_BALANCE = 'current_equity_balance'
+    CREATED_AT = 'created_at'
+    UPDATED_AT = 'updated_at'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'SortField':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid SortField: {value}. Must be one of: {[f.value for f in cls]}")
+    
+    @classmethod
+    def is_numeric_field(cls, field: 'SortField') -> bool:
+        """Check if sort field contains numeric values."""
+        numeric_fields = {
+            cls.COMMITMENT_AMOUNT,
+            cls.CURRENT_EQUITY_BALANCE,
+            cls.CREATED_AT,
+            cls.UPDATED_AT
+        }
+        return field in numeric_fields
+
+
+class Environment(Enum):
+    """
+    Environment enum.
+    
+    Defines the deployment environment for configuration management.
+    
+    Values:
+        DEVELOPMENT: Development environment
+        STAGING: Staging/testing environment
+        PRODUCTION: Production environment
+    """
+    DEVELOPMENT = 'development'
+    STAGING = 'staging'
+    PRODUCTION = 'production'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'Environment':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid Environment: {value}. Must be one of: {[e.value for e in cls]}")
+    
+    @classmethod
+    def is_production(cls, env: 'Environment') -> bool:
+        """Check if environment is production."""
+        return env == cls.PRODUCTION
+    
+    @classmethod
+    def is_development(cls, env: 'Environment') -> bool:
+        """Check if environment is development."""
+        return env == cls.DEVELOPMENT
+
+
+class Currency(Enum):
+    """
+    Currency enum.
+    
+    Defines supported currencies for financial operations.
+    
+    Values:
+        AUD: Australian Dollar
+        USD: US Dollar
+        EUR: Euro
+        GBP: British Pound
+        CAD: Canadian Dollar
+        JPY: Japanese Yen
+        CHF: Swiss Franc
+    """
+    AUD = 'AUD'
+    USD = 'USD'
+    EUR = 'EUR'
+    GBP = 'GBP'
+    CAD = 'CAD'
+    JPY = 'JPY'
+    CHF = 'CHF'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'Currency':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid Currency: {value}. Must be one of: {[c.value for c in cls]}")
+    
+    @classmethod
+    def is_major_currency(cls, currency: 'Currency') -> bool:
+        """Check if currency is a major world currency."""
+        major_currencies = {
+            cls.USD, cls.EUR, cls.GBP, cls.JPY, cls.CHF
+        }
+        return currency in major_currencies
+    
+    @classmethod
+    def is_commonwealth_currency(cls, currency: 'Currency') -> bool:
+        """Check if currency is from a Commonwealth country."""
+        commonwealth_currencies = {
+            cls.AUD, cls.GBP, cls.CAD
+        }
+        return currency in commonwealth_currencies
 
 
 # Convenience functions for common enum operations

@@ -8,6 +8,7 @@ type safety and clean separation of concerns for the fund system.
 import pytest
 from src.fund.enums import (
     FundStatus, FundType, EventType, DistributionType, GroupType,
+    CashFlowDirection, TaxPaymentType, TaxJurisdiction,
     get_all_enum_values, validate_enum_value, get_enum_display_name
 )
 
@@ -22,8 +23,8 @@ class TestFundStatus:
         assert FundStatus.COMPLETED.value == 'completed'
     
     def test_enum_count(self):
-        """Test that FundStatus has exactly 3 values."""
-        assert len(FundStatus) == 3
+        """Test that FundStatus has exactly 4 values."""
+        assert len(FundStatus) == 4
     
     def test_string_representation(self):
         """Test string representation of FundStatus values."""
@@ -93,14 +94,101 @@ class TestDistributionType:
     def test_enum_values(self):
         """Test that DistributionType has the correct values."""
         assert DistributionType.INCOME.value == 'income'
-        assert DistributionType.CAPITAL_GAINS.value == 'capital_gains'
-        assert DistributionType.RETURN_OF_CAPITAL.value == 'return_of_capital'
+        assert DistributionType.DIVIDEND_FRANKED.value == 'dividend_franked'
+        assert DistributionType.INTEREST.value == 'interest'
     
     def test_taxable_distribution_detection(self):
         """Test taxable distribution detection methods."""
         assert DistributionType.is_taxable(DistributionType.INCOME) is True
-        assert DistributionType.is_taxable(DistributionType.CAPITAL_GAINS) is True
-        assert DistributionType.is_taxable(DistributionType.RETURN_OF_CAPITAL) is False
+        assert DistributionType.is_taxable(DistributionType.DIVIDEND_FRANKED) is True
+        assert DistributionType.is_taxable(DistributionType.INTEREST) is True
+    
+    def test_enum_count(self):
+        """Test that DistributionType has exactly 6 values."""
+        assert len(DistributionType) == 6
+    
+    def test_franking_credits_detection(self):
+        """Test franking credits detection methods."""
+        assert DistributionType.has_franking_credits(DistributionType.DIVIDEND_FRANKED) is True
+        assert DistributionType.has_franking_credits(DistributionType.DIVIDEND_UNFRANKED) is False
+        assert DistributionType.has_franking_credits(DistributionType.INTEREST) is False
+
+
+class TestCashFlowDirection:
+    """Test suite for CashFlowDirection enum."""
+    
+    def test_enum_values(self):
+        """Test that CashFlowDirection has the correct values."""
+        assert CashFlowDirection.INFLOW.value == 'inflow'
+        assert CashFlowDirection.OUTFLOW.value == 'outflow'
+    
+    def test_enum_count(self):
+        """Test that CashFlowDirection has exactly 2 values."""
+        assert len(CashFlowDirection) == 2
+    
+    def test_from_string_valid(self):
+        """Test creating CashFlowDirection from valid string values."""
+        assert CashFlowDirection.from_string('inflow') == CashFlowDirection.INFLOW
+        assert CashFlowDirection.from_string('outflow') == CashFlowDirection.OUTFLOW
+    
+    def test_direction_detection(self):
+        """Test direction detection methods."""
+        assert CashFlowDirection.is_incoming(CashFlowDirection.INFLOW) is True
+        assert CashFlowDirection.is_incoming(CashFlowDirection.OUTFLOW) is False
+        assert CashFlowDirection.is_outgoing(CashFlowDirection.OUTFLOW) is True
+        assert CashFlowDirection.is_outgoing(CashFlowDirection.INFLOW) is False
+
+
+class TestTaxPaymentType:
+    """Test suite for TaxPaymentType enum."""
+    
+    def test_enum_values(self):
+        """Test that TaxPaymentType has the correct values."""
+        assert TaxPaymentType.CAPITAL_GAINS_TAX.value == 'capital_gains_tax'
+        assert TaxPaymentType.DIVIDENDS_FRANKED_TAX.value == 'dividends_franked_tax'
+        assert TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING.value == 'non_resident_interest_withholding'
+    
+    def test_enum_count(self):
+        """Test that TaxPaymentType has exactly 6 values."""
+        assert len(TaxPaymentType) == 6
+    
+    def test_withholding_tax_detection(self):
+        """Test withholding tax detection methods."""
+        assert TaxPaymentType.is_withholding_tax(TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING) is True
+        assert TaxPaymentType.is_withholding_tax(TaxPaymentType.CAPITAL_GAINS_TAX) is False
+    
+    def test_dividend_tax_detection(self):
+        """Test dividend tax detection methods."""
+        assert TaxPaymentType.is_dividend_tax(TaxPaymentType.DIVIDENDS_FRANKED_TAX) is True
+        assert TaxPaymentType.is_dividend_tax(TaxPaymentType.DIVIDENDS_UNFRANKED_TAX) is True
+        assert TaxPaymentType.is_dividend_tax(TaxPaymentType.CAPITAL_GAINS_TAX) is False
+
+
+class TestTaxJurisdiction:
+    """Test suite for TaxJurisdiction enum."""
+    
+    def test_enum_values(self):
+        """Test that TaxJurisdiction has the correct values."""
+        assert TaxJurisdiction.AU.value == 'AU'
+        assert TaxJurisdiction.US.value == 'US'
+        assert TaxJurisdiction.UK.value == 'UK'
+        assert TaxJurisdiction.OTHER.value == 'OTHER'
+    
+    def test_enum_count(self):
+        """Test that TaxJurisdiction has exactly 4 values."""
+        assert len(TaxJurisdiction) == 4
+    
+    def test_franking_credits_support(self):
+        """Test franking credits support detection."""
+        assert TaxJurisdiction.has_franking_credits(TaxJurisdiction.AU) is True
+        assert TaxJurisdiction.has_franking_credits(TaxJurisdiction.US) is False
+        assert TaxJurisdiction.has_franking_credits(TaxJurisdiction.UK) is False
+    
+    def test_cgt_discount_support(self):
+        """Test capital gains tax discount support."""
+        assert TaxJurisdiction.has_cgt_discount(TaxJurisdiction.AU) is True
+        assert TaxJurisdiction.has_cgt_discount(TaxJurisdiction.UK) is True
+        assert TaxJurisdiction.has_cgt_discount(TaxJurisdiction.US) is False
 
 
 class TestGroupType:
@@ -108,9 +196,12 @@ class TestGroupType:
     
     def test_enum_values(self):
         """Test that GroupType has the correct values."""
+        assert GroupType.INTEREST_WITHHOLDING.value == 'interest_withholding'
         assert GroupType.TAX_STATEMENT.value == 'tax_statement'
-        assert GroupType.PERFORMANCE.value == 'performance'
-        assert GroupType.CASH_FLOW.value == 'cash_flow'
+    
+    def test_enum_count(self):
+        """Test that GroupType has exactly 2 values."""
+        assert len(GroupType) == 2
 
 
 class TestEnumUtilityFunctions:
@@ -120,9 +211,10 @@ class TestEnumUtilityFunctions:
         """Test getting all enum values."""
         fund_status_values = get_all_enum_values(FundStatus)
         assert 'active' in fund_status_values
+        assert 'suspended' in fund_status_values
         assert 'realized' in fund_status_values
         assert 'completed' in fund_status_values
-        assert len(fund_status_values) == 3
+        assert len(fund_status_values) == 4
     
     def test_validate_enum_value_valid(self):
         """Test validating valid enum values."""
