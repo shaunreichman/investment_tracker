@@ -3,23 +3,20 @@ import {
   Box,
   Typography,
   Link,
-  Breadcrumbs,
   Button,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ErrorDisplay } from '../ErrorDisplay';
-import { ErrorType, ErrorSeverity, createErrorInfo, getUserFriendlyMessage } from '../../types/errors';
+import { ErrorType, createErrorInfo } from '../../types/errors';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { TabNavigation } from './TabNavigation';
 import { OverviewTab } from './overview-tab';
-import { FundsTab } from './funds-tab';
 import { CompanyDetailsTab } from './company-details-tab';
 import { AnalysisTab } from './analysis-tab';
 import { ActivityTab } from './activity-tab';
 import {
   useCompanyOverview,
-  useEnhancedFunds,
   useCompanyDetails,
 } from '../../hooks/useInvestmentCompanies';
 
@@ -45,26 +42,13 @@ export const EnhancedCompaniesPage: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [fundsParams, setFundsParams] = useState({
-    sort_by: 'start_date',
-    sort_order: 'desc' as 'asc' | 'desc',
-    status_filter: 'all' as 'all' | 'active' | 'completed' | 'suspended',
-    search: '',
-    page: 1,
-    per_page: 25,
-  });
 
   // API hooks
   const { data: overviewData, loading: overviewLoading, error: overviewError, refetch: refetchOverview } = useCompanyOverview(
     parseInt(companyId || '0')
   );
   
-  const { data: fundsData, loading: fundsLoading, error: fundsError, refetch: refetchFunds } = useEnhancedFunds(
-    parseInt(companyId || '0'),
-    fundsParams
-  );
-  
-  const { data: detailsData, loading: detailsLoading, error: detailsError, refetch: refetchDetails } = useCompanyDetails(
+  const { data: detailsData, loading: detailsLoading } = useCompanyDetails(
     parseInt(companyId || '0')
   );
 
@@ -82,15 +66,10 @@ export const EnhancedCompaniesPage: React.FC = () => {
     setActiveTab(tabId);
   };
 
-  // Handle funds parameters change
-  const handleFundsParamsChange = (newParams: any) => {
-    setFundsParams(newParams);
-  };
-
   // Handle fund creation
   const handleFundCreated = () => {
     // Refresh the overview data
-    // Note: The enhanced funds data will refresh automatically due to the params change
+    refetchOverview();
   };
 
   // Error handling - these functions are kept for future use when implementing tab-specific error/loading states
@@ -120,69 +99,36 @@ export const EnhancedCompaniesPage: React.FC = () => {
   //   }
   // };
 
-    // Handle errors from any of the API calls
-    if (overviewError || fundsError || detailsError) {
-      const errorMessage = overviewError || fundsError || detailsError || 'Unknown error';
-      
-      // Check if the error is already an ErrorInfo object
-      let errorInfo;
-      if (typeof errorMessage === 'object' && errorMessage !== null && 'retryable' in errorMessage) {
-        errorInfo = errorMessage;
-        // Add context if not already present
-        if (!errorInfo.details?.context) {
-          errorInfo.details = { ...errorInfo.details, context: 'company_details' };
-          // Update user message with context
-          if (errorInfo.code) {
-            errorInfo.userMessage = getUserFriendlyMessage(errorInfo.type, errorInfo.message, errorInfo.code, 'company_details');
-          }
-        }
-      } else {
-        errorInfo = createErrorInfo(typeof errorMessage === 'string' ? errorMessage : 'Unknown error');
-        // Add context and update user message
-        errorInfo.details = { context: 'company_details' };
-        if (errorInfo.code) {
-          errorInfo.userMessage = getUserFriendlyMessage(errorInfo.type, errorInfo.message, errorInfo.code, 'company_details');
-        }
-      }
-      
-      return (
-        <Box p={3}>
-          <ErrorDisplay
-            error={errorInfo}
-            canRetry={errorInfo.retryable}
-            onRetry={() => {
-              refetchOverview();
-              refetchFunds();
-              refetchDetails();
-            }}
-            onDismiss={() => window.location.reload()}
-          />
-        </Box>
-      );
-    }
-
-  // Show loading for initial data
-  if (overviewLoading && !overviewData) {
+  // Show loading state for overview data
+  if (overviewLoading) {
     return (
-      <Box p={3}>
-        <LoadingSpinner label="Loading company data..." />
+      <Box sx={{ p: 3 }}>
+        <LoadingSpinner label="Loading company overview..." />
       </Box>
     );
   }
 
-  // Show error if company not found
-  if (!overviewData?.company) {
+  // Show error state for overview data
+  if (overviewError) {
+    const errorInfo = typeof overviewError === 'string' ? createErrorInfo(overviewError) : overviewError;
     return (
-      <Box p={3}>
+      <Box sx={{ p: 3 }}>
         <ErrorDisplay
-          error={{
-            message: 'Company not found',
-            type: ErrorType.NOT_FOUND,
-            severity: ErrorSeverity.MEDIUM,
-            retryable: false,
-            userMessage: 'The requested company could not be found.',
-            timestamp: new Date()
-          }}
+          error={errorInfo}
+          canRetry={errorInfo.retryable}
+          onRetry={refetchOverview}
+          onDismiss={() => navigate('/')}
+        />
+      </Box>
+    );
+  }
+
+  // Show error state if no company data
+  if (!overviewData) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <ErrorDisplay
+          error={createErrorInfo('Company not found', ErrorType.NOT_FOUND)}
           canRetry={false}
           onDismiss={() => navigate('/')}
         />
@@ -190,130 +136,228 @@ export const EnhancedCompaniesPage: React.FC = () => {
     );
   }
 
-  const company = overviewData.company;
-
   return (
-    <Box component="main">
-      {/* Breadcrumb Navigation */}
-      <Box p={3} pb={0}>
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-          <Link
-            component="button"
-            variant="body2"
-            onClick={() => navigate('/')}
-            sx={{ textDecoration: 'none', cursor: 'pointer' }}
-          >
-            Investment Companies
-          </Link>
-          <Typography color="text.primary">{company.name}</Typography>
-        </Breadcrumbs>
-
-        {/* Company Header */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+    <Box sx={{ p: 0 }}>
+      {/* Company Header Section */}
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-start',
+          mb: 3
+        }}>
           <Box>
-            <Typography variant="h4" gutterBottom>
-              {company.name}
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                color: '#FFFFFF',
+                fontWeight: 600,
+                mb: 1,
+                letterSpacing: '-0.02em'
+              }}
+            >
+              {overviewData.company.name}
             </Typography>
             
-            <Typography variant="body1" color="textSecondary">
-              {company.company_type ? `${company.company_type} Investment Company` : 'Investment Company'}
-            </Typography>
+            {overviewData.company.company_type && (
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: '#8B949E',
+                  fontSize: '16px',
+                  lineHeight: 1.5,
+                  maxWidth: '600px'
+                }}
+              >
+                {overviewData.company.company_type} Investment Company
+              </Typography>
+            )}
           </Box>
-
+          
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setCreateModalOpen(true)}
+            size="large"
+            sx={{
+              backgroundColor: '#2496ED',
+              '&:hover': {
+                backgroundColor: '#1B7FC4'
+              },
+              px: 4,
+              py: 1.5,
+              fontSize: '14px',
+              fontWeight: 500
+            }}
           >
             Create Fund
           </Button>
         </Box>
+
+        {/* Company Metadata */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: 3,
+          mb: 3
+        }}>
+          {overviewData.company.website && (
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              backgroundColor: '#1F2937',
+              border: '1px solid #303234',
+              borderRadius: '8px',
+              px: 3,
+              py: 2
+            }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#8B949E',
+                  mr: 2,
+                  fontWeight: 500
+                }}
+              >
+                Website:
+              </Typography>
+              <Link
+                href={overviewData.company.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: '#2496ED',
+                  textDecoration: 'none',
+                  fontWeight: 500,
+                  '&:hover': {
+                    color: '#1B7FC4'
+                  }
+                }}
+              >
+                {overviewData.company.website}
+              </Link>
+            </Box>
+          )}
+          
+          {overviewData.company.contacts && overviewData.company.contacts.length > 0 && (
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              backgroundColor: '#1F2937',
+              border: '1px solid #303234',
+              borderRadius: '8px',
+              px: 3,
+              py: 2
+            }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#8B949E',
+                  mr: 2,
+                  fontWeight: 500
+                }}
+              >
+                Contact:
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#FFFFFF',
+                  fontWeight: 500
+                }}
+              >
+                {overviewData.company.contacts[0]?.name}
+                {overviewData.company.contacts[0]?.direct_email && (
+                  <Box sx={{ mt: 0.5 }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: '#8B949E',
+                        fontSize: '12px'
+                      }}
+                    >
+                      {overviewData.company.contacts[0]?.direct_email}
+                    </Typography>
+                  </Box>
+                )}
+              </Typography>
+            </Box>
+          )}
+        </Box>
       </Box>
 
       {/* Tab Navigation */}
-      <TabNavigation
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-      />
+      <Box sx={{ mb: 3 }}>
+        <TabNavigation
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+        />
+      </Box>
 
       {/* Tab Content */}
-      <Box>
+      <Box sx={{ 
+        backgroundColor: '#1F2937',
+        border: '1px solid #303234',
+        borderTop: 'none',
+        borderRadius: '0 0 8px 8px',
+        minHeight: '400px'
+      }}>
         {activeTab === 'overview' && (
-          <Box
-            role="tabpanel"
-            id="overview-tabpanel"
-            aria-labelledby="overview-tab"
-            hidden={activeTab !== 'overview'}
-          >
-            <OverviewTab
-              data={overviewData}
-              loading={overviewLoading}
-            />
-          </Box>
+          <OverviewTab 
+            data={overviewData}
+            loading={overviewLoading}
+          />
         )}
-
+        
         {activeTab === 'funds' && (
-          <Box
-            role="tabpanel"
-            id="funds-tabpanel"
-            aria-labelledby="funds-tab"
-            hidden={activeTab !== 'funds'}
-          >
-            <FundsTab
-              data={fundsData}
-              loading={fundsLoading}
-              onParamsChange={handleFundsParamsChange}
-              currentParams={fundsParams}
-            />
+          <Box sx={{ p: 3 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: '#FFFFFF',
+                fontWeight: 600,
+                mb: 2
+              }}
+            >
+              Funds Management
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: '#8B949E',
+                lineHeight: 1.5
+              }}
+            >
+              Funds management functionality will be implemented in the next phase. This tab will provide comprehensive fund overview, filtering, and management capabilities.
+            </Typography>
           </Box>
         )}
-
+        
         {activeTab === 'analysis' && (
-          <Box
-            role="tabpanel"
-            id="analysis-tabpanel"
-            aria-labelledby="analysis-tab"
-            hidden={activeTab !== 'analysis'}
-          >
-            <AnalysisTab />
-          </Box>
+          <AnalysisTab />
         )}
-
+        
         {activeTab === 'activity' && (
-          <Box
-            role="tabpanel"
-            id="activity-tabpanel"
-            aria-labelledby="activity-tab"
-            hidden={activeTab !== 'activity'}
-          >
-            <ActivityTab />
-          </Box>
+          <ActivityTab />
         )}
-
-        {activeTab === 'details' && (
-          <Box
-            role="tabpanel"
-            id="details-tabpanel"
-            aria-labelledby="details-tab"
-            hidden={activeTab !== 'details'}
-          >
-            <CompanyDetailsTab
-              data={detailsData!}
-              loading={detailsLoading}
-            />
-          </Box>
+        
+        {activeTab === 'details' && detailsData && (
+          <CompanyDetailsTab
+            data={detailsData}
+            loading={detailsLoading}
+          />
         )}
       </Box>
 
       {/* Create Fund Modal */}
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingSpinner label="Loading create fund form..." />}>
         <CreateFundModal
           open={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
           onFundCreated={handleFundCreated}
-          companyId={parseInt(companyId!)}
-          companyName={company.name}
+          companyId={parseInt(companyId || '0')}
+          companyName={overviewData.company.name}
         />
       </Suspense>
     </Box>

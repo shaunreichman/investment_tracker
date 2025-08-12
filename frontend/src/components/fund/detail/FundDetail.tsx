@@ -81,7 +81,7 @@ const FundDetail: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <Box p={3}>
+      <Box sx={{ p: 3 }}>
         <LoadingSpinner label="Loading fund details..." />
       </Box>
     );
@@ -90,7 +90,7 @@ const FundDetail: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <Box p={3}>
+      <Box sx={{ p: 3 }}>
         <ErrorDisplay
           error={error}
           canRetry={error.retryable}
@@ -105,9 +105,23 @@ const FundDetail: React.FC = () => {
   // No data state
   if (!fundData) {
     return (
-      <Box p={3}>
-        <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
-          <Typography variant="body1" fontWeight="medium" color="warning.main">
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ 
+          p: 3, 
+          backgroundColor: '#1F2937',
+          border: '1px solid #303234',
+          borderRadius: '8px',
+          display: 'flex', 
+          alignItems: 'center',
+          borderLeft: '4px solid #F2C94C'
+        }}>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontWeight: 500, 
+              color: '#F2C94C'
+            }}
+          >
             No fund data available
           </Typography>
         </Box>
@@ -118,7 +132,7 @@ const FundDetail: React.FC = () => {
   const { fund, events } = fundData;
 
   return (
-    <Box p={3}>
+    <Box sx={{ p: 0 }}>
       <FundDetailHeader fund={fund} sidebarVisible={sidebarVisible} onToggleSidebar={toggleSidebar} />
 
       {/* Main Layout */}
@@ -131,9 +145,8 @@ const FundDetail: React.FC = () => {
         alignItems: 'stretch',
         transition: 'all 0.3s ease-in-out',
         '& > *:first-of-type': {
-          borderRight: { sm: '1px solid' },
-          borderColor: { sm: 'divider' },
-          pr: { sm: 2 }
+          borderRight: { sm: '1px solid #303234' },
+          pr: { sm: 3 }
         }
       }}>
         {/* Left Sidebar - Summary Sections */}
@@ -147,9 +160,10 @@ const FundDetail: React.FC = () => {
           overflow: 'hidden',
           order: { xs: 1, sm: 0 },
           mb: { xs: 2, sm: 0 },
-          bgcolor: 'background.paper',
-          borderRadius: { sm: 2 },
-          boxShadow: { sm: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)' },
+          backgroundColor: '#1F2937',
+          border: '1px solid #303234',
+          borderRadius: { sm: '8px' },
+          boxShadow: '0px 4px 16px rgba(0,0,0,0.2)',
           display: 'flex',
           flexDirection: 'column',
           opacity: sidebarVisible ? 1 : 0,
@@ -159,17 +173,16 @@ const FundDetail: React.FC = () => {
           {/* Summary Section Header */}
           <Box sx={{ 
             p: 3, 
-            borderBottom: 1, 
-            borderColor: 'divider',
-            bgcolor: 'grey.50'
+            borderBottom: '1px solid #303234',
+            backgroundColor: '#070b0d'
           }}>
             <Typography 
-              variant="h2"
+              variant="h5"
               sx={{ 
                 fontWeight: 600,
-                color: 'text.primary',
+                color: '#FFFFFF',
                 letterSpacing: '-0.01em',
-                fontSize: '1.25rem'
+                fontSize: '20px'
               }}
             >
               Summary
@@ -195,10 +208,11 @@ const FundDetail: React.FC = () => {
           overflow: 'hidden',
           order: { xs: 2, sm: 1 },
           width: { xs: '100%', sm: 'auto' },
-          bgcolor: 'background.paper',
-          borderRadius: { sm: 2 },
-          boxShadow: { sm: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)' },
-          pl: { sm: 2 },
+          backgroundColor: '#1F2937',
+          border: '1px solid #303234',
+          borderRadius: { sm: '8px' },
+          boxShadow: '0px 4px 16px rgba(0,0,0,0.2)',
+          pl: { sm: 3 },
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -226,8 +240,6 @@ const FundDetail: React.FC = () => {
           fundTrackingType={fund.tracking_type}
         />
       </Suspense>
-
-
 
       <ConfirmDialog
         open={deleteDialogOpen}

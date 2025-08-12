@@ -31,9 +31,20 @@ export const EventTypeChip: React.FC<EventTypeChipProps> = ({
       component="div"
       label={label}
       size={size}
-      color={color}
       className={className || ''}
       aria-label={`event type: ${label}`}
+      sx={{
+        backgroundColor: color,
+        color: '#FFFFFF',
+        fontWeight: 600,
+        fontSize: '12px',
+        height: size === 'small' ? '24px' : '32px',
+        borderRadius: '6px',
+        '& .MuiChip-label': {
+          px: 1.5,
+          py: 0.5
+        }
+      }}
     />
   );
 };

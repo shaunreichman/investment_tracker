@@ -25,42 +25,47 @@ interface TabNavigationProps {
 
 const TabContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.background.paper,
+  borderBottom: '1px solid #303234', // Docker border color
+  backgroundColor: '#1F2937', // Docker panel background
+  borderRadius: '8px 8px 0 0', // Rounded top corners
+  overflow: 'hidden',
   '&.tab-navigation': {
     // Additional custom styles if needed
   },
   [theme.breakpoints.down('md')]: {
     flexDirection: 'column',
     borderBottom: 'none',
-    borderRight: `1px solid ${theme.palette.divider}`,
+    borderRight: '1px solid #303234',
+    borderRadius: '8px 0 0 8px', // Rounded left corners on mobile
   },
 }));
 
 const TabButton = styled(Button, {
   shouldForwardProp: (prop) => prop !== 'active' && prop !== 'isMobile',
 })<{ active: boolean; isMobile: boolean }>(({ theme, active, isMobile }) => ({
-  minHeight: 48,
-  padding: theme.spacing(1, 3),
+  minHeight: 56, // Increased height for better touch targets
+  padding: '16px 24px', // Docker-style generous padding
   borderRadius: 0,
   textTransform: 'none',
-  fontWeight: active ? 600 : 400,
-  color: active ? theme.palette.primary.main : theme.palette.text.secondary,
-  backgroundColor: active ? theme.palette.background.paper : 'transparent',
-  borderBottom: active ? `2px solid ${theme.palette.primary.main}` : 'none',
-  borderRight: isMobile && active ? `2px solid ${theme.palette.primary.main}` : 'none',
+  fontWeight: active ? 600 : 500,
+  fontSize: '14px',
+  color: active ? '#FFFFFF' : '#8B949E', // Docker text colors
+  backgroundColor: active ? '#070b0d' : 'transparent', // Docker active background
+  borderBottom: active ? '3px solid #2496ED' : 'none', // Docker blue indicator
+  borderRight: isMobile && active ? '3px solid #2496ED' : 'none',
+  transition: 'all 0.2s ease-in-out',
   '&:hover': {
-    backgroundColor: theme.palette.action.hover,
-    color: theme.palette.text.primary,
+    backgroundColor: active ? '#070b0d' : '#19222a', // Docker hover colors
+    color: active ? '#FFFFFF' : '#C9D1D9',
   },
   '&:disabled': {
-    color: theme.palette.text.disabled,
+    color: '#6B7280',
     backgroundColor: 'transparent',
   },
   [theme.breakpoints.down('md')]: {
     justifyContent: 'flex-start',
     borderBottom: 'none',
-    borderRight: active ? `2px solid ${theme.palette.primary.main}` : 'none',
+    borderRight: active ? '3px solid #2496ED' : 'none',
   },
 }));
 
@@ -137,7 +142,15 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           tabIndex={activeTab === tab.id ? 0 : -1}
           id={`${tab.id}-tab`}
         >
-          <Typography variant="body2" component="span">
+          <Typography 
+            variant="body2" 
+            component="span"
+            sx={{
+              fontWeight: 'inherit',
+              fontSize: '14px',
+              lineHeight: 1.4
+            }}
+          >
             {tab.label}
           </Typography>
         </TabButton>

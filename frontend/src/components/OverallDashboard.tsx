@@ -57,7 +57,7 @@ const OverallDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Box p={3}>
+      <Box sx={{ p: 3 }}>
         <LoadingSpinner label="Loading companies..." />
       </Box>
     );
@@ -67,7 +67,7 @@ const OverallDashboard: React.FC = () => {
     // Handle both string and ErrorInfo error types
     const errorInfo = typeof error === 'string' ? createErrorInfo(error) : error;
     return (
-      <Box p={3}>
+      <Box sx={{ p: 3 }}>
         <ErrorDisplay
           error={errorInfo}
           canRetry={errorInfo.retryable}
@@ -79,24 +79,72 @@ const OverallDashboard: React.FC = () => {
   }
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Investment Companies
-      </Typography>
-      
-      <Typography variant="body1" color="textSecondary" mb={3}>
-        Overview of all investment companies and their managed funds
-      </Typography>
+    <Box sx={{ p: 0 }}>
+      {/* Page Header Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography 
+          variant="h3" 
+          sx={{ 
+            color: '#FFFFFF',
+            fontWeight: 600,
+            mb: 1,
+            letterSpacing: '-0.02em'
+          }}
+        >
+          Investment Companies
+        </Typography>
+        
+        <Typography 
+          variant="body1" 
+          sx={{ 
+            color: '#8B949E',
+            fontSize: '16px',
+            lineHeight: 1.5
+          }}
+        >
+          Overview of all investment companies and their managed funds
+        </Typography>
+      </Box>
 
       {/* Data Management Section */}
-      <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr', mb: 3 }}>
+      <Box 
+        sx={{ 
+          display: 'grid', 
+          gap: 3, 
+          gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
+          mb: 4 
+        }}
+      >
         {/* Entity Management Card */}
-        <Card>
-          <CardContent>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Box display="flex" alignItems="center">
-                <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6">
+        <Card sx={{ 
+          backgroundColor: '#1F2937',
+          border: '1px solid #303234',
+          '&:hover': {
+            boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
+            transform: 'translateY(-2px)',
+            transition: 'all 0.2s ease-in-out'
+          }
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              mb: 2 
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <PersonIcon sx={{ 
+                  mr: 2, 
+                  color: '#2496ED',
+                  fontSize: '28px'
+                }} />
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600
+                  }}
+                >
                   Entity Management
                 </Typography>
               </Box>
@@ -104,24 +152,61 @@ const OverallDashboard: React.FC = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => setShowEntityModal(true)}
-                size="small"
+                size="medium"
+                sx={{
+                  backgroundColor: '#2496ED',
+                  '&:hover': {
+                    backgroundColor: '#1B7FC4'
+                  },
+                  px: 3,
+                  py: 1
+                }}
               >
                 Create Entity
               </Button>
             </Box>
-            <Typography variant="body2" color="textSecondary">
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: '#8B949E',
+                lineHeight: 1.6
+              }}
+            >
               Create and manage investing entities (persons or companies) that can hold funds
             </Typography>
           </CardContent>
         </Card>
 
         {/* Investment Company Management Card */}
-        <Card>
-          <CardContent>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Box display="flex" alignItems="center">
-                <BusinessIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6">
+        <Card sx={{ 
+          backgroundColor: '#1F2937',
+          border: '1px solid #303234',
+          '&:hover': {
+            boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
+            transform: 'translateY(-2px)',
+            transition: 'all 0.2s ease-in-out'
+          }
+        }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              mb: 2 
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <BusinessIcon sx={{ 
+                  mr: 2, 
+                  color: '#2496ED',
+                  fontSize: '28px'
+                }} />
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600
+                  }}
+                >
                   Company Management
                 </Typography>
               </Box>
@@ -129,86 +214,243 @@ const OverallDashboard: React.FC = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => setShowCompanyModal(true)}
-                size="small"
+                size="medium"
+                sx={{
+                  backgroundColor: '#2496ED',
+                  '&:hover': {
+                    backgroundColor: '#1B7FC4'
+                  },
+                  px: 3,
+                  py: 1
+                }}
               >
                 Create Company
               </Button>
             </Box>
-            <Typography variant="body2" color="textSecondary">
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: '#8B949E',
+                lineHeight: 1.6
+              }}
+            >
               Create and manage investment companies and fund managers
             </Typography>
           </CardContent>
         </Card>
       </Box>
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            <Business sx={{ mr: 1, verticalAlign: 'middle' }} />
+      {/* Companies Portfolio Table */}
+      <Card sx={{ 
+        backgroundColor: '#1F2937',
+        border: '1px solid #303234',
+        mb: 4
+      }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              color: '#FFFFFF',
+              fontWeight: 600,
+              mb: 3,
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <Business sx={{ mr: 2, color: '#2496ED', fontSize: '28px' }} />
             Investment Companies Portfolio
           </Typography>
           
-          <TableContainer component={Paper} variant="outlined">
+          <TableContainer 
+            component={Paper} 
+            variant="outlined"
+            sx={{
+              backgroundColor: '#10151a',
+              border: '1px solid #303234',
+              borderRadius: '8px',
+              overflow: 'hidden'
+            }}
+          >
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Company Name</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell align="right">Total Funds</TableCell>
-                  <TableCell align="right">Active Funds</TableCell>
-                  <TableCell align="right">Total Equity</TableCell>
-                  <TableCell align="right">Contact</TableCell>
+                  <TableCell sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderBottom: '1px solid #303234'
+                  }}>
+                    Company Name
+                  </TableCell>
+                  <TableCell sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderBottom: '1px solid #303234'
+                  }}>
+                    Description
+                  </TableCell>
+                  <TableCell align="right" sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderBottom: '1px solid #303234'
+                  }}>
+                    Total Funds
+                  </TableCell>
+                  <TableCell align="right" sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderBottom: '1px solid #303234'
+                  }}>
+                    Active Funds
+                  </TableCell>
+                  <TableCell align="right" sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderBottom: '1px solid #303234'
+                  }}>
+                    Total Equity
+                  </TableCell>
+                  <TableCell align="right" sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderBottom: '1px solid #303234'
+                  }}>
+                    Contact
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {companies?.map((company) => (
-                  <TableRow key={company.id}>
-                    <TableCell>
+                {companies?.map((company, index) => (
+                  <TableRow 
+                    key={company.id}
+                    sx={{
+                      backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
+                      '&:hover': {
+                        backgroundColor: '#19222a'
+                      }
+                    }}
+                  >
+                    <TableCell sx={{ 
+                      borderBottom: '1px solid #303234',
+                      padding: '16px'
+                    }}>
                       <Box>
                         <Link
                           component="button"
                           variant="subtitle2"
                           onClick={() => navigate(`/companies/${company.id}`)}
-                          sx={{ textDecoration: 'none', cursor: 'pointer' }}
+                          sx={{ 
+                            textDecoration: 'none', 
+                            cursor: 'pointer',
+                            color: '#2496ED',
+                            fontWeight: 500,
+                            '&:hover': {
+                              color: '#1B7FC4'
+                            }
+                          }}
                         >
                           {company.name}
                         </Link>
                         {company.website && (
-                          <Typography variant="caption" color="textSecondary" display="block">
-                            <a href={company.website} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              color: '#8B949E',
+                              display: 'block',
+                              mt: 0.5
+                            }}
+                          >
+                            <a 
+                              href={company.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={{ 
+                                textDecoration: 'none',
+                                color: '#8B949E'
+                              }}
+                            >
                               {company.website}
                             </a>
                           </Typography>
                         )}
                       </Box>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="textSecondary">
+                    <TableCell sx={{ 
+                      borderBottom: '1px solid #303234',
+                      padding: '16px'
+                    }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: '#8B949E',
+                          lineHeight: 1.5
+                        }}
+                      >
                         {company.description || 'No description available'}
                       </Typography>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ 
+                      borderBottom: '1px solid #303234',
+                      padding: '16px'
+                    }}>
                       <Chip
                         label={`${company.fund_count} funds`}
                         size="small"
-                        color="primary"
+                        sx={{
+                          backgroundColor: '#2496ED',
+                          color: '#FFFFFF',
+                          fontWeight: 500,
+                          fontSize: '12px'
+                        }}
                       />
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ 
+                      borderBottom: '1px solid #303234',
+                      padding: '16px'
+                    }}>
                       <Chip
                         label={`${company.active_funds || 0} active`}
                         size="small"
-                        color={(company.active_funds || 0) > 0 ? 'success' : 'default'}
+                        sx={{
+                          backgroundColor: (company.active_funds || 0) > 0 ? '#06a58c' : '#6B7280',
+                          color: '#FFFFFF',
+                          fontWeight: 500,
+                          fontSize: '12px'
+                        }}
                       />
                     </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" fontWeight="bold">
+                    <TableCell align="right" sx={{ 
+                      borderBottom: '1px solid #303234',
+                      padding: '16px'
+                    }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          fontWeight: 600,
+                          color: '#FFFFFF',
+                          fontSize: '14px'
+                        }}
+                      >
                         {formatCurrency(company.total_equity_balance || 0)}
                       </Typography>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ 
+                      borderBottom: '1px solid #303234',
+                      padding: '16px'
+                    }}>
                       {company.contact_email && (
-                        <Typography variant="caption" color="textSecondary">
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            color: '#8B949E',
+                            fontSize: '12px'
+                          }}
+                        >
                           {company.contact_email}
                         </Typography>
                       )}
@@ -224,26 +466,48 @@ const OverallDashboard: React.FC = () => {
       {/* Summary Cards */}
       {companies && companies.length > 0 && (
         <Box 
-          display="flex" 
-          flexWrap="wrap" 
-          gap={3} 
-          mt={4}
           sx={{
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: 3, 
+            mt: 4,
             '& > *': {
-              flex: '1 1 250px',
-              minWidth: '250px'
+              flex: '1 1 280px',
+              minWidth: '280px'
             }
           }}
         >
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <Business color="primary" sx={{ mr: 2 }} />
+          <Card sx={{ 
+            backgroundColor: '#1F2937',
+            border: '1px solid #303234',
+            '&:hover': {
+              boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
+              transform: 'translateY(-2px)',
+              transition: 'all 0.2s ease-in-out'
+            }
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Business sx={{ 
+                  color: '#2496ED', 
+                  mr: 3,
+                  fontSize: '32px'
+                }} />
                 <Box>
-                  <Typography color="textSecondary" gutterBottom>
+                  <Typography 
+                    sx={{ 
+                      color: '#8B949E', 
+                      fontSize: '14px',
+                      fontWeight: 500
+                    }}
+                    gutterBottom
+                  >
                     Total Companies
                   </Typography>
-                  <Typography variant="h5">
+                  <Typography variant="h4" sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600
+                  }}>
                     {companies.length}
                   </Typography>
                 </Box>
@@ -251,15 +515,37 @@ const OverallDashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <AccountBalance color="success" sx={{ mr: 2 }} />
+          <Card sx={{ 
+            backgroundColor: '#1F2937',
+            border: '1px solid #303234',
+            '&:hover': {
+              boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
+              transform: 'translateY(-2px)',
+              transition: 'all 0.2s ease-in-out'
+            }
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <AccountBalance sx={{ 
+                  color: '#06a58c', 
+                  mr: 3,
+                  fontSize: '32px'
+                }} />
                 <Box>
-                  <Typography color="textSecondary" gutterBottom>
+                  <Typography 
+                    sx={{ 
+                      color: '#8B949E', 
+                      fontSize: '14px',
+                      fontWeight: 500
+                    }}
+                    gutterBottom
+                  >
                     Total Funds
                   </Typography>
-                  <Typography variant="h5">
+                  <Typography variant="h4" sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600
+                  }}>
                     {companies?.reduce((sum, company) => sum + (company.fund_count || 0), 0) || 0}
                   </Typography>
                 </Box>
@@ -267,15 +553,37 @@ const OverallDashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <TrendingUp color="info" sx={{ mr: 2 }} />
+          <Card sx={{ 
+            backgroundColor: '#1F2937',
+            border: '1px solid #303234',
+            '&:hover': {
+              boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
+              transform: 'translateY(-2px)',
+              transition: 'all 0.2s ease-in-out'
+            }
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <TrendingUp sx={{ 
+                  color: '#4ca2fa', 
+                  mr: 3,
+                  fontSize: '32px'
+                }} />
                 <Box>
-                  <Typography color="textSecondary" gutterBottom>
+                  <Typography 
+                    sx={{ 
+                      color: '#8B949E', 
+                      fontSize: '14px',
+                      fontWeight: 500
+                    }}
+                    gutterBottom
+                  >
                     Active Funds
                   </Typography>
-                  <Typography variant="h5">
+                  <Typography variant="h4" sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600
+                  }}>
                     {companies?.reduce((sum, company) => sum + (company.active_funds || 0), 0) || 0}
                   </Typography>
                 </Box>
@@ -283,15 +591,37 @@ const OverallDashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <Event color="secondary" sx={{ mr: 2 }} />
+          <Card sx={{ 
+            backgroundColor: '#1F2937',
+            border: '1px solid #303234',
+            '&:hover': {
+              boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
+              transform: 'translateY(-2px)',
+              transition: 'all 0.2s ease-in-out'
+            }
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Event sx={{ 
+                  color: '#06a58c', 
+                  mr: 3,
+                  fontSize: '32px'
+                }} />
                 <Box>
-                  <Typography color="textSecondary" gutterBottom>
+                  <Typography 
+                    sx={{ 
+                      color: '#8B949E', 
+                      fontSize: '14px',
+                      fontWeight: 500
+                    }}
+                    gutterBottom
+                  >
                     Total Equity
                   </Typography>
-                  <Typography variant="h5">
+                  <Typography variant="h4" sx={{ 
+                    color: '#FFFFFF',
+                    fontWeight: 600
+                  }}>
                     {formatCurrency(companies?.reduce((sum, company) => sum + (company.total_equity_balance || 0), 0) || 0)}
                   </Typography>
                 </Box>

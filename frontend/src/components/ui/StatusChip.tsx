@@ -20,9 +20,16 @@ export const StatusChip: React.FC<StatusChipProps> = ({ status, size = 'small', 
       className={className || ''}
       aria-label={`status: ${info.value}`}
       sx={{
-        bgcolor: info.color,
-        color: '#fff',
-        fontWeight: 500,
+        backgroundColor: info.color,
+        color: '#FFFFFF',
+        fontWeight: 600,
+        fontSize: '12px',
+        height: size === 'small' ? '24px' : '32px',
+        borderRadius: '6px',
+        '& .MuiChip-label': {
+          px: 1.5,
+          py: 0.5
+        }
       }}
       title={info.tooltip}
     />

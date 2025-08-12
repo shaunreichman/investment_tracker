@@ -15,11 +15,44 @@ export const FormField: React.FC<FormFieldProps> = ({ id, label, error, hint, re
   const isError = Boolean(error);
 
   return (
-    <FormControl fullWidth error={isError} aria-invalid={isError} aria-describedby={helperId}>
-      <FormLabel htmlFor={id} required={required || false}>{label}</FormLabel>
+    <FormControl 
+      fullWidth 
+      error={isError} 
+      aria-invalid={isError} 
+      aria-describedby={helperId}
+      sx={{ mb: 3 }}
+    >
+      <FormLabel 
+        htmlFor={id} 
+        required={required || false}
+        sx={{
+          color: '#FFFFFF',
+          fontWeight: 600,
+          fontSize: '14px',
+          mb: 1,
+          '&.Mui-focused': {
+            color: '#2496ED'
+          },
+          '&.Mui-error': {
+            color: '#F85149'
+          }
+        }}
+      >
+        {label}
+      </FormLabel>
       {children}
       {(hint || error) && (
-        <FormHelperText id={helperId}>{error || hint}</FormHelperText>
+        <FormHelperText 
+          id={helperId}
+          sx={{
+            color: isError ? '#F85149' : '#8B949E',
+            fontSize: '12px',
+            fontWeight: 500,
+            mt: 0.5
+          }}
+        >
+          {error || hint}
+        </FormHelperText>
       )}
     </FormControl>
   );

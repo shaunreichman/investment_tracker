@@ -10,16 +10,47 @@ export interface TrackingTypeChipProps {
 export const TrackingTypeChip: React.FC<TrackingTypeChipProps> = ({ trackingType, size = 'small', className }) => {
   const normalized = String(trackingType).toLowerCase();
   const label = normalized === 'nav_based' ? 'nav_based' : normalized === 'cost_based' ? 'cost_based' : trackingType;
-  const color = normalized === 'nav_based' ? 'primary' : normalized === 'cost_based' ? 'secondary' : 'default';
+  
+  // Docker color scheme for tracking types
+  const getChipStyle = () => {
+    if (normalized === 'nav_based') {
+      return {
+        backgroundColor: '#2496ED',
+        color: '#FFFFFF'
+      };
+    } else if (normalized === 'cost_based') {
+      return {
+        backgroundColor: '#06a58c',
+        color: '#FFFFFF'
+      };
+    } else {
+      return {
+        backgroundColor: '#6B7280',
+        color: '#FFFFFF'
+      };
+    }
+  };
+
+  const chipStyle = getChipStyle();
 
   return (
     <Chip
       component="div"
       label={label}
       size={size}
-      color={color as any}
       className={className || ''}
       aria-label={`tracking: ${label}`}
+      sx={{
+        ...chipStyle,
+        fontWeight: 600,
+        fontSize: '12px',
+        height: size === 'small' ? '24px' : '32px',
+        borderRadius: '6px',
+        '& .MuiChip-label': {
+          px: 1.5,
+          py: 0.5
+        }
+      }}
     />
   );
 };

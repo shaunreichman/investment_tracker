@@ -13,15 +13,48 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   center = true,
 }) => {
   const content = (
-    <Box role="status" aria-live="polite" display="flex" flexDirection="column" alignItems="center">
-      <CircularProgress size={size} sx={{ mb: 1 }} />
-      <Typography variant="body2" color="text.secondary">{label}</Typography>
+    <Box 
+      role="status" 
+      aria-live="polite" 
+      sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        p: 3
+      }}
+    >
+      <CircularProgress 
+        size={size} 
+        sx={{ 
+          mb: 2,
+          color: '#2496ED'
+        }} 
+      />
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          color: '#8B949E',
+          fontSize: '14px',
+          fontWeight: 500
+        }}
+      >
+        {label}
+      </Typography>
     </Box>
   );
 
   if (center) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={160}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: 160,
+        backgroundColor: '#1F2937',
+        border: '1px solid #303234',
+        borderRadius: '8px',
+        m: 2
+      }}>
         {content}
       </Box>
     );
