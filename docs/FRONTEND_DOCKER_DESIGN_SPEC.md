@@ -46,16 +46,27 @@ export const dockerThemeWithConfig = {
 
 ## 3. Color Palette
 
-- **Background (Primary)**: `#1E1E2F` (main app background)
-- **Surface Background (Panels/Cards)**: `#252537`
-- **Sidebar Background**: `#1B1B2B`
-- **Highlight/Accent**: Docker-like blue `#2496ED`
-- **Text Primary**: `#FFFFFF`
-- **Text Secondary**: `#B0B0C3`
-- **Borders/Dividers**: `rgba(255,255,255,0.08)`
-- **Success**: `#28A745`
+### Primary Background
+- **Main App Background**: Deep charcoal/blue-black (`#0D1117` to `#1B1F23` range)
+- **Surface Background (Panels/Cards)**: Slightly lighter dark (`#1B1F23` to `#21262D` range)
+- **Sidebar Background**: Deep dark (`#0D1117` to `#161B22` range)
+
+### Header & Navigation
+- **Header Bar**: Rich gradient blue (`#0066CC` to deeper navy `#004499`)
+- **Active Navigation**: Bright blue accent (`#007FFF`)
+
+### Accent Colors
+- **Primary Accent**: Blue (`#007FFF` to lighter blues `#1E90FF`)
+- **Success/Status**: Green (`#28A745`)
 - **Warning**: `#FFC107`
 - **Error**: `#DC3545`
+
+### Text Colors
+- **Primary Text**: High-contrast white (`#FFFFFF`) for titles and key metrics
+- **Secondary Text**: Soft gray (`#8B949E`) for descriptive text
+- **Borders/Dividers**: `rgba(255,255,255,0.08)`
+
+> **Design Principle**: Bright accent colors (blue, green, red) reserved only for high-importance cues and interactive elements.
 
 > Use MUI's `createTheme` to centralize these colors.
 
@@ -75,9 +86,9 @@ export const dockerThemeWithConfig = {
 
 - **Main Sidebar Navigation** (Docker-style):
   - Collapsible vertical nav on the left
-  - Solid dark background (`#1B1B2B`)
+  - Solid dark background (`#0D1117` to `#161B22` range)
   - Icons first, labels second
-  - Active item highlighted with blue accent + subtle background
+  - Active item highlighted with blue accent (`#007FFF`) + subtle background
 - **Fund Navigation Sidebar** (Enhanced Navigation - Phase 7):
   - Contextual navigation between funds and companies
   - Company header and fund list with active states
@@ -146,11 +157,12 @@ export const dockerThemeWithConfig = {
 
 **Tasks**:
 - [ ] **Create Docker Color Palette**: Implement exact color codes from design principles
-  - Background: `#1E1E2F` (main app background)
-  - Surface: `#252537` (panels/cards)
-  - Sidebar: `#1B1B2B`
-  - Accent: `#2496ED` (Docker blue)
-  - Text: `#FFFFFF` (primary), `#B0B0C3` (secondary)
+  - Background: Deep charcoal/blue-black (`#0D1117` to `#1B1F23` range)
+  - Surface: Slightly lighter dark (`#1B1F23` to `#21262D` range)
+  - Sidebar: Deep dark (`#0D1117` to `#161B22` range)
+  - Header: Rich gradient blue (`#0066CC` to `#004499`)
+  - Accent: Blue (`#007FFF` to `#1E90FF`)
+  - Text: `#FFFFFF` (primary), `#8B949E` (secondary)
 - [ ] **Implement Typography Scale**: Set up precise font hierarchy
   - Headings: 28px h1, 22px h2, 18px h3
   - Body: 14-16px
@@ -171,9 +183,9 @@ export const dockerThemeWithConfig = {
 
 **Tasks**:
 - [ ] **Implement Sidebar Navigation**: Create collapsible left sidebar
-  - Dark background (`#1B1B2B`)
+  - Dark background (`#0D1117` to `#161B22` range)
   - Navigation items with icons and labels
-  - Active state highlighting with blue accent
+  - Active state highlighting with blue accent (`#007FFF`)
   - Collapse/expand functionality with smooth animation
 - [ ] **Create Top Bar**: Fixed position header with page context
   - Page title and breadcrumbs
@@ -199,7 +211,7 @@ export const dockerThemeWithConfig = {
 
 **Tasks**:
 - [ ] **Modernize Cards & Panels**: Apply Docker styling to all containers
-  - Background: `#252537`
+  - Background: Slightly lighter dark (`#1B1F23` to `#21262D` range)
   - Border-radius: 8px
   - Subtle shadows: `rgba(0,0,0,0.2) 0px 4px 12px`
   - Consistent 16px padding
@@ -215,7 +227,7 @@ export const dockerThemeWithConfig = {
   - Backgrounds slightly lighter than panels
   - Consistent spacing and typography
 - [ ] **Style Buttons**: Create professional button designs
-  - Primary: Accent blue background (`#2496ED`) with white text
+  - Primary: Accent blue background (`#007FFF`) with white text
   - Secondary: Transparent with white border
   - Hover states with smooth transitions
   - Consistent sizing and spacing
@@ -389,7 +401,7 @@ export const dockerThemeWithConfig = {
 
 ### Visual Quality
 - [ ] Application achieves professional, enterprise-grade appearance
-- [ ] Color scheme matches Docker Desktop specifications exactly
+- [ ] Color scheme matches specified deep charcoal/blue-black theme with rich blue gradients
 - [ ] Typography hierarchy is clear and consistent
 - [ ] Spacing and layout follow Docker's generous padding approach
 - [ ] All components use consistent design language
@@ -454,8 +466,9 @@ The outcome will be a frontend that feels as polished and modern as Docker Deskt
 ## 15. Appendix
 
 ### **A. Docker Design Reference**
-- Docker Desktop UI design principles
-- Exact color codes and typography specifications
+- Deep charcoal/blue-black color scheme (`#0D1117` to `#1B1F23` range)
+- Rich blue gradient header system (`#0066CC` to `#004499`)
+- Professional accent color palette (`#007FFF` to `#1E90FF`)
 - Layout principles and interaction patterns
 - Component design guidelines and spacing systems
 
