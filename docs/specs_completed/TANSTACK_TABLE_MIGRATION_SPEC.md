@@ -1,5 +1,20 @@
 # TanStack Table Migration Specification
 
+> **⚠️ SPEC NOT IMPLEMENTED - MOVED TO COMPLETED FOLDER**
+> 
+> **Decision**: This migration was determined to be unnecessary and over-engineered for the current needs.
+> 
+> **Key Reasons**:
+> - Current MUI tables perform adequately for most use cases (Companies, Dashboard, Funds tables)
+> - The "400+ lines of complex table code" was mischaracterized - complexity is in business logic, not table structure
+> - MUI v7.2.0 provides modern, beautiful tables that can be enhanced with better styling
+> - 6-7 week development effort for minimal benefit and significant risk
+> - Better approach: Modern MUI table enhancement for visual appeal + targeted TanStack migration only for performance-critical tables (10,000+ fund events) if needed
+> 
+> **Alternative Plan**: Focus on modern MUI table styling improvements for immediate visual impact and better user experience.
+> 
+> **Status**: Spec archived - not proceeding with implementation
+
 ## Overview
 
 Migrate from Material-UI (MUI) table components to TanStack Table (React Table v8) across the investment tracker application. This migration will enhance table performance, add advanced features, and establish consistent table patterns while preserving existing functionality and styling.
