@@ -4,6 +4,16 @@
 
 import { createTheme } from '@mui/material/styles';
 
+// Docker Spacing System - Following spec requirements
+export const dockerSpacing = {
+  xs: 4,      // 4px
+  sm: 8,      // 8px
+  md: 16,     // 16px - inner padding for cards (spec requirement)
+  lg: 24,     // 24px - outer padding between sections (spec requirement)
+  xl: 32,     // 32px - major section spacing
+  xxl: 48,    // 48px - page-level spacing
+} as const;
+
 // Create minimal theme with only essential overrides
 export const dockerTheme = createTheme({
   palette: {
@@ -120,6 +130,55 @@ export const dockerTheme = createTheme({
           '&:hover': {
             backgroundColor: 'rgba(255,255,255,0.04)', // Subtle hover effect
           },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+          fontWeight: 500,
+          fontSize: '12px',
+          height: '24px',
+        },
+        label: {
+          padding: '0 8px',
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 8,
+            backgroundColor: '#21262D', // Slightly lighter than panel background
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#007FFF', // Docker blue focus
+              borderWidth: 2,
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'rgba(255,255,255,0.2)', // Subtle hover
+            },
+          },
+        },
+      },
+    },
+    MuiTableContainer: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1B1F23',
+          borderRadius: 8,
+          boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
+          overflow: 'hidden',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1B1F23',
+          borderRadius: 8,
+          boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
         },
       },
     },
