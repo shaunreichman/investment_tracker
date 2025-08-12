@@ -207,6 +207,34 @@ export const dockerTheme = createTheme({
         },
       },
     },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          padding: '12px 16px',
+          color: '#FFFFFF',
+          fontSize: '14px',
+        },
+      },
+    },
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(255,255,255,0.08)',
+          margin: '16px 0',
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+          '&:hover': {
+            backgroundColor: 'rgba(255,255,255,0.04)',
+          },
+        },
+      },
+    },
   },
 });
 
