@@ -15,9 +15,11 @@ import { OverviewTab } from './overview-tab';
 import { CompanyDetailsTab } from './company-details-tab';
 import { AnalysisTab } from './analysis-tab';
 import { ActivityTab } from './activity-tab';
+import { FundsTab } from './funds-tab';
 import {
   useCompanyOverview,
   useCompanyDetails,
+  useEnhancedFunds,
 } from '../../hooks/useInvestmentCompanies';
 
 const CreateFundModal = React.lazy(() => import('../companies/create-fund/CreateFundModal'));
@@ -51,6 +53,35 @@ export const EnhancedCompaniesPage: React.FC = () => {
   const { data: detailsData, loading: detailsLoading } = useCompanyDetails(
     parseInt(companyId || '0')
   );
+
+  // Funds tab state
+  const [fundsParams, setFundsParams] = useState({
+    search: '',
+    status_filter: 'all',
+    currency_filter: 'all',
+    fund_type_filter: 'all',
+    page: 1,
+    per_page: 25,
+    sort_field: 'start_date',
+    sort_direction: 'desc' as 'asc' | 'desc',
+    view_mode: 'table' as 'table' | 'cards'
+  });
+
+  const { data: fundsData, loading: fundsLoading } = useEnhancedFunds(
+    parseInt(companyId || '0'),
+    {
+      sort_by: 'start_date',
+      sort_order: 'desc',
+      status_filter: 'all',
+      search: '',
+      page: 1,
+      per_page: 25,
+    }
+  );
+
+  const handleFundsParamsChange = (newParams: any) => {
+    setFundsParams(prev => ({ ...prev, ...newParams }));
+  };
 
   // Tab configuration
   const tabs: TabData[] = [
@@ -311,27 +342,12 @@ export const EnhancedCompaniesPage: React.FC = () => {
         )}
         
         {activeTab === 'funds' && (
-          <Box sx={{ p: 3 }}>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                color: '#FFFFFF',
-                fontWeight: 600,
-                mb: 2
-              }}
-            >
-              Funds Management
-            </Typography>
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                color: '#8B949E',
-                lineHeight: 1.5
-              }}
-            >
-              Funds management functionality will be implemented in the next phase. This tab will provide comprehensive fund overview, filtering, and management capabilities.
-            </Typography>
-          </Box>
+          <FundsTab
+            data={fundsData}
+            loading={fundsLoading}
+            onParamsChange={handleFundsParamsChange}
+            currentParams={fundsParams}
+          />
         )}
         
         {activeTab === 'analysis' && (

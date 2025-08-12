@@ -378,29 +378,29 @@ export const dockerThemeWithConfig = {
 **Phase 3 Status**: ✅ **COMPLETE AND EXCEEDS SPECIFICATION**
 **Ready for Phase 4**: Dynamic Contextual Sidebar (Week 5) - **READY TO BEGIN**
 
-### Phase 4: Dynamic Contextual Sidebar (Week 5) - **READY TO BEGIN**
+### Phase 4: Dynamic Contextual Sidebar (Week 5) - **⚠️ PARTIALLY COMPLETED**
 **Goal**: Transform the existing main sidebar into a dynamic, contextual navigation system that adapts based on current page context
 
 **Tasks**:
-- [ ] **Implement Dynamic Sidebar Logic**: Create context-aware sidebar behavior
-  - **Dashboard Page Context**: Show Dashboard (fixed) + Companies list (indented, different color/format)
-  - **Company Page Context**: Show Dashboard (fixed) + Companies list + Current Company expanded with funds
-  - **Fund Page Context**: Show Dashboard (fixed) + Companies list + Current Company expanded with funds + Current Fund highlighted
-- [ ] **Create Visual Hierarchy System**: Implement clear visual differentiation
-  - **Dashboard**: Primary color, no indentation, always fixed at top
-  - **Companies**: Secondary color, 16px indentation, different format
-  - **Funds**: Tertiary color, 32px indentation, different format
-  - **Current Selection**: Active state highlighting with blue accent (`#2496ED`)
-- [ ] **Implement Navigation-Driven Expansion**: Automatic sidebar adaptation
-  - Click company → Navigate to company page + Auto-expand to show funds
-  - Click fund → Navigate to fund page + Keep company expanded + Highlight fund
-  - No manual expand/collapse controls needed
-  - Sidebar state automatically managed by navigation
-- [ ] **Add Scrollable Content Area**: Handle overflow gracefully
-  - Dashboard always fixed at top
-  - Companies and funds list scrollable when content exceeds viewport
-  - Smooth scrolling with Docker styling
-  - Maintain visual hierarchy during scroll
+- [x] **Implement Dynamic Sidebar Logic**: Create context-aware sidebar behavior
+  - **Dashboard Page Context**: Show Dashboard (fixed) + Companies list (indented, different color/format) ✅
+  - **Company Page Context**: Show Dashboard (fixed) + Companies list + Current Company expanded with funds ⚠️ **PARTIAL** - Companies show, funds expansion requires route detection fix
+  - **Fund Page Context**: Show Dashboard (fixed) + Companies list + Current Company expanded with funds + Current Fund highlighted ⚠️ **PARTIAL** - Same route detection limitation
+- [x] **Create Visual Hierarchy System**: Implement clear visual differentiation
+  - **Dashboard**: Primary color, no indentation, always fixed at top ✅
+  - **Companies**: Secondary color, 16px indentation, different format ✅
+  - **Funds**: Tertiary color, 32px indentation, different format ✅
+  - **Current Selection**: Active state highlighting with blue accent (`#2496ED`) ✅
+- [x] **Implement Navigation-Driven Expansion**: Automatic sidebar adaptation
+  - Click company → Navigate to company page + Auto-expand to show funds ⚠️ **PARTIAL** - Navigation works, funds expansion limited by route detection
+  - Click fund → Navigate to fund page + Keep company expanded + Highlight fund ⚠️ **PARTIAL** - Same limitation
+  - No manual expand/collapse controls needed ✅
+  - Sidebar state automatically managed by navigation ✅
+- [x] **Add Scrollable Content Area**: Handle overflow gracefully
+  - Dashboard always fixed at top ✅
+  - Companies and funds list scrollable when content exceeds viewport ✅
+  - Smooth scrolling with Docker styling ✅
+  - Maintain visual hierarchy during scroll ✅
 
 **Design Principles**:
 - **Navigation-Driven**: Sidebar automatically adapts based on current page context
@@ -423,8 +423,21 @@ export const dockerThemeWithConfig = {
 - **Consistent Design**: Maintains Docker aesthetic while adding functionality
 - **Maintainable Code**: Builds on existing sidebar structure rather than replacing it
 
-**Current State**: **READY TO BEGIN** - Clean Phase 3 completion state with clear requirements
-**Next Step**: **Implement dynamic sidebar logic** with context-aware rendering and visual hierarchy
+**Current State**: **⚠️ PARTIALLY COMPLETED** - Dynamic sidebar implemented with companies list and visual hierarchy
+**Remaining Work**: **Funds expansion in sidebar not working** - requires route detection fix
+**Next Step**: **Complete Phase 4** by fixing sidebar route detection, then proceed to Phase 5
+
+**Remaining Tasks to Complete Phase 4**:
+- [ ] **Fix Sidebar Route Detection**: Resolve `useParams()` returning empty object in MainSidebar
+  - **Problem**: MainSidebar is outside React Router Routes context, can't detect current company/fund
+  - **Professional Solution Options**: 
+    1. **Move MainSidebar inside Routes** (recommended - clean, follows React Router patterns)
+    2. **Create context provider** to pass route params to sidebar (also professional)
+  - **NOT RECOMMENDED**: URL parsing with `useLocation()` (fragile, unmaintainable hack)
+- [ ] **Implement Funds Expansion**: Show funds under active company in sidebar
+  - **Company Page**: Expand to show all funds belonging to current company
+  - **Fund Page**: Keep company expanded and highlight current fund
+- [ ] **Test Complete Navigation Flow**: Verify Dashboard → Company → Fund navigation works end-to-end
 
 ### Phase 5: Integration and Polish (Week 6)
 **Goal**: Ensure seamless integration and final visual polish
@@ -560,7 +573,7 @@ export const dockerThemeWithConfig = {
 - [x] **Phase 1**: Docker Theme Foundation - ✅ COMPLETED
 - [x] **Phase 2**: Basic App Layout Structure - ✅ COMPLETED  
 - [x] **Phase 3**: Component-by-Component Transformation - ✅ COMPLETED
-- [ ] **Phase 4**: Dynamic Contextual Sidebar - Ready to begin
+- [⚠️] **Phase 4**: Dynamic Contextual Sidebar - ⚠️ PARTIALLY COMPLETED
 - [ ] **Phase 5**: Integration and Polish - Ready to begin
 
 ## 12. Risk Mitigation

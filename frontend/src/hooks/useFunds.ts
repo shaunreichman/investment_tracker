@@ -6,6 +6,7 @@ import { apiClient } from '../services/api';
 import { useApiCall, useMutation, useApiCallWithDeps, useConditionalApiCall } from './useApiCall';
 import {
   Fund,
+  DashboardFund,
   CreateFundData,
   CreateFundEventData,
   CreateTaxStatementData,
@@ -23,7 +24,7 @@ import {
 export function useFunds(options?: { refetchOnWindowFocus?: boolean }) {
   const getFunds = useCallback(() => apiClient.getFunds(), []);
   
-  return useApiCall(
+  return useApiCall<DashboardFund[]>(
     getFunds,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );

@@ -26,7 +26,7 @@ import {
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useInvestmentCompanies } from '../../hooks/useInvestmentCompanies';
 import { useFunds } from '../../hooks/useFunds';
-import { Fund } from '../../types/api';
+import { Fund, DashboardFund } from '../../types/api';
 
 interface MainSidebarProps {
   open: boolean;
@@ -45,11 +45,19 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
 
   // Get current company and fund IDs
   const currentCompanyId = useMemo(() => {
-    if (params.companyId) return parseInt(params.companyId);
+    console.log('Sidebar Debug - params:', params);
+    console.log('Sidebar Debug - allFundsData:', allFundsData);
+    
+    if (params.companyId) {
+      console.log('Sidebar Debug - Found companyId in params:', params.companyId);
+      return parseInt(params.companyId);
+    }
     if (params.fundId && allFundsData) {
       const fund = allFundsData.find(f => f.id === parseInt(params.fundId || '0'));
+      console.log('Sidebar Debug - Found fund in params, fund:', fund);
       return fund?.investment_company_id;
     }
+    console.log('Sidebar Debug - No current company ID found');
     return null;
   }, [params.companyId, params.fundId, allFundsData]);
 
@@ -58,20 +66,25 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
     return null;
   }, [params.fundId]);
 
-  // Group funds by company for efficient lookup
+  // Group funds by company for sidebar display
   const fundsByCompany = useMemo(() => {
     if (!allFundsData) return new Map();
     
-    const grouped = new Map<number, Fund[]>();
-    allFundsData.forEach((fund: Fund) => {
+    console.log('Sidebar Debug - allFundsData:', allFundsData);
+    console.log('Sidebar Debug - companiesData:', companiesData);
+    
+    const grouped = new Map<number, DashboardFund[]>();
+    allFundsData.forEach((fund: DashboardFund) => {
+      console.log('Sidebar Debug - Processing fund:', fund);
       if (!grouped.has(fund.investment_company_id)) {
         grouped.set(fund.investment_company_id, []);
       }
       grouped.get(fund.investment_company_id)!.push(fund);
     });
     
+    console.log('Sidebar Debug - Grouped funds:', grouped);
     return grouped;
-  }, [allFundsData]);
+  }, [allFundsData, companiesData]);
 
   // Handle navigation
   const handleNavigation = (path: string) => {
@@ -253,6 +266,12 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                   const companyActive = isCompanyActive(company.id);
                   const companyFunds = fundsByCompany.get(company.id) || [];
                   
+                  console.log(`Sidebar Debug - Company ${company.name} (ID: ${company.id}):`, {
+                    companyActive,
+                    companyFundsCount: companyFunds.length,
+                    companyFunds
+                  });
+                  
                   return (
                     <Box key={company.id}>
                       {/* Company Item */}
@@ -299,7 +318,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                       {/* Company Funds - Show when company is active */}
                       {companyActive && open && companyFunds.length > 0 && (
                         <List sx={{ p: 0, pl: 2 }}>
-                          {companyFunds.map((fund: Fund) => {
+                          {companyFunds.map((fund: DashboardFund) => {
                             const fundActive = isFundActive(fund.id);
                             
                             return (

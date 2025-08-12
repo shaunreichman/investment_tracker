@@ -30,7 +30,8 @@ import {
   EntityListResponse,
   CompanyOverviewResponse,
   EnhancedFundsResponse,
-  CompanyDetailsResponse
+  CompanyDetailsResponse,
+  DashboardFund
 } from '../types/api';
 
 import { getApiBaseUrl } from '../config/environment';
@@ -128,8 +129,8 @@ class ApiClient {
   // FUNDS API
   // ============================================================================
 
-  async getFunds(): Promise<FundListResponse> {
-    const response = await this.request<{ funds: Fund[] }>('/api/dashboard/funds');
+  async getFunds(): Promise<DashboardFund[]> {
+    const response = await this.request<{ funds: DashboardFund[] }>('/api/dashboard/funds');
     return response.funds;
   }
 

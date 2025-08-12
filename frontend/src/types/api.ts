@@ -187,6 +187,24 @@ export interface PortfolioSummary {
   last_updated: string;
 }
 
+export interface DashboardFund {
+  id: number;
+  name: string;
+  fund_type: string;
+  tracking_type: string;
+  currency: string;
+  current_equity_balance: number;
+  average_equity_balance: number;
+  status: string;
+  recent_events_count: number;
+  created_at: string;
+  // Display fields (strings instead of IDs)
+  investment_company_id: number;  // Company ID for grouping
+  investment_company: string;     // Company name as string
+  entity_id: number;             // Entity ID for consistency
+  entity: string;                // Entity name as string
+}
+
 export interface FundStatistics {
   total_events: number;
   total_tax_statements: number;
@@ -200,7 +218,7 @@ export interface FundStatistics {
 
 export interface DashboardData {
   portfolio_summary: PortfolioSummary;
-  funds: Fund[];
+  funds: DashboardFund[];
   recent_events: FundEvent[];
   performance: any; // TODO: Define specific performance interface
 }

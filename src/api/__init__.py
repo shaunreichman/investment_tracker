@@ -119,7 +119,9 @@ def create_app(db_config=None):
                         "current_equity_balance": float(fund.current_equity_balance) if fund.current_equity_balance else 0.0,
                         "average_equity_balance": float(fund.average_equity_balance) if fund.average_equity_balance else 0.0,
                         "status": fund.status.value if fund.status else None,
+                        "investment_company_id": fund.investment_company_id,  # Add the ID for grouping
                         "investment_company": fund.investment_company.name if fund.investment_company else "Unknown",
+                        "entity_id": fund.entity_id,  # Add the entity ID for consistency
                         "entity": fund.entity.name if fund.entity else "Unknown",
                         "recent_events_count": recent_events_count,
                         "created_at": fund.created_at.isoformat() if fund.created_at else None

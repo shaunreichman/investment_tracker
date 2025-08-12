@@ -2,16 +2,24 @@
 // This file addresses the critical 37.54% coverage gap in hooks
 
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { 
-  useFunds, 
-  useFund, 
-  useCreateFund, 
-  useCreateFundEvent, 
-  useDeleteFundEvent, 
+import {
+  useFunds,
+  useFund,
+  useCreateFund,
+  useCreateFundEvent,
+  useDeleteFundEvent,
   useCreateTaxStatement,
-  useFundDetail 
+  useFundDetail
 } from './useFunds';
-import { Fund, FundEvent, FundType, FundStatus, EventType, ExtendedFundEvent } from '../types/api';
+import {
+  Fund,
+  FundType,
+  FundStatus,
+  FundEvent,
+  EventType,
+  ExtendedFundEvent,
+  DashboardFund,
+} from '../types/api';
 import { apiClient } from '../services/api';
 
 // ============================================================================
@@ -33,6 +41,24 @@ const createMockFund = (overrides: Partial<Fund> = {}): Fund => ({
   final_tax_statement_received: false,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
+  ...overrides
+});
+
+const createMockDashboardFund = (overrides: Partial<DashboardFund> = {}): DashboardFund => ({
+  id: 1,
+  name: 'Test Fund',
+  fund_type: 'Private Equity',
+  tracking_type: 'nav_based',
+  currency: 'AUD',
+  current_equity_balance: 1000000,
+  average_equity_balance: 1000000,
+  status: 'active',
+  recent_events_count: 5,
+  created_at: '2023-01-01T00:00:00Z',
+  investment_company_id: 1,
+  investment_company: 'Test Company',
+  entity_id: 1,
+  entity: 'Test Entity',
   ...overrides
 });
 
@@ -126,7 +152,7 @@ describe('useFunds', () => {
     });
 
     it('should fetch funds successfully', async () => {
-      const mockFunds = [createMockFund(), createMockFund({ id: 2, name: 'Fund 2' })];
+      const mockFunds = [createMockDashboardFund(), createMockDashboardFund({ id: 2, name: 'Fund 2' })];
       mockApiClient.getFunds.mockResolvedValue(mockFunds);
 
       const { result } = renderHook(() => useFunds());
@@ -278,9 +304,9 @@ describe('useFunds', () => {
 
   describe('useCreateTaxStatement', () => {
     it('should create a tax statement successfully', async () => {
-      const mockTaxStatement = { 
-        id: 1, 
-        fund_id: 1, 
+      const mockTaxStatement = {
+        id: 1,
+        fund_id: 1,
         entity_id: 1,
         financial_year: '2023',
         tax_payment_date: '2023-06-30',
@@ -310,7 +336,7 @@ describe('useFunds', () => {
         created_at: '2023-01-01T00:00:00Z',
         updated_at: '2023-01-01T00:00:00Z'
       };
-      const taxData = { 
+      const taxData = {
         entity_id: 1,
         financial_year: '2023',
         statement_date: '2023-06-30',
@@ -329,7 +355,7 @@ describe('useFunds', () => {
 
     it('should handle tax statement creation errors', async () => {
       const errorMessage = 'Failed to create tax statement';
-      const taxData = { 
+      const taxData = {
         entity_id: 1,
         financial_year: '2023',
         statement_date: '2023-06-30',
@@ -353,12 +379,12 @@ describe('useFunds', () => {
 
   describe('useFundDetail', () => {
     it('should fetch fund details successfully', async () => {
-      const mockFundDetail = { 
+      const mockFundDetail = {
         fund: {
           ...createMockFund(),
           investment_company: 'Test Company',
           entity: 'Test Entity'
-        }, 
+        },
         events: [createMockExtendedFundEvent()],
         statistics: {
           total_events: 1,
@@ -412,7 +438,7 @@ describe('useFunds', () => {
     it('should work with different fund types', async () => {
       const navFund = createMockFund({ tracking_type: FundType.NAV_BASED });
               const costFund = createMockFund({ tracking_type: FundType.COST_BASED, id: 2 });
-      
+
       mockApiClient.getFund.mockResolvedValueOnce(navFund);
       mockApiClient.getFund.mockResolvedValueOnce(costFund);
 
@@ -433,7 +459,7 @@ describe('useFunds', () => {
     it('should handle different event types', async () => {
       const capitalCallEvent = createMockFundEvent({ event_type: EventType.CAPITAL_CALL });
       const distributionEvent = createMockFundEvent({ event_type: EventType.DISTRIBUTION, id: 2 });
-      
+
       mockApiClient.createFundEvent.mockResolvedValueOnce(capitalCallEvent);
       mockApiClient.createFundEvent.mockResolvedValueOnce(distributionEvent);
 
@@ -491,8 +517,8 @@ describe('useFunds', () => {
     });
 
     it('should handle very large fund lists', async () => {
-      const largeFundList = Array.from({ length: 1000 }, (_, i) => 
-        createMockFund({ id: i + 1, name: `Fund ${i + 1}` })
+      const largeFundList = Array.from({ length: 1000 }, (_, i) =>
+        createMockDashboardFund({ id: i + 1, name: `Fund ${i + 1}` })
       );
       mockApiClient.getFunds.mockResolvedValue(largeFundList);
 
@@ -512,13 +538,13 @@ describe('useFunds', () => {
 
   describe('Performance', () => {
     it('should handle rapid successive operations efficiently', async () => {
-      const mockFunds = [createMockFund()];
+      const mockFunds = [createMockDashboardFund()];
       mockApiClient.getFunds.mockResolvedValue(mockFunds);
 
       const { result } = renderHook(() => useFunds());
 
       const startTime = performance.now();
-      
+
       await act(async () => {
         await Promise.all([
           result.current.refetch(),
@@ -535,7 +561,7 @@ describe('useFunds', () => {
     });
 
     it('should handle concurrent operations without state corruption', async () => {
-      const mockFunds = [createMockFund()];
+      const mockFunds = [createMockDashboardFund()];
       mockApiClient.getFunds.mockResolvedValue(mockFunds);
 
       const { result } = renderHook(() => useFunds());
