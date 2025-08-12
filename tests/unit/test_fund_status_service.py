@@ -72,6 +72,31 @@ class TestFundStatusService:
         return events
     
     @pytest.fixture
+    def mock_events_with_positive_balance(self):
+        """Create mock fund events with positive final equity balance for testing REALIZED to ACTIVE transition."""
+        events = []
+        
+        # Event 0: Capital call
+        event0 = Mock(spec=FundEvent)
+        event0.id = 1
+        event0.event_type = EventType.CAPITAL_CALL
+        event0.event_date = date(2020, 1, 1)
+        event0.amount = 1000.0
+        event0.current_equity_balance = 1000.0
+        events.append(event0)
+        
+        # Event 1: Return of capital (partial)
+        event1 = Mock(spec=FundEvent)
+        event1.id = 2
+        event1.event_type = EventType.RETURN_OF_CAPITAL
+        event1.event_date = date(2020, 12, 31)
+        event1.amount = 500.0
+        event1.current_equity_balance = 500.0  # Still has positive balance
+        events.append(event1)
+        
+        return events
+    
+    @pytest.fixture
     def mock_tax_statements(self):
         """Create mock tax statements for testing."""
         tax_statements = []
@@ -95,7 +120,7 @@ class TestFundStatusService:
     
     def test_update_status_active_to_realized(self, service, mock_fund, mock_events):
         """Test status update from ACTIVE to REALIZED."""
-        # Setup fund with no equity balance
+        # Setup fund with no equity balance (last event has equity_balance = 0.0)
         mock_fund.status = FundStatus.ACTIVE
         mock_fund.get_all_fund_events.return_value = mock_events
         
@@ -104,13 +129,10 @@ class TestFundStatusService:
         mock_fund.calculate_after_tax_irr.return_value = 0.12
         mock_fund.calculate_real_irr.return_value = 0.10
         
-        # Mock status change to realized
-        mock_fund.status = FundStatus.REALIZED
-        
-        # Update status
+        # Update status - service should determine it should be REALIZED due to 0 equity balance
         service.update_status(mock_fund)
         
-        # Verify status changed to realized
+        # Verify status changed to realized (because last event has equity_balance = 0.0)
         assert mock_fund.status == FundStatus.REALIZED
         
         # Verify IRRs were calculated and stored
@@ -118,24 +140,21 @@ class TestFundStatusService:
         assert mock_fund.irr_after_tax == 0.12
         assert mock_fund.irr_real == 0.10
     
-    def test_update_status_realized_to_active(self, service, mock_fund, mock_events):
+    def test_update_status_realized_to_active(self, service, mock_fund, mock_events_with_positive_balance):
         """Test status update from REALIZED to ACTIVE."""
-        # Setup fund with equity balance
+        # Setup fund with equity balance (last event has equity_balance = 500.0)
         mock_fund.status = FundStatus.REALIZED
-        mock_fund.get_all_fund_events.return_value = mock_events
+        mock_fund.get_all_fund_events.return_value = mock_events_with_positive_balance
         
-        # Mock status change to active
-        mock_fund.status = FundStatus.ACTIVE
-        
-        # Update status
+        # Update status - service should determine it should be ACTIVE due to positive equity balance
         service.update_status(mock_fund)
         
-        # Verify status changed to active
+        # Verify status changed to active (because last event has equity_balance = 500.0)
         assert mock_fund.status == FundStatus.ACTIVE
     
     def test_update_status_after_equity_event(self, service, mock_fund, mock_events):
         """Test status update after equity event."""
-        # Setup fund with no equity balance
+        # Setup fund with no equity balance (last event has equity_balance = 0.0)
         mock_fund.status = FundStatus.ACTIVE
         mock_fund.get_all_fund_events.return_value = mock_events
         
@@ -144,13 +163,10 @@ class TestFundStatusService:
         mock_fund.calculate_after_tax_irr.return_value = 0.12
         mock_fund.calculate_real_irr.return_value = 0.10
         
-        # Mock status change to realized
-        mock_fund.status = FundStatus.REALIZED
-        
-        # Update status after equity event
+        # Update status after equity event - service should determine it should be REALIZED
         service.update_status_after_equity_event(mock_fund)
         
-        # Verify status changed to realized
+        # Verify status changed to realized (because last event has equity_balance = 0.0)
         assert mock_fund.status == FundStatus.REALIZED
         
         # Verify IRRs were calculated and stored
@@ -164,15 +180,17 @@ class TestFundStatusService:
         mock_fund.status = FundStatus.REALIZED
         mock_fund.tax_statements = mock_tax_statements
         
-        # Mock status change to completed
-        mock_fund.status = FundStatus.COMPLETED
-        
         # Mock end date calculation
         with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)):
-            # Update status after tax statement
+            # Mock the completed IRR calculation methods
+            mock_fund.calculate_completed_irr.return_value = 0.15
+            mock_fund.calculate_completed_after_tax_irr.return_value = 0.12
+            mock_fund.calculate_completed_real_irr.return_value = 0.10
+            
+            # Update status after tax statement - service should determine it should be COMPLETED
             service.update_status_after_tax_statement(mock_fund)
             
-            # Verify status changed to completed
+            # Verify status changed to completed (because final tax statement received)
             assert mock_fund.status == FundStatus.COMPLETED
             
             # Verify completed IRRs were calculated
@@ -186,21 +204,15 @@ class TestFundStatusService:
         mock_fund.status = FundStatus.COMPLETED
         mock_fund.tax_statements = mock_tax_statements
         
-        # Mock status change to realized
-        mock_fund.status = FundStatus.REALIZED
-        
         # Mock end date calculation
         with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)):
-            # Update status after tax statement
-            service.update_status_after_tax_statement(mock_fund)
-            
-            # Verify status changed to realized
-            assert mock_fund.status == FundStatus.REALIZED
-            
-            # Verify realized IRRs were calculated
-            mock_fund.calculate_completed_irr.assert_called_once()
-            mock_fund.calculate_completed_after_tax_irr.assert_called_once()
-            mock_fund.calculate_completed_real_irr.assert_called_once()
+            # Mock _is_final_tax_statement_received to return False (no final tax statement)
+            with patch.object(service, '_is_final_tax_statement_received', return_value=False):
+                # Update status after tax statement - service should determine it should be REALIZED
+                service.update_status_after_tax_statement(mock_fund)
+                
+                # Verify status changed to realized (because no final tax statement received)
+                assert mock_fund.status == FundStatus.REALIZED
     
     def test_should_be_active_with_equity(self, service, mock_fund, mock_events):
         """Test should_be_active when fund has equity balance."""
@@ -335,9 +347,9 @@ class TestFundStatusService:
         
         assert result is False
     
-    def test_get_status_summary(self, service, mock_fund, mock_events):
+    def test_get_status_summary(self, service, mock_fund, mock_events_with_positive_balance):
         """Test get_status_summary method."""
-        mock_fund.get_all_fund_events.return_value = mock_events
+        mock_fund.get_all_fund_events.return_value = mock_events_with_positive_balance
         
         with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)):
             with patch.object(service, '_is_final_tax_statement_received', return_value=True):
@@ -357,7 +369,7 @@ class TestFundStatusService:
         mock_fund.calculate_after_tax_irr.return_value = 0.12
         mock_fund.calculate_real_irr.return_value = 0.10
         
-        service._calculate_and_store_irrs_for_status(mock_fund, 'realized')
+        service._calculate_and_store_irrs_for_status(mock_fund, FundStatus.REALIZED)
         
         # Verify IRRs were calculated and stored
         assert mock_fund.irr_gross == 0.15
@@ -371,7 +383,7 @@ class TestFundStatusService:
         mock_fund.calculate_completed_after_tax_irr.return_value = 0.12
         mock_fund.calculate_completed_real_irr.return_value = 0.10
         
-        service._calculate_and_store_irrs_for_status(mock_fund, 'completed')
+        service._calculate_and_store_irrs_for_status(mock_fund, FundStatus.COMPLETED)
         
         # Verify completed IRRs were calculated and stored
         assert mock_fund.completed_irr == 0.15
@@ -385,7 +397,7 @@ class TestFundStatusService:
         mock_fund.calculate_after_tax_irr.return_value = 0.12
         mock_fund.calculate_real_irr.return_value = 0.10
         
-        service._calculate_and_store_irrs_for_status(mock_fund, 'active')
+        service._calculate_and_store_irrs_for_status(mock_fund, FundStatus.ACTIVE)
         
         # Verify no IRRs were calculated for active status
         assert mock_fund.irr_gross is None

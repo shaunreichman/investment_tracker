@@ -179,21 +179,44 @@ class FundStatusService:
             status: The status to calculate IRRs for
             session: Database session (optional)
         """
-        if status == FundStatus.REALIZED:
-            # Calculate IRRs for realized status
-            fund.irr_gross = fund.calculate_irr(session)
-            fund.irr_after_tax = fund.calculate_after_tax_irr(session)
-            fund.irr_real = fund.calculate_real_irr(session)
+        if status == FundStatus.ACTIVE:
+            # ACTIVE: No IRRs meaningful (fund has capital at risk)
+            fund.irr_gross = None
+            fund.irr_after_tax = None
+            fund.irr_real = None
+            fund.completed_irr = None
+            fund.completed_after_tax_irr = None
+            fund.completed_real_irr = None
             
-            print(f"IRRs calculated and stored for realized fund {fund.name}")
+            print(f"IRRs reset to None for active fund {fund.name}")
+            
+        elif status == FundStatus.REALIZED:
+            # Calculate IRRs for realized status
+            try:
+                fund.irr_gross = fund.calculate_irr(session=session)
+                fund.irr_after_tax = fund.calculate_after_tax_irr(session=session)
+                fund.irr_real = fund.calculate_real_irr(session=session)
+                
+                print(f"IRRs calculated and stored for realized fund {fund.name}")
+            except Exception as e:
+                print(f"Error calculating IRRs for realized fund {fund.name}: {e}")
+                fund.irr_gross = None
+                fund.irr_after_tax = None
+                fund.irr_real = None
             
         elif status == FundStatus.COMPLETED:
             # Calculate completed IRRs
-            fund.completed_irr = fund.calculate_completed_irr(session)
-            fund.completed_after_tax_irr = fund.calculate_completed_after_tax_irr(session)
-            fund.completed_real_irr = fund.calculate_completed_real_irr(session)
-            
-            print(f"Completed IRRs calculated and stored for fund {fund.name}")
+            try:
+                fund.completed_irr = fund.calculate_completed_irr(session=session)
+                fund.completed_after_tax_irr = fund.calculate_completed_after_tax_irr(session=session)
+                fund.completed_real_irr = fund.calculate_completed_real_irr(session=session)
+                
+                print(f"Completed IRRs calculated and stored for fund {fund.name}")
+            except Exception as e:
+                print(f"Error calculating completed IRRs for fund {fund.name}: {e}")
+                fund.completed_irr = None
+                fund.completed_after_tax_irr = None
+                fund.completed_real_irr = None
     
     # ============================================================================
     # END DATE CALCULATION LOGIC
@@ -282,7 +305,7 @@ class FundStatusService:
         Returns:
             bool: True if transition is allowed, False otherwise
         """
-        current_status = fund.status.value
+        current_status = fund.status
         
         # Define allowed transitions
         allowed_transitions = {
@@ -316,8 +339,8 @@ class FundStatusService:
             'should_be_active': self._should_be_active(fund, session),
             'is_final_tax_statement_received': self._is_final_tax_statement_received(fund, session),
             'status_transition_allowed': {
-                'to_realized': self.validate_status_transition(fund, 'realized', session),
-                'to_completed': self.validate_status_transition(fund, 'completed', session),
-                'to_active': self.validate_status_transition(fund, 'active', session)
+                'to_realized': self.validate_status_transition(fund, FundStatus.REALIZED, session),
+                'to_completed': self.validate_status_transition(fund, FundStatus.COMPLETED, session),
+                'to_active': self.validate_status_transition(fund, FundStatus.ACTIVE, session)
             }
         }
