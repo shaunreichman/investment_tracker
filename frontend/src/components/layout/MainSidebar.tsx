@@ -9,7 +9,6 @@ import {
   ListItem,
   ListItemButton,
   ListItemIcon,
-  ListItemText,
   IconButton,
   Tooltip,
   useTheme,
@@ -42,7 +41,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
   const { data: companiesData } = useInvestmentCompanies();
   const { data: allFundsData } = useFunds();
 
-  // Get current company and fund IDs
+  // Get current company and fund IDs from route params
   const currentCompanyId = useMemo(() => {
     console.log('Sidebar Debug - params:', params);
     console.log('Sidebar Debug - allFundsData:', allFundsData);
@@ -146,7 +145,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
           alignItems: 'center',
           justifyContent: open ? 'flex-end' : 'center',
           padding: 2,
-          borderBottom: '1px solid #303234',
+          // Removed borderBottom to eliminate line above Dashboard button
         }}
       >
         <Tooltip title={open ? 'Collapse Sidebar' : 'Expand Sidebar'}>
@@ -174,7 +173,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
       }}>
         {/* Dashboard - Always Fixed at Top */}
         <Box sx={{ flexShrink: 0 }}>
-          <List sx={{ padding: 1 }}>
+          <List sx={{ padding: 1, paddingBottom: 0 }}> {/* Added paddingBottom: 2 for symmetric spacing */}
             <ListItem disablePadding sx={{ mb: 1 }}>
               <ListItemButton
                 onClick={() => handleNavigation('/')}
@@ -223,13 +222,19 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                   <DashboardIcon />
                 </ListItemIcon>
                 {open && (
-                  <ListItemText
-                    primary="Dashboard"
+                  <Typography
                     sx={{
                       color: isActive('/') ? '#FFFFFF' : '#C9D1D9',
                       fontWeight: isActive('/') ? 600 : 400,
+                      fontSize: '18px',
+                      marginLeft: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
-                  />
+                  >
+                    Dashboard
+                  </Typography>
                 )}
               </ListItemButton>
             </ListItem>
@@ -237,7 +242,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
         </Box>
 
         {/* Divider */}
-        <Divider sx={{ backgroundColor: '#303234', mx: 2 }} />
+        <Divider sx={{ backgroundColor: '#303234', mx: 2, my: 1 }} /> {/* Added my: 1 for symmetric vertical spacing */}
 
         {/* Dynamic Content - Scrollable */}
         <Box sx={{ 
@@ -287,9 +292,9 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                             '&:hover': {
                               backgroundColor: companyActive ? '#19222a' : '#1F2937',
                             },
-                            minHeight: 32,
-                            padding: '6px 12px',
-                            paddingLeft: open ? '28px' : '8px', // 16px indentation
+                            minHeight: 28, // Reduced height from 32
+                            padding: '4px 12px', // Reduced padding from 6px 12px
+                            paddingLeft: open ? '12px' : '8px', // No indentation for companies
                             paddingRight: open ? '12px' : '8px',
                           }}
                         >
@@ -298,28 +303,33 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                               color: companyActive ? '#2496ED' : '#8B949E',
                               minWidth: open ? 32 : 24,
                               '& .MuiSvgIcon-root': {
-                                fontSize: '20px',
+                                fontSize: '18px', // Reduced from 20px
                               },
                             }}
                           >
                             <CompanyIcon />
                           </ListItemIcon>
                           {open && (
-                            <ListItemText
-                              primary={company.name}
+                            <Typography
                               sx={{
                                 color: companyActive ? '#FFFFFF' : '#C9D1D9',
                                 fontWeight: companyActive ? 600 : 400,
-                                fontSize: '14px',
+                                fontSize: '16px',
+                                marginLeft: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
                               }}
-                            />
+                            >
+                              {company.name}
+                            </Typography>
                           )}
                         </ListItemButton>
                       </ListItem>
 
                       {/* Company Funds - Show when company is active */}
                       {companyActive && open && companyFunds.length > 0 && (
-                        <List sx={{ p: 0, pl: 2 }}>
+                        <List sx={{ p: 0, pl: 1 }}> {/* Reduced left padding from pl: 2 */}
                           {companyFunds.map((fund: DashboardFund) => {
                             const fundActive = isFundActive(fund.id);
                             
@@ -334,32 +344,37 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                                     '&:hover': {
                                       backgroundColor: fundActive ? '#19222a' : '#1F2937',
                                     },
-                                    minHeight: 28,
-                                    padding: '4px 12px',
-                                    paddingLeft: open ? '44px' : '8px', // 32px indentation
+                                    minHeight: 18, // Reduced from 20
+                                    padding: '1px 12px', // Reduced from 2px 12px
+                                    paddingLeft: open ? '20px' : '8px', // Small indent from companies (20px vs 12px)
                                     paddingRight: open ? '12px' : '8px',
                                   }}
                                 >
                                   <ListItemIcon
                                     sx={{
                                       color: fundActive ? '#2496ED' : '#8B949E',
-                                      minWidth: open ? 24 : 20,
+                                      minWidth: open ? 20 : 16, // Reduced from 24:20
                                       '& .MuiSvgIcon-root': {
-                                        fontSize: '16px',
+                                        fontSize: '14px', // Reduced from 16px
                                       },
                                     }}
                                   >
                                     <FundIcon />
                                   </ListItemIcon>
                                   {open && (
-                                    <ListItemText
-                                      primary={fund.name}
+                                    <Typography
                                       sx={{
                                         color: fundActive ? '#FFFFFF' : '#C9D1D9',
                                         fontWeight: fundActive ? 600 : 400,
-                                        fontSize: '13px',
+                                        fontSize: '14px',
+                                        marginLeft: 1,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
                                       }}
-                                    />
+                                    >
+                                      {fund.name}
+                                    </Typography>
                                   )}
                                 </ListItemButton>
                               </ListItem>

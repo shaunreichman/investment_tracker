@@ -1,11 +1,10 @@
-// Main Layout - Phase 2 Implementation
-// Combines sidebar, top bar, and main content area
+// Main Layout - Phase 4 Implementation (Clean Solution)
+// Handles content area and TopBar positioning, sidebar now rendered inside routes
 
-import React, { useState, createContext, useContext } from 'react';
-import { Box, CssBaseline, useTheme } from '@mui/material';
-import MainSidebar from './MainSidebar';
+import React, { createContext, useContext } from 'react';
+import { Box, CssBaseline } from '@mui/material';
 
-// Create context for sidebar state
+// Create context for sidebar state (shared across all routes)
 interface SidebarContextType {
   sidebarOpen: boolean;
   onSidebarToggle: () => void;
@@ -23,51 +22,30 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const theme = useTheme();
-
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
+  // Removed unused theme variable
+  
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
       
-      {/* Main Sidebar */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: '56px', // Start below the TopBar
-          left: 0,
-          height: 'calc(100vh - 56px)', // Full height minus TopBar
-          zIndex: theme.zIndex.drawer,
-        }}
-      >
-        <MainSidebar open={sidebarOpen} onToggle={handleSidebarToggle} />
-      </Box>
-      
-      {/* Main Content Area */}
+      {/* Main Content Area - Sidebar will be rendered by children */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          width: `calc(100% - ${sidebarOpen ? 240 : 72}px)`, // Updated sidebar dimensions
-          marginLeft: `${sidebarOpen ? 240 : 72}px`, // Offset for sidebar
-          transition: 'width 0.2s ease-in-out, margin-left 0.2s ease-in-out',
+          width: '100%', // Full width since sidebar is handled by children
+          minHeight: '100vh',
+          backgroundColor: '#10151a', // Main dashboard background
         }}
       >
         {/* Content Area with proper spacing */}
         <Box
           sx={{
             padding: '24px', // 24px outer padding as per spec
-            minHeight: 'calc(100vh - 56px)',
-            backgroundColor: '#10151a', // Main dashboard background
+            minHeight: '100vh',
           }}
         >
-          <SidebarContext.Provider value={{ sidebarOpen, onSidebarToggle: handleSidebarToggle }}>
-            {children}
-          </SidebarContext.Provider>
+          {children}
         </Box>
       </Box>
     </Box>

@@ -5,7 +5,7 @@ import { EnhancedCompaniesPage } from './components/companies';
 import FundDetail from './components/fund/detail/FundDetail';
 import { AppStoreProvider } from './store';
 import { DockerThemeProvider } from './theme/DockerThemeProvider';
-import { MainLayout } from './components/layout';
+import RouteLayout from './components/layout/RouteLayout';
 import './App.css';
 
 function App() {
@@ -18,13 +18,23 @@ function App() {
             v7_relativeSplatPath: true
           }}
         >
-          <MainLayout>
-            <Routes>
-              <Route path="/" element={<OverallDashboard />} />
-              <Route path="/companies/:companyId" element={<EnhancedCompaniesPage />} />
-              <Route path="/funds/:fundId" element={<FundDetail />} />
-            </Routes>
-          </MainLayout>
+          <Routes>
+            <Route path="/" element={
+              <RouteLayout>
+                <OverallDashboard />
+              </RouteLayout>
+            } />
+            <Route path="/companies/:companyId" element={
+              <RouteLayout>
+                <EnhancedCompaniesPage />
+              </RouteLayout>
+            } />
+            <Route path="/funds/:fundId" element={
+              <RouteLayout>
+                <FundDetail />
+              </RouteLayout>
+            } />
+          </Routes>
         </BrowserRouter>
       </AppStoreProvider>
     </DockerThemeProvider>
