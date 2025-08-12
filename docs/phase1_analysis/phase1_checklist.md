@@ -72,8 +72,8 @@
 ## ✅ Week 4: Risk Assessment & Refactoring Recommendations
 
 ### Risk Assessment
-- [ ] **Technical Risk Assessment**: Assess all technical risks identified
-- [ ] **Business Risk Assessment**: Assess impact on business operations
+- [x] **Technical Risk Assessment**: Assess all technical risks identified
+- [x] **Business Risk Assessment**: Assess impact on business operations
 - [ ] **Timeline Risk Assessment**: Assess impact on project timeline
 - [ ] **Resource Risk Assessment**: Assess resource requirements and availability
 - [ ] **Risk Mitigation Planning**: Plan mitigation strategies for all risks
