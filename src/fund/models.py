@@ -31,6 +31,9 @@ from .calculations import (
 from ..shared.calculations import orchestrate_irr_base
 from ..shared.utils import with_session
 
+# Import the new FundCalculationService
+from .services.fund_calculation_service import FundCalculationService
+
 # Import models from other domains
 from ..rates.models import RiskFreeRate
 from ..entity.models import Entity
@@ -233,6 +236,11 @@ class Fund(Base):
     entity = relationship("Entity", back_populates="funds", lazy='selectin')
     fund_events = relationship("FundEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     tax_statements = relationship("TaxStatement", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
+    
+    @property
+    def calculation_service(self) -> FundCalculationService:
+        """Get the fund calculation service instance."""
+        return FundCalculationService()
     
     @classmethod
     def create(cls, investment_company_id, entity_id, name, fund_type, tracking_type, 
@@ -1814,70 +1822,28 @@ class Fund(Base):
         """Calculate the pre-tax IRR for the fund using all relevant cash flows.
         Returns a float (IRR) or None if not computable.
         """
-        return self._calculate_irr_base(include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False, session=session)
+        return self.calculation_service.calculate_irr(self, session)
 
     def calculate_after_tax_irr(self, session=None):
         """Calculate the after-tax IRR for the fund, including tax payment events.
         Returns a float (IRR) or None if not computable.
         """
-        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=False, include_eofy_debt_cost=False, session=session)
+        return self.calculation_service.calculate_after_tax_irr(self, session)
 
     def calculate_real_irr(self, session=None, risk_free_rate_currency=None):
         """Calculate the real IRR for the fund, including debt cost and tax effects.
         Returns a float (IRR) or None if not computable.
         """
-        self.create_daily_risk_free_interest_charges(session=session, risk_free_rate_currency=risk_free_rate_currency)
-        return self._calculate_irr_base(include_tax_payments=True, include_risk_free_charges=True, include_eofy_debt_cost=True, session=session)
+        return self.calculation_service.calculate_real_irr(self, session, risk_free_rate_currency)
 
 
     def calculate_average_equity_balance(self, session=None, events=None):
         """
-        [NEW FLOW] Calculate average equity balance for the fund, regardless of FundType.
+        [EXTRACTED] Calculate average equity balance for the fund, regardless of FundType.
         Uses per-event current_equity_balance values and time-weighting.
         Accepts an in-memory events list for efficiency.
         """
-        # Use provided events list if available, otherwise query
-        if events is None:
-            if self.tracking_type == FundType.NAV_BASED:
-                event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
-            elif self.tracking_type == FundType.COST_BASED:
-                event_types = [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]
-            events = session.query(FundEvent).filter(
-                FundEvent.fund_id == self.id,
-                FundEvent.event_type.in_(event_types)
-            ).order_by(FundEvent.event_date, FundEvent.id).all()
-        if not events:
-            return 0.0
-        elif len(events) == 1:
-            return events[0].current_equity_balance
-        # Time-weighted average: sum(balance * days) / total_days
-        total_weighted_equity = 0.0
-        total_days = 0
-        for i in range(len(events) - 1):
-            e = events[i]
-            next_e = events[i + 1]
-            days = (next_e.event_date - e.event_date).days
-            equity = e.current_equity_balance if e.current_equity_balance is not None else 0.0
-            total_weighted_equity += equity * days
-            total_days += days
-        # Determine the correct period end: use end_date if present, else today if active
-        from datetime import date
-        last_event = events[-1]
-        period_end = None
-        if self.end_date is not None:
-            period_end = self.end_date
-        elif self.status == FundStatus.ACTIVE:
-            period_end = date.today()
-        else:
-            period_end = last_event.event_date
-        # Include the last period if period_end is after or equal to the last event
-        if period_end:
-            days = (period_end - last_event.event_date).days
-            if days >= 0:  # Include even if days = 0 (realized funds)
-                equity = last_event.current_equity_balance if last_event.current_equity_balance is not None else 0.0
-                total_weighted_equity += equity * days
-                total_days += days
-        return total_weighted_equity / total_days if total_days > 0 else 0.0
+        return self.calculation_service.calculate_average_equity_balance(self, session, events)
 
     @with_session
     def update_average_equity_balance(self, session=None):
@@ -2151,100 +2117,21 @@ class Fund(Base):
 
     def _calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event(self, events, start_idx, session=None):
         """
-        [NEW FLOW] Efficiently recalculate NAV-based fields (units_owned, current_equity_balance, amount, etc.) for all subsequent events in a single pass.
+        [EXTRACTED] Efficiently recalculate NAV-based fields (units_owned, current_equity_balance, amount, etc.) for all subsequent events in a single pass.
         Builds FIFO and units up to start_idx, then processes all subsequent events.
         """
-        # Build FIFO and cumulative units up to (but not including) start_idx
-        # Each FIFO entry: (units, unit_price, effective_price, event_date, brokerage_fee)
-        fifo = []
-        cumulative_units = 0.0
-        for i in range(start_idx):
-            e = events[i]
-            if e.event_type == EventType.UNIT_PURCHASE:
-                units = e.units_purchased or 0
-                unit_price = e.unit_price or 0
-                brokerage_fee = e.brokerage_fee or 0
-                if units > 0:
-                    effective_price = unit_price + (brokerage_fee / units)
-                    fifo.append((units, unit_price, effective_price, e.event_date, brokerage_fee))
-                cumulative_units += units
-            elif e.event_type == EventType.UNIT_SALE:
-                units = e.units_sold or 0
-                remaining = units
-                while remaining > 0 and fifo:
-                    oldest_units, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage = fifo[0]
-                    if oldest_units <= remaining:
-                        fifo.pop(0)
-                        remaining -= oldest_units
-                    else:
-                        fifo[0] = (oldest_units - remaining, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage)
-                        remaining = 0
-                cumulative_units -= units
-        # Now process all subsequent events in a single pass
-        for i in range(start_idx, len(events)):
-            e = events[i]
-            if e.event_type == EventType.UNIT_PURCHASE:
-                # Update the FIFO and cumulative units
-                units = e.units_purchased or 0
-                unit_price = e.unit_price or 0
-                brokerage_fee = e.brokerage_fee or 0
-                e.amount = (units * unit_price) + brokerage_fee
-                if units > 0:
-                    effective_price = unit_price + (brokerage_fee / units)
-                    fifo.append((units, unit_price, effective_price, e.event_date, brokerage_fee))
-                cumulative_units += units
-                e.units_owned = cumulative_units
-                # For equity balance, exclude brokerage: only units * unit_price
-                total_equity = sum(u * p for u, p, _, _, _ in fifo)
-                e.current_equity_balance = total_equity
-            elif e.event_type == EventType.UNIT_SALE:
-                units = e.units_sold or 0
-                unit_price = e.unit_price or 0
-                brokerage_fee = e.brokerage_fee or 0
-                e.amount = (units * unit_price) - brokerage_fee
-                remaining = units
-                while remaining > 0 and fifo:
-                    oldest_units, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage = fifo[0]
-                    if oldest_units <= remaining:
-                        fifo.pop(0)
-                        remaining -= oldest_units
-                    else:
-                        fifo[0] = (oldest_units - remaining, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage)
-                        remaining = 0
-                cumulative_units -= units
-                e.units_owned = cumulative_units
-                # For equity balance, exclude brokerage: only units * unit_price
-                total_equity = sum(u * p for u, p, _, _, _ in fifo)
-                e.current_equity_balance = total_equity
-            else:
-                # Not a capital event we care about for NAV-based
-                e.units_owned = cumulative_units
-                e.current_equity_balance = sum(u * p for u, p, _, _, _ in fifo)
-        # End of single-pass NAV recalculation
+        self.calculation_service.calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event(
+            self, events, start_idx, session
+        )
 
     def _calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event(self, events, start_idx, session=None):
         """
-        [NEW FLOW] Efficiently recalculate cost-based fields (current_equity_balance, amount, etc.) for all subsequent events in a single pass.
+        [EXTRACTED] Efficiently recalculate cost-based fields (current_equity_balance, amount, etc.) for all subsequent events in a single pass.
         Builds running balance up to start_idx, then processes all subsequent events.
         """
-        balance = 0.0
-        for i in range(start_idx):
-            e = events[i]
-            if e.event_type == EventType.CAPITAL_CALL:
-                balance += e.amount or 0.0
-            elif e.event_type == EventType.RETURN_OF_CAPITAL:
-                balance -= e.amount or 0.0
-        for i in range(start_idx, len(events)):
-            e = events[i]
-            if e.event_type == EventType.CAPITAL_CALL:
-                balance += float(e.amount or 0.0)
-                e.current_equity_balance = balance
-            elif e.event_type == EventType.RETURN_OF_CAPITAL:
-                balance -= float(e.amount or 0.0)
-                e.current_equity_balance = balance
-            else:
-                e.current_equity_balance = balance
-        # End of single-pass cost-based recalculation
+        self.calculation_service.calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event(
+            self, events, start_idx, session
+        )
 
     def update_fund_summary_fields_after_capital_event(self, session=None):
         """
@@ -2575,38 +2462,20 @@ class Fund(Base):
     @with_session
     def calculate_actual_duration_months(self, session=None):
         """
-        Calculate the actual duration of the fund in months.
+        [EXTRACTED] Calculate the actual duration of the fund in months.
         
         Args:
             session (Session): Database session
         
         Returns:
-            int: Duration in months, or None if not calculable
+            float: Duration in months, or None if not calculable
         """
-        start_date = self.start_date
-        end_date = self.end_date
-        
-        if not start_date:
-            return None
-            
-        # If fund is still active, use current date
-        if not end_date:
-            from datetime import date
-            end_date = date.today()
-        
-        # Calculate months difference
-        months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
-        
-        # Adjust for day of month
-        if end_date.day < start_date.day:
-            months -= 1
-            
-        return max(0, months)
+        return self.calculation_service.calculate_actual_duration_months(self, session)
 
     @with_session
     def calculate_completed_irr(self, session=None):
         """
-        Calculate IRR for completed funds (status = COMPLETED).
+        [EXTRACTED] Calculate IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2614,15 +2483,12 @@ class Fund(Base):
         Returns:
             float: IRR percentage, or None if not calculable
         """
-        if self.status == FundStatus.ACTIVE:
-            return None
-            
-        return self.calculate_irr(session=session)
+        return self.calculation_service.calculate_completed_irr(self, session)
 
     @with_session
     def calculate_completed_after_tax_irr(self, session=None):
         """
-        Calculate after-tax IRR for completed funds (status = COMPLETED).
+        [EXTRACTED] Calculate after-tax IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2630,15 +2496,12 @@ class Fund(Base):
         Returns:
             float: After-tax IRR percentage, or None if not calculable
         """
-        if self.status == FundStatus.ACTIVE:
-            return None
-            
-        return self.calculate_after_tax_irr(session=session)
+        return self.calculation_service.calculate_completed_after_tax_irr(self, session)
 
     @with_session
     def calculate_completed_real_irr(self, session=None):
         """
-        Calculate real IRR for completed funds (status = COMPLETED).
+        [EXTRACTED] Calculate real IRR for completed funds (status = COMPLETED).
         
         Args:
             session (Session): Database session
@@ -2646,10 +2509,7 @@ class Fund(Base):
         Returns:
             float: Real IRR percentage, or None if not calculable
         """
-        if self.status == FundStatus.ACTIVE:
-            return None
-            
-        return self.calculate_real_irr(session=session)
+        return self.calculation_service.calculate_completed_real_irr(self, session)
 
 
 class FundEvent(Base):
