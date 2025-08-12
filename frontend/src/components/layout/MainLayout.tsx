@@ -1,10 +1,22 @@
 // Main Layout - Phase 2 Implementation
 // Combines sidebar, top bar, and main content area
 
-import React, { useState } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import { Box, CssBaseline, useTheme } from '@mui/material';
 import MainSidebar from './MainSidebar';
-import TopBar from './TopBar';
+
+// Create context for sidebar state
+interface SidebarContextType {
+  sidebarOpen: boolean;
+  onSidebarToggle: () => void;
+}
+
+export const SidebarContext = createContext<SidebarContextType>({
+  sidebarOpen: true,
+  onSidebarToggle: () => {},
+});
+
+export const useSidebar = () => useContext(SidebarContext);
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -45,19 +57,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           transition: 'width 0.2s ease-in-out, margin-left 0.2s ease-in-out',
         }}
       >
-        {/* Top Bar */}
-        <TopBar sidebarOpen={sidebarOpen} />
-        
         {/* Content Area with proper spacing */}
         <Box
           sx={{
-            marginTop: '56px', // Account for 56px fixed top bar
             padding: '24px', // 24px outer padding as per spec
             minHeight: 'calc(100vh - 56px)',
             backgroundColor: '#10151a', // Main dashboard background
           }}
         >
-          {children}
+          <SidebarContext.Provider value={{ sidebarOpen, onSidebarToggle: handleSidebarToggle }}>
+            {children}
+          </SidebarContext.Provider>
         </Box>
       </Box>
     </Box>

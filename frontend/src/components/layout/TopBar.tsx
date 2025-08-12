@@ -11,72 +11,32 @@ import {
   Link,
   useTheme,
   InputBase,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  Settings as SettingsIcon,
-  Help as HelpIcon,
-  AccountCircle as AccountIcon,
+  Notifications as NotificationsIcon,
+  AccountCircle as AccountCircleIcon,
 } from '@mui/icons-material';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useSidebar } from './MainLayout';
 
 interface TopBarProps {
-  sidebarOpen: boolean;
+  pageTitle?: string;
+  breadcrumbs?: Array<{ label: string; path: string }>;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ sidebarOpen }) => {
+const TopBar: React.FC<TopBarProps> = ({ 
+  pageTitle = 'Dashboard',
+  breadcrumbs = [{ label: 'Dashboard', path: '/' }]
+}) => {
   const theme = useTheme();
-  const location = useLocation();
   const navigate = useNavigate();
+  // We don't need sidebarOpen for now, but keeping the context for future use
+  useSidebar();
 
-  // Generate breadcrumbs based on current location
-  const generateBreadcrumbs = () => {
-    const pathSegments = location.pathname.split('/').filter(Boolean);
-    
-    if (pathSegments.length === 0) {
-      return [{ label: 'Dashboard', path: '/' }];
-    }
-
-    const breadcrumbs = [{ label: 'Dashboard', path: '/' }];
-    
-    pathSegments.forEach((segment, index) => {
-      const path = `/${pathSegments.slice(0, index + 1).join('/')}`;
-      const label = segment.charAt(0).toUpperCase() + segment.slice(1);
-      breadcrumbs.push({ label, path });
-    });
-
-    return breadcrumbs;
+  const handleBreadcrumbClick = (path: string) => {
+    navigate(path);
   };
-
-  // Get page title
-  const getPageTitle = () => {
-    const pathSegments = location.pathname.split('/').filter(Boolean);
-    
-    if (pathSegments.length === 0) {
-      return 'Dashboard';
-    }
-    
-    if (pathSegments[0] === 'companies' && pathSegments[1]) {
-      return 'Company Details';
-    }
-    
-    if (pathSegments[0] === 'funds' && pathSegments[1]) {
-      return 'Fund Details';
-    }
-    
-    // Safe access with null check
-    const firstSegment = pathSegments[0];
-    if (firstSegment) {
-      return firstSegment.charAt(0).toUpperCase() + firstSegment.slice(1);
-    }
-    
-    return 'Dashboard';
-  };
-
-  const breadcrumbs = generateBreadcrumbs();
-  const pageTitle = getPageTitle();
 
   return (
     <AppBar
@@ -160,7 +120,7 @@ const TopBar: React.FC<TopBarProps> = ({ sidebarOpen }) => {
                   key={breadcrumb.path}
                   color={isLast ? 'inherit' : '#2496ED'} // Docker blue for links
                   underline="hover"
-                  onClick={() => !isLast && navigate(breadcrumb.path)}
+                  onClick={() => !isLast && handleBreadcrumbClick(breadcrumb.path)}
                   sx={{
                     cursor: isLast ? 'default' : 'pointer',
                     '&:hover': {
@@ -185,47 +145,9 @@ const TopBar: React.FC<TopBarProps> = ({ sidebarOpen }) => {
 
         {/* Action Buttons Area */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title="Settings">
-            <IconButton
-              sx={{
-                color: '#C9D1D9', // Light grey by default
-                '&:hover': {
-                  backgroundColor: '#19222a', // Dashboard hover row
-                  color: '#FFFFFF', // White on hover
-                },
-              }}
-            >
-              <SettingsIcon />
-            </IconButton>
-          </Tooltip>
+          <NotificationsIcon sx={{ color: '#C9D1D9' }} />
           
-          <Tooltip title="Help">
-            <IconButton
-              sx={{
-                color: '#C9D1D9', // Light grey by default
-                '&:hover': {
-                  backgroundColor: '#19222a', // Dashboard hover row
-                  color: '#FFFFFF', // White on hover
-                },
-              }}
-            >
-              <HelpIcon />
-            </IconButton>
-          </Tooltip>
-          
-          <Tooltip title="User Profile">
-            <IconButton
-              sx={{
-                color: '#C9D1D9', // Light grey by default
-                '&:hover': {
-                  backgroundColor: '#19222a', // Dashboard hover row
-                  color: '#FFFFFF', // White on hover
-                },
-              }}
-            >
-              <AccountIcon />
-            </IconButton>
-          </Tooltip>
+          <AccountCircleIcon sx={{ color: '#C9D1D9' }} />
         </Box>
       </Toolbar>
     </AppBar>

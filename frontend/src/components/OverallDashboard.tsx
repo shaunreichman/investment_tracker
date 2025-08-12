@@ -14,8 +14,8 @@ import {
   Chip,
   Link,
   Button,
-  
 } from '@mui/material';
+import TopBar from './layout/TopBar';
 import { ErrorDisplay } from './ErrorDisplay';
 import { createErrorInfo } from '../types/errors';
 import {
@@ -80,6 +80,12 @@ const OverallDashboard: React.FC = () => {
 
   return (
     <Box sx={{ p: 0 }}>
+      {/* Top Bar */}
+      <TopBar 
+        pageTitle="Dashboard"
+        breadcrumbs={[{ label: 'Dashboard', path: '/' }]}
+      />
+      
       {/* Page Header Section */}
       <Box sx={{ mb: 4 }}>
         <Typography 

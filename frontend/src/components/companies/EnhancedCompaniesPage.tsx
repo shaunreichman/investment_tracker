@@ -5,6 +5,7 @@ import {
   Link,
   Button,
 } from '@mui/material';
+import TopBar from '../layout/TopBar';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ErrorDisplay } from '../ErrorDisplay';
@@ -169,6 +170,16 @@ export const EnhancedCompaniesPage: React.FC = () => {
 
   return (
     <Box sx={{ p: 0 }}>
+      {/* Top Bar */}
+      <TopBar 
+        pageTitle="Company Details"
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/' },
+          { label: 'Companies', path: '/companies' },
+          { label: overviewData.company.name, path: `/companies/${companyId}` }
+        ]}
+      />
+      
       {/* Company Header Section */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ 

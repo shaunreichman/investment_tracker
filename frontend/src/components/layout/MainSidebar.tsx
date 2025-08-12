@@ -23,10 +23,10 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useInvestmentCompanies } from '../../hooks/useInvestmentCompanies';
 import { useFunds } from '../../hooks/useFunds';
-import { Fund, DashboardFund } from '../../types/api';
+import { DashboardFund } from '../../types/api';
 
 interface MainSidebarProps {
   open: boolean;
@@ -36,7 +36,6 @@ interface MainSidebarProps {
 const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
   const params = useParams();
 
   // API hooks for dynamic content
@@ -59,7 +58,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
     }
     console.log('Sidebar Debug - No current company ID found');
     return null;
-  }, [params.companyId, params.fundId, allFundsData]);
+  }, [params, allFundsData]);
 
   const currentFundId = useMemo(() => {
     if (params.fundId) return parseInt(params.fundId);
@@ -101,12 +100,15 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
     navigate(`/funds/${fundId}`);
   };
 
-  // Check if item is active
+  // Check if item is active using route params (proper React Router pattern)
   const isActive = (path: string) => {
     if (path === '/') {
-      return location.pathname === '/';
+      return !params.companyId && !params.fundId; // Dashboard is active when no company or fund is selected
     }
-    return location.pathname.startsWith(path);
+    if (path === '/companies') {
+      return !!params.companyId; // Companies section is active when viewing a company
+    }
+    return false;
   };
 
   // Check if company is active

@@ -23,7 +23,6 @@ import {
   ApiError as ApiErrorType,
   
   // List responses
-  FundListResponse,
   FundEventListResponse,
   TaxStatementListResponse,
   InvestmentCompanyListResponse,
