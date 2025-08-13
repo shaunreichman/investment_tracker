@@ -1,0 +1,179 @@
+"""
+Fund Event Handler Registry.
+
+This module provides the centralized registry for routing fund events
+to their appropriate handlers. It implements the Registry pattern to
+allow dynamic handler registration and easy testing.
+"""
+
+from typing import Dict, Type, Optional
+from sqlalchemy.orm import Session
+
+from ..models import Fund, FundEvent
+from ..enums import EventType
+from .base_handler import BaseFundEventHandler
+
+
+class FundEventHandlerRegistry:
+    """
+    Centralized registry for routing fund events to appropriate handlers.
+    
+    This class implements the Registry pattern to:
+    1. Register handlers for each event type
+    2. Route events to the correct handler
+    3. Support dynamic handler registration
+    4. Enable easy testing and mocking
+    
+    The registry maintains a mapping of EventType to handler classes
+    and creates handler instances as needed.
+    """
+    
+    def __init__(self):
+        """Initialize the registry with default handlers."""
+        self._handlers: Dict[EventType, Type[BaseFundEventHandler]] = {}
+        self._register_default_handlers()
+    
+    def register_handler(self, event_type: EventType, handler_class: Type[BaseFundEventHandler]) -> None:
+        """
+        Register a handler class for a specific event type.
+        
+        Args:
+            event_type: The event type to register the handler for
+            handler_class: The handler class to register
+            
+        Raises:
+            ValueError: If handler_class doesn't inherit from BaseFundEventHandler
+        """
+        if not issubclass(handler_class, BaseFundEventHandler):
+            raise ValueError(
+                f"Handler class {handler_class.__name__} must inherit from BaseFundEventHandler"
+            )
+        
+        self._handlers[event_type] = handler_class
+    
+    def get_handler(self, event_type: EventType, session: Session, fund: Fund) -> BaseFundEventHandler:
+        """
+        Get a handler instance for the specified event type.
+        
+        Args:
+            event_type: The event type to get a handler for
+            session: Database session for the handler
+            fund: Fund instance for the handler
+            
+        Returns:
+            BaseFundEventHandler: Handler instance
+            
+        Raises:
+            ValueError: If no handler is registered for the event type
+        """
+        handler_class = self._handlers.get(event_type)
+        if not handler_class:
+            raise ValueError(f"No handler registered for event type: {event_type.value}")
+        
+        return handler_class(session, fund)
+    
+    def handle_event(self, event_data: Dict, session: Session, fund: Fund) -> FundEvent:
+        """
+        Handle an event by routing it to the appropriate handler.
+        
+        This is the main entry point for event processing. It:
+        1. Extracts the event type from the event data
+        2. Gets the appropriate handler
+        3. Delegates processing to the handler
+        4. Returns the result
+        
+        Args:
+            event_data: Dictionary containing event parameters including 'event_type'
+            session: Database session for all operations
+            fund: Fund instance to operate on
+            
+        Returns:
+            FundEvent: The created or updated event
+            
+        Raises:
+            ValueError: If event_type is missing or invalid
+            RuntimeError: If event processing fails
+        """
+        # Extract event type from event data
+        event_type_str = event_data.get('event_type')
+        if not event_type_str:
+            raise ValueError("event_type is required in event_data")
+        
+        try:
+            event_type = EventType.from_string(event_type_str)
+        except ValueError as e:
+            raise ValueError(f"Invalid event_type '{event_type_str}': {e}")
+        
+        # Get and use the appropriate handler
+        handler = self.get_handler(event_type, session, fund)
+        return handler.handle(event_data)
+    
+    def is_handler_registered(self, event_type: EventType) -> bool:
+        """
+        Check if a handler is registered for the specified event type.
+        
+        Args:
+            event_type: The event type to check
+            
+        Returns:
+            bool: True if a handler is registered, False otherwise
+        """
+        return event_type in self._handlers
+    
+    def get_registered_event_types(self) -> list[EventType]:
+        """
+        Get a list of all registered event types.
+        
+        Returns:
+            list[EventType]: List of registered event types
+        """
+        return list(self._handlers.keys())
+    
+    def unregister_handler(self, event_type: EventType) -> None:
+        """
+        Unregister a handler for the specified event type.
+        
+        Args:
+            event_type: The event type to unregister
+            
+        Note:
+            This is primarily useful for testing. In production,
+            handlers should remain registered once set up.
+        """
+        if event_type in self._handlers:
+            del self._handlers[event_type]
+    
+    def clear_handlers(self) -> None:
+        """
+        Clear all registered handlers.
+        
+        Note:
+            This is primarily useful for testing. In production,
+            handlers should remain registered once set up.
+        """
+        self._handlers.clear()
+        self._register_default_handlers()
+    
+    def _register_default_handlers(self) -> None:
+        """
+        Register the default handlers for all supported event types.
+        
+        This method registers all implemented handlers for the supported
+        event types. It's called during initialization and after clearing
+        handlers to ensure all event types have handlers registered.
+        """
+        # Import handlers here to avoid circular imports
+        from .handlers.capital_call_handler import CapitalCallHandler
+        from .handlers.return_of_capital_handler import ReturnOfCapitalHandler
+        from .handlers.distribution_handler import DistributionHandler
+        from .handlers.nav_update_handler import NAVUpdateHandler
+        from .handlers.unit_purchase_handler import UnitPurchaseHandler
+        from .handlers.unit_sale_handler import UnitSaleHandler
+        
+        # Register all handlers
+        self.register_handler(EventType.CAPITAL_CALL, CapitalCallHandler)
+        self.register_handler(EventType.RETURN_OF_CAPITAL, ReturnOfCapitalHandler)
+        self.register_handler(EventType.DISTRIBUTION, DistributionHandler)
+        self.register_handler(EventType.NAV_UPDATE, NAVUpdateHandler)
+        self.register_handler(EventType.UNIT_PURCHASE, UnitPurchaseHandler)
+        self.register_handler(EventType.UNIT_SALE, UnitSaleHandler)
