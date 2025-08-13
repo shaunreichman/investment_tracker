@@ -133,7 +133,7 @@ class DistributionHandler(BaseFundEventHandler):
         self.validate_event(event_data)
         
         # Extract parameters
-        event_date = event_data['event_date']
+        event_date = self._parse_date(event_data['event_date'])
         distribution_type = event_data['distribution_type']
         has_withholding_tax = event_data.get('has_withholding_tax', False)
         description = event_data.get('description')
@@ -169,7 +169,7 @@ class DistributionHandler(BaseFundEventHandler):
         Returns:
             FundEvent: Existing event if found, None otherwise
         """
-        event_date = event_data['event_date']
+        event_date = self._parse_date(event_data['event_date'])
         distribution_type = event_data['distribution_type']
         has_withholding_tax = event_data.get('has_withholding_tax', False)
         reference_number = event_data.get('reference_number')
@@ -204,7 +204,7 @@ class DistributionHandler(BaseFundEventHandler):
         Returns:
             FundEvent: Created distribution event
         """
-        event_date = event_data['event_date']
+        event_date = self._parse_date(event_data['event_date'])
         distribution_type = event_data['distribution_type']
         distribution_amount = float(event_data['distribution_amount'])
         description = event_data.get('description')
@@ -229,7 +229,7 @@ class DistributionHandler(BaseFundEventHandler):
         Returns:
             FundEvent: Created distribution event
         """
-        event_date = event_data['event_date']
+        event_date = self._parse_date(event_data['event_date'])
         distribution_type = event_data['distribution_type']
         gross_amount = event_data.get('gross_interest_amount')
         net_amount = event_data.get('net_interest_amount')

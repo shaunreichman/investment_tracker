@@ -37,7 +37,7 @@ class ReturnOfCapitalHandler(BaseFundEventHandler):
         
         # Validate required fields
         amount = event_data.get('amount')
-        event_date = event_data.get('date')
+        event_date = self._parse_date(event_data.get('date')) if event_data.get('date') else None
         
         self._validate_positive_amount(amount, 'amount')
         self._validate_required_date(event_date, 'date')
@@ -74,7 +74,7 @@ class ReturnOfCapitalHandler(BaseFundEventHandler):
         
         # Extract parameters
         amount = float(event_data['amount'])
-        event_date = event_data['date']
+        event_date = self._parse_date(event_data['date'])
         description = event_data.get('description')
         reference_number = event_data.get('reference_number')
         

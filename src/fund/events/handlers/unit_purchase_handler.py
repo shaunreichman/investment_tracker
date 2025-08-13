@@ -37,7 +37,7 @@ class UnitPurchaseHandler(BaseFundEventHandler):
         # Validate required fields
         units = event_data.get('units')
         price = event_data.get('price')
-        event_date = event_data.get('date')
+        event_date = self._parse_date(event_data.get('date')) if event_data.get('date') else None
         
         self._validate_positive_amount(units, 'units')
         self._validate_positive_amount(price, 'price')
@@ -87,7 +87,7 @@ class UnitPurchaseHandler(BaseFundEventHandler):
         # Extract parameters
         units = float(event_data['units'])
         price = float(event_data['price'])
-        event_date = event_data['date']
+        event_date = self._parse_date(event_data['date'])
         brokerage_fee = float(event_data.get('brokerage_fee', 0.0))
         description = event_data.get('description')
         reference_number = event_data.get('reference_number')

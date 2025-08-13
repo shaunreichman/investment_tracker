@@ -78,7 +78,7 @@ class NAVUpdateHandler(BaseFundEventHandler):
         
         # Extract parameters
         nav_per_share = float(event_data['nav_per_share'])
-        event_date = event_data['date']
+        event_date = self._parse_date(event_data['date'])
         description = event_data.get('description')
         reference_number = event_data.get('reference_number')
         

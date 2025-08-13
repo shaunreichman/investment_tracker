@@ -7,7 +7,7 @@ domain events for dependent updates.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, Any, Dict, List
 from sqlalchemy.orm import Session
 
@@ -251,6 +251,37 @@ class BaseFundEventHandler(ABC):
         except Exception as e:
             self.session.rollback()
             raise RuntimeError(f"Failed to commit changes: {e}") from e
+    
+    def _parse_date(self, date_value: Any) -> date:
+        """
+        Parse date value to ensure it's a proper datetime.date object.
+        
+        Args:
+            date_value: Date value that could be string, date, or datetime
+            
+        Returns:
+            date: Proper datetime.date object
+            
+        Raises:
+            ValueError: If date cannot be parsed
+        """
+        if isinstance(date_value, date):
+            return date_value
+        elif isinstance(date_value, datetime):
+            return date_value.date()
+        elif isinstance(date_value, str):
+            try:
+                # Try parsing common date formats
+                if '-' in date_value:
+                    return datetime.strptime(date_value, '%Y-%m-%d').date()
+                elif '/' in date_value:
+                    return datetime.strptime(date_value, '%Y/%m/%d').date()
+                else:
+                    raise ValueError(f"Unsupported date format: {date_value}")
+            except ValueError as e:
+                raise ValueError(f"Invalid date format: {date_value}. Expected YYYY-MM-DD or YYYY/MM/DD") from e
+        else:
+            raise ValueError(f"Invalid date type: {type(date_value)}. Expected string, date, or datetime")
     
     def _rollback_on_error(self, error: Exception) -> None:
         """
