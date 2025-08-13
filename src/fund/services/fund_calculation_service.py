@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from ..calculations import calculate_irr, calculate_debt_cost
 from ...shared.calculations import orchestrate_irr_base
 from ...shared.utils import with_session
+from ..enums import FundStatus, EventType
 
 
 class FundCalculationService:
@@ -155,18 +156,18 @@ class FundCalculationService:
         # Build balance up to start_idx
         for i in range(start_idx):
             e = events[i]
-            if e.event_type.value == 'capital_call':
+            if e.event_type == EventType.CAPITAL_CALL:
                 balance += e.amount or 0.0
-            elif e.event_type.value == 'return_of_capital':
+            elif e.event_type == EventType.RETURN_OF_CAPITAL:
                 balance -= e.amount or 0.0
         
         # Process all subsequent events
         for i in range(start_idx, len(events)):
             e = events[i]
-            if e.event_type.value == 'capital_call':
+            if e.event_type == EventType.CAPITAL_CALL:
                 balance += e.amount or 0.0
                 e.current_equity_balance = balance
-            elif e.event_type.value == 'return_of_capital':
+            elif e.event_type == EventType.RETURN_OF_CAPITAL:
                 balance -= e.amount or 0.0
                 e.current_equity_balance = balance
             else:
@@ -260,7 +261,7 @@ class FundCalculationService:
         Returns:
             float or None: The completed IRR as a decimal, or None if not computable
         """
-        if fund.status.value not in ['realized', 'completed']:
+        if fund.status not in [FundStatus.REALIZED, FundStatus.COMPLETED]:
             return None
         
         return self.calculate_irr(fund, session)
@@ -278,7 +279,7 @@ class FundCalculationService:
         Returns:
             float or None: The completed after-tax IRR as a decimal, or None if not computable
         """
-        if fund.status.value not in ['realized', 'completed']:
+        if fund.status not in [FundStatus.REALIZED, FundStatus.COMPLETED]:
             return None
         
         return self.calculate_after_tax_irr(fund, session)
@@ -296,7 +297,7 @@ class FundCalculationService:
         Returns:
             float or None: The completed real IRR as a decimal, or None if not computable
         """
-        if fund.status.value not in ['realized', 'completed']:
+        if fund.status not in [FundStatus.REALIZED, FundStatus.COMPLETED]:
             return None
         
         return self.calculate_real_irr(fund, session)
@@ -350,7 +351,7 @@ class FundCalculationService:
         
         if fund.end_date is not None:
             period_end = fund.end_date
-        elif fund.status.value == 'active':
+        elif fund.status == FundStatus.ACTIVE:
             period_end = date.today()
         else:
             period_end = last_event.event_date
@@ -383,7 +384,7 @@ class FundCalculationService:
         
         if fund.end_date:
             end_date = fund.end_date
-        elif fund.status.value == 'active':
+        elif fund.status == FundStatus.ACTIVE:
             end_date = date.today()
         else:
             return None
@@ -420,11 +421,11 @@ class FundCalculationService:
         """
         # Delegate to the shared IRR calculation function
         return orchestrate_irr_base(
-            fund, 
+            fund.fund_events, 
+            fund.start_date,
             include_tax_payments=include_tax_payments,
             include_risk_free_charges=include_risk_free_charges,
-            include_eofy_debt_cost=include_eofy_debt_cost,
-            session=session
+            include_eofy_debt_cost=include_eofy_debt_cost
         )
     
     def _create_daily_risk_free_interest_charges(

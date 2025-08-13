@@ -8,6 +8,7 @@ from datetime import date, timedelta
 import numpy as np
 import numpy_financial as npf
 from src.shared.calculations import get_equity_change_for_event
+from src.fund.enums import EventType, DistributionType
 
 # IRR calculation utility
 def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
@@ -165,7 +166,7 @@ def calculate_nav_based_capital_gains(events):
     available_units = deque()  # Each entry: (units, cost_per_unit)
     total_capital_gains = 0
     for event in events:
-        if event.event_type.name == 'UNIT_PURCHASE':
+        if event.event_type == EventType.UNIT_PURCHASE:
             units = event.units_purchased or 0
             unit_price = event.unit_price or 0
             brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
@@ -173,7 +174,7 @@ def calculate_nav_based_capital_gains(events):
                 # Apportion brokerage per unit and add to cost base
                 cost_per_unit = unit_price + (brokerage_fee / units)
                 available_units.append((units, cost_per_unit))
-        elif event.event_type.name == 'UNIT_SALE':
+        elif event.event_type == EventType.UNIT_SALE:
             units_to_sell = event.units_sold or 0
             sale_price_per_unit = event.unit_price or 0
             sale_brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
@@ -211,7 +212,7 @@ def calculate_cost_based_capital_gains(events):
     # For cost-based funds, capital gains are typically distributions
     total_capital_gains = 0
     for event in events:
-        if event.event_type.name == 'DISTRIBUTION' and event.distribution_type and event.distribution_type.name == 'CAPITAL_GAIN':
+        if event.event_type == EventType.DISTRIBUTION and event.distribution_type and event.distribution_type == DistributionType.CAPITAL_GAIN:
             total_capital_gains += event.amount or 0
     return total_capital_gains
 

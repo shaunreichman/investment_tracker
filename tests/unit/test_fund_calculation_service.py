@@ -30,8 +30,7 @@ class TestFundCalculationService:
         fund = Mock(spec=Fund)
         fund.id = 1
         fund.tracking_type = FundType.NAV_BASED
-        fund.status = Mock()
-        fund.status.value = 'active'
+        fund.status = FundStatus.ACTIVE
         fund.start_date = date(2020, 1, 1)
         fund.end_date = None
         return fund
@@ -42,8 +41,7 @@ class TestFundCalculationService:
         fund = Mock(spec=Fund)
         fund.id = 2
         fund.tracking_type = FundType.COST_BASED
-        fund.status = Mock()
-        fund.status.value = 'active'
+        fund.status = FundStatus.ACTIVE
         fund.start_date = date(2020, 1, 1)
         fund.end_date = None
         return fund
@@ -508,7 +506,7 @@ class TestFundCalculationService:
     
     def test_calculate_completed_irr_active_fund(self, service, mock_fund):
         """Test completed IRR calculation for active fund (should return None)."""
-        mock_fund.status.value = 'active'
+        mock_fund.status = FundStatus.ACTIVE
         
         result = service.calculate_completed_irr(mock_fund)
         
@@ -516,7 +514,7 @@ class TestFundCalculationService:
     
     def test_calculate_completed_irr_realized_fund(self, service, mock_fund):
         """Test completed IRR calculation for realized fund."""
-        mock_fund.status.value = 'realized'
+        mock_fund.status = FundStatus.REALIZED
         
         with patch.object(service, 'calculate_irr', return_value=0.15):
             result = service.calculate_completed_irr(mock_fund)
@@ -525,7 +523,7 @@ class TestFundCalculationService:
     
     def test_calculate_completed_after_tax_irr_completed_fund(self, service, mock_fund):
         """Test completed after-tax IRR calculation for completed fund."""
-        mock_fund.status.value = 'completed'
+        mock_fund.status = FundStatus.COMPLETED
         
         with patch.object(service, 'calculate_after_tax_irr', return_value=0.12):
             result = service.calculate_completed_after_tax_irr(mock_fund)
@@ -534,7 +532,7 @@ class TestFundCalculationService:
     
     def test_calculate_completed_real_irr_completed_fund(self, service, mock_fund):
         """Test completed real IRR calculation for completed fund."""
-        mock_fund.status.value = 'completed'
+        mock_fund.status = FundStatus.COMPLETED
         
         with patch.object(service, 'calculate_real_irr', return_value=0.10):
             result = service.calculate_completed_real_irr(mock_fund)
@@ -710,7 +708,7 @@ class TestFundCalculationService:
     
     def test_calculate_actual_duration_months_realized_fund(self, service, mock_fund):
         """Test duration calculation for realized fund (no end date, not active)."""
-        mock_fund.status.value = 'realized'
+        mock_fund.status = FundStatus.REALIZED
         mock_fund.end_date = None
         
         # For realized funds with no end date, the method should return None

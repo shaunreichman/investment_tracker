@@ -45,10 +45,16 @@ from ..entity.calculations import get_financial_years_for_fund_period
 from ..rates.calculations import get_risk_free_rate_for_date
 from ..banking.models import BankAccount
 
-
-class CashFlowDirection(enum.Enum):
-    INFLOW = "inflow"  # (SYSTEM) persisted enum value indicating money received by investor
-    OUTFLOW = "outflow"  # (SYSTEM) persisted enum value indicating money paid out by investor
+# Import centralized enums
+from .enums import (
+    CashFlowDirection,
+    EventType,
+    FundType,
+    DistributionType,
+    TaxPaymentType,
+    FundStatus,
+    GroupType
+)
 
 
 class FundEventCashFlow(Base):
@@ -80,93 +86,6 @@ class FundEventCashFlow(Base):
     def _is_same_currency(session, bank_account_id: int, currency: str) -> bool:
         acct: BankAccount | None = session.query(BankAccount).filter(BankAccount.id == bank_account_id).first()
         return bool(acct and acct.currency.upper() == currency.upper())
-
-
-class EventType(enum.Enum):
-    """Enumeration for all fund event types.
-    
-    - CAPITAL_CALL: Capital call (cost-based funds)
-    - RETURN_OF_CAPITAL: Return of capital (cost-based funds)
-    - DISTRIBUTION: Distribution (income, interest, etc.)
-    - TAX_PAYMENT: Tax payment event
-    - DAILY_RISK_FREE_INTEREST_CHARGE: Daily risk-free interest charge (for real IRR)
-    - EOFY_DEBT_COST: End of financial year debt cost tax benefit (for real IRR)
-    - NAV_UPDATE: NAV update (NAV-based funds)
-    - UNIT_PURCHASE: Unit purchase (NAV-based funds)
-    - UNIT_SALE: Unit sale (NAV-based funds)
-    (Removed: MANAGEMENT_FEE, CARRIED_INTEREST, OTHER)
-    """
-    CAPITAL_CALL = "capital_call"
-    RETURN_OF_CAPITAL = "return_of_capital"
-    DISTRIBUTION = "distribution"
-    TAX_PAYMENT = "tax_payment"
-    DAILY_RISK_FREE_INTEREST_CHARGE = "daily_risk_free_interest_charge"
-    EOFY_DEBT_COST = "eofy_debt_cost"
-    NAV_UPDATE = "nav_update"
-    UNIT_PURCHASE = "unit_purchase"
-    UNIT_SALE = "unit_sale"
-    # Removed: management_fee, carried_interest, other
-
-
-class FundType(enum.Enum):
-    """Enumeration for fund types."""
-    NAV_BASED = "nav_based"  # Funds with NAV updates and unit tracking
-    COST_BASED = "cost_based"  # Funds held at cost
-
-
-class DistributionType(enum.Enum):
-    """Enumeration for income distribution types (affects tax treatment).
-    
-    Australian tax considerations:
-    - DIVIDEND_FRANKED: Dividend with franking credits (reduces tax liability)
-    - DIVIDEND_UNFRANKED: Dividend without franking credits (fully taxable)
-    - INTEREST: Interest income (fully taxable)
-    - CAPITAL_GAIN: Capital gains (may have CGT discount)
-    """
-    INCOME = "income"  # Ordinary income
-    DIVIDEND_FRANKED = "dividend_franked"  # Dividend with franking credits
-    DIVIDEND_UNFRANKED = "dividend_unfranked"  # Dividend without franking credits
-    INTEREST = "interest"  # Interest income
-    RENT = "rent"  # Rental income
-    CAPITAL_GAIN = "capital_gain"  # Capital gains income
-    # Removed generic OTHER to enforce explicit types
-
-
-class TaxPaymentType(enum.Enum):
-    """Enumeration for tax payment types."""
-    NON_RESIDENT_INTEREST_WITHHOLDING = "non_resident_interest_withholding"
-    NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE = "non_resident_interest_withholding_difference"
-    CAPITAL_GAINS_TAX = "capital_gains_tax"
-    EOFY_INTEREST_TAX = "eofy_interest_tax"
-    DIVIDENDS_FRANKED_TAX = "dividends_franked_tax"
-    DIVIDENDS_UNFRANKED_TAX = "dividends_unfranked_tax"
-    # Keep other tax payment types as defined; no generic OTHER needed
-
-
-class FundStatus(enum.Enum):
-    """Enumeration for fund status types.
-    
-    Business definitions:
-    - ACTIVE: Equity balance > 0 (fund still invested, has capital at risk)
-    - SUSPENDED: Fund temporarily suspended/on hold (equity balance may be > 0 but no new activity)
-    - REALIZED: Equity balance = 0 (all capital returned, may still receive distributions)
-    - COMPLETED: Final tax statement received after equity balance = 0 (fully realized AND all tax obligations complete)
-    """
-    ACTIVE = "active"
-    SUSPENDED = "suspended"
-    REALIZED = "realized"
-    COMPLETED = "completed"
-
-
-class GroupType(enum.Enum):
-    """Enumeration for event grouping types.
-    
-    Business definitions:
-    - INTEREST_WITHHOLDING: Interest distribution events paired with withholding tax events
-    - TAX_STATEMENT: Tax statement events grouped by financial year (future implementation)
-    """
-    INTEREST_WITHHOLDING = "interest_withholding"
-    TAX_STATEMENT = "tax_statement"
 
 
 class Fund(Base):
@@ -1736,7 +1655,12 @@ class Fund(Base):
         """Update the stored average equity balance with the calculated value for the fund type.
         Note: This method does NOT commit the session. The caller is responsible for committing.
         """
-        calculated_average = self.calculate_average_equity_balance(session=session)
+        # Fetch events to pass to the service method
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id
+        ).order_by(FundEvent.event_date).all()
+        
+        calculated_average = self.calculate_average_equity_balance(session=session, events=events)
         self.average_equity_balance = calculated_average
         # No session.commit() here
 
@@ -2074,7 +1998,7 @@ class Fund(Base):
         self.calculate_end_date(session=session)
         
         # Average equity balance (unified method)
-        self.average_equity_balance = self.calculate_average_equity_balance(session=session)
+        self.average_equity_balance = self.calculate_average_equity_balance(session=session, events=events)
 
     def _update_cost_based_fund_summary_after_capital_event(self, session):
         """
@@ -2102,7 +2026,7 @@ class Fund(Base):
         self.calculate_end_date(session=session)
         
         # Average equity balance (unified method)
-        calculated_avg = self.calculate_average_equity_balance(session=session)
+        calculated_avg = self.calculate_average_equity_balance(session=session, events=events)
         old_avg = self.average_equity_balance
         self.average_equity_balance = calculated_avg
         

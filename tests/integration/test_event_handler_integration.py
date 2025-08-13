@@ -10,7 +10,7 @@ from datetime import date
 from decimal import Decimal
 
 from src.fund.events import FundUpdateOrchestrator
-from src.fund.enums import FundType, EventType, DistributionType
+from src.fund.models import FundType, EventType, DistributionType
 from src.fund.models import Fund, FundEvent
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
@@ -25,35 +25,34 @@ class TestEventHandlerIntegration:
         # Create test data
         company = InvestmentCompany(
             name="Test Company",
-            abn="12345678901"
+            description="Test investment company"
         )
         db_session.add(company)
         db_session.flush()
         
         entity = Entity(
             name="Test Entity",
-            investment_company_id=company.id
+            description="Test entity"
         )
         db_session.add(entity)
         db_session.flush()
         
-        fund = Fund(
+        fund = Fund.create(
             investment_company_id=company.id,
             entity_id=entity.id,
             name="Test Fund",
+            fund_type="Private Equity",
             tracking_type=FundType.COST_BASED,
-            start_date=date(2024, 1, 1),
-            end_date=date(2024, 12, 31)
+            description="Test fund for integration testing",
+            session=db_session
         )
-        db_session.add(fund)
-        db_session.flush()
         
         # Test the event handler architecture
         orchestrator = FundUpdateOrchestrator()
         
         # Process a capital call event
         event_data = {
-            'event_type': 'capital_call',
+            'event_type': EventType.CAPITAL_CALL,
             'amount': 100000.0,
             'date': '2024-01-15',
             'description': 'Initial capital call',
@@ -87,35 +86,34 @@ class TestEventHandlerIntegration:
         # Create test data
         company = InvestmentCompany(
             name="Test NAV Company",
-            abn="12345678902"
+            description="Test NAV investment company"
         )
         db_session.add(company)
         db_session.flush()
         
         entity = Entity(
             name="Test NAV Entity",
-            investment_company_id=company.id
+            description="Test NAV entity"
         )
         db_session.add(entity)
         db_session.flush()
         
-        fund = Fund(
+        fund = Fund.create(
             investment_company_id=company.id,
             entity_id=entity.id,
             name="Test NAV Fund",
+            fund_type="Private Equity",
             tracking_type=FundType.NAV_BASED,
-            start_date=date(2024, 1, 1),
-            end_date=date(2024, 12, 31)
+            description="Test NAV fund for integration testing",
+            session=db_session
         )
-        db_session.add(fund)
-        db_session.flush()
         
         # Test the event handler architecture
         orchestrator = FundUpdateOrchestrator()
         
         # Process a NAV update event
         event_data = {
-            'event_type': 'nav_update',
+            'event_type': EventType.NAV_UPDATE,
             'nav_per_share': 10.50,
             'date': '2024-01-15',
             'description': 'Initial NAV update',
@@ -149,28 +147,27 @@ class TestEventHandlerIntegration:
         # Create test data
         company = InvestmentCompany(
             name="Test Distribution Company",
-            abn="12345678903"
+            description="Test distribution investment company"
         )
         db_session.add(company)
         db_session.flush()
         
         entity = Entity(
             name="Test Distribution Entity",
-            investment_company_id=company.id
+            description="Test distribution entity"
         )
         db_session.add(entity)
         db_session.flush()
         
-        fund = Fund(
+        fund = Fund.create(
             investment_company_id=company.id,
             entity_id=entity.id,
             name="Test Distribution Fund",
+            fund_type="Private Equity",
             tracking_type=FundType.COST_BASED,
-            start_date=date(2024, 1, 1),
-            end_date=date(2024, 12, 31)
+            description="Test distribution fund for integration testing",
+            session=db_session
         )
-        db_session.add(fund)
-        db_session.flush()
         
         # Test the event handler architecture
         orchestrator = FundUpdateOrchestrator()
@@ -179,7 +176,7 @@ class TestEventHandlerIntegration:
         event_data = {
             'event_type': 'distribution',
             'event_date': '2024-01-15',
-            'distribution_type': 'income',
+            'distribution_type': DistributionType.INCOME,
             'distribution_amount': 5000.0,
             'description': 'Income distribution',
             'reference_number': 'DIST001'
@@ -209,28 +206,27 @@ class TestEventHandlerIntegration:
         # Create test data
         company = InvestmentCompany(
             name="Test Bulk Company",
-            abn="12345678904"
+            description="Test bulk investment company"
         )
         db_session.add(company)
         db_session.flush()
         
         entity = Entity(
             name="Test Bulk Entity",
-            investment_company_id=company.id
+            description="Test bulk entity"
         )
         db_session.add(entity)
         db_session.flush()
         
-        fund = Fund(
+        fund = Fund.create(
             investment_company_id=company.id,
             entity_id=entity.id,
             name="Test Bulk Fund",
+            fund_type="Private Equity",
             tracking_type=FundType.COST_BASED,
-            start_date=date(2024, 1, 1),
-            end_date=date(2024, 12, 31)
+            description="Test bulk fund for integration testing",
+            session=db_session
         )
-        db_session.add(fund)
-        db_session.flush()
         
         # Test the event handler architecture
         orchestrator = FundUpdateOrchestrator()
@@ -238,14 +234,14 @@ class TestEventHandlerIntegration:
         # Process multiple events
         events_data = [
             {
-                'event_type': 'capital_call',
+                'event_type': EventType.CAPITAL_CALL,
                 'amount': 50000.0,
                 'date': '2024-01-15',
                 'description': 'First capital call',
                 'reference_number': 'CC001'
             },
             {
-                'event_type': 'capital_call',
+                'event_type': EventType.CAPITAL_CALL,
                 'amount': 50000.0,
                 'date': '2024-02-15',
                 'description': 'Second capital call',

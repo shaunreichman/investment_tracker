@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 # Import enums from the dedicated enums module
 from ..enums import FundStatus
+from ..enums import EventType
 
 
 class FundStatusService:
@@ -152,7 +153,7 @@ class FundStatusService:
         Returns:
             bool: True if final tax statement received, False otherwise
         """
-        if fund.status.value == 'active':
+        if fund.status == FundStatus.ACTIVE:
             return False
         
         # Get the fund's end date
@@ -264,28 +265,53 @@ class FundStatusService:
     def _is_equity_or_distribution_event(self, event: 'FundEvent') -> bool:
         """
         [EXTRACTED] Determine if an event is an equity or distribution event.
-        
+
         This method was extracted from the Fund model to improve separation of concerns.
-        
+
         Args:
             event: The fund event to check
-            
+
         Returns:
             bool: True if equity or distribution event, False otherwise
         """
         equity_event_types = [
-            'capital_call',
-            'return_of_capital',
-            'unit_purchase',
-            'unit_sale'
+            EventType.CAPITAL_CALL,
+            EventType.RETURN_OF_CAPITAL,
+            EventType.UNIT_PURCHASE,
+            EventType.UNIT_SALE
         ]
-        
+
         distribution_event_types = [
-            'distribution'
+            EventType.DISTRIBUTION
         ]
+
+        # Handle both enum objects and strings
+        event_type_value = event.event_type if hasattr(event.event_type, 'value') else event.event_type
+        return (event_type_value in equity_event_types or
+               event_type_value in distribution_event_types)
+    
+    def should_calculate_irr(self, status: FundStatus, fund: 'Fund') -> bool:
+        """
+        Determine if IRR should be calculated for the current fund status.
         
-        return (event.event_type.value in equity_event_types or 
-                event.event_type.value in distribution_event_types)
+        Args:
+            status: Current fund status
+            fund: The fund object
+            
+        Returns:
+            bool: True if IRR should be calculated, False otherwise
+        """
+        # Calculate IRR when fund transitions to REALIZED or COMPLETED
+        if status in [FundStatus.REALIZED, FundStatus.COMPLETED]:
+            return True
+        
+        # Calculate IRR for active funds if they have significant activity
+        if status == FundStatus.ACTIVE:
+            # Check if fund has substantial equity balance or many events
+            if fund.current_equity_balance and fund.current_equity_balance > 10000:
+                return True
+        
+        return False
     
     # ============================================================================
     # STATUS VALIDATION AND BUSINESS RULES

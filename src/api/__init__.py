@@ -21,6 +21,7 @@ from src.entity.models import Entity
 from src.fund.models import Fund, FundType, FundEvent, FundStatus
 from src.banking.models import Bank, BankAccount
 from src.fund.models import FundEventCashFlow, CashFlowDirection
+from src.fund.enums import EventType
 
 def create_app(db_config=None):
     app = Flask(__name__)
@@ -476,11 +477,11 @@ def create_app(db_config=None):
                 
                 # Apply status filter
                 if status_filter != 'all':
-                    from src.fund.models import FundStatus
+                    from src.fund.enums import FundStatus
                     status_map = {
                         'active': FundStatus.ACTIVE,
                         'completed': FundStatus.COMPLETED,
-                        'suspended': FundStatus.REALIZED
+                        'suspended': FundStatus.SUSPENDED
                     }
                     # Only apply filter if status_filter is valid, otherwise ignore it
                     if status_filter in status_map:
@@ -874,9 +875,10 @@ def create_app(db_config=None):
                         return jsonify({"error": f"Missing required field: {field}"}), 400
                 
                 # Validate tracking type
-                valid_tracking_types = ['nav_based', 'cost_based']
+                from src.fund.enums import FundType
+                valid_tracking_types = [FundType.NAV_BASED.value, FundType.COST_BASED.value]
                 if data['tracking_type'] not in valid_tracking_types:
-                    return jsonify({"error": f"Invalid tracking_type: {data['tracking_type']}. Must be one of: {valid_tracking_types}"}), 400
+                    return jsonify({'error': f'Invalid tracking_type. Must be one of: {valid_tracking_types}'}), 400
                 
                 # Get investment company and entity using domain methods
                 company = InvestmentCompany.get_by_id(data['investment_company_id'], session=session)
@@ -955,7 +957,7 @@ def create_app(db_config=None):
                     return jsonify({"error": "Invalid event_date format. Use ISO format (YYYY-MM-DD)."}), 400
                 # Route to correct domain method
                 created_event = None
-                if event_type.upper() == 'CAPITAL_CALL' and fund.tracking_type.value == 'cost_based':
+                if event_type.upper() == EventType.CAPITAL_CALL.value.upper() and fund.tracking_type == FundType.COST_BASED:
                     amount = data.get('amount')
                     if amount is None:
                         return jsonify({"error": "Missing required field: amount for capital call"}), 400
@@ -966,7 +968,7 @@ def create_app(db_config=None):
                         reference_number=data.get('reference_number'),
                         session=session
                     )
-                elif event_type.upper() == 'DISTRIBUTION':
+                elif event_type.upper() == EventType.DISTRIBUTION.value.upper():
                     distribution_type = data.get('distribution_type')
                     if distribution_type is None:
                         return jsonify({"error": "Missing required field: distribution_type for distribution"}), 400
@@ -1024,7 +1026,7 @@ def create_app(db_config=None):
                             )
                     except ValueError as e:
                         return jsonify({"error": str(e)}), 400
-                elif event_type.upper() == 'UNIT_PURCHASE' and fund.tracking_type.value == 'nav_based':
+                elif event_type.upper() == EventType.UNIT_PURCHASE.value.upper() and fund.tracking_type == FundType.NAV_BASED:
                     units = data.get('units_purchased')
                     price = data.get('unit_price')
                     if units is None or price is None:
@@ -1038,7 +1040,7 @@ def create_app(db_config=None):
                         reference_number=data.get('reference_number'),
                         session=session
                     )
-                elif event_type.upper() == 'UNIT_SALE' and fund.tracking_type.value == 'nav_based':
+                elif event_type.upper() == EventType.UNIT_SALE.value.upper() and fund.tracking_type == FundType.NAV_BASED:
                     units = data.get('units_sold')
                     price = data.get('unit_price')
                     if units is None or price is None:
@@ -1052,7 +1054,7 @@ def create_app(db_config=None):
                         reference_number=data.get('reference_number'),
                         session=session
                     )
-                elif event_type.upper() == 'NAV_UPDATE' and fund.tracking_type.value == 'nav_based':
+                elif event_type.upper() == EventType.NAV_UPDATE.value.upper() and fund.tracking_type == FundType.NAV_BASED:
                     nav_per_share = data.get('nav_per_share')
                     if nav_per_share is None:
                         return jsonify({"error": "Missing required field: nav_per_share for NAV update"}), 400
@@ -1063,7 +1065,7 @@ def create_app(db_config=None):
                         reference_number=data.get('reference_number'),
                         session=session
                     )
-                elif event_type.upper() == 'RETURN_OF_CAPITAL' and fund.tracking_type.value == 'cost_based':
+                elif event_type.upper() == EventType.RETURN_OF_CAPITAL.value.upper() and fund.tracking_type == FundType.COST_BASED:
                     amount = data.get('amount')
                     if amount is None:
                         return jsonify({"error": "Missing required field: amount for return of capital"}), 400
@@ -1120,8 +1122,8 @@ def create_app(db_config=None):
                 if not event:
                     return jsonify({"error": "Event not found"}), 404
                 # Only allow deleting user-editable events
-                if event.event_type.value.upper() in [
-                    'TAX_PAYMENT', 'DAILY_RISK_FREE_INTEREST_CHARGE', 'EOFY_DEBT_COST']:
+                if event.event_type in [
+                    EventType.TAX_PAYMENT, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, EventType.EOFY_DEBT_COST]:
                     return jsonify({"error": "Cannot delete system or tax events from the UI"}), 400
                 fund.delete_event(event_id, session=session)
                 session.commit()

@@ -9,7 +9,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, asc, func
 
-from ..models import TaxStatement
+from ...tax.models import TaxStatement
 from ..enums import SortOrder
 
 

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..models import Fund, FundEvent
 from .registry import FundEventHandlerRegistry
+from ..enums import EventType
 
 
 class FundUpdateOrchestrator:
@@ -140,11 +141,11 @@ class FundUpdateOrchestrator:
         # Update fund summary fields if needed
         if hasattr(event.fund, 'update_fund_summary_fields_after_capital_event'):
             # For capital events, update summary fields
-            if event.event_type in ['capital_call', 'return_of_capital', 'unit_purchase', 'unit_sale']:
+            if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
                 event.fund.update_fund_summary_fields_after_capital_event(session=session)
         
         # Handle NAV-specific updates
-        if event.event_type == 'nav_update':
+        if event.event_type == EventType.NAV_UPDATE:
             # Update subsequent NAV events if needed
             if hasattr(event.fund, '_update_subsequent_nav_change_fields'):
                 event.fund._update_subsequent_nav_change_fields(event, session)
@@ -223,7 +224,6 @@ class FundUpdateOrchestrator:
         
         # Validate event type
         try:
-            from ..enums import EventType
             EventType.from_string(event_data['event_type'])
         except ValueError as e:
             raise ValueError(f"Invalid event_type: {e}")

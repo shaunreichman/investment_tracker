@@ -69,7 +69,7 @@ class FundEventService:
         # Create the capital call event
         event = fund.fund_events.__class__(
             fund_id=fund.id,
-            event_type=fund.fund_events.__class__.__class__('capital_call'),
+            event_type=EventType.CAPITAL_CALL,
             event_date=date,
             amount=amount,
             description=description or f"Capital call of {amount}",
@@ -111,7 +111,7 @@ class FundEventService:
         # Create the return of capital event
         event = fund.fund_events.__class__(
             fund_id=fund.id,
-            event_type=fund.fund_events.__class__.__class__('return_of_capital'),
+            event_type=EventType.RETURN_OF_CAPITAL,
             event_date=date,
             amount=amount,
             description=description or f"Return of capital of {amount}",
@@ -269,7 +269,7 @@ class FundEventService:
         # Create the NAV update event
         event = fund.fund_events.__class__(
             fund_id=fund.id,
-            event_type=fund.fund_events.__class__.__class__('nav_update'),
+            event_type=EventType.NAV_UPDATE,
             event_date=date,
             nav_per_share=nav_per_share,
             description=description or f"NAV update to {nav_per_share}",
@@ -302,7 +302,7 @@ class FundEventService:
         # Get the previous NAV event
         prev_nav_event = session.query(fund.fund_events.__class__).filter(
             fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == fund.fund_events.__class__.__class__('nav_update'),
+            fund.fund_events.__class__.event_type == EventType.NAV_UPDATE,
             fund.fund_events.__class__.event_date < date
         ).order_by(fund.fund_events.__class__.event_date.desc()).first()
         
@@ -334,7 +334,7 @@ class FundEventService:
         # Get subsequent NAV events
         subsequent_events = session.query(fund.fund_events.__class__).filter(
             fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == fund.fund_events.__class__.__class__('nav_update'),
+            fund.fund_events.__class__.event_type == EventType.NAV_UPDATE,
             fund.fund_events.__class__.event_date > new_nav_event.event_date
         ).order_by(fund.fund_events.__class__.event_date).all()
         
@@ -528,7 +528,7 @@ class FundEventService:
         # Create the event
         event = fund.fund_events.__class__(
             fund_id=fund.id,
-            event_type=fund.fund_events.__class__.__class__(event_type),
+            event_type=event_type if isinstance(event_type, EventType) else EventType(event_type),
             event_date=event_date,
             amount=amount,
             description=event_data.get('description'),
@@ -536,17 +536,17 @@ class FundEventService:
         )
         
         # Set optional fields based on event type
-        if event_type == 'unit_purchase':
+        if event_type == EventType.UNIT_PURCHASE:
             event.units_purchased = event_data.get('units_purchased')
             event.unit_price = event_data.get('unit_price')
             event.brokerage_fee = event_data.get('brokerage_fee', 0.0)
-        elif event_type == 'unit_sale':
+        elif event_type == EventType.UNIT_SALE:
             event.units_sold = event_data.get('units_sold')
             event.unit_price = event_data.get('unit_price')
             event.brokerage_fee = event_data.get('brokerage_fee', 0.0)
-        elif event_type == 'nav_update':
+        elif event_type == EventType.NAV_UPDATE:
             event.nav_per_share = event_data.get('nav_per_share')
-        elif event_type == 'distribution':
+        elif event_type == EventType.DISTRIBUTION:
             event.distribution_type = event_data.get('distribution_type')
             event.tax_withheld = event_data.get('tax_withheld', 0.0)
         

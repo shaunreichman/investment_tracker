@@ -17,7 +17,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 # Import enums from the dedicated enums module
-from ..enums import EventType, DistributionType
+from ..enums import EventType, DistributionType, FundStatus
 
 
 class TaxCalculationService:
@@ -66,7 +66,7 @@ class TaxCalculationService:
         # Calculate daily interest charges
         daily_charges = self._calculate_daily_interest_charge_objects(
             fund.start_date, 
-            date.today() if fund.status.value == 'active' else fund.end_date,
+            date.today() if fund.status == FundStatus.ACTIVE else fund.end_date,
             risk_free_rates,
             self._get_existing_daily_interest_dates(fund, session),
             self._get_cash_flow_events(fund, session)
@@ -103,7 +103,7 @@ class TaxCalculationService:
         # Calculate daily interest charges
         daily_charges = self._calculate_daily_interest_charge_objects(
             fund.start_date,
-            date.today() if fund.status.value == 'active' else fund.end_date,
+            date.today() if fund.status == FundStatus.ACTIVE else fund.end_date,
             risk_free_rates,
             self._get_existing_daily_interest_dates(fund, session),
             self._get_cash_flow_events(fund, session)
@@ -260,7 +260,7 @@ class TaxCalculationService:
         distributions = {}
         
         for event in fund.fund_events:
-            if event.event_type.value == 'distribution':
+            if event.event_type == EventType.DISTRIBUTION:
                 dist_type = event.distribution_type.value if event.distribution_type else 'unknown'
                 if dist_type not in distributions:
                     distributions[dist_type] = []
@@ -282,7 +282,7 @@ class TaxCalculationService:
             float: Total distribution amount
         """
         total = sum(event.amount for event in fund.fund_events 
-                   if event.event_type.value == 'distribution' and event.amount)
+                   if event.event_type == EventType.DISTRIBUTION and event.amount)
         return float(total) if total else 0.0
     
     def get_taxable_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
@@ -299,7 +299,7 @@ class TaxCalculationService:
             float: Total taxable distribution amount
         """
         total = sum(event.amount for event in fund.fund_events 
-                   if event.event_type.value == 'distribution' and 
+                   if event.event_type == EventType.DISTRIBUTION and 
                    event.amount and 
                    event.distribution_type and 
                    event.distribution_type.value in ['income', 'capital_gains'])
@@ -319,7 +319,7 @@ class TaxCalculationService:
             float: Total gross distribution amount
         """
         total = sum(event.amount for event in fund.fund_events 
-                   if event.event_type.value == 'distribution' and event.amount)
+                   if event.event_type == EventType.DISTRIBUTION and event.amount)
         return float(total) if total else 0.0
     
     def get_net_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
@@ -353,7 +353,7 @@ class TaxCalculationService:
             float: Total tax withheld amount
         """
         total = sum(event.tax_withheld for event in fund.fund_events 
-                   if event.event_type.value == 'distribution' and event.tax_withheld)
+                   if event.event_type == EventType.DISTRIBUTION and event.tax_withheld)
         return float(total) if total else 0.0
     
     def get_distributions_with_tax_details(self, fund: 'Fund', session: Optional[Session] = None) -> List[Dict[str, Any]]:
@@ -372,7 +372,7 @@ class TaxCalculationService:
         distributions = []
         
         for event in fund.fund_events:
-            if event.event_type.value == 'distribution':
+            if event.event_type == EventType.DISTRIBUTION:
                 dist_info = {
                     'id': event.id,
                     'date': event.event_date,
@@ -465,7 +465,7 @@ class TaxCalculationService:
             list: List of cash flow events
         """
         return [event for event in fund.fund_events 
-                if event.event_type.value in ['capital_call', 'return_of_capital', 'distribution']]
+                if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION]]
     
     def _process_financial_year_for_debt_cost(self, fund: 'Fund', fy: int, session: Optional[Session] = None) -> None:
         """

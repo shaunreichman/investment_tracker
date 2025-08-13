@@ -114,7 +114,8 @@ class BaseFundEventHandler(ABC):
         Raises:
             ValueError: If fund type doesn't match
         """
-        if self.fund.tracking_type != expected_type:
+        # Compare values since we might have different enum classes (old vs new)
+        if self.fund.tracking_type.value != expected_type.value:
             raise ValueError(
                 f"Event requires {expected_type.value} fund, "
                 f"but fund is {self.fund.tracking_type.value}"
@@ -165,7 +166,7 @@ class BaseFundEventHandler(ABC):
         """
         query = self.session.query(FundEvent).filter(
             FundEvent.fund_id == self.fund.id,
-            FundEvent.event_type == event_type
+            FundEvent.event_type == event_type.name  # Use enum name for database compatibility
         )
         
         for field, value in filters.items():
@@ -187,7 +188,7 @@ class BaseFundEventHandler(ABC):
         """
         event = FundEvent(
             fund_id=self.fund.id,
-            event_type=event_type,
+            event_type=event_type.name,  # Use enum name for database compatibility
             **kwargs
         )
         self.session.add(event)
