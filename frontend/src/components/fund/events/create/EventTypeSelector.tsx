@@ -3,7 +3,8 @@ import {
   Box,
   Paper,
   Typography,
-  Button
+  Button,
+  useTheme
 } from '@mui/material';
 import {
   AccountBalance,
@@ -96,6 +97,8 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
   onSubDistributionTypeSelect,
   onBack
 }) => {
+  const theme = useTheme();
+  
   // Filter templates based on fund tracking type
   const filteredTemplates = EVENT_TEMPLATES.filter(
     template => template.trackingType === fundTrackingType || template.trackingType === 'both'
@@ -125,8 +128,8 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
               sx={{
                 p: 2,
                 minWidth: 120,
-                border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
-                background: isSelected ? '#e3f2fd' : '#fff',
+                border: isSelected ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
+                background: isSelected ? theme.palette.primary.light : theme.palette.background.paper,
                 opacity: isDisabled ? 0.5 : 1,
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
@@ -180,8 +183,8 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                   sx={{
                     p: 2,
                     minWidth: 120,
-                    border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
-                    background: isSelected ? '#e3f2fd' : '#f3f6fa',
+                    border: isSelected ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
+                    background: isSelected ? theme.palette.primary.light : theme.palette.background.paper,
                     opacity: isDisabled ? 0.5 : 1,
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
@@ -255,8 +258,8 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                   sx={{
                     p: 2,
                     minWidth: 120,
-                    border: isSelected ? '2px solid #1976d2' : '1px solid #ccc',
-                    background: isSelected ? '#e3f2fd' : '#f3f6fa',
+                    border: isSelected ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
+                    background: isSelected ? theme.palette.primary.light : theme.palette.background.paper,
                     opacity: isDisabled ? 0.5 : 1,
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',

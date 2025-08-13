@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, Box, Typography } from '@mui/material';
+import { TextField, Box, Typography, useTheme } from '@mui/material';
 
 interface NavUpdateFormProps {
   formData: {
@@ -16,6 +16,8 @@ const NavUpdateForm: React.FC<NavUpdateFormProps> = ({
   validationErrors,
   onInputChange,
 }) => {
+  const theme = useTheme();
+  
   return (
     <Box>
       <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
@@ -24,7 +26,7 @@ const NavUpdateForm: React.FC<NavUpdateFormProps> = ({
       
       <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
         <TextField
-          label={<span>NAV Per Share <span style={{ color: '#d32f2f' }}>*</span></span>}
+          label={<span>NAV Per Share <span style={{ color: theme.palette.error.main }}>*</span></span>}
           type="number"
           value={formData.nav_per_share || ''}
           onChange={e => onInputChange('nav_per_share', e.target.value)}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, Box, Typography, FormControlLabel, Checkbox } from '@mui/material';
+import { TextField, Box, Typography, FormControlLabel, Checkbox, useTheme } from '@mui/material';
 import { formatNumber, parseNumber } from '../../../../utils/helpers';
 import { ValidationErrors, FormData } from '../../../../hooks/useEventForm';
 
@@ -25,6 +25,8 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
   onInputChange,
   eventType,
 }) => {
+  const theme = useTheme();
+  
   // Only render for distribution events
   if (eventType !== 'DISTRIBUTION') {
     return null;
@@ -34,7 +36,7 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
     <>
       {/* Distribution Type Display */}
       <TextField
-        label={<span>Distribution Type <span style={{ color: '#d32f2f' }}>*</span></span>}
+        label={<span>Distribution Type <span style={{ color: theme.palette.error.main }}>*</span></span>}
         value={distributionType}
         disabled
         fullWidth
@@ -45,7 +47,7 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
       {/* Sub-Distribution Type Display */}
       {(distributionType === 'DIVIDEND' || distributionType === 'INTEREST') && (
         <TextField
-          label={<span>Sub-Distribution Type <span style={{ color: '#d32f2f' }}>*</span></span>}
+          label={<span>Sub-Distribution Type <span style={{ color: theme.palette.error.main }}>*</span></span>}
           value={subDistributionType}
           disabled
           fullWidth
@@ -56,7 +58,7 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
 
       {/* Simple Amount Field for all distributions */}
       <TextField
-        label={<span>Amount <span style={{ color: '#d32f2f' }}>*</span></span>}
+        label={<span>Amount <span style={{ color: theme.palette.error.main }}>*</span></span>}
         type="text"
         value={formatNumber(formData.amount || '')}
         onChange={e => onInputChange('amount', parseNumber(e.target.value))}
