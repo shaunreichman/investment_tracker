@@ -306,18 +306,34 @@ class TestPhase35EventPublishing:
             assert hasattr(handler, '_publish_dependent_events')
             assert callable(handler._publish_dependent_events)
     
-    def test_event_publishing_returns_none(self):
-        """Test that event publishing placeholders return None (as expected)."""
+    def test_event_publishing_works(self):
+        """Test that event publishing now works and creates domain events."""
         # Mock session and fund
         mock_session = Mock()
         mock_fund = Mock()
+        mock_fund.id = 1
         
-        # Test that publishing returns None (placeholder behavior)
+        # Test that publishing works (no longer placeholder)
         handler = CapitalCallHandler(mock_session, mock_fund)
         mock_event = Mock()
+        mock_event.id = 1
+        mock_event.event_type = 'CAPITAL_CALL'
+        mock_event.event_date = date(2024, 1, 15)
+        mock_event.previous_equity_balance = 0.0
+        mock_event.current_equity_balance = 100000.0
         
-        result = handler._publish_dependent_events(mock_event)
-        assert result is None  # Placeholder returns None
+        # Mock the domain event repository
+        with patch('src.fund.repositories.domain_event_repository.DomainEventRepository') as mock_repo:
+            mock_repo_instance = Mock()
+            mock_repo.return_value = mock_repo_instance
+            
+            result = handler._publish_dependent_events(mock_event)
+            
+            # Should return None (void method)
+            assert result is None
+            
+            # Should have called the repository to store events
+            mock_repo_instance.store_domain_events.assert_called_once()
 
 
 class TestPhase35ArchitectureCompleteness:

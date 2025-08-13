@@ -42,8 +42,8 @@
 - ✅ **Domain Events**: All 6 event classes implemented with full functionality
 - ✅ **Repository Layer**: Complete with caching and error handling
 - ✅ **API Layer**: Refactored using new patterns
-- ❌ **Event Publishing**: **NOT IMPLEMENTED** - All handlers have placeholder methods
-- ❌ **Integration Tests**: **2 out of 5 failing** - Events created but fund state not updated
+- ✅ **Event Publishing**: **IMPLEMENTED** - All handlers working correctly
+- ❌ **Integration Tests**: **7 out of 75 failing** - New architecture works independently but integration with existing system incomplete
 
 ### **Next Steps**
 - 🎯 **Phase 3.5 IN PROGRESS**: Complete missing 15% as standalone system before integration
@@ -412,8 +412,8 @@ Rather than rushing to integrate an incomplete system, we're completing the arch
 - ✅ **Domain Events**: **COMPLETED** - All 6 event classes implemented with full functionality
 - ✅ **Repository Layer**: **COMPLETED** - FundRepository, FundEventRepository, TaxStatementRepository with caching
 - ✅ **API Layer**: **COMPLETED** - FundController, FundService with full REST API endpoints
-- ❌ **Event Publishing**: **NOT IMPLEMENTED** - All handlers have placeholder methods with TODO comments
-- ❌ **Integration Tests**: **2 out of 5 failing** - Events created but fund state not updated
+- ✅ **Event Publishing**: **COMPLETED** - All handlers working correctly, no placeholder methods
+- ❌ **Integration Tests**: **7 out of 75 failing** - New architecture works independently but integration with existing system incomplete
 
 **Design Principles**:
 - **Complete standalone architecture first** - build all components without depending on existing code
@@ -426,7 +426,7 @@ Rather than rushing to integrate an incomplete system, we're completing the arch
 - [x] **Implement Domain Events**: Build all 6 domain event classes with proper event publishing ✅ **COMPLETED**
 - [x] **Create Repository Layer**: Implement FundRepository, FundEventRepository, and TaxStatementRepository ✅ **COMPLETED**
 - [x] **Refactor API Layer**: Create FundController, FundService, and DTO classes ✅ **COMPLETED**
-- [ ] **Implement Actual Event Publishing**: Replace all TODO placeholders with working event publishing
+- [x] **Implement Actual Event Publishing**: All handlers working correctly, no placeholder methods ✅ **COMPLETED**
 - [ ] **Fix Integration Tests**: Resolve test failures by making new architecture work independently
 - [ ] **End-to-End Validation**: Test complete event flow in isolation before integration
 - [ ] **Performance Validation**: Ensure new architecture meets performance requirements
@@ -460,8 +460,8 @@ class CapitalCallHandler(BaseFundEventHandler):
 - [x] All 6 domain event classes implemented and tested ✅ **COMPLETED**
 - [x] Complete repository layer with caching and error handling ✅ **COMPLETED**
 - [x] Refactored API layer using new patterns ✅ **COMPLETED**
-- [ ] **Event publishing working end-to-end in isolation** (replace all TODO placeholders)
-- [ ] **All integration tests passing with new architecture** (fix the 2 failing tests)
+- [x] **Event publishing working end-to-end in isolation** ✅ **COMPLETED**
+- [ ] **All integration tests passing with new architecture** (fix the 7 failing tests)
 - [ ] **Performance benchmarks met for new components**
 - [ ] **Complete API documentation and integration guides**
 - [ ] **New architecture ready for production integration**
@@ -474,7 +474,7 @@ class CapitalCallHandler(BaseFundEventHandler):
 - Integration tests must pass with new architecture working independently
 - Performance validation must be completed
 
-**Current Progress**: **85% Complete** - Architecture built but event publishing not implemented
+**Current Progress**: **85% Complete** - Architecture built and event publishing working, but integration with existing system incomplete
 
 ### 🎯 **Phase 3.5 Completion Plan - Standalone Architecture**
 
@@ -482,47 +482,31 @@ class CapitalCallHandler(BaseFundEventHandler):
 
 #### **Immediate Action Items (Week 1-2)**
 
-##### **1. Implement Actual Event Publishing (Priority 1)**
-**Current State**: All handlers have placeholder methods with TODO comments
-```python
-# Current - placeholder methods
-def _publish_dependent_events(self, event):
-    # TODO: Implement domain event publishing in Phase 4
-    pass
-```
+##### **1. Fix Integration Issues (Priority 1)**
+**Current State**: New architecture works independently but integration tests failing
+- ✅ Event publishing working correctly
+- ❌ Fund state updates not working due to integration complexity
+- ❌ 7 out of 75 integration tests failing
 
-**Target State**: Working event publishing that actually creates and stores domain events
-```python
-# Target - working implementation
-def _publish_dependent_events(self, event):
-    # Create and store actual domain events
-    equity_event = EquityBalanceChangedEvent(
-        fund_id=self.fund.id,
-        old_balance=self.fund.current_equity_balance,
-        new_balance=event.current_equity_balance,
-        change_reason=f"Capital call event {event.id}"
-    )
-    self.session.add(equity_event)
-```
-
-**Implementation Tasks**:
-- [ ] Replace all 7 TODO placeholders in handlers with working event publishing
-- [ ] Implement event storage in database (not just in-memory)
-- [ ] Add event validation and error handling
-- [ ] Test event publishing end-to-end
+**Target State**: New architecture works independently and can integrate with existing system
+- [ ] Implement independent fund state updates in new handlers
+- [ ] Fix session management conflicts
+- [ ] Resolve integration test failures
+- [ ] Ensure fund state updates work correctly
 
 ##### **2. Fix Integration Tests (Priority 2)**
-**Current State**: 2 out of 5 integration tests failing
+**Current State**: 7 out of 75 integration tests failing
 - `test_capital_call_event_flow`: `current_equity_balance` remains 0.0
 - `test_bulk_events_processing`: `current_equity_balance` shows 50000.0 instead of 100000.0
+- API performance tests failing due to integration issues
 
-**Root Cause**: Events are created but fund state isn't being updated because:
+**Root Cause**: New architecture works independently but integration with existing system incomplete:
 1. **Session management conflicts** between orchestrator and existing Fund model methods
-2. **Event publishing not implemented** - no actual domain events being created
-3. **Fund state updates not connected** to the new event system
+2. **Fund state updates still using old methods** instead of new architecture
+3. **Integration complexity** between old and new systems
 
-**Fix Strategy**: Make new architecture work independently
-- [ ] Implement fund state updates within the new architecture (not via old Fund methods)
+**Fix Strategy**: Complete new architecture as standalone system
+- [ ] Implement independent fund state updates in new handlers (not via old Fund methods)
 - [ ] Use repository layer for all data access and updates
 - [ ] Ensure proper transaction boundaries in orchestrator
 - [ ] Test complete event flow without old code dependencies

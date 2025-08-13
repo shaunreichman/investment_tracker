@@ -299,16 +299,11 @@ class DistributionHandler(BaseFundEventHandler):
         """
         Publish domain events for dependent updates.
         
-        This method will be implemented in Phase 4 when we add
-        the full domain event system. For now, it's a placeholder
-        that maintains the contract.
+        This method creates and stores domain events for significant
+        state changes, enabling loose coupling between components.
         
         Args:
             event: The distribution event that was processed
         """
-        # TODO: Implement domain event publishing in Phase 4
-        # Examples of events to publish:
-        # - DistributionRecordedEvent
-        # - TaxStatementUpdatedEvent
-        # - FundSummaryUpdatedEvent
-        pass
+        # Call the base class implementation which handles all domain event creation
+        super()._publish_dependent_events(event)

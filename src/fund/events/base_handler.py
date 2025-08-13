@@ -199,15 +199,119 @@ class BaseFundEventHandler(ABC):
         """
         Publish domain events for dependent updates.
         
-        This method will be implemented in Phase 4 when we add
-        the full domain event system. For now, it's a placeholder
-        that maintains the contract.
+        This method creates and stores domain events for significant
+        state changes, enabling loose coupling between components.
         
         Args:
             event: The event that was just processed
         """
-        # TODO: Implement domain event publishing in Phase 4
-        pass
+        from ..repositories.domain_event_repository import DomainEventRepository
+        
+        # Initialize domain event repository
+        domain_repo = DomainEventRepository(self.session)
+        
+        # Create domain events based on the fund event type
+        domain_events = self._create_domain_events_for_fund_event(event)
+        
+        # Store all domain events in the database
+        if domain_events:
+            domain_repo.store_domain_events(domain_events)
+    
+    def _create_domain_events_for_fund_event(self, event: FundEvent) -> List['FundDomainEvent']:
+        """
+        Create appropriate domain events for a fund event.
+        
+        This method determines which domain events should be created
+        based on the type of fund event and its impact.
+        
+        Args:
+            event: The fund event that was processed
+            
+        Returns:
+            List[FundDomainEvent]: List of domain events to publish
+        """
+        domain_events = []
+        
+        # Import domain event classes
+        from ..events.domain.equity_balance_changed_event import EquityBalanceChangedEvent
+        from ..events.domain.distribution_recorded_event import DistributionRecordedEvent
+        from ..events.domain.nav_updated_event import NAVUpdatedEvent
+        from ..events.domain.units_changed_event import UnitsChangedEvent
+        from ..events.domain.tax_statement_updated_event import TaxStatementUpdatedEvent
+        
+        # Get current fund state for comparison
+        old_equity_balance = getattr(event, 'previous_equity_balance', 0.0) or 0.0
+        current_equity_balance = getattr(event, 'current_equity_balance', 0.0) or 0.0
+        
+        # Create equity balance changed event if balance changed
+        if abs(current_equity_balance - old_equity_balance) > 0.01:  # Small tolerance for floating point
+            equity_event = EquityBalanceChangedEvent(
+                fund_id=self.fund.id,
+                event_date=event.event_date,
+                old_balance=old_equity_balance,
+                new_balance=current_equity_balance,
+                change_reason=f"{event.event_type} event {event.id}"
+            )
+            domain_events.append(equity_event)
+        
+        # Create event-specific domain events
+        if event.event_type == EventType.DISTRIBUTION.value:
+            # Distribution recorded event
+            # Get distribution type as enum if possible, fallback to string
+            distribution_type = getattr(event, 'distribution_type', 'Unknown')
+            if hasattr(distribution_type, 'value'):
+                distribution_type = distribution_type.value
+            
+            dist_event = DistributionRecordedEvent(
+                fund_id=self.fund.id,
+                event_date=event.event_date,
+                distribution_type=distribution_type,
+                amount=getattr(event, 'amount', 0.0),
+                tax_withheld=getattr(event, 'withholding_tax_amount', 0.0),
+                metadata={'fund_event_id': event.id}
+            )
+            domain_events.append(dist_event)
+            
+            # Tax statement updated event if tax was withheld
+            if getattr(event, 'withholding_tax_amount', 0.0) > 0:
+                tax_event = TaxStatementUpdatedEvent(
+                    fund_id=self.fund.id,
+                    event_date=event.event_date,
+                    tax_statement_id=None,  # Will be updated when tax statement is created
+                    update_type='distribution_tax_withheld',
+                    metadata={'fund_event_id': event.id, 'tax_amount': getattr(event, 'withholding_tax_amount')}
+                )
+                domain_events.append(tax_event)
+        
+        elif event.event_type == EventType.NAV_UPDATE.value:
+            # NAV updated event
+            nav_event = NAVUpdatedEvent(
+                fund_id=self.fund.id,
+                event_date=event.event_date,
+                old_nav=getattr(event, 'previous_nav', 0.0) or 0.0,
+                new_nav=getattr(event, 'current_nav', 0.0) or 0.0,
+                change_reason=f"NAV update event {event.id}",
+                metadata={'fund_event_id': event.id}
+            )
+            domain_events.append(nav_event)
+        
+        elif event.event_type in [EventType.UNIT_PURCHASE.value, EventType.UNIT_SALE.value]:
+            # Units changed event
+            old_units = getattr(event, 'previous_units', 0.0) or 0.0
+            current_units = getattr(event, 'current_units', 0.0) or 0.0
+            
+            if abs(current_units - old_units) > 0.01:  # Small tolerance for floating point
+                units_event = UnitsChangedEvent(
+                    fund_id=self.fund.id,
+                    event_date=event.event_date,
+                    old_units=old_units,
+                    new_units=current_units,
+                    change_reason=f"{event.event_type} event {event.id}",
+                    metadata={'fund_event_id': event.id}
+                )
+                domain_events.append(units_event)
+        
+        return domain_events
     
     def _update_fund_summary_fields(self) -> None:
         """

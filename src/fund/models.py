@@ -4,7 +4,7 @@ Fund domain models.
 This module contains the core fund models including Fund, FundEvent, and related enums.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, func
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, func, JSON
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime, date, timezone
@@ -155,6 +155,7 @@ class Fund(Base):
     entity = relationship("Entity", back_populates="funds", lazy='selectin')
     fund_events = relationship("FundEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     tax_statements = relationship("TaxStatement", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
+    domain_events = relationship("DomainEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     
     @property
     def calculation_service(self) -> FundCalculationService:
@@ -2632,3 +2633,70 @@ class FundEvent(Base):
         self.group_type = None
         self.group_position = None
         self.validate_grouping_consistency()
+
+
+class DomainEvent(Base):
+    """
+    Database model for storing domain events.
+    
+    Domain events represent significant state changes in the fund system
+    and enable loose coupling between components. They are stored for
+    audit trails, debugging, and event replay capabilities.
+    """
+    __tablename__ = 'domain_events'
+    
+    # Primary key
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # Event identification
+    event_id = Column(String(36), unique=True, nullable=False, index=True)
+    event_type = Column(String(100), nullable=False, index=True)
+    
+    # Fund association
+    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)
+    
+    # Event timing
+    event_date = Column(Date, nullable=False, index=True)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    
+    # Event data (JSON)
+    event_metadata = Column(JSON, nullable=True)
+    
+    # Relationships
+    fund = relationship('Fund', back_populates='domain_events')
+    
+    def __repr__(self):
+        """String representation of the domain event."""
+        return (
+            f"<DomainEvent(id={self.id}, "
+            f"event_type='{self.event_type}', "
+            f"fund_id={self.fund_id}, "
+            f"event_date={self.event_date})>"
+        )
+    
+    @classmethod
+    def create_from_domain_event(cls, domain_event, session=None):
+        """
+        Create a DomainEvent database record from a FundDomainEvent instance.
+        
+        Args:
+            domain_event: FundDomainEvent instance
+            session: Database session
+            
+        Returns:
+            DomainEvent: Created database record
+        """
+        db_event = cls(
+            event_id=domain_event.event_id,
+            event_type=domain_event.event_type,
+            fund_id=domain_event.fund_id,
+            event_date=domain_event.event_date,
+            timestamp=domain_event.timestamp,
+            event_metadata=domain_event.metadata
+        )
+        
+        if session:
+            session.add(db_event)
+            session.flush()
+        
+        return db_event

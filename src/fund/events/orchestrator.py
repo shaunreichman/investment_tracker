@@ -135,9 +135,6 @@ class FundUpdateOrchestrator:
             event: The event that was just processed
             session: Database session for all operations
         """
-        # TODO: Implement dependent updates in Phase 4
-        # For now, this is a placeholder that maintains the contract
-        
         # Update fund summary fields if needed
         if hasattr(event.fund, 'update_fund_summary_fields_after_capital_event'):
             # For capital events, update summary fields
@@ -149,6 +146,98 @@ class FundUpdateOrchestrator:
             # Update subsequent NAV events if needed
             if hasattr(event.fund, '_update_subsequent_nav_change_fields'):
                 event.fund._update_subsequent_nav_change_fields(event, session)
+        
+        # Trigger domain event processing for dependent components
+        self._process_domain_events_for_dependent_updates(event, session)
+    
+    def _process_domain_events_for_dependent_updates(self, event: FundEvent, session: Session) -> None:
+        """
+        Process domain events to trigger updates in dependent components.
+        
+        This method looks at the domain events that were published and
+        triggers appropriate updates in other components that need to react.
+        
+        Args:
+            event: The fund event that was processed
+            session: Database session for all operations
+        """
+        from ..repositories.domain_event_repository import DomainEventRepository
+        
+        # Get the domain events that were published for this fund event
+        domain_repo = DomainEventRepository(session)
+        
+        # Get recent domain events for this fund (last 5 minutes to catch the ones we just published)
+        from datetime import datetime, timedelta
+        recent_cutoff = datetime.now() - timedelta(minutes=5)
+        
+        recent_events = domain_repo.get_by_date_range(
+            start_date=recent_cutoff.date(),
+            end_date=datetime.now().date(),
+            fund_id=event.fund_id
+        )
+        
+        # Process each domain event to trigger dependent updates
+        for domain_event in recent_events:
+            self._trigger_dependent_component_updates(domain_event, session)
+    
+    def _trigger_dependent_component_updates(self, domain_event, session: Session) -> None:
+        """
+        Trigger updates in dependent components based on domain events.
+        
+        Args:
+            domain_event: The domain event that occurred
+            session: Database session for all operations
+        """
+        # Import domain event types
+        from ..enums import DomainEventType
+        
+        if domain_event.event_type == DomainEventType.EQUITY_BALANCE_CHANGED.value:
+            # Trigger tax statement updates if needed
+            self._update_tax_statements_for_equity_change(domain_event, session)
+            
+        elif domain_event.event_type == DomainEventType.DISTRIBUTION_RECORDED.value:
+            # Trigger company record updates for distributions
+            self._update_company_records_for_distribution(domain_event, session)
+            
+        elif domain_event.event_type == DomainEventType.NAV_UPDATED.value:
+            # Trigger unit value recalculations
+            self._update_unit_values_for_nav_change(domain_event, session)
+    
+    def _update_tax_statements_for_equity_change(self, domain_event, session: Session) -> None:
+        """
+        Update tax statements when equity balance changes.
+        
+        Args:
+            domain_event: The equity balance changed event
+            session: Database session for all operations
+        """
+        # This would trigger tax statement recalculations
+        # For now, we'll implement this in Phase 4 when we add full tax integration
+        pass
+    
+    def _update_company_records_for_distribution(self, domain_event, session: Session) -> None:
+        """
+        Update company records when distributions are recorded.
+        
+        Args:
+            domain_event: The distribution recorded event
+            session: Database session for all operations
+        """
+        # This would trigger company record updates
+        # For now, we'll implement this in Phase 4 when we add full company integration
+        pass
+    
+    def _update_unit_values_for_nav_change(self, domain_event, session: Session) -> None:
+        """
+        Update unit values when NAV changes.
+        
+        Args:
+            domain_event: The NAV updated event
+            session: Database session for all operations
+        """
+        # This would trigger unit value recalculations
+        # For now, we'll implement this in Phase 4 when we add full NAV integration
+        pass
     
     def _commit_changes(self, session: Session) -> None:
         """
