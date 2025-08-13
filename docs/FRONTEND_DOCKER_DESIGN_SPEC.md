@@ -479,12 +479,12 @@ export const dockerThemeWithConfig = {
   - **Medium Priority**: ✅ FormField (4 hardcoded colors → theme references), ✅ FormSection (4 hardcoded colors → theme references), ✅ TrackingTypeChip (6 hardcoded colors → theme references)
   - **Low Priority**: ✅ StatusChip (1 hardcoded color → theme references), ✅ EventTypeChip (1 hardcoded color → theme references)
   - **Total Completed**: 40+ hardcoded colors successfully migrated to theme system
-- [ ] **🔄 IN PROGRESS: Main Page Component Theme Integration** - 126+ hardcoded colors need migration
-  - **OverallDashboard.tsx**: ❌ 67 hardcoded colors need migration (HIGHEST PRIORITY)
-  - **EnhancedCompaniesPage.tsx**: ❌ 22 hardcoded colors need migration (HIGH PRIORITY)
+- [x] **✅ COMPLETED: Main Page Component Theme Integration - OverallDashboard.tsx** - 67 hardcoded colors successfully migrated
+  - **OverallDashboard.tsx**: ✅ 67 hardcoded colors successfully migrated (HIGHEST PRIORITY - COMPLETED)
+  - **EnhancedCompaniesPage.tsx**: ❌ 22 hardcoded colors need migration (HIGH PRIORITY - NEXT)
   - **FundDetail.tsx**: ❌ 22 hardcoded colors need migration (HIGH PRIORITY)
   - **Event Creation Forms**: ❌ 15+ hardcoded colors need migration (MEDIUM PRIORITY)
-  - **Total Remaining**: 126+ hardcoded colors across main page components
+  - **Total Remaining**: 59+ hardcoded colors across remaining main page components
 - [ ] **Test Theme Integration**: Verify all components use the new design system
   - Check for any remaining default MUI styling
   - Ensure color consistency across all components
@@ -512,96 +512,96 @@ export const dockerThemeWithConfig = {
 **Estimated Duration**: 5-9 hours
 **Priority**: **CRITICAL** - Required to complete Phase 5
 
-#### **📋 CRITICAL ISSUE: Spec vs. Reality Mismatch**
-The spec claims Phase 5b is complete with "40+ hardcoded colors successfully migrated," but **this is incorrect**. The main page components still contain **126+ hardcoded colors** that need immediate migration.
+#### **📋 PROGRESS UPDATE: Phase 5c Successfully Underway**
+Phase 5b was completed with "40+ hardcoded colors successfully migrated" across layout and UI components. Phase 5c is now in progress with **59+ hardcoded colors remaining** in main page components.
 
 #### **📁 File-by-File Task Breakdown**
 
 ##### **1. OverallDashboard.tsx (HIGHEST PRIORITY)**
-**Status**: ❌ **67 hardcoded colors need migration**
+**Status**: ✅ **67 hardcoded colors successfully migrated**
 **Estimated Effort**: 2-3 hours
 
 **Required Tasks:**
 
 **A. Background Colors (15 instances)**
-- [ ] **Line 125**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
-- [ ] **Line 187**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
-- [ ] **Line 250**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
-- [ ] **Line 273**: `backgroundColor: '#10151a'` → `theme.palette.background.default`
-- [ ] **Line 339**: `backgroundColor: '#19222a'` → `theme.palette.background.sidebarHover`
-- [ ] **Line 486**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
-- [ ] **Line 524**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
-- [ ] **Line 562**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
-- [ ] **Line 600**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 125**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 187**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 250**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 273**: `backgroundColor: '#10151a'` → `theme.palette.background.default`
+- [x] **Line 339**: `backgroundColor: '#19222a'` → `theme.palette.background.sidebarHover`
+- [x] **Line 486**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 524**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 562**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 600**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
 
 **B. Border Colors (20 instances)**
-- [ ] **Line 126**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 188**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 251**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 274**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 286**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 294**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 302**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 310**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 318**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 326**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 344**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 389**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 403**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 418**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 433**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 448**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 486**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 524**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 562**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 600**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 126**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 188**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 251**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 274**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 286**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 294**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 302**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 310**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 318**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 326**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 344**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 389**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 403**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 418**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 433**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 448**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 486**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 524**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 562**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 600**: `border: '1px solid #303234'` → `theme.palette.divider`
 
 **C. Text Colors (20 instances)**
-- [ ] **Line 93**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 105**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 143**: `color: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 149**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 176**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 205**: `color: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 211**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 238**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 258**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 283**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 291**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 299**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 307**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 315**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 323**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 355**: `color: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 368**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 379**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 395**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 455**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 497**: `color: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 504**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 513**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 535**: `color: '#06a58c'` → `theme.palette.secondary.main`
-- [ ] **Line 542**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 551**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 573**: `color: '#4ca2fa'` → `theme.palette.info.main`
-- [ ] **Line 580**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 589**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 611**: `color: '#06a58c'` → `theme.palette.secondary.main`
-- [ ] **Line 618**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 627**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 93**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 105**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 143**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 149**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 176**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 205**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 211**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 238**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 258**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 283**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 291**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 299**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 307**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 315**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 323**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 355**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 368**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 379**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 395**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 455**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 497**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 504**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 513**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 535**: `color: '#06a58c'` → `theme.palette.secondary.main`
+- [x] **Line 542**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 551**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 573**: `color: '#4ca2fa'` → `theme.palette.info.main`
+- [x] **Line 580**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 589**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 611**: `color: '#06a58c'` → `theme.palette.secondary.main`
+- [x] **Line 618**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 627**: `color: '#FFFFFF'` → `theme.palette.text.primary`
 
 **D. Button/Interactive Colors (12 instances)**
-- [ ] **Line 162**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 164**: `backgroundColor: '#1B7FC4'` → `theme.palette.primary.dark`
-- [ ] **Line 224**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 226**: `backgroundColor: '#1B7FC4'` → `theme.palette.primary.dark`
-- [ ] **Line 410**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 411**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 425**: `backgroundColor: (company.active_funds || 0) > 0 ? '#06a58c' : '#6B7280'` → `theme.palette.secondary.main` and `theme.palette.text.muted`
-- [ ] **Line 426**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 162**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 164**: `backgroundColor: '#1B7FC4'` → `theme.palette.primary.dark`
+- [x] **Line 224**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 226**: `backgroundColor: '#1B7FC4'` → `theme.palette.primary.dark`
+- [x] **Line 410**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 411**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 425**: `backgroundColor: (company.active_funds || 0) > 0 ? '#06a58c' : '#6B7280'` → `theme.palette.secondary.main` and `theme.palette.text.muted`
+- [x] **Line 426**: `color: '#FFFFFF'` → `theme.palette.text.primary`
 
 **E. Icon Colors (1 instance)**
-- [ ] **Line 265**: `<Business sx={{ mr: 2, color: '#2496ED', fontSize: '28px' }} />` → `theme.palette.primary.main`
+- [x] **Line 265**: `<Business sx={{ mr: 2, color: '#2496ED', fontSize: '28px' }} />` → `theme.palette.primary.main`
 
 ##### **2. EnhancedCompaniesPage.tsx (HIGH PRIORITY)**
 **Status**: ❌ **22 hardcoded colors need migration**
@@ -719,11 +719,11 @@ After each file migration:
 
 | **File** | **Colors to Migrate** | **Estimated Time** | **Priority** |
 |-----------|----------------------|-------------------|--------------|
-| **OverallDashboard.tsx** | 67 | 2-3 hours | 🔴 HIGHEST |
+| **OverallDashboard.tsx** | ✅ **67 COMPLETED** | ✅ **COMPLETED** | 🔴 HIGHEST |
 | **EnhancedCompaniesPage.tsx** | 22 | 1-2 hours | 🔴 HIGH |
 | **FundDetail.tsx** | 22 | 1-2 hours | 🔴 HIGH |
 | **Event Creation Forms** | 15+ | 1-2 hours | 🟡 MEDIUM |
-| **TOTAL** | **126+** | **5-9 hours** | **CRITICAL** |
+| **TOTAL** | **59+ REMAINING** | **3-6 hours** | **CRITICAL** |
 
 #### **⚠️ Critical Notes**
 
@@ -925,8 +925,8 @@ This approach ensures systematic progress while minimizing risk and maintaining 
 
 ## 16. Project Status Summary - August 2025
 
-### **🎯 Overall Project Status: 85% Complete**
-We have successfully completed **4 out of 5 phases** and **Phase 5a & 5b**, achieving a professional, enterprise-grade UI that matches Docker Desktop's aesthetic with a fully centralized theme system. **Phase 5c requires immediate attention** to complete the theme integration.
+### **🎯 Overall Project Status: 90% Complete**
+We have successfully completed **4 out of 5 phases** and **Phase 5a, 5b, and 5c (OverallDashboard.tsx)**, achieving a professional, enterprise-grade UI that matches Docker Desktop's aesthetic with a fully centralized theme system. **Phase 5c continues with remaining components** to complete the theme integration.
 
 ### **✅ Completed Phases:**
 
@@ -957,13 +957,14 @@ We have successfully completed **4 out of 5 phases** and **Phase 5a & 5b**, achi
 
 ### **🚀 Current Phase:**
 
-#### **Phase 5: Integration and Polish** - 75% Complete
+#### **Phase 5: Integration and Polish** - 85% Complete
 - **Goal**: Final integration testing and visual polish
 - **Phase 5a**: ✅ **COMPLETED** - Layout Component Theme Integration
 - **Phase 5b**: ✅ **COMPLETED** - UI Component Theme Integration
 - **Phase 5c**: **🔄 IN PROGRESS** - Main Page Component Theme Integration (CRITICAL)
-- **Estimated Duration**: 5-9 hours remaining for Phase 5c
-- **Key Tasks**: Migrate 126+ hardcoded colors to theme system, maintain zero visual changes, complete theme integration
+- **OverallDashboard.tsx**: ✅ **COMPLETED** - 67 hardcoded colors successfully migrated
+- **Estimated Duration**: 3-6 hours remaining for Phase 5c
+- **Key Tasks**: Migrate 59+ remaining hardcoded colors to theme system, maintain zero visual changes, complete theme integration
 
 ### **📊 Technical Achievements:**
 
@@ -995,12 +996,12 @@ We have successfully completed **4 out of 5 phases** and **Phase 5a & 5b**, achi
    - Complete theme system integration across layout and UI components
 
 2. **🔄 IN PROGRESS: Phase 5c** (Main Page Component Theme Integration - CRITICAL)
-   - **OverallDashboard.tsx**: Migrate 67 hardcoded colors (HIGHEST PRIORITY)
-   - **EnhancedCompaniesPage.tsx**: Migrate 22 hardcoded colors (HIGH PRIORITY)
+   - **OverallDashboard.tsx**: ✅ 67 hardcoded colors successfully migrated (COMPLETED)
+   - **EnhancedCompaniesPage.tsx**: Migrate 22 hardcoded colors (HIGH PRIORITY - NEXT)
    - **FundDetail.tsx**: Migrate 22 hardcoded colors (HIGH PRIORITY)
    - **Event Creation Forms**: Migrate 15+ hardcoded colors (MEDIUM PRIORITY)
-   - **Total**: 126+ hardcoded colors need migration
-   - **Estimated Duration**: 5-9 hours
+   - **Total**: 59+ hardcoded colors remaining
+   - **Estimated Duration**: 3-6 hours
    - **Requirement**: Zero visual changes during migration
 
 3. **Complete Phase 5c** (Final Integration and Polish)

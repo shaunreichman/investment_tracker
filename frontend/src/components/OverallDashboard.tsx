@@ -14,6 +14,7 @@ import {
   Chip,
   Link,
   Button,
+  useTheme,
 } from '@mui/material';
 import TopBar from './layout/TopBar';
 import { ErrorDisplay } from './ErrorDisplay';
@@ -36,6 +37,7 @@ import { LoadingSpinner } from './ui/LoadingSpinner';
 
 
 const OverallDashboard: React.FC = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [showEntityModal, setShowEntityModal] = useState(false);
   const [showCompanyModal, setShowCompanyModal] = useState(false);
@@ -91,7 +93,7 @@ const OverallDashboard: React.FC = () => {
         <Typography 
           variant="h3" 
           sx={{ 
-            color: '#FFFFFF',
+            color: theme.palette.text.primary,
             fontWeight: 600,
             mb: 1,
             letterSpacing: '-0.02em'
@@ -103,7 +105,7 @@ const OverallDashboard: React.FC = () => {
         <Typography 
           variant="body1" 
           sx={{ 
-            color: '#8B949E',
+            color: theme.palette.text.muted,
             fontSize: '16px',
             lineHeight: 1.5
           }}
@@ -123,8 +125,8 @@ const OverallDashboard: React.FC = () => {
       >
         {/* Entity Management Card */}
         <Card sx={{ 
-          backgroundColor: '#1F2937',
-          border: '1px solid #303234',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
           '&:hover': {
             boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
             transform: 'translateY(-2px)',
@@ -141,13 +143,13 @@ const OverallDashboard: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <PersonIcon sx={{ 
                   mr: 2, 
-                  color: '#2496ED',
+                  color: theme.palette.primary.main,
                   fontSize: '28px'
                 }} />
                 <Typography 
                   variant="h5" 
                   sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600
                   }}
                 >
@@ -160,9 +162,9 @@ const OverallDashboard: React.FC = () => {
                 onClick={() => setShowEntityModal(true)}
                 size="medium"
                 sx={{
-                  backgroundColor: '#2496ED',
+                  backgroundColor: theme.palette.primary.main,
                   '&:hover': {
-                    backgroundColor: '#1B7FC4'
+                    backgroundColor: theme.palette.primary.dark
                   },
                   px: 3,
                   py: 1
@@ -174,7 +176,7 @@ const OverallDashboard: React.FC = () => {
             <Typography 
               variant="body1" 
               sx={{ 
-                color: '#8B949E',
+                color: theme.palette.text.muted,
                 lineHeight: 1.6
               }}
             >
@@ -185,8 +187,8 @@ const OverallDashboard: React.FC = () => {
 
         {/* Investment Company Management Card */}
         <Card sx={{ 
-          backgroundColor: '#1F2937',
-          border: '1px solid #303234',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
           '&:hover': {
             boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
             transform: 'translateY(-2px)',
@@ -195,21 +197,19 @@ const OverallDashboard: React.FC = () => {
         }}>
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
+              display: 'flex', alignItems: 'center', 
               mb: 2 
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <BusinessIcon sx={{ 
                   mr: 2, 
-                  color: '#2496ED',
+                  color: theme.palette.primary.main,
                   fontSize: '28px'
                 }} />
                 <Typography 
                   variant="h5" 
                   sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600
                   }}
                 >
@@ -222,9 +222,9 @@ const OverallDashboard: React.FC = () => {
                 onClick={() => setShowCompanyModal(true)}
                 size="medium"
                 sx={{
-                  backgroundColor: '#2496ED',
+                  backgroundColor: theme.palette.primary.main,
                   '&:hover': {
-                    backgroundColor: '#1B7FC4'
+                    backgroundColor: theme.palette.primary.dark
                   },
                   px: 3,
                   py: 1
@@ -236,7 +236,7 @@ const OverallDashboard: React.FC = () => {
             <Typography 
               variant="body1" 
               sx={{ 
-                color: '#8B949E',
+                color: theme.palette.text.muted,
                 lineHeight: 1.6
               }}
             >
@@ -248,22 +248,22 @@ const OverallDashboard: React.FC = () => {
 
       {/* Companies Portfolio Table */}
       <Card sx={{ 
-        backgroundColor: '#1F2937',
-        border: '1px solid #303234',
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
         mb: 4
       }}>
         <CardContent sx={{ p: 3 }}>
           <Typography 
             variant="h5" 
             sx={{ 
-              color: '#FFFFFF',
+              color: theme.palette.text.primary,
               fontWeight: 600,
               mb: 3,
               display: 'flex',
               alignItems: 'center'
             }}
           >
-            <Business sx={{ mr: 2, color: '#2496ED', fontSize: '28px' }} />
+            <Business sx={{ mr: 2, color: theme.palette.primary.main, fontSize: '28px' }} />
             Investment Companies Portfolio
           </Typography>
           
@@ -271,8 +271,8 @@ const OverallDashboard: React.FC = () => {
             component={Paper} 
             variant="outlined"
             sx={{
-              backgroundColor: '#10151a',
-              border: '1px solid #303234',
+              backgroundColor: theme.palette.background.default,
+              border: `1px solid ${theme.palette.divider}`,
               borderRadius: '8px',
               overflow: 'hidden'
             }}
@@ -281,50 +281,50 @@ const OverallDashboard: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600,
                     fontSize: '14px',
-                    borderBottom: '1px solid #303234'
+                    borderBottom: `1px solid ${theme.palette.divider}`
                   }}>
                     Company Name
                   </TableCell>
                   <TableCell sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600,
                     fontSize: '14px',
-                    borderBottom: '1px solid #303234'
+                    borderBottom: `1px solid ${theme.palette.divider}`
                   }}>
                     Description
                   </TableCell>
                   <TableCell align="right" sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600,
                     fontSize: '14px',
-                    borderBottom: '1px solid #303234'
+                    borderBottom: `1px solid ${theme.palette.divider}`
                   }}>
                     Total Funds
                   </TableCell>
                   <TableCell align="right" sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600,
                     fontSize: '14px',
-                    borderBottom: '1px solid #303234'
+                    borderBottom: `1px solid ${theme.palette.divider}`
                   }}>
                     Active Funds
                   </TableCell>
                   <TableCell align="right" sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600,
                     fontSize: '14px',
-                    borderBottom: '1px solid #303234'
+                    borderBottom: `1px solid ${theme.palette.divider}`
                   }}>
                     Total Equity
                   </TableCell>
                   <TableCell align="right" sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600,
                     fontSize: '14px',
-                    borderBottom: '1px solid #303234'
+                    borderBottom: `1px solid ${theme.palette.divider}`
                   }}>
                     Contact
                   </TableCell>
@@ -337,12 +337,12 @@ const OverallDashboard: React.FC = () => {
                     sx={{
                       backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
                       '&:hover': {
-                        backgroundColor: '#19222a'
+                        backgroundColor: theme.palette.background.sidebarHover
                       }
                     }}
                   >
                     <TableCell sx={{ 
-                      borderBottom: '1px solid #303234',
+                      borderBottom: `1px solid ${theme.palette.divider}`,
                       padding: '16px'
                     }}>
                       <Box>
@@ -353,10 +353,10 @@ const OverallDashboard: React.FC = () => {
                           sx={{ 
                             textDecoration: 'none', 
                             cursor: 'pointer',
-                            color: '#2496ED',
+                            color: theme.palette.primary.main,
                             fontWeight: 500,
                             '&:hover': {
-                              color: '#1B7FC4'
+                              color: theme.palette.primary.dark
                             }
                           }}
                         >
@@ -366,7 +366,7 @@ const OverallDashboard: React.FC = () => {
                           <Typography 
                             variant="caption" 
                             sx={{ 
-                              color: '#8B949E',
+                              color: theme.palette.text.muted,
                               display: 'block',
                               mt: 0.5
                             }}
@@ -377,7 +377,7 @@ const OverallDashboard: React.FC = () => {
                               rel="noopener noreferrer" 
                               style={{ 
                                 textDecoration: 'none',
-                                color: '#8B949E'
+                                color: theme.palette.text.muted
                               }}
                             >
                               {company.website}
@@ -387,13 +387,13 @@ const OverallDashboard: React.FC = () => {
                       </Box>
                     </TableCell>
                     <TableCell sx={{ 
-                      borderBottom: '1px solid #303234',
+                      borderBottom: `1px solid ${theme.palette.divider}`,
                       padding: '16px'
                     }}>
                       <Typography 
                         variant="body2" 
                         sx={{ 
-                          color: '#8B949E',
+                          color: theme.palette.text.muted,
                           lineHeight: 1.5
                         }}
                       >
@@ -401,44 +401,44 @@ const OverallDashboard: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell align="right" sx={{ 
-                      borderBottom: '1px solid #303234',
+                      borderBottom: `1px solid ${theme.palette.divider}`,
                       padding: '16px'
                     }}>
                       <Chip
                         label={`${company.fund_count} funds`}
                         size="small"
                         sx={{
-                          backgroundColor: '#2496ED',
-                          color: '#FFFFFF',
+                          backgroundColor: theme.palette.primary.main,
+                          color: theme.palette.text.primary,
                           fontWeight: 500,
                           fontSize: '12px'
                         }}
                       />
                     </TableCell>
                     <TableCell align="right" sx={{ 
-                      borderBottom: '1px solid #303234',
+                      borderBottom: `1px solid ${theme.palette.divider}`,
                       padding: '16px'
                     }}>
                       <Chip
                         label={`${company.active_funds || 0} active`}
                         size="small"
                         sx={{
-                          backgroundColor: (company.active_funds || 0) > 0 ? '#06a58c' : '#6B7280',
-                          color: '#FFFFFF',
+                          backgroundColor: (company.active_funds || 0) > 0 ? theme.palette.secondary.main : theme.palette.text.muted,
+                          color: theme.palette.text.primary,
                           fontWeight: 500,
                           fontSize: '12px'
                         }}
                       />
                     </TableCell>
                     <TableCell align="right" sx={{ 
-                      borderBottom: '1px solid #303234',
+                      borderBottom: `1px solid ${theme.palette.divider}`,
                       padding: '16px'
                     }}>
                       <Typography 
                         variant="body2" 
                         sx={{ 
                           fontWeight: 600,
-                          color: '#FFFFFF',
+                          color: theme.palette.text.primary,
                           fontSize: '14px'
                         }}
                       >
@@ -446,14 +446,14 @@ const OverallDashboard: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell align="right" sx={{ 
-                      borderBottom: '1px solid #303234',
+                      borderBottom: `1px solid ${theme.palette.divider}`,
                       padding: '16px'
                     }}>
                       {company.contact_email && (
                         <Typography 
                           variant="caption" 
                           sx={{ 
-                            color: '#8B949E',
+                            color: theme.palette.text.muted,
                             fontSize: '12px'
                           }}
                         >
@@ -484,8 +484,8 @@ const OverallDashboard: React.FC = () => {
           }}
         >
           <Card sx={{ 
-            backgroundColor: '#1F2937',
-            border: '1px solid #303234',
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
             '&:hover': {
               boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
               transform: 'translateY(-2px)',
@@ -495,14 +495,14 @@ const OverallDashboard: React.FC = () => {
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Business sx={{ 
-                  color: '#2496ED', 
+                  color: theme.palette.primary.main, 
                   mr: 3,
                   fontSize: '32px'
                 }} />
                 <Box>
                   <Typography 
                     sx={{ 
-                      color: '#8B949E', 
+                      color: theme.palette.text.muted, 
                       fontSize: '14px',
                       fontWeight: 500
                     }}
@@ -511,7 +511,7 @@ const OverallDashboard: React.FC = () => {
                     Total Companies
                   </Typography>
                   <Typography variant="h4" sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600
                   }}>
                     {companies.length}
@@ -522,8 +522,8 @@ const OverallDashboard: React.FC = () => {
           </Card>
 
           <Card sx={{ 
-            backgroundColor: '#1F2937',
-            border: '1px solid #303234',
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
             '&:hover': {
               boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
               transform: 'translateY(-2px)',
@@ -533,14 +533,14 @@ const OverallDashboard: React.FC = () => {
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <AccountBalance sx={{ 
-                  color: '#06a58c', 
+                  color: theme.palette.secondary.main, 
                   mr: 3,
                   fontSize: '32px'
                 }} />
                 <Box>
                   <Typography 
                     sx={{ 
-                      color: '#8B949E', 
+                      color: theme.palette.text.muted, 
                       fontSize: '14px',
                       fontWeight: 500
                     }}
@@ -549,7 +549,7 @@ const OverallDashboard: React.FC = () => {
                     Total Funds
                   </Typography>
                   <Typography variant="h4" sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600
                   }}>
                     {companies?.reduce((sum, company) => sum + (company.fund_count || 0), 0) || 0}
@@ -560,8 +560,8 @@ const OverallDashboard: React.FC = () => {
           </Card>
 
           <Card sx={{ 
-            backgroundColor: '#1F2937',
-            border: '1px solid #303234',
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
             '&:hover': {
               boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
               transform: 'translateY(-2px)',
@@ -571,14 +571,14 @@ const OverallDashboard: React.FC = () => {
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <TrendingUp sx={{ 
-                  color: '#4ca2fa', 
+                  color: theme.palette.info.main, 
                   mr: 3,
                   fontSize: '32px'
                 }} />
                 <Box>
                   <Typography 
                     sx={{ 
-                      color: '#8B949E', 
+                      color: theme.palette.text.muted, 
                       fontSize: '14px',
                       fontWeight: 500
                     }}
@@ -587,7 +587,7 @@ const OverallDashboard: React.FC = () => {
                     Active Funds
                   </Typography>
                   <Typography variant="h4" sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600
                   }}>
                     {companies?.reduce((sum, company) => sum + (company.active_funds || 0), 0) || 0}
@@ -598,8 +598,8 @@ const OverallDashboard: React.FC = () => {
           </Card>
 
           <Card sx={{ 
-            backgroundColor: '#1F2937',
-            border: '1px solid #303234',
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
             '&:hover': {
               boxShadow: '0px 8px 24px rgba(0,0,0,0.3)',
               transform: 'translateY(-2px)',
@@ -609,14 +609,14 @@ const OverallDashboard: React.FC = () => {
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Event sx={{ 
-                  color: '#06a58c', 
+                  color: theme.palette.secondary.main, 
                   mr: 3,
                   fontSize: '32px'
                 }} />
                 <Box>
                   <Typography 
                     sx={{ 
-                      color: '#8B949E', 
+                      color: theme.palette.text.muted, 
                       fontSize: '14px',
                       fontWeight: 500
                     }}
@@ -625,7 +625,7 @@ const OverallDashboard: React.FC = () => {
                     Total Equity
                   </Typography>
                   <Typography variant="h4" sx={{ 
-                    color: '#FFFFFF',
+                    color: theme.palette.text.primary,
                     fontWeight: 600
                   }}>
                     {formatCurrency(companies?.reduce((sum, company) => sum + (company.total_equity_balance || 0), 0) || 0)}
