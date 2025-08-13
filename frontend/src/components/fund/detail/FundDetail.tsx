@@ -1,4 +1,4 @@
-import React, { useState, Suspense, useCallback } from 'react';
+import React, { useState, Suspense, useCallback, useEffect } from 'react';
 import { Typography, Box, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import TopBar from '../../layout/TopBar';

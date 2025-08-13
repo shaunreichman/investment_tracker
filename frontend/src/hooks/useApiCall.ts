@@ -189,8 +189,11 @@ export function useApiCallWithDeps<T, D extends readonly unknown[]>(
   deps: D,
   options: ApiCallOptions = {}
 ): ApiCallState<T> & { refetch: () => Promise<void> } {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const memoizedApiCall = useCallback(() => apiCall(...deps), [...deps]);
+  // Use a more stable approach to avoid infinite loops
+  const memoizedApiCall = useCallback(() => {
+    return apiCall(...deps);
+  }, deps);
+  
   return useApiCall(memoizedApiCall, options);
 }
 
