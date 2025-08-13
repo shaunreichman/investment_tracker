@@ -138,9 +138,6 @@ export function useMutation<T, R>(
     onSuccess?: (data: R) => void;
   } = {}
 ): MutationState<R> & { mutate: (data: T) => Promise<R | undefined> } {
-  const [data, setData] = useState<R | null>(null);
-  const [loading, setLoading] = useState(false);
-  
   // Use centralized error handler
   const { error, withErrorHandling } = useErrorHandler();
 
@@ -163,8 +160,8 @@ export function useMutation<T, R>(
   }, [mutationFn, onSuccess, withErrorHandling]);
 
   return {
-    data,
-    loading,
+    data: null,
+    loading: false,
     error,
     mutate,
   };
@@ -189,10 +186,21 @@ export function useApiCallWithDeps<T, D extends readonly unknown[]>(
   deps: D,
   options: ApiCallOptions = {}
 ): ApiCallState<T> & { refetch: () => Promise<void> } {
-  // Use a more stable approach to avoid infinite loops
-  const memoizedApiCall = useCallback(() => {
-    return apiCall(...deps);
-  }, deps);
+  // Use a ref to store the latest deps and apiCall
+  const depsRef = useRef(deps);
+  const apiCallRef = useRef(apiCall);
+  
+  // Update refs when deps or apiCall change
+  useEffect(() => {
+    depsRef.current = deps;
+    apiCallRef.current = apiCall;
+  }, [deps, apiCall]);
+  
+  // Create a stable callback that uses the refs
+  const memoizedApiCall = useCallback(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await apiCallRef.current(...depsRef.current);
+  }, []);
   
   return useApiCall(memoizedApiCall, options);
 }
