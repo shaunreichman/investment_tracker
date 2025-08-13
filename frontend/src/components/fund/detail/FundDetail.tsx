@@ -1,5 +1,5 @@
 import React, { useState, Suspense, useCallback } from 'react';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import TopBar from '../../layout/TopBar';
 import { ErrorDisplay } from '../../ErrorDisplay';
@@ -33,6 +33,7 @@ const UnitPriceChartSection = React.lazy(() => import('./summary/UnitPriceChartS
 const FundDetail: React.FC = () => {
   const { fundId } = useParams<{ fundId: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
   
   // Modal state management
   const [eventModalOpen, setEventModalOpen] = useState(false);
@@ -109,18 +110,18 @@ const FundDetail: React.FC = () => {
       <Box sx={{ p: 3 }}>
         <Box sx={{ 
           p: 3, 
-          backgroundColor: '#1F2937',
-          border: '1px solid #303234',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
           borderRadius: '8px',
           display: 'flex', 
           alignItems: 'center',
-          borderLeft: '4px solid #F2C94C'
+          borderLeft: `4px solid ${theme.palette.warning.main}`
         }}>
           <Typography 
             variant="body1" 
             sx={{ 
               fontWeight: 500, 
-              color: '#F2C94C'
+              color: theme.palette.warning.main
             }}
           >
             No fund data available
@@ -156,7 +157,7 @@ const FundDetail: React.FC = () => {
         alignItems: 'stretch',
         transition: 'all 0.3s ease-in-out',
         '& > *:first-of-type': {
-          borderRight: { sm: '1px solid #303234' },
+          borderRight: { sm: `1px solid ${theme.palette.divider}` },
           pr: { sm: 3 }
         }
       }}>
@@ -171,8 +172,8 @@ const FundDetail: React.FC = () => {
           overflow: 'hidden',
           order: { xs: 1, sm: 0 },
           mb: { xs: 2, sm: 0 },
-          backgroundColor: '#1F2937',
-          border: '1px solid #303234',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
           borderRadius: { sm: '8px' },
           boxShadow: '0px 4px 16px rgba(0,0,0,0.2)',
           display: 'flex',
@@ -184,14 +185,14 @@ const FundDetail: React.FC = () => {
           {/* Summary Section Header */}
           <Box sx={{ 
             p: 3, 
-            borderBottom: '1px solid #303234',
-            backgroundColor: '#070b0d'
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            backgroundColor: theme.palette.background.sidebar
           }}>
             <Typography 
               variant="h5"
               sx={{ 
                 fontWeight: 600,
-                color: '#FFFFFF',
+                color: theme.palette.text.primary,
                 letterSpacing: '-0.01em',
                 fontSize: '20px'
               }}
@@ -219,8 +220,8 @@ const FundDetail: React.FC = () => {
           overflow: 'hidden',
           order: { xs: 2, sm: 1 },
           width: { xs: '100%', sm: 'auto' },
-          backgroundColor: '#1F2937',
-          border: '1px solid #303234',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
           borderRadius: { sm: '8px' },
           boxShadow: '0px 4px 16px rgba(0,0,0,0.2)',
           pl: { sm: 3 },
