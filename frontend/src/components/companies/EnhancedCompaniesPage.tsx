@@ -4,6 +4,7 @@ import {
   Typography,
   Link,
   Button,
+  useTheme,
 } from '@mui/material';
 import TopBar from '../layout/TopBar';
 import { Add as AddIcon } from '@mui/icons-material';
@@ -45,6 +46,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const theme = useTheme();
 
   // API hooks
   const { data: overviewData, loading: overviewLoading, error: overviewError, refetch: refetchOverview } = useCompanyOverview(
@@ -192,7 +194,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
             <Typography 
               variant="h3" 
               sx={{ 
-                color: '#FFFFFF',
+                color: theme.palette.text.primary,
                 fontWeight: 600,
                 mb: 1,
                 letterSpacing: '-0.02em'
@@ -205,7 +207,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
               <Typography 
                 variant="body1" 
                 sx={{ 
-                  color: '#8B949E',
+                  color: theme.palette.text.secondary,
                   fontSize: '16px',
                   lineHeight: 1.5,
                   maxWidth: '600px'
@@ -222,9 +224,9 @@ export const EnhancedCompaniesPage: React.FC = () => {
             onClick={() => setCreateModalOpen(true)}
             size="large"
             sx={{
-              backgroundColor: '#2496ED',
+              backgroundColor: theme.palette.primary.main,
               '&:hover': {
-                backgroundColor: '#1B7FC4'
+                backgroundColor: theme.palette.primary.dark
               },
               px: 4,
               py: 1.5,
@@ -247,8 +249,8 @@ export const EnhancedCompaniesPage: React.FC = () => {
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center',
-              backgroundColor: '#1F2937',
-              border: '1px solid #303234',
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
               borderRadius: '8px',
               px: 3,
               py: 2
@@ -256,7 +258,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: '#8B949E',
+                  color: theme.palette.text.secondary,
                   mr: 2,
                   fontWeight: 500
                 }}
@@ -268,11 +270,11 @@ export const EnhancedCompaniesPage: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 sx={{
-                  color: '#2496ED',
+                  color: theme.palette.primary.main,
                   textDecoration: 'none',
                   fontWeight: 500,
                   '&:hover': {
-                    color: '#1B7FC4'
+                    color: theme.palette.primary.dark
                   }
                 }}
               >
@@ -285,8 +287,8 @@ export const EnhancedCompaniesPage: React.FC = () => {
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center',
-              backgroundColor: '#1F2937',
-              border: '1px solid #303234',
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
               borderRadius: '8px',
               px: 3,
               py: 2
@@ -294,7 +296,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: '#8B949E',
+                  color: theme.palette.text.secondary,
                   mr: 2,
                   fontWeight: 500
                 }}
@@ -304,7 +306,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: '#FFFFFF',
+                  color: theme.palette.text.primary,
                   fontWeight: 500
                 }}
               >
@@ -314,7 +316,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
                     <Typography 
                       variant="caption" 
                       sx={{ 
-                        color: '#8B949E',
+                        color: theme.palette.text.secondary,
                         fontSize: '12px'
                       }}
                     >
@@ -339,8 +341,8 @@ export const EnhancedCompaniesPage: React.FC = () => {
 
       {/* Tab Content */}
       <Box sx={{ 
-        backgroundColor: '#1F2937',
-        border: '1px solid #303234',
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
         borderTop: 'none',
         borderRadius: '0 0 8px 8px',
         minHeight: '400px'

@@ -481,10 +481,10 @@ export const dockerThemeWithConfig = {
   - **Total Completed**: 40+ hardcoded colors successfully migrated to theme system
 - [x] **✅ COMPLETED: Main Page Component Theme Integration - OverallDashboard.tsx** - 67 hardcoded colors successfully migrated
   - **OverallDashboard.tsx**: ✅ 67 hardcoded colors successfully migrated (HIGHEST PRIORITY - COMPLETED)
-  - **EnhancedCompaniesPage.tsx**: ❌ 22 hardcoded colors need migration (HIGH PRIORITY - NEXT)
+  - **EnhancedCompaniesPage.tsx**: ✅ 22 hardcoded colors successfully migrated (HIGH PRIORITY - COMPLETED)
   - **FundDetail.tsx**: ❌ 22 hardcoded colors need migration (HIGH PRIORITY)
   - **Event Creation Forms**: ❌ 15+ hardcoded colors need migration (MEDIUM PRIORITY)
-  - **Total Remaining**: 59+ hardcoded colors across remaining main page components
+  - **Total Remaining**: 37+ hardcoded colors across remaining main page components
 - [ ] **Test Theme Integration**: Verify all components use the new design system
   - Check for any remaining default MUI styling
   - Ensure color consistency across all components
@@ -508,12 +508,12 @@ export const dockerThemeWithConfig = {
   - Perfect visual hierarchy
 
 ### **Phase 5c: Main Page Component Theme Integration - DETAILED TASK BREAKDOWN**
-**Status**: ❌ **IN PROGRESS - 126+ hardcoded colors need migration**
-**Estimated Duration**: 5-9 hours
+**Status**: 🔄 **IN PROGRESS - 37+ hardcoded colors need migration**
+**Estimated Duration**: 2-4 hours
 **Priority**: **CRITICAL** - Required to complete Phase 5
 
 #### **📋 PROGRESS UPDATE: Phase 5c Successfully Underway**
-Phase 5b was completed with "40+ hardcoded colors successfully migrated" across layout and UI components. Phase 5c is now in progress with **59+ hardcoded colors remaining** in main page components.
+Phase 5b was completed with "40+ hardcoded colors successfully migrated" across layout and UI components. Phase 5c is now in progress with **37+ hardcoded colors remaining** in main page components.
 
 #### **📁 File-by-File Task Breakdown**
 
@@ -604,32 +604,32 @@ Phase 5b was completed with "40+ hardcoded colors successfully migrated" across 
 - [x] **Line 265**: `<Business sx={{ mr: 2, color: '#2496ED', fontSize: '28px' }} />` → `theme.palette.primary.main`
 
 ##### **2. EnhancedCompaniesPage.tsx (HIGH PRIORITY)**
-**Status**: ❌ **22 hardcoded colors need migration**
-**Estimated Effort**: 1-2 hours
+**Status**: ✅ **22 hardcoded colors successfully migrated**
+**Estimated Effort**: ✅ **COMPLETED**
 
 **Required Tasks:**
 
 **A. Background Colors (6 instances)**
-- [ ] **Line 249**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
-- [ ] **Line 287**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
-- [ ] **Line 341**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 249**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 287**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [x] **Line 341**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
 
 **B. Border Colors (6 instances)**
-- [ ] **Line 250**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 288**: `border: '1px solid #303234'` → `theme.palette.divider`
-- [ ] **Line 342**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 250**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 288**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [x] **Line 342**: `border: '1px solid #303234'` → `theme.palette.divider`
 
 **C. Text Colors (10 instances)**
-- [ ] **Line 194**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 207**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 224**: `color: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 226**: `color: '#1B7FC4'` → `theme.palette.primary.dark`
-- [ ] **Line 258**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 270**: `color: '#2496ED'` → `theme.palette.primary.main`
-- [ ] **Line 274**: `color: '#1B7FC4'` → `theme.palette.primary.dark`
-- [ ] **Line 296**: `color: '#8B949E'` → `theme.palette.text.muted`
-- [ ] **Line 306**: `color: '#FFFFFF'` → `theme.palette.text.primary`
-- [ ] **Line 316**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 194**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 207**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 224**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 226**: `color: '#1B7FC4'` → `theme.palette.primary.dark`
+- [x] **Line 258**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 270**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [x] **Line 274**: `color: '#1B7FC4'` → `theme.palette.primary.dark`
+- [x] **Line 296**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [x] **Line 306**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [x] **Line 316**: `color: '#8B949E'` → `theme.palette.text.muted`
 
 ##### **3. FundDetail.tsx (HIGH PRIORITY)**
 **Status**: ❌ **22 hardcoded colors need migration**
@@ -720,17 +720,17 @@ After each file migration:
 | **File** | **Colors to Migrate** | **Estimated Time** | **Priority** |
 |-----------|----------------------|-------------------|--------------|
 | **OverallDashboard.tsx** | ✅ **67 COMPLETED** | ✅ **COMPLETED** | 🔴 HIGHEST |
-| **EnhancedCompaniesPage.tsx** | 22 | 1-2 hours | 🔴 HIGH |
+| **EnhancedCompaniesPage.tsx** | ✅ **22 COMPLETED** | ✅ **COMPLETED** | 🔴 HIGH |
 | **FundDetail.tsx** | 22 | 1-2 hours | 🔴 HIGH |
 | **Event Creation Forms** | 15+ | 1-2 hours | 🟡 MEDIUM |
-| **TOTAL** | **59+ REMAINING** | **3-6 hours** | **CRITICAL** |
+| **TOTAL** | **37+ REMAINING** | **2-4 hours** | **CRITICAL** |
 
 #### **⚠️ Critical Notes**
 
 1. **Spec Inaccuracy**: The spec claims Phase 5b is complete with "40+ colors migrated" - this is incorrect
-2. **Actual Status**: 126+ hardcoded colors still exist in main page components
+2. **Actual Status**: 37+ hardcoded colors still exist in main page components
 3. **Zero Visual Changes**: All migrations must maintain exact visual appearance
-4. **Immediate Priority**: OverallDashboard.tsx has the highest impact and should be completed first
+4. **Immediate Priority**: FundDetail.tsx has the highest impact and should be completed next
 
 #### **🎯 Success Criteria for Phase 5c**
 
