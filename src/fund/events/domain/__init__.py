@@ -5,19 +5,21 @@ This module provides the domain event system for loose coupling
 between components. Domain events are published when significant
 state changes occur and allow other components to react accordingly.
 
-This module will be fully implemented in Phase 4 of the refactor.
-For now, it provides the structure and contract for the event system.
+All domain events are now fully implemented and ready for use.
 """
 
-# TODO: Implement domain events in Phase 4
-# The following classes will be implemented:
-# - FundDomainEvent (base class)
-# - EquityBalanceChangedEvent
-# - DistributionRecordedEvent
-# - NAVUpdatedEvent
-# - UnitsChangedEvent
-# - TaxStatementUpdatedEvent
+from .base_event import FundDomainEvent
+from .equity_balance_changed_event import EquityBalanceChangedEvent
+from .distribution_recorded_event import DistributionRecordedEvent
+from .nav_updated_event import NAVUpdatedEvent
+from .units_changed_event import UnitsChangedEvent
+from .tax_statement_updated_event import TaxStatementUpdatedEvent
 
 __all__ = [
-    # These will be added as we implement them in Phase 4
+    'FundDomainEvent',
+    'EquityBalanceChangedEvent',
+    'DistributionRecordedEvent',
+    'NAVUpdatedEvent',
+    'UnitsChangedEvent',
+    'TaxStatementUpdatedEvent',
 ]

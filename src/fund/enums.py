@@ -471,6 +471,31 @@ class Environment(Enum):
         return env == cls.DEVELOPMENT
 
 
+class DomainEventType(Enum):
+    """
+    Domain event type enum.
+    
+    Defines business domain events that are published when significant
+    state changes occur in the fund system.
+    
+    Values:
+        EQUITY_BALANCE_CHANGED: Fund equity balance changed
+        DISTRIBUTION_RECORDED: Distribution was recorded
+        NAV_UPDATED: Fund NAV was updated
+        UNITS_CHANGED: Fund units changed
+        TAX_STATEMENT_UPDATED: Tax statement was updated
+    """
+    EQUITY_BALANCE_CHANGED = 'equity_balance_changed'
+    DISTRIBUTION_RECORDED = 'distribution_recorded'
+    NAV_UPDATED = 'nav_updated'
+    UNITS_CHANGED = 'units_changed'
+    TAX_STATEMENT_UPDATED = 'tax_statement_updated'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+
+
 class Currency(Enum):
     """
     Currency enum.

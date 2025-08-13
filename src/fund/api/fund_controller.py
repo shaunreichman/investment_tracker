@@ -1,0 +1,448 @@
+"""
+Fund Controller.
+
+This module provides the controller layer for fund operations, handling
+HTTP requests and providing REST API endpoints.
+"""
+
+from typing import Dict, Any, Optional
+from flask import request, jsonify, current_app
+from sqlalchemy.orm import Session
+
+from .fund_service import FundService
+from ..enums import FundStatus, FundType, EventType
+
+
+class FundController:
+    """
+    Controller for fund operations.
+    
+    This controller handles HTTP requests and provides REST API endpoints
+    for fund operations. It delegates business logic to the FundService
+    and handles request/response formatting.
+    
+    Attributes:
+        fund_service (FundService): Service layer for fund operations
+    """
+    
+    def __init__(self):
+        """Initialize the fund controller."""
+        self.fund_service = FundService()
+    
+    def get_fund(self, fund_id: int) -> tuple:
+        """
+        Get a fund by ID.
+        
+        Args:
+            fund_id: ID of the fund to retrieve
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get database session (this would be injected in a real Flask app)
+            session = self._get_session()
+            
+            # Get the fund
+            fund = self.fund_service.get_fund(fund_id, session)
+            
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            return jsonify(fund), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting fund {fund_id}: {str(e)}")
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def create_fund(self) -> tuple:
+        """
+        Create a new fund.
+        
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get request data
+            fund_data = request.get_json()
+            if not fund_data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Create the fund
+            fund = self.fund_service.create_fund(fund_data, session)
+            
+            # Commit the transaction
+            session.commit()
+            
+            return jsonify(fund), 201
+            
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error creating fund: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def update_fund(self, fund_id: int) -> tuple:
+        """
+        Update an existing fund.
+        
+        Args:
+            fund_id: ID of the fund to update
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get request data
+            fund_data = request.get_json()
+            if not fund_data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Update the fund
+            fund = self.fund_service.update_fund(fund_id, fund_data, session)
+            
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Commit the transaction
+            session.commit()
+            
+            return jsonify(fund), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error updating fund {fund_id}: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def delete_fund(self, fund_id: int) -> tuple:
+        """
+        Delete a fund.
+        
+        Args:
+            fund_id: ID of the fund to delete
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get database session
+            session = self._get_session()
+            
+            # Delete the fund
+            success = self.fund_service.delete_fund(fund_id, session)
+            
+            if not success:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Commit the transaction
+            session.commit()
+            
+            return jsonify({'message': 'Fund deleted successfully'}), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error deleting fund {fund_id}: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def get_funds(self) -> tuple:
+        """
+        Get funds with filtering, pagination, and search.
+        
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get query parameters
+            skip = request.args.get('skip', 0, type=int)
+            limit = request.args.get('limit', 100, type=int)
+            status = request.args.get('status')
+            fund_type = request.args.get('fund_type')
+            search = request.args.get('search')
+            
+            # Parse enums if provided
+            parsed_status = None
+            if status:
+                try:
+                    parsed_status = FundStatus(status)
+                except ValueError:
+                    return jsonify({'error': f'Invalid status: {status}'}), 400
+            
+            parsed_fund_type = None
+            if fund_type:
+                try:
+                    parsed_fund_type = FundType(fund_type)
+                except ValueError:
+                    return jsonify({'error': f'Invalid fund_type: {fund_type}'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Get funds
+            funds = self.fund_service.get_funds(
+                session, skip, limit, parsed_status, parsed_fund_type, search
+            )
+            
+            return jsonify(funds), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting funds: {str(e)}")
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def add_fund_event(self, fund_id: int) -> tuple:
+        """
+        Add a fund event.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get request data
+            event_data = request.get_json()
+            if not event_data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Add the event
+            event = self.fund_service.add_fund_event(fund_id, event_data, session)
+            
+            # Commit the transaction
+            session.commit()
+            
+            return jsonify(event), 201
+            
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        except RuntimeError as e:
+            return jsonify({'error': str(e)}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error adding fund event: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def get_fund_events(self, fund_id: int) -> tuple:
+        """
+        Get events for a specific fund.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get query parameters
+            skip = request.args.get('skip', 0, type=int)
+            limit = request.args.get('limit', 100, type=int)
+            event_types = request.args.getlist('event_types')
+            
+            # Parse event types if provided
+            parsed_event_types = None
+            if event_types:
+                try:
+                    parsed_event_types = [EventType(et) for et in event_types]
+                except ValueError:
+                    return jsonify({'error': 'Invalid event types provided'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Get events
+            events = self.fund_service.get_fund_events(
+                fund_id, session, skip, limit, parsed_event_types
+            )
+            
+            return jsonify(events), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting fund events: {str(e)}")
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def update_fund_event(self, fund_id: int, event_id: int) -> tuple:
+        """
+        Update a fund event.
+        
+        Args:
+            fund_id: ID of the fund
+            event_id: ID of the event to update
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get request data
+            event_data = request.get_json()
+            if not event_data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Update the event
+            event = self.fund_service.update_fund_event(fund_id, event_id, event_data, session)
+            
+            if not event:
+                return jsonify({'error': 'Event not found'}), 404
+            
+            # Commit the transaction
+            session.commit()
+            
+            return jsonify(event), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error updating fund event: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def delete_fund_event(self, fund_id: int, event_id: int) -> tuple:
+        """
+        Delete a fund event.
+        
+        Args:
+            fund_id: ID of the fund
+            event_id: ID of the event to delete
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get database session
+            session = self._get_session()
+            
+            # Delete the event
+            success = self.fund_service.delete_fund_event(fund_id, event_id, session)
+            
+            if not success:
+                return jsonify({'error': 'Event not found'}), 404
+            
+            # Commit the transaction
+            session.commit()
+            
+            return jsonify({'message': 'Event deleted successfully'}), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error deleting fund event: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def get_fund_summary(self, fund_id: int) -> tuple:
+        """
+        Get a comprehensive summary of a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get database session
+            session = self._get_session()
+            
+            # Get fund summary
+            summary = self.fund_service.get_fund_summary(fund_id, session)
+            
+            if not summary:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            return jsonify(summary), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting fund summary: {str(e)}")
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def get_fund_metrics(self, fund_id: int) -> tuple:
+        """
+        Get performance metrics for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get database session
+            session = self._get_session()
+            
+            # Get fund metrics
+            metrics = self.fund_service.get_fund_metrics(fund_id, session)
+            
+            if not metrics:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            return jsonify(metrics), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting fund metrics: {str(e)}")
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def _get_session(self) -> Session:
+        """
+        Get a database session.
+        
+        In a real Flask application, this would be injected or retrieved
+        from a session factory. For now, we'll return None to indicate
+        that this needs to be implemented.
+        
+        Returns:
+            Database session
+            
+        Raises:
+            NotImplementedError: This method needs to be implemented
+        """
+        raise NotImplementedError(
+            "Database session management needs to be implemented. "
+            "In a real Flask application, this would be injected or "
+            "retrieved from a session factory."
+        )
