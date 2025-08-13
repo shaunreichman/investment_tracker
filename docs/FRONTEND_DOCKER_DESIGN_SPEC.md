@@ -479,6 +479,12 @@ export const dockerThemeWithConfig = {
   - **Medium Priority**: ✅ FormField (4 hardcoded colors → theme references), ✅ FormSection (4 hardcoded colors → theme references), ✅ TrackingTypeChip (6 hardcoded colors → theme references)
   - **Low Priority**: ✅ StatusChip (1 hardcoded color → theme references), ✅ EventTypeChip (1 hardcoded color → theme references)
   - **Total Completed**: 40+ hardcoded colors successfully migrated to theme system
+- [ ] **🔄 IN PROGRESS: Main Page Component Theme Integration** - 126+ hardcoded colors need migration
+  - **OverallDashboard.tsx**: ❌ 67 hardcoded colors need migration (HIGHEST PRIORITY)
+  - **EnhancedCompaniesPage.tsx**: ❌ 22 hardcoded colors need migration (HIGH PRIORITY)
+  - **FundDetail.tsx**: ❌ 22 hardcoded colors need migration (HIGH PRIORITY)
+  - **Event Creation Forms**: ❌ 15+ hardcoded colors need migration (MEDIUM PRIORITY)
+  - **Total Remaining**: 126+ hardcoded colors across main page components
 - [ ] **Test Theme Integration**: Verify all components use the new design system
   - Check for any remaining default MUI styling
   - Ensure color consistency across all components
@@ -500,6 +506,240 @@ export const dockerThemeWithConfig = {
   - Smooth animations and transitions
   - Professional hover states
   - Perfect visual hierarchy
+
+### **Phase 5c: Main Page Component Theme Integration - DETAILED TASK BREAKDOWN**
+**Status**: ❌ **IN PROGRESS - 126+ hardcoded colors need migration**
+**Estimated Duration**: 5-9 hours
+**Priority**: **CRITICAL** - Required to complete Phase 5
+
+#### **📋 CRITICAL ISSUE: Spec vs. Reality Mismatch**
+The spec claims Phase 5b is complete with "40+ hardcoded colors successfully migrated," but **this is incorrect**. The main page components still contain **126+ hardcoded colors** that need immediate migration.
+
+#### **📁 File-by-File Task Breakdown**
+
+##### **1. OverallDashboard.tsx (HIGHEST PRIORITY)**
+**Status**: ❌ **67 hardcoded colors need migration**
+**Estimated Effort**: 2-3 hours
+
+**Required Tasks:**
+
+**A. Background Colors (15 instances)**
+- [ ] **Line 125**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 187**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 250**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 273**: `backgroundColor: '#10151a'` → `theme.palette.background.default`
+- [ ] **Line 339**: `backgroundColor: '#19222a'` → `theme.palette.background.sidebarHover`
+- [ ] **Line 486**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 524**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 562**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 600**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+
+**B. Border Colors (20 instances)**
+- [ ] **Line 126**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 188**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 251**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 274**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 286**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 294**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 302**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 310**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 318**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 326**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 344**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 389**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 403**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 418**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 433**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 448**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 486**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 524**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 562**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 600**: `border: '1px solid #303234'` → `theme.palette.divider`
+
+**C. Text Colors (20 instances)**
+- [ ] **Line 93**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 105**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 143**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 149**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 176**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 205**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 211**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 238**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 258**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 283**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 291**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 299**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 307**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 315**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 323**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 355**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 368**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 379**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 395**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 455**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 497**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 504**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 513**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 535**: `color: '#06a58c'` → `theme.palette.secondary.main`
+- [ ] **Line 542**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 551**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 573**: `color: '#4ca2fa'` → `theme.palette.info.main`
+- [ ] **Line 580**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 589**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 611**: `color: '#06a58c'` → `theme.palette.secondary.main`
+- [ ] **Line 618**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 627**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+
+**D. Button/Interactive Colors (12 instances)**
+- [ ] **Line 162**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 164**: `backgroundColor: '#1B7FC4'` → `theme.palette.primary.dark`
+- [ ] **Line 224**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 226**: `backgroundColor: '#1B7FC4'` → `theme.palette.primary.dark`
+- [ ] **Line 410**: `backgroundColor: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 411**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 425**: `backgroundColor: (company.active_funds || 0) > 0 ? '#06a58c' : '#6B7280'` → `theme.palette.secondary.main` and `theme.palette.text.muted`
+- [ ] **Line 426**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+
+**E. Icon Colors (1 instance)**
+- [ ] **Line 265**: `<Business sx={{ mr: 2, color: '#2496ED', fontSize: '28px' }} />` → `theme.palette.primary.main`
+
+##### **2. EnhancedCompaniesPage.tsx (HIGH PRIORITY)**
+**Status**: ❌ **22 hardcoded colors need migration**
+**Estimated Effort**: 1-2 hours
+
+**Required Tasks:**
+
+**A. Background Colors (6 instances)**
+- [ ] **Line 249**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 287**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 341**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+
+**B. Border Colors (6 instances)**
+- [ ] **Line 250**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 288**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 342**: `border: '1px solid #303234'` → `theme.palette.divider`
+
+**C. Text Colors (10 instances)**
+- [ ] **Line 194**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 207**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 224**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 226**: `color: '#1B7FC4'` → `theme.palette.primary.dark`
+- [ ] **Line 258**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 270**: `color: '#2496ED'` → `theme.palette.primary.main`
+- [ ] **Line 274**: `color: '#1B7FC4'` → `theme.palette.primary.dark`
+- [ ] **Line 296**: `color: '#8B949E'` → `theme.palette.text.muted`
+- [ ] **Line 306**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+- [ ] **Line 316**: `color: '#8B949E'` → `theme.palette.text.muted`
+
+##### **3. FundDetail.tsx (HIGH PRIORITY)**
+**Status**: ❌ **22 hardcoded colors need migration**
+**Estimated Effort**: 1-2 hours
+
+**Required Tasks:**
+
+**A. Background Colors (6 instances)**
+- [ ] **Line 111**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 173**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+- [ ] **Line 187**: `backgroundColor: '#070b0d'` → `theme.palette.background.sidebar`
+- [ ] **Line 221**: `backgroundColor: '#1F2937'` → `theme.palette.background.paper`
+
+**B. Border Colors (8 instances)**
+- [ ] **Line 112**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 158**: `borderRight: { sm: '1px solid #303234' }` → `theme.palette.divider`
+- [ ] **Line 174**: `border: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 186**: `borderBottom: '1px solid #303234'` → `theme.palette.divider`
+- [ ] **Line 222**: `border: '1px solid #303234'` → `theme.palette.divider`
+
+**C. Warning Colors (2 instances)**
+- [ ] **Line 116**: `borderLeft: '4px solid #F2C94C'` → `theme.palette.warning.main`
+- [ ] **Line 122**: `color: '#F2C94C'` → `theme.palette.warning.main`
+
+**D. Text Colors (6 instances)**
+- [ ] **Line 193**: `color: '#FFFFFF'` → `theme.palette.text.primary`
+
+##### **4. Event Creation Forms (MEDIUM PRIORITY)**
+**Status**: ❌ **Multiple hardcoded colors need migration**
+**Estimated Effort**: 1-2 hours
+
+**Required Tasks:**
+
+**A. Required Field Indicators (8 instances)**
+- [ ] **DistributionForm.tsx Line 36**: `color: '#d32f2f'` → `theme.palette.error.main`
+- [ ] **DistributionForm.tsx Line 47**: `color: '#d32f2f'` → `theme.palette.error.main`
+- [ ] **DistributionForm.tsx Line 58**: `color: '#d32f2f'` → `theme.palette.error.main`
+- [ ] **NavUpdateForm.tsx Line 26**: `color: '#d32f2f'` → `theme.palette.error.main`
+- [ ] **UnitTransactionForm.tsx Line 60**: `color: '#d32f2f'` → `theme.palette.error.main`
+- [ ] **UnitTransactionForm.tsx Line 74**: `color: '#d32f2f'` → `theme.palette.error.main`
+- [ ] **TaxStatementForm.tsx Line 36**: `color: '#d32f2f'` → `theme.palette.error.main`
+- [ ] **TaxStatementForm.tsx Line 50**: `color: '#d32f2f'` → `theme.palette.error.main`
+- [ ] **TaxStatementForm.tsx Line 67**: `color: '#d32f2f'` → `theme.palette.error.main`
+
+**B. EventTypeSelector.tsx (6 instances)**
+- [ ] **Line 127**: `border: isSelected ? '2px solid #1976d2' : '1px solid #ccc'` → `theme.palette.primary.main` and `theme.palette.divider`
+- [ ] **Line 128**: `background: isSelected ? '#e3f2fd' : '#fff'` → `theme.palette.primary.light` and `theme.palette.background.paper`
+- [ ] **Line 182**: `border: isSelected ? '2px solid #1976d2' : '1px solid #ccc'` → `theme.palette.primary.main` and `theme.palette.divider`
+- [ ] **Line 183**: `background: isSelected ? '#e3f2fd' : '#f3f6fa'` → `theme.palette.primary.light` and `theme.palette.background.paper`
+- [ ] **Line 257**: `border: isSelected ? '2px solid #1976d2' : '1px solid #ccc'` → `theme.palette.primary.main` and `theme.palette.divider`
+- [ ] **Line 258**: `background: isSelected ? '#e3f2fd' : '#f3f6fa'` → `theme.palette.primary.light` and `theme.palette.background.paper`
+
+**C. CreateFundEventModal.tsx (1 instance)**
+- [ ] **Line 28**: `const REQUIRED_FIELD_COLOR = '#d32f2f';` → `theme.palette.error.main`
+
+#### **🔧 Implementation Requirements**
+
+##### **1. Theme Property Mapping**
+Each hardcoded color must be mapped to the appropriate theme property:
+
+| **Hardcoded Color** | **Theme Property** | **Usage** |
+|---------------------|-------------------|-----------|
+| `#FFFFFF` | `theme.palette.text.primary` | Primary text |
+| `#8B949E` | `theme.palette.text.muted` | Muted/secondary text |
+| `#2496ED` | `theme.palette.primary.main` | Primary actions/links |
+| `#1B7FC4` | `theme.palette.primary.dark` | Hover states |
+| `#1F2937` | `theme.palette.background.paper` | Card/panel backgrounds |
+| `#303234` | `theme.palette.divider` | Borders and dividers |
+| `#06a58c` | `theme.palette.secondary.main` | Success/active states |
+| `#4ca2fa` | `theme.palette.info.main` | Info text |
+| `#F2C94C` | `theme.palette.warning.main` | Warning indicators |
+| `#d32f2f` | `theme.palette.error.main` | Error indicators |
+
+##### **2. Required Code Changes**
+Each migration requires:
+1. **Import useTheme hook**: `import { useTheme } from '@mui/material';`
+2. **Get theme instance**: `const theme = useTheme();`
+3. **Replace hardcoded color**: `color: '#FFFFFF'` → `color: theme.palette.text.primary`
+
+##### **3. Testing Requirements**
+After each file migration:
+- [ ] **Visual Verification**: No visual changes should occur
+- [ ] **TypeScript Compilation**: `npx tsc --noEmit` should pass
+- [ ] **Component Functionality**: All existing functionality preserved
+
+#### **📊 Total Effort Estimate**
+
+| **File** | **Colors to Migrate** | **Estimated Time** | **Priority** |
+|-----------|----------------------|-------------------|--------------|
+| **OverallDashboard.tsx** | 67 | 2-3 hours | 🔴 HIGHEST |
+| **EnhancedCompaniesPage.tsx** | 22 | 1-2 hours | 🔴 HIGH |
+| **FundDetail.tsx** | 22 | 1-2 hours | 🔴 HIGH |
+| **Event Creation Forms** | 15+ | 1-2 hours | 🟡 MEDIUM |
+| **TOTAL** | **126+** | **5-9 hours** | **CRITICAL** |
+
+#### **⚠️ Critical Notes**
+
+1. **Spec Inaccuracy**: The spec claims Phase 5b is complete with "40+ colors migrated" - this is incorrect
+2. **Actual Status**: 126+ hardcoded colors still exist in main page components
+3. **Zero Visual Changes**: All migrations must maintain exact visual appearance
+4. **Immediate Priority**: OverallDashboard.tsx has the highest impact and should be completed first
+
+#### **🎯 Success Criteria for Phase 5c**
+
+- [ ] **All 126+ hardcoded colors migrated** to theme system
+- [ ] **Zero visual changes** during migration
+- [ ] **TypeScript compilation passes** without errors
+- [ ] **All component functionality preserved**
+- [ ] **Theme system fully integrated** across all components
+- [ ] **Ready for Phase 6** (Enhanced Navigation Sidebar)
 
 **Design Principles**:
 - **Layout and UI components are fully themed** - All hardcoded colors have been migrated to the centralized theme system
@@ -594,7 +834,8 @@ export const dockerThemeWithConfig = {
 - [x] Tables and data are easier to scan and navigate
 
 ### Technical Achievement
-- [x] Design system is consistent across all components
+- [x] Design system is consistent across layout and UI components
+- [ ] Design system is consistent across main page components (Phase 5c required)
 - [x] Performance is maintained or improved
 - [x] Accessibility is enhanced by design improvements
 - [x] Code maintainability is improved through consistent theming
@@ -684,8 +925,8 @@ This approach ensures systematic progress while minimizing risk and maintaining 
 
 ## 16. Project Status Summary - August 2025
 
-### **🎯 Overall Project Status: 95% Complete**
-We have successfully completed **4 out of 5 phases** and **Phase 5a & 5b**, achieving a professional, enterprise-grade UI that matches Docker Desktop's aesthetic with a fully centralized theme system.
+### **🎯 Overall Project Status: 85% Complete**
+We have successfully completed **4 out of 5 phases** and **Phase 5a & 5b**, achieving a professional, enterprise-grade UI that matches Docker Desktop's aesthetic with a fully centralized theme system. **Phase 5c requires immediate attention** to complete the theme integration.
 
 ### **✅ Completed Phases:**
 
@@ -720,9 +961,9 @@ We have successfully completed **4 out of 5 phases** and **Phase 5a & 5b**, achi
 - **Goal**: Final integration testing and visual polish
 - **Phase 5a**: ✅ **COMPLETED** - Layout Component Theme Integration
 - **Phase 5b**: ✅ **COMPLETED** - UI Component Theme Integration
-- **Phase 5c**: **IN PROGRESS** - Final Integration and Polish
-- **Estimated Duration**: 3-5 days remaining
-- **Key Tasks**: Test theme integration, responsive validation, performance optimization, accessibility validation
+- **Phase 5c**: **🔄 IN PROGRESS** - Main Page Component Theme Integration (CRITICAL)
+- **Estimated Duration**: 5-9 hours remaining for Phase 5c
+- **Key Tasks**: Migrate 126+ hardcoded colors to theme system, maintain zero visual changes, complete theme integration
 
 ### **📊 Technical Achievements:**
 
@@ -751,13 +992,22 @@ We have successfully completed **4 out of 5 phases** and **Phase 5a & 5b**, achi
 1. **✅ COMPLETED: Phase 5a & 5b** (Layout & UI Component Theme Integration)
    - All 40+ hardcoded colors successfully migrated to theme system
    - Zero visual changes achieved while improving code quality
-   - Complete theme system integration across all components
+   - Complete theme system integration across layout and UI components
 
-2. **Complete Phase 5c** (Final Integration and Polish)
+2. **🔄 IN PROGRESS: Phase 5c** (Main Page Component Theme Integration - CRITICAL)
+   - **OverallDashboard.tsx**: Migrate 67 hardcoded colors (HIGHEST PRIORITY)
+   - **EnhancedCompaniesPage.tsx**: Migrate 22 hardcoded colors (HIGH PRIORITY)
+   - **FundDetail.tsx**: Migrate 22 hardcoded colors (HIGH PRIORITY)
+   - **Event Creation Forms**: Migrate 15+ hardcoded colors (MEDIUM PRIORITY)
+   - **Total**: 126+ hardcoded colors need migration
+   - **Estimated Duration**: 5-9 hours
+   - **Requirement**: Zero visual changes during migration
+
+3. **Complete Phase 5c** (Final Integration and Polish)
    - Test theme integration across all components
    - Validate responsive behavior
    - Performance optimization and accessibility validation
-   - **Estimated Duration**: 3-5 days
+   - **Estimated Duration**: 1-2 days after Phase 5c completion
 
 3. **Phase 6** (Enhanced Navigation Sidebar - Stretch Goal)
    - Three-column layout for fund pages
