@@ -1,13 +1,14 @@
 import React from 'react';
-import { Chip } from '@mui/material';
+import { Chip, useTheme } from '@mui/material';
 
 export interface TrackingTypeChipProps {
-  trackingType: 'nav_based' | 'cost_based' | string;
+  trackingType: string;
   size?: 'small' | 'medium';
   className?: string;
 }
 
 export const TrackingTypeChip: React.FC<TrackingTypeChipProps> = ({ trackingType, size = 'small', className }) => {
+  const theme = useTheme();
   const normalized = String(trackingType).toLowerCase();
   const label = normalized === 'nav_based' ? 'nav_based' : normalized === 'cost_based' ? 'cost_based' : trackingType;
   
@@ -15,23 +16,21 @@ export const TrackingTypeChip: React.FC<TrackingTypeChipProps> = ({ trackingType
   const getChipStyle = () => {
     if (normalized === 'nav_based') {
       return {
-        backgroundColor: '#2496ED',
-        color: '#FFFFFF'
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.text.primary
       };
     } else if (normalized === 'cost_based') {
       return {
-        backgroundColor: '#06a58c',
-        color: '#FFFFFF'
+        backgroundColor: theme.palette.success.main,
+        color: theme.palette.text.primary
       };
     } else {
       return {
-        backgroundColor: '#6B7280',
-        color: '#FFFFFF'
+        backgroundColor: theme.palette.text.disabled || theme.palette.text.muted,
+        color: theme.palette.text.primary
       };
     }
   };
-
-  const chipStyle = getChipStyle();
 
   return (
     <Chip
@@ -39,17 +38,13 @@ export const TrackingTypeChip: React.FC<TrackingTypeChipProps> = ({ trackingType
       label={label}
       size={size}
       className={className || ''}
-      aria-label={`tracking: ${label}`}
       sx={{
-        ...chipStyle,
-        fontWeight: 600,
-        fontSize: '12px',
-        height: size === 'small' ? '24px' : '32px',
-        borderRadius: '6px',
+        ...getChipStyle(),
+        fontWeight: 500,
+        textTransform: 'none',
         '& .MuiChip-label': {
-          px: 1.5,
-          py: 0.5
-        }
+          px: 1,
+        },
       }}
     />
   );

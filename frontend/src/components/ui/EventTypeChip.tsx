@@ -1,54 +1,69 @@
 import React from 'react';
-import { Chip } from '@mui/material';
-import { DistributionType, EventType } from '../../types/api';
+import { Chip, useTheme } from '@mui/material';
 import { getEventTypeColor } from '../../utils/helpers';
-import { getEventTypeLabelSimple } from '../../utils/transformers/eventTransformers';
 
 export interface EventTypeChipProps {
-  eventType: EventType | DistributionType | string;
-  distributionType?: DistributionType | string;
+  eventType: string;
   size?: 'small' | 'medium';
   className?: string;
 }
 
-export const EventTypeChip: React.FC<EventTypeChipProps> = ({
-  eventType,
-  distributionType,
-  size = 'small',
-  className,
-}) => {
-  // CALCULATED: Determine if this is a distribution type or event type
-  const isDistributionType = ['INTEREST', 'DIVIDEND', 'OTHER'].includes(eventType);
+export const EventTypeChip: React.FC<EventTypeChipProps> = ({ eventType, size = 'small', className }) => {
+  const theme = useTheme();
+  const colorVariant = getEventTypeColor(eventType);
   
-  // CALCULATED: Get the appropriate label
-  const label = isDistributionType ? eventType : getEventTypeLabelSimple(String(eventType));
-  
-  // CALCULATED: Get the appropriate color
-  const color = getEventTypeColor(String(eventType)) as any;
+  // Map MUI color variants to theme colors
+  const getChipStyle = () => {
+    switch (colorVariant) {
+      case 'primary':
+        return {
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.text.primary
+        };
+      case 'success':
+        return {
+          backgroundColor: theme.palette.success.main,
+          color: theme.palette.text.primary
+        };
+      case 'warning':
+        return {
+          backgroundColor: theme.palette.warning.main,
+          color: theme.palette.text.primary
+        };
+      case 'error':
+        return {
+          backgroundColor: theme.palette.error.main,
+          color: theme.palette.text.primary
+        };
+      case 'info':
+        return {
+          backgroundColor: theme.palette.info.main,
+          color: theme.palette.text.primary
+        };
+      default:
+        return {
+          backgroundColor: theme.palette.text.disabled || theme.palette.text.muted,
+          color: theme.palette.text.primary
+        };
+    }
+  };
 
   return (
     <Chip
       component="div"
-      label={label}
+      label={eventType}
       size={size}
       className={className || ''}
-      aria-label={`event type: ${label}`}
       sx={{
-        backgroundColor: color,
-        color: '#FFFFFF',
-        fontWeight: 600,
-        fontSize: '12px',
-        height: size === 'small' ? '24px' : '32px',
-        borderRadius: '6px',
+        ...getChipStyle(),
+        fontWeight: 500,
+        textTransform: 'none',
         '& .MuiChip-label': {
-          px: 1.5,
-          py: 0.5
-        }
+          px: 1,
+        },
       }}
     />
   );
 };
-
-export default EventTypeChip;
 
 

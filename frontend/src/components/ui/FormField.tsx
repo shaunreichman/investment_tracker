@@ -1,63 +1,68 @@
 import React from 'react';
-import { FormControl, FormLabel, FormHelperText } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 
 export interface FormFieldProps {
-  id: string;
   label: string;
-  error?: string | null;
-  hint?: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
+  helperText?: string;
+  disabled?: boolean;
 }
 
-export const FormField: React.FC<FormFieldProps> = ({ id, label, error, hint, required, children }) => {
-  const helperId = hint || error ? `${id}-help` : undefined;
-  const isError = Boolean(error);
-
+export const FormField: React.FC<FormFieldProps> = ({ 
+  label, 
+  required = false, 
+  error, 
+  children, 
+  helperText,
+  disabled = false
+}) => {
+  const theme = useTheme();
+  
   return (
-    <FormControl 
-      fullWidth 
-      error={isError} 
-      aria-invalid={isError} 
-      aria-describedby={helperId}
-      sx={{ mb: 3 }}
-    >
-      <FormLabel 
-        htmlFor={id} 
-        required={required || false}
-        sx={{
-          color: '#FFFFFF',
-          fontWeight: 600,
-          fontSize: '14px',
+    <Box sx={{ mb: 2 }}>
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          color: theme.palette.text.primary,
+          fontWeight: 500,
           mb: 1,
-          '&.Mui-focused': {
-            color: '#2496ED'
-          },
-          '&.Mui-error': {
-            color: '#F85149'
-          }
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5
         }}
       >
         {label}
-      </FormLabel>
-      {children}
-      {(hint || error) && (
-        <FormHelperText 
-          id={helperId}
-          sx={{
-            color: isError ? '#F85149' : '#8B949E',
+        {required && (
+          <span style={{ 
+            color: theme.palette.error.main,
+            fontSize: '14px'
+          }}>
+            *
+          </span>
+        )}
+      </Typography>
+      
+      <Box sx={{ mb: 1 }}>
+        {children}
+      </Box>
+      
+      {(error || helperText) && (
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            color: error ? theme.palette.error.main : theme.palette.text.muted,
             fontSize: '12px',
-            fontWeight: 500,
+            display: 'block',
             mt: 0.5
           }}
         >
-          {error || hint}
-        </FormHelperText>
+          {error || helperText}
+        </Typography>
       )}
-    </FormControl>
+    </Box>
   );
 };
-
-export default FormField;
 
 

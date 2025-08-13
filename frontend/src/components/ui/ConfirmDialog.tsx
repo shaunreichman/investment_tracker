@@ -7,6 +7,7 @@ import {
   DialogActions,
   Button,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
 
 export interface ConfirmDialogProps {
@@ -15,10 +16,11 @@ export interface ConfirmDialogProps {
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  loading?: boolean;
-  disabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  confirmVariant?: 'error' | 'primary' | 'secondary';
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -27,11 +29,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   description,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
-  loading = false,
-  disabled = false,
   onConfirm,
   onCancel,
+  loading = false,
+  disabled = false,
+  confirmVariant = 'error',
 }) => {
+  const theme = useTheme();
+  
   const titleId = 'confirm-dialog-title';
   const descId = description ? 'confirm-dialog-description' : undefined;
 
@@ -43,8 +48,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       {...(descId && { 'aria-describedby': descId })}
       PaperProps={{
         sx: {
-          backgroundColor: '#1F2937',
-          border: '1px solid #303234',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
           borderRadius: '12px',
           boxShadow: '0px 8px 32px rgba(0,0,0,0.4)',
           minWidth: '400px',
@@ -55,11 +60,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       <DialogTitle 
         id={titleId}
         sx={{
-          color: '#FFFFFF',
+          color: theme.palette.text.primary,
           fontWeight: 600,
           fontSize: '20px',
-          borderBottom: '1px solid #303234',
-          backgroundColor: '#070b0d',
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.sidebar,
           borderRadius: '12px 12px 0 0'
         }}
       >
@@ -71,7 +76,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <DialogContentText 
             id={descId}
             sx={{
-              color: '#8B949E',
+              color: theme.palette.text.muted,
               fontSize: '16px',
               lineHeight: 1.5
             }}
@@ -87,15 +92,15 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           disabled={loading}
           variant="outlined"
           sx={{
-            borderColor: '#303234',
-            color: '#C9D1D9',
+            borderColor: theme.palette.divider,
+            color: theme.palette.text.secondary,
             '&:hover': {
-              borderColor: '#8B949E',
-              backgroundColor: '#19222a'
+              borderColor: theme.palette.text.muted,
+              backgroundColor: theme.palette.background.sidebarHover
             },
             '&:disabled': {
-              borderColor: '#6B7280',
-              color: '#6B7280'
+              borderColor: theme.palette.text.disabled || theme.palette.text.muted,
+              color: theme.palette.text.disabled || theme.palette.text.muted
             },
             px: 3,
             py: 1
@@ -108,14 +113,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           onClick={onConfirm}
           variant="contained"
           disabled={loading || disabled}
-          startIcon={loading ? <CircularProgress size={18} sx={{ color: '#FFFFFF' }} /> : null}
+          startIcon={loading ? <CircularProgress size={18} sx={{ color: theme.palette.text.primary }} /> : null}
           sx={{
-            backgroundColor: '#F85149',
+            backgroundColor: theme.palette.error.main,
             '&:hover': {
-              backgroundColor: '#DC3545'
+              backgroundColor: theme.palette.error.dark
             },
             '&:disabled': {
-              backgroundColor: '#6B7280'
+              backgroundColor: theme.palette.text.disabled || theme.palette.text.muted
             },
             px: 3,
             py: 1,

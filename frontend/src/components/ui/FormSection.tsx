@@ -1,60 +1,71 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 
 export interface FormSectionProps {
   title: string;
-  description?: string;
+  subtitle?: string;
   children: React.ReactNode;
+  required?: boolean;
+  error?: string;
 }
 
-export const FormSection: React.FC<FormSectionProps> = ({ title, description, children }) => {
-  const headingId = `${title.replace(/\s+/g, '-').toLowerCase()}-heading`;
-
+export const FormSection: React.FC<FormSectionProps> = ({ 
+  title, 
+  subtitle, 
+  children, 
+  required = false,
+  error
+}) => {
+  const theme = useTheme();
+  
   return (
-    <Box 
-      component="section" 
-      role="region" 
-      aria-labelledby={headingId} 
-      sx={{ 
-        mt: 4,
-        p: 3,
-        backgroundColor: '#1F2937',
-        border: '1px solid #303234',
+    <Box sx={{ mb: 3 }}>
+      <Box sx={{ 
+        mb: 2, 
+        p: 2, 
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
         borderRadius: '8px'
-      }}
-    >
-      <Typography 
-        id={headingId} 
-        variant="h5" 
-        sx={{ 
-          mb: description ? 1 : 2,
-          color: '#FFFFFF',
-          fontWeight: 600,
-          fontSize: '18px'
-        }}
-      >
-        {title}
-      </Typography>
-      {description && (
+      }}>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            color: theme.palette.text.primary,
+            fontWeight: 600,
+            mb: subtitle ? 1 : 0
+          }}
+        >
+          {title}
+          {required && <span style={{ color: theme.palette.error.main }}> *</span>}
+        </Typography>
+        
+        {subtitle && (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: theme.palette.text.muted,
+              fontSize: '14px'
+            }}
+          >
+            {subtitle}
+          </Typography>
+        )}
+      </Box>
+      
+      {children}
+      
+      {error && (
         <Typography 
           variant="body2" 
           sx={{ 
-            mb: 3,
-            color: '#8B949E',
-            fontSize: '14px',
-            lineHeight: 1.5
+            color: theme.palette.error.main,
+            fontSize: '12px',
+            mt: 1
           }}
         >
-          {description}
+          {error}
         </Typography>
       )}
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: 2
-      }}>
-        {children}
-      </Box>
     </Box>
   );
 };

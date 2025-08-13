@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 
 export interface SuccessBannerProps {
@@ -9,6 +9,8 @@ export interface SuccessBannerProps {
 }
 
 export const SuccessBanner: React.FC<SuccessBannerProps> = ({ title, subtitle, icon }) => {
+  const theme = useTheme();
+  
   return (
     <Box 
       role="status" 
@@ -16,21 +18,21 @@ export const SuccessBanner: React.FC<SuccessBannerProps> = ({ title, subtitle, i
       sx={{ 
         mb: 3, 
         p: 3, 
-        backgroundColor: '#06a58c',
-        border: '1px solid #06a58c',
+        backgroundColor: theme.palette.success.main,
+        border: `1px solid ${theme.palette.success.main}`,
         borderRadius: '8px', 
         display: 'flex', 
         alignItems: 'center',
         boxShadow: '0px 4px 12px rgba(6, 165, 140, 0.2)'
       }}
     >
-      {icon || <CheckCircleIcon sx={{ mr: 2, color: '#FFFFFF', fontSize: '24px' }} />}
+      {icon || <CheckCircleIcon sx={{ mr: 2, color: theme.palette.text.primary, fontSize: '24px' }} />}
       <Box>
         <Typography 
           variant="body1" 
           sx={{ 
             fontWeight: 600, 
-            color: '#FFFFFF',
+            color: theme.palette.text.primary,
             fontSize: '16px',
             mb: subtitle ? 0.5 : 0
           }}
@@ -41,7 +43,7 @@ export const SuccessBanner: React.FC<SuccessBannerProps> = ({ title, subtitle, i
           <Typography 
             variant="body2" 
             sx={{ 
-              color: '#FFFFFF',
+              color: theme.palette.text.primary,
               opacity: 0.9,
               fontSize: '14px'
             }}
