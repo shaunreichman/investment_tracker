@@ -4,6 +4,24 @@
 
 import { createTheme } from '@mui/material/styles';
 
+// Extend the MUI theme types to include our custom properties
+declare module '@mui/material/styles' {
+  interface TypeBackground {
+    sidebar?: string;
+    sidebarHover?: string;
+    topbar?: string;
+    topbarGradient?: string;
+    search?: string;
+    searchHover?: string;
+  }
+  
+  interface TypeText {
+    muted?: string;
+    active?: string;
+    hover?: string;
+  }
+}
+
 // Docker Spacing System - Following spec requirements
 export const dockerSpacing = {
   xs: 4,      // 4px
@@ -57,10 +75,20 @@ export const dockerTheme = createTheme({
     background: {
       default: '#10151a',   // Main dashboard background
       paper: '#1F2937',     // Panel background
+      // Layout-specific backgrounds
+      sidebar: '#070b0d',   // Navigation sidebar background
+      sidebarHover: '#19222a', // Sidebar hover states
+      topbar: '#051B51',    // TopBar base color
+      topbarGradient: '#00298B', // TopBar gradient end
+      search: '#1b3d89',    // Search bar background
+      searchHover: '#345397', // Search bar hover
     },
     text: {
       primary: '#FFFFFF',   // White
       secondary: '#C9D1D9', // Light grey
+      muted: '#8B949E',     // Muted text
+      active: '#2496ED',    // Active text
+      hover: '#1B7FC4',     // Hover text
     },
     divider: '#303234',     // Navigation selection color
   },

@@ -2,7 +2,7 @@
 // Handles content area and TopBar positioning, sidebar now rendered inside routes
 
 import React, { createContext, useContext } from 'react';
-import { Box, CssBaseline } from '@mui/material';
+import { Box, CssBaseline, useTheme } from '@mui/material';
 
 // Create context for sidebar state (shared across all routes)
 interface SidebarContextType {
@@ -22,7 +22,7 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  // Removed unused theme variable
+  const theme = useTheme();
   
   return (
     <Box sx={{ display: 'flex' }}>
@@ -35,7 +35,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           flexGrow: 1,
           width: '100%', // Full width since sidebar is handled by children
           minHeight: '100vh',
-          backgroundColor: '#10151a', // Main dashboard background
+          backgroundColor: theme.palette.background.default, // Main dashboard background
         }}
       >
         {/* Content Area with proper spacing */}

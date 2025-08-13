@@ -60,7 +60,7 @@ const RouteLayout: React.FC<RouteLayoutProps> = ({ children }) => {
           sx={{
             padding: '24px', // 24px outer padding as per spec
             minHeight: 'calc(100vh - 56px)',
-            backgroundColor: '#10151a', // Main dashboard background
+            backgroundColor: theme.palette.background.default, // Main dashboard background
           }}
         >
           <SidebarContext.Provider value={{ sidebarOpen, onSidebarToggle: handleSidebarToggle }}>

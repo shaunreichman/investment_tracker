@@ -44,8 +44,8 @@ const TopBar: React.FC<TopBarProps> = ({
       sx={{
         width: '100%', // Full width
         marginLeft: 0, // No left margin - extends to left edge
-        background: 'linear-gradient(90deg, #051B51 0%, #00298B 100%)', // TopBar gradient background
-        borderBottom: '1px solid #303234', // Updated border color
+        background: `linear-gradient(90deg, ${theme.palette.background.topbar} 0%, ${theme.palette.background.topbarGradient} 100%)`, // TopBar gradient background
+        borderBottom: `1px solid ${theme.palette.divider}`, // Updated border color
         boxShadow: '0px 1px 4px rgba(0,0,0,0.2)', // Subtle shadow for depth
         transition: theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
@@ -59,7 +59,7 @@ const TopBar: React.FC<TopBarProps> = ({
         <Typography
           variant="h6"
           sx={{
-            color: '#FFFFFF', // White text as per spec
+            color: theme.palette.text.primary, // White text as per spec
             fontWeight: 600,
             marginRight: 3,
           }}
@@ -72,26 +72,26 @@ const TopBar: React.FC<TopBarProps> = ({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: '#1b3d89', // Search bar background
+            backgroundColor: theme.palette.background.search, // Search bar background
             borderRadius: '8px',
             padding: '8px 12px',
             marginRight: 3,
             minWidth: 200,
             '&:hover': {
-              backgroundColor: '#345397', // Search bar hover
+              backgroundColor: theme.palette.background.searchHover, // Search bar hover
             },
           }}
         >
-          <SearchIcon sx={{ color: '#8B949E', marginRight: 1, fontSize: 20 }} />
+          <SearchIcon sx={{ color: theme.palette.text.muted, marginRight: 1, fontSize: 20 }} />
           <InputBase
             placeholder="Search..."
             sx={{
-              color: '#FFFFFF', // White text
-              fontSize: '14px',
-              '& input::placeholder': {
-                color: '#8B949E', // Placeholder text color
-                opacity: 1,
-              },
+                          color: theme.palette.text.primary, // White text
+            fontSize: '14px',
+            '& input::placeholder': {
+              color: theme.palette.text.muted, // Placeholder text color
+              opacity: 1,
+            },
             }}
           />
         </Box>
@@ -104,12 +104,12 @@ const TopBar: React.FC<TopBarProps> = ({
               '& .MuiBreadcrumbs-ol': {
                 alignItems: 'center',
               },
-              '& .MuiBreadcrumbs-li': {
-                '&:last-child .MuiTypography-root': {
-                  color: '#8B949E', // Muted color for current page
-                  fontWeight: 400,
+                              '& .MuiBreadcrumbs-li': {
+                  '&:last-child .MuiTypography-root': {
+                    color: theme.palette.text.muted, // Muted color for current page
+                    fontWeight: 400,
+                  },
                 },
-              },
             }}
           >
             {breadcrumbs.map((breadcrumb, index) => {
@@ -118,13 +118,13 @@ const TopBar: React.FC<TopBarProps> = ({
               return (
                 <Link
                   key={breadcrumb.path}
-                  color={isLast ? 'inherit' : '#2496ED'} // Docker blue for links
+                  color={isLast ? 'inherit' : theme.palette.primary.main} // Docker blue for links
                   underline="hover"
                   onClick={() => !isLast && handleBreadcrumbClick(breadcrumb.path)}
                   sx={{
                     cursor: isLast ? 'default' : 'pointer',
                     '&:hover': {
-                      color: isLast ? '#8B949E' : '#1B7FC4', // Darker blue on hover
+                      color: isLast ? theme.palette.text.muted : theme.palette.text.hover, // Darker blue on hover
                     },
                   }}
                 >
@@ -145,9 +145,9 @@ const TopBar: React.FC<TopBarProps> = ({
 
         {/* Action Buttons Area */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <NotificationsIcon sx={{ color: '#C9D1D9' }} />
+          <NotificationsIcon sx={{ color: theme.palette.text.secondary }} />
           
-          <AccountCircleIcon sx={{ color: '#C9D1D9' }} />
+                      <AccountCircleIcon sx={{ color: theme.palette.text.secondary }} />
         </Box>
       </Toolbar>
     </AppBar>
