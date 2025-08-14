@@ -1,5 +1,6 @@
 // Top Bar - Phase 2 Implementation
 // Fixed position header with page context and actions
+// Now route-aware for dynamic content updates
 
 import React from 'react';
 import {
@@ -17,22 +18,59 @@ import {
   Notifications as NotificationsIcon,
   AccountCircle as AccountCircleIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useSidebar } from './MainLayout';
 
-interface TopBarProps {
-  pageTitle?: string;
-  breadcrumbs?: Array<{ label: string; path: string }>;
-}
+// Route-based page title and breadcrumb configuration
+const getRouteInfo = (pathname: string, params: any) => {
+  if (pathname === '/') {
+    return {
+      pageTitle: 'Investment Dashboard',
+      breadcrumbs: [{ label: 'Investment Dashboard', path: '/' }]
+    };
+  }
+  
+  if (pathname.startsWith('/companies/')) {
+    const companyId = params.companyId;
+    return {
+      pageTitle: `Company ${companyId}`,
+      breadcrumbs: [
+        { label: 'Investment Dashboard', path: '/' },
+        { label: 'Companies', path: '/companies' },
+        { label: `Company ${companyId}`, path: `/companies/${companyId}` }
+      ]
+    };
+  }
+  
+  if (pathname.startsWith('/funds/')) {
+    const fundId = params.fundId;
+    return {
+      pageTitle: `Fund ${fundId}`,
+      breadcrumbs: [
+        { label: 'Investment Dashboard', path: '/' },
+        { label: 'Funds', path: '/funds' },
+        { label: `Fund ${fundId}`, path: `/funds/${fundId}` }
+      ]
+    };
+  }
+  
+  // Default fallback
+  return {
+    pageTitle: 'Investment Dashboard',
+    breadcrumbs: [{ label: 'Investment Dashboard', path: '/' }]
+  };
+};
 
-const TopBar: React.FC<TopBarProps> = ({ 
-  pageTitle = 'Investments',
-  breadcrumbs = [{ label: 'Investments', path: '/' }]
-}) => {
+const TopBar: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams();
   // We don't need sidebarOpen for now, but keeping the context for future use
   useSidebar();
+
+  // Get dynamic route information
+  const { pageTitle, breadcrumbs } = getRouteInfo(location.pathname, params);
 
   const handleBreadcrumbClick = (path: string) => {
     navigate(path);

@@ -1,7 +1,7 @@
 import React, { useState, Suspense, useCallback } from 'react';
 import { Typography, Box, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import TopBar from '../../layout/TopBar';
+
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
@@ -135,16 +135,6 @@ const FundDetail: React.FC = () => {
 
   return (
     <Box sx={{ p: 0 }}>
-      {/* Top Bar */}
-      <TopBar 
-        pageTitle="Fund Details"
-        breadcrumbs={[
-          { label: 'Investments', path: '/' },
-          { label: 'Funds', path: '/funds' },
-          { label: fund.name, path: `/funds/${fundId}` }
-        ]}
-      />
-      
       <FundDetailHeader fund={fund} sidebarVisible={sidebarVisible} onToggleSidebar={toggleSidebar} />
 
       {/* Main Layout */}

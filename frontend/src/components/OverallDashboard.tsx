@@ -16,9 +16,10 @@ import {
   Button,
   useTheme,
 } from '@mui/material';
-import TopBar from './layout/TopBar';
+
 import { ErrorDisplay } from './ErrorDisplay';
 import { createErrorInfo } from '../types/errors';
+import { LoadingSpinner } from './ui/LoadingSpinner';
 import {
   Business,
   AccountBalance,
@@ -33,7 +34,6 @@ import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
-import { LoadingSpinner } from './ui/LoadingSpinner';
 
 
 const OverallDashboard: React.FC = () => {
@@ -82,12 +82,6 @@ const OverallDashboard: React.FC = () => {
 
   return (
     <Box sx={{ p: 0 }}>
-      {/* Top Bar */}
-      <TopBar 
-        pageTitle="Investments"
-        breadcrumbs={[{ label: 'Investments', path: '/' }]}
-      />
-      
       {/* Page Header Section - Add top margin to account for fixed TopBar */}
       <Box sx={{ mb: 4 }}> {/* Removed manual top margin since RouteLayout handles it */}
         <Typography 
