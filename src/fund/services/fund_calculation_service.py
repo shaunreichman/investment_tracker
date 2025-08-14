@@ -70,7 +70,7 @@ class FundCalculationService:
         
         for i in range(start_idx):
             e = events[i]
-            if e.event_type.value == 'unit_purchase':
+            if e.event_type == EventType.UNIT_PURCHASE:
                 units = e.units_purchased or 0
                 unit_price = e.unit_price or 0
                 brokerage_fee = e.brokerage_fee or 0
@@ -78,7 +78,7 @@ class FundCalculationService:
                     effective_price = unit_price + (brokerage_fee / units)
                     fifo.append((units, unit_price, effective_price, e.event_date, brokerage_fee))
                 cumulative_units += units
-            elif e.event_type.value == 'unit_sale':
+            elif e.event_type == EventType.UNIT_SALE:
                 units = e.units_sold or 0
                 remaining = units
                 while remaining > 0 and fifo:
@@ -94,7 +94,7 @@ class FundCalculationService:
         # Now process all subsequent events in a single pass
         for i in range(start_idx, len(events)):
             e = events[i]
-            if e.event_type.value == 'unit_purchase':
+            if e.event_type == EventType.UNIT_PURCHASE:
                 # Update the FIFO and cumulative units
                 units = e.units_purchased or 0
                 unit_price = e.unit_price or 0
@@ -108,7 +108,7 @@ class FundCalculationService:
                 # For equity balance, exclude brokerage: only units * unit_price
                 total_equity = sum(u * p for u, p, _, _, _ in fifo)
                 e.current_equity_balance = total_equity
-            elif e.event_type.value == 'unit_sale':
+            elif e.event_type == EventType.UNIT_SALE:
                 units = e.units_sold or 0
                 unit_price = e.unit_price or 0
                 brokerage_fee = e.brokerage_fee or 0
@@ -133,10 +133,10 @@ class FundCalculationService:
                 e.current_equity_balance = sum(u * p for u, p, _, _, _ in fifo)
     
     def calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event(
-        self, 
-        fund: 'Fund', 
-        events: List['FundEvent'], 
-        start_idx: int, 
+        self,
+        fund: 'Fund',
+        events: List['FundEvent'],
+        start_idx: int,
         session: Optional[Session] = None
     ) -> None:
         """
@@ -151,24 +151,32 @@ class FundCalculationService:
             start_idx: Index to start processing from
             session: Database session (optional)
         """
-        balance = 0.0
+        balance = 0.0  # MANUAL: Running balance for cost-based calculations
         
         # Build balance up to start_idx
         for i in range(start_idx):
             e = events[i]
             if e.event_type == EventType.CAPITAL_CALL:
-                balance += e.amount or 0.0
+                # SYSTEM: Convert Decimal to float for consistent type handling
+                amount = float(e.amount) if e.amount is not None else 0.0
+                balance += amount
             elif e.event_type == EventType.RETURN_OF_CAPITAL:
-                balance -= e.amount or 0.0
+                # SYSTEM: Convert Decimal to float for consistent type handling
+                amount = float(e.amount) if e.amount is not None else 0.0
+                balance -= amount
         
         # Process all subsequent events
         for i in range(start_idx, len(events)):
             e = events[i]
             if e.event_type == EventType.CAPITAL_CALL:
-                balance += e.amount or 0.0
+                # SYSTEM: Convert Decimal to float for consistent type handling
+                amount = float(e.amount) if e.amount is not None else 0.0
+                balance += amount
                 e.current_equity_balance = balance
             elif e.event_type == EventType.RETURN_OF_CAPITAL:
-                balance -= e.amount or 0.0
+                # SYSTEM: Convert Decimal to float for consistent type handling
+                amount = float(e.amount) if e.amount is not None else 0.0
+                balance -= amount
                 e.current_equity_balance = balance
             else:
                 # Not a capital event we care about for cost-based

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Performance tests for flag-based event grouping system.
+Performance tests for flag-based event grouping system using NEW Phase 3.5 Architecture.
 
 This test suite verifies that the simplified flag-based approach provides
 better performance than the complex grouping service approach.
+
+UPDATED: Now uses FundUpdateOrchestrator instead of old Fund model methods.
 """
 
 import pytest
@@ -11,24 +13,31 @@ import time
 from datetime import date, timedelta, datetime
 from decimal import Decimal
 
-# Remove the global session import - we'll use the test session instead
-# from src.database import get_global_session
-from src.fund.models import Fund, FundEvent, EventType, DistributionType, TaxPaymentType, GroupType, FundType, FundStatus
+# NEW: Import new architecture components
+from src.fund.events import FundUpdateOrchestrator
+from src.fund.events.handlers import CapitalCallHandler, DistributionHandler
+from src.fund.enums import EventType, DistributionType, TaxPaymentType, GroupType, FundType, FundStatus
+
+# OLD: Keep old imports for comparison and gradual migration
+from src.fund.models import Fund, FundEvent
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
 from src.api import create_app
 
 
 class TestFlagBasedPerformance:
-    """Test suite for flag-based event grouping performance."""
+    """Test suite for flag-based event grouping performance using NEW architecture."""
     
     @pytest.fixture(autouse=True)
     def setup(self, db_session):
-        """Set up test environment with large dataset."""
+        """Set up test environment with large dataset using NEW architecture."""
         # Use the test session instead of global session
         self.session = db_session
         self.app = create_app()
         self.client = self.app.test_client()
+        
+        # NEW: Initialize new architecture components
+        self.orchestrator = FundUpdateOrchestrator()
         
         # Create test data
         self.company = InvestmentCompany(
@@ -58,7 +67,7 @@ class TestFlagBasedPerformance:
         self.session.add(self.fund)
         self.session.flush()
         
-        # Create large dataset for performance testing
+        # Create large dataset for performance testing using NEW architecture
         self._create_large_dataset()
         
         yield
@@ -68,7 +77,7 @@ class TestFlagBasedPerformance:
         # self.session.close()
     
     def _create_large_dataset(self):
-        """Create a large dataset for performance testing."""
+        """Create a large dataset for performance testing using NEW architecture."""
         print("📊 Creating large dataset for performance testing...")
         
         # Create events over 2 years (730 days)
@@ -81,42 +90,52 @@ class TestFlagBasedPerformance:
             # Create interest distribution with withholding tax every 30 days
             if i % 30 == 0:
                 amount = Decimal("1000.00") + (i * Decimal("10.00"))  # Varying amounts
-                dist, tax = self.fund.add_distribution(
-                    event_date=current_date,
-                    gross_interest_amount=amount,
-                    distribution_type=DistributionType.INTEREST,
-                    has_withholding_tax=True,
-                    withholding_tax_rate=0.10,
-                    reference_number=f"PERF{i:04d}",
-                    session=self.session
-                )
-                total_events += 2
-            
-            # Create capital call every 90 days
-            if i % 90 == 0:
-                self.fund.add_capital_call(
-                    amount=float(Decimal("5000.00")),  # Convert Decimal to float for model compatibility
-                    date=current_date,
-                    reference_number=f"PERF_CAP{i:04d}",
-                    session=self.session
+                
+                # NEW: Use new architecture instead of old Fund model methods
+                distribution_data = {
+                    'event_type': EventType.DISTRIBUTION,
+                    'event_date': current_date,
+                    'distribution_type': DistributionType.INTEREST,
+                    'has_withholding_tax': True,
+                    'distribution_amount': float(amount),  # Use the field name the handler expects
+                    'gross_interest_amount': float(amount),
+                    'withholding_tax_rate': 0.10,
+                    'reference_number': f"PERF{i:04d}",
+                    'description': f"Performance test distribution {i}"
+                }
+                
+                # Process distribution through new architecture
+                dist = self.orchestrator.process_fund_event(
+                    event_data=distribution_data,
+                    session=self.session,
+                    fund=self.fund
                 )
                 total_events += 1
             
-            # Create NAV update every 7 days (only for NAV-based funds)
-            # if i % 7 == 0:
-            #     nav_value = Decimal("100.00") + (i * Decimal("0.01"))
-            #     self.fund.add_nav_update(
-            #         nav_per_share=nav_value,
-            #         date=current_date,
-            #         reference_number=f"PERF_NAV{i:04d}",
-            #         session=self.session
-            #     )
-            #     total_events += 1
+            # Create capital call every 90 days
+            if i % 90 == 0:
+                # NEW: Use new architecture for capital calls
+                capital_call_data = {
+                    'event_type': EventType.CAPITAL_CALL,
+                    'amount': float(Decimal("5000.00")),
+                    'date': current_date,
+                    'reference_number': f"PERF_CAP{i:04d}",
+                    'description': f"Performance test capital call {i}"
+                }
+                
+                # Process capital call through new architecture
+                self.orchestrator.process_fund_event(
+                    event_data=capital_call_data,
+                    session=self.session,
+                    fund=self.fund
+                )
+                total_events += 1
         
-        # Don't commit - let the test session handle it
-        # self.session.commit()
+        # Commit all events
+        self.session.commit()
+        
         print(f"    ✅ Created {total_events} events over 730 days")
-        print(f"    ✅ Fund has {len(self.fund.get_all_fund_events(session=self.session))} total events")
+        print(f"    ✅ Fund has {total_events} total events")
     
     def test_api_response_performance(self):
         """Test API response performance with large dataset."""

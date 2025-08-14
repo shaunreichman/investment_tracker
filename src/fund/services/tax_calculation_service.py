@@ -261,7 +261,7 @@ class TaxCalculationService:
         
         for event in fund.fund_events:
             if event.event_type == EventType.DISTRIBUTION:
-                dist_type = event.distribution_type.value if event.distribution_type else 'unknown'
+                dist_type = event.distribution_type if event.distribution_type else 'unknown'
                 if dist_type not in distributions:
                     distributions[dist_type] = []
                 distributions[dist_type].append(event)
@@ -302,7 +302,7 @@ class TaxCalculationService:
                    if event.event_type == EventType.DISTRIBUTION and 
                    event.amount and 
                    event.distribution_type and 
-                   event.distribution_type.value in ['income', 'capital_gains'])
+                   event.distribution_type in [DistributionType.INCOME, DistributionType.CAPITAL_GAINS])
         return float(total) if total else 0.0
     
     def get_gross_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
@@ -377,7 +377,7 @@ class TaxCalculationService:
                     'id': event.id,
                     'date': event.event_date,
                     'amount': event.amount,
-                    'distribution_type': event.distribution_type.value if event.distribution_type else None,
+                    'distribution_type': event.distribution_type if event.distribution_type else None,
                     'tax_withheld': event.tax_withheld,
                     'net_amount': event.amount - (event.tax_withheld or 0) if event.amount else 0,
                     'description': event.description,

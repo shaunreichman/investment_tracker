@@ -371,7 +371,7 @@ class FundEventService:
         
         # Filter by event types
         if event_types:
-            events = [e for e in events if e.event_type.value in event_types]
+            events = [e for e in events if e.event_type in event_types]
         
         # Filter by start date
         if start_date:
@@ -406,8 +406,8 @@ class FundEventService:
         
         # Exclude system events if requested
         if exclude_system_events:
-            system_event_types = ['daily_risk_free_interest_charge', 'eofy_debt_cost', 'tax_payment']
-            events = [e for e in events if e.event_type.value not in system_event_types]
+            system_event_types = [EventType.DAILY_RISK_FREE_INTEREST_CHARGE, EventType.EOFY_DEBT_COST, EventType.TAX_PAYMENT]
+            events = [e for e in events if e.event_type not in system_event_types]
         
         # Sort by date (most recent first) and limit
         events.sort(key=lambda e: e.event_date, reverse=True)
@@ -432,8 +432,8 @@ class FundEventService:
         
         # Exclude system events if requested
         if exclude_system_events:
-            system_event_types = ['daily_risk_free_interest_charge', 'eofy_debt_cost', 'tax_payment']
-            events = [e for e in events if e.event_type.value not in system_event_types]
+            system_event_types = [EventType.DAILY_RISK_FREE_INTEREST_CHARGE, EventType.EOFY_DEBT_COST, EventType.TAX_PAYMENT]
+            events = [e for e in events if e.event_type not in system_event_types]
         
         # Sort by date
         events.sort(key=lambda e: e.event_date)

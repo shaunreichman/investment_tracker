@@ -117,18 +117,41 @@ class FundService:
     
     def get_fund(self, fund_id: int, session: Session) -> Optional[Dict[str, Any]]:
         """
-        Get a fund by its ID.
+        Get a fund by its ID including all events.
         
         Args:
             fund_id: ID of the fund to retrieve
             session: Database session
             
         Returns:
-            Dictionary containing fund information, or None if not found
+            Dictionary containing fund information and events, or None if not found
         """
         fund = self.fund_repository.get_by_id(fund_id, session)
         if not fund:
             return None
+        
+        # Get fund events using the repository
+        events = self.fund_event_repository.get_by_fund(fund_id, session)
+        
+        # Convert events to dictionaries
+        event_list = []
+        for event in events:
+            event_dict = {
+                'id': event.id,
+                'event_type': event.event_type.value if event.event_type else None,
+                'event_date': event.event_date.isoformat() if event.event_date else None,
+                'amount': event.amount,
+                'description': event.description,
+                'reference_number': event.reference_number,
+                'is_grouped': event.is_grouped,
+                'group_id': event.group_id,
+                'group_type': event.group_type.value if event.group_type else None,
+                'group_position': event.group_position,
+                'distribution_type': event.distribution_type.value if event.distribution_type else None,
+                'has_withholding_tax': event.has_withholding_tax,
+                'created_at': event.created_at.isoformat() if event.created_at else None
+            }
+            event_list.append(event_dict)
         
         return {
             'id': fund.id,
@@ -139,7 +162,8 @@ class FundService:
             'investment_company_id': fund.investment_company_id,
             'description': fund.description,
             'created_at': fund.created_at.isoformat() if fund.created_at else None,
-            'updated_at': fund.updated_at.isoformat() if fund.updated_at else None
+            'updated_at': fund.updated_at.isoformat() if fund.updated_at else None,
+            'events': event_list
         }
     
     def get_funds(self, session: Session, 
@@ -379,8 +403,8 @@ class FundService:
         
         # Calculate basic metrics (this would be enhanced with actual business logic)
         total_events = len(recent_events)
-        capital_events = [e for e in recent_events if e.event_type in [EventType.CAPITAL_CALL.value, EventType.RETURN_OF_CAPITAL.value]]
-        distribution_events = [e for e in recent_events if e.event_type == EventType.DISTRIBUTION.value]
+        capital_events = [e for e in recent_events if e.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]]
+        distribution_events = [e for e in recent_events if e.event_type == EventType.DISTRIBUTION]
         
         return {
             'fund_id': fund_id,

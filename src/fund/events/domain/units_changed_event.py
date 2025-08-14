@@ -9,6 +9,7 @@ from datetime import date
 from typing import Any, Dict, Optional
 from decimal import Decimal
 
+from ...enums import DomainEventType
 from .base_event import FundDomainEvent
 
 
@@ -60,9 +61,9 @@ class UnitsChangedEvent(FundDomainEvent):
         self.change_amount = new_units - old_units
     
     @property
-    def event_type(self) -> str:
+    def event_type(self) -> DomainEventType:
         """Get the event type identifier."""
-        return DomainEventType.UNITS_CHANGED.value
+        return DomainEventType.UNITS_CHANGED
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary with event-specific data."""

@@ -174,7 +174,7 @@ class TestEventHandlerIntegration:
         
         # Process a distribution event
         event_data = {
-            'event_type': 'distribution',
+            'event_type': EventType.DISTRIBUTION,
             'event_date': '2024-01-15',
             'distribution_type': DistributionType.INCOME,
             'distribution_amount': 5000.0,
@@ -274,8 +274,8 @@ class TestEventHandlerIntegration:
         
         # Verify all expected event types are registered
         expected_types = [
-            'capital_call', 'return_of_capital', 'distribution',
-            'nav_update', 'unit_purchase', 'unit_sale'
+            EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION,
+            EventType.NAV_UPDATE, EventType.UNIT_PURCHASE, EventType.UNIT_SALE
         ]
         for event_type in expected_types:
             assert event_type in status['registered_event_types']

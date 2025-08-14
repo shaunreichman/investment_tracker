@@ -63,9 +63,9 @@ class NAVUpdatedEvent(FundDomainEvent):
             self.change_percentage = Decimal('0')
     
     @property
-    def event_type(self) -> str:
+    def event_type(self) -> DomainEventType:
         """Get the event type identifier."""
-        return DomainEventType.NAV_UPDATED.value
+        return DomainEventType.NAV_UPDATED
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary with event-specific data."""

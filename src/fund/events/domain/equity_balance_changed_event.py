@@ -27,7 +27,7 @@ class EquityBalanceChangedEvent(FundDomainEvent):
         new_balance (Decimal): New equity balance after the change
         change_reason (str): Reason for the balance change
         change_amount (Decimal): Absolute amount of the change
-        event_type (str): Type identifier for this event
+        event_type (DomainEventType): Type identifier for this event
     """
     
     def __init__(
@@ -57,9 +57,9 @@ class EquityBalanceChangedEvent(FundDomainEvent):
         self.change_amount = new_balance - old_balance
     
     @property
-    def event_type(self) -> str:
+    def event_type(self) -> DomainEventType:
         """Get the event type identifier."""
-        return DomainEventType.EQUITY_BALANCE_CHANGED.value
+        return DomainEventType.EQUITY_BALANCE_CHANGED
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary with event-specific data."""

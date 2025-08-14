@@ -359,7 +359,7 @@ class FundStatusService:
             dict: Status summary information
         """
         return {
-            'current_status': fund.status.value,
+            'current_status': fund.status,
             'start_date': fund.start_date,
             'end_date': self.calculate_end_date(fund, session),
             'should_be_active': self._should_be_active(fund, session),

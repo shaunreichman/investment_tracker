@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 """
-Integration tests for flag-based event grouping system.
+Integration tests for flag-based event grouping system using NEW Phase 3.5 Architecture.
 
 This test suite verifies the complete workflow from backend event creation
-through API responses to frontend data processing.
+through API responses to frontend data processing using the new event-driven architecture.
+
+UPDATED: Now uses FundUpdateOrchestrator instead of old Fund model methods.
 """
 
 import pytest
 from datetime import date, datetime
 from decimal import Decimal
 
-from src.fund.models import Fund, FundEvent, EventType, DistributionType, TaxPaymentType, GroupType
+# NEW: Import new architecture components
+from src.fund.events import FundUpdateOrchestrator
+from src.fund.events.handlers import CapitalCallHandler, DistributionHandler
+from src.fund.enums import EventType, DistributionType, TaxPaymentType, GroupType
+
+# OLD: Keep old imports for comparison and gradual migration
+from src.fund.models import Fund, FundEvent
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
 from src.api import create_app
@@ -19,7 +27,7 @@ from src.tax.events import TaxEventManager
 
 
 class TestFlagBasedEventGrouping:
-    """Test suite for flag-based event grouping integration."""
+    """Test suite for flag-based event grouping integration using NEW architecture."""
     
     @pytest.fixture(autouse=True)
     def setup(self, db_session):
@@ -58,6 +66,9 @@ class TestFlagBasedEventGrouping:
         )
         self.session.add(self.fund)
         self.session.commit()
+        
+        # NEW: Initialize new architecture components
+        self.orchestrator = FundUpdateOrchestrator()
         
         yield
         
@@ -197,7 +208,7 @@ class TestFlagBasedEventGrouping:
             assert "group_position" in event, "Grouped events should have group_position"
             assert event["is_grouped"] is True, "is_grouped should be True"
             assert event["group_id"] == distribution_event.group_id, "Group ID should match"
-            assert event["group_type"] == "interest_withholding", "Group type should be interest_withholding"
+            assert event["group_type"] == "INTEREST_WITHHOLDING", "Group type should be INTEREST_WITHHOLDING"
         
         print(f"    ✅ API returned {len(grouped_events)} grouped events")
         print(f"    ✅ All grouped events have proper metadata")
@@ -246,7 +257,7 @@ class TestFlagBasedEventGrouping:
         
         group = grouped_events_processed[0]
         assert group["isGrouped"] is True, "Processed group should be marked as grouped"
-        assert group["groupType"] == "interest_withholding", "Group type should be correct"
+        assert group["groupType"] == "INTEREST_WITHHOLDING", "Group type should be correct"
         assert len(group["events"]) == 2, "Group should have 2 events"
         assert group["displayDate"] == "2024-01-15", "Display date should be correct"
         
@@ -315,15 +326,23 @@ class TestFlagBasedEventGrouping:
         print("  🎉 Multiple groups test passed!")
     
     def test_non_grouped_events_work_correctly(self):
-        """Test that non-grouped events still work correctly."""
-        print("\n🧪 Testing non-grouped events...")
+        """Test that non-grouped events still work correctly using NEW architecture."""
+        print("\n🧪 Testing non-grouped events with NEW architecture...")
         
-        # Create a simple capital call (not grouped)
-        capital_call = self.fund.add_capital_call(
-            amount=Decimal("5000.00"),
-            date=date(2024, 1, 20),
-            reference_number="TEST003",
-            session=self.session
+        # NEW: Use new architecture instead of old Fund model methods
+        event_data = {
+            'event_type': EventType.CAPITAL_CALL,  # Required by new architecture
+            'amount': float(Decimal("5000.00")),  # Convert Decimal to float for new architecture
+            'date': date(2024, 1, 20),
+            'reference_number': "TEST003",
+            'description': "Test capital call using new architecture"
+        }
+        
+        # Process event through new architecture
+        capital_call = self.orchestrator.process_fund_event(
+            event_data=event_data,
+            session=self.session,
+            fund=self.fund
         )
         
         # Commit the event so the API can see it
@@ -347,12 +366,12 @@ class TestFlagBasedEventGrouping:
         assert capital_call_event is not None, "Capital call should be in API response"
         assert capital_call_event["is_grouped"] is False, "Capital call should not be grouped in API"
         
-        print("    ✅ Non-grouped events work correctly")
+        print("    ✅ Non-grouped events work correctly with NEW architecture")
         print("  🎉 Non-grouped events test passed!")
     
     def _generate_group_description(self, group_type: str, events: list) -> str:
         """Generate group description (same logic as frontend)."""
-        if group_type == "interest_withholding":
+        if group_type == "INTEREST_WITHHOLDING":  # Updated to match new architecture enum values
             # Find events by position
             first_event = next((e for e in events if e.get("group_position") == 0), None)
             second_event = next((e for e in events if e.get("group_position") == 1), None)

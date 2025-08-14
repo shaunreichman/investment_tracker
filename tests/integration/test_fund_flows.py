@@ -262,7 +262,7 @@ class TestFundStatusUpdates:
         
         # Verify status is ACTIVE
         fund = db_session.get(Fund, fund.id)
-        assert fund.status.value == "active"
+        assert fund.status.value == "ACTIVE"
         assert fund.current_equity_balance > 0
 
     def test_fund_status_realized_when_equity_zero(self, db_session):
@@ -290,5 +290,5 @@ class TestFundStatusUpdates:
         
         # Verify status is REALIZED
         fund = db_session.get(Fund, fund.id)
-        assert fund.status.value == "realized"
+        assert fund.status.value == "REALIZED"
         assert fund.current_equity_balance == 0.0

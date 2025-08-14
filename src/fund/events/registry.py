@@ -68,7 +68,7 @@ class FundEventHandlerRegistry:
         """
         handler_class = self._handlers.get(event_type)
         if not handler_class:
-            raise ValueError(f"No handler registered for event type: {event_type.value}")
+            raise ValueError(f"No handler registered for event type: {event_type}")
         
         return handler_class(session, fund)
     
@@ -95,14 +95,18 @@ class FundEventHandlerRegistry:
             RuntimeError: If event processing fails
         """
         # Extract event type from event data
-        event_type_str = event_data.get('event_type')
-        if not event_type_str:
+        event_type_raw = event_data.get('event_type')
+        if not event_type_raw:
             raise ValueError("event_type is required in event_data")
         
-        try:
-            event_type = EventType.from_string(event_type_str)
-        except ValueError as e:
-            raise ValueError(f"Invalid event_type '{event_type_str}': {e}")
+        # Handle both string and enum object inputs
+        if isinstance(event_type_raw, EventType):
+            event_type = event_type_raw
+        else:
+            try:
+                event_type = EventType.from_string(event_type_raw)
+            except ValueError as e:
+                raise ValueError(f"Invalid event_type '{event_type_raw}': {e}")
         
         # Get and use the appropriate handler
         handler = self.get_handler(event_type, session, fund)

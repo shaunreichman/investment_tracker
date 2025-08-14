@@ -8,6 +8,7 @@ including the type of update and any relevant tax information.
 from datetime import date
 from typing import Any, Dict, Optional
 
+from ...enums import DomainEventType
 from .base_event import FundDomainEvent
 
 
@@ -56,9 +57,9 @@ class TaxStatementUpdatedEvent(FundDomainEvent):
         self.entity_id = entity_id
     
     @property
-    def event_type(self) -> str:
+    def event_type(self) -> DomainEventType:
         """Get the event type identifier."""
-        return DomainEventType.TAX_STATEMENT_UPDATED.value
+        return DomainEventType.TAX_STATEMENT_UPDATED
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary with event-specific data."""

@@ -257,20 +257,19 @@ class DistributionHandler(BaseFundEventHandler):
             tax_amount = gross_amount - net_amount
         
         # Create the distribution event
+        # NOTE: Only pass fields that exist in the old FundEvent model
         event = self._create_event(
             EventType.DISTRIBUTION,
             event_date=event_date,
             distribution_type=DistributionType.INTEREST,
             amount=net_amount,
-            gross_interest_amount=gross_amount,
-            withholding_tax_amount=tax_amount,
-            withholding_tax_rate=tax_rate,
             has_withholding_tax=True,
             description=description or f"Interest distribution: ${net_amount:,.2f} (net)",
             reference_number=reference_number
         )
         
         # Create tax payment event
+        # NOTE: Only pass fields that exist in the old FundEvent model
         tax_event = self._create_event(
             EventType.TAX_PAYMENT,
             event_date=event_date,

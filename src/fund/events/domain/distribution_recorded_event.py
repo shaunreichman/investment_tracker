@@ -56,9 +56,9 @@ class DistributionRecordedEvent(FundDomainEvent):
         self.net_amount = amount - tax_withheld
     
     @property
-    def event_type(self) -> str:
+    def event_type(self) -> DomainEventType:
         """Get the event type identifier."""
-        return DomainEventType.DISTRIBUTION_RECORDED.value
+        return DomainEventType.DISTRIBUTION_RECORDED
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary with event-specific data."""

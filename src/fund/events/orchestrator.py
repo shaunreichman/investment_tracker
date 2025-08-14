@@ -191,15 +191,15 @@ class FundUpdateOrchestrator:
         # Import domain event types
         from ..enums import DomainEventType
         
-        if domain_event.event_type == DomainEventType.EQUITY_BALANCE_CHANGED.value:
+        if domain_event.event_type == DomainEventType.EQUITY_BALANCE_CHANGED:
             # Trigger tax statement updates if needed
             self._update_tax_statements_for_equity_change(domain_event, session)
             
-        elif domain_event.event_type == DomainEventType.DISTRIBUTION_RECORDED.value:
+        elif domain_event.event_type == DomainEventType.DISTRIBUTION_RECORDED:
             # Trigger company record updates for distributions
             self._update_company_records_for_distribution(domain_event, session)
             
-        elif domain_event.event_type == DomainEventType.NAV_UPDATED.value:
+        elif domain_event.event_type == DomainEventType.NAV_UPDATED:
             # Trigger unit value recalculations
             self._update_unit_values_for_nav_change(domain_event, session)
     
@@ -282,7 +282,7 @@ class FundUpdateOrchestrator:
         """
         return {
             'registered_event_types': [
-                event_type.value for event_type in self.registry.get_registered_event_types()
+                event_type for event_type in self.registry.get_registered_event_types()
             ],
             'total_handlers': len(self.registry.get_registered_event_types()),
             'registry_initialized': self.registry is not None
@@ -312,10 +312,15 @@ class FundUpdateOrchestrator:
                 raise ValueError(f"Required field '{field}' is missing or empty")
         
         # Validate event type
-        try:
-            EventType.from_string(event_data['event_type'])
-        except ValueError as e:
-            raise ValueError(f"Invalid event_type: {e}")
+        event_type_raw = event_data['event_type']
+        if isinstance(event_type_raw, EventType):
+            # Already a valid enum object
+            pass
+        else:
+            try:
+                EventType.from_string(event_type_raw)
+            except ValueError as e:
+                raise ValueError(f"Invalid event_type: {e}")
         
         # Validate date if present
         if 'date' in event_data and event_data['date']:

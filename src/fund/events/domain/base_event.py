@@ -8,8 +8,10 @@ between components.
 
 from abc import ABC, abstractmethod
 from datetime import datetime, date
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 import uuid
+
+from ...enums import DomainEventType
 
 
 class FundDomainEvent(ABC):
@@ -50,12 +52,12 @@ class FundDomainEvent(ABC):
     
     @property
     @abstractmethod
-    def event_type(self) -> str:
+    def event_type(self) -> DomainEventType:
         """
         Get the type of this event.
         
         Returns:
-            String identifier for the event type
+            DomainEventType enum value for the event type
         """
         pass
     
@@ -68,7 +70,7 @@ class FundDomainEvent(ABC):
         """
         return {
             'event_id': self.event_id,
-            'event_type': self.event_type,
+            'event_type': self.event_type.value,  # Use .value here for serialization
             'fund_id': self.fund_id,
             'event_date': self.event_date.isoformat(),
             'timestamp': self.timestamp.isoformat(),

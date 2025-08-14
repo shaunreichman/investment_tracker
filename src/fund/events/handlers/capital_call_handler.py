@@ -123,12 +123,30 @@ class CapitalCallHandler(BaseFundEventHandler):
         Args:
             event: The capital call event that was created
         """
-        # Use the existing fund method to recalculate capital chain
-        # This maintains compatibility with existing logic while
-        # providing a clean interface through the handler
-        self.fund.recalculate_capital_chain_from(event, session=self.session)
+        # Update the event's current_equity_balance field
+        # This is the key field that needs to be set for cost-based funds
+        if self.fund.tracking_type == FundType.COST_BASED:
+            # For cost-based funds, equity balance accumulates with capital calls
+            # Get the current fund equity balance as the "previous" balance for this event
+            previous_balance = self.fund.current_equity_balance or 0.0
+            new_balance = previous_balance + event.amount
+            
+            # Update the event's current_equity_balance
+            event.current_equity_balance = new_balance
+            
+            # Update the fund's current_equity_balance
+            self.fund.current_equity_balance = new_balance
+            
+            # Ensure the fund is tracked by the session and flush changes
+            if self.fund not in self.session:
+                self.session.add(self.fund)
+            self.session.flush()
+            
+            # Ensure the event's amount field is set
+            if event.amount is None:
+                event.amount = 0.0
         
-        # Update fund summary fields
+        # Update fund summary fields using the new architecture
         self._update_fund_summary_fields()
     
     def _publish_dependent_events(self, event: FundEvent) -> None:

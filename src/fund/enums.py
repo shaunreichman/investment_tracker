@@ -39,10 +39,10 @@ class FundStatus(Enum):
         REALIZED: All capital has been returned, fund is realized
         COMPLETED: Fund is realized and all tax obligations are complete
     """
-    ACTIVE = 'active'
-    SUSPENDED = 'suspended'
-    REALIZED = 'realized'
-    COMPLETED = 'completed'
+    ACTIVE = 'ACTIVE'
+    SUSPENDED = 'SUSPENDED'
+    REALIZED = 'REALIZED'
+    COMPLETED = 'COMPLETED'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -67,8 +67,8 @@ class FundType(Enum):
         COST_BASED: Fund tracks cost basis and commitment amounts
         NAV_BASED: Fund tracks NAV per share and unit-based calculations
     """
-    COST_BASED = 'cost_based'
-    NAV_BASED = 'nav_based'
+    COST_BASED = 'COST_BASED'
+    NAV_BASED = 'NAV_BASED'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -100,15 +100,15 @@ class EventType(Enum):
         EOFY_DEBT_COST: End of financial year debt cost
         TAX_PAYMENT: Tax payment event
     """
-    CAPITAL_CALL = 'capital_call'
-    RETURN_OF_CAPITAL = 'return_of_capital'
-    DISTRIBUTION = 'distribution'
-    UNIT_PURCHASE = 'unit_purchase'
-    UNIT_SALE = 'unit_sale'
-    NAV_UPDATE = 'nav_update'
-    DAILY_RISK_FREE_INTEREST_CHARGE = 'daily_risk_free_interest_charge'
-    EOFY_DEBT_COST = 'eofy_debt_cost'
-    TAX_PAYMENT = 'tax_payment'
+    CAPITAL_CALL = 'CAPITAL_CALL'
+    RETURN_OF_CAPITAL = 'RETURN_OF_CAPITAL'
+    DISTRIBUTION = 'DISTRIBUTION'
+    UNIT_PURCHASE = 'UNIT_PURCHASE'
+    UNIT_SALE = 'UNIT_SALE'
+    NAV_UPDATE = 'NAV_UPDATE'
+    DAILY_RISK_FREE_INTEREST_CHARGE = 'DAILY_RISK_FREE_INTEREST_CHARGE'
+    EOFY_DEBT_COST = 'EOFY_DEBT_COST'
+    TAX_PAYMENT = 'TAX_PAYMENT'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -163,12 +163,12 @@ class DistributionType(Enum):
         RENT: Rental income
         CAPITAL_GAIN: Capital gains (may have CGT discount)
     """
-    INCOME = 'income'
-    DIVIDEND_FRANKED = 'dividend_franked'
-    DIVIDEND_UNFRANKED = 'dividend_unfranked'
-    INTEREST = 'interest'
-    RENT = 'rent'
-    CAPITAL_GAIN = 'capital_gain'
+    INCOME = 'INCOME'
+    DIVIDEND_FRANKED = 'DIVIDEND_FRANKED'
+    DIVIDEND_UNFRANKED = 'DIVIDEND_UNFRANKED'
+    INTEREST = 'INTEREST'
+    RENT = 'RENT'
+    CAPITAL_GAIN = 'CAPITAL_GAIN'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -211,8 +211,8 @@ class CashFlowDirection(Enum):
         INFLOW: Money received by investor (e.g., distributions, returns)
         OUTFLOW: Money paid out by investor (e.g., capital calls, fees)
     """
-    INFLOW = 'inflow'
-    OUTFLOW = 'outflow'
+    INFLOW = 'INFLOW'
+    OUTFLOW = 'OUTFLOW'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -251,12 +251,12 @@ class TaxPaymentType(Enum):
         DIVIDENDS_FRANKED_TAX: Tax on franked dividends
         DIVIDENDS_UNFRANKED_TAX: Tax on unfranked dividends
     """
-    NON_RESIDENT_INTEREST_WITHHOLDING = 'non_resident_interest_withholding'
-    NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE = 'non_resident_interest_withholding_difference'
-    CAPITAL_GAINS_TAX = 'capital_gains_tax'
-    EOFY_INTEREST_TAX = 'eofy_interest_tax'
-    DIVIDENDS_FRANKED_TAX = 'dividends_franked_tax'
-    DIVIDENDS_UNFRANKED_TAX = 'dividends_unfranked_tax'
+    NON_RESIDENT_INTEREST_WITHHOLDING = 'NON_RESIDENT_INTEREST_WITHHOLDING'
+    NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE = 'NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE'
+    CAPITAL_GAINS_TAX = 'CAPITAL_GAINS_TAX'
+    EOFY_INTEREST_TAX = 'EOFY_INTEREST_TAX'
+    DIVIDENDS_FRANKED_TAX = 'DIVIDENDS_FRANKED_TAX'
+    DIVIDENDS_UNFRANKED_TAX = 'DIVIDENDS_UNFRANKED_TAX'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -299,8 +299,8 @@ class GroupType(Enum):
         INTEREST_WITHHOLDING: Interest distribution events paired with withholding tax events
         TAX_STATEMENT: Tax statement events grouped by financial year (future implementation)
     """
-    INTEREST_WITHHOLDING = 'interest_withholding'
-    TAX_STATEMENT = 'tax_statement'
+    INTEREST_WITHHOLDING = 'INTEREST_WITHHOLDING'
+    TAX_STATEMENT = 'TAX_STATEMENT'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -365,8 +365,8 @@ class SortOrder(Enum):
         ASC: Ascending order (A-Z, 1-9, oldest to newest)
         DESC: Descending order (Z-A, 9-1, newest to oldest)
     """
-    ASC = 'asc'
-    DESC = 'desc'
+    ASC = 'ASC'
+    DESC = 'DESC'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -401,13 +401,13 @@ class SortField(Enum):
         CREATED_AT: Sort by creation timestamp
         UPDATED_AT: Sort by last update timestamp
     """
-    START_DATE = 'start_date'
-    NAME = 'name'
-    STATUS = 'status'
-    COMMITMENT_AMOUNT = 'commitment_amount'
-    CURRENT_EQUITY_BALANCE = 'current_equity_balance'
-    CREATED_AT = 'created_at'
-    UPDATED_AT = 'updated_at'
+    START_DATE = 'START_DATE'
+    NAME = 'NAME'
+    STATUS = 'STATUS'
+    COMMITMENT_AMOUNT = 'COMMITMENT_AMOUNT'
+    CURRENT_EQUITY_BALANCE = 'CURRENT_EQUITY_BALANCE'
+    CREATED_AT = 'CREATED_AT'
+    UPDATED_AT = 'UPDATED_AT'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -444,9 +444,9 @@ class Environment(Enum):
         STAGING: Staging/testing environment
         PRODUCTION: Production environment
     """
-    DEVELOPMENT = 'development'
-    STAGING = 'staging'
-    PRODUCTION = 'production'
+    DEVELOPMENT = 'DEVELOPMENT'
+    STAGING = 'STAGING'
+    PRODUCTION = 'PRODUCTION'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
@@ -485,11 +485,11 @@ class DomainEventType(Enum):
         UNITS_CHANGED: Fund units changed
         TAX_STATEMENT_UPDATED: Tax statement was updated
     """
-    EQUITY_BALANCE_CHANGED = 'equity_balance_changed'
-    DISTRIBUTION_RECORDED = 'distribution_recorded'
-    NAV_UPDATED = 'nav_updated'
-    UNITS_CHANGED = 'units_changed'
-    TAX_STATEMENT_UPDATED = 'tax_statement_updated'
+    EQUITY_BALANCE_CHANGED = 'EQUITY_BALANCE_CHANGED'
+    DISTRIBUTION_RECORDED = 'DISTRIBUTION_RECORDED'
+    NAV_UPDATED = 'NAV_UPDATED'
+    UNITS_CHANGED = 'UNITS_CHANGED'
+    TAX_STATEMENT_UPDATED = 'TAX_STATEMENT_UPDATED'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""

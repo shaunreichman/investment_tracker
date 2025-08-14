@@ -158,12 +158,14 @@ class TestPhase35RepositoryLayer:
         db_session.add(entity)
         db_session.flush()
         
+        from src.fund.enums import FundType
+        
         fund = Fund.create(
             investment_company_id=company.id,
             entity_id=entity.id,
             name="Test Fund",
             fund_type="Private Equity",
-            tracking_type="cost_based",
+            tracking_type=FundType.COST_BASED,
             description="Test fund for repository testing",
             session=db_session
         )

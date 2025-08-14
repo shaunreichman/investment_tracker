@@ -670,12 +670,12 @@ def create_app(db_config=None):
                     }
                     
                     # Add tax statement fields for TAX_PAYMENT and EOFY_DEBT_COST events
-                    if event.event_type.value in ['tax_payment', 'eofy_debt_cost'] and event.tax_statement_id:
+                    if event.event_type.value in ['TAX_PAYMENT', 'EOFY_DEBT_COST'] and event.tax_statement_id:
                         from src.tax.models import TaxStatement
                         tax_statement = session.query(TaxStatement).filter(TaxStatement.id == event.tax_statement_id).first()
                         if tax_statement:
                             # Add tax statement fields for TAX_PAYMENT events
-                            if event.event_type.value == 'tax_payment':
+                            if event.event_type.value == 'TAX_PAYMENT':
                                 event_data.update({
                                     "interest_income_amount": float(tax_statement.interest_income_amount) if tax_statement.interest_income_amount else None,
                                     "interest_income_tax_rate": float(tax_statement.interest_income_tax_rate) if tax_statement.interest_income_tax_rate else None,

@@ -2688,7 +2688,7 @@ class DomainEvent(Base):
         """
         db_event = cls(
             event_id=domain_event.event_id,
-            event_type=domain_event.event_type,
+            event_type=domain_event.event_type.value if hasattr(domain_event.event_type, 'value') else str(domain_event.event_type),
             fund_id=domain_event.fund_id,
             event_date=domain_event.event_date,
             timestamp=domain_event.timestamp,
