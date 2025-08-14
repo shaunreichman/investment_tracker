@@ -8,48 +8,53 @@ Transform the current static search bar into an intelligent, expandable global s
 - **Progressive Disclosure**: Start simple, expand on interaction  
 - **Keyboard Navigation**: Full keyboard support for power users
 - **Visual Hierarchy**: Clear distinction between search states
+- **Graceful Degradation**: Handle errors and edge cases elegantly
 
 ## Implementation Strategy
 
-### Phase 1: Core Expansion Foundation
-**Goal**: Create expandable search modal with basic functionality
+### Phase 1: Backend Search Infrastructure (CRITICAL PREREQUISITE)
+**Goal**: Implement backend search endpoints before building frontend
 **Design Principles**:
-- Use existing TopBar search bar as trigger point
-- Implement modal system that centers and expands smoothly
-- Maintain current search bar styling and positioning
+- Search must work before building the UI
+- Focus on core search functionality over advanced features
+- Ensure search performance meets user expectations
 **Tasks**:
-- [ ] Create expandable search modal component
-- [ ] Implement smooth expand animation from TopBar position
-- [ ] Add backdrop and focus management
-- [ ] Create large search input field with proper styling
-- [ ] Implement basic open/close state management
+- [ ] Create `/api/search` endpoint for global entity search
+- [ ] Implement company search with name, description, and metadata matching
+- [ ] Implement fund search with name, company, and status matching
+- [ ] Add search result ranking/scoring algorithm
+- [ ] Implement search result pagination and limiting
+- [ ] Add search result caching at API level
+- [ ] Create search result data models and types
 **Success Criteria**:
-- Search modal expands smoothly from TopBar position
-- Modal centers on screen with proper backdrop
-- Search input receives focus automatically
-- ESC key closes modal and returns focus to TopBar
+- Search endpoint responds in < 500ms for typical queries
+- Search results include relevant metadata for display
+- Search handles partial matches and typos gracefully
+- API supports search across multiple entity types
 
-### Phase 2: Search Logic & Results
-**Goal**: Implement real-time search functionality with result display
+### Phase 2: Core Search Modal Foundation
+**Goal**: Create functional search modal with basic search capability
 **Design Principles**:
-- Use existing company and fund data APIs
-- Implement debounced search to prevent excessive API calls
-- Follow existing data structure patterns from useInvestmentCompanies hook
+- Start with simple, centered modal (skip complex animations initially)
+- Focus on functionality over visual polish
+- Use existing modal patterns from the codebase
 **Tasks**:
-- [ ] Integrate with company search API endpoint
-- [ ] Integrate with fund search API endpoint  
-- [ ] Implement debounced search (300ms delay)
-- [ ] Create search results list component
-- [ ] Add loading states and error handling
-- [ ] Implement basic result filtering and display
+- [ ] Create search modal component using existing Dialog patterns
+- [ ] Implement basic open/close state management
+- [ ] Add search input field with proper styling
+- [ ] Integrate with backend search API
+- [ ] Display search results in simple list format
+- [ ] Add loading states and basic error handling
+- [ ] Implement basic result selection and navigation
 **Success Criteria**:
-- Search results appear within 2 seconds of typing
-- Results show company/fund names with relevant metadata
-- Loading states provide clear feedback during search
-- Error states handle API failures gracefully
+- Search modal opens/closes reliably
+- Search input receives focus automatically
+- Search results display within 2 seconds
+- Users can click results to navigate to entities
+- Basic error states are handled gracefully
 
 ### Phase 3: Enhanced User Experience
-**Goal**: Add keyboard navigation and suggested content
+**Goal**: Add keyboard navigation and improved UX
 **Design Principles**:
 - Implement full keyboard navigation following accessibility standards
 - Use hardcoded suggestions initially (3PG, Senior Debt Fund)
@@ -61,28 +66,33 @@ Transform the current static search bar into an intelligent, expandable global s
 - [ ] Add result selection and highlighting
 - [ ] Implement enter key to open selected result
 - [ ] Ensure mobile touch navigation works properly
+- [ ] Add search result caching at frontend level
 **Success Criteria**:
 - All keyboard shortcuts work as specified
 - Suggested content displays when search is empty
 - Navigation help bar shows proper instructions
 - Mobile users can navigate results with touch
+- Search results are cached for improved performance
 
-### Phase 4: Polish & Performance
-**Goal**: Optimize animations, performance, and accessibility
+### Phase 4: Polish & Advanced Features
+**Goal**: Add animations, advanced features, and performance optimizations
 **Design Principles**:
-- Use CSS transitions for smooth animations
-- Implement result caching to improve performance
-- Follow WCAG accessibility guidelines for keyboard navigation
+- Add animations only after core functionality is solid
+- Focus on performance and accessibility improvements
+- Consider advanced search features for power users
 **Tasks**:
-- [ ] Optimize expand/collapse animations
-- [ ] Implement search result caching
-- [ ] Add keyboard navigation accessibility improvements
+- [ ] Implement smooth modal animations (fade-in from center initially)
+- [ ] Add search history and recent searches
+- [ ] Implement advanced search filters and operators
+- [ ] Add search result highlighting and context
 - [ ] Optimize re-renders and component performance
 - [ ] Add comprehensive keyboard navigation testing
 - [ ] Ensure proper focus management and screen reader support
+- [ ] Consider "expand from search bar" animation as stretch goal
 **Success Criteria**:
-- Animations run at 60fps without jank
-- Search results cache improves subsequent search speed
+- Animations run smoothly without jank
+- Search history improves user efficiency
+- Advanced search features work reliably
 - All keyboard navigation passes accessibility testing
 - Zero console errors during search operations
 
@@ -92,13 +102,92 @@ Transform the current static search bar into an intelligent, expandable global s
 - **User Satisfaction**: Search feature usage increases by 40%
 - **Performance**: Search modal opens/closes in < 200ms
 - **Accessibility**: 100% keyboard navigation coverage
+- **Backend Performance**: Search API responds in < 500ms
 
-## Dependencies
-- Existing TopBar search bar component
+## Dependencies & Prerequisites
+
+### Critical Backend Dependencies
+- **Search API Endpoint**: `/api/search` with proper data models
+- **Search Performance**: < 500ms response time for typical queries
+- **Search Result Models**: Structured data for companies and funds
+- **Search Ranking**: Algorithm for result relevance scoring
+
+### Search Architecture
+**Backend Responsibilities:**
+- **Core Search Logic**: Text matching, fuzzy search, relevance scoring
+- **Data Processing**: Query parsing, filtering, pagination, aggregation
+- **Performance**: Database optimization, indexing, result caching
+- **Security**: Access control, rate limiting, query validation
+
+**Frontend Responsibilities:**
+- **User Experience**: Input handling, result display, navigation
+- **Search Orchestration**: API coordination, local caching, error handling
+- **State Management**: Search history, recent searches, UI state
+- **Performance**: Debounced input, result caching, loading states
+
+### Frontend Dependencies
+- Existing TopBar search bar component (currently static)
 - Company and fund data APIs (useInvestmentCompanies, useFunds)
-- Modal/dialog component system
+- Modal/dialog component system (ConfirmDialog patterns)
 - Keyboard event handling utilities
 - Existing theme system for consistent styling
+- useDebouncedSearch hook for input handling
+
+## Error Handling & Edge Cases
+
+### Search Failures
+- **API Errors**: Display user-friendly error messages with retry options
+- **Network Issues**: Graceful degradation with offline search suggestions
+- **Empty Results**: Show helpful messaging and suggested alternatives
+- **Rate Limiting**: Inform users and provide search cooldown feedback
+
+### User Experience Edge Cases
+- **Very Long Queries**: Handle gracefully with proper truncation
+- **Special Characters**: Ensure search handles symbols and punctuation
+- **Rapid Typing**: Debounced search prevents excessive API calls
+- **Route Changes**: Preserve search state during navigation
+
+## Search Result Data Models
+
+### Company Search Result
+```typescript
+interface CompanySearchResult {
+  id: number;
+  name: string;
+  description?: string;
+  status: 'active' | 'inactive' | 'suspended';
+  type: 'company';
+  fundCount: number;
+  lastActivity?: string;
+  relevanceScore: number;
+}
+```
+
+### Fund Search Result
+```typescript
+interface FundSearchResult {
+  id: number;
+  name: string;
+  companyName: string;
+  companyId: number;
+  status: 'active' | 'completed' | 'suspended';
+  type: 'fund';
+  totalCommitted: number;
+  lastActivity?: string;
+  relevanceScore: number;
+}
+```
+
+### Global Search Response
+```typescript
+interface SearchResponse {
+  companies: CompanySearchResult[];
+  funds: FundSearchResult[];
+  totalResults: number;
+  searchTime: number;
+  suggestions?: string[];
+}
+```
 
 ## Directory Structure & File Organization
 
@@ -111,6 +200,8 @@ frontend/src/components/search/
 ├── SearchResultItem.tsx             # Individual result item (company/fund)
 ├── SuggestedContent.tsx             # Suggested content section (3PG, Senior Debt Fund)
 ├── NavigationHelpBar.tsx            # Keyboard shortcuts help bar
+├── SearchErrorState.tsx             # Error handling component
+├── SearchLoadingState.tsx           # Loading state component
 ├── index.ts                         # Export all components
 └── types/
     └── search.types.ts              # Search-related type definitions
@@ -123,15 +214,81 @@ frontend/src/components/search/
 - **SearchResultItem**: Individual result display, click handling
 - **SuggestedContent**: Hardcoded suggestions for empty state
 - **NavigationHelpBar**: Keyboard shortcuts instructions
+- **SearchErrorState**: Error display and retry functionality
+- **SearchLoadingState**: Loading indicators and progress
 
 ### Integration Points
 - **TopBar**: Remains as trigger, imports search modal
 - **Layout**: Search modal renders at app root level (not inside TopBar)
 - **Theme**: Uses existing theme system for consistent styling
-- **APIs**: Integrates with existing useInvestmentCompanies and useFunds hooks
+- **APIs**: Integrates with new search endpoint and existing hooks
+- **Navigation**: Uses React Router for result navigation
 
-## Notes
-- Start with hardcoded suggestions (3PG, Senior Debt Fund) as specified
-- Focus on core functionality before advanced features
-- Ensure mobile responsiveness from the start
-- Consider future integration with other searchable entities
+## Implementation Notes & Recommendations
+
+### Search Architecture Implementation
+**Backend Search Engine:**
+```python
+# Example backend search endpoint
+@app.route('/api/search')
+def search_entities(query, limit=20):
+    # Backend handles: fuzzy matching, relevance scoring, data aggregation
+    companies = search_companies(query)
+    funds = search_funds(query)
+    
+    # Rank and combine results
+    results = rank_search_results(companies, funds)
+    return jsonify(results)
+```
+
+**Frontend Search Orchestrator:**
+```typescript
+// Example frontend search hook
+const useSearch = (query: string) => {
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Frontend handles: debouncing, API coordination, state management
+  useEffect(() => {
+    if (query.length > 2) {
+      setLoading(true);
+      apiClient.search(query)
+        .then(setResults)
+        .finally(() => setLoading(false));
+    }
+  }, [query]);
+  
+  return { results, loading };
+};
+```
+
+### Start Simple, Build Up
+1. **Phase 1 is critical** - don't build frontend without working backend search
+2. **Skip complex animations initially** - focus on functionality first
+3. **Test search performance early** - ensure backend meets response time requirements
+4. **Mobile-first approach** - ensure touch navigation works from the start
+
+### Animation Strategy
+- **Phase 2**: Simple fade-in from center
+- **Phase 4**: Consider slide-up from bottom for mobile
+- **Stretch Goal**: "Expand from search bar" animation (requires complex positioning calculations)
+
+### Search Performance Considerations
+- **Debouncing**: Use existing useDebouncedSearch hook (300ms delay)
+- **Result Caching**: Cache results at both API and frontend levels
+- **Pagination**: Limit initial results to 10-20 items
+- **Lazy Loading**: Load additional results on demand
+
+### Accessibility Requirements
+- **Keyboard Navigation**: Full arrow key, enter, escape support
+- **Screen Reader**: Proper ARIA labels and descriptions
+- **Focus Management**: Logical tab order and focus restoration
+- **High Contrast**: Ensure search results are readable in all themes
+
+## Future Enhancements (Post-Phase 4)
+- **Search Analytics**: Track popular searches and user behavior
+- **Personalized Results**: User-specific search result ranking
+- **Search Suggestions**: AI-powered search query suggestions
+- **Advanced Filters**: Date ranges, status filters, amount ranges
+- **Search Export**: Export search results to CSV/PDF
+- **Search History**: Persistent search history across sessions
