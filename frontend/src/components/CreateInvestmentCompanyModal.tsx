@@ -247,7 +247,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
       <DialogContent sx={{ pb: 2 }}>
         {/* Success State */}
         {success && (
-          <SuccessBanner title="Investment company created successfully!" subtitle="Redirecting to dashboard..." />
+          <SuccessBanner title="Investment company created successfully!" subtitle="Redirecting to investments..." />
         )}
 
         {/* Error State */}

@@ -55,10 +55,11 @@ const RouteLayout: React.FC<RouteLayoutProps> = ({ children }) => {
           transition: 'width 0.2s ease-in-out, margin-left 0.2s ease-in-out',
         }}
       >
-        {/* Content Area with proper spacing */}
+        {/* Content Area with proper spacing - account for TopBar height */}
         <Box
           sx={{
             padding: '24px', // 24px outer padding as per spec
+            paddingTop: '80px', // 56px TopBar height + 24px spacing
             minHeight: 'calc(100vh - 56px)',
             backgroundColor: theme.palette.background.default, // Main dashboard background
           }}

@@ -26,8 +26,8 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ 
-  pageTitle = 'Dashboard',
-  breadcrumbs = [{ label: 'Dashboard', path: '/' }]
+  pageTitle = 'Investments',
+  breadcrumbs = [{ label: 'Investments', path: '/' }]
 }) => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -66,35 +66,6 @@ const TopBar: React.FC<TopBarProps> = ({
         >
           {pageTitle}
         </Typography>
-
-        {/* Search Box */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: theme.palette.background.search, // Search bar background
-            borderRadius: '8px',
-            padding: '8px 12px',
-            marginRight: 3,
-            minWidth: 200,
-            '&:hover': {
-              backgroundColor: theme.palette.background.searchHover, // Search bar hover
-            },
-          }}
-        >
-          <SearchIcon sx={{ color: theme.palette.text.muted, marginRight: 1, fontSize: 20 }} />
-          <InputBase
-            placeholder="Search..."
-            sx={{
-                          color: theme.palette.text.primary, // White text
-            fontSize: '14px',
-            '& input::placeholder': {
-              color: theme.palette.text.muted, // Placeholder text color
-              opacity: 1,
-            },
-            }}
-          />
-        </Box>
 
         {/* Breadcrumbs */}
         <Box sx={{ flexGrow: 1 }}>
@@ -141,6 +112,40 @@ const TopBar: React.FC<TopBarProps> = ({
               );
             })}
           </Breadcrumbs>
+        </Box>
+
+        {/* Search Box - Moved to right side */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            background: `linear-gradient(90deg, ${theme.palette.background.searchGradientStart} 0%, ${theme.palette.background.searchGradientEnd} 100%)`, // Theme-based gradient
+            borderRadius: '8px',
+            padding: '8px 16px', // Increased horizontal padding
+            marginRight: 3,
+            minWidth: 300, // Increased from 200 to 300
+            maxWidth: 400, // Added max width for responsiveness
+            '&:hover': {
+              background: `linear-gradient(90deg, ${theme.palette.background.searchGradientEnd} 0%, ${theme.palette.background.searchGradientStart} 100%)`, // Reverse gradient on hover
+            },
+          }}
+        >
+          <SearchIcon sx={{ color: theme.palette.text.primary, marginRight: 1, fontSize: 20 }} />
+          <InputBase
+            placeholder="Search..."
+            sx={{
+              color: theme.palette.text.primary, // Theme-based white text
+              fontSize: '14px',
+              width: '100%', // Take full width of container
+              '& input': {
+                color: theme.palette.text.primary, // Ensure input text uses theme color
+                '&::placeholder': {
+                  color: theme.palette.text.pure, // Pure white placeholder from theme
+                  opacity: 1,
+                },
+              },
+            }}
+          />
         </Box>
 
         {/* Action Buttons Area */}

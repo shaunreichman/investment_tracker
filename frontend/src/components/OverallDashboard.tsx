@@ -84,12 +84,12 @@ const OverallDashboard: React.FC = () => {
     <Box sx={{ p: 0 }}>
       {/* Top Bar */}
       <TopBar 
-        pageTitle="Dashboard"
-        breadcrumbs={[{ label: 'Dashboard', path: '/' }]}
+        pageTitle="Investments"
+        breadcrumbs={[{ label: 'Investments', path: '/' }]}
       />
       
-      {/* Page Header Section */}
-      <Box sx={{ mb: 4 }}>
+      {/* Page Header Section - Add top margin to account for fixed TopBar */}
+      <Box sx={{ mb: 4 }}> {/* Removed manual top margin since RouteLayout handles it */}
         <Typography 
           variant="h3" 
           sx={{ 
@@ -197,20 +197,26 @@ const OverallDashboard: React.FC = () => {
         }}>
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ 
-              display: 'flex', alignItems: 'center', 
-              mb: 2 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'flex-start', 
+              mb: 2,
+              flexWrap: 'wrap',
+              gap: 2
             }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
                 <BusinessIcon sx={{ 
                   mr: 2, 
                   color: theme.palette.primary.main,
-                  fontSize: '28px'
+                  fontSize: '28px',
+                  flexShrink: 0
                 }} />
                 <Typography 
                   variant="h5" 
                   sx={{ 
                     color: theme.palette.text.primary,
-                    fontWeight: 600
+                    fontWeight: 600,
+                    minWidth: 0
                   }}
                 >
                   Company Management
@@ -227,7 +233,8 @@ const OverallDashboard: React.FC = () => {
                     backgroundColor: theme.palette.primary.dark
                   },
                   px: 3,
-                  py: 1
+                  py: 1,
+                  flexShrink: 0
                 }}
               >
                 Create Company

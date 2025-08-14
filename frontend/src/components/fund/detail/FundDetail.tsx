@@ -139,7 +139,7 @@ const FundDetail: React.FC = () => {
       <TopBar 
         pageTitle="Fund Details"
         breadcrumbs={[
-          { label: 'Dashboard', path: '/' },
+          { label: 'Investments', path: '/' },
           { label: 'Funds', path: '/funds' },
           { label: fund.name, path: `/funds/${fundId}` }
         ]}

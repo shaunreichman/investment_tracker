@@ -176,7 +176,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
       <TopBar 
         pageTitle="Company Details"
         breadcrumbs={[
-          { label: 'Dashboard', path: '/' },
+          { label: 'Investments', path: '/' },
           { label: 'Companies', path: '/companies' },
           { label: overviewData.company.name, path: `/companies/${companyId}` }
         ]}

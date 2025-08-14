@@ -102,7 +102,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
   // Check if item is active using route params (proper React Router pattern)
   const isActive = (path: string) => {
     if (path === '/') {
-      return !params.companyId && !params.fundId; // Dashboard is active when no company or fund is selected
+      return !params.companyId && !params.fundId; // Investments is active when no company or fund is selected
     }
     if (path === '/companies') {
       return !!params.companyId; // Companies section is active when viewing a company
@@ -145,14 +145,14 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
           alignItems: 'center',
           justifyContent: open ? 'flex-end' : 'center',
           padding: 2,
-          // Removed borderBottom to eliminate line above Dashboard button
+          // Removed borderBottom to eliminate line above Investments button
         }}
       >
         <Tooltip title={open ? 'Collapse Sidebar' : 'Expand Sidebar'}>
           <IconButton
             onClick={onToggle}
             sx={{
-              color: theme.palette.text.secondary,
+              color: '#ffffff', // White icon for striking appearance
               '&:hover': {
                 backgroundColor: theme.palette.background.sidebarHover,
                 color: theme.palette.primary.main,
@@ -171,7 +171,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
         display: 'flex',
         flexDirection: 'column'
       }}>
-        {/* Dashboard - Always Fixed at Top */}
+        {/* Investments - Always Fixed at Top */}
         <Box sx={{ flexShrink: 0 }}>
           <List sx={{ padding: 1, paddingBottom: 0 }}> {/* Added paddingBottom: 2 for symmetric spacing */}
             <ListItem disablePadding sx={{ mb: 1 }}>
@@ -209,14 +209,14 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                 
                 <ListItemIcon
                   sx={{
-                                      color: isActive('/') ? theme.palette.text.primary : theme.palette.text.secondary,
-                  minWidth: open ? 40 : 32,
-                  '& .MuiSvgIcon-root': {
-                    fontSize: '24px',
-                  },
-                  '&:hover': {
-                    color: theme.palette.primary.main,
-                  },
+                    color: '#ffffff', // White icon for striking appearance
+                    minWidth: open ? 40 : 32,
+                    '& .MuiSvgIcon-root': {
+                      fontSize: '24px',
+                    },
+                    '&:hover': {
+                      color: theme.palette.primary.main,
+                    },
                   }}
                 >
                   <DashboardIcon />
@@ -224,7 +224,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                 {open && (
                   <Typography
                     sx={{
-                      color: isActive('/') ? theme.palette.text.primary : theme.palette.text.secondary,
+                      color: '#ffffff', // White text for striking appearance
                       fontWeight: isActive('/') ? 600 : 400,
                       fontSize: '18px',
                       marginLeft: 1,
@@ -233,7 +233,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    Dashboard
+                    Investments
                   </Typography>
                 )}
               </ListItemButton>
@@ -241,8 +241,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
           </List>
         </Box>
 
-        {/* Divider */}
-        <Divider sx={{ backgroundColor: theme.palette.divider, mx: 2, my: 1 }} /> {/* Added my: 1 for symmetric vertical spacing */}
+        {/* Removed divider for sleeker appearance */}
 
         {/* Dynamic Content - Scrollable */}
         <Box sx={{ 
@@ -253,21 +252,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
           {/* Companies Section */}
           {open && companiesData && (
             <Box sx={{ mb: 2 }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: theme.palette.text.muted,
-                  fontSize: '11px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  px: 2,
-                  py: 1,
-                  display: 'block'
-                }}
-              >
-                Companies
-              </Typography>
-              
               <List sx={{ p: 0 }}>
                 {companiesData.map((company) => {
                   const companyActive = isCompanyActive(company.id);
@@ -300,7 +284,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                         >
                           <ListItemIcon
                             sx={{
-                              color: companyActive ? theme.palette.primary.main : theme.palette.text.muted,
+                              color: '#ffffff', // White icon for striking appearance
                               minWidth: open ? 32 : 24,
                               '& .MuiSvgIcon-root': {
                                 fontSize: '18px', // Reduced from 20px
@@ -312,7 +296,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                           {open && (
                             <Typography
                               sx={{
-                                color: companyActive ? theme.palette.text.primary : theme.palette.text.secondary,
+                                color: '#ffffff', // White text for striking appearance
                                 fontWeight: companyActive ? 600 : 400,
                                 fontSize: '16px',
                                 marginLeft: 1,
@@ -352,7 +336,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                                 >
                                   <ListItemIcon
                                     sx={{
-                                      color: fundActive ? theme.palette.primary.main : theme.palette.text.muted,
+                                      color: '#ffffff', // White icon for striking appearance
                                       minWidth: open ? 20 : 16, // Reduced from 24:20
                                       '& .MuiSvgIcon-root': {
                                         fontSize: '14px', // Reduced from 16px
@@ -364,7 +348,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                                   {open && (
                                     <Typography
                                       sx={{
-                                        color: fundActive ? theme.palette.text.primary : theme.palette.text.secondary,
+                                        color: '#ffffff', // White text for striking appearance
                                         fontWeight: fundActive ? 600 : 400,
                                         fontSize: '14px',
                                         marginLeft: 1,

@@ -13,12 +13,15 @@ declare module '@mui/material/styles' {
     topbarGradient?: string;
     search?: string;
     searchHover?: string;
+    searchGradientStart?: string;
+    searchGradientEnd?: string;
   }
   
   interface TypeText {
     muted?: string;
     active?: string;
     hover?: string;
+    pure?: string;
   }
 }
 
@@ -80,8 +83,10 @@ export const dockerTheme = createTheme({
       sidebarHover: '#19222a', // Sidebar hover states
       topbar: '#051B51',    // TopBar base color
       topbarGradient: '#00298B', // TopBar gradient end
-      search: '#1b3d89',    // Search bar background
-      searchHover: '#345397', // Search bar hover
+      search: '#1b3d89',    // Search bar background (legacy)
+      searchHover: '#345397', // Search bar hover (legacy)
+      searchGradientStart: '#1C3C85', // New search gradient start
+      searchGradientEnd: '#1A3E8D',   // New search gradient end
     },
     text: {
       primary: '#FFFFFF',   // White
@@ -89,41 +94,48 @@ export const dockerTheme = createTheme({
       muted: '#8B949E',     // Muted text
       active: '#2496ED',    // Active text
       hover: '#1B7FC4',     // Hover text
+      pure: '#FFFFFF',      // Pure white for high contrast elements
     },
     divider: '#303234',     // Navigation selection color
   },
   
   typography: {
-    fontFamily: '"Inter", "Roboto", sans-serif',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif',
     h1: { 
       fontSize: '28px', 
       fontWeight: 600,
       lineHeight: 1.2,
       letterSpacing: '-0.02em',
+      fontFamily: '"Inter", sans-serif',
     },
     h2: { 
       fontSize: '22px', 
       fontWeight: 600,
       lineHeight: 1.3,
       letterSpacing: '-0.01em',
+      fontFamily: '"Inter", sans-serif',
     },
     h3: { 
       fontSize: '18px', 
       fontWeight: 600,
       lineHeight: 1.4,
+      fontFamily: '"Inter", sans-serif',
     },
     body1: { 
       fontSize: '16px',
       lineHeight: 1.5,
+      fontFamily: '"Inter", sans-serif',
     },
     body2: { 
       fontSize: '14px',
       lineHeight: 1.5,
+      fontFamily: '"Inter", sans-serif',
     },
     button: { 
       textTransform: 'none',
       lineHeight: 1.4,
       letterSpacing: '0.02em',
+      fontFamily: '"Inter", sans-serif',
     },
   },
   
