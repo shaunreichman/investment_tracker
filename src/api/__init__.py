@@ -877,7 +877,7 @@ def create_app(db_config=None):
             controller = FundController()
             return controller.add_fund_event(fund_id)
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": str(e)}), 400
 
     @app.route('/api/funds/<int:fund_id>/events/<int:event_id>', methods=['DELETE'])
     def delete_fund_event(fund_id, event_id):
