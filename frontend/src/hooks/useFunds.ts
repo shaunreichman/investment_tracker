@@ -1,7 +1,7 @@
 // Fund-specific Custom Hooks
 // This file provides hooks for fund-related API operations
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { apiClient } from '../services/api';
 import { useApiCall, useMutation, useApiCallWithDeps, useConditionalApiCall } from './useApiCall';
 import {
@@ -43,11 +43,39 @@ export function useFund(id: number, options?: { refetchOnWindowFocus?: boolean }
 
 /**
  * Hook to get fund detail data (fund + events + statistics)
+ * This is the main hook used by components
  */
 export function useFundDetail(id: number, options?: { refetchOnWindowFocus?: boolean }) {
   return useApiCallWithDeps(
     (fundId: number) => apiClient.getFundDetail(fundId),
     [id],
+    { refetchOnWindowFocus: options?.refetchOnWindowFocus }
+  );
+}
+
+/**
+ * NEW: Centralized fund data hook that prevents state pollution
+ * This hook ensures that all components get the same data for the same fund ID
+ * and properly invalidates when the fund ID changes
+ */
+export function useCentralizedFundDetail(fundId: number | string | null, options?: { refetchOnWindowFocus?: boolean }) {
+  // Convert fundId to number, defaulting to 0 if invalid
+  const numericFundId = useMemo(() => {
+    if (!fundId) return 0;
+    const parsed = Number(fundId);
+    return isNaN(parsed) ? 0 : parsed;
+  }, [fundId]);
+
+  // Only make API call if we have a valid fund ID
+  const shouldFetch = numericFundId > 0;
+
+  // Use useConditionalApiCall but ensure it refetches when fundId changes
+  // by creating a new callback function that depends on the fundId
+  const getFundDetail = useCallback(() => apiClient.getFundDetail(numericFundId), [numericFundId]);
+
+  return useConditionalApiCall(
+    getFundDetail,
+    shouldFetch,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
 }

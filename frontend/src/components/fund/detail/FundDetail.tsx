@@ -6,7 +6,7 @@ import { ErrorDisplay } from '../../ErrorDisplay';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { ExtendedFundEvent } from '../../../types/api';
-import { useFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
+import { useCentralizedFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { useSidebarState, useTableFilters } from '../../../store';
 
@@ -46,7 +46,7 @@ const FundDetail: React.FC = () => {
   const { filters: tableFilters, updateFilters } = useTableFilters();
 
   // Centralized API hooks
-  const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
+  const { data: fundData, loading, error, refetch } = useCentralizedFundDetail(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
   // Event handlers

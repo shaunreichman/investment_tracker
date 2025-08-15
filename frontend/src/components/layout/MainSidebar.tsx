@@ -12,7 +12,6 @@ import {
   IconButton,
   Tooltip,
   useTheme,
-  Divider,
   Typography,
 } from '@mui/material';
 import {
@@ -43,19 +42,13 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
 
   // Get current company and fund IDs from route params
   const currentCompanyId = useMemo(() => {
-    console.log('Sidebar Debug - params:', params);
-    console.log('Sidebar Debug - allFundsData:', allFundsData);
-    
     if (params.companyId) {
-      console.log('Sidebar Debug - Found companyId in params:', params.companyId);
       return parseInt(params.companyId);
     }
     if (params.fundId && allFundsData) {
       const fund = allFundsData.find(f => f.id === parseInt(params.fundId || '0'));
-      console.log('Sidebar Debug - Found fund in params, fund:', fund);
       return fund?.investment_company_id;
     }
-    console.log('Sidebar Debug - No current company ID found');
     return null;
   }, [params, allFundsData]);
 
@@ -68,21 +61,16 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
   const fundsByCompany = useMemo(() => {
     if (!allFundsData) return new Map();
     
-    console.log('Sidebar Debug - allFundsData:', allFundsData);
-    console.log('Sidebar Debug - companiesData:', companiesData);
-    
     const grouped = new Map<number, DashboardFund[]>();
     allFundsData.forEach((fund: DashboardFund) => {
-      console.log('Sidebar Debug - Processing fund:', fund);
       if (!grouped.has(fund.investment_company_id)) {
         grouped.set(fund.investment_company_id, []);
       }
       grouped.get(fund.investment_company_id)!.push(fund);
     });
     
-    console.log('Sidebar Debug - Grouped funds:', grouped);
     return grouped;
-  }, [allFundsData, companiesData]);
+  }, [allFundsData]);
 
   // Handle navigation
   const handleNavigation = (path: string) => {
@@ -256,12 +244,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
                 {companiesData.map((company) => {
                   const companyActive = isCompanyActive(company.id);
                   const companyFunds = fundsByCompany.get(company.id) || [];
-                  
-                  console.log(`Sidebar Debug - Company ${company.name} (ID: ${company.id}):`, {
-                    companyActive,
-                    companyFundsCount: companyFunds.length,
-                    companyFunds
-                  });
                   
                   return (
                     <Box key={company.id}>

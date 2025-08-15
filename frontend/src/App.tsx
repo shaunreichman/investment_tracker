@@ -14,6 +14,12 @@ const FundDetailWrapper: React.FC = () => {
   return <FundDetail key={fundId} />;
 };
 
+// Wrapper component to provide key for EnhancedCompaniesPage
+const CompaniesPageWrapper: React.FC = () => {
+  const { companyId } = useParams<{ companyId: string }>();
+  return <EnhancedCompaniesPage key={companyId} />;
+};
+
 function App() {
   return (
     <DockerThemeProvider>
@@ -32,7 +38,7 @@ function App() {
             } />
             <Route path="/companies/:companyId" element={
               <RouteLayout>
-                <EnhancedCompaniesPage />
+                <CompaniesPageWrapper />
               </RouteLayout>
             } />
             <Route path="/funds/:fundId" element={

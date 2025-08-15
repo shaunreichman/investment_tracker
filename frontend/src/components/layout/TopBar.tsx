@@ -20,57 +20,69 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useSidebar } from './MainLayout';
+import { useInvestmentCompanies } from '../../hooks/useInvestmentCompanies';
+import { useCentralizedFundDetail } from '../../hooks/useFunds';
 
-// Route-based page title and breadcrumb configuration
-const getRouteInfo = (pathname: string, params: any) => {
-  if (pathname === '/') {
+// Custom hook to get meaningful breadcrumb data
+const useBreadcrumbData = () => {
+  const location = useLocation();
+  const params = useParams();
+  
+  // Get company data if we're on a company or fund route
+  const companyId = params.companyId || (params.fundId ? undefined : undefined);
+  const fundId = params.fundId;
+  
+  const { data: companiesData } = useInvestmentCompanies();
+  const { data: fundData } = useCentralizedFundDetail(fundId || null);
+  
+  if (location.pathname === '/') {
     return {
-      pageTitle: 'Investment Dashboard',
-      breadcrumbs: [{ label: 'Investment Dashboard', path: '/' }]
+      breadcrumbs: [{ label: 'Investments', path: '/' }]
     };
   }
   
-  if (pathname.startsWith('/companies/')) {
-    const companyId = params.companyId;
+  if (location.pathname.startsWith('/companies/') && companyId) {
+    // Find the company name from the companies data
+    const company = companiesData?.find((c: any) => c.id === Number(companyId));
+    const companyName = company?.name || `Company ${companyId}`;
+    
     return {
-      pageTitle: `Company ${companyId}`,
       breadcrumbs: [
-        { label: 'Investment Dashboard', path: '/' },
-        { label: 'Companies', path: '/companies' },
-        { label: `Company ${companyId}`, path: `/companies/${companyId}` }
+        { label: 'Investments', path: '/' },
+        { label: companyName, path: `/companies/${companyId}` }
       ]
     };
   }
   
-  if (pathname.startsWith('/funds/')) {
-    const fundId = params.fundId;
+  if (location.pathname.startsWith('/funds/') && fundId) {
+    // Get company name from fund data
+    const fund = fundData?.fund;
+    const companyName = fund?.investment_company || `Company ${fund?.investment_company_id || 'Unknown'}`;
+    const fundName = fund?.name || `Fund ${fundId}`;
+    
     return {
-      pageTitle: `Fund ${fundId}`,
       breadcrumbs: [
-        { label: 'Investment Dashboard', path: '/' },
-        { label: 'Funds', path: '/funds' },
-        { label: `Fund ${fundId}`, path: `/funds/${fundId}` }
+        { label: 'Investments', path: '/' },
+        { label: companyName, path: `/companies/${fund?.investment_company_id || 0}` },
+        { label: fundName, path: `/funds/${fundId}` }
       ]
     };
   }
   
   // Default fallback
   return {
-    pageTitle: 'Investment Dashboard',
-    breadcrumbs: [{ label: 'Investment Dashboard', path: '/' }]
+    breadcrumbs: [{ label: 'Investments', path: '/' }]
   };
 };
 
 const TopBar: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
-  const params = useParams();
   // We don't need sidebarOpen for now, but keeping the context for future use
   useSidebar();
 
-  // Get dynamic route information
-  const { pageTitle, breadcrumbs } = getRouteInfo(location.pathname, params);
+  // Get dynamic breadcrumb data with actual names
+  const { breadcrumbs } = useBreadcrumbData();
 
   const handleBreadcrumbClick = (path: string) => {
     navigate(path);
@@ -93,19 +105,7 @@ const TopBar: React.FC = () => {
       }}
     >
       <Toolbar sx={{ minHeight: 56, padding: '0 24px' }}> {/* 56px height as per spec */}
-        {/* Page Title */}
-        <Typography
-          variant="h6"
-          sx={{
-            color: theme.palette.text.primary, // White text as per spec
-            fontWeight: 600,
-            marginRight: 3,
-          }}
-        >
-          {pageTitle}
-        </Typography>
-
-        {/* Breadcrumbs */}
+        {/* Breadcrumbs - Now the primary navigation element */}
         <Box sx={{ flexGrow: 1 }}>
           <Breadcrumbs
             aria-label="breadcrumb"

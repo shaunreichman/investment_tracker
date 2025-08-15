@@ -200,7 +200,7 @@ export function useApiCallWithDeps<T, D extends readonly unknown[]>(
   const memoizedApiCall = useCallback(async () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await apiCallRef.current(...depsRef.current);
-  }, []);
+  }, []); // No dependencies needed since we use refs for latest values
   
   return useApiCall(memoizedApiCall, options);
 }

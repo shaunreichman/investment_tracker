@@ -4,8 +4,9 @@
 
 import React, { useState, createContext, useContext } from 'react';
 import { Box, useTheme } from '@mui/material';
-import MainSidebar from './MainSidebar';
+import { useLocation } from 'react-router-dom';
 import TopBar from './TopBar';
+import MainSidebar from './MainSidebar';
 
 // Create context for sidebar state
 interface SidebarContextType {
@@ -20,26 +21,24 @@ export const SidebarContext = createContext<SidebarContextType>({
 
 export const useSidebar = () => useContext(SidebarContext);
 
-interface RouteLayoutProps {
-  children: React.ReactNode;
-}
-
-const RouteLayout: React.FC<RouteLayoutProps> = ({ children }) => {
+const RouteLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const theme = useTheme();
+  const location = useLocation();
 
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
+  // Create a key for TopBar based on the current route to force re-render on navigation
+  const topBarKey = location.pathname;
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Persistent TopBar - Now part of layout structure */}
-      <TopBar />
-      
-      {/* Main Content and Sidebar Container */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      {/* Persistent TopBar - Clean implementation with key for route changes */}
+      <TopBar key={topBarKey} />
       <Box sx={{ display: 'flex', flex: 1 }}>
-        {/* Main Sidebar - Now has access to route parameters */}
+        {/* Main Sidebar */}
         <Box
           sx={{
             position: 'fixed',
