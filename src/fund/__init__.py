@@ -1,30 +1,31 @@
 """
 Fund domain module.
 
-This module contains all fund-related models, calculations, and business logic.
-Funds can be either NAV-based (tracking units and NAV) or cost-based (tracking capital calls/returns).
+This module contains the core fund models, services, and business logic.
 """
 
+from .models import Fund, FundEvent, FundEventCashFlow
 from .enums import (
-    FundType, EventType, DistributionType, CashFlowDirection, 
-    TaxPaymentType, TaxJurisdiction, SortOrder, SortField, 
-    Environment, Currency
+    FundStatus,
+    FundType,
+    EventType,
+    DistributionType,
+    CashFlowDirection,
+    TaxPaymentType,
+    GroupType
 )
-from .models import Fund, FundEvent
-from .calculations import *
-from .queries import *
+from .new_fund_manager import NewFundManager
 
 __all__ = [
     'Fund',
     'FundEvent', 
+    'FundEventCashFlow',
+    'FundStatus',
     'FundType',
     'EventType',
     'DistributionType',
     'CashFlowDirection',
     'TaxPaymentType',
-    'TaxJurisdiction',
-    'SortOrder',
-    'SortField',
-    'Environment',
-    'Currency',
+    'GroupType',
+    'NewFundManager'
 ] 
