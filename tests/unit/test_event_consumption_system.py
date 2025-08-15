@@ -21,6 +21,7 @@ from src.fund.events.domain import (
     NAVUpdatedEvent,
     UnitsChangedEvent
 )
+from src.fund.enums import FundType
 
 
 class TestEventBus:
@@ -297,6 +298,50 @@ class TestTaxStatementEventHandler:
         )
         
         assert handler.can_handle(event) is False
+    
+    def test_tax_statement_handler_business_logic_called(self):
+        """Test that tax statement handler calls business logic methods."""
+        handler = TaxStatementEventHandler()
+        
+        # Create a mock event
+        event = EquityBalanceChangedEvent(
+            fund_id=1,
+            event_date=date(2024, 1, 15),
+            old_balance=Decimal('100000.0'),
+            new_balance=Decimal('150000.0'),
+            change_reason="Test equity change"
+        )
+        
+        # Mock the _get_fund method to return a fund
+        with patch.object(handler, '_get_fund', return_value=Mock(tracking_type=FundType.COST_BASED)):
+            with patch.object(handler, '_update_tax_statement_equity') as mock_update:
+                # Process the event
+                handler.handle_event(event)
+                
+                # Verify the business logic method was called
+                mock_update.assert_called_once_with(1, date(2024, 1, 15), Decimal('150000.0'))
+    
+    def test_company_record_handler_business_logic_called(self):
+        """Test that company record handler calls business logic methods."""
+        handler = CompanyRecordEventHandler()
+        
+        # Create a mock event
+        event = EquityBalanceChangedEvent(
+            fund_id=1,
+            event_date=date(2024, 1, 15),
+            old_balance=Decimal('100000.0'),
+            new_balance=Decimal('150000.0'),
+            change_reason="Test equity change"
+        )
+        
+        # Mock the _get_fund method to return a fund
+        with patch.object(handler, '_get_fund', return_value=Mock()):
+            with patch.object(handler, '_update_company_equity') as mock_update:
+                # Process the event
+                handler.handle_event(event)
+                
+                # Verify the business logic method was called
+                mock_update.assert_called_once_with(1, date(2024, 1, 15), Decimal('150000.0'))
 
 
 class TestCompanyRecordEventHandler:
