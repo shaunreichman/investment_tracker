@@ -120,7 +120,7 @@ class TestCompanyPortfolioCalculations:
         company = InvestmentCompanyFactory()
         
         # Create funds with different statuses and performance
-        active_funds = []
+        ACTIVE_funds = []
         completed_funds = []
         
         for i in range(5):
@@ -131,7 +131,7 @@ class TestCompanyPortfolioCalculations:
                 commitment_amount=100000 + i * 10000,
                 current_equity_balance=95000 + i * 10000
             )
-            active_funds.append(fund)
+            ACTIVE_funds.append(fund)
         
         for i in range(3):
             # Completed funds with different IRRs
@@ -147,8 +147,8 @@ class TestCompanyPortfolioCalculations:
         summary_data = company.get_company_summary_data(session=db_session)
         
         portfolio = summary_data['portfolio_summary']
-        expected_committed = sum(f.commitment_amount for f in active_funds + completed_funds)
-        expected_current = sum(f.current_equity_balance for f in active_funds + completed_funds)
+        expected_committed = sum(f.commitment_amount for f in ACTIVE_funds + completed_funds)
+        expected_current = sum(f.current_equity_balance for f in ACTIVE_funds + completed_funds)
         
         assert portfolio['total_committed_capital'] == expected_committed
         assert portfolio['total_current_value'] == expected_current

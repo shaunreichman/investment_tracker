@@ -271,7 +271,7 @@ class TestInvestmentCompanyDerivedFields:
         db_session.commit()
         
         # Create funds with different statuses
-        active_fund = FundFactory(
+        ACTIVE_fund = FundFactory(
             investment_company=company,  # Pass the object, not just the ID
             tracking_type=FundType.COST_BASED,
             commitment_amount=100000.0
@@ -284,7 +284,7 @@ class TestInvestmentCompanyDerivedFields:
         db_session.commit()
         
         # Return capital from realized fund
-        active_fund.add_capital_call(50000.0, date(2023, 1, 1), "Capital call", session=db_session)
+        ACTIVE_fund.add_capital_call(50000.0, date(2023, 1, 1), "Capital call", session=db_session)
         realized_fund.add_capital_call(50000.0, date(2023, 1, 1), "Capital call", session=db_session)
         realized_fund.add_return_of_capital(50000.0, date(2023, 6, 1), "Capital return", session=db_session)
         db_session.commit()

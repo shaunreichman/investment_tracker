@@ -39,7 +39,7 @@ def test_fund_event_cash_flow_factory_creates_valid_cash_flow():
     
     assert cash_flow.fund_event is not None
     assert cash_flow.bank_account is not None
-    assert cash_flow.direction.value in ["inflow", "outflow"]
+    assert cash_flow.direction.value in ["INFLOW", "OUTFLOW"]
     assert cash_flow.transfer_date is not None
     assert cash_flow.currency == "AUD"
     assert cash_flow.amount > 0
@@ -48,15 +48,15 @@ def test_fund_event_cash_flow_factory_creates_valid_cash_flow():
 
 def test_cash_flow_direction_inference():
     """Test that cash flow direction is correctly inferred from event type"""
-    # Test outflow events
-    capital_call_event = FundEventFactory.build(event_type=EventType.CAPITAL_CALL)
-    cash_flow = FundEventCashFlowFactory.build(fund_event=capital_call_event)
-    assert cash_flow.direction.value == "outflow"
+    # Test OUTFLOW events
+    CAPITAL_CALL_event = FundEventFactory.build(event_type=EventType.CAPITAL_CALL)
+    cash_flow = FundEventCashFlowFactory.build(fund_event=CAPITAL_CALL_event)
+    assert cash_flow.direction.value == "OUTFLOW"
     
-    # Test inflow events
+    # Test INFLOW events
     distribution_event = FundEventFactory.build(event_type=EventType.DISTRIBUTION)
     cash_flow = FundEventCashFlowFactory.build(fund_event=distribution_event)
-    assert cash_flow.direction.value == "inflow"
+    assert cash_flow.direction.value == "INFLOW"
 
 
 def test_factory_relationships():

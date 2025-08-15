@@ -149,7 +149,7 @@ class TestFundStatusService:
         # Update status - service should determine it should be ACTIVE due to positive equity balance
         service.update_status(mock_fund)
         
-        # Verify status changed to active (because last event has equity_balance = 500.0)
+        # Verify status changed to ACTIVE (because last event has equity_balance = 500.0)
         assert mock_fund.status == FundStatus.ACTIVE
     
     def test_update_status_after_equity_event(self, service, mock_fund, mock_events):
@@ -215,7 +215,7 @@ class TestFundStatusService:
                 assert mock_fund.status == FundStatus.REALIZED
     
     def test_should_be_active_with_equity(self, service, mock_fund, mock_events):
-        """Test should_be_active when fund has equity balance."""
+        """Test should_be_ACTIVE when fund has equity balance."""
         # Ensure the last event has equity balance > 0
         mock_events[1].current_equity_balance = 1000.0  # Override the 0.0 from fixture
         mock_fund.get_all_fund_events.return_value = mock_events
@@ -225,7 +225,7 @@ class TestFundStatusService:
         assert result is True
     
     def test_should_be_active_no_equity(self, service, mock_fund, mock_events):
-        """Test should_be_active when fund has no equity balance."""
+        """Test should_be_ACTIVE when fund has no equity balance."""
         # Modify events to have zero equity balance
         mock_events[1].current_equity_balance = 0.0
         mock_fund.get_all_fund_events.return_value = mock_events
@@ -235,7 +235,7 @@ class TestFundStatusService:
         assert result is False
     
     def test_should_be_active_no_events(self, service, mock_fund):
-        """Test should_be_active when fund has no events."""
+        """Test should_be_ACTIVE when fund has no events."""
         mock_fund.get_all_fund_events.return_value = []
         
         result = service._should_be_active(mock_fund)
@@ -243,7 +243,7 @@ class TestFundStatusService:
         assert result is True
     
     def test_is_final_tax_statement_received_active_fund(self, service, mock_fund):
-        """Test is_final_tax_statement_received for active fund."""
+        """Test is_final_tax_statement_received for ACTIVE fund."""
         mock_fund.status = FundStatus.ACTIVE
         
         result = service._is_final_tax_statement_received(mock_fund)
@@ -355,7 +355,7 @@ class TestFundStatusService:
             with patch.object(service, '_is_final_tax_statement_received', return_value=True):
                 result = service.get_status_summary(mock_fund)
                 
-                assert result['current_status'] == FundStatus.ACTIVE.value
+                assert result['current_status'] == FundStatus.ACTIVE
                 assert result['start_date'] == date(2020, 1, 1)
                 assert result['end_date'] == date(2020, 12, 31)
                 assert result['should_be_active'] is True
@@ -391,7 +391,7 @@ class TestFundStatusService:
         assert mock_fund.completed_real_irr == 0.10
     
     def test_calculate_and_store_irrs_for_status_active(self, service, mock_fund):
-        """Test IRR calculation and storage for active status."""
+        """Test IRR calculation and storage for ACTIVE status."""
         # Mock the IRR calculation methods
         mock_fund.calculate_irr.return_value = 0.15
         mock_fund.calculate_after_tax_irr.return_value = 0.12
@@ -399,7 +399,7 @@ class TestFundStatusService:
         
         service._calculate_and_store_irrs_for_status(mock_fund, FundStatus.ACTIVE)
         
-        # Verify no IRRs were calculated for active status
+        # Verify no IRRs were calculated for ACTIVE status
         assert mock_fund.irr_gross is None
         assert mock_fund.irr_after_tax is None
         assert mock_fund.irr_real is None

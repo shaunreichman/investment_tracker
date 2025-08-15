@@ -111,7 +111,7 @@ class TestEventHandlerArchitecture:
         
         # Test valid event data
         valid_data = {
-            'event_type': 'capital_call',
+            'event_type': 'CAPITAL_CALL',
             'amount': 1000.0,
             'date': '2024-01-15'
         }
@@ -128,12 +128,12 @@ class TestEventHandlerArchitecture:
             orchestrator.validate_event_data(invalid_data)
         
         # Test invalid date format
-        invalid_data = {'event_type': 'capital_call', 'amount': 1000.0, 'date': 'invalid-date'}
+        invalid_data = {'event_type': 'CAPITAL_CALL', 'amount': 1000.0, 'date': 'invalid-date'}
         with pytest.raises(ValueError, match="Invalid date format"):
             orchestrator.validate_event_data(invalid_data)
         
         # Test negative amount
-        invalid_data = {'event_type': 'capital_call', 'amount': -1000.0, 'date': '2024-01-15'}
+        invalid_data = {'event_type': 'CAPITAL_CALL', 'amount': -1000.0, 'date': '2024-01-15'}
         with pytest.raises(ValueError, match="Amount cannot be negative"):
             orchestrator.validate_event_data(invalid_data)
     
@@ -172,7 +172,7 @@ class TestCapitalCallHandler:
         # Should not raise
         self.handler.validate_event(event_data)
     
-    def test_validate_event_nav_based_fund(self):
+    def test_validate_event_NAV_BASED_fund(self):
         """Test validation rejects NAV-based funds."""
         self.mock_fund.tracking_type = FundType.NAV_BASED
         
@@ -181,7 +181,7 @@ class TestCapitalCallHandler:
             'date': date(2024, 1, 15)
         }
         
-        with pytest.raises(ValueError, match="Event requires cost_based fund"):
+        with pytest.raises(ValueError, match="Event requires COST_BASED fund"):
             self.handler.validate_event(event_data)
     
     def test_validate_event_missing_amount(self):
@@ -225,7 +225,7 @@ class TestNAVUpdateHandler:
         
         self.handler = NAVUpdateHandler(self.mock_session, self.mock_fund)
     
-    def test_validate_event_nav_based_fund(self):
+    def test_validate_event_NAV_BASED_fund(self):
         """Test validation for NAV-based funds."""
         event_data = {
             'nav_per_share': 10.50,
@@ -244,7 +244,7 @@ class TestNAVUpdateHandler:
             'date': date(2024, 1, 15)
         }
         
-        with pytest.raises(ValueError, match="Event requires nav_based fund"):
+        with pytest.raises(ValueError, match="Event requires NAV_BASED fund"):
             self.handler.validate_event(event_data)
     
     def test_validate_event_missing_nav(self):

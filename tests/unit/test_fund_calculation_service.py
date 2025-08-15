@@ -465,11 +465,11 @@ class TestFundCalculationService:
         
         assert result == 0.15
         mock_orchestrate.assert_called_once_with(
-            mock_fund,
+            mock_fund.fund_events,
+            mock_fund.start_date,
             include_tax_payments=False,
             include_risk_free_charges=False,
-            include_eofy_debt_cost=False,
-            session=None
+            include_eofy_debt_cost=False
         )
     
     @patch('src.fund.services.fund_calculation_service.orchestrate_irr_base')
@@ -481,11 +481,11 @@ class TestFundCalculationService:
         
         assert result == 0.12
         mock_orchestrate.assert_called_once_with(
-            mock_fund,
+            mock_fund.fund_events,
+            mock_fund.start_date,
             include_tax_payments=True,
             include_risk_free_charges=False,
-            include_eofy_debt_cost=False,
-            session=None
+            include_eofy_debt_cost=False
         )
     
     @patch('src.fund.services.fund_calculation_service.orchestrate_irr_base')
@@ -497,15 +497,15 @@ class TestFundCalculationService:
         
         assert result == 0.10
         mock_orchestrate.assert_called_once_with(
-            mock_fund,
+            mock_fund.fund_events,
+            mock_fund.start_date,
             include_tax_payments=True,
             include_risk_free_charges=True,
-            include_eofy_debt_cost=True,
-            session=None
+            include_eofy_debt_cost=True
         )
     
     def test_calculate_completed_irr_active_fund(self, service, mock_fund):
-        """Test completed IRR calculation for active fund (should return None)."""
+        """Test completed IRR calculation for ACTIVE fund (should return None)."""
         mock_fund.status = FundStatus.ACTIVE
         
         result = service.calculate_completed_irr(mock_fund)
@@ -580,7 +580,7 @@ class TestFundCalculationService:
         event3.current_equity_balance = 1100.0
         events.append(event3)
         
-        # Mock today's date for active fund
+        # Mock today's date for ACTIVE fund
         with patch('src.fund.services.fund_calculation_service.date') as mock_date:
             mock_date.today.return_value = date(2020, 3, 15)  # 14 days after last event
             
@@ -696,7 +696,7 @@ class TestFundCalculationService:
         assert abs(result - expected_result) < 0.01
     
     def test_calculate_actual_duration_months_active_fund(self, service, mock_fund):
-        """Test duration calculation for active fund (uses today's date)."""
+        """Test duration calculation for ACTIVE fund (uses today's date)."""
         with patch('src.fund.services.fund_calculation_service.date') as mock_date:
             mock_date.today.return_value = date(2020, 6, 30)  # 181 days after start
             
@@ -707,12 +707,12 @@ class TestFundCalculationService:
         assert abs(result - expected_result) < 0.01
     
     def test_calculate_actual_duration_months_realized_fund(self, service, mock_fund):
-        """Test duration calculation for realized fund (no end date, not active)."""
+        """Test duration calculation for realized fund (no end date, not ACTIVE)."""
         mock_fund.status = FundStatus.REALIZED
         mock_fund.end_date = None
         
         # For realized funds with no end date, the method should return None
-        # since it can't determine the end date (not active, no end_date)
+        # since it can't determine the end date (not ACTIVE, no end_date)
         result = service.calculate_actual_duration_months(mock_fund)
         
         assert result is None
@@ -737,11 +737,11 @@ class TestFundCalculationService:
         
         assert result == 0.18
         mock_orchestrate.assert_called_once_with(
-            mock_fund,
+            mock_fund.fund_events,
+            mock_fund.start_date,
             include_tax_payments=True,
             include_risk_free_charges=True,
-            include_eofy_debt_cost=True,
-            session=mock_session
+            include_eofy_debt_cost=True
         )
     
     def test_create_daily_risk_free_interest_charges_placeholder(self, service, mock_fund):

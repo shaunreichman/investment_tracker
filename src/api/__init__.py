@@ -874,8 +874,13 @@ def create_app(db_config=None):
                     if not data.get(field):
                         return jsonify({"error": f"Missing required field: {field}"}), 400
                 
-                # Validate tracking type
+                # Validate fund type
                 from src.fund.enums import FundType
+                valid_fund_types = [FundType.NAV_BASED.value, FundType.COST_BASED.value]
+                if data['fund_type'] not in valid_fund_types:
+                    return jsonify({'error': f'Invalid fund_type. Must be one of: {valid_fund_types}'}), 400
+                
+                # Validate tracking type
                 valid_tracking_types = [FundType.NAV_BASED.value, FundType.COST_BASED.value]
                 if data['tracking_type'] not in valid_tracking_types:
                     return jsonify({'error': f'Invalid tracking_type. Must be one of: {valid_tracking_types}'}), 400

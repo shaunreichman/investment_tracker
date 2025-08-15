@@ -213,7 +213,7 @@ class TestEnhancedFundsEndpoint:
         
         # Verify fund data structure
         fund1_data = next(f for f in data['funds'] if f['name'] == "Fund Alpha")
-        assert fund1_data['status'] == 'active'
+        assert fund1_data['status'] == 'ACTIVE'
         assert fund1_data['equity']['commitment'] == 100000
         assert fund1_data['equity']['current_value'] == 95000
         assert fund1_data['estimated_return']['expected_irr'] == 12.0
@@ -276,12 +276,12 @@ class TestEnhancedFundsEndpoint:
         """Test enhanced funds with status and search filtering"""
         company = InvestmentCompanyFactory()
         
-        # Create active fund (has equity balance > 0)
+        # Create ACTIVE fund (has equity balance > 0)
         fund1 = FundFactory(
             investment_company=company,
             name="Active Fund"
         )
-        # Add capital call to make it active using proper fund method
+        # Add capital call to make it ACTIVE using proper fund method
         fund1.add_capital_call(amount=50000, date=date(2020, 1, 1), session=db_session)
         
         # Create completed fund (equity balance = 0, has tax statement)
@@ -300,12 +300,12 @@ class TestEnhancedFundsEndpoint:
             financial_year="2020-2021"
         )
         
-        # Create another active fund
+        # Create another ACTIVE fund
         fund3 = FundFactory(
             investment_company=company,
             name="Another Active Fund"
         )
-        # Add capital call to make it active using proper fund method
+        # Add capital call to make it ACTIVE using proper fund method
         fund3.add_capital_call(amount=50000, date=date(2020, 1, 1), session=db_session)
         
         # Update fund statuses based on their current state
@@ -320,7 +320,7 @@ class TestEnhancedFundsEndpoint:
         
         funds = data['funds']
         assert len(funds) == 2
-        assert all(f['status'] == 'active' for f in funds)
+        assert all(f['status'] == 'ACTIVE' for f in funds)
         
         # Test search filtering
         response = client.get(f'/api/companies/{company.id}/funds/enhanced?search=Active')

@@ -48,14 +48,14 @@ class TestCompaniesUIWorkflows:
         
                 # Verify fund status breakdown matches actual fund counts
         status_breakdown = summary_data['fund_status_breakdown']
-        active_funds = [f for f in company.funds if f.status == FundStatus.ACTIVE]
+        ACTIVE_funds = [f for f in company.funds if f.status == FundStatus.ACTIVE]
         completed_funds = [f for f in company.funds if f.status == FundStatus.COMPLETED]
     
-        assert status_breakdown['active_funds_count'] == len(active_funds)
+        assert status_breakdown['active_funds_count'] == len(ACTIVE_funds)
         assert status_breakdown['completed_funds_count'] == len(completed_funds)
         
         # Verify individual counts in portfolio summary
-        assert portfolio['active_funds_count'] == len(active_funds)
+        assert portfolio['active_funds_count'] == len(ACTIVE_funds)
         assert portfolio['completed_funds_count'] == len(completed_funds)
     
     def test_fund_metrics_rollup_to_company(self, db_session):
@@ -143,7 +143,7 @@ class TestCompaniesUIWorkflows:
         """Test how fund status transitions affect company portfolio calculations"""
         company = InvestmentCompanyFactory()
         
-        # Create an active fund
+        # Create an ACTIVE fund
         fund = FundFactory(
             investment_company=company,
             status=FundStatus.ACTIVE,

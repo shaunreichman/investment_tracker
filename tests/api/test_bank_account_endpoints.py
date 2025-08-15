@@ -84,7 +84,7 @@ class TestBankAccountEndpoints:
         assert len(data['bank_accounts']) == 1
         assert data['bank_accounts'][0]['currency'] == "AUD"
         
-        # Test active filter
+        # Test ACTIVE filter
         response = client.get('/api/bank-accounts?is_active=true')
         assert response.status_code == 200
         data = response.get_json()

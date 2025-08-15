@@ -40,9 +40,9 @@ class TestCostBasedFundFlows:
         
         # Verify event was created
         events = fund.get_all_fund_events()
-        capital_call_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
-        assert len(capital_call_events) == 1
-        assert capital_call_events[0].amount == 50000.0
+        CAPITAL_CALL_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
+        assert len(CAPITAL_CALL_events) == 1
+        assert CAPITAL_CALL_events[0].amount == 50000.0
 
     def test_capital_return_reduces_equity_balance(self, db_session):
         """Test that capital return correctly reduces equity balance."""
@@ -74,9 +74,9 @@ class TestCostBasedFundFlows:
         # Verify both events exist
         events = fund.get_all_fund_events()
         assert len(events) == 2
-        capital_call_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
+        CAPITAL_CALL_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
         capital_return_events = [e for e in events if e.event_type == EventType.RETURN_OF_CAPITAL]
-        assert len(capital_call_events) == 1
+        assert len(CAPITAL_CALL_events) == 1
         assert len(capital_return_events) == 1
 
     def test_distribution_does_not_affect_equity_balance(self, db_session):
@@ -148,9 +148,9 @@ class TestCostBasedFundFlows:
         # Verify all events exist
         events = fund.get_all_fund_events()
         assert len(events) == 3
-        capital_call_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
+        CAPITAL_CALL_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
         capital_return_events = [e for e in events if e.event_type == EventType.RETURN_OF_CAPITAL]
-        assert len(capital_call_events) == 2
+        assert len(CAPITAL_CALL_events) == 2
         assert len(capital_return_events) == 1
 
 

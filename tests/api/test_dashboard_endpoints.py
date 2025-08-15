@@ -37,19 +37,19 @@ class TestDashboardPortfolioSummary:
         assert 'last_updated' in data
     
     def test_portfolio_summary_with_funds(self, client, db_session):
-        """Test portfolio summary with active and completed funds"""
+        """Test portfolio summary with ACTIVE and completed funds"""
         # Create test data
         company = InvestmentCompanyFactory()
         entity = EntityFactory()
         
         # Active fund with events
-        active_fund = FundFactory(
+        ACTIVE_fund = FundFactory(
             investment_company=company,
             entity=entity,
             status='ACTIVE'
         )
         FundEventFactory(
-            fund=active_fund,
+            fund=ACTIVE_fund,
             event_type='CAPITAL_CALL',
             amount=100000.0,
             event_date=date.today() - timedelta(days=30)
@@ -63,7 +63,7 @@ class TestDashboardPortfolioSummary:
         )
         
         # Tax statement
-        TaxStatementFactory(fund=active_fund)
+        TaxStatementFactory(fund=ACTIVE_fund)
         
         response = client.get('/api/dashboard/portfolio-summary')
         

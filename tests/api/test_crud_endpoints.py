@@ -260,7 +260,7 @@ class TestFundCRUD:
         fund_data = {
             "name": "New Fund",
             "fund_type": "SENIOR_DEBT",
-            "tracking_type": "cost_based",
+            "tracking_type": "COST_BASED",
             "investment_company_id": company.id,
             "entity_id": entity.id,
             "commitment_amount": 1000000.0
@@ -277,7 +277,7 @@ class TestFundCRUD:
         
         assert data['name'] == "New Fund"
         assert data['fund_type'] == "SENIOR_DEBT"
-        assert data['tracking_type'] == "cost_based"
+        assert data['tracking_type'] == "COST_BASED"
         assert 'id' in data
     
     def test_create_fund_missing_required_fields(self, client):

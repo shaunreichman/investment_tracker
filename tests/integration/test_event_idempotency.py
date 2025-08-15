@@ -50,8 +50,8 @@ class TestEventIdempotency:
         
         # Verify only one event was created
         events = fund.get_all_fund_events()
-        capital_call_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
-        assert len(capital_call_events) == 1
+        CAPITAL_CALL_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
+        assert len(CAPITAL_CALL_events) == 1
 
     def test_nav_update_idempotency(self, db_session):
         """Test that NAV update can be safely re-run with same parameters."""
@@ -165,8 +165,8 @@ class TestDuplicateEventPrevention:
         
         # Verify no duplicate event was created
         events = fund.get_all_fund_events()
-        capital_call_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
-        assert len(capital_call_events) == 1
+        CAPITAL_CALL_events = [e for e in events if e.event_type == EventType.CAPITAL_CALL]
+        assert len(CAPITAL_CALL_events) == 1
 
     def test_duplicate_nav_update_same_date(self, db_session):
         """Test that duplicate NAV updates on same date are prevented via idempotent behavior."""

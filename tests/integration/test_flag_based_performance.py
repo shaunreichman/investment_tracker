@@ -115,7 +115,7 @@ class TestFlagBasedPerformance:
             # Create capital call every 90 days
             if i % 90 == 0:
                 # NEW: Use new architecture for capital calls
-                capital_call_data = {
+                CAPITAL_CALL_data = {
                     'event_type': EventType.CAPITAL_CALL,
                     'amount': float(Decimal("5000.00")),
                     'date': current_date,
@@ -125,7 +125,7 @@ class TestFlagBasedPerformance:
                 
                 # Process capital call through new architecture
                 self.orchestrator.process_fund_event(
-                    event_data=capital_call_data,
+                    event_data=CAPITAL_CALL_data,
                     session=self.session,
                     fund=self.fund
                 )

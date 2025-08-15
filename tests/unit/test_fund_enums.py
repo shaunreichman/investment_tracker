@@ -18,9 +18,9 @@ class TestFundStatus:
     
     def test_enum_values(self):
         """Test that FundStatus has the correct values."""
-        assert FundStatus.ACTIVE.value == 'active'
-        assert FundStatus.REALIZED.value == 'realized'
-        assert FundStatus.COMPLETED.value == 'completed'
+        assert FundStatus.ACTIVE.value == 'ACTIVE'
+        assert FundStatus.REALIZED.value == 'REALIZED'
+        assert FundStatus.COMPLETED.value == 'COMPLETED'
     
     def test_enum_count(self):
         """Test that FundStatus has exactly 4 values."""
@@ -28,15 +28,15 @@ class TestFundStatus:
     
     def test_string_representation(self):
         """Test string representation of FundStatus values."""
-        assert str(FundStatus.ACTIVE) == 'active'
-        assert str(FundStatus.REALIZED) == 'realized'
-        assert str(FundStatus.COMPLETED) == 'completed'
+        assert str(FundStatus.ACTIVE) == 'ACTIVE'
+        assert str(FundStatus.REALIZED) == 'REALIZED'
+        assert str(FundStatus.COMPLETED) == 'COMPLETED'
     
     def test_from_string_valid(self):
         """Test creating FundStatus from valid string values."""
-        assert FundStatus.from_string('active') == FundStatus.ACTIVE
-        assert FundStatus.from_string('realized') == FundStatus.REALIZED
-        assert FundStatus.from_string('completed') == FundStatus.COMPLETED
+        assert FundStatus.from_string('ACTIVE') == FundStatus.ACTIVE
+        assert FundStatus.from_string('REALIZED') == FundStatus.REALIZED
+        assert FundStatus.from_string('COMPLETED') == FundStatus.COMPLETED
     
     def test_from_string_invalid(self):
         """Test creating FundStatus from invalid string values."""
@@ -49,8 +49,8 @@ class TestFundType:
     
     def test_enum_values(self):
         """Test that FundType has the correct values."""
-        assert FundType.COST_BASED.value == 'cost_based'
-        assert FundType.NAV_BASED.value == 'nav_based'
+        assert FundType.COST_BASED.value == 'COST_BASED'
+        assert FundType.NAV_BASED.value == 'NAV_BASED'
     
     def test_enum_count(self):
         """Test that FundType has exactly 2 values."""
@@ -58,8 +58,8 @@ class TestFundType:
     
     def test_from_string_valid(self):
         """Test creating FundType from valid string values."""
-        assert FundType.from_string('cost_based') == FundType.COST_BASED
-        assert FundType.from_string('nav_based') == FundType.NAV_BASED
+        assert FundType.from_string('COST_BASED') == FundType.COST_BASED
+        assert FundType.from_string('NAV_BASED') == FundType.NAV_BASED
 
 
 class TestEventType:
@@ -67,9 +67,9 @@ class TestEventType:
     
     def test_enum_values(self):
         """Test that EventType has the correct values."""
-        assert EventType.CAPITAL_CALL.value == 'capital_call'
-        assert EventType.DISTRIBUTION.value == 'distribution'
-        assert EventType.NAV_UPDATE.value == 'nav_update'
+        assert EventType.CAPITAL_CALL.value == 'CAPITAL_CALL'
+        assert EventType.DISTRIBUTION.value == 'DISTRIBUTION'
+        assert EventType.NAV_UPDATE.value == 'NAV_UPDATE'
     
     def test_equity_event_detection(self):
         """Test equity event detection methods."""
@@ -93,9 +93,9 @@ class TestDistributionType:
     
     def test_enum_values(self):
         """Test that DistributionType has the correct values."""
-        assert DistributionType.INCOME.value == 'income'
-        assert DistributionType.DIVIDEND_FRANKED.value == 'dividend_franked'
-        assert DistributionType.INTEREST.value == 'interest'
+        assert DistributionType.INCOME.value == 'INCOME'
+        assert DistributionType.DIVIDEND_FRANKED.value == 'DIVIDEND_FRANKED'
+        assert DistributionType.INTEREST.value == 'INTEREST'
     
     def test_taxable_distribution_detection(self):
         """Test taxable distribution detection methods."""
@@ -119,8 +119,8 @@ class TestCashFlowDirection:
     
     def test_enum_values(self):
         """Test that CashFlowDirection has the correct values."""
-        assert CashFlowDirection.INFLOW.value == 'inflow'
-        assert CashFlowDirection.OUTFLOW.value == 'outflow'
+        assert CashFlowDirection.INFLOW.value == 'INFLOW'
+        assert CashFlowDirection.OUTFLOW.value == 'OUTFLOW'
     
     def test_enum_count(self):
         """Test that CashFlowDirection has exactly 2 values."""
@@ -128,8 +128,8 @@ class TestCashFlowDirection:
     
     def test_from_string_valid(self):
         """Test creating CashFlowDirection from valid string values."""
-        assert CashFlowDirection.from_string('inflow') == CashFlowDirection.INFLOW
-        assert CashFlowDirection.from_string('outflow') == CashFlowDirection.OUTFLOW
+        assert CashFlowDirection.from_string('INFLOW') == CashFlowDirection.INFLOW
+        assert CashFlowDirection.from_string('OUTFLOW') == CashFlowDirection.OUTFLOW
     
     def test_direction_detection(self):
         """Test direction detection methods."""
@@ -144,9 +144,9 @@ class TestTaxPaymentType:
     
     def test_enum_values(self):
         """Test that TaxPaymentType has the correct values."""
-        assert TaxPaymentType.CAPITAL_GAINS_TAX.value == 'capital_gains_tax'
-        assert TaxPaymentType.DIVIDENDS_FRANKED_TAX.value == 'dividends_franked_tax'
-        assert TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING.value == 'non_resident_interest_withholding'
+        assert TaxPaymentType.CAPITAL_GAINS_TAX.value == 'CAPITAL_GAINS_TAX'
+        assert TaxPaymentType.DIVIDENDS_FRANKED_TAX.value == 'DIVIDENDS_FRANKED_TAX'
+        assert TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING.value == 'NON_RESIDENT_INTEREST_WITHHOLDING'
     
     def test_enum_count(self):
         """Test that TaxPaymentType has exactly 6 values."""
@@ -196,8 +196,8 @@ class TestGroupType:
     
     def test_enum_values(self):
         """Test that GroupType has the correct values."""
-        assert GroupType.INTEREST_WITHHOLDING.value == 'interest_withholding'
-        assert GroupType.TAX_STATEMENT.value == 'tax_statement'
+        assert GroupType.INTEREST_WITHHOLDING.value == 'INTEREST_WITHHOLDING'
+        assert GroupType.TAX_STATEMENT.value == 'TAX_STATEMENT'
     
     def test_enum_count(self):
         """Test that GroupType has exactly 2 values."""
@@ -210,16 +210,16 @@ class TestEnumUtilityFunctions:
     def test_get_all_enum_values(self):
         """Test getting all enum values."""
         fund_status_values = get_all_enum_values(FundStatus)
-        assert 'active' in fund_status_values
-        assert 'suspended' in fund_status_values
-        assert 'realized' in fund_status_values
-        assert 'completed' in fund_status_values
+        assert 'ACTIVE' in fund_status_values
+        assert 'SUSPENDED' in fund_status_values
+        assert 'REALIZED' in fund_status_values
+        assert 'COMPLETED' in fund_status_values
         assert len(fund_status_values) == 4
     
     def test_validate_enum_value_valid(self):
         """Test validating valid enum values."""
-        assert validate_enum_value(FundStatus, 'active') is True
-        assert validate_enum_value(FundType, 'nav_based') is True
+        assert validate_enum_value(FundStatus, 'ACTIVE') is True
+        assert validate_enum_value(FundType, 'NAV_BASED') is True
     
     def test_validate_enum_value_invalid(self):
         """Test validating invalid enum values."""
@@ -241,7 +241,7 @@ class TestEnumIntegration:
         status = FundStatus.ACTIVE
         assert status == FundStatus.ACTIVE
         assert status != FundStatus.REALIZED
-        assert status.value == 'active'
+        assert status.value == 'ACTIVE'
     
     def test_enum_in_collections(self):
         """Test that enums work correctly in collections."""
@@ -252,8 +252,8 @@ class TestEnumIntegration:
     def test_enum_as_dict_keys(self):
         """Test that enums work correctly as dictionary keys."""
         status_map = {
-            FundStatus.ACTIVE: "Fund is active",
+            FundStatus.ACTIVE: "Fund is ACTIVE",
             FundStatus.REALIZED: "Fund is realized"
         }
-        assert status_map[FundStatus.ACTIVE] == "Fund is active"
+        assert status_map[FundStatus.ACTIVE] == "Fund is ACTIVE"
         assert status_map[FundStatus.REALIZED] == "Fund is realized"

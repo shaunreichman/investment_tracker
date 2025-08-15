@@ -21,7 +21,7 @@ from src.shared.calculations import (
 class TestEquityChangeForEventExtended:
     """Extended tests for equity change calculation"""
     
-    def test_equity_change_nav_based_unit_purchase(self, db_session):
+    def test_equity_change_NAV_BASED_unit_purchase(self, db_session):
         """Test equity change for NAV-based unit purchase"""
         from tests.factories import FundEventFactory, FundFactory, EntityFactory, InvestmentCompanyFactory
         from src.fund.models import FundType, EventType
@@ -46,7 +46,7 @@ class TestEquityChangeForEventExtended:
         # Should exclude brokerage: 100 * 10 = 1000
         assert result == 1000.0
     
-    def test_equity_change_nav_based_unit_sale(self, db_session):
+    def test_equity_change_NAV_BASED_unit_sale(self, db_session):
         """Test equity change for NAV-based unit sale"""
         from tests.factories import FundEventFactory, FundFactory, EntityFactory, InvestmentCompanyFactory
         from src.fund.models import FundType, EventType
@@ -622,7 +622,7 @@ class TestOrchestrateIRRBaseExtended:
         result = orchestrate_irr_base(events, start_date, return_cashflows=True)
         
         if result and 'cash_flows' in result:
-            # CAPITAL_CALL should be negative (outflow)
+            # CAPITAL_CALL should be negative (OUTFLOW)
             assert result['cash_flows'][0] < 0
-            # DISTRIBUTION should be positive (inflow)
+            # DISTRIBUTION should be positive (INFLOW)
             assert result['cash_flows'][1] > 0

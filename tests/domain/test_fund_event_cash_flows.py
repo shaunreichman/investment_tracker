@@ -251,7 +251,7 @@ class TestWithholdingTaxMatching:
 class TestCashFlowDirectionInference:
     """Test automatic direction inference based on event type"""
     
-    def test_capital_call_outflow_direction(self, db_session):
+    def test_capital_call_OUTFLOW_direction(self, db_session):
         """Test that CAPITAL_CALL events infer OUTFLOW direction"""
         # Create test data
         entity = EntityFactory.create()
@@ -276,7 +276,7 @@ class TestCashFlowDirectionInference:
         # Verify direction is inferred as OUTFLOW
         assert cash_flow.direction == CashFlowDirection.OUTFLOW
     
-    def test_distribution_inflow_direction(self, db_session):
+    def test_distribution_INFLOW_direction(self, db_session):
         """Test that DISTRIBUTION events infer INFLOW direction"""
         # Create test data
         entity = EntityFactory.create()

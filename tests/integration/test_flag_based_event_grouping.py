@@ -339,7 +339,7 @@ class TestFlagBasedEventGrouping:
         }
         
         # Process event through new architecture
-        capital_call = self.orchestrator.process_fund_event(
+        CAPITAL_CALL = self.orchestrator.process_fund_event(
             event_data=event_data,
             session=self.session,
             fund=self.fund
@@ -349,10 +349,10 @@ class TestFlagBasedEventGrouping:
         self.session.commit()
         
         # Verify it's not grouped
-        assert not capital_call.is_grouped, "Capital call should not be grouped"
-        assert capital_call.group_id is None, "Non-grouped event should have no group_id"
-        assert capital_call.group_type is None, "Non-grouped event should have no group_type"
-        assert capital_call.group_position is None, "Non-grouped event should have no group_position"
+        assert not CAPITAL_CALL.is_grouped, "Capital call should not be grouped"
+        assert CAPITAL_CALL.group_id is None, "Non-grouped event should have no group_id"
+        assert CAPITAL_CALL.group_type is None, "Non-grouped event should have no group_type"
+        assert CAPITAL_CALL.group_position is None, "Non-grouped event should have no group_position"
         
         # Test API response
         response = self.client.get(f"/api/funds/{self.fund.id}")
@@ -362,9 +362,9 @@ class TestFlagBasedEventGrouping:
         events = data["events"]
         
         # Find the capital call
-        capital_call_event = next((e for e in events if e["reference_number"] == "TEST003"), None)
-        assert capital_call_event is not None, "Capital call should be in API response"
-        assert capital_call_event["is_grouped"] is False, "Capital call should not be grouped in API"
+        CAPITAL_CALL_event = next((e for e in events if e["reference_number"] == "TEST003"), None)
+        assert CAPITAL_CALL_event is not None, "Capital call should be in API response"
+        assert CAPITAL_CALL_event["is_grouped"] is False, "Capital call should not be grouped in API"
         
         print("    ✅ Non-grouped events work correctly with NEW architecture")
         print("  🎉 Non-grouped events test passed!")
