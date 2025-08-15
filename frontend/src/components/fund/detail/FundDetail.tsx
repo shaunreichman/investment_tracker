@@ -134,18 +134,25 @@ const FundDetail: React.FC = () => {
   const { fund, events } = fundData;
 
   return (
-    <Box sx={{ p: 0 }}>
+    <Box sx={{ 
+      p: 0, 
+      height: '100%', // Inherit height from parent container (not viewport)
+      display: 'grid',
+      gridTemplateRows: 'auto 1fr', // Header takes what it needs, content takes remaining
+      minHeight: 0, // Allow grid item to shrink below content size
+      overflow: 'hidden' // Prevent page-level scrollbar
+    }}>
       <FundDetailHeader fund={fund} sidebarVisible={sidebarVisible} onToggleSidebar={toggleSidebar} />
 
-      {/* Main Layout */}
+      {/* Main Layout - Grid item that fills remaining space */}
       <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'row' },
         gap: { xs: 2, sm: 3 },
-        minHeight: { xs: 'auto', sm: 'calc(100vh - 200px)' },
-        height: { xs: 'auto', sm: 'calc(100vh - 200px)' },
+        minHeight: 0, // Critical: allow grid item to shrink below content size
         alignItems: 'stretch',
         transition: 'all 0.3s ease-in-out',
+        overflow: 'hidden', // Prevent page-level scrollbar
         '& > *:first-of-type': {
           borderRight: { sm: `1px solid ${theme.palette.divider}` },
           pr: { sm: 3 }
@@ -156,18 +163,17 @@ const FundDetail: React.FC = () => {
           width: sidebarVisible ? { xs: '100%', sm: '322px', md: '368px', lg: '414px' } : 0,
           flexShrink: 0,
           position: { xs: 'static', sm: 'relative' },
-          height: { xs: 'auto', sm: '100%' },
-          overflowY: { xs: 'visible', sm: 'auto' },
+          height: '100%', // Use full height from grid parent
+          minHeight: 0, // Allow flex item to shrink
+          display: 'flex',
+          flexDirection: 'column',
           transition: 'all 0.3s ease-in-out',
-          overflow: 'hidden',
           order: { xs: 1, sm: 0 },
           mb: { xs: 2, sm: 0 },
           backgroundColor: theme.palette.background.paper,
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: { sm: '8px' },
           boxShadow: '0px 4px 16px rgba(0,0,0,0.2)',
-          display: 'flex',
-          flexDirection: 'column',
           opacity: sidebarVisible ? 1 : 0,
           visibility: sidebarVisible ? 'visible' : 'hidden',
           transform: sidebarVisible ? 'translateX(0)' : 'translateX(-100%)'
@@ -176,7 +182,8 @@ const FundDetail: React.FC = () => {
           <Box sx={{ 
             p: 3, 
             borderBottom: `1px solid ${theme.palette.divider}`,
-            backgroundColor: theme.palette.background.sidebar
+            backgroundColor: theme.palette.background.sidebar,
+            flexShrink: 0 // Prevent header from shrinking
           }}>
             <Typography 
               variant="h5"
@@ -191,32 +198,39 @@ const FundDetail: React.FC = () => {
             </Typography>
           </Box>
           
-          {/* Summary Sections */}
-          <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <Suspense fallback={null}>
-            <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
-          </Suspense>
+          {/* Summary Sections - Scrollable container */}
+          <Box sx={{ 
+            flex: 1, 
+            overflowY: 'auto',
+            minHeight: 0 // Allow flex item to shrink
+          }}>
+            <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <Suspense fallback={null}>
+              <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
+            </Suspense>
+          </Box>
         </Box>
 
         {/* Right Main Area - Events Table */}
         <Box sx={{ 
           flex: 1,
           minWidth: 0,
-          height: { xs: 'auto', sm: '100%' },
-          overflow: 'hidden',
+          height: '100%', // Use full height from grid parent
+          minHeight: 0, // Allow flex item to shrink
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden', // Container overflow hidden, but table can scroll internally
           order: { xs: 2, sm: 1 },
           width: { xs: '100%', sm: 'auto' },
           backgroundColor: theme.palette.background.paper,
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: { sm: '8px' },
           boxShadow: '0px 4px 16px rgba(0,0,0,0.2)',
-          pl: { sm: 3 },
-          display: 'flex',
-          flexDirection: 'column'
+          pl: { sm: 3 }
         }}>
           {/* Use the extracted TableContainer component */}
           <TableContainer

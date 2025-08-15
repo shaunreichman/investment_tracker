@@ -65,7 +65,8 @@ const TableContainerComponent: React.FC<TableContainerProps> = ({
         p: 3, 
         borderBottom: 1, 
         borderColor: 'divider',
-        bgcolor: 'grey.50'
+        bgcolor: 'background.sidebar',
+        flexShrink: 0 // Prevent header from shrinking
       }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography 
@@ -91,26 +92,27 @@ const TableContainerComponent: React.FC<TableContainerProps> = ({
         </Box>
       </Box>
 
-      {/* Table Container - EXACTLY matching original structure */}
+      {/* Table Container - Scrollable when content exceeds height */}
       <TableContainer sx={{ 
         flex: 1,
         maxHeight: { xs: 300, sm: 'none' },
         scrollBehavior: 'smooth',
-        // Phase 4: Enhanced scrollbar styling
+        overflow: 'auto', // Allow internal scrolling
+        // Phase 4: Enhanced scrollbar styling with theme colors
         '&::-webkit-scrollbar': {
           width: '8px',
           height: '8px'
         },
         '&::-webkit-scrollbar-track': {
-          backgroundColor: 'grey.100',
+          backgroundColor: 'background.sidebar',
           borderRadius: '4px'
         },
         '&::-webkit-scrollbar-thumb': {
-          backgroundColor: 'grey.400',
+          backgroundColor: 'divider',
           borderRadius: '4px',
           transition: 'background-color 0.2s ease-in-out',
           '&:hover': {
-            backgroundColor: 'grey.500'
+            backgroundColor: 'primary.main'
           }
         },
         // Responsive optimization: Better mobile table experience

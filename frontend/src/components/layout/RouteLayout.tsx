@@ -34,17 +34,34 @@ const RouteLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const topBarKey = location.pathname;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100vh',
+      // Define CSS custom properties for layout dimensions
+      '--topbar-height': '56px',
+      '--content-padding': '24px',
+      '--content-top-offset': 'calc(var(--topbar-height) + var(--content-padding))',
+      '--sidebar-width': sidebarOpen ? '280px' : '72px'
+    } as any}>
       {/* Persistent TopBar - Clean implementation with key for route changes */}
       <TopBar key={topBarKey} />
-      <Box sx={{ display: 'flex', flex: 1 }}>
+      
+      {/* Main Layout Area - CSS Grid for proper space distribution */}
+      <Box sx={{ 
+        display: 'grid',
+        gridTemplateRows: '1fr', // Main content takes remaining space
+        gridTemplateColumns: `${sidebarOpen ? 280 : 72}px 1fr`, // Sidebar + main content
+        flex: 1,
+        minHeight: 0 // Allow grid to shrink below content size
+      }}>
         {/* Main Sidebar */}
         <Box
           sx={{
             position: 'fixed',
-            top: '56px', // Start below the TopBar
+            top: 'var(--topbar-height)', // Use CSS custom property
             left: 0,
-            height: 'calc(100vh - 56px)', // Full height minus TopBar
+            height: 'calc(100vh - var(--topbar-height))', // Use CSS custom property
             zIndex: theme.zIndex.drawer,
           }}
         >
@@ -55,19 +72,22 @@ const RouteLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <Box
           component="main"
           sx={{
-            flexGrow: 1,
-            width: `calc(100% - ${sidebarOpen ? 280 : 72}px)`, // Updated sidebar dimensions
-            marginLeft: `${sidebarOpen ? 280 : 72}px`, // Offset for sidebar
-            transition: 'width 0.2s ease-in-out, margin-left 0.2s ease-in-out',
+            gridColumn: 2, // Position in second grid column
+            width: '100%',
+            height: '100%',
+            minHeight: 0 // Allow grid item to shrink
           }}
         >
           {/* Content Area with proper spacing - account for TopBar height */}
           <Box
             sx={{
-              padding: '24px', // 24px outer padding as per spec
-              paddingTop: '80px', // 56px TopBar height + 24px spacing
-              minHeight: 'calc(100vh - 56px)',
+              padding: 'var(--content-padding)', // Use CSS custom property
+              paddingTop: 'var(--content-top-offset)', // Use CSS custom property
+              height: '100%',
+              minHeight: 0, // Allow flex item to shrink
               backgroundColor: theme.palette.background.default, // Main dashboard background
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <SidebarContext.Provider value={{ sidebarOpen, onSidebarToggle: handleSidebarToggle }}>
