@@ -61,12 +61,15 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
               backgroundColor: detail.priority === 1 ? 'success.50' : 'transparent',
               border: '1px solid',
               borderColor: 'grey.200',
-              // Phase 4: Enhanced hover effects for individual items
+              // Very obvious hover effects for consistent user experience
               transition: 'all 0.2s ease-in-out',
+              cursor: 'pointer',
               '&:hover': {
-                backgroundColor: detail.priority === 1 ? 'success.100' : 'grey.50',
-                borderColor: 'grey.300',
-                transform: 'translateX(2px)'
+                backgroundColor: detail.priority === 1 ? 'success.300' : 'success.100',
+                borderColor: 'success.main',
+                borderWidth: '2px',
+                transform: 'translateX(4px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
               }
             }}
           >
