@@ -243,6 +243,9 @@ class FundController:
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
         except RuntimeError as e:
+            # Check if this is a "not found" error
+            if "not found" in str(e).lower():
+                return jsonify({'error': str(e)}), 404
             return jsonify({'error': str(e)}), 400
         except Exception as e:
             current_app.logger.error(f"Error adding fund event: {str(e)}")
@@ -358,7 +361,7 @@ class FundController:
             # Commit the transaction
             session.commit()
             
-            return jsonify({'message': 'Event deleted successfully'}), 200
+            return '', 204  # DELETE operations return 204 No Content
             
         except Exception as e:
             current_app.logger.error(f"Error deleting fund event: {str(e)}")
@@ -432,17 +435,25 @@ class FundController:
         Get a database session.
         
         In a real Flask application, this would be injected or retrieved
-        from a session factory. For now, we'll return None to indicate
-        that this needs to be implemented.
+        from a session factory. For now, we'll use the existing Flask session management.
         
         Returns:
             Database session
-            
-        Raises:
-            NotImplementedError: This method needs to be implemented
         """
-        raise NotImplementedError(
-            "Database session management needs to be implemented. "
-            "In a real Flask application, this would be injected or "
-            "retrieved from a session factory."
-        )
+        from flask import current_app
+        # Access the get_db_session function from the Flask app context
+        # The function is defined in the Flask app, so we need to access it differently
+        try:
+            # Try to get the test session first
+            if current_app.config.get('TEST_DB_SESSION'):
+                return current_app.config['TEST_DB_SESSION']
+        except:
+            pass
+        
+        # For now, let's use a simple approach - create a session directly
+        # This is not ideal but will work for testing
+        from src.database import create_database_engine
+        from sqlalchemy.orm import sessionmaker
+        engine = create_database_engine()
+        Session = sessionmaker(bind=engine)
+        return Session()

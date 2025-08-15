@@ -59,15 +59,29 @@ class FundService:
             if field not in fund_data:
                 raise ValueError(f"Required field '{field}' is missing")
         
+        # Convert string enum values to enum objects
+        processed_data = fund_data.copy()
+        if 'fund_type' in processed_data and isinstance(processed_data['fund_type'], str):
+            # For backward compatibility, allow any string value for fund_type
+            # The old system used String(100) column, not enum
+            pass  # Keep as string
+        if 'tracking_type' in processed_data and isinstance(processed_data['tracking_type'], str):
+            # tracking_type should be a valid FundType enum
+            try:
+                processed_data['tracking_type'] = FundType(processed_data['tracking_type'])
+            except ValueError:
+                raise ValueError(f"Invalid tracking_type: {processed_data['tracking_type']}. Must be one of: {[t.value for t in FundType]}")
+        
         # Create the fund
-        fund = self.fund_repository.create(fund_data, session)
+        fund = self.fund_repository.create(processed_data, session)
         
         # Return fund information
         return {
             'id': fund.id,
             'name': fund.name,
             'status': fund.status.value if fund.status else None,
-            'fund_type': fund.fund_type.value if fund.fund_type else None,
+            'fund_type': fund.fund_type.value if hasattr(fund.fund_type, 'value') else fund.fund_type,
+            'tracking_type': fund.tracking_type.value if hasattr(fund.tracking_type, 'value') else fund.tracking_type,
             'entity_id': fund.entity_id,
             'investment_company_id': fund.investment_company_id,
             'created_at': fund.created_at.isoformat() if fund.created_at else None
@@ -96,7 +110,8 @@ class FundService:
             'id': fund.id,
             'name': fund.name,
             'status': fund.status.value if fund.status else None,
-            'fund_type': fund.fund_type.value if fund.fund_type else None,
+            'fund_type': fund.fund_type.value if hasattr(fund.fund_type, 'value') else fund.fund_type,
+            'tracking_type': fund.tracking_type.value if hasattr(fund.tracking_type, 'value') else fund.tracking_type,
             'entity_id': fund.entity_id,
             'investment_company_id': fund.investment_company_id,
             'updated_at': fund.updated_at.isoformat() if fund.updated_at else None
@@ -238,6 +253,11 @@ class FundService:
             ValueError: If required fields are missing
             RuntimeError: If event processing fails
         """
+        # Get the fund first
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            raise RuntimeError(f"Fund with ID {fund_id} not found")
+        
         # Validate required fields
         required_fields = ['event_type', 'event_date', 'amount']
         for field in required_fields:
@@ -247,17 +267,22 @@ class FundService:
         # Add fund_id to event data
         event_data['fund_id'] = fund_id
         
+        # For backward compatibility, map event_date to date if it exists
+        if 'event_date' in event_data and 'date' not in event_data:
+            event_data['date'] = event_data['event_date']
+        
         # Process the event through the orchestrator
         try:
-            result = self.orchestrator.process_fund_event(event_data, session)
+            result = self.orchestrator.process_fund_event(event_data, session, fund)
             
             # Return event information
             return {
-                'id': result.get('event_id'),
+                'id': result.id,
                 'fund_id': fund_id,
                 'event_type': event_data['event_type'],
                 'event_date': event_data['event_date'].isoformat() if hasattr(event_data['event_date'], 'isoformat') else str(event_data['event_date']),
-                'amount': str(event_data['amount']),
+                'amount': float(event_data['amount']),
+                'description': event_data.get('description'),
                 'status': 'processed'
             }
             
