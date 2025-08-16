@@ -11,14 +11,14 @@ from src.shared.calculations import get_equity_change_for_event
 from src.fund.enums import EventType, DistributionType
 
 # IRR calculation utility
-def calculate_irr(cash_flows, days_from_start, tolerance=1e-10, max_iterations=200):
+def calculate_irr(cash_flows, days_from_start, tolerance=1e-6, max_iterations=200):
     """
     Calculate annual IRR using monthly compounding with the Newton-Raphson method.
     
     Args:
         cash_flows (list[float]): List of cash flow amounts (negative for outflows, positive for inflows).
         days_from_start (list[int]): List of days from the start date for each cash flow.
-        tolerance (float): Convergence tolerance for the root-finding algorithm.
+        tolerance (float): Convergence tolerance for the root-finding algorithm (default: 1e-6 for financial precision).
         max_iterations (int): Maximum number of iterations to attempt.
     
     Returns:
