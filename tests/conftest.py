@@ -87,12 +87,13 @@ def engine(test_database_name):
     engine = create_postgresql_test_engine(test_database_name)
     
     # Import all model modules so their tables are registered with Base
-    import src.fund.models  # noqa: F401
+    # Import order matters - import dependencies first
     import src.banking.models  # noqa: F401
     import src.entity.models  # noqa: F401
     import src.tax.models  # noqa: F401
     import src.rates.models  # noqa: F401
     import src.investment_company.models  # noqa: F401
+    import src.fund.models  # noqa: F401
 
     # Create all tables
     Base.metadata.create_all(bind=engine)

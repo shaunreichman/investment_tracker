@@ -1,9 +1,9 @@
 """
-New Fund Manager.
+Fund Manager.
 
-This module provides a wrapper around the existing Fund model that routes
-operations to the new event-driven architecture. It maintains backward
-compatibility while enabling the new system.
+This module provides a comprehensive interface for all fund operations using
+the event-driven architecture. It maintains backward compatibility while
+enabling the new system and provides a clean, service-oriented API.
 """
 
 from typing import Dict, Any, Optional, Union, List
@@ -19,12 +19,12 @@ from src.fund.services.tax_calculation_service import TaxCalculationService
 from src.fund.services.fund_event_service import FundEventService
 
 
-class NewFundManager:
+class FundManager:
     """
-    New fund manager that uses the event-driven architecture.
+    Fund manager that uses the event-driven architecture.
     
-    This class wraps the existing Fund model and routes operations to the
-    new event handler system while maintaining backward compatibility.
+    This class provides a clean, service-oriented API for all fund operations
+    while maintaining backward compatibility and enabling the new system.
     """
     
     def __init__(self, fund: Fund):
@@ -472,8 +472,8 @@ class NewFundManager:
         return getattr(self.fund, name)
     
     def __repr__(self) -> str:
-        """String representation of the new fund manager."""
-        return f"<NewFundManager(fund_id={self.fund.id}, name='{self.fund.name}')>"
+        """String representation of the fund manager."""
+        return f"<FundManager(fund_id={self.fund.id}, name='{self.fund.name}')>"
 
     # ============================================================================
     # UTILITY AND HELPER METHODS

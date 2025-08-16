@@ -50,7 +50,6 @@ class DomainEvent(Base):
         Index('idx_domain_events_fund_id_event_type', 'fund_id', 'event_type'),
         Index('idx_domain_events_timestamp', 'timestamp'),
         Index('idx_domain_events_processed', 'processed'),
-        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
     def __repr__(self) -> str:

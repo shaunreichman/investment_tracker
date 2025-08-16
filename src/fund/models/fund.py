@@ -84,7 +84,6 @@ class Fund(Base):
         # Composite indexes for common query patterns
         Index('idx_funds_status_tracking_type', 'status', 'tracking_type'),
         Index('idx_funds_equity_status', 'current_equity_balance', 'status'),
-        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
     def __repr__(self) -> str:

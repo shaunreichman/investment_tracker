@@ -1,7 +1,7 @@
 """
-Test NewFundManager functionality.
+Test FundManager functionality.
 
-This module tests the enhanced NewFundManager that provides
+This module tests the enhanced FundManager that provides
 a comprehensive API for fund operations.
 """
 
@@ -9,13 +9,13 @@ import pytest
 from datetime import date
 from unittest.mock import Mock, MagicMock
 
-from src.fund.new_fund_manager import NewFundManager
+from src.fund.fund_manager import FundManager
 from src.fund.models import Fund
 from src.fund.enums import FundStatus, FundType, EventType
 
 
-class TestNewFundManager:
-    """Test the NewFundManager class."""
+class TestFundManager:
+    """Test the FundManager class."""
     
     def setup_method(self):
         """Set up test fixtures."""
@@ -28,11 +28,11 @@ class TestNewFundManager:
         self.mock_fund.commitment_amount = 1000000.0
         self.mock_fund.current_equity_balance = 500000.0
         
-        # Create the NewFundManager
-        self.fund_manager = NewFundManager(self.mock_fund)
+        # Create the FundManager
+        self.fund_manager = FundManager(self.mock_fund)
     
     def test_initialization(self):
-        """Test NewFundManager initialization."""
+        """Test FundManager initialization."""
         assert self.fund_manager.fund == self.mock_fund
         assert self.fund_manager.orchestrator is not None
     
@@ -87,7 +87,7 @@ class TestNewFundManager:
         assert self.fund_manager.get_remaining_commitment() == 0.0
     
     def test_method_count(self):
-        """Test that NewFundManager has the expected number of methods."""
+        """Test that FundManager has the expected number of methods."""
         # Count public methods (excluding private methods starting with _)
         public_methods = [
             method for method in dir(self.fund_manager) 

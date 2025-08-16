@@ -6,6 +6,18 @@ Models handle only data persistence and basic validation, with business logic
 delegated to services through the orchestrator.
 """
 
+# Import enums first to ensure they're registered with SQLAlchemy
+from src.fund.enums import (
+    FundType,
+    FundStatus,
+    EventType,
+    DistributionType,
+    CashFlowDirection,
+    TaxPaymentType,
+    GroupType
+)
+
+# Import fund models
 from src.fund.models.domain_event import DomainEvent
 from src.fund.models.fund_event_cash_flow import FundEventCashFlow
 from src.fund.models.fund_event import FundEvent
@@ -16,6 +28,14 @@ __all__ = [
     'FundEventCashFlow', 
     'FundEvent',
     'Fund',
+    # Also export enums for convenience
+    'FundType',
+    'FundStatus',
+    'EventType',
+    'DistributionType',
+    'CashFlowDirection',
+    'TaxPaymentType',
+    'GroupType'
 ]
 
 # Version information

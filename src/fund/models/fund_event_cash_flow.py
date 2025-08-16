@@ -51,7 +51,6 @@ class FundEventCashFlow(Base):
         Index('idx_fund_event_cash_flows_bank_account_id', 'bank_account_id'),
         Index('idx_fund_event_cash_flows_transfer_date', 'transfer_date'),
         Index('idx_fund_event_cash_flows_currency', 'currency'),
-        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
     def __repr__(self) -> str:

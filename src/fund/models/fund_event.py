@@ -62,7 +62,6 @@ class FundEvent(Base):
         Index('idx_fund_events_event_type', 'event_type'),
         Index('idx_fund_events_event_date', 'event_date'),
         Index('idx_fund_events_fund_id_event_date', 'fund_id', 'event_date'),
-        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
     def __repr__(self) -> str:
