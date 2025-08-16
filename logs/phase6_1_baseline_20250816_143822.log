@@ -1,0 +1,38 @@
+2025-08-16 14:38:22,391 - INFO - 🚀 STARTING PHASE 6.1: PERFORMANCE BASELINE & ANALYSIS
+2025-08-16 14:38:22,391 - INFO - ================================================================================
+2025-08-16 14:38:22,391 - INFO - Ensured directory exists: logs
+2025-08-16 14:38:22,391 - INFO - Ensured directory exists: scripts/performance
+2025-08-16 14:38:22,392 - INFO - Ensured directory exists: reports/phase6_1
+2025-08-16 14:38:22,392 - INFO - ============================================================
+2025-08-16 14:38:22,392 - INFO - STEP 1: GENERATING LOAD TEST DATA
+2025-08-16 14:38:22,392 - INFO - ============================================================
+2025-08-16 14:38:23,370 - ERROR - ❌ Load test data generation failed: cannot import name 'get_database_session' from 'database_config' (/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker3/investment_tracker/database_config.py)
+2025-08-16 14:38:23,370 - INFO - ============================================================
+2025-08-16 14:38:23,371 - INFO - STEP 2: RUNNING PERFORMANCE BASELINE TESTS
+2025-08-16 14:38:23,371 - INFO - ============================================================
+2025-08-16 14:38:23,429 - ERROR - ❌ Performance baseline testing failed: cannot import name 'get_database_session' from 'database_config' (/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker3/investment_tracker/database_config.py)
+2025-08-16 14:38:23,430 - INFO - ============================================================
+2025-08-16 14:38:23,430 - INFO - STEP 3: ANALYZING DATABASE QUERIES
+2025-08-16 14:38:23,430 - INFO - ============================================================
+2025-08-16 14:38:23,450 - ERROR - ❌ Database analysis failed: cannot import name 'get_database_session' from 'database_config' (/Users/shaunreichman/Documents/laptop backup/Work/Money/investment_tracker3/investment_tracker/database_config.py)
+2025-08-16 14:38:23,450 - INFO - ============================================================
+2025-08-16 14:38:23,450 - INFO - STEP 4: GENERATING SUMMARY REPORT
+2025-08-16 14:38:23,450 - INFO - ============================================================
+2025-08-16 14:38:23,453 - INFO - ✅ Summary report generated: reports/phase6_1/phase6_1_summary_20250816_143823.txt
+2025-08-16 14:38:23,454 - INFO - ================================================================================
+2025-08-16 14:38:23,454 - INFO - PHASE 6.1 COMPLETION SUMMARY
+2025-08-16 14:38:23,455 - INFO - ================================================================================
+2025-08-16 14:38:23,455 - INFO - Start Time: 2025-08-16T14:38:22.391609
+2025-08-16 14:38:23,455 - INFO - End Time: 2025-08-16T14:38:23.454315
+2025-08-16 14:38:23,455 - INFO - Duration: 0:00:01.062706
+2025-08-16 14:38:23,456 - INFO - Successful Steps: 1/4
+2025-08-16 14:38:23,456 - INFO - Success Rate: 25.0%
+2025-08-16 14:38:23,458 - INFO - 
+2025-08-16 14:38:23,459 - INFO - Load Test Data: ❌ FAIL
+2025-08-16 14:38:23,459 - INFO - Performance Baseline: ❌ FAIL
+2025-08-16 14:38:23,459 - INFO - Database Analysis: ❌ FAIL
+2025-08-16 14:38:23,460 - INFO - Summary Report: ✅ PASS
+2025-08-16 14:38:23,460 - INFO - 
+2025-08-16 14:38:23,461 - ERROR - ❌ PHASE 6.1 FAILED
+2025-08-16 14:38:23,461 - ERROR - Critical issues detected - must resolve before proceeding
+2025-08-16 14:38:23,461 - INFO - ================================================================================

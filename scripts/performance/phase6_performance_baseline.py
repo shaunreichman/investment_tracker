@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Database imports
 from sqlalchemy.orm import Session
-from src.database_config import get_database_session
+from src.database import get_database_session
 from src.fund.models import Fund, FundEvent, FundStatus
 from src.fund.enums import FundType, EventType
 from src.investment_company.models import InvestmentCompany

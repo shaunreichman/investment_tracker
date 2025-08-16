@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Database imports
 from sqlalchemy.orm import Session
-from src.database_config import get_database_session
+from src.database import get_database_session
 from src.fund.models import Fund, FundEvent, FundStatus
 from src.fund.enums import FundType, EventType
 from src.investment_company.models import InvestmentCompany
@@ -61,7 +61,7 @@ class LoadTestDataGenerator:
             FundStatus.COMPLETED: 0.1    # 10% completed funds
         }
     
-    def generate_companies(self, count: int = 15) -> List[InvestmentCompany]:
+    def generate_companies(self, count: int = 15, session: Session = None) -> List[InvestmentCompany]:
         """Generate test investment companies."""
         logger.info(f"Generating {count} test investment companies...")
         
@@ -75,13 +75,13 @@ class LoadTestDataGenerator:
         
         companies = []
         for i in range(count):
-            company = InvestmentCompany(
+            company = InvestmentCompany.create(
                 name=company_names[i],
-                abn=f"12{random.randint(100000000, 999999999)}",
-                acn=f"{random.randint(100000000, 999999999)}",
-                address=f"{random.randint(1, 999)} Test Street, Test City, NSW {random.randint(2000, 2999)}",
-                phone=f"+61 {random.randint(2, 9)}{random.randint(10000000, 99999999)}",
-                email=f"info@{company_names[i].lower().replace(' ', '')}.com.au"
+                description=f"Test investment company {i+1} for performance testing",
+                company_type=random.choice(["Private Equity", "Venture Capital", "Asset Management", "Investment Group"]),
+                business_address=f"{random.randint(1, 999)} Test Street, Test City, NSW {random.randint(2000, 2999)}",
+                website=f"https://www.{company_names[i].lower().replace(' ', '')}.com.au",
+                session=session
             )
             companies.append(company)
         
@@ -89,7 +89,7 @@ class LoadTestDataGenerator:
         logger.info(f"Generated {len(companies)} companies")
         return companies
     
-    def generate_entities(self, count: int = 25) -> List[Entity]:
+    def generate_entities(self, count: int = 25, session: Session = None) -> List[Entity]:
         """Generate test entities."""
         logger.info(f"Generating {count} test entities...")
         
@@ -103,13 +103,11 @@ class LoadTestDataGenerator:
         
         entities = []
         for i in range(count):
-            entity = Entity(
+            entity = Entity.create(
                 name=entity_names[i],
-                abn=f"12{random.randint(100000000, 999999999)}",
-                acn=f"{random.randint(100000000, 999999999)}",
-                address=f"{random.randint(1, 999)} Entity Street, Entity City, NSW {random.randint(2000, 2999)}",
-                phone=f"+61 {random.randint(2, 9)}{random.randint(10000000, 99999999)}",
-                email=f"contact@{entity_names[i].lower().replace(' ', '')}.com.au"
+                description=f"Test entity {i+1} for performance testing",
+                tax_jurisdiction=random.choice(["AU", "US", "UK", "CA"]),
+                session=session
             )
             entities.append(entity)
         
@@ -117,7 +115,7 @@ class LoadTestDataGenerator:
         logger.info(f"Generated {len(entities)} entities")
         return entities
     
-    def generate_funds(self, count: int = 75) -> List[Fund]:
+    def generate_funds(self, count: int = 75, session: Session = None) -> List[Fund]:
         """Generate test funds."""
         logger.info(f"Generating {count} test funds...")
         
@@ -145,24 +143,18 @@ class LoadTestDataGenerator:
             )[0]
             
             # Generate fund data
-            fund = Fund(
-                name=f"{company.name} - {random.choice(fund_names)} {i+1:03d}",
+            fund = Fund.create(
                 investment_company_id=company.id,
                 entity_id=entity.id,
+                name=f"{company.name} - {random.choice(fund_names)} {i+1:03d}",
+                fund_type=random.choice(["Private Equity", "Venture Capital", "Real Estate", "Infrastructure"]),
                 tracking_type=fund_type,
-                status=fund_status,
-                start_date=date(2020, 1, 1) + timedelta(days=random.randint(0, 1000)),
-                end_date=date(2025, 12, 31) - timedelta(days=random.randint(0, 1000)),
                 currency="AUD",
-                current_equity_balance=Decimal(str(random.randint(100000, 10000000))),
-                average_equity_balance=Decimal(str(random.randint(100000, 10000000))),
-                total_capital_called=Decimal(str(random.randint(100000, 10000000))),
-                total_capital_returned=Decimal(str(random.randint(0, 5000000))),
-                total_distributions=Decimal(str(random.randint(0, 3000000))),
-                total_units_issued=Decimal(str(random.randint(1000, 100000))),
-                total_units_redeemed=Decimal(str(random.randint(0, 50000))),
-                current_nav_per_unit=Decimal(str(random.uniform(1.0, 2.0))),
-                description=f"Test fund {i+1} for performance testing"
+                description=f"Test fund {i+1} for performance testing",
+                commitment_amount=Decimal(str(random.randint(100000, 10000000))),
+                expected_irr=Decimal(str(random.uniform(8.0, 25.0))),
+                expected_duration_months=random.randint(36, 120),
+                session=session
             )
             funds.append(fund)
         
@@ -186,7 +178,7 @@ class LoadTestDataGenerator:
             )[0]
             
             # Generate event date within fund's lifetime
-            fund_start = fund.start_date
+            fund_start = date(2020, 1, 1)  # Use a fixed start date for testing
             fund_end = fund.end_date or date.today()
             days_range = (fund_end - fund_start).days
             event_date = fund_start + timedelta(days=random.randint(0, days_range))
@@ -227,7 +219,7 @@ class LoadTestDataGenerator:
             fund = random.choice(self.funds)
             
             # Generate tax statement date
-            fund_start = fund.start_date
+            fund_start = date(2020, 1, 1)  # Use a fixed start date for testing
             fund_end = fund.end_date or date.today()
             days_range = (fund_end - fund_start).days
             statement_date = fund_start + timedelta(days=random.randint(0, days_range))
@@ -239,14 +231,16 @@ class LoadTestDataGenerator:
             
             tax_statement = TaxStatement(
                 fund_id=fund.id,
+                entity_id=fund.entity_id,  # Use the fund's entity
                 financial_year=financial_year,
                 statement_date=statement_date,
-                gross_income=Decimal(str(random.randint(10000, 1000000))),
-                net_income=Decimal(str(random.randint(8000, 800000))),
-                franked_amount=Decimal(str(random.randint(0, 500000))),
-                unfranked_amount=Decimal(str(random.randint(0, 500000))),
-                franking_credit=Decimal(str(random.randint(0, 200000))),
-                description=f"Test tax statement {i+1} for FY{financial_year}"
+                interest_income_amount=Decimal(str(random.randint(10000, 1000000))),
+                interest_income_tax_rate=Decimal(str(random.uniform(20.0, 45.0))),
+                interest_received_in_cash=Decimal(str(random.randint(8000, 800000))),
+                dividend_franked_income_amount=Decimal(str(random.randint(0, 500000))),
+                dividend_unfranked_income_amount=Decimal(str(random.randint(0, 500000))),
+                capital_gain_income_amount=Decimal(str(random.randint(0, 300000))),
+                notes=f"Test tax statement {i+1} for FY{financial_year}"
             )
             tax_statements.append(tax_statement)
         
@@ -303,9 +297,9 @@ class LoadTestDataGenerator:
         logger.info("Generating complete load test dataset...")
         
         # Generate all data
-        self.generate_companies(15)
-        self.generate_entities(25)
-        self.generate_funds(75)
+        self.generate_companies(15, session)
+        self.generate_entities(25, session)
+        self.generate_funds(75, session)
         self.generate_events(1500)
         self.generate_tax_statements(200)
         

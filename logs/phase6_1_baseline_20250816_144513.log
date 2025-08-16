@@ -1,0 +1,86 @@
+2025-08-16 14:45:13,270 - INFO - 🚀 STARTING PHASE 6.1: PERFORMANCE BASELINE & ANALYSIS
+2025-08-16 14:45:13,270 - INFO - ================================================================================
+2025-08-16 14:45:13,270 - INFO - Ensured directory exists: logs
+2025-08-16 14:45:13,270 - INFO - Ensured directory exists: scripts/performance
+2025-08-16 14:45:13,270 - INFO - Ensured directory exists: reports/phase6_1
+2025-08-16 14:45:13,270 - INFO - ============================================================
+2025-08-16 14:45:13,271 - INFO - STEP 1: GENERATING LOAD TEST DATA
+2025-08-16 14:45:13,271 - INFO - ============================================================
+2025-08-16 14:45:14,042 - INFO - Starting load test data generation for Phase 6.1
+2025-08-16 14:45:14,149 - INFO - Generating complete load test dataset...
+2025-08-16 14:45:14,149 - INFO - Generating 15 test investment companies...
+2025-08-16 14:45:14,333 - ERROR - Error in load test data generation: Investment company with name 'Alpha Capital Partners' already exists
+2025-08-16 14:45:14,333 - ERROR - ❌ Load test data generation failed: Investment company with name 'Alpha Capital Partners' already exists
+2025-08-16 14:45:14,333 - INFO - ============================================================
+2025-08-16 14:45:14,334 - INFO - STEP 2: RUNNING PERFORMANCE BASELINE TESTS
+2025-08-16 14:45:14,334 - INFO - ============================================================
+2025-08-16 14:45:14,384 - INFO - Starting Phase 6.1 Performance Baseline Testing
+2025-08-16 14:45:14,384 - INFO - Starting comprehensive performance baseline testing...
+2025-08-16 14:45:14,384 - INFO - Memory baseline established: {'rss_mb': 59.1484375, 'vms_mb': 33021.8984375, 'percent': 0.3610372543334961}
+2025-08-16 14:45:14,385 - INFO - Measuring event creation performance with 100 iterations...
+2025-08-16 14:45:18,683 - INFO - Event creation performance: 37.93ms average
+2025-08-16 14:45:18,684 - INFO - Measuring fund summary update performance with 50 iterations...
+2025-08-16 14:45:20,615 - INFO - Fund summary update performance: 37.83ms average
+2025-08-16 14:45:20,616 - INFO - Measuring database query performance with 100 iterations...
+2025-08-16 14:45:39,470 - INFO - Database query performance measured
+2025-08-16 14:45:39,478 - INFO - Measuring API endpoint performance with 50 iterations...
+2025-08-16 14:45:45,854 - INFO - API endpoint performance measured
+2025-08-16 14:45:45,855 - INFO - Comprehensive performance baseline completed successfully
+2025-08-16 14:45:45,864 - INFO - Performance baseline report saved to scripts/performance/baseline_results_20250816_144545.txt
+2025-08-16 14:45:45,865 - INFO - Phase 6.1 Performance Baseline Testing completed successfully
+2025-08-16 14:45:45,865 - INFO - ✅ Performance baseline testing completed successfully
+2025-08-16 14:45:45,865 - INFO - ============================================================
+2025-08-16 14:45:45,865 - INFO - STEP 3: ANALYZING DATABASE QUERIES
+2025-08-16 14:45:45,866 - INFO - ============================================================
+2025-08-16 14:45:45,891 - INFO - Starting Phase 6.1 Database Query Analysis
+2025-08-16 14:45:45,894 - INFO - Starting comprehensive database analysis...
+2025-08-16 14:45:45,894 - INFO - Analyzing table indexes...
+2025-08-16 14:45:46,370 - INFO - Analyzing query performance...
+2025-08-16 14:45:46,371 - INFO - Testing query: fund_by_id
+2025-08-16 14:45:47,756 - INFO - Testing query: fund_by_name
+2025-08-16 14:45:48,103 - INFO - Testing query: active_funds
+2025-08-16 14:45:50,027 - INFO - Testing query: cost_based_funds
+2025-08-16 14:45:52,003 - INFO - Testing query: fund_events
+2025-08-16 14:45:52,895 - INFO - Testing query: events_by_type
+2025-08-16 14:45:53,704 - INFO - Testing query: recent_events
+2025-08-16 14:45:54,287 - INFO - Testing query: fund_with_company
+2025-08-16 14:45:55,389 - INFO - Testing query: fund_with_entity
+2025-08-16 14:45:56,474 - INFO - Testing query: fund_summary
+2025-08-16 14:45:56,495 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,503 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,514 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,521 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,531 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,541 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,550 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,560 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,569 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,578 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 14:45:56,579 - INFO - Testing query: tax_statements_by_fund
+2025-08-16 14:45:57,723 - INFO - Analyzing connection usage patterns...
+2025-08-16 14:45:57,806 - INFO - Generating optimization recommendations...
+2025-08-16 14:45:57,806 - INFO - Database analysis completed successfully
+2025-08-16 14:45:57,808 - INFO - Database analysis report saved to scripts/performance/database_analysis_20250816_144557.txt
+2025-08-16 14:45:57,808 - INFO - Phase 6.1 Database Analysis completed successfully
+2025-08-16 14:45:57,812 - INFO - ✅ Database analysis completed successfully
+2025-08-16 14:45:57,813 - INFO - ============================================================
+2025-08-16 14:45:57,813 - INFO - STEP 4: GENERATING SUMMARY REPORT
+2025-08-16 14:45:57,813 - INFO - ============================================================
+2025-08-16 14:45:57,816 - INFO - ✅ Summary report generated: reports/phase6_1/phase6_1_summary_20250816_144557.txt
+2025-08-16 14:45:57,816 - INFO - ================================================================================
+2025-08-16 14:45:57,816 - INFO - PHASE 6.1 COMPLETION SUMMARY
+2025-08-16 14:45:57,816 - INFO - ================================================================================
+2025-08-16 14:45:57,816 - INFO - Start Time: 2025-08-16T14:45:13.270521
+2025-08-16 14:45:57,816 - INFO - End Time: 2025-08-16T14:45:57.816449
+2025-08-16 14:45:57,816 - INFO - Duration: 0:00:44.545928
+2025-08-16 14:45:57,816 - INFO - Successful Steps: 3/4
+2025-08-16 14:45:57,817 - INFO - Success Rate: 75.0%
+2025-08-16 14:45:57,817 - INFO - 
+2025-08-16 14:45:57,817 - INFO - Load Test Data: ❌ FAIL
+2025-08-16 14:45:57,817 - INFO - Performance Baseline: ✅ PASS
+2025-08-16 14:45:57,817 - INFO - Database Analysis: ✅ PASS
+2025-08-16 14:45:57,817 - INFO - Summary Report: ✅ PASS
+2025-08-16 14:45:57,817 - INFO - 
+2025-08-16 14:45:57,817 - INFO - 🎉 PHASE 6.1 COMPLETED SUCCESSFULLY!
+2025-08-16 14:45:57,817 - INFO - Ready to proceed to Phase 6.2: Incremental Calculations
+2025-08-16 14:45:57,817 - INFO - ================================================================================
