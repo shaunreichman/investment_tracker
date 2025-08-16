@@ -136,10 +136,23 @@ class FundUpdateOrchestrator:
             session: Database session for all operations
         """
         # Update fund summary fields if needed
-        if hasattr(event.fund, 'update_fund_summary_fields_after_capital_event'):
-            # For capital events, update summary fields
-            if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
-                event.fund.update_fund_summary_fields_after_capital_event(session=session)
+        if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
+            # Instead of calling fund method directly, publish a domain event
+            # This enables loose coupling and allows other components to react
+            from .domain import FundSummaryUpdatedEvent
+            from .consumption.event_bus import event_bus
+            
+            summary_event = FundSummaryUpdatedEvent(
+                fund_id=event.fund_id,
+                event_date=event.event_date,
+                summary_type="CAPITAL_EVENT_PROCESSED",
+                metadata={
+                    "original_event_id": event.id,
+                    "original_event_type": event.event_type.value,
+                    "amount": event.amount
+                }
+            )
+            event_bus.publish(summary_event)
         
         # Handle NAV-specific updates
         if event.event_type == EventType.NAV_UPDATE:

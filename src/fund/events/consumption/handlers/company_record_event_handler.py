@@ -17,7 +17,8 @@ from ...domain import (
     EquityBalanceChangedEvent,
     DistributionRecordedEvent,
     NAVUpdatedEvent,
-    UnitsChangedEvent
+    UnitsChangedEvent,
+    FundSummaryUpdatedEvent
 )
 from ....repositories.fund_repository import FundRepository
 from ....models import Fund
@@ -42,7 +43,8 @@ class CompanyRecordEventHandler(EventConsumer):
                 EquityBalanceChangedEvent,
                 DistributionRecordedEvent,
                 NAVUpdatedEvent,
-                UnitsChangedEvent
+                UnitsChangedEvent,
+                FundSummaryUpdatedEvent
             ]
         )
         
@@ -65,6 +67,8 @@ class CompanyRecordEventHandler(EventConsumer):
             self._handle_nav_updated(event)
         elif event_type == UnitsChangedEvent:
             self._handle_units_changed(event)
+        elif event_type == FundSummaryUpdatedEvent:
+            self._handle_fund_summary_updated(event)
         else:
             logger.warning(f"CompanyRecordEventHandler received unexpected event type: {event_type}")
     
@@ -167,6 +171,60 @@ class CompanyRecordEventHandler(EventConsumer):
         except Exception as e:
             logger.error(f"Error handling units changed event: {e}")
             raise
+    
+    def _handle_fund_summary_updated(self, event: FundSummaryUpdatedEvent) -> None:
+        """
+        Handle fund summary updated events.
+        
+        Args:
+            event: Fund summary updated event
+        """
+        logger.info(f"Processing fund summary update for fund {event.fund_id}, type: {event.event_type}")
+        
+        try:
+            # Get the fund to determine its type and current status
+            fund = self._get_fund(event.fund_id)
+            if not fund:
+                logger.warning(f"Fund {event.fund_id} not found, skipping company record update")
+                return
+            
+            # Update company summary information based on the event type
+            if event.summary_type == "CAPITAL_EVENT_PROCESSED":
+                # Capital events affect company portfolio totals
+                self._update_company_portfolio_totals(event.fund_id, event.event_date)
+            elif event.summary_type == "NAV_UPDATE":
+                # NAV updates affect company portfolio values
+                self._update_company_portfolio_values(event.fund_id, event.event_date)
+            else:
+                logger.debug(f"Unknown fund summary update type: {event.summary_type}")
+            
+        except Exception as e:
+            logger.error(f"Error handling fund summary updated event: {e}")
+            raise
+    
+    def _update_company_portfolio_totals(self, fund_id: int, event_date: date) -> None:
+        """
+        Update company portfolio totals after capital events.
+        
+        Args:
+            fund_id: ID of the fund that was updated
+            event_date: Date of the event
+        """
+        logger.info(f"Updating company portfolio totals for fund {fund_id}")
+        # This would trigger company portfolio recalculation
+        # For now, just log the update
+        
+    def _update_company_portfolio_values(self, fund_id: int, event_date: date) -> None:
+        """
+        Update company portfolio values after NAV updates.
+        
+        Args:
+            fund_id: ID of the fund that was updated
+            event_date: Date of the event
+        """
+        logger.info(f"Updating company portfolio values for fund {fund_id}")
+        # This would trigger company portfolio value recalculation
+        # For now, just log the update
     
     def _get_fund(self, fund_id: int) -> Optional[Fund]:
         """

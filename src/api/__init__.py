@@ -1042,8 +1042,20 @@ def create_app(db_config=None):
                 from src.tax.events import TaxEventManager
                 TaxEventManager.create_or_update_tax_events(tax_statement, session=session)
                 
-                # Update fund status after tax statement creation
-                fund.update_status_after_tax_statement(session=session)
+                # Publish tax statement created event instead of direct fund update
+                from src.fund.events.consumption.event_bus import event_bus
+                from src.fund.events.domain import TaxStatementUpdatedEvent
+                
+                # Create and publish the tax statement updated event
+                tax_event = TaxStatementUpdatedEvent(
+                    fund_id=tax_statement.fund_id,
+                    event_date=tax_statement.statement_date or date.today(),
+                    tax_statement_id=tax_statement.id,
+                    update_type="created",
+                    financial_year=tax_statement.financial_year,
+                    entity_id=tax_statement.entity_id
+                )
+                event_bus.publish(tax_event)
                 
                 # Return created tax statement
                 response_data = {

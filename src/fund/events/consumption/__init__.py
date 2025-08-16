@@ -12,13 +12,14 @@ Components:
 - HandlerRegistry: Automatic registration of all event handlers
 """
 
-from .event_bus import EventBus
+from .event_bus import EventBus, event_bus
 from .base_consumer import EventConsumer
 from .async_processor import AsyncEventProcessor
 from .handler_registry import EventHandlerRegistry, register_all_handlers, get_handler_stats, clear_registrations
 
 __all__ = [
     'EventBus',
+    'event_bus',
     'EventConsumer', 
     'AsyncEventProcessor',
     'EventHandlerRegistry',

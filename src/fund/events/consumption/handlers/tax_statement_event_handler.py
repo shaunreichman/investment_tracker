@@ -42,7 +42,8 @@ class TaxStatementEventHandler(EventConsumer):
             event_types=[
                 EquityBalanceChangedEvent,
                 DistributionRecordedEvent,
-                NAVUpdatedEvent
+                NAVUpdatedEvent,
+                TaxStatementUpdatedEvent
             ]
         )
         
@@ -63,6 +64,8 @@ class TaxStatementEventHandler(EventConsumer):
             self._handle_distribution_recorded(event)
         elif event_type == NAVUpdatedEvent:
             self._handle_nav_updated(event)
+        elif event_type == TaxStatementUpdatedEvent:
+            self._handle_tax_statement_updated(event)
         else:
             logger.warning(f"TaxStatementEventHandler received unexpected event type: {event_type}")
     
@@ -145,6 +148,88 @@ class TaxStatementEventHandler(EventConsumer):
         except Exception as e:
             logger.error(f"Error handling NAV updated event: {e}")
             raise
+    
+    def _handle_tax_statement_updated(self, event: TaxStatementUpdatedEvent) -> None:
+        """
+        Handle tax statement updated events.
+        
+        Args:
+            event: Tax statement updated event
+        """
+        logger.info(f"Processing tax statement update for fund {event.fund_id}, type: {event.update_type}")
+        
+        try:
+            # Get the fund to determine its type and current status
+            fund = self._get_fund(event.fund_id)
+            if not fund:
+                logger.warning(f"Fund {event.fund_id} not found, skipping tax statement update")
+                return
+            
+            # Handle different types of tax statement updates
+            if event.update_type == "created":
+                # When a tax statement is created, we may need to update fund status
+                # This replaces the direct call to fund.update_status_after_tax_statement()
+                self._handle_tax_statement_created(event, fund)
+            elif event.update_type == "modified":
+                # Handle modifications to existing tax statements
+                self._handle_tax_statement_modified(event, fund)
+            elif event.update_type == "finalized":
+                # Handle finalization of tax statements
+                self._handle_tax_statement_finalized(event, fund)
+            else:
+                logger.warning(f"Unknown tax statement update type: {event.update_type}")
+            
+        except Exception as e:
+            logger.error(f"Error handling tax statement updated event: {e}")
+            raise
+    
+    def _handle_tax_statement_created(self, event: TaxStatementUpdatedEvent, fund: Fund) -> None:
+        """
+        Handle tax statement creation events.
+        
+        Args:
+            event: Tax statement updated event
+            fund: The fund associated with the tax statement
+        """
+        logger.info(f"Handling tax statement creation for fund {event.fund_id}")
+        
+        try:
+            # Check if fund status should be updated after tax statement creation
+            # This replaces the direct call to fund.update_status_after_tax_statement()
+            if hasattr(fund, 'update_status_after_tax_statement'):
+                # Use the existing method if available (for backward compatibility)
+                fund.update_status_after_tax_statement()
+                logger.info(f"Fund {event.fund_id} status updated after tax statement creation")
+            else:
+                # If the method doesn't exist, we can implement the logic here
+                # or delegate to the fund status service
+                logger.debug(f"Fund {event.fund_id} status update method not available")
+                
+        except Exception as e:
+            logger.error(f"Error updating fund status after tax statement creation: {e}")
+            raise
+    
+    def _handle_tax_statement_modified(self, event: TaxStatementUpdatedEvent, fund: Fund) -> None:
+        """
+        Handle tax statement modification events.
+        
+        Args:
+            event: Tax statement updated event
+            fund: The fund associated with the tax statement
+        """
+        logger.info(f"Handling tax statement modification for fund {event.fund_id}")
+        # Implement modification logic as needed
+        
+    def _handle_tax_statement_finalized(self, event: TaxStatementUpdatedEvent, fund: Fund) -> None:
+        """
+        Handle tax statement finalization events.
+        
+        Args:
+            event: Tax statement updated event
+            fund: The fund associated with the tax statement
+        """
+        logger.info(f"Handling tax statement finalization for fund {event.fund_id}")
+        # Implement finalization logic as needed
     
     def _get_fund(self, fund_id: int) -> Optional[Fund]:
         """

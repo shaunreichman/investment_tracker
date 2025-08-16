@@ -267,11 +267,11 @@ class BaseFundEventHandler(ABC):
         domain_events = []
         
         # Import domain event classes
-        from ..events.domain.equity_balance_changed_event import EquityBalanceChangedEvent
-        from ..events.domain.distribution_recorded_event import DistributionRecordedEvent
-        from ..events.domain.nav_updated_event import NAVUpdatedEvent
-        from ..events.domain.units_changed_event import UnitsChangedEvent
-        from ..events.domain.tax_statement_updated_event import TaxStatementUpdatedEvent
+        from .domain.equity_balance_changed_event import EquityBalanceChangedEvent
+        from .domain.distribution_recorded_event import DistributionRecordedEvent
+        from .domain.nav_updated_event import NAVUpdatedEvent
+        from .domain.units_changed_event import UnitsChangedEvent
+        from .domain.tax_statement_updated_event import TaxStatementUpdatedEvent
         
         # Get current fund state for comparison
         old_equity_balance = getattr(event, 'previous_equity_balance', 0.0) or 0.0
