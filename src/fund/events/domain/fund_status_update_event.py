@@ -1,15 +1,16 @@
 """
-Fund Status Update Event.
+Fund Status Update Domain Event.
 
-This module defines the domain event that is published when a fund's
-status is updated, enabling loose coupling between components.
+This event is published when a fund's status is updated,
+enabling loose coupling between status updates and dependent components.
 """
 
-from datetime import date
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Optional
+from datetime import date, datetime
+from decimal import Decimal
 
-from .base_event import FundDomainEvent
-from ...enums import DomainEventType
+from src.fund.enums import DomainEventType, FundStatus
+from src.fund.events.domain.base_event import FundDomainEvent
 
 
 class FundStatusUpdateEvent(FundDomainEvent):

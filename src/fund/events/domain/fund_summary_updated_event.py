@@ -1,15 +1,16 @@
 """
 Fund Summary Updated Domain Event.
 
-This event is published when fund summary fields are updated,
-including equity balance, cost basis, and other calculated fields.
+This event is published when a fund's summary information is updated,
+enabling loose coupling between summary updates and dependent components.
 """
 
-from datetime import date
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional
+from datetime import date, datetime
+from decimal import Decimal
 
-from ...enums import DomainEventType
-from .base_event import FundDomainEvent
+from src.fund.enums import DomainEventType
+from src.fund.events.domain.base_event import FundDomainEvent
 
 
 class FundSummaryUpdatedEvent(FundDomainEvent):

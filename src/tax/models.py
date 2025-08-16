@@ -1,18 +1,18 @@
 """
-Tax domain models.
+Tax Models.
 
-This module contains the core tax models including TaxStatement.
+This module provides the tax-related model classes,
+representing tax statements and tax calculations in the system.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, Index
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.elements import ColumnElement
-from datetime import datetime, date, timezone
-import enum
 
-# Import the Base from shared
-from ..shared.base import Base
-from ..shared.utils import with_session, with_class_session
+from src.shared.base import Base
+from src.shared.utils import with_session, with_class_session
+from src.shared.calculations import get_financial_year_dates
 from src.fund.models import Fund
 
 
@@ -141,7 +141,7 @@ class TaxStatement(Base):
         """Get the start and end dates for this financial year based on entity jurisdiction.
         Returns a tuple: (start_date, end_date).
         """
-        from ..shared.calculations import get_financial_year_dates
+        from src.shared.calculations import get_financial_year_dates
         from sqlalchemy.orm import object_session
         from src.entity.models import Entity
         session = object_session(self)

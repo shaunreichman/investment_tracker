@@ -1,16 +1,17 @@
 """
 NAV Update Event Handler.
 
-This module provides the handler for processing NAV update events.
-It handles validation, event creation, and fund updates for NAV updates.
+This handler processes NAV update events for NAV-based funds,
+updating unit prices and triggering dependent calculations.
 """
 
 from typing import Dict, Any, Optional
+from sqlalchemy.orm import Session
 from datetime import date
 
-from ..base_handler import BaseFundEventHandler
-from ...enums import EventType, FundType
-from ...models import FundEvent
+from src.fund.events.base_handler import BaseFundEventHandler
+from src.fund.enums import EventType, FundType
+from src.fund.models import FundEvent
 
 
 class NAVUpdateHandler(BaseFundEventHandler):

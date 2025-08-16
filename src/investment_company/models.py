@@ -1,16 +1,19 @@
 """
-Investment company domain models.
+Investment Company Models.
 
-This module contains the core investment company models including InvestmentCompany.
+This module provides the investment company model class,
+representing investment management companies in the system.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 
-# Import the Base from shared
-from ..shared.base import Base
-from ..shared.utils import with_session, with_class_session
+from src.shared.base import Base
+from src.shared.utils import with_session, with_class_session
+from src.fund.models import Fund
+from src.fund.models import FundStatus
 
 class Contact(Base):
     """Model representing a contact person at an investment company."""
@@ -237,7 +240,7 @@ class InvestmentCompany(Base):
         Raises:
             ValueError: If required fields are missing or invalid
         """
-        from ..fund.models import Fund
+        from src.fund.models import Fund
         
         # Validate entity
         if entity is None:
@@ -271,7 +274,7 @@ class InvestmentCompany(Base):
         Returns:
             dict: Company summary data matching the API contract structure
         """
-        from ..fund.models import FundStatus
+        from src.fund.models import FundStatus
         
         # Get all funds for this company
         funds = self.funds
@@ -376,7 +379,7 @@ class InvestmentCompany(Base):
         Returns:
             dict: Performance summary data for completed funds
         """
-        from ..fund.models import FundStatus
+        from src.fund.models import FundStatus
         
         completed_funds = [f for f in self.funds if f.status == FundStatus.COMPLETED]
         

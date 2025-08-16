@@ -20,33 +20,33 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import object_session
 
 # Import the Base from shared
-from ..shared.base import Base
+from src.shared.base import Base
 
 # Import utilities and calculations
-from ..shared.utils import with_session, with_class_session
-from .calculations import (
+from src.shared.utils import with_session, with_class_session
+from src.fund.calculations import (
     calculate_irr,
     calculate_debt_cost
 )
-from ..shared.calculations import orchestrate_irr_base
-from ..shared.utils import with_session
+from src.shared.calculations import orchestrate_irr_base
+from src.shared.utils import with_session
 
 # Import the new FundCalculationService
-from .services.fund_calculation_service import FundCalculationService
+from src.fund.services.fund_calculation_service import FundCalculationService
 
 # Import models from other domains
-from ..rates.models import RiskFreeRate
-from ..entity.models import Entity
+from src.rates.models import RiskFreeRate
+from src.entity.models import Entity
 # Note: TaxStatement is imported as a string reference to avoid circular imports
 
 # Import shared calculations
-from ..shared.calculations import get_equity_change_for_event
-from ..entity.calculations import get_financial_years_for_fund_period
-from ..rates.calculations import get_risk_free_rate_for_date
-from ..banking.models import BankAccount
+from src.shared.calculations import get_equity_change_for_event
+from src.entity.calculations import get_financial_years_for_fund_period
+from src.rates.calculations import get_risk_free_rate_for_date
+from src.banking.models import BankAccount
 
 # Import centralized enums
-from .enums import (
+from src.fund.enums import (
     CashFlowDirection,
     EventType,
     FundType,
@@ -176,19 +176,19 @@ class Fund(Base):
     @property
     def status_service(self) -> 'FundStatusService':
         """Get the fund status service instance."""
-        from .services.fund_status_service import FundStatusService
+        from src.fund.services.fund_status_service import FundStatusService
         return FundStatusService()
     
     @property
     def tax_service(self) -> 'TaxCalculationService':
         """Get the fund tax calculation service instance."""
-        from .services.tax_calculation_service import TaxCalculationService
+        from src.fund.services.tax_calculation_service import TaxCalculationService
         return TaxCalculationService()
     
     @property
     def event_service(self) -> 'FundEventService':
         """Get the fund event service instance."""
-        from .services.fund_event_service import FundEventService
+        from src.fund.services.fund_event_service import FundEventService
         return FundEventService()
     
     @classmethod
@@ -437,7 +437,7 @@ class Fund(Base):
         """Create or update a tax statement object.
         Returns the TaxStatement object. No database operations.
         """
-        from ..tax.models import TaxStatement
+        from src.tax.models import TaxStatement
         # Try to find existing statement
         statement = self.get_tax_statement_for_entity_financial_year(entity_id, financial_year)
         
@@ -486,8 +486,8 @@ class Fund(Base):
         # This replaces: self.update_status_after_tax_statement(session=session)
         
         try:
-            from .events.domain import FundStatusUpdateEvent
-            from .events.consumption.event_bus import event_bus
+            from src.fund.events.domain import FundStatusUpdateEvent
+            from src.fund.events.consumption.event_bus import event_bus
             
             # Publish fund status update event
             status_event = FundStatusUpdateEvent(
@@ -1177,7 +1177,7 @@ class Fund(Base):
             # Create tax payment event if there's tax withheld
             tax_event = None
             if tax_withheld > 0:
-                from .models import TaxPaymentType
+                from src.fund.models import TaxPaymentType
                 tax_event = FundEvent(
                     fund_id=self.id,
                     event_type=EventType.TAX_PAYMENT,
@@ -1555,8 +1555,8 @@ class Fund(Base):
         # This replaces: self.status_service.update_status_after_tax_statement(self, session)
         
         try:
-            from .events.domain import FundStatusUpdateEvent
-            from .events.consumption.event_bus import event_bus
+            from src.fund.events.domain import FundStatusUpdateEvent
+            from src.fund.events.consumption.event_bus import event_bus
             
             # Get current status
             current_status = self.status.value if self.status else "UNKNOWN"
@@ -2003,7 +2003,7 @@ class Fund(Base):
         """
         # SYSTEM: Use the incremental calculation service for O(1) performance
         if not hasattr(self, 'incremental_calculation_service'):
-            from .services.fund_incremental_calculation_service import FundIncrementalCalculationService
+            from src.fund.services.fund_incremental_calculation_service import FundIncrementalCalculationService
             self.incremental_calculation_service = FundIncrementalCalculationService()
         
         # SYSTEM: Perform incremental update using the service

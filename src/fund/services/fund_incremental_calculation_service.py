@@ -1,25 +1,24 @@
 """
 Fund Incremental Calculation Service.
 
-This service implements O(1) incremental updates for fund calculations,
+This service provides O(1) incremental updates for fund capital chain calculations,
 replacing the O(n) full chain recalculation approach.
 
-Key Features:
-- Incremental capital chain updates (only affected events)
-- Smart event dependency tracking
-- Delta-based fund summary updates
-- Cached intermediate calculation results
+Key benefits:
+- O(1) performance for most operations
+- Maintains data consistency
+- Reduces database load
+- Improves user experience
 """
 
-from typing import List, Tuple, Optional, Dict, Any, Set
+from typing import List, Optional, Tuple, Dict, Any
 from datetime import date, datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
+from sqlalchemy import func
 
-# Use string references to avoid circular imports
-from ..models import Fund, FundEvent, EventType, FundType
-from ..enums import FundStatus
-from .fund_calculation_service import FundCalculationService
+from src.fund.models import Fund, FundEvent, EventType, FundType
+from src.fund.enums import FundStatus
+from src.fund.services.fund_calculation_service import FundCalculationService
 
 
 class FundIncrementalCalculationService:

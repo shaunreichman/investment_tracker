@@ -1,24 +1,23 @@
 """
 Fund Status Service.
 
-This service extracts status management logic from the Fund model to provide
-clean separation of concerns and improved testability.
+This service handles all fund status transitions and calculations,
+extracting complex status logic from the Fund model.
 
-Extracted functionality:
-- Status transition logic and business rules
-- Status update methods after equity events
-- Status update methods after tax statements
-- Status determination logic
-- End date calculation logic
+Key responsibilities:
+- Status transition validation
+- End date calculations
+- Status-based IRR calculations
+- Tax statement status checks
 """
 
-from typing import List, Optional, Dict, Any
-from datetime import date, datetime
+from typing import Optional, List
+from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_, or_
 
-# Import enums from the dedicated enums module
-from ..enums import FundStatus
-from ..enums import EventType
+from src.fund.enums import FundStatus
+from src.fund.enums import EventType
 
 
 class FundStatusService:

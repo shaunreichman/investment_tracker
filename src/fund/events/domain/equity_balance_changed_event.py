@@ -1,16 +1,16 @@
 """
 Equity Balance Changed Domain Event.
 
-This event is published when a fund's equity balance changes due to
-capital calls, returns of capital, or distributions.
+This event is published when a fund's equity balance changes,
+enabling loose coupling between equity balance updates and dependent components.
 """
 
-from datetime import date
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional
+from datetime import date, datetime
 from decimal import Decimal
 
-from .base_event import FundDomainEvent
-from ...enums import DomainEventType
+from src.fund.enums import DomainEventType
+from src.fund.events.domain.base_event import FundDomainEvent
 
 
 class EquityBalanceChangedEvent(FundDomainEvent):

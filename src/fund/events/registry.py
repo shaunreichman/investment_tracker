@@ -1,17 +1,28 @@
 """
 Fund Event Handler Registry.
 
-This module provides the centralized registry for routing fund events
-to their appropriate handlers. It implements the Registry pattern to
-allow dynamic handler registration and easy testing.
+This module provides a centralized registry for all fund event handlers,
+enabling automatic registration and discovery of handlers for different event types.
+
+Key responsibilities:
+- Handler registration and discovery
+- Handler routing by event type
+- Handler validation and error handling
+- Handler lifecycle management
 """
 
-from typing import Dict, Type, Optional
-from sqlalchemy.orm import Session
+from typing import Dict, Type, Optional, List
+from datetime import datetime
+import logging
 
-from ..models import Fund, FundEvent
-from ..enums import EventType
-from .base_handler import BaseFundEventHandler
+from src.fund.events.base_handler import BaseFundEventHandler
+from src.fund.enums import EventType
+from src.fund.events.handlers.capital_call_handler import CapitalCallHandler
+from src.fund.events.handlers.return_of_capital_handler import ReturnOfCapitalHandler
+from src.fund.events.handlers.distribution_handler import DistributionHandler
+from src.fund.events.handlers.nav_update_handler import NAVUpdateHandler
+from src.fund.events.handlers.unit_purchase_handler import UnitPurchaseHandler
+from src.fund.events.handlers.unit_sale_handler import UnitSaleHandler
 
 
 class FundEventHandlerRegistry:
@@ -51,7 +62,7 @@ class FundEventHandlerRegistry:
         
         self._handlers[event_type] = handler_class
     
-    def get_handler(self, event_type: EventType, session: Session, fund: Fund) -> BaseFundEventHandler:
+    def get_handler(self, event_type: EventType, session, fund) -> BaseFundEventHandler:
         """
         Get a handler instance for the specified event type.
         
@@ -72,7 +83,7 @@ class FundEventHandlerRegistry:
         
         return handler_class(session, fund)
     
-    def handle_event(self, event_data: Dict, session: Session, fund: Fund) -> FundEvent:
+    def handle_event(self, event_data: Dict, session, fund) -> FundEvent:
         """
         Handle an event by routing it to the appropriate handler.
         
@@ -167,12 +178,12 @@ class FundEventHandlerRegistry:
         handlers to ensure all event types have handlers registered.
         """
         # Import handlers here to avoid circular imports
-        from .handlers.capital_call_handler import CapitalCallHandler
-        from .handlers.return_of_capital_handler import ReturnOfCapitalHandler
-        from .handlers.distribution_handler import DistributionHandler
-        from .handlers.nav_update_handler import NAVUpdateHandler
-        from .handlers.unit_purchase_handler import UnitPurchaseHandler
-        from .handlers.unit_sale_handler import UnitSaleHandler
+        # from .handlers.capital_call_handler import CapitalCallHandler
+        # from .handlers.return_of_capital_handler import ReturnOfCapitalHandler
+        # from .handlers.distribution_handler import DistributionHandler
+        # from .handlers.nav_update_handler import NAVUpdateHandler
+        # from .handlers.unit_purchase_handler import UnitPurchaseHandler
+        # from .handlers.unit_sale_handler import UnitSaleHandler
         
         # Register all handlers
         self.register_handler(EventType.CAPITAL_CALL, CapitalCallHandler)

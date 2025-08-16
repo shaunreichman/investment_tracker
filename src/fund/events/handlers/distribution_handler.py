@@ -1,16 +1,17 @@
 """
 Distribution Event Handler.
 
-This module provides the handler for processing distribution events.
-It handles validation, event creation, and fund updates for distributions.
+This handler processes distribution events for funds,
+updating equity balances and triggering dependent calculations.
 """
 
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Optional
+from sqlalchemy.orm import Session
 from datetime import date
 
-from ..base_handler import BaseFundEventHandler
-from ...enums import EventType, DistributionType
-from ...models import FundEvent
+from src.fund.events.base_handler import BaseFundEventHandler
+from src.fund.enums import EventType, DistributionType
+from src.fund.models import FundEvent
 
 
 class DistributionHandler(BaseFundEventHandler):

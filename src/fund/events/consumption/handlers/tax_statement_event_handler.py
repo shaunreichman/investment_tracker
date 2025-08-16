@@ -1,28 +1,21 @@
 """
 Tax Statement Event Handler.
 
-This module provides the event handler for updating tax statements
-based on fund events. It handles events like equity balance changes,
-distributions, and NAV updates to maintain tax statement consistency.
+This handler processes tax statement update events,
+triggering appropriate updates in dependent components.
 """
 
 import logging
-from typing import Optional, List
+from typing import Dict, Any, Optional, List
 from datetime import date, datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from ..base_consumer import EventConsumer
-from ...domain import (
-    EquityBalanceChangedEvent,
-    DistributionRecordedEvent,
-    NAVUpdatedEvent,
-    TaxStatementUpdatedEvent
-)
-from ....repositories.tax_statement_repository import TaxStatementRepository
-from ....repositories.fund_repository import FundRepository
-from ....models import Fund
-from ....enums import FundType
+from src.fund.events.consumption.base_consumer import EventConsumer
+from src.fund.repositories.tax_statement_repository import TaxStatementRepository
+from src.fund.repositories.fund_repository import FundRepository
+from src.fund.models import Fund
+from src.fund.enums import FundType
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +33,6 @@ class TaxStatementEventHandler(EventConsumer):
         super().__init__(
             name="TaxStatementEventHandler",
             event_types=[
-                EquityBalanceChangedEvent,
-                DistributionRecordedEvent,
-                NAVUpdatedEvent,
                 TaxStatementUpdatedEvent
             ]
         )
@@ -58,96 +48,10 @@ class TaxStatementEventHandler(EventConsumer):
         """
         event_type = type(event)
         
-        if event_type == EquityBalanceChangedEvent:
-            self._handle_equity_balance_changed(event)
-        elif event_type == DistributionRecordedEvent:
-            self._handle_distribution_recorded(event)
-        elif event_type == NAVUpdatedEvent:
-            self._handle_nav_updated(event)
-        elif event_type == TaxStatementUpdatedEvent:
+        if event_type == TaxStatementUpdatedEvent:
             self._handle_tax_statement_updated(event)
         else:
             logger.warning(f"TaxStatementEventHandler received unexpected event type: {event_type}")
-    
-    def _handle_equity_balance_changed(self, event: EquityBalanceChangedEvent) -> None:
-        """
-        Handle equity balance changed events.
-        
-        Args:
-            event: Equity balance changed event
-        """
-        logger.info(f"Processing equity balance change for fund {event.fund_id}")
-        
-        try:
-            # Get the fund to determine its type and current status
-            fund = self._get_fund(event.fund_id)
-            if not fund:
-                logger.warning(f"Fund {event.fund_id} not found, skipping tax statement update")
-                return
-            
-            # For cost-based funds, equity changes affect capital gain calculations
-            if fund.tracking_type == FundType.COST_BASED:
-                self._update_tax_statement_equity(event.fund_id, event.event_date, event.new_balance)
-            else:
-                logger.debug(f"Fund {event.fund_id} is not cost-based, equity changes don't affect tax statements")
-            
-        except Exception as e:
-            logger.error(f"Error handling equity balance change event: {e}")
-            raise
-    
-    def _handle_distribution_recorded(self, event: DistributionRecordedEvent) -> None:
-        """
-        Handle distribution recorded events.
-        
-        Args:
-            event: Distribution recorded event
-        """
-        logger.info(f"Processing distribution for fund {event.fund_id}")
-        
-        try:
-            # Get the fund to determine its type and current status
-            fund = self._get_fund(event.fund_id)
-            if not fund:
-                logger.warning(f"Fund {event.fund_id} not found, skipping tax statement update")
-                return
-            
-            # Update tax statement with distribution information
-            self._update_tax_statement_distribution(
-                event.fund_id, 
-                event.event_date, 
-                event.amount, 
-                event.tax_withheld
-            )
-            
-        except Exception as e:
-            logger.error(f"Error handling distribution recorded event: {e}")
-            raise
-    
-    def _handle_nav_updated(self, event: NAVUpdatedEvent) -> None:
-        """
-        Handle NAV updated events.
-        
-        Args:
-            event: NAV updated event
-        """
-        logger.info(f"Processing NAV update for fund {event.fund_id}")
-        
-        try:
-            # Get the fund to determine its type and current status
-            fund = self._get_fund(event.fund_id)
-            if not fund:
-                logger.warning(f"Fund {event.fund_id} not found, skipping tax statement update")
-                return
-            
-            # For NAV-based funds, NAV changes affect unrealized gain/loss calculations
-            if fund.tracking_type == FundType.NAV_BASED:
-                self._update_tax_statement_nav(event.fund_id, event.event_date, event.new_nav)
-            else:
-                logger.debug(f"Fund {event.fund_id} is not NAV-based, NAV changes don't affect tax statements")
-            
-        except Exception as e:
-            logger.error(f"Error handling NAV updated event: {e}")
-            raise
     
     def _handle_tax_statement_updated(self, event: TaxStatementUpdatedEvent) -> None:
         """
@@ -159,6 +63,15 @@ class TaxStatementEventHandler(EventConsumer):
         logger.info(f"Processing tax statement update for fund {event.fund_id}, type: {event.update_type}")
         
         try:
+            # Import domain events
+            from src.fund.events.domain import (
+                FundSummaryUpdatedEvent,
+                TaxStatementUpdatedEvent,
+                EquityBalanceChangedEvent
+            )
+            from src.fund.events.consumption.event_bus import event_bus
+            
+            # Create tax statement update event
             # Get the fund to determine its type and current status
             fund = self._get_fund(event.fund_id)
             if not fund:
@@ -194,10 +107,13 @@ class TaxStatementEventHandler(EventConsumer):
         logger.info(f"Handling tax statement creation for fund {event.fund_id}")
         
         try:
-            # Check if fund status should be updated after tax statement creation
-            # Instead of direct dependency, publish an event for fund status updates
-            from ...domain import FundSummaryUpdatedEvent
-            from ..event_bus import event_bus
+            # Import domain events
+            from src.fund.events.domain import (
+                FundSummaryUpdatedEvent,
+                TaxStatementUpdatedEvent,
+                EquityBalanceChangedEvent
+            )
+            from src.fund.events.consumption.event_bus import event_bus
             
             # Publish event for fund status update
             summary_event = FundSummaryUpdatedEvent(

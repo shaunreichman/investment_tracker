@@ -12,9 +12,9 @@ Core Components:
 - Domain event system for loose coupling
 """
 
-from .base_handler import BaseFundEventHandler
-from .registry import FundEventHandlerRegistry
-from .orchestrator import FundUpdateOrchestrator
+from src.fund.events.base_handler import BaseFundEventHandler
+from src.fund.events.registry import FundEventHandlerRegistry
+from src.fund.events.orchestrator import FundUpdateOrchestrator
 
 __all__ = [
     'BaseFundEventHandler',

@@ -1,22 +1,26 @@
 """
 Base Fund Event Handler.
 
-This module provides the abstract base class for all fund event handlers.
-Each handler is responsible for processing a specific event type and publishing
-domain events for dependent updates.
+This module provides the base class for all fund event handlers,
+defining the common interface and shared functionality.
+
+Key responsibilities:
+- Common event processing logic
+- Event validation and error handling
+- Event relationship management
+- Event publishing and side effects
 """
 
-from abc import ABC, abstractmethod
-from datetime import datetime, date
-from typing import Optional, Any, Dict, List
+from typing import Dict, Any, Optional, List
+from datetime import date, datetime
 from sqlalchemy.orm import Session
-import logging
+from abc import ABC, abstractmethod
 
-from ..models import Fund, FundEvent
-from ..enums import EventType, FundType, FundStatus
-from ..services.fund_calculation_service import FundCalculationService
-from ..services.fund_status_service import FundStatusService
-from ..services.tax_calculation_service import TaxCalculationService
+from src.fund.models import Fund, FundEvent
+from src.fund.enums import EventType, FundType, FundStatus
+from src.fund.services.fund_calculation_service import FundCalculationService
+from src.fund.services.fund_status_service import FundStatusService
+from src.fund.services.tax_calculation_service import TaxCalculationService
 
 
 class BaseFundEventHandler(ABC):
@@ -209,7 +213,7 @@ class BaseFundEventHandler(ABC):
         Args:
             event: The event that was just processed
         """
-        from ..repositories.domain_event_repository import DomainEventRepository
+        from src.fund.repositories.domain_event_repository import DomainEventRepository
         
         # Initialize domain event repository
         domain_repo = DomainEventRepository(self.session)
@@ -236,7 +240,7 @@ class BaseFundEventHandler(ABC):
         """
         try:
             # Import the event bus from the consumption module
-            from ..consumption.event_bus import event_bus
+            from src.fund.consumption.event_bus import event_bus
             
             # Publish each domain event to the event bus
             for domain_event in domain_events:
@@ -267,11 +271,11 @@ class BaseFundEventHandler(ABC):
         domain_events = []
         
         # Import domain event classes
-        from .domain.equity_balance_changed_event import EquityBalanceChangedEvent
-        from .domain.distribution_recorded_event import DistributionRecordedEvent
-        from .domain.nav_updated_event import NAVUpdatedEvent
-        from .domain.units_changed_event import UnitsChangedEvent
-        from .domain.tax_statement_updated_event import TaxStatementUpdatedEvent
+        from src.fund.events.domain.equity_balance_changed_event import EquityBalanceChangedEvent
+        from src.fund.events.domain.distribution_recorded_event import DistributionRecordedEvent
+        from src.fund.events.domain.nav_updated_event import NAVUpdatedEvent
+        from src.fund.events.domain.units_changed_event import UnitsChangedEvent
+        from src.fund.events.domain.tax_statement_updated_event import TaxStatementUpdatedEvent
         
         # Get current fund state for comparison
         old_equity_balance = getattr(event, 'previous_equity_balance', 0.0) or 0.0
@@ -369,8 +373,8 @@ class BaseFundEventHandler(ABC):
         total_cost_basis, and average_equity_balance for cost-based funds.
         """
         # Get all capital events for this fund to calculate summary fields
-        from ..models import FundEvent
-        from ..enums import EventType
+        from src.fund.models import FundEvent
+        from src.fund.enums import EventType
         
         capital_events = self.session.query(FundEvent).filter(
             FundEvent.fund_id == self.fund.id,

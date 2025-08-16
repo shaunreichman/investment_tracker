@@ -1,15 +1,16 @@
 """
 Domain Event Model.
 
-This module contains the DomainEvent model for tracking domain events
-in the fund system. Models handle only data persistence and basic validation.
+This module provides the DomainEvent model class,
+representing domain events in the fund system.
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON, Index
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 
-from ...shared.base import Base
+from src.shared.base import Base
 
 
 class DomainEvent(Base):

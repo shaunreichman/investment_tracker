@@ -11,10 +11,10 @@ The package follows enterprise best practices with:
 - Comprehensive enum coverage for all business domains
 """
 
-from .fund_calculation_service import FundCalculationService
-from .fund_status_service import FundStatusService
-from .tax_calculation_service import TaxCalculationService
-from .fund_event_service import FundEventService
+from src.fund.services.fund_calculation_service import FundCalculationService
+from src.fund.services.fund_status_service import FundStatusService
+from src.fund.services.tax_calculation_service import TaxCalculationService
+from src.fund.services.fund_event_service import FundEventService
 
 __all__ = [
     'FundCalculationService',

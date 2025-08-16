@@ -1,16 +1,22 @@
 """
 Tax Statement Repository.
 
-This module provides the data access layer for tax statement operations including
-CRUD operations, efficient querying, and caching strategies.
+This repository provides data access operations for tax statements,
+implementing the repository pattern for clean separation of concerns.
+
+Key responsibilities:
+- Tax statement CRUD operations
+- Statement querying and filtering
+- Statement relationship management
+- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc, func
+from sqlalchemy import and_, or_, func
 
-from ...tax.models import TaxStatement
-from ..enums import SortOrder
+from src.tax.models import TaxStatement
+from src.fund.enums import SortOrder
 
 
 class TaxStatementRepository:

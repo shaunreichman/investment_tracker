@@ -1,16 +1,21 @@
 """
-Fund Controller.
+Fund API Controller.
 
-This module provides the controller layer for fund operations, handling
-HTTP requests and providing REST API endpoints.
+This controller handles HTTP requests for fund operations,
+providing RESTful endpoints for fund management.
+
+Key responsibilities:
+- Fund CRUD endpoints
+- Fund event endpoints
+- Fund calculation endpoints
+- Input validation and error handling
 """
 
-from typing import Dict, Any, Optional
-from flask import request, jsonify, current_app
+from typing import List, Optional, Dict, Any
+from flask import request, jsonify
 from sqlalchemy.orm import Session
 
-from .fund_service import FundService
-from ..enums import FundStatus, FundType, EventType
+from src.fund.enums import FundStatus, FundType, EventType
 
 
 class FundController:

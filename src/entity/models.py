@@ -1,16 +1,17 @@
 """
-Entity domain models.
+Entity Models.
 
-This module contains the core entity models including Entity.
+This module provides the Entity model class,
+representing investing entities (people or companies) in the system.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 
-# Import the Base from shared
-from ..shared.base import Base
-from ..shared.utils import with_session, with_class_session
+from src.shared.base import Base
+from src.shared.utils import with_session, with_class_session
 
 class Entity(Base):
     """Model representing an investing entity (person or company)."""

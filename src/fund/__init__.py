@@ -4,8 +4,8 @@ Fund domain module.
 This module contains the core fund models, services, and business logic.
 """
 
-from .models import Fund, FundEvent, FundEventCashFlow
-from .enums import (
+from src.fund.models import Fund, FundEvent, FundEventCashFlow
+from src.fund.enums import (
     FundStatus,
     FundType,
     EventType,
@@ -14,7 +14,7 @@ from .enums import (
     TaxPaymentType,
     GroupType
 )
-from .new_fund_manager import NewFundManager
+from src.fund.new_fund_manager import NewFundManager
 
 __all__ = [
     'Fund',

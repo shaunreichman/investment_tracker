@@ -1,18 +1,23 @@
 """
-Fund Service.
+Fund API Service.
 
-This module provides the service layer for fund operations, coordinating
-between the API layer, business logic services, and data access layer.
+This service provides the business logic layer for fund operations,
+coordinating between the API controllers and the domain models.
+
+Key responsibilities:
+- Fund CRUD operations
+- Fund event processing
+- Fund calculations and updates
+- Business rule enforcement
 """
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from decimal import Decimal
 
-from ..repositories import FundRepository, FundEventRepository, TaxStatementRepository
-from ..events.orchestrator import FundUpdateOrchestrator
-from ..events.registry import FundEventHandlerRegistry
-from ..enums import FundStatus, FundType, EventType
+from src.fund.repositories import FundRepository, FundEventRepository, TaxStatementRepository
+from src.fund.events.orchestrator import FundUpdateOrchestrator
+from src.fund.events.registry import FundEventHandlerRegistry
+from src.fund.enums import FundStatus, FundType, EventType
 
 
 class FundService:

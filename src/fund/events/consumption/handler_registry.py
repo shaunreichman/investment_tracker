@@ -1,19 +1,19 @@
 """
 Event Handler Registry.
 
-This module provides automatic registration of all event handlers
-with the event bus to enable real-time event consumption.
+This module provides automatic registration and discovery of all event handlers,
+enabling the system to automatically wire up event consumers.
 """
 
+from typing import Dict, Type, Optional, List
 import logging
-from typing import List, Type
 
-from .event_bus import event_bus
-from .base_consumer import EventConsumer
-from .handlers.tax_statement_event_handler import TaxStatementEventHandler
-from .handlers.company_record_event_handler import CompanyRecordEventHandler
-from .handlers.capital_chain_event_handler import CapitalChainEventHandler
-from .handlers.fund_status_event_handler import FundStatusEventHandler
+from src.fund.events.consumption.event_bus import event_bus
+from src.fund.events.consumption.base_consumer import EventConsumer
+from src.fund.events.consumption.handlers.tax_statement_event_handler import TaxStatementEventHandler
+from src.fund.events.consumption.handlers.company_record_event_handler import CompanyRecordEventHandler
+from src.fund.events.consumption.handlers.capital_chain_event_handler import CapitalChainEventHandler
+from src.fund.events.consumption.handlers.fund_status_event_handler import FundStatusEventHandler
 
 logger = logging.getLogger(__name__)
 

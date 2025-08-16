@@ -1,17 +1,17 @@
 """
 Fund Model.
 
-This module contains the Fund model representing an investment fund.
-Models handle only data persistence and basic validation, with business logic
-delegated to services through the orchestrator.
+This module provides the Fund model class,
+representing investment funds in the system.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, func, JSON, Index
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 
-from ...shared.base import Base
-from ...fund.enums import FundType, FundStatus, GroupType
+from src.shared.base import Base
+from src.fund.enums import FundType, FundStatus, GroupType
 
 
 class Fund(Base):

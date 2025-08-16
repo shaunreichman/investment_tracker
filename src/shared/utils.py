@@ -1,11 +1,16 @@
 """
-Shared utilities module.
+Shared Utilities.
 
-This module contains shared utility functions and decorators used across domains.
+This module provides utility functions and decorators used across the system,
+including session management and common database operations.
 """
 
+from typing import Callable, Any, Optional, TypeVar, ParamSpec
 from functools import wraps
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
+from contextlib import contextmanager
+
+from src.shared.base import Base
 
 def get_database_session():
     """Import and return get_database_session to avoid circular imports"""
@@ -151,7 +156,6 @@ def reset_database_for_testing(session):
     Returns:
         bool: True if reset was successful
     """
-    from ..shared.base import Base
     from sqlalchemy import text
     
     # Get the engine from the session

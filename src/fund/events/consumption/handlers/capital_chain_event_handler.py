@@ -1,21 +1,19 @@
 """
 Capital Chain Event Handler.
 
-This module provides the event handler for processing capital chain
-recalculation events, enabling loose coupling between components.
+This handler processes capital chain recalculation events and performs
+dependent updates for other components in the system.
 """
 
-import logging
-from typing import Optional
-from datetime import date
-from decimal import Decimal
+from typing import Dict, Any, Optional, List
+from datetime import date, datetime
 from sqlalchemy.orm import Session
 
-from ..base_consumer import EventConsumer
-from ...domain import CapitalChainRecalculatedEvent
-from ....repositories.fund_repository import FundRepository
-from ....models import Fund
-from ....enums import FundType
+from src.fund.events.consumption.base_consumer import EventConsumer
+from src.fund.events.domain import CapitalChainRecalculatedEvent
+from src.fund.repositories.fund_repository import FundRepository
+from src.fund.models import Fund
+from src.fund.enums import FundType
 
 logger = logging.getLogger(__name__)
 
@@ -145,8 +143,8 @@ class CapitalChainEventHandler(EventConsumer):
             # Publish events for other components that need to react to capital chain changes
             # This could include events for tax statements, company records, etc.
             
-            from ...domain import FundSummaryUpdatedEvent
-            from ..event_bus import event_bus
+            from src.fund.events.domain import FundSummaryUpdatedEvent
+            from src.fund.events.consumption.event_bus import event_bus
             
             # Publish fund summary update event
             summary_event = FundSummaryUpdatedEvent(

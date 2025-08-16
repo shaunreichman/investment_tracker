@@ -1,16 +1,17 @@
 """
 Capital Call Event Handler.
 
-This module provides the handler for processing capital call events.
-It handles validation, event creation, and fund updates for capital calls.
+This handler processes capital call events for cost-based funds,
+updating equity balances and triggering dependent calculations.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from sqlalchemy.orm import Session
 from datetime import date
 
-from ..base_handler import BaseFundEventHandler
-from ...enums import EventType, FundType
-from ...models import FundEvent
+from src.fund.events.base_handler import BaseFundEventHandler
+from src.fund.enums import EventType, FundType
+from src.fund.models import FundEvent
 
 
 class CapitalCallHandler(BaseFundEventHandler):

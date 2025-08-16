@@ -1,16 +1,16 @@
 """
 NAV Updated Domain Event.
 
-This event is published when a fund's NAV (Net Asset Value) is updated,
-including the old and new values and the reason for the change.
+This event is published when a fund's NAV is updated,
+enabling loose coupling between NAV updates and dependent components.
 """
 
-from datetime import date
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional
+from datetime import date, datetime
 from decimal import Decimal
 
-from .base_event import FundDomainEvent
-from ...enums import DomainEventType
+from src.fund.enums import DomainEventType
+from src.fund.events.domain.base_event import FundDomainEvent
 
 
 class NAVUpdatedEvent(FundDomainEvent):

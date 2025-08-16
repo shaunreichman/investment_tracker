@@ -18,11 +18,11 @@ import numpy_financial as npf
 from sqlalchemy.orm import Session
 
 # Use string references to avoid circular imports
-# from ..models import Fund, FundEvent, EventType, FundType
-from ..calculations import calculate_irr, calculate_debt_cost
-from ...shared.calculations import orchestrate_irr_base
-from ...shared.utils import with_session
-from ..enums import FundStatus, EventType
+# from src.fund.models import Fund, FundEvent, EventType, FundType
+from src.fund.calculations import calculate_irr, calculate_debt_cost
+from src.shared.calculations import orchestrate_irr_base
+from src.shared.utils import with_session
+from src.fund.enums import FundStatus, EventType
 
 
 class FundCalculationService:

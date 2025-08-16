@@ -1,17 +1,22 @@
 """
 Fund Repository.
 
-This module provides the data access layer for fund operations including
-CRUD operations, caching strategies, and optimized queries.
+This repository provides data access operations for Fund entities,
+implementing the repository pattern for clean separation of concerns.
+
+Key responsibilities:
+- Fund CRUD operations
+- Fund querying and filtering
+- Fund relationship management
+- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc
-from decimal import Decimal
+from sqlalchemy import and_, or_, func
 
-from ..models import Fund
-from ..enums import FundStatus, FundType, SortOrder, SortField
+from src.fund.models import Fund
+from src.fund.enums import FundStatus, FundType, SortOrder, SortField
 
 
 class FundRepository:
@@ -136,11 +141,11 @@ class FundRepository:
         
         # Apply sorting
         if sort_by == SortField.NAME:
-            query = query.order_by(asc(Fund.name) if sort_order == SortOrder.ASC else desc(Fund.name))
+            query = query.order_by(func.asc(Fund.name) if sort_order == SortOrder.ASC else func.desc(Fund.name))
         elif sort_by == SortField.STATUS:
-            query = query.order_by(asc(Fund.status) if sort_order == SortOrder.ASC else desc(Fund.status))
+            query = query.order_by(func.asc(Fund.status) if sort_order == SortOrder.ASC else func.desc(Fund.status))
         elif sort_by == SortField.CREATED_AT:
-            query = query.order_by(asc(Fund.created_at) if sort_order == SortOrder.ASC else desc(Fund.created_at))
+            query = query.order_by(func.asc(Fund.created_at) if sort_order == SortOrder.ASC else func.desc(Fund.created_at))
         
         # Apply pagination
         query = query.offset(skip).limit(limit)

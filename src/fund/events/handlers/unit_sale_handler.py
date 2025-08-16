@@ -1,16 +1,17 @@
 """
 Unit Sale Event Handler.
 
-This module provides the handler for processing unit sale events.
-It handles validation, event creation, and fund updates for unit sales.
+This handler processes unit sale events for NAV-based funds,
+updating unit counts and triggering dependent calculations.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from sqlalchemy.orm import Session
 from datetime import date
 
-from ..base_handler import BaseFundEventHandler
-from ...enums import EventType, FundType
-from ...models import FundEvent
+from src.fund.events.base_handler import BaseFundEventHandler
+from src.fund.enums import EventType, FundType
+from src.fund.models import FundEvent
 
 
 class UnitSaleHandler(BaseFundEventHandler):
@@ -184,8 +185,8 @@ class UnitSaleHandler(BaseFundEventHandler):
         
         try:
             # Publish capital chain recalculation event
-            from ..domain import CapitalChainRecalculatedEvent
-            from ..consumption.event_bus import event_bus
+            from src.fund.events.domain import CapitalChainRecalculatedEvent
+            from src.fund.events.consumption.event_bus import event_bus
             
             # Get old equity balance before the event
             old_equity_balance = self.fund.current_equity_balance

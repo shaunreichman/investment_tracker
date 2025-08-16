@@ -1,14 +1,16 @@
 """
-Rates domain models.
+Rates Models.
 
-This module contains market data models including RiskFreeRate and future rate types.
+This module provides the rates-related model classes,
+representing interest rates and risk-free rates in the system.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, UniqueConstraint
-from datetime import datetime, timezone
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
+from sqlalchemy.orm import relationship
 
-# Import the Base from shared
-from ..shared.base import Base
+from src.shared.base import Base
 
 class RiskFreeRate(Base):
     """Model representing risk-free rates for different currencies over time.

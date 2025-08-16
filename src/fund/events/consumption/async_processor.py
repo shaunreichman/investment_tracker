@@ -13,8 +13,8 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import threading
 import queue
 
-from ..domain.base_event import FundDomainEvent
-from .event_bus import EventBus
+from src.fund.events.domain.base_event import FundDomainEvent
+from src.fund.events.consumption.event_bus import EventBus
 
 logger = logging.getLogger(__name__)
 

@@ -1,15 +1,17 @@
 """
-Banking domain models.
+Banking Models.
 
-This module contains models for Bank and BankAccount, which represent
-investor-owned banking institutions and accounts used to fund cash-flow events.
+This module provides the banking-related model classes,
+representing bank accounts and banking operations in the system.
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
-from ..shared.utils import with_session
 
-from ..shared.base import Base
+from src.shared.utils import with_session
+from src.shared.base import Base
 
 
 class Bank(Base):

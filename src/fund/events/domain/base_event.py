@@ -1,17 +1,23 @@
 """
-Base Domain Event for Fund System.
+Base Fund Domain Event.
 
-This module provides the foundation for all domain events in the fund system.
-Domain events represent significant state changes and enable loose coupling
-between components.
+This module provides the base class for all fund domain events,
+defining the common interface and shared functionality.
+
+Key responsibilities:
+- Common event structure and validation
+- Event metadata and relationships
+- Event serialization and persistence
+- Event type classification
 """
 
-from abc import ABC, abstractmethod
-from datetime import datetime, date
-from typing import Any, Dict, Optional, Union
+from typing import Dict, Any, Optional
+from datetime import date, datetime
 import uuid
+from sqlalchemy.orm import Session
+from abc import ABC, abstractmethod
 
-from ...enums import DomainEventType
+from src.fund.enums import DomainEventType
 
 
 class FundDomainEvent(ABC):

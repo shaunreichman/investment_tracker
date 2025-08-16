@@ -1,16 +1,17 @@
 """
 Fund Event Model.
 
-This module contains the FundEvent model for tracking fund events like
-capital calls, distributions, and NAV updates. Models handle only data persistence and basic validation.
+This module provides the FundEvent model class,
+representing events that occur within funds.
 """
 
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Index
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
-from datetime import date
 
-from ...shared.base import Base
-from ...fund.enums import EventType, DistributionType, FundType
+from src.shared.base import Base
+from src.fund.enums import EventType, DistributionType, FundType
 
 
 class FundEvent(Base):

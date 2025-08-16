@@ -1,15 +1,17 @@
 """
 Fund Event Cash Flow Model.
 
-This module contains the FundEventCashFlow model for tracking actual cash transfers
-linked to fund events. Models handle only data persistence and basic validation.
+This module provides the FundEventCashFlow model class,
+representing actual cash transfers linked to fund events.
 """
 
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Index
+from typing import Optional, List
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Enum
 from sqlalchemy.orm import relationship
 
-from ...shared.base import Base
-from ...fund.enums import CashFlowDirection
+from src.shared.base import Base
+from src.fund.enums import CashFlowDirection
 
 
 class FundEventCashFlow(Base):

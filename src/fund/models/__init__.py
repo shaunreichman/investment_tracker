@@ -6,10 +6,10 @@ Models handle only data persistence and basic validation, with business logic
 delegated to services through the orchestrator.
 """
 
-from .domain_event import DomainEvent
-from .fund_event_cash_flow import FundEventCashFlow
-from .fund_event import FundEvent
-from .fund import Fund
+from src.fund.models.domain_event import DomainEvent
+from src.fund.models.fund_event_cash_flow import FundEventCashFlow
+from src.fund.models.fund_event import FundEvent
+from src.fund.models.fund import Fund
 
 __all__ = [
     'DomainEvent',

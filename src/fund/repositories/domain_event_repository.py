@@ -1,17 +1,23 @@
 """
 Domain Event Repository.
 
-This module provides the repository for managing domain events in the database.
-Domain events are stored for audit trails, debugging, and event replay capabilities.
+This repository provides data access operations for domain events,
+implementing the repository pattern for clean separation of concerns.
+
+Key responsibilities:
+- Domain event CRUD operations
+- Event querying and filtering
+- Event relationship management
+- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
 from datetime import date, datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc
+from sqlalchemy import and_, or_, desc, func
 
-from ..models import DomainEvent
-from ..events.domain.base_event import FundDomainEvent
+from src.fund.models import DomainEvent
+from src.fund.events.domain.base_event import FundDomainEvent
 
 
 class DomainEventRepository:

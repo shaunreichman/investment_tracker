@@ -1,16 +1,16 @@
 """
 Distribution Recorded Domain Event.
 
-This event is published when a distribution is recorded in the fund system,
-including tax withholding calculations and distribution type information.
+This event is published when a distribution is recorded for a fund,
+enabling loose coupling between distribution updates and dependent components.
 """
 
-from datetime import date
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional
+from datetime import date, datetime
 from decimal import Decimal
 
-from .base_event import FundDomainEvent
-from ...enums import DomainEventType
+from src.fund.enums import DomainEventType, DistributionType
+from src.fund.events.domain.base_event import FundDomainEvent
 
 
 class DistributionRecordedEvent(FundDomainEvent):

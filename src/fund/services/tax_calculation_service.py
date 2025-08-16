@@ -1,23 +1,23 @@
 """
 Tax Calculation Service.
 
-This service extracts tax-related business logic from the Fund model to provide
-clean separation of concerns and improved testability.
+This service handles all tax-related calculations for funds,
+extracting complex tax logic from the Fund model.
 
-Extracted functionality:
-- Debt cost calculations and risk-free interest charges
-- Tax payment event creation and management
-- Distribution tax calculations and withholding logic
-- Tax statement integration and business rules
+Key responsibilities:
+- Tax withholding calculations
+- Tax statement calculations
+- Tax event creation
+- Tax-based IRR calculations
 """
 
-from typing import List, Optional, Dict, Any, Tuple
-from datetime import date, datetime, timedelta
+from typing import List, Optional, Dict, Any, Union
+from datetime import date, datetime
 from decimal import Decimal
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_, or_
 
-# Import enums from the dedicated enums module
-from ..enums import EventType, DistributionType, FundStatus
+from src.fund.enums import EventType, DistributionType, FundStatus
 
 
 class TaxCalculationService:

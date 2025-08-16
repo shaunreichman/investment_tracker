@@ -1,15 +1,16 @@
 """
 Tax Statement Updated Domain Event.
 
-This event is published when a tax statement is updated in the fund system,
-including the type of update and any relevant tax information.
+This event is published when a tax statement is updated for a fund,
+enabling loose coupling between tax statement updates and dependent components.
 """
 
-from datetime import date
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional
+from datetime import date, datetime
+from decimal import Decimal
 
-from ...enums import DomainEventType
-from .base_event import FundDomainEvent
+from src.fund.enums import DomainEventType
+from src.fund.events.domain.base_event import FundDomainEvent
 
 
 class TaxStatementUpdatedEvent(FundDomainEvent):

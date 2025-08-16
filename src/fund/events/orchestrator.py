@@ -1,17 +1,24 @@
 """
 Fund Update Orchestrator.
 
-This module provides the orchestrator that coordinates the complete
-fund update pipeline. It manages transaction boundaries, error handling,
-and coordinates between different components of the event system.
+This module provides the main orchestrator for fund updates,
+coordinating the complete update pipeline for fund events.
+
+Key responsibilities:
+- Event routing and handler selection
+- Update pipeline coordination
+- Error handling and rollback
+- Domain event publishing
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
+import logging
 
-from ..models import Fund, FundEvent
-from .registry import FundEventHandlerRegistry
-from ..enums import EventType
+from src.fund.models import Fund, FundEvent
+from src.fund.enums import EventType, FundType
+from src.fund.events.registry import FundEventHandlerRegistry
 
 
 class FundUpdateOrchestrator:
@@ -139,8 +146,8 @@ class FundUpdateOrchestrator:
         if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
             # Instead of calling fund method directly, publish a domain event
             # This enables loose coupling and allows other components to react
-            from .domain import FundSummaryUpdatedEvent
-            from .consumption.event_bus import event_bus
+            from src.fund.events.domain import FundSummaryUpdatedEvent
+            from src.fund.events.consumption.event_bus import event_bus
             
             summary_event = FundSummaryUpdatedEvent(
                 fund_id=event.fund_id,
@@ -174,13 +181,13 @@ class FundUpdateOrchestrator:
             event: The fund event that was processed
             session: Database session for all operations
         """
-        from ..repositories.domain_event_repository import DomainEventRepository
+        from src.fund.repositories.domain_event_repository import DomainEventRepository
         
         # Get the domain events that were published for this fund event
         domain_repo = DomainEventRepository(session)
         
         # Get recent domain events for this fund (last 5 minutes to catch the ones we just published)
-        from datetime import datetime, timedelta
+        
         recent_cutoff = datetime.now() - timedelta(minutes=5)
         
         recent_events = domain_repo.get_by_date_range(
@@ -202,7 +209,7 @@ class FundUpdateOrchestrator:
             session: Database session for all operations
         """
         # Import domain event types
-        from ..enums import DomainEventType
+        from src.fund.enums import DomainEventType
         
         if domain_event.event_type == DomainEventType.EQUITY_BALANCE_CHANGED:
             # Trigger tax statement updates if needed
@@ -338,7 +345,7 @@ class FundUpdateOrchestrator:
         # Validate date if present
         if 'date' in event_data and event_data['date']:
             try:
-                from datetime import date
+                
                 if isinstance(event_data['date'], str):
                     date.fromisoformat(event_data['date'])
             except ValueError:

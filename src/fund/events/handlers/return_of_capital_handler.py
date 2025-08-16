@@ -1,16 +1,17 @@
 """
 Return of Capital Event Handler.
 
-This module provides the handler for processing return of capital events.
-It handles validation, event creation, and fund updates for returns of capital.
+This handler processes return of capital events for cost-based funds,
+updating equity balances and triggering dependent calculations.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from sqlalchemy.orm import Session
 from datetime import date
 
-from ..base_handler import BaseFundEventHandler
-from ...enums import EventType, FundType
-from ...models import FundEvent
+from src.fund.events.base_handler import BaseFundEventHandler
+from src.fund.enums import EventType, FundType
+from src.fund.models import FundEvent
 
 
 class ReturnOfCapitalHandler(BaseFundEventHandler):
@@ -37,7 +38,7 @@ class ReturnOfCapitalHandler(BaseFundEventHandler):
         
         # Validate required fields
         amount = event_data.get('amount')
-        event_date = self._parse_date(event_data.get('date')) if event_data.get('date') else None
+        event_date = event_data.get('date')
         
         self._validate_positive_amount(amount, 'amount')
         self._validate_required_date(event_date, 'date')
@@ -128,8 +129,8 @@ class ReturnOfCapitalHandler(BaseFundEventHandler):
         
         try:
             # Publish capital chain recalculation event
-            from ..domain import CapitalChainRecalculatedEvent
-            from ..consumption.event_bus import event_bus
+            from src.fund.events.domain import CapitalChainRecalculatedEvent
+            from src.fund.events.consumption.event_bus import event_bus
             
             # Get old equity balance before the event
             old_equity_balance = self.fund.current_equity_balance

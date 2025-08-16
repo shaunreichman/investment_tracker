@@ -11,8 +11,8 @@ import logging
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from ..domain.base_event import FundDomainEvent
-from ..domain import (
+from src.fund.events.domain.base_event import FundDomainEvent
+from src.fund.events.domain import (
     EquityBalanceChangedEvent,
     DistributionRecordedEvent,
     NAVUpdatedEvent,

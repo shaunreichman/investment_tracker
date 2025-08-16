@@ -1,18 +1,24 @@
 """
 Fund Event Repository.
 
-This module provides the data access layer for fund event operations including
-CRUD operations, bulk operations, and optimized queries for event processing.
+This repository provides data access operations for FundEvent entities,
+implementing the repository pattern for clean separation of concerns.
+
+Key responsibilities:
+- FundEvent CRUD operations
+- Event querying and filtering
+- Event relationship management
+- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
-from datetime import date
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc, func
+from datetime import date, datetime
 from decimal import Decimal
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_, func
 
-from ..models import FundEvent
-from ..enums import EventType, SortOrder, SortField
+from src.fund.models import FundEvent
+from src.fund.enums import EventType, SortOrder, SortField
 
 
 class FundEventRepository:
@@ -99,9 +105,9 @@ class FundEventRepository:
         
         # Apply sorting (default to newest first)
         if sort_order == SortOrder.ASC:
-            query = query.order_by(asc(FundEvent.event_date), asc(FundEvent.id))
+            query = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
         else:
-            query = query.order_by(desc(FundEvent.event_date), desc(FundEvent.id))
+            query = query.order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
         
         # Apply pagination
         query = query.offset(skip).limit(limit)
@@ -147,7 +153,7 @@ class FundEventRepository:
             query = query.filter(FundEvent.fund_id == fund_id)
         
         # Order by date and ID
-        query = query.order_by(asc(FundEvent.event_date), asc(FundEvent.id))
+        query = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
         
         events = query.all()
         
@@ -187,7 +193,7 @@ class FundEventRepository:
             query = query.filter(FundEvent.fund_id == fund_id)
         
         # Order by date and ID
-        query = query.order_by(desc(FundEvent.event_date), desc(FundEvent.id))
+        query = query.order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
         
         # Apply pagination
         query = query.offset(skip).limit(limit)
@@ -373,7 +379,7 @@ class FundEventRepository:
                 FundEvent.fund_id == fund_id,
                 FundEvent.id >= from_event_id
             )
-        ).order_by(asc(FundEvent.event_date), asc(FundEvent.id)).all()
+        ).order_by(FundEvent.event_date.asc(), FundEvent.id.asc()).all()
         
         # Cache the result
         self._cache[cache_key] = events

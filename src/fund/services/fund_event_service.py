@@ -1,24 +1,23 @@
 """
 Fund Event Service.
 
-This service extracts event-related business logic from the Fund model to provide
-clean separation of concerns and improved testability.
+This service handles all fund event operations and calculations,
+extracting complex event logic from the Fund model.
 
-Extracted functionality:
-- Capital call and return of capital event creation
-- Unit purchase and sale event creation
-- NAV update event creation and management
-- Event bulk operations and management
-- Event querying and filtering
+Key responsibilities:
+- Event creation and validation
+- Event field calculations
+- Event grouping and relationships
+- Event-based fund updates
 """
 
 from typing import List, Optional, Dict, Any, Union
 from datetime import date, datetime
 from decimal import Decimal
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_, or_
 
-# Import enums from the dedicated enums module
-from ..enums import EventType
+from src.fund.enums import EventType
 
 
 class FundEventService:
