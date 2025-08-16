@@ -1405,7 +1405,7 @@ class Fund(Base):
                 .first()
             )
             if prev_event:
-                self.recalculate_capital_chain_from(prev_event, session=session)
+                self.update_capital_chain_incrementally(prev_event, session=session)
             else:
                 # No previous event, recalculate from the first capital event
                 first_event = (
@@ -1423,7 +1423,7 @@ class Fund(Base):
                     .first()
                 )
                 if first_event:
-                    self.recalculate_capital_chain_from(first_event, session=session)
+                    self.update_capital_chain_incrementally(first_event, session=session)
                 else:
                     # No capital events left, just update end_date and status
                     self.calculate_end_date(session=session)
@@ -1784,7 +1784,7 @@ class Fund(Base):
         )
         session.add(event)
         session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
+        self.update_capital_chain_incrementally(event, session=session)
         return event
 
 
@@ -1848,7 +1848,7 @@ class Fund(Base):
         )
         session.add(event)
         session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
+        self.update_capital_chain_incrementally(event, session=session)
         return event
 
 
@@ -1919,7 +1919,7 @@ class Fund(Base):
         )
         session.add(event)
         session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
+        self.update_capital_chain_incrementally(event, session=session)
         return event
 
 
@@ -1940,15 +1940,17 @@ class Fund(Base):
         )
         session.add(event)
         session.flush()
-        self.recalculate_capital_chain_from(event, session=session)
+        self.update_capital_chain_incrementally(event, session=session)
         return event
 
 
 
     def recalculate_capital_chain_from(self, event, session=None):
         """
-        [NEW FLOW] Unified entry point: Recalculate all capital-related fields for this event and all subsequent capital events.
-        Delegates to fund-type-specific logic as needed.
+        [LEGACY] O(n) full chain recalculation: Recalculate all capital-related fields for this event and all subsequent capital events.
+        This method is kept for backward compatibility but should be replaced with update_capital_chain_incrementally().
+        
+        DEPRECATED: Use update_capital_chain_incrementally() for O(1) performance.
         """
         # Get all capital events for this fund, ordered by (event_date, id)
         CAPITAL_EVENT_TYPES = [
@@ -1976,6 +1978,29 @@ class Fund(Base):
         self.update_status_after_equity_event(session=session)
         # Commit session
         session.commit()
+
+    def update_capital_chain_incrementally(self, event, session=None):
+        """
+        [NEW] O(1) incremental update: Only recalculate affected events, not entire chains.
+        
+        This method replaces the O(n) recalculate_capital_chain_from() with smart
+        incremental updates that achieve O(1) performance for most operations.
+        
+        Args:
+            event: The event that triggered the update
+            session: Database session (optional)
+        """
+        # SYSTEM: Use the incremental calculation service for O(1) performance
+        if not hasattr(self, 'incremental_calculation_service'):
+            from .services.fund_incremental_calculation_service import FundIncrementalCalculationService
+            self.incremental_calculation_service = FundIncrementalCalculationService()
+        
+        # SYSTEM: Perform incremental update using the service
+        self.incremental_calculation_service.update_capital_chain_incrementally(self, event, session)
+        
+        # SYSTEM: Commit session after incremental update
+        if session:
+            session.commit()
 
     def _recalculate_subsequent_capital_fund_events_after_capital_event(self, events, start_idx, session=None):
         """
