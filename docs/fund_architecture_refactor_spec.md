@@ -882,51 +882,98 @@ Phase 4.5 must be completed before Phase 5 can begin. We need to build the event
 - **O(1) Complexity**: Capital event updates now scale independently of total event count
 - **Test Coverage**: 16 comprehensive tests passing, covering all functionality
 - **Backward Compatibility**: Legacy methods maintained for smooth migration
-- **Ready for Phase 6.3**: Redis caching layer implementation
+- **Ready for Phase 6.4**: Database optimization and final performance tuning
 
-**Phase 6.3: Redis Caching Layer (Week 3)** 🗄️
-**Goal**: Implement intelligent caching for frequently accessed data
+**Phase 6.4: Database & Final Optimization (Weeks 1-3)** 🗃️
+**Goal**: Optimize database performance for scale and production readiness
+
+**Phase 6.4.1: Critical Indexes & Immediate Performance (Week 1)** ⚡
+**Goal**: Add missing high-priority indexes for immediate 50-80% performance improvement
 
 **Tasks**:
-- [ ] **Redis Infrastructure Setup**
-  - [ ] Set up Redis server and connection management
-  - [ ] Implement connection pooling and failover
-  - [ ] Add Redis health monitoring
-- [ ] **Cache Strategy Implementation**
-  - [ ] Cache fund summaries and calculations
-  - [ ] Implement smart cache invalidation
-  - [ ] Add cache warming for frequently accessed data
-- [ ] **Cache Performance Optimization**
-  - [ ] Implement cache hit/miss monitoring
-  - [ ] Optimize cache key strategies
-  - [ ] Add cache compression for large objects
+- [ ] **High-Priority Indexes Implementation**
+  - [ ] Add single index on funds.investment_company_id (Priority: high)
+  - [ ] Add single index on funds.entity_id (Priority: high)
+  - [ ] Add single index on fund_events.reference_number (Priority: high)
+  - [ ] Add single index on tax_statements.statement_date (Priority: high)
+  - [ ] Add single index on investment_companies.abn (Priority: high)
+  - [ ] Add single index on investment_companies.acn (Priority: high)
+  - [ ] Add single index on entities.abn (Priority: high)
+  - [ ] Add single index on entities.acn (Priority: high)
+- [ ] **Performance Validation**
+  - [ ] Test active_funds query (target: 131ms → <10ms)
+  - [ ] Test cost_based_funds query (target: 140ms → <10ms)
+  - [ ] Validate 50-80% performance improvement across all operations
+  - [ ] Document performance baseline improvements
 
 **Success Criteria**:
-- Redis caching fully operational
-- 80%+ cache hit rate for fund summaries
-- Cache invalidation maintains consistency
+- All 8 high-priority indexes implemented
+- active_funds query: < 10ms (from 131ms)
+- cost_based_funds query: < 10ms (from 140ms)
+- 50-80% performance improvement achieved
 
-**Phase 6.4: Database & Final Optimization (Week 4)** 🗃️
-**Goal**: Optimize database performance for scale
+**Phase 6.4.2: Query Optimization & Composite Indexes (Week 2)** 🔍
+**Goal**: Optimize slow queries and add composite indexes for complex operations
 
 **Tasks**:
-- [ ] **Index Optimization**
-  - [ ] Add missing indexes for common queries
-  - [ ] Optimize existing index strategies
-  - [ ] Implement composite indexes for complex queries
-- [ ] **Query Optimization**
-  - [ ] Rewrite slow queries for better performance
-  - [ ] Implement query result caching
-  - [ ] Optimize bulk operations
-- [ ] **Connection & Session Optimization**
-  - [ ] Optimize database connection pooling
+- [ ] **Composite Indexes Implementation**
+  - [ ] Add composite index on funds.status, tracking_type (Priority: medium)
+  - [ ] Add composite index on funds.current_equity_balance, status (Priority: medium)
+  - [ ] Add composite index on funds.start_date, end_date (Priority: medium)
+  - [ ] Add composite index on fund_events.fund_id, event_date (Priority: medium)
+  - [ ] Add composite index on fund_events.event_type, event_date (Priority: medium)
+  - [ ] Add composite index on fund_events.fund_id, event_type (Priority: medium)
+  - [ ] Add composite index on tax_statements.fund_id, financial_year (Priority: medium)
+- [ ] **Slow Query Optimization**
+  - [ ] Optimize active_funds query implementation
+  - [ ] Optimize cost_based_funds query implementation
+  - [ ] Implement query result caching for expensive operations
+  - [ ] Add query performance monitoring and logging
+- [ ] **Performance Testing**
+  - [ ] Test all queries with production-scale data
+  - [ ] Validate composite index effectiveness
+  - [ ] Measure query performance improvements
+
+**Success Criteria**:
+- All 7 composite indexes implemented
+- Slow queries optimized and performing < 10ms
+- Query result caching operational
+- Performance monitoring in place
+
+**Phase 6.4.3: Connection Pool & Final Optimization (Week 3)** 🚀
+**Goal**: Optimize database connections and achieve production readiness
+
+**Tasks**:
+- [ ] **Connection Pool Optimization**
+  - [ ] Optimize database connection pooling configuration
+  - [ ] Increase pool_size from 10 to 20
+  - [ ] Reduce max_overflow from 20 to 10
+  - [ ] Increase pool_timeout from 30 to 60 seconds
+  - [ ] Implement connection health monitoring
+- [ ] **Session Management Optimization**
   - [ ] Implement session reuse strategies
-  - [ ] Add query performance monitoring
+  - [ ] Optimize session lifecycle management
+  - [ ] Add session performance monitoring
+  - [ ] Implement connection leak detection
+- [ ] **Final Performance Validation**
+  - [ ] Load testing with 20,000+ events, 500+ funds
+  - [ ] Concurrent user testing (100+ simultaneous users)
+  - [ ] Production readiness validation
+  - [ ] Performance dashboard implementation
 
 **Success Criteria**:
 - All critical queries complete in < 50ms
-- Database connection usage optimized
+- Database connection usage optimized and stable
+- System scales to 20,000+ events with sub-100ms response times
+- Production readiness achieved
+- Performance monitoring dashboard operational
+
+**Overall Phase 6.4 Success Criteria**:
+- All critical queries complete in < 50ms
+- Database connection usage optimized and stable
 - Query performance monitoring in place
+- System production-ready with enterprise-grade performance
+- 94%+ performance improvement achieved (131ms → 8ms)
 
 **Current Status**: **READY TO BEGIN** - All Phase 5 prerequisites met, complete event-driven architecture working
 
@@ -950,32 +997,29 @@ def update_capital_chain_incrementally(self, event, session=None):
         self.update_event_incrementally(event, session)
 ```
 
-### **2. Redis Caching Strategy**
+### **2. Database Index Strategy**
 
-```python
-# Cache key strategy
-class FundCacheKeys:
-    @staticmethod
-    def fund_summary(fund_id: int) -> str:
-        return f"fund:{fund_id}:summary"
-    
-    @staticmethod
-    def fund_events(fund_id: int, limit: int = 100) -> str:
-        return f"fund:{fund_id}:events:{limit}"
-    
-    @staticmethod
-    def fund_calculations(fund_id: int) -> str:
-        return f"fund:{fund_id}:calculations"
+```sql
+-- Critical indexes for performance
+CREATE INDEX CONCURRENTLY idx_fund_events_fund_date 
+ON fund_events(fund_id, event_date DESC);
 
-# Cache invalidation
-def invalidate_fund_cache(fund_id: int):
-    """Invalidate all cache entries for a fund when it changes."""
-    cache_keys = [
-        FundCacheKeys.fund_summary(fund_id),
-        FundCacheKeys.fund_calculations(fund_id)
-    ]
-    for key in cache_keys:
-        redis_client.delete(key)
+CREATE INDEX CONCURRENTLY idx_fund_events_type_date 
+ON fund_events(event_type, event_date DESC);
+
+CREATE INDEX CONCURRENTLY idx_fund_status_type 
+ON funds(status, tracking_type);
+
+-- Composite indexes for complex queries
+CREATE INDEX CONCURRENTLY idx_fund_summary_fields 
+ON funds(current_equity_balance, average_equity_balance, status);
+
+-- High-priority single indexes
+CREATE INDEX CONCURRENTLY idx_funds_investment_company_id 
+ON funds(investment_company_id);
+
+CREATE INDEX CONCURRENTLY idx_funds_entity_id 
+ON funds(entity_id);
 ```
 
 ### **3. Database Index Strategy**
@@ -1111,8 +1155,9 @@ ON funds(current_equity_balance, average_equity_balance, status);
 ### Phase 6 Metrics (Performance Optimization) 🚀 **IN PROGRESS**
 - [x] **Phase 6.1**: Performance baseline established with all bottlenecks identified ✅ **COMPLETED**
 - [x] **Phase 6.2**: O(1) updates for all capital events with 90%+ reduction in recalculations ✅ **COMPLETED**
-- [ ] **Phase 6.3**: Redis caching operational with 80%+ cache hit rate
-- [ ] **Phase 6.4**: Database optimized with all critical queries < 50ms
+- [ ] **Phase 6.4.1**: Critical indexes implemented with 50-80% performance improvement
+- [ ] **Phase 6.4.2**: Composite indexes and query optimization completed
+- [ ] **Phase 6.4.3**: Connection pool optimization and production readiness achieved
 - [ ] Support for 20,000+ events with sub-100ms response times
 - [ ] Real-time field consistency maintained within 100ms
 - [ ] System scales to 500+ funds, 25+ companies with concurrent access
@@ -1132,7 +1177,7 @@ ON funds(current_equity_balance, average_equity_balance, status);
 - ✅ **Production Value**: New architecture actually processes real events (Phase 4)
 - ✅ **Decoupling**: Zero direct cross-model dependencies (Phase 5) ✅ **ACHIEVED**
 - ✅ **Event-Driven Architecture**: Complete system operates through domain events (Phase 5) ✅ **ACHIEVED**
-- 🚀 **Performance**: O(1) updates and real-time consistency (Phase 6) - **IN PROGRESS (Phase 6.1 Complete)**
+- 🚀 **Performance**: O(1) updates and real-time consistency (Phase 6) - **IN PROGRESS (Phase 6.2 Complete, Ready for 6.4)**
 
 ## Conclusion
 
@@ -1152,7 +1197,7 @@ This refactor represents a critical foundation for the fund system's future scal
 **Current Phase**:
 - 🎯 **Phase 6**: Performance Optimization (50% Complete) - **IN PROGRESS**
 - 📝 **Last Commit**: Phase 6.2 incremental calculations implemented, O(1) updates operational
-- 🎯 **Current Status**: Incremental calculation system operational, ready for Phase 6.3 Redis caching
+- 🎯 **Current Status**: Incremental calculation system operational, ready for Phase 6.4 Database optimization
 - 🔧 **Recent Achievements**: Phase 6.2 completed - O(1) incremental updates implemented, 90%+ recalculation reduction achieved
 
 **Remaining Phases**:
@@ -1192,8 +1237,8 @@ This refactor represents a critical foundation for the fund system's future scal
 - **Professional Responsibility**: **FULLY DELIVERED** - Phase 5 has delivered on all its promises of complete system decoupling
 
 **Next Steps**: 
-1. **IMMEDIATE**: Continue Phase 6.2 - Incremental Calculations & O(1) Updates (Ready to begin)
-2. **FOCUS**: O(1) updates, Redis caching, database optimization
+1. **IMMEDIATE**: Begin Phase 6.4.1 - Critical Indexes & Immediate Performance (Ready to begin)
+2. **FOCUS**: Database optimization, query performance, production readiness
 3. **TARGET**: 20,000+ events, 500+ funds, 25+ companies with sub-100ms response times
 
 **Phase 6.1 Completed Successfully**:
