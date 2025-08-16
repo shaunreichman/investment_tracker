@@ -6,7 +6,7 @@ representing investing entities (people or companies) in the system.
 """
 
 from typing import Optional, List
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 
