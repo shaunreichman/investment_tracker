@@ -4,7 +4,7 @@ Tax domain models.
 This module contains the core tax models including TaxStatement.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.elements import ColumnElement
 from datetime import datetime, date, timezone
@@ -95,6 +95,9 @@ class TaxStatement(Base):
     # Composite unique constraint to ensure one statement per fund/entity/financial year
     __table_args__ = (
         UniqueConstraint('fund_id', 'entity_id', 'financial_year', name='unique_tax_statement'),
+        # Performance indexes for common queries
+        Index('idx_tax_statements_fund_financial_year', 'fund_id', 'financial_year'),
+        Index('idx_tax_statements_entity_financial_year', 'entity_id', 'financial_year'),
     )
     
     def __repr__(self):

@@ -162,6 +162,9 @@ class Fund(Base):
         # Foreign key indexes for JOIN performance
         Index('idx_funds_investment_company_id', 'investment_company_id'),
         Index('idx_funds_entity_id', 'entity_id'),
+        # Composite indexes for common query patterns
+        Index('idx_funds_status_tracking_type', 'status', 'tracking_type'),
+        Index('idx_funds_equity_status', 'current_equity_balance', 'status'),
         {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
@@ -2470,10 +2473,14 @@ class FundEvent(Base):
     tax_statement = relationship("TaxStatement", lazy='selectin')  # Eager load for tax statement data
     cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan", lazy='selectin')
     
-    # Critical index for fund event queries (most common query pattern)
+    # Critical indexes for fund event queries (most common query patterns)
     __table_args__ = (
         # Composite index for fund events by fund and date (DESC for recent events)
         Index('idx_fund_events_fund_date', 'fund_id', 'event_date', postgresql_ops={'event_date': 'text_pattern_ops'}),
+        # Composite index for event type filtering with date
+        Index('idx_fund_events_type_date', 'event_type', 'event_date'),
+        # Composite index for fund events by fund and type
+        Index('idx_fund_events_fund_type', 'fund_id', 'event_type'),
         {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
