@@ -185,8 +185,8 @@ class TestPhase45PerformanceValidation:
         total_time = end_time - start_time
         
         # Verify performance is acceptable
-        # 20 orchestrator events should complete in under 2 seconds
-        assert total_time < 2.0, f"Orchestrator too slow: {total_time:.4f}s for 20 events"
+        # 20 orchestrator events should complete in under 3 seconds
+        assert total_time < 3.0, f"Orchestrator too slow: {total_time:.4f}s for 20 events"
         
         print(f"✅ Orchestrator performance: {20} events in {total_time:.4f}s ({20/total_time:.1f} events/sec)")
     

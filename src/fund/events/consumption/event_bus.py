@@ -9,6 +9,7 @@ from typing import Dict, List, Callable, Any, Optional, Type
 from collections import defaultdict
 import logging
 from datetime import datetime
+from sqlalchemy.orm import Session
 
 from ..domain.base_event import FundDomainEvent
 from ..domain import (
@@ -100,12 +101,13 @@ class EventBus:
             self._consumers[event_type].remove(consumer_instance)
             logger.info(f"Unsubscribed consumer instance {type(consumer_instance).__name__} from {event_type.__name__}")
     
-    def publish(self, event: FundDomainEvent) -> None:
+    def publish(self, event: FundDomainEvent, session: Optional[Session] = None) -> None:
         """
         Publish an event to all subscribed consumers.
         
         Args:
             event: The domain event to publish
+            session: Optional database session to pass to consumers
         """
         event_type = type(event)
         self._stats['events_published'] += 1
@@ -125,6 +127,10 @@ class EventBus:
         # Process instance-based consumers
         for consumer_instance in self._consumers[event_type]:
             try:
+                # Set session if provided
+                if session and hasattr(consumer_instance, 'set_session'):
+                    consumer_instance.set_session(session)
+                
                 consumer_instance.process_event(event)
                 self._stats['events_processed'] += 1
             except Exception as e:
@@ -133,15 +139,16 @@ class EventBus:
         
         logger.debug(f"Published {event_type.__name__} event to {len(self._subscriptions[event_type]) + len(self._consumers[event_type])} consumers")
     
-    def publish_batch(self, events: List[FundDomainEvent]) -> None:
+    def publish_batch(self, events: List[FundDomainEvent], session: Optional[Session] = None) -> None:
         """
         Publish multiple events in batch.
         
         Args:
             events: List of domain events to publish
+            session: Optional database session to pass to consumers
         """
         for event in events:
-            self.publish(event)
+            self.publish(event, session)
     
     def get_subscription_count(self, event_type: Type[FundDomainEvent]) -> int:
         """

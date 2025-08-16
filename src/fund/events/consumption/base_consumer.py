@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional
 import logging
 from datetime import datetime
+from sqlalchemy.orm import Session
 
 from ..domain.base_event import FundDomainEvent
 
@@ -29,6 +30,7 @@ class EventConsumer(ABC):
         enabled (bool): Whether this consumer is currently enabled
         last_processed (datetime): When this consumer last processed an event
         processed_count (int): Total number of events processed by this consumer
+        session (Session): Database session for database operations
     """
     
     def __init__(self, name: str, event_types: list = None):
@@ -44,8 +46,28 @@ class EventConsumer(ABC):
         self.enabled = True
         self.last_processed: Optional[datetime] = None
         self.processed_count = 0
+        self.session: Optional[Session] = None
         
         logger.info(f"Initialized event consumer: {name}")
+    
+    def set_session(self, session: Session) -> None:
+        """
+        Set the database session for this consumer.
+        
+        Args:
+            session: Database session to use for operations
+        """
+        self.session = session
+        logger.debug(f"Set session for consumer {self.name}")
+    
+    def get_session(self) -> Optional[Session]:
+        """
+        Get the current database session.
+        
+        Returns:
+            Database session if set, None otherwise
+        """
+        return self.session
     
     @abstractmethod
     def handle_event(self, event: FundDomainEvent) -> None:
@@ -98,25 +120,31 @@ class EventConsumer(ABC):
             self.handle_event(event)
             
             # Update statistics
-            self.last_processed = datetime.now()
             self.processed_count += 1
+            self.last_processed = datetime.now()
             
             logger.debug(f"Consumer {self.name} successfully processed event: {type(event).__name__}")
             return True
             
         except Exception as e:
-            logger.error(f"Error in consumer {self.name} processing event {type(event).__name__}: {e}")
+            logger.error(f"Error processing event in consumer {self.name}: {e}")
             raise
     
     def enable(self) -> None:
         """Enable this consumer."""
         self.enabled = True
-        logger.info(f"Enabled event consumer: {self.name}")
+        logger.info(f"Enabled consumer: {self.name}")
     
     def disable(self) -> None:
         """Disable this consumer."""
         self.enabled = False
-        logger.info(f"Disabled event consumer: {self.name}")
+        logger.info(f"Disabled consumer: {self.name}")
+    
+    def reset_stats(self) -> None:
+        """Reset processing statistics."""
+        self.processed_count = 0
+        self.last_processed = None
+        logger.debug(f"Reset statistics for consumer: {self.name}")
     
     def get_stats(self) -> dict:
         """
@@ -128,16 +156,10 @@ class EventConsumer(ABC):
         return {
             'name': self.name,
             'enabled': self.enabled,
-            'event_types': [et.__name__ for et in self.event_types],
+            'processed_count': self.processed_count,
             'last_processed': self.last_processed.isoformat() if self.last_processed else None,
-            'processed_count': self.processed_count
+            'event_types': [et.__name__ for et in self.event_types]
         }
-    
-    def reset_stats(self) -> None:
-        """Reset consumer statistics."""
-        self.last_processed = None
-        self.processed_count = 0
-        logger.info(f"Reset statistics for consumer: {self.name}")
     
     def __repr__(self) -> str:
         """String representation of the consumer."""
