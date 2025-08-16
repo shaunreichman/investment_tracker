@@ -4,6 +4,8 @@
 
 Consolidate and standardize the current test suite to eliminate redundancies, establish consistent testing patterns, and create a professional enterprise-grade testing foundation. This refactor is critical prerequisite for Phase 3 of the fund models rewrite, ensuring reliable validation of the new architecture.
 
+**CRITICAL**: This test refactor will test the NEW fund models architecture (Phase 2 completed), NOT the old monolithic models. We are building tests for the future clean architecture, not maintaining tests for legacy code.
+
 ## Design Philosophy
 
 - **Single Responsibility**: Each test file tests one concept or component
@@ -12,6 +14,8 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
 - **Professional Standards**: Enterprise-grade test organization and maintainability
 - **Performance Aware**: Tests don't create performance bottlenecks
 - **Clear Separation**: Distinct test categories with clear boundaries
+- **NEW ARCHITECTURE FIRST**: All tests must validate the new fund models architecture
+- **LEGACY ELIMINATION**: Remove tests that maintain old monolithic models
 
 ## Problems We're Solving
 
@@ -21,6 +25,7 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
 4. **Performance Problems**: Some tests create unnecessary database overhead
 5. **Maintenance Nightmare**: Supporting multiple test patterns increases complexity and reduces reliability
 6. **Quality Assurance Risk**: Inconsistent tests make it difficult to validate new fund models architecture
+7. **Architecture Mismatch**: Current tests import from old monolithic models instead of new clean architecture
 
 ## Current State Analysis
 
@@ -48,6 +53,8 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
 - Establish clear separation between unit, integration, and API tests
 - Remove overlapping test scenarios while maintaining coverage completeness
 - Use consistent naming conventions across all test files
+- **NEW ARCHITECTURE FOCUS**: All tests must import from new fund models architecture
+- **LEGACY REMOVAL**: Remove tests that import from old monolithic models
 
 **Tasks**:
 - [ ] **Consolidate IRR Calculation Tests**
@@ -55,14 +62,20 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
   - [ ] Consolidate IRR tests from `test_fund_calculation_service.py` into unified IRR test suite
   - [ ] Merge IRR property tests from `test_financial_properties.py` into consolidated suite
   - [ ] Remove duplicate IRR test scenarios from `test_shared_calculations_extended.py`
+  - [ ] **UPDATE IMPORTS**: Ensure all tests import from `src.fund.calculations` (new architecture)
+  - [ ] **REMOVE LEGACY**: Delete tests that import from old monolithic models
 - [ ] **Consolidate Calculation Service Tests**
   - [ ] Merge `test_fund_calculation_service.py` and `test_fund_incremental_calculation_service.py` into unified service test suite
   - [ ] Consolidate calculation tests from `test_shared_calculations_extended.py` into appropriate service test files
   - [ ] Establish clear boundaries between different calculation service responsibilities
+  - [ ] **UPDATE IMPORTS**: Ensure all tests import from `src.fund.services.*` (new architecture)
+  - [ ] **REMOVE LEGACY**: Delete tests that import from old monolithic models
 - [ ] **Consolidate Fund Model Tests**
   - [ ] Merge fund-related tests from `test_fund_enums.py` into appropriate model test files
   - [ ] Consolidate fund event grouping tests into unified event test suite
   - [ ] Remove duplicate fund validation tests across multiple files
+  - [ ] **UPDATE IMPORTS**: Ensure all tests import from `src.fund.models.*` (new architecture)
+  - [ ] **REMOVE LEGACY**: Delete tests that import from old monolithic models
 
 **Success Criteria**:
 - Zero duplicate test scenarios across all test files
@@ -332,6 +345,28 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
 - **Phase 4**: Week 4 - Test coverage enhancement
 - **Phase 5**: Week 5 - Quality assurance and documentation
 
+## New Architecture Focus
+
+### **Why We're Testing the NEW Architecture**
+
+**Phase 2 Status**: ✅ **COMPLETED** - New fund models architecture is fully implemented and ready for testing.
+
+**New Architecture Components**:
+- `src/fund/models/fund.py` - Clean Fund model (220 lines vs 2,332 lines in legacy)
+- `src/fund/models/fund_event.py` - Clean FundEvent model (158 lines vs 323 lines in legacy)
+- `src/fund/models/fund_event_cash_flow.py` - Clean cash flow model (114 lines vs 31 lines in legacy)
+- `src/fund/services/fund_calculation_service.py` - Business logic service layer
+- `src/fund/services/fund_incremental_calculation_service.py` - Performance-optimized service
+- `src/fund/fund_manager.py` - New orchestrator for all fund operations
+
+**Legacy Status**: `src/fund/models.py.legacy` - Old 2,810-line monolithic file (archived, not tested)
+
+### **Test Import Strategy**
+- **NEW MODELS**: `from src.fund.models.fund import Fund`
+- **NEW SERVICES**: `from src.fund.services.fund_calculation_service import FundCalculationService`
+- **NEW ORCHESTRATOR**: `from src.fund.fund_manager import FundManager`
+- **LEGACY IMPORTS**: ❌ **REMOVED** - No tests should import from old monolithic models
+
 ## Critical Success Factors
 
 1. **Zero Regression**: All existing functionality must continue to work
@@ -339,6 +374,8 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
 3. **Team Adoption**: New testing patterns must be adopted by development team
 4. **Coverage Maintenance**: Test coverage must not decrease during refactor
 5. **Professional Standards**: Final test architecture must meet enterprise-grade standards
+6. **NEW ARCHITECTURE VALIDATION**: All tests must validate the new fund models architecture
+7. **LEGACY ELIMINATION**: Complete removal of tests importing from old monolithic models
 
 ## Next Steps
 
