@@ -814,8 +814,8 @@ Phase 4.5 must be completed before Phase 5 can begin. We need to build the event
 - **Event-Driven Architecture**: System operates entirely through domain events
 - **Professional Quality**: No TODO comments, comprehensive error handling, proper logging
 
-### Phase 6: Performance Optimization (3 weeks) 🚀 **SCALE & OPTIMIZATION** 🎯 **READY TO BEGIN**
-**Goal**: Optimize for scale and real-time consistency
+### Phase 6: Performance Optimization (4 weeks) 🚀 **SCALE & OPTIMIZATION** 🎯 **READY TO BEGIN**
+**Goal**: Optimize for scale and real-time consistency with O(1) updates and enterprise-grade performance
 
 **Prerequisites**: ✅ **Phase 5 is 100% complete** with complete system decoupling achieved ✅ **MET**
 
@@ -823,29 +823,185 @@ Phase 4.5 must be completed before Phase 5 can begin. We need to build the event
 - **O(1) updates** - replace full chain recalculations with incremental updates
 - **Smart caching** - implement Redis for frequently accessed data
 - **Database optimization** - add proper indexes, materialized views, partitioning
-- **Real-time consistency** - ensure all calculated fields remain up-to-date
+- **Real-time consistency** - ensure all calculated fields remain up-to-date within 100ms
+
+**Phase 6.1: Performance Baseline & Analysis (Week 1)** 🔍
+**Goal**: Establish current performance characteristics and identify optimization opportunities
 
 **Tasks**:
-- [ ] **Implement Incremental Calculations**: Replace full chain recalculations with O(1) updates
-- [ ] **Add Caching Layer**: Redis implementation for fund summaries and calculations
-- [ ] **Database Optimization**: Add indexes, materialized views, and partitioning
-- [ ] **Performance Testing**: Test with 20,000+ events, 500+ funds, 25+ companies
-- [ ] **Real-time Consistency**: Ensure all fields updated within 100ms of event
-- [ ] **Load Testing**: Validate performance under realistic production loads
-- [ ] **Cache Invalidation Strategy**: Implement smart cache invalidation for real-time consistency
-- [ ] **Database Query Optimization**: Analyze and optimize all database queries for scale
-- [ ] **Background Job Optimization**: Optimize async processing for heavy calculations
+- [ ] **Performance Profiling**
+  - [ ] Profile current system with realistic data volumes
+  - [ ] Identify bottlenecks in event processing, database queries, and API responses
+  - [ ] Measure current response times for all critical operations
+- [ ] **Load Testing Setup**
+  - [ ] Create performance testing infrastructure
+  - [ ] Generate test datasets (1000+ events, 50+ funds, 10+ companies)
+  - [ ] Establish performance benchmarks for all operations
+- [ ] **Database Query Analysis**
+  - [ ] Analyze current database query performance
+  - [ ] Identify slow queries and missing indexes
+  - [ ] Profile database connection usage and session management
 
 **Success Criteria**:
-- O(1) updates for all capital events
-- Support for 20,000+ events with sub-100ms response times
-- Real-time field consistency maintained
-- Performance benchmarks met for all operations
-- System scales to target production volumes
-- Cache invalidation maintains consistency without performance degradation
-- Database queries optimized for target scale
+- Complete performance baseline established
+- All bottlenecks identified and documented
+- Performance testing infrastructure ready
+
+**Phase 6.2: Incremental Calculations & O(1) Updates (Week 2)** ⚡
+**Goal**: Replace full chain recalculations with incremental updates
+
+**Tasks**:
+- [ ] **Implement Incremental Capital Chain Updates**
+  - [ ] Replace `recalculate_capital_chain_from()` with incremental updates
+  - [ ] Only recalculate affected events, not entire chains
+  - [ ] Implement smart event dependency tracking
+- [ ] **Optimize Fund Summary Updates**
+  - [ ] Update only changed summary fields
+  - [ ] Implement delta-based calculations
+  - [ ] Cache intermediate calculation results
+- [ ] **Event Dependency Optimization**
+  - [ ] Track event dependencies efficiently
+  - [ ] Implement minimal recalculation paths
+  - [ ] Cache dependency graphs
+
+**Success Criteria**:
+- O(1) updates for capital events
+- 90%+ reduction in unnecessary recalculations
+- All tests passing with new incremental system
+
+**Phase 6.3: Redis Caching Layer (Week 3)** 🗄️
+**Goal**: Implement intelligent caching for frequently accessed data
+
+**Tasks**:
+- [ ] **Redis Infrastructure Setup**
+  - [ ] Set up Redis server and connection management
+  - [ ] Implement connection pooling and failover
+  - [ ] Add Redis health monitoring
+- [ ] **Cache Strategy Implementation**
+  - [ ] Cache fund summaries and calculations
+  - [ ] Implement smart cache invalidation
+  - [ ] Add cache warming for frequently accessed data
+- [ ] **Cache Performance Optimization**
+  - [ ] Implement cache hit/miss monitoring
+  - [ ] Optimize cache key strategies
+  - [ ] Add cache compression for large objects
+
+**Success Criteria**:
+- Redis caching fully operational
+- 80%+ cache hit rate for fund summaries
+- Cache invalidation maintains consistency
+
+**Phase 6.4: Database & Final Optimization (Week 4)** 🗃️
+**Goal**: Optimize database performance for scale
+
+**Tasks**:
+- [ ] **Index Optimization**
+  - [ ] Add missing indexes for common queries
+  - [ ] Optimize existing index strategies
+  - [ ] Implement composite indexes for complex queries
+- [ ] **Query Optimization**
+  - [ ] Rewrite slow queries for better performance
+  - [ ] Implement query result caching
+  - [ ] Optimize bulk operations
+- [ ] **Connection & Session Optimization**
+  - [ ] Optimize database connection pooling
+  - [ ] Implement session reuse strategies
+  - [ ] Add query performance monitoring
+
+**Success Criteria**:
+- All critical queries complete in < 50ms
+- Database connection usage optimized
+- Query performance monitoring in place
 
 **Current Status**: **READY TO BEGIN** - All Phase 5 prerequisites met, complete event-driven architecture working
+
+## **🔧 Phase 6 Technical Implementation Details**
+
+### **1. Incremental Calculation System**
+
+```python
+# Current: Full chain recalculation (O(n))
+def recalculate_capital_chain_from(self, event, session=None):
+    # Recalculates entire chain from event forward
+    events = self.get_capital_events_after(event, session)
+    for event in events:
+        self.recalculate_event(event, session)
+
+# New: Incremental updates (O(1))
+def update_capital_chain_incrementally(self, event, session=None):
+    # Only update affected events
+    affected_events = self.get_affected_events(event, session)
+    for event in affected_events:
+        self.update_event_incrementally(event, session)
+```
+
+### **2. Redis Caching Strategy**
+
+```python
+# Cache key strategy
+class FundCacheKeys:
+    @staticmethod
+    def fund_summary(fund_id: int) -> str:
+        return f"fund:{fund_id}:summary"
+    
+    @staticmethod
+    def fund_events(fund_id: int, limit: int = 100) -> str:
+        return f"fund:{fund_id}:events:{limit}"
+    
+    @staticmethod
+    def fund_calculations(fund_id: int) -> str:
+        return f"fund:{fund_id}:calculations"
+
+# Cache invalidation
+def invalidate_fund_cache(fund_id: int):
+    """Invalidate all cache entries for a fund when it changes."""
+    cache_keys = [
+        FundCacheKeys.fund_summary(fund_id),
+        FundCacheKeys.fund_calculations(fund_id)
+    ]
+    for key in cache_keys:
+        redis_client.delete(key)
+```
+
+### **3. Database Index Strategy**
+
+```sql
+-- Critical indexes for performance
+CREATE INDEX CONCURRENTLY idx_fund_events_fund_date 
+ON fund_events(fund_id, event_date DESC);
+
+CREATE INDEX CONCURRENTLY idx_fund_events_type_date 
+ON fund_events(event_type, event_date DESC);
+
+CREATE INDEX CONCURRENTLY idx_fund_status_type 
+ON funds(status, tracking_type);
+
+-- Composite indexes for complex queries
+CREATE INDEX CONCURRENTLY idx_fund_summary_fields 
+ON funds(current_equity_balance, average_equity_balance, status);
+```
+
+## **📈 Phase 6 Success Metrics & Targets**
+
+### **Performance Targets**
+- **Single Event Creation**: < 50ms (currently ~100ms)
+- **Fund Summary Updates**: < 25ms (currently ~200ms)
+- **API Response Times**: < 100ms for all endpoints
+- **Database Queries**: < 50ms for all critical operations
+- **Cache Hit Rate**: > 80% for frequently accessed data
+
+### **Scale Targets**
+- **Event Processing**: 20,000+ events with sub-100ms response times
+- **Fund Management**: 500+ funds with real-time consistency
+- **Company Operations**: 25+ companies with concurrent access
+- **Memory Usage**: < 2GB for full dataset processing
+- **Database Connections**: < 50 concurrent connections
+
+### **Quality Targets**
+- **Zero Performance Regression**: All existing functionality maintains or improves performance
+- **100% Test Coverage**: All new optimizations fully tested
+- **Real-Time Consistency**: All calculated fields updated within 100ms of events
+- **Professional Quality**: Enterprise-grade performance monitoring and alerting
 
 ## Risk Mitigation
 
@@ -937,10 +1093,14 @@ Phase 4.5 must be completed before Phase 5 can begin. We need to build the event
 - ✅ All direct dependencies eliminated from event handlers ✅ **ACHIEVED**
 - ✅ All direct dependencies eliminated from fund model ✅ **ACHIEVED**
 
-### Phase 6 Metrics (Performance Optimization)
-- [ ] O(1) updates for all capital events
+### Phase 6 Metrics (Performance Optimization) 🚀 **READY TO BEGIN**
+- [ ] **Phase 6.1**: Performance baseline established with all bottlenecks identified
+- [ ] **Phase 6.2**: O(1) updates for all capital events with 90%+ reduction in recalculations
+- [ ] **Phase 6.3**: Redis caching operational with 80%+ cache hit rate
+- [ ] **Phase 6.4**: Database optimized with all critical queries < 50ms
 - [ ] Support for 20,000+ events with sub-100ms response times
-- [ ] Real-time field consistency maintained
+- [ ] Real-time field consistency maintained within 100ms
+- [ ] System scales to 500+ funds, 25+ companies with concurrent access
 
 ## Overall Success Metrics
 - [x] **Maintainability**: Fund model complexity reduced by 70% (from 2,965 to under 1,000 lines) ✅ **ACHIEVED**
@@ -957,7 +1117,7 @@ Phase 4.5 must be completed before Phase 5 can begin. We need to build the event
 - ✅ **Production Value**: New architecture actually processes real events (Phase 4)
 - ✅ **Decoupling**: Zero direct cross-model dependencies (Phase 5) ✅ **ACHIEVED**
 - ✅ **Event-Driven Architecture**: Complete system operates through domain events (Phase 5) ✅ **ACHIEVED**
-- [ ] **Performance**: O(1) updates and real-time consistency (Phase 6)
+- 🚀 **Performance**: O(1) updates and real-time consistency (Phase 6) - **READY TO BEGIN**
 
 ## Conclusion
 
