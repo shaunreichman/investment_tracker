@@ -485,6 +485,8 @@ class DomainEventType(Enum):
         UNITS_CHANGED: Fund units changed
         TAX_STATEMENT_UPDATED: Tax statement was updated
         FUND_SUMMARY_UPDATED: Fund summary fields were updated
+        CAPITAL_CHAIN_RECALCULATED: Fund capital chain was recalculated
+        FUND_STATUS_UPDATED: Fund status was updated
     """
     EQUITY_BALANCE_CHANGED = 'EQUITY_BALANCE_CHANGED'
     DISTRIBUTION_RECORDED = 'DISTRIBUTION_RECORDED'
@@ -492,6 +494,8 @@ class DomainEventType(Enum):
     UNITS_CHANGED = 'UNITS_CHANGED'
     TAX_STATEMENT_UPDATED = 'TAX_STATEMENT_UPDATED'
     FUND_SUMMARY_UPDATED = 'FUND_SUMMARY_UPDATED'
+    CAPITAL_CHAIN_RECALCULATED = 'CAPITAL_CHAIN_RECALCULATED'
+    FUND_STATUS_UPDATED = 'FUND_STATUS_UPDATED'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""

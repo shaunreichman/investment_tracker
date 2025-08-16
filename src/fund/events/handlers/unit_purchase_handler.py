@@ -135,13 +135,49 @@ class UnitPurchaseHandler(BaseFundEventHandler):
         """
         Update fund state after a unit purchase event.
         
+        This method handles the complex logic of updating fund state
+        after a capital event, including:
+        - Publishing capital chain recalculation events
+        - Updating summary fields
+        - Maintaining data consistency
+        
         Args:
             event: The unit purchase event that was created
         """
-        # Use the existing fund method to recalculate capital chain
-        # This maintains compatibility with existing logic while
-        # providing a clean interface through the handler
-        self.fund.recalculate_capital_chain_from(event, session=self.session)
+        # Instead of direct model calls, publish events for loose coupling
+        # This replaces: self.fund.recalculate_capital_chain_from(event, session=self.session)
+        
+        try:
+            # Publish capital chain recalculation event
+            from ..domain import CapitalChainRecalculatedEvent
+            from ..consumption.event_bus import event_bus
+            
+            # Get old equity balance before the event
+            old_equity_balance = self.fund.current_equity_balance
+            
+            # Publish capital chain recalculation event
+            capital_event = CapitalChainRecalculatedEvent(
+                fund_id=self.fund.id,
+                event_date=event.event_date,
+                trigger_event_id=event.id,
+                trigger_event_type="UNIT_PURCHASE",
+                old_equity_balance=old_equity_balance,
+                new_equity_balance=None,  # Will be calculated by event handler
+                change_reason=f"Capital chain recalculation after unit purchase: ${event.amount:,.2f}",
+                metadata={
+                    "event_amount": event.amount,
+                    "event_description": event.description,
+                    "reference_number": event.reference_number
+                }
+            )
+            
+            event_bus.publish(capital_event, self.session)
+            
+            logger.info(f"Published capital chain recalculation event for fund {self.fund.id}")
+            
+        except Exception as e:
+            logger.error(f"Error publishing capital chain recalculation event: {e}")
+            raise
         
         # Update fund summary fields
         self._update_fund_summary_fields()

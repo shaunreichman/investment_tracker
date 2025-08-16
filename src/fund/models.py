@@ -471,8 +471,37 @@ class Fund(Base):
         
         session.commit()
         
-        # Update fund status after tax statement creation/update
-        self.update_status_after_tax_statement(session=session)
+        # Instead of direct status updates, publish events for loose coupling
+        # This replaces: self.update_status_after_tax_statement(session=session)
+        
+        try:
+            from .events.domain import FundStatusUpdateEvent
+            from .events.consumption.event_bus import event_bus
+            
+            # Publish fund status update event
+            status_event = FundStatusUpdateEvent(
+                fund_id=self.id,
+                event_date=date.today(),
+                old_status=self.status.value if self.status else "UNKNOWN",
+                new_status=self.status.value if self.status else "UNKNOWN",
+                update_reason=f"Tax statement created/updated for entity {entity_id}, financial year {financial_year}",
+                trigger_event_id=None,
+                trigger_event_type="TAX_STATEMENT_CREATED",
+                metadata={
+                    "entity_id": entity_id,
+                    "financial_year": financial_year,
+                    "tax_statement_id": statement.id if statement.id else None
+                }
+            )
+            
+            event_bus.publish(status_event, session)
+            
+            logger.info(f"Published fund status update event for fund {self.id}")
+            
+        except Exception as e:
+            logger.error(f"Error publishing fund status update event: {e}")
+            # Don't fail the main operation if event publishing fails
+            pass
         
         return statement
     
@@ -1511,7 +1540,39 @@ class Fund(Base):
         This checks if the fund should transition between REALIZED and COMPLETED.
         Also recalculates IRRs when tax statements change.
         """
-        self.status_service.update_status_after_tax_statement(self, session)
+        # Instead of direct status service calls, publish events for loose coupling
+        # This replaces: self.status_service.update_status_after_tax_statement(self, session)
+        
+        try:
+            from .events.domain import FundStatusUpdateEvent
+            from .events.consumption.event_bus import event_bus
+            
+            # Get current status
+            current_status = self.status.value if self.status else "UNKNOWN"
+            
+            # Publish fund status update event
+            status_event = FundStatusUpdateEvent(
+                fund_id=self.id,
+                event_date=date.today(),
+                old_status=current_status,
+                new_status=current_status,  # Status will be determined by event handler
+                update_reason="Tax statement status update required",
+                trigger_event_id=None,
+                trigger_event_type="TAX_STATEMENT_STATUS_UPDATE",
+                metadata={
+                    "current_status": current_status,
+                    "update_type": "tax_statement_status"
+                }
+            )
+            
+            event_bus.publish(status_event, session)
+            
+            logger.info(f"Published fund status update event for fund {self.id}")
+            
+        except Exception as e:
+            logger.error(f"Error publishing fund status update event: {e}")
+            # Don't fail the main operation if event publishing fails
+            pass
 
     @with_session
     def is_final_tax_statement_received(self, session=None):

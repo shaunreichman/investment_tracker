@@ -12,6 +12,8 @@ from .nav_updated_event import NAVUpdatedEvent
 from .units_changed_event import UnitsChangedEvent
 from .tax_statement_updated_event import TaxStatementUpdatedEvent
 from .fund_summary_updated_event import FundSummaryUpdatedEvent
+from .capital_chain_recalculated_event import CapitalChainRecalculatedEvent
+from .fund_status_update_event import FundStatusUpdateEvent
 
 __all__ = [
     'FundDomainEvent',
@@ -20,5 +22,7 @@ __all__ = [
     'NAVUpdatedEvent',
     'UnitsChangedEvent',
     'TaxStatementUpdatedEvent',
-    'FundSummaryUpdatedEvent'
+    'FundSummaryUpdatedEvent',
+    'CapitalChainRecalculatedEvent',
+    'FundStatusUpdateEvent'
 ]

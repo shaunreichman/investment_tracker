@@ -12,6 +12,8 @@ from .event_bus import event_bus
 from .base_consumer import EventConsumer
 from .handlers.tax_statement_event_handler import TaxStatementEventHandler
 from .handlers.company_record_event_handler import CompanyRecordEventHandler
+from .handlers.capital_chain_event_handler import CapitalChainEventHandler
+from .handlers.fund_status_event_handler import FundStatusEventHandler
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,14 @@ class EventHandlerRegistry:
             # Create and register company record event handler
             company_handler = CompanyRecordEventHandler()
             self._register_handler(company_handler)
+            
+            # Create and register capital chain event handler
+            capital_handler = CapitalChainEventHandler()
+            self._register_handler(capital_handler)
+            
+            # Create and register fund status event handler
+            status_handler = FundStatusEventHandler()
+            self._register_handler(status_handler)
             
             self.registered = True
             logger.info(f"Successfully registered {len(self.handlers)} event handlers")
