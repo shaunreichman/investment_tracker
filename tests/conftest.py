@@ -209,6 +209,23 @@ def setup_factories(db_session):
     # No need to manually rollback - nested transaction handles it automatically
 
 
+@pytest.fixture(autouse=True)
+def cleanup_event_bus():
+    """
+    Clean up event bus between tests to prevent hanging.
+    
+    This fixture ensures that event handler subscriptions don't accumulate
+    across tests, which can cause memory leaks and resource conflicts.
+    """
+    yield
+    try:
+        from src.fund.events.consumption.event_bus import event_bus
+        event_bus.clear_subscriptions()
+        print("✅ Event bus subscriptions cleared")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not clear event bus subscriptions: {e}")
+
+
 class BaseTestCase:
     """Base test class that provides database session access"""
     
