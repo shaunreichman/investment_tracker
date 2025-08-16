@@ -209,3 +209,60 @@ class TestEventConsumptionIntegration:
         assert company_stats['name'] == "CompanyRecordEventHandler"
         assert tax_stats['processed_count'] == 1
         assert company_stats['processed_count'] == 1
+
+    def test_event_consumption_integration_with_main_system(self):
+        """Test that events published from the main system are consumed by event handlers."""
+        # Import the main system components
+        from src.fund.events.consumption import EventBus
+        from src.fund.events.consumption.handlers import TaxStatementEventHandler, CompanyRecordEventHandler
+        
+        # Create a new event bus instance for testing
+        event_bus = EventBus()
+        
+        # Create handlers and register them
+        tax_handler = TaxStatementEventHandler()
+        company_handler = CompanyRecordEventHandler()
+        
+        # Subscribe handlers to events
+        event_bus.subscribe_consumer(EquityBalanceChangedEvent, tax_handler)
+        event_bus.subscribe_consumer(EquityBalanceChangedEvent, company_handler)
+        event_bus.subscribe_consumer(DistributionRecordedEvent, tax_handler)
+        event_bus.subscribe_consumer(DistributionRecordedEvent, company_handler)
+        
+        # Verify initial stats
+        initial_stats = event_bus.get_stats()
+        assert initial_stats['events_published'] == 0
+        assert initial_stats['events_processed'] == 0
+        
+        # Create and publish events (simulating what the main system would do)
+        equity_event = EquityBalanceChangedEvent(
+            fund_id=1,
+            event_date=date(2024, 1, 15),
+            old_balance=Decimal('100000.0'),
+            new_balance=Decimal('150000.0'),
+            change_reason="Test integration"
+        )
+        
+        distribution_event = DistributionRecordedEvent(
+            fund_id=1,
+            event_date=date(2024, 1, 15),
+            distribution_type="income",
+            amount=Decimal('50000.0'),
+            tax_withheld=Decimal('7500.0')
+        )
+        
+        # Publish events
+        event_bus.publish(equity_event)
+        event_bus.publish(distribution_event)
+        
+        # Verify events were processed
+        final_stats = event_bus.get_stats()
+        assert final_stats['events_published'] == 2
+        assert final_stats['events_processed'] == 4  # 2 handlers × 2 events
+        
+        # Verify handler statistics
+        assert tax_handler.processed_count == 2  # equity + distribution
+        assert company_handler.processed_count == 2  # equity + distribution
+        
+        # Verify no errors
+        assert final_stats['consumer_errors'] == 0

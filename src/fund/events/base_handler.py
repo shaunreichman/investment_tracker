@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, date
 from typing import Optional, Any, Dict, List
 from sqlalchemy.orm import Session
+import logging
 
 from ..models import Fund, FundEvent
 from ..enums import EventType, FundType, FundStatus
@@ -42,6 +43,9 @@ class BaseFundEventHandler(ABC):
         """
         self.session = session
         self.fund = fund
+        
+        # Initialize logger
+        self.logger = logging.getLogger(__name__)
         
         # Initialize services for business logic
         self.calculation_service = FundCalculationService()
@@ -216,6 +220,36 @@ class BaseFundEventHandler(ABC):
         # Store all domain events in the database
         if domain_events:
             domain_repo.store_domain_events(domain_events)
+            
+            # Also publish events to the event bus for real-time consumption
+            self._publish_events_to_bus(domain_events)
+    
+    def _publish_events_to_bus(self, domain_events: List['FundDomainEvent']) -> None:
+        """
+        Publish domain events to the event bus for real-time consumption.
+        
+        This method ensures that domain events are not only stored
+        but also immediately available for consumption by event handlers.
+        
+        Args:
+            domain_events: List of domain events to publish
+        """
+        try:
+            # Import the event bus from the consumption module
+            from ..consumption.event_bus import event_bus
+            
+            # Publish each domain event to the event bus
+            for domain_event in domain_events:
+                event_bus.publish(domain_event)
+                self.logger.debug(f"Published {type(domain_event).__name__} to event bus")
+                
+        except ImportError as e:
+            # If the event bus is not available, log a warning but don't fail
+            self.logger.warning(f"Event bus not available, skipping event bus publishing: {e}")
+        except Exception as e:
+            # Log any other errors but don't fail the main event processing
+            self.logger.error(f"Error publishing events to event bus: {e}")
+            # Don't raise - this is a non-critical operation
     
     def _create_domain_events_for_fund_event(self, event: FundEvent) -> List['FundDomainEvent']:
         """

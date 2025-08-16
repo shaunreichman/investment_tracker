@@ -26,6 +26,15 @@ from src.fund.enums import EventType
 def create_app(db_config=None):
     app = Flask(__name__)
     CORS(app)
+    
+    # Initialize event consumption system
+    try:
+        from src.fund.events.consumption import register_all_handlers
+        register_all_handlers()
+        app.logger.info("Event consumption system initialized successfully")
+    except Exception as e:
+        app.logger.warning(f"Could not initialize event consumption system: {e}")
+        # Don't fail app startup if event system fails
 
     # Direct database setup to avoid import issues
     def get_db_session():
