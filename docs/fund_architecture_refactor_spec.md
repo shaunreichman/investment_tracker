@@ -887,30 +887,31 @@ Phase 4.5 must be completed before Phase 5 can begin. We need to build the event
 **Phase 6.4: Database & Final Optimization (Weeks 1-3)** 🗃️
 **Goal**: Optimize database performance for scale and production readiness
 
-**Phase 6.4.1: Critical Indexes & Immediate Performance (Week 1)** ⚡
-**Goal**: Add missing high-priority indexes for immediate 50-80% performance improvement
+**Phase 6.4.1: Essential Production Indexes (Week 1)** ⚡
+**Goal**: Add only the 3 critical indexes needed for production readiness and immediate 75-80% performance improvement
+
+**Business Decision**: Focus on 3 critical indexes instead of 8+ indexes to avoid over-engineering. Investment companies and entities will remain small-scale, making additional indexes unnecessary. The 3 critical indexes deliver production readiness with excellent ROI.
 
 **Tasks**:
-- [ ] **High-Priority Indexes Implementation**
-  - [ ] Add single index on funds.investment_company_id (Priority: high)
-  - [ ] Add single index on funds.entity_id (Priority: high)
-  - [ ] Add single index on fund_events.reference_number (Priority: high)
-  - [ ] Add single index on tax_statements.statement_date (Priority: high)
-  - [ ] Add single index on investment_companies.abn (Priority: high)
-  - [ ] Add single index on investment_companies.acn (Priority: high)
-  - [ ] Add single index on entities.abn (Priority: high)
-  - [ ] Add single index on entities.acn (Priority: high)
+- [ ] **Critical Foreign Key Indexes**
+  - [ ] Add index on funds.investment_company_id (Priority: high)
+  - [ ] Add index on funds.entity_id (Priority: high)
+- [ ] **Critical Query Pattern Index**
+  - [ ] Add index on fund_events(fund_id, event_date DESC) (Priority: high)
 - [ ] **Performance Validation**
-  - [ ] Test active_funds query (target: 131ms → <10ms)
-  - [ ] Test cost_based_funds query (target: 140ms → <10ms)
-  - [ ] Validate 50-80% performance improvement across all operations
-  - [ ] Document performance baseline improvements
+  - [ ] Test active_funds query (target: 131ms → <30ms)
+  - [ ] Test cost_based_funds query (target: 140ms → <30ms)
+  - [ ] Test JOIN queries (target: 77ms → <50ms)
+  - [ ] Validate 75-80% performance improvement across all operations
+  - [ ] Document production readiness achievement
 
 **Success Criteria**:
-- All 8 high-priority indexes implemented
-- active_funds query: < 10ms (from 131ms)
-- cost_based_funds query: < 10ms (from 140ms)
-- 50-80% performance improvement achieved
+- 3 critical indexes implemented (no over-engineering)
+- active_funds query: < 30ms (from 131ms) - 75-80% improvement
+- cost_based_funds query: < 30ms (from 140ms) - 75-80% improvement
+- JOIN queries: < 50ms (from 77ms) - 70-80% improvement
+- Production readiness achieved with excellent ROI
+- No unnecessary complexity or premature optimization
 
 **Phase 6.4.2: Query Optimization & Composite Indexes (Week 2)** 🔍
 **Goal**: Optimize slow queries and add composite indexes for complex operations
@@ -969,11 +970,13 @@ Phase 4.5 must be completed before Phase 5 can begin. We need to build the event
 - Performance monitoring dashboard operational
 
 **Overall Phase 6.4 Success Criteria**:
-- All critical queries complete in < 50ms
+- All critical queries complete in < 100ms (enterprise standard)
 - Database connection usage optimized and stable
 - Query performance monitoring in place
 - System production-ready with enterprise-grade performance
-- 94%+ performance improvement achieved (131ms → 8ms)
+- 75-80% performance improvement achieved (131ms → 30ms)
+- Production readiness achieved with excellent ROI
+- No over-engineering or premature optimization
 
 **Current Status**: **READY TO BEGIN** - All Phase 5 prerequisites met, complete event-driven architecture working
 
@@ -1155,8 +1158,8 @@ ON funds(current_equity_balance, average_equity_balance, status);
 ### Phase 6 Metrics (Performance Optimization) 🚀 **IN PROGRESS**
 - [x] **Phase 6.1**: Performance baseline established with all bottlenecks identified ✅ **COMPLETED**
 - [x] **Phase 6.2**: O(1) updates for all capital events with 90%+ reduction in recalculations ✅ **COMPLETED**
-- [ ] **Phase 6.4.1**: Critical indexes implemented with 50-80% performance improvement
-- [ ] **Phase 6.4.2**: Composite indexes and query optimization completed
+- [ ] **Phase 6.4.1**: Essential production indexes implemented with 75-80% performance improvement
+- [ ] **Phase 6.4.2**: Query optimization and performance monitoring completed
 - [ ] **Phase 6.4.3**: Connection pool optimization and production readiness achieved
 - [ ] Support for 20,000+ events with sub-100ms response times
 - [ ] Real-time field consistency maintained within 100ms
@@ -1237,8 +1240,8 @@ This refactor represents a critical foundation for the fund system's future scal
 - **Professional Responsibility**: **FULLY DELIVERED** - Phase 5 has delivered on all its promises of complete system decoupling
 
 **Next Steps**: 
-1. **IMMEDIATE**: Begin Phase 6.4.1 - Critical Indexes & Immediate Performance (Ready to begin)
-2. **FOCUS**: Database optimization, query performance, production readiness
+1. **IMMEDIATE**: Begin Phase 6.4.1 - Essential Production Indexes (Ready to begin)
+2. **FOCUS**: 3 critical indexes for production readiness, no over-engineering
 3. **TARGET**: 20,000+ events, 500+ funds, 25+ companies with sub-100ms response times
 
 **Phase 6.1 Completed Successfully**:
