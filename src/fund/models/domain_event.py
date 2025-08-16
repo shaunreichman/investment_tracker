@@ -6,8 +6,8 @@ representing domain events in the fund system.
 """
 
 from typing import Optional, List
-from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON
+from datetime import date, datetime, timezone
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON, Index
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
@@ -50,7 +50,7 @@ class DomainEvent(Base):
         Index('idx_domain_events_fund_id_event_type', 'fund_id', 'event_type'),
         Index('idx_domain_events_timestamp', 'timestamp'),
         Index('idx_domain_events_processed', 'processed'),
-        {'postgresql_using': 'btree'},
+        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
     def __repr__(self) -> str:

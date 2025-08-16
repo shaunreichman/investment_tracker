@@ -17,6 +17,7 @@ import logging
 
 from src.fund.events.base_handler import BaseFundEventHandler
 from src.fund.enums import EventType
+from src.fund.models import FundEvent
 from src.fund.events.handlers.capital_call_handler import CapitalCallHandler
 from src.fund.events.handlers.return_of_capital_handler import ReturnOfCapitalHandler
 from src.fund.events.handlers.distribution_handler import DistributionHandler

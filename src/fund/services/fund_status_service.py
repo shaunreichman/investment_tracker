@@ -11,7 +11,7 @@ Key responsibilities:
 - Tax statement status checks
 """
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_

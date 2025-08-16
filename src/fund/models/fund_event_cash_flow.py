@@ -7,7 +7,7 @@ representing actual cash transfers linked to fund events.
 
 from typing import Optional, List
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Enum
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Enum, Index
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
@@ -34,7 +34,7 @@ class FundEventCashFlow(Base):
     bank_account_id = Column(Integer, ForeignKey('bank_accounts.id'), nullable=False, index=True)  # (MANUAL) account where the transfer occurred
     
     # Cash flow details
-    direction = Column(CashFlowDirection, nullable=False)  # (SYSTEM) inflow/outflow from investor perspective
+    direction = Column(Enum(CashFlowDirection), nullable=False)  # (SYSTEM) inflow/outflow from investor perspective
     transfer_date = Column(Date, nullable=False, index=True)  # (MANUAL) date of transaction on bank statement
     currency = Column(String(3), nullable=False)  # (MANUAL) ISO-4217; must equal BankAccount.currency
     amount = Column(Float, nullable=False)  # (MANUAL) transfer amount in currency
@@ -51,7 +51,7 @@ class FundEventCashFlow(Base):
         Index('idx_fund_event_cash_flows_bank_account_id', 'bank_account_id'),
         Index('idx_fund_event_cash_flows_transfer_date', 'transfer_date'),
         Index('idx_fund_event_cash_flows_currency', 'currency'),
-        {'postgresql_using': 'btree'},
+        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
     def __repr__(self) -> str:

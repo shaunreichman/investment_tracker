@@ -7,7 +7,7 @@ representing events that occur within funds.
 
 from typing import Optional, List
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON, Index
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
@@ -34,7 +34,7 @@ class FundEvent(Base):
     fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (SYSTEM) link to fund
     
     # Event details
-    event_type = Column(EventType, nullable=False, index=True)  # (SYSTEM) type of fund event
+    event_type = Column(Enum(EventType), nullable=False, index=True)  # (SYSTEM) type of fund event
     event_date = Column(Date, nullable=False, index=True)  # (MANUAL) date when event occurred
     amount = Column(Float, nullable=False)  # (MANUAL) event amount (positive for calls, negative for returns)
     description = Column(Text)  # (MANUAL) description of the event
@@ -45,7 +45,7 @@ class FundEvent(Base):
     units_change = Column(Float, nullable=True)  # (MANUAL) change in units for NAV events
     
     # Distribution-specific fields
-    distribution_type = Column(DistributionType, nullable=True)  # (MANUAL) type of distribution if applicable
+    distribution_type = Column(Enum(DistributionType), nullable=True)  # (MANUAL) type of distribution if applicable
     tax_withholding = Column(Float, nullable=True)  # (MANUAL) tax withholding amount if applicable
     
     # Metadata
@@ -62,7 +62,7 @@ class FundEvent(Base):
         Index('idx_fund_events_event_type', 'event_type'),
         Index('idx_fund_events_event_date', 'event_date'),
         Index('idx_fund_events_fund_id_event_date', 'fund_id', 'event_date'),
-        {'postgresql_using': 'btree'},
+        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
     )
     
     def __repr__(self) -> str:

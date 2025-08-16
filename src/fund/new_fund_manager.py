@@ -6,13 +6,13 @@ operations to the new event-driven architecture. It maintains backward
 compatibility while enabling the new system.
 """
 
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, List
 from datetime import date
 from sqlalchemy.orm import Session
 
 from src.fund.models import Fund, FundEvent
 from src.fund.events.orchestrator import FundUpdateOrchestrator
-from src.fund.enums import EventType, DistributionType, FundType
+from src.fund.enums import EventType, DistributionType, FundType, FundStatus
 from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.services.fund_status_service import FundStatusService
 from src.fund.services.tax_calculation_service import TaxCalculationService
@@ -280,6 +280,158 @@ class NewFundManager:
         return self.orchestrator.process_fund_event(event_data, session, self.fund)
     
     # ============================================================================
+    # CALCULATION METHODS - Route to calculation service
+    # ============================================================================
+    
+    def calculate_irr(self, session: Optional[Session] = None) -> Optional[float]:
+        """Calculate gross IRR for the fund."""
+        return self.orchestrator.calculation_service.calculate_irr(
+            fund=self.fund, session=session
+        )
+    
+    def calculate_after_tax_irr(self, session: Optional[Session] = None) -> Optional[float]:
+        """Calculate after-tax IRR for the fund."""
+        return self.orchestrator.calculation_service.calculate_after_tax_irr(
+            fund=self.fund, session=session
+        )
+    
+    def calculate_real_irr(self, session: Optional[Session] = None, 
+                          risk_free_rate_currency: Optional[str] = None) -> Optional[float]:
+        """Calculate real IRR (after inflation) for the fund."""
+        return self.orchestrator.calculation_service.calculate_real_irr(
+            fund=self.fund, session=session, risk_free_rate_currency=risk_free_rate_currency
+        )
+    
+    def calculate_average_equity_balance(self, session: Optional[Session] = None, 
+                                       events: Optional[List] = None) -> float:
+        """Calculate time-weighted average equity balance."""
+        return self.orchestrator.calculation_service.calculate_average_equity_balance(
+            fund=self.fund, session=session, events=events
+        )
+    
+    def update_average_equity_balance(self, session: Optional[Session] = None) -> None:
+        """Update the fund's average equity balance."""
+        self.orchestrator.calculation_service.update_average_equity_balance(
+            fund=self.fund, session=session
+        )
+    
+    # ============================================================================
+    # STATUS AND METRICS METHODS - Route to status service
+    # ============================================================================
+    
+    def get_summary_data(self, session: Optional[Session] = None) -> Dict[str, Any]:
+        """Get comprehensive fund summary data."""
+        return self.orchestrator.status_service.get_summary_data(
+            fund=self.fund, session=session
+        )
+    
+    def update_status(self, session: Optional[Session] = None) -> None:
+        """Update fund status based on current state."""
+        self.orchestrator.status_service.update_status(
+            fund=self.fund, session=session
+        )
+    
+    def update_status_after_equity_event(self, session: Optional[Session] = None) -> None:
+        """Update fund status after an equity event."""
+        self.orchestrator.status_service.update_status_after_equity_event(
+            fund=self.fund, session=session
+        )
+    
+    def update_status_after_tax_statement(self, session: Optional[Session] = None) -> None:
+        """Update fund status after a tax statement."""
+        self.orchestrator.status_service.update_status_after_tax_statement(
+            fund=self.fund, session=session
+        )
+    
+    # ============================================================================
+    # QUERY AND RETRIEVAL METHODS - Route to event service
+    # ============================================================================
+    
+    def get_recent_events(self, limit: int = 10, exclude_system_events: bool = True, 
+                         session: Optional[Session] = None) -> List[FundEvent]:
+        """Get recent fund events."""
+        return self.orchestrator.event_service.get_recent_events(
+            fund=self.fund, limit=limit, exclude_system_events=exclude_system_events, 
+            session=session
+        )
+    
+    def get_all_fund_events(self, exclude_system_events: bool = True, 
+                           session: Optional[Session] = None) -> List[FundEvent]:
+        """Get all fund events."""
+        return self.orchestrator.event_service.get_all_fund_events(
+            fund=self.fund, exclude_system_events=exclude_system_events, 
+            session=session
+        )
+    
+    def get_events(self, event_types: Optional[List[EventType]] = None,
+                   start_date: Optional[date] = None, end_date: Optional[date] = None,
+                   session: Optional[Session] = None) -> List[FundEvent]:
+        """Get fund events with optional filtering."""
+        return self.orchestrator.event_service.get_events(
+            fund=self.fund, event_types=event_types, start_date=start_date, 
+            end_date=end_date, session=session
+        )
+    
+    def delete_event(self, event_id: int, session: Optional[Session] = None) -> None:
+        """Delete a fund event."""
+        self.orchestrator.event_service.delete_event(
+            fund=self.fund, event_id=event_id, session=session
+        )
+    
+    # ============================================================================
+    # DISTRIBUTION AND TAX METHODS - Route to tax service
+    # ============================================================================
+    
+    def get_distributions_by_type(self, session: Optional[Session] = None) -> Dict[str, float]:
+        """Get distributions grouped by type."""
+        return self.orchestrator.tax_service.get_distributions_by_type(
+            fund=self.fund, session=session
+        )
+    
+    def get_total_distributions(self, session: Optional[Session] = None) -> float:
+        """Get total distributions amount."""
+        return self.orchestrator.tax_service.get_total_distributions(
+            fund=self.fund, session=session
+        )
+    
+    def get_taxable_distributions(self, session: Optional[Session] = None) -> float:
+        """Get total taxable distributions amount."""
+        return self.orchestrator.tax_service.get_taxable_distributions(
+            fund=self.fund, session=session
+        )
+    
+    def get_total_tax_withheld(self, session: Optional[Session] = None) -> float:
+        """Get total tax withheld amount."""
+        return self.orchestrator.tax_service.get_total_tax_withheld(
+            fund=self.fund, session=session
+        )
+    
+    # ============================================================================
+    # CAPITAL CHAIN METHODS - Route to calculation service
+    # ============================================================================
+    
+    def recalculate_capital_chain_from(self, event: FundEvent, 
+                                     session: Optional[Session] = None) -> None:
+        """Recalculate capital chain from a specific event."""
+        self.orchestrator.calculation_service.recalculate_capital_chain_from(
+            fund=self.fund, event=event, session=session
+        )
+    
+    def update_capital_chain_incrementally(self, event: FundEvent, 
+                                         session: Optional[Session] = None) -> None:
+        """Update capital chain incrementally after an event."""
+        self.orchestrator.calculation_service.update_capital_chain_incrementally(
+            fund=self.fund, event=event, session=session
+        )
+    
+    def update_fund_summary_fields_after_capital_event(self, 
+                                                     session: Optional[Session] = None) -> None:
+        """Update fund summary fields after a capital event."""
+        self.orchestrator.calculation_service.update_fund_summary_fields_after_capital_event(
+            fund=self.fund, session=session
+        )
+    
+    # ============================================================================
     # BACKWARD COMPATIBILITY - Delegate to original Fund model
     # ============================================================================
     
@@ -322,3 +474,60 @@ class NewFundManager:
     def __repr__(self) -> str:
         """String representation of the new fund manager."""
         return f"<NewFundManager(fund_id={self.fund.id}, name='{self.fund.name}')>"
+
+    # ============================================================================
+    # UTILITY AND HELPER METHODS
+    # ============================================================================
+    
+    def is_active(self) -> bool:
+        """Check if fund is active."""
+        return self.fund.status == FundStatus.ACTIVE
+    
+    def is_completed(self) -> bool:
+        """Check if fund is completed."""
+        return self.fund.status == FundStatus.COMPLETED
+    
+    def is_realized(self) -> bool:
+        """Check if fund is realized."""
+        return self.fund.status == FundStatus.REALIZED
+    
+    def has_equity_balance(self) -> bool:
+        """Check if fund has equity balance."""
+        return self.fund.current_equity_balance > 0
+    
+    def get_commitment_utilization(self) -> float:
+        """Get commitment utilization percentage."""
+        if not self.fund.commitment_amount or self.fund.commitment_amount <= 0:
+            return 0.0
+        return (self.fund.current_equity_balance / self.fund.commitment_amount) * 100
+    
+    def get_remaining_commitment(self) -> float:
+        """Get remaining commitment amount."""
+        if not self.fund.commitment_amount:
+            return 0.0
+        return max(0, self.fund.commitment_amount - self.fund.current_equity_balance)
+    
+    def start_date(self) -> Optional[date]:
+        """Get fund start date (first event date)."""
+        events = self.get_all_fund_events(session=None)
+        if not events:
+            return None
+        return min(event.event_date for event in events if event.event_date)
+    
+    def total_capital_called(self) -> float:
+        """Get total capital called amount."""
+        events = self.get_all_fund_events(session=None)
+        return sum(
+            event.amount for event in events 
+            if event.event_type == EventType.CAPITAL_CALL and event.amount
+        )
+    
+    def remaining_commitment(self) -> float:
+        """Get remaining commitment amount."""
+        return self.get_remaining_commitment()
+    
+    def calculate_end_date(self, session: Optional[Session] = None) -> Optional[date]:
+        """Calculate fund end date based on events."""
+        return self.orchestrator.status_service.calculate_end_date(
+            fund=self.fund, session=session
+        )

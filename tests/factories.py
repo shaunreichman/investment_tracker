@@ -4,7 +4,8 @@ from datetime import datetime
 
 from src.entity.models import Entity
 from src.investment_company.models import InvestmentCompany, Contact
-from src.fund.models import Fund, FundType, FundEvent, EventType, DistributionType, TaxPaymentType, FundEventCashFlow, CashFlowDirection
+from src.fund.models import Fund, FundEvent, FundEventCashFlow
+from src.fund.enums import FundType, EventType, DistributionType, TaxPaymentType, CashFlowDirection
 from src.tax.models import TaxStatement
 from src.rates.models import RiskFreeRate
 from src.banking.models import Bank, BankAccount

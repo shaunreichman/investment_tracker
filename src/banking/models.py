@@ -7,7 +7,7 @@ representing bank accounts and banking operations in the system.
 
 from typing import Optional, List
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from src.shared.utils import with_session

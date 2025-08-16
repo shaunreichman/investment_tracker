@@ -13,7 +13,7 @@ from sqlalchemy.orm import relationship
 from src.shared.base import Base
 from src.shared.utils import with_session, with_class_session
 from src.fund.models import Fund
-from src.fund.models import FundStatus
+from src.fund.enums import FundStatus
 
 class Contact(Base):
     """Model representing a contact person at an investment company."""

@@ -18,10 +18,9 @@ if project_root not in sys.path:
 from src.database import get_database_session
 from src.investment_company.models import InvestmentCompany
 from src.entity.models import Entity
-from src.fund.models import Fund, FundType, FundEvent, FundStatus
+from src.fund.models import Fund, FundEvent, FundEventCashFlow
+from src.fund.enums import FundType, FundStatus, EventType, CashFlowDirection
 from src.banking.models import Bank, BankAccount
-from src.fund.models import FundEventCashFlow, CashFlowDirection
-from src.fund.enums import EventType
 
 def create_app(db_config=None):
     app = Flask(__name__)
