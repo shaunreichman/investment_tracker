@@ -1,0 +1,94 @@
+================================================================================
+PHASE 6.1 DATABASE QUERY ANALYSIS REPORT
+================================================================================
+
+INDEX ANALYSIS:
+----------------------------------------
+  FUNDS:
+    Missing composite index on: status, tracking_type (Priority: medium)
+    Missing single index on: investment_company_id (Priority: high)
+    Missing single index on: entity_id (Priority: high)
+    Missing composite index on: current_equity_balance, status (Priority: medium)
+    Missing composite index on: start_date, end_date (Priority: medium)
+  FUND_EVENTS:
+    Missing composite index on: fund_id, event_date (Priority: medium)
+    Missing composite index on: event_type, event_date (Priority: medium)
+    Missing composite index on: fund_id, event_type (Priority: medium)
+    Missing single index on: reference_number (Priority: high)
+  TAX_STATEMENTS:
+    Missing composite index on: fund_id, financial_year (Priority: medium)
+    Missing single index on: statement_date (Priority: high)
+  INVESTMENT_COMPANIES:
+    Missing single index on: abn (Priority: high)
+    Missing single index on: acn (Priority: high)
+  ENTITIES:
+    Missing single index on: abn (Priority: high)
+    Missing single index on: acn (Priority: high)
+
+QUERY PERFORMANCE ANALYSIS:
+----------------------------------------
+  GOOD PERFORMANCE:
+    fund_by_name: 17.68ms avg
+    recent_events: 38.46ms avg
+
+  ACCEPTABLE PERFORMANCE:
+    fund_by_id: 58.21ms avg
+    fund_events: 63.10ms avg
+    events_by_type: 58.05ms avg
+    fund_with_company: 77.50ms avg
+    fund_with_entity: 69.70ms avg
+    tax_statements_by_fund: 77.95ms avg
+
+  SLOW PERFORMANCE:
+    active_funds: 131.43ms avg
+    cost_based_funds: 140.63ms avg
+
+SLOW QUERIES (Require Immediate Attention):
+----------------------------------------
+  cost_based_funds: 140.63ms avg (Priority: medium)
+  active_funds: 131.43ms avg (Priority: medium)
+
+CONNECTION POOL ANALYSIS:
+----------------------------------------
+  Pool Size: 10
+  Checked In: 0
+  Checked Out: 1
+  Overflow: -9
+  Connection Time: 8.82ms
+  Pool Efficiency: good
+
+OPTIMIZATION RECOMMENDATIONS:
+----------------------------------------
+  HIGH PRIORITY:
+    [INDEX] Add single index on funds.investment_company_id
+    [INDEX] Add single index on funds.entity_id
+    [INDEX] Add single index on fund_events.reference_number
+    [INDEX] Add single index on tax_statements.statement_date
+    [INDEX] Add single index on investment_companies.abn
+    [INDEX] Add single index on investment_companies.acn
+    [INDEX] Add single index on entities.abn
+    [INDEX] Add single index on entities.acn
+    [GENERAL] Implement Redis caching for frequently accessed fund summaries
+    [GENERAL] Replace full chain recalculations with incremental updates
+
+  MEDIUM PRIORITY:
+    [INDEX] Add composite index on funds.status, tracking_type
+    [INDEX] Add composite index on funds.current_equity_balance, status
+    [INDEX] Add composite index on funds.start_date, end_date
+    [INDEX] Add composite index on fund_events.fund_id, event_date
+    [INDEX] Add composite index on fund_events.event_type, event_date
+    [INDEX] Add composite index on fund_events.fund_id, event_type
+    [INDEX] Add composite index on tax_statements.fund_id, financial_year
+    [QUERY_OPTIMIZATION] Optimize active_funds query - currently slow
+    [QUERY_OPTIMIZATION] Optimize cost_based_funds query - currently slow
+    [GENERAL] Add query result caching for expensive operations
+
+NEXT STEPS:
+----------------------------------------
+  1. Address high-priority missing indexes
+  2. Optimize slow queries identified above
+  3. Implement Phase 6.2 incremental calculations
+  4. Add Phase 6.3 Redis caching layer
+  5. Optimize database connection pooling
+
+================================================================================

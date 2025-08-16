@@ -4,7 +4,7 @@ Fund domain models.
 This module contains the core fund models including Fund, FundEvent, and related enums.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, func, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint, func, JSON, Index
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime, date, timezone
@@ -156,6 +156,14 @@ class Fund(Base):
     fund_events = relationship("FundEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     tax_statements = relationship("TaxStatement", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     domain_events = relationship("DomainEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
+    
+    # Critical indexes for production performance
+    __table_args__ = (
+        # Foreign key indexes for JOIN performance
+        Index('idx_funds_investment_company_id', 'investment_company_id'),
+        Index('idx_funds_entity_id', 'entity_id'),
+        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
+    )
     
     @property
     def calculation_service(self) -> FundCalculationService:
@@ -2461,6 +2469,13 @@ class FundEvent(Base):
     fund = relationship("Fund", back_populates="fund_events", lazy='selectin')  # Eager load for fund event lists
     tax_statement = relationship("TaxStatement", lazy='selectin')  # Eager load for tax statement data
     cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan", lazy='selectin')
+    
+    # Critical index for fund event queries (most common query pattern)
+    __table_args__ = (
+        # Composite index for fund events by fund and date (DESC for recent events)
+        Index('idx_fund_events_fund_date', 'fund_id', 'event_date', postgresql_ops={'event_date': 'text_pattern_ops'}),
+        {'postgresql_using': 'btree'},  # Use B-tree indexes for optimal performance
+    )
     
     def __init__(self, **kwargs):
         """Initialize FundEvent with default values for grouping fields."""

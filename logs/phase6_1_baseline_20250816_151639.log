@@ -1,0 +1,72 @@
+2025-08-16 15:16:39,473 - INFO - 🚀 STARTING PHASE 6.1: PERFORMANCE BASELINE & ANALYSIS
+2025-08-16 15:16:39,473 - INFO - ================================================================================
+2025-08-16 15:16:39,473 - INFO - Ensured directory exists: logs
+2025-08-16 15:16:39,474 - INFO - Ensured directory exists: scripts/performance
+2025-08-16 15:16:39,474 - INFO - Ensured directory exists: reports/phase6_1
+2025-08-16 15:16:39,474 - INFO - ============================================================
+2025-08-16 15:16:39,474 - INFO - STEP 1: GENERATING LOAD TEST DATA
+2025-08-16 15:16:39,474 - INFO - ============================================================
+2025-08-16 15:16:40,357 - INFO - Starting load test data generation for Phase 6.1
+2025-08-16 15:16:40,480 - INFO - Generating complete load test dataset...
+2025-08-16 15:16:40,480 - INFO - Generating 15 test investment companies...
+2025-08-16 15:16:40,641 - ERROR - Error in load test data generation: Investment company with name 'Alpha Capital Partners' already exists
+2025-08-16 15:16:40,641 - ERROR - ❌ Load test data generation failed: Investment company with name 'Alpha Capital Partners' already exists
+2025-08-16 15:16:40,641 - INFO - ============================================================
+2025-08-16 15:16:40,641 - INFO - STEP 2: RUNNING PERFORMANCE BASELINE TESTS
+2025-08-16 15:16:40,641 - INFO - ============================================================
+2025-08-16 15:16:40,642 - ERROR - ❌ Performance baseline testing failed: No module named 'scripts.performance.phase6_performance_baseline'
+2025-08-16 15:16:40,642 - INFO - ============================================================
+2025-08-16 15:16:40,642 - INFO - STEP 3: ANALYZING DATABASE QUERIES
+2025-08-16 15:16:40,642 - INFO - ============================================================
+2025-08-16 15:16:40,653 - INFO - Starting Phase 6.1 Database Query Analysis
+2025-08-16 15:16:40,654 - INFO - Starting comprehensive database analysis...
+2025-08-16 15:16:40,654 - INFO - Analyzing table indexes...
+2025-08-16 15:16:40,896 - INFO - Analyzing query performance...
+2025-08-16 15:16:40,896 - INFO - Testing query: fund_by_id
+2025-08-16 15:16:41,480 - INFO - Testing query: fund_by_name
+2025-08-16 15:16:41,657 - INFO - Testing query: active_funds
+2025-08-16 15:16:42,972 - INFO - Testing query: cost_based_funds
+2025-08-16 15:16:44,378 - INFO - Testing query: fund_events
+2025-08-16 15:16:45,010 - INFO - Testing query: events_by_type
+2025-08-16 15:16:45,591 - INFO - Testing query: recent_events
+2025-08-16 15:16:45,976 - INFO - Testing query: fund_with_company
+2025-08-16 15:16:46,751 - INFO - Testing query: fund_with_entity
+2025-08-16 15:16:47,449 - INFO - Testing query: fund_summary
+2025-08-16 15:16:47,459 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,462 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,465 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,470 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,473 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,476 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,479 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,483 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,489 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,493 - WARNING - Query fund_summary failed: 'int' object has no attribute 'label'
+2025-08-16 15:16:47,493 - INFO - Testing query: tax_statements_by_fund
+2025-08-16 15:16:48,274 - INFO - Analyzing connection usage patterns...
+2025-08-16 15:16:48,325 - INFO - Generating optimization recommendations...
+2025-08-16 15:16:48,326 - INFO - Database analysis completed successfully
+2025-08-16 15:16:48,327 - INFO - Database analysis report saved to scripts/performance/database_analysis_20250816_151648.txt
+2025-08-16 15:16:48,327 - INFO - Phase 6.1 Database Analysis completed successfully
+2025-08-16 15:16:48,330 - INFO - ✅ Database analysis completed successfully
+2025-08-16 15:16:48,330 - INFO - ============================================================
+2025-08-16 15:16:48,331 - INFO - STEP 4: GENERATING SUMMARY REPORT
+2025-08-16 15:16:48,331 - INFO - ============================================================
+2025-08-16 15:16:48,332 - INFO - ✅ Summary report generated: reports/phase6_1/phase6_1_summary_20250816_151648.txt
+2025-08-16 15:16:48,332 - INFO - ================================================================================
+2025-08-16 15:16:48,332 - INFO - PHASE 6.1 COMPLETION SUMMARY
+2025-08-16 15:16:48,332 - INFO - ================================================================================
+2025-08-16 15:16:48,333 - INFO - Start Time: 2025-08-16T15:16:39.473772
+2025-08-16 15:16:48,333 - INFO - End Time: 2025-08-16T15:16:48.332812
+2025-08-16 15:16:48,333 - INFO - Duration: 0:00:08.859040
+2025-08-16 15:16:48,333 - INFO - Successful Steps: 2/4
+2025-08-16 15:16:48,333 - INFO - Success Rate: 50.0%
+2025-08-16 15:16:48,333 - INFO - 
+2025-08-16 15:16:48,333 - INFO - Load Test Data: ❌ FAIL
+2025-08-16 15:16:48,333 - INFO - Performance Baseline: ❌ FAIL
+2025-08-16 15:16:48,333 - INFO - Database Analysis: ✅ PASS
+2025-08-16 15:16:48,333 - INFO - Summary Report: ✅ PASS
+2025-08-16 15:16:48,333 - INFO - 
+2025-08-16 15:16:48,333 - INFO - ⚠️  PHASE 6.1 PARTIALLY COMPLETED
+2025-08-16 15:16:48,333 - INFO - Some issues detected - review logs before proceeding
+2025-08-16 15:16:48,334 - INFO - ================================================================================
