@@ -11,6 +11,7 @@ Key responsibilities:
 - Event publishing and side effects
 """
 
+import logging
 from typing import Dict, Any, Optional, List
 from datetime import date, datetime
 from sqlalchemy.orm import Session
