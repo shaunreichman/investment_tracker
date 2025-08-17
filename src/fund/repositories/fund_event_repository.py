@@ -217,8 +217,13 @@ class FundEventRepository:
             Created FundEvent object
             
         Raises:
+            TypeError: If event_data is not a dictionary
             ValueError: If required fields are missing
         """
+        # Type validation - ensure event_data is a dictionary
+        if not isinstance(event_data, dict):
+            raise TypeError(f"event_data must be a dictionary, got {type(event_data).__name__}")
+        
         # Validate required fields
         required_fields = ['fund_id', 'event_type', 'event_date', 'amount']
         for field in required_fields:
@@ -248,7 +253,14 @@ class FundEventRepository:
             
         Returns:
             Updated FundEvent object if found, None otherwise
+            
+        Raises:
+            TypeError: If event_data is not a dictionary
         """
+        # Type validation - ensure event_data is a dictionary
+        if not isinstance(event_data, dict):
+            raise TypeError(f"event_data must be a dictionary, got {type(event_data).__name__}")
+        
         event = self.get_by_id(event_id, session)
         if not event:
             return None
@@ -319,14 +331,23 @@ class FundEventRepository:
             List of created FundEvent objects
             
         Raises:
+            TypeError: If events_data is not a list
             ValueError: If any event is missing required fields
         """
+        # Type validation - ensure events_data is a list
+        if not isinstance(events_data, list):
+            raise TypeError(f"events_data must be a list, got {type(events_data).__name__}")
+        
         if not events_data:
             return []
         
         # Validate all events have required fields
         required_fields = ['fund_id', 'event_type', 'event_date', 'amount']
         for i, event_data in enumerate(events_data):
+            # Additional validation that each item is a dictionary
+            if not isinstance(event_data, dict):
+                raise TypeError(f"Event {i} must be a dictionary, got {type(event_data).__name__}")
+            
             for field in required_fields:
                 if field not in event_data:
                     raise ValueError(f"Event {i} is missing required field '{field}'")
