@@ -50,7 +50,17 @@ class DomainEventRepository:
         Returns:
             DomainEvent: Stored database record
         """
-        db_event = DomainEvent.create_from_domain_event(domain_event, self.session)
+        # Create a new DomainEvent instance from the domain event
+        db_event = DomainEvent(
+            fund_id=domain_event.fund_id,
+            event_type=domain_event.event_type.value,
+            event_data=domain_event.metadata,
+            timestamp=domain_event.timestamp,
+            source=domain_event.__class__.__name__.lower()
+        )
+        
+        self.session.add(db_event)
+        self.session.flush()  # Get the ID without committing
         return db_event
     
     def store_domain_events(self, domain_events: List[FundDomainEvent]) -> List[DomainEvent]:
@@ -69,39 +79,33 @@ class DomainEventRepository:
             db_events.append(db_event)
         return db_events
     
-    def get_by_id(self, event_id: str) -> Optional[DomainEvent]:
+    def get_by_id(self, event_id: int) -> Optional[DomainEvent]:
         """
-        Get a domain event by its unique event ID.
+        Get a domain event by its primary key ID.
         
         Args:
-            event_id: Unique event identifier
+            event_id: Primary key identifier
             
         Returns:
             DomainEvent: Found event or None
         """
         return self.session.query(DomainEvent).filter(
-            DomainEvent.event_id == event_id
+            DomainEvent.id == event_id
         ).first()
     
-    def get_by_fund(self, fund_id: int, limit: Optional[int] = None) -> List[DomainEvent]:
+    def get_by_fund(self, fund_id: int) -> List[DomainEvent]:
         """
         Get all domain events for a specific fund.
         
         Args:
             fund_id: Fund ID to get events for
-            limit: Maximum number of events to return
             
         Returns:
-            List[DomainEvent]: List of domain events
+            List[DomainEvent]: List of domain events ordered by timestamp (newest first)
         """
-        query = self.session.query(DomainEvent).filter(
+        return self.session.query(DomainEvent).filter(
             DomainEvent.fund_id == fund_id
-        ).order_by(desc(DomainEvent.timestamp))
-        
-        if limit:
-            query = query.limit(limit)
-        
-        return query.all()
+        ).order_by(desc(DomainEvent.timestamp)).all()
     
     def get_by_type(self, event_type: str, fund_id: Optional[int] = None, limit: Optional[int] = None) -> List[DomainEvent]:
         """
@@ -143,8 +147,8 @@ class DomainEventRepository:
         """
         query = self.session.query(DomainEvent).filter(
             and_(
-                DomainEvent.event_date >= start_date,
-                DomainEvent.event_date <= end_date
+                func.date(DomainEvent.timestamp) >= start_date,
+                func.date(DomainEvent.timestamp) <= end_date
             )
         )
         
@@ -213,9 +217,7 @@ class DomainEventRepository:
         """
         query = self.session.query(
             DomainEvent.event_type,
-            self.session.query(DomainEvent).filter(
-                DomainEvent.event_type == DomainEvent.event_type
-            ).count().label('count')
+            func.count(DomainEvent.id).label('count')
         )
         
         if fund_id:

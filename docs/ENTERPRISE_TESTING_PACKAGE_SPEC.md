@@ -62,7 +62,7 @@ Test files work together as a **cohesive testing ecosystem**:
 **Goal**: Complete fund domain testing before expanding to other domains
 **Timeline**: Weeks 1-2
 **Week 1 Status**: ✅ **COMPLETED** - Fund Models & Services 100% complete
-**Week 2 Status**: 🔄 **IN PROGRESS** - Fund Events (5/5 complete) ✅ & Repositories (0/3 complete)
+**Week 2 Status**: 🔄 **IN PROGRESS** - Fund Events (5/5 complete) ✅ & Repositories (2/3 complete) ✅
 **Design Principles**:
 - **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
@@ -233,7 +233,7 @@ Test files work together as a **cohesive testing ecosystem**:
 - **Test Reliability**: Eliminated flaky tests through proper mock configuration ✅
 
 ##### **1.5 Complete Fund Repositories Testing** (`tests/unit/repositories/fund/`)
-**Current Status**: 🔄 **IN PROGRESS** - 1/3 tests completed
+**Current Status**: 🔄 **IN PROGRESS** - 2/3 tests completed
 **Testing Approach**: **Mock-Based Testing** (Unit Tests)
 **Reasoning**: Repository logic should be tested without database dependencies for fast execution
 
@@ -248,11 +248,12 @@ Test files work together as a **cohesive testing ecosystem**:
   - Test event filtering and sorting capabilities
   - Test event relationship and constraint validation
   - **Use Mocks**: Mock database queries and relationships
-- [ ] `test_domain_event_repository.py` - Domain event persistence
-  - Test domain event storage and retrieval
-  - Test event persistence performance and reliability
-  - Test event audit trail and history management
-  - **Use Mocks**: Mock domain event storage and retrieval
+- [x] `test_domain_event_repository.py` - Domain event persistence ✅ **COMPLETED**
+  - Test domain event storage and retrieval ✅
+  - Test event persistence performance and reliability ✅
+  - Test event audit trail and history management ✅
+  - **Use Mocks**: Mock domain event storage and retrieval ✅
+  - **Enterprise Improvements**: Simplified API, removed confusing limit parameter, focused on single responsibility
 
 **Success Criteria**:
 - 100% fund repository functionality covered by tests
@@ -733,8 +734,8 @@ Track migration progress for each folder and domain:
 - [ ] **Repositories** (`unit/repositories/`)
   - [ ] `fund/` - **PHASE 1 PRIORITY**: Directory created, **3 tests to create from scratch**
     - [x] `test_fund_repository.py` - **COMPLETED: Fund repository tests created and passing** ✅
-    - [ ] `test_fund_event_repository.py` - **NEXT: Create event repository tests**
-    - [ ] `test_domain_event_repository.py` - **NEXT: Create domain event repository tests**
+    - [ ] `test_fund_event_repository.py` - **NEXT PRIORITY: Create fund event repository tests**
+    - [x] `test_domain_event_repository.py` - **COMPLETED: Domain event repository tests created and passing** ✅
   - [ ] `investment_company/` - Directory created, no tests (PHASE 2)
   - [ ] `entity/` - Directory created, no tests (PHASE 2)
   - [ ] `banking/` - Directory created, no tests (PHASE 2)

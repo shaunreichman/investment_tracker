@@ -108,7 +108,7 @@ tests/
 │   │   │   ├── __init__.py
 │   │   │   ├── ✅ test_fund_repository.py               # Data access logic
 │   │   │   ├── test_fund_event_repository.py         # Event query logic
-│   │   │   ├── test_domain_event_repository.py       # Domain event persistence
+│   │   │   ├── ✅ test_domain_event_repository.py       # Domain event persistence
 │   │   │   └── test_tax_statement_repository.py      # Tax statement persistence
 │   │   ├── investment_company/          # Company data access
 │   │   │   ├── __init__.py
