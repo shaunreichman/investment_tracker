@@ -65,7 +65,7 @@ Test files work together as a **cohesive testing ecosystem**:
 **Goal**: Complete fund domain testing before expanding to other domains
 **Timeline**: Weeks 1-2
 **Week 1 Status**: ✅ **COMPLETED** - Fund Models & Services 100% complete
-**Week 2 Status**: 🔄 **IN PROGRESS** - Fund Events (2/4 complete) & Repositories (0/3 complete)
+**Week 2 Status**: 🔄 **IN PROGRESS** - Fund Events (3/4 complete) & Repositories (0/3 complete)
 **Design Principles**:
 - **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
@@ -181,7 +181,7 @@ Test files work together as a **cohesive testing ecosystem**:
 #### **Week 2: Fund Events & Repositories**
 
 ##### **1.4 Complete Fund Events Testing** (`tests/unit/events/fund/`)
-**Current Status**: 🔄 IN PROGRESS - 2 of 4 test files completed
+**Current Status**: 🔄 IN PROGRESS - 3 of 4 test files completed
 **Testing Approach**: **Mock-Based Testing** (Unit Tests)
 **Reasoning**: Event system components should be tested in isolation for fast execution and focused validation
 
@@ -202,11 +202,14 @@ Test files work together as a **cohesive testing ecosystem**:
   - Test event routing rules and validation ✅
   - Test event registry performance and scalability ✅
   - **Use Mocks**: Test registry logic without handler instantiation ✅
-- [x] `test_base_handler.py` - Base handler functionality ✅ COMPLETED
+- [x] `test_base_handler.py` - Base handler functionality ✅ COMPLETED & ENHANCED
   - Test base handler common functionality ✅
   - Test handler lifecycle and state management ✅
   - Test handler integration and coordination ✅
   - **Use Mocks**: Test base functionality without concrete implementations ✅
+  - **Bug Fixes**: Fixed date parsing logic for datetime vs date type handling ✅
+  - **Test Coverage**: Enabled previously skipped event bus tests (35 passed, 0 skipped) ✅
+  - **Event Bus Testing**: Complete coverage of event publishing functionality ✅
 
 **Success Criteria**:
 - 100% fund event system functionality covered by tests
@@ -695,11 +698,20 @@ Track migration progress for each folder and domain:
   - [ ] `shared/` - Directory created, no tests (PHASE 2)
 
 - [x] **Events** (`unit/events/`)
-  - [x] `fund/` - **PHASE 1 PRIORITY**: ✅ **COMPLETED** - All 4 test files created and passing
+  - [x] `fund/` - **PHASE 1 PRIORITY**: 🔄 **IN PROGRESS** - 3 of 4 test files completed and passing
     - [x] `test_orchestrator.py` - **COMPLETED: Event orchestration tests created and passing** ✅
-    - [ ] `test_event_handlers.py` - **NEXT: Create event handler tests**
-    - [x] `test_event_registry.py` - **COMPLETED: Event registry tests created and passing** ✅
-    - [x] `test_base_handler.py` - **COMPLETED: Base handler tests created and passing** ✅
+      - [ ] `test_event_handlers.py` - **NEXT: Create event handler tests**
+  - [x] `test_event_registry.py` - **COMPLETED: Event registry tests created and passing** ✅
+  - [x] `test_base_handler.py` - **COMPLETED & ENHANCED: Base handler tests created, passing, and improved** ✅
+  - Fixed critical date parsing bug in base handler implementation ✅
+  - Enabled previously skipped event bus tests for complete coverage ✅
+  - Achieved 100% test success rate (35 passed, 0 skipped) ✅
+  
+  **Next Steps for Fund Events**:
+  - Create `test_event_handlers.py` to test individual event type handlers
+  - Focus on handler business logic, validation, and error handling
+  - Use mock-based testing approach for fast execution
+  - Target: Complete all 4 test files to achieve 100% Fund Events coverage
   - [ ] `tax/` - Directory created, no tests (PHASE 2)
   - [ ] `shared/` - Directory created, no tests (PHASE 2)
 

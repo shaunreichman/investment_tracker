@@ -241,7 +241,7 @@ class BaseFundEventHandler(ABC):
         """
         try:
             # Import the event bus from the consumption module
-            from src.fund.consumption.event_bus import event_bus
+            from src.fund.events.consumption.event_bus import event_bus
             
             # Publish each domain event to the event bus
             for domain_event in domain_events:
@@ -485,10 +485,10 @@ class BaseFundEventHandler(ABC):
         Raises:
             ValueError: If date cannot be parsed
         """
-        if isinstance(date_value, date):
-            return date_value
-        elif isinstance(date_value, datetime):
+        if isinstance(date_value, datetime):
             return date_value.date()
+        elif isinstance(date_value, date):
+            return date_value
         elif isinstance(date_value, str):
             try:
                 # Try parsing common date formats
