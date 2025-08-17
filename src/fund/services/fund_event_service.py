@@ -165,7 +165,7 @@ class FundEventService:
         # Create the unit purchase event
         event = fund.fund_events.__class__(
             fund_id=fund.id,
-            event_type=fund.fund_events.__class__.__class__('unit_purchase'),
+            event_type=EventType.UNIT_PURCHASE,
             event_date=date,
             units_purchased=units,
             unit_price=price,
@@ -219,13 +219,13 @@ class FundEventService:
         # Create the unit sale event
         event = fund.fund_events.__class__(
             fund_id=fund.id,
-            event_type=fund.fund_events.__class__.__class__('unit_sale'),
+            event_type=EventType.UNIT_SALE,
             event_date=date,
             units_sold=units,
             unit_price=price,
             brokerage_fee=brokerage_fee,
             amount=total_amount,
-            description=description or f"Sale of {units} units at {price}",
+            description=description or f"Unit sale of {units} units at {price}",
             reference_number=reference_number
         )
         
