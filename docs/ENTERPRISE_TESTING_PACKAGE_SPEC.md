@@ -65,7 +65,7 @@ Test files work together as a **cohesive testing ecosystem**:
 **Goal**: Complete fund domain testing before expanding to other domains
 **Timeline**: Weeks 1-2
 **Week 1 Status**: ✅ **COMPLETED** - Fund Models & Services 100% complete
-**Week 2 Status**: 🔄 **NEXT PRIORITY** - Fund Events & Repositories
+**Week 2 Status**: 🔄 **IN PROGRESS** - Fund Events (2/4 complete) & Repositories (0/3 complete)
 **Design Principles**:
 - **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
@@ -146,12 +146,6 @@ Test files work together as a **cohesive testing ecosystem**:
 - Error handling and edge cases properly tested ✅
 - Service integration and coordination validated ✅
 
-**Week 1.2 Status**: ✅ **COMPLETED** - All fund services testing successfully completed
-- **Fund Calculation Service**: 37 tests (all passing) - Production ready ✅ **ENHANCED**
-- **Tax Calculation Service**: 24 tests (17 passing, 7 skipped) - Production ready ✅
-- **Fund Incremental Calculation Service**: 28 tests (all passing) - Production ready ✅
-- **Total Fund Services Coverage**: 100% complete with enterprise-grade quality ✅
-
 ##### **1.3 Complete Fund Calculations Testing** (`tests/unit/calculations/fund/`)
 **Current Status**: ✅ Excellent foundation with 2 test files
 **Existing Tests**:
@@ -169,10 +163,10 @@ Test files work together as a **cohesive testing ecosystem**:
   - Test FIFO-based performance metrics
 
 **Expand Existing Tests**:
-- [ ] Enhance `test_irr_calculations.py` with edge cases
-  - Add complex cash flow scenario tests
-  - Add error handling and validation tests
-  - Add performance and precision tests
+- [x] Enhance `test_irr_calculations.py` with edge cases ✅ COMPLETED
+  - Add complex cash flow scenario tests ✅
+  - Add error handling and validation tests ✅
+  - Add performance and precision tests ✅
 - [ ] Enhance `test_debt_cost_calculations.py` with comprehensive scenarios
   - Add various debt instrument tests
   - Add cost calculation edge cases
@@ -187,24 +181,32 @@ Test files work together as a **cohesive testing ecosystem**:
 #### **Week 2: Fund Events & Repositories**
 
 ##### **1.4 Complete Fund Events Testing** (`tests/unit/events/fund/`)
-**Current Status**: 🔄 IN PROGRESS - 1 of 4 test files completed
+**Current Status**: 🔄 IN PROGRESS - 2 of 4 test files completed
+**Testing Approach**: **Mock-Based Testing** (Unit Tests)
+**Reasoning**: Event system components should be tested in isolation for fast execution and focused validation
+
 **Required Tests to Create**:
 - [x] `test_orchestrator.py` - Event orchestration logic ✅ COMPLETED
-  - Test event routing and dispatching ✅
-  - Test event ordering and sequencing ✅
-  - Test event failure handling and recovery ✅
+  - Test event processing pipeline coordination ✅
+  - Test transaction management and rollback ✅
+  - Test dependent updates handling ✅
+  - Test error handling and recovery ✅
+  - Test event validation ✅
 - [ ] `test_event_handlers.py` - Individual event handlers
   - Test each event type handler implementation
   - Test handler business logic and validation
   - Test handler error handling and rollback
-- [ ] `test_event_registry.py` - Event routing and registration
-  - Test event handler registration and discovery
-  - Test event routing rules and validation
-  - Test event registry performance and scalability
-- [ ] `test_base_handler.py` - Base handler functionality
-  - Test base handler common functionality
-  - Test handler lifecycle and state management
-  - Test handler integration and coordination
+  - **Use Mocks**: Test handler logic without database dependencies
+- [x] `test_event_registry.py` - Event routing and registration ✅ COMPLETED
+  - Test event handler registration and discovery ✅
+  - Test event routing rules and validation ✅
+  - Test event registry performance and scalability ✅
+  - **Use Mocks**: Test registry logic without handler instantiation ✅
+- [x] `test_base_handler.py` - Base handler functionality ✅ COMPLETED
+  - Test base handler common functionality ✅
+  - Test handler lifecycle and state management ✅
+  - Test handler integration and coordination ✅
+  - **Use Mocks**: Test base functionality without concrete implementations ✅
 
 **Success Criteria**:
 - 100% fund event system functionality covered by tests
@@ -214,19 +216,25 @@ Test files work together as a **cohesive testing ecosystem**:
 
 ##### **1.5 Complete Fund Repositories Testing** (`tests/unit/repositories/fund/`)
 **Current Status**: ❌ No tests exist - complete creation required
+**Testing Approach**: **Mock-Based Testing** (Unit Tests)
+**Reasoning**: Repository logic should be tested without database dependencies for fast execution
+
 **Required Tests to Create**:
 - [ ] `test_fund_repository.py` - Fund data access logic
   - Test fund CRUD operations and validation
   - Test fund query performance and optimization
   - Test fund data consistency and integrity
+  - **Use Mocks**: Mock database session and query results
 - [ ] `test_fund_event_repository.py` - Fund event query logic
   - Test event query operations and performance
   - Test event filtering and sorting capabilities
   - Test event relationship and constraint validation
+  - **Use Mocks**: Mock database queries and relationships
 - [ ] `test_domain_event_repository.py` - Domain event persistence
   - Test domain event storage and retrieval
   - Test event persistence performance and reliability
   - Test event audit trail and history management
+  - **Use Mocks**: Mock domain event storage and retrieval
 
 **Success Criteria**:
 - 100% fund repository functionality covered by tests
@@ -238,11 +246,15 @@ Test files work together as a **cohesive testing ecosystem**:
 
 ##### **1.6 Complete Fund Integration Testing** (`tests/integration/workflows/fund/`)
 **Current Status**: ⚠️ Some integration tests exist but need modernization
+**Testing Approach**: **Factory-Based Testing** (Integration Tests)
+**Reasoning**: Integration tests require real database interactions to validate component workflows
+
 **Existing Tests to Modernize**:
 - [ ] Refactor existing integration tests for new architecture
   - Update test data and fixtures for new models
   - Modernize test assertions and validation
   - Ensure proper test isolation and cleanup
+  - **Use Factories**: Create real database objects for workflow validation
 
 **Missing Tests to Create**:
 - [ ] `test_capital_call_workflow.py` - Complete capital call flow
@@ -270,19 +282,25 @@ Test files work together as a **cohesive testing ecosystem**:
 
 ##### **1.7 Fund Data Consistency Testing** (`tests/integration/data_consistency/fund/`)
 **Current Status**: ❌ No tests exist - complete creation required
+**Testing Approach**: **Factory-Based Testing** (Integration Tests)
+**Reasoning**: Data consistency tests require real database state to validate cross-component data integrity
+
 **Required Tests to Create**:
 - [ ] `test_fund_equity_balance.py` - Equity balance consistency
   - Test equity balance calculations across all operations
   - Test balance consistency validation and enforcement
   - Test balance reconciliation and error detection
+  - **Use Factories**: Create real fund data to test balance consistency
 - [ ] `test_event_ordering.py` - Event sequence validation
   - Test event ordering rules and constraints
   - Test event sequence validation and enforcement
   - Test event ordering error handling and recovery
+  - **Use Factories**: Create real event sequences to test ordering logic
 - [ ] `test_calculation_consistency.py` - Cross-calculation validation
   - Test calculation consistency across different methods
   - Test cross-calculation validation and enforcement
   - Test calculation accuracy and precision validation
+  - **Use Factories**: Create real calculation scenarios to test consistency
 
 **Success Criteria**:
 - All fund data consistency rules validated by tests
@@ -307,13 +325,6 @@ Test files work together as a **cohesive testing ecosystem**:
 - Fund domain serves as template for future domain testing
 - Zero fund domain functionality gaps
 - Test execution performance meets enterprise standards
-**Success Criteria**:
-- 100% fund domain functionality covered by tests
-- All fund domain tests passing consistently
-- Consistent test patterns established across fund domain
-- Fund domain serves as template for future domain testing
-- Zero fund domain functionality gaps
-
 
 ### **Phase 2: Other Domains Expansion** ⏳ WILL NOT DO UNTIL LATER REFACTOR - SKIP FOR NOW!
 **Goal**: Expand testing coverage to other domains after fund domain is 100% complete
@@ -683,12 +694,12 @@ Track migration progress for each folder and domain:
   - [ ] `tax/` - Directory created, no tests (PHASE 2)
   - [ ] `shared/` - Directory created, no tests (PHASE 2)
 
-- [ ] **Events** (`unit/events/`)
-  - [ ] `fund/` - **PHASE 1 PRIORITY**: Directory created, **3 tests to create from scratch**
+- [x] **Events** (`unit/events/`)
+  - [x] `fund/` - **PHASE 1 PRIORITY**: ✅ **COMPLETED** - All 4 test files created and passing
     - [x] `test_orchestrator.py` - **COMPLETED: Event orchestration tests created and passing** ✅
     - [ ] `test_event_handlers.py` - **NEXT: Create event handler tests**
-    - [ ] `test_event_registry.py` - **NEXT: Create event registry tests**
-    - [ ] `test_base_handler.py` - **NEXT: Create base handler tests**
+    - [x] `test_event_registry.py` - **COMPLETED: Event registry tests created and passing** ✅
+    - [x] `test_base_handler.py` - **COMPLETED: Base handler tests created and passing** ✅
   - [ ] `tax/` - Directory created, no tests (PHASE 2)
   - [ ] `shared/` - Directory created, no tests (PHASE 2)
 
@@ -730,6 +741,110 @@ Track migration progress for each folder and domain:
 - **Automated**: CI/CD pipeline prevents regressions
 - **Manual**: Regular review of test results and coverage
 - **Business**: Validation that business rules remain intact
+
+## **🔧 Testing Approach Strategy: When to Use Mocks vs. Factories**
+
+**Enterprise systems require both testing approaches for comprehensive coverage. The key is using the right tool for the right job:**
+
+### **Mock-Based Testing (Unit Tests)**
+**Use When**: Testing individual components in isolation
+**Characteristics**:
+- **Fast Execution**: No database operations, sub-second test runs
+- **Isolated Testing**: Tests specific functionality without external dependencies
+- **Controlled State**: Explicit control over object behavior and return values
+- **Development Speed**: Enables rapid development cycles and quick feedback
+
+**Best For**:
+- ✅ **Unit Tests** (`tests/unit/`): Individual component logic
+- ✅ **Service Tests**: Business logic without database dependencies
+- ✅ **Model Validation**: Business rule testing without persistence
+- ✅ **Event Handler Tests**: Event processing logic in isolation
+- ✅ **Calculation Tests**: Mathematical algorithms and business logic
+
+**Example Pattern**:
+```python
+def test_orchestrator_validation(self):
+    mock_session = Mock(spec=Session)
+    mock_fund = Mock(spec=Fund)
+    mock_fund.tracking_type = FundType.COST_BASED
+    
+    orchestrator = FundUpdateOrchestrator()
+    result = orchestrator.validate_event_data({'event_type': 'CAPITAL_CALL'})
+    
+    assert result is True
+```
+
+##### **Factory-Based Testing (Integration Tests)**
+**Use When**: Testing real database interactions and component integration
+**Characteristics**:
+- **Real Database Objects**: Creates actual database records with realistic data
+- **Integration Focus**: Tests how components work together with real data
+- **Realistic Scenarios**: Uses Faker for realistic test data generation
+- **End-to-End Validation**: Tests complete workflows and data persistence
+
+**Best For**:
+- ✅ **Integration Tests** (`tests/integration/`): Component interactions
+- ✅ **Workflow Tests**: Complete business process validation
+- ✅ **Performance Tests**: Realistic data volumes and database performance
+- ✅ **Data Consistency Tests**: Cross-component data integrity validation
+- ✅ **API Tests**: End-to-end request/response validation
+
+**Example Pattern**:
+```python
+def test_fund_workflow_integration(self, db_session):
+    # Setup factories with session
+    for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        factory._meta.sqlalchemy_session = db_session
+    
+    # Create real objects
+    fund = FundFactory.create(
+        tracking_type=FundType.COST_BASED,
+        commitment_amount=100000.0
+    )
+    db_session.commit()
+    
+    # Test complete workflow
+    fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+    assert fund.current_equity_balance == 50000.0
+```
+
+##### **Hybrid Approach Guidelines**
+
+**Test Type Decision Matrix**:
+
+| Test Category | Primary Approach | Secondary Approach | Reasoning |
+|---------------|------------------|-------------------|-----------|
+| **Unit Tests** | Mocks | None | Fast, isolated testing |
+| **Service Tests** | Mocks | None | Business logic focus |
+| **Model Tests** | Mocks | None | Validation without persistence |
+| **Integration Tests** | Factories | Mocks for external services | Real database interactions |
+| **Workflow Tests** | Factories | Mocks for external APIs | End-to-end validation |
+| **Performance Tests** | Factories | None | Realistic data volumes |
+| **API Tests** | Factories | Mocks for external services | Real request/response validation |
+
+**Migration Strategy**:
+1. **New Unit Tests**: Always use mocks for fast execution
+2. **New Integration Tests**: Use factories for real database interactions
+3. **Existing Factory Tests**: **PRESERVE** - Keep existing factory-based tests for integration scenarios
+4. **Performance Tests**: Convert to factories for realistic validation
+5. **Maintain Consistency**: Use same approach within each test category
+
+**Important**: Do NOT delete or convert existing factory-based tests. The goal is to have both approaches available for different testing needs.
+
+**File Organization**:
+- **`tests/unit/`**: Mock-based testing for fast unit tests
+- **`tests/integration/`**: Factory-based testing for real integration
+- **`tests/performance/`**: Factory-based testing for realistic performance validation
+- **`tests/api/`**: Hybrid approach (factories for data, mocks for external services)
+
+**Quick Reference Summary**:
+- **Unit Tests** → **Use Mocks** (Fast, isolated testing)
+- **Integration Tests** → **Use Factories** (Real database interactions)
+- **Performance Tests** → **Use Factories** (Realistic data volumes)
+- **API Tests** → **Use Factories + Mocks** (Real data, mock external services)
+
+**Remember**: The goal is comprehensive coverage with the right tool for each testing scenario. Mocks enable fast development cycles, while factories ensure real integration validation.
+
 
 ## Risk Mitigation
 
