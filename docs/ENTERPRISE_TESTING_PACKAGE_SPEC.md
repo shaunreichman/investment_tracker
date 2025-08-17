@@ -6,27 +6,6 @@ Establish a comprehensive, enterprise-grade testing suite for the fund managemen
 **CURRENT FOCUS: FUND CALCULATIONS TESTING**
 We have completed Fund Models and Fund Services testing. We are now focused on completing Fund Calculations testing to achieve 100% test coverage of the fund domain before expanding to other domains.
 
-## **SPECIFICATION STATUS: PHASE 1 FUND DOMAIN IN PROGRESS** ✅
-**Last Updated**: Current session
-**Phase 1 Status**: Fund Models ✅ COMPLETED, Fund Services ✅ COMPLETED
-**Current Sprint**: Fund Calculations Testing (Week 1)
-**Next Sprint**: Fund Events & Repositories Testing (Week 2)
-
-### **🎯 PHASE 1 PROGRESS SUMMARY**
-- **✅ Week 1: Fund Models & Services Foundation** - COMPLETED
-  - Fund Models: 4/4 test files ✅
-  - Fund Services: 4/4 test files ✅
-- **🔄 Week 2: Fund Events & Repositories** - IN PROGRESS (Next)
-- **⏳ Week 3: Fund Integration & Validation** - PENDING
-
-### **What's New in This Update**
-- ✅ **Detailed Phase 1 breakdown** with week-by-week tasks
-- ✅ **Current sprint planning** with specific deliverables and timelines
-- ✅ **Updated migration status** showing exact progress and next steps
-- ✅ **Specific test file requirements** with effort estimates
-- ✅ **Success criteria** for each phase and sprint
-- ✅ **Dependencies and risks** identified and mitigated
-
 ## Design Philosophy
 - **Test-Driven Quality**: Every piece of business logic must have corresponding tests
 - **Layered Testing Strategy**: Unit → Integration → API → E2E → Performance → Property
@@ -71,51 +50,20 @@ Test files work together as a **cohesive testing ecosystem**:
 
 ## Implementation Strategy
 
-### Phase 1: Assessment & Planning (Week 1)
+### **Phase 0: Assessment & Planning** ✅ COMPLETED
 **Goal**: Assess current test landscape and create systematic migration plan
-**Design Principles**:
-- **Systematic Approach**: Go folder-by-folder, starting with core models
-- **Quality Assessment**: Evaluate existing tests for keep/refactor/rewrite decisions
-- **Dependency Mapping**: Identify what needs testing first based on dependencies
-- **Migration Strategy**: Preserve good tests, refactor adequate ones, rewrite poor ones
-**Tasks**:
-- [ ] Analyze current test landscape across all directories
-- [ ] Assess quality and coverage of existing 44 test files
-- [ ] Create migration plan for each test category and domain
-- [ ] Identify priority order for implementation (models → services → calculations → integration → API → E2E)
-- [ ] Document current state vs. target state for each folder
-- [ ] Establish quality criteria for test migration decisions
-**Success Criteria**:
-- Complete inventory of existing tests with quality assessment
-- Clear migration plan with priority order established
-- Quality criteria defined for test evaluation
-- Dependencies mapped between test components
+**Status**: ✅ COMPLETED - Assessment done, plan created
+**What Was Accomplished**:
+- ✅ Analyzed current test landscape across all directories
+- ✅ Assessed quality and coverage of existing 44 test files
+- ✅ Created migration plan for each test category and domain
+- ✅ Identified priority order for implementation (models → services → calculations → integration → API → E2E)
+- ✅ Documented current state vs. target state for each folder
+- ✅ Established quality criteria for test migration decisions
 
-### Phase 2: Foundation & Infrastructure (Week 2)
-**Goal**: Establish robust testing infrastructure and begin systematic test migration
-**Design Principles**:
-- Use pytest as the primary testing framework with proper fixtures and conftest setup
-- Implement comprehensive test data factories for all domain models
-- Establish isolated test database management with proper cleanup
-- Follow existing test patterns from current test suite where appropriate
-- **Migration-First Approach**: Start with existing tests, then expand coverage
-**Tasks**:
-- [ ] Set up comprehensive test configuration with environment isolation
-- [ ] Create test data factories for Fund, FundEvent, DomainEvent, and related models
-- [ ] Implement test database management with proper session handling
-- [ ] Establish test utilities for common testing patterns (mocking, assertions)
-- [ ] Create base test classes for different test categories
-- [ ] Set up test categorization and execution framework
-- [ ] **Begin systematic migration**: Start with `unit/models/fund/` folder
-**Success Criteria**:
-- All test infrastructure components pass validation
-- Test database setup/teardown works reliably in CI/CD
-- Test execution framework supports parallel execution
-- Zero configuration-related test failures
-- **First folder migration completed successfully**
-
-### Phase 3: Core Business Logic Testing (Weeks 3-4)
+### **Phase 1: Fund Domain Foundation** 🔄 IN PROGRESS (Current Focus)
 **Goal**: Complete fund domain testing before expanding to other domains
+**Timeline**: Weeks 1-2
 **Design Principles**:
 - **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
@@ -353,7 +301,95 @@ Test files work together as a **cohesive testing ecosystem**:
 - Fund domain serves as template for future domain testing
 - Zero fund domain functionality gaps
 
-### Phase 3: Integration & Workflow Testing (Weeks 5-6)
+
+### **Phase 2: Other Domains Expansion** ⏳ PENDING
+**Goal**: Expand testing coverage to other domains after fund domain is 100% complete
+**Timeline**: Weeks 3-4
+**Prerequisite**: Fund domain testing must be 100% complete
+**Design Principles**:
+- **Fund-Domain-Complete**: Only start after fund domain testing is 100% complete
+- **Pattern Replication**: Apply established fund domain patterns to other domains
+- **Systematic Approach**: Go domain by domain, maintaining quality standards
+- **Dependency Management**: Respect domain dependencies and test in correct order
+
+**Detailed Tasks**:
+- [ ] **Investment Company Domain Testing**
+  - [ ] Models: `test_investment_company_model.py`, `test_company_relationship_model.py`
+  - [ ] Services: `test_investment_company_service.py`, `test_company_calculation_service.py`
+  - [ ] Calculations: `test_company_performance_calculations.py`, `test_company_metrics.py`
+- [ ] **Entity Domain Testing**
+  - [ ] Models: `test_entity_model.py`, `test_entity_relationship_model.py`
+  - [ ] Services: `test_entity_service.py`, `test_entity_calculation_service.py`
+  - [ ] Calculations: `test_entity_performance_calculations.py`, `test_entity_metrics.py`
+- [ ] **Banking Domain Testing**
+  - [ ] Models: `test_bank_account_model.py`, `test_bank_transaction_model.py`
+  - [ ] Services: `test_banking_service.py`, `test_transaction_service.py`
+  - [ ] Calculations: `test_banking_calculations.py`, `test_transaction_metrics.py`
+- [ ] **Tax Domain Testing**
+  - [ ] Models: `test_tax_statement_model.py`, `test_tax_payment_model.py`
+  - [ ] Services: `test_tax_calculation_service.py`, `test_tax_reporting_service.py`
+  - [ ] Calculations: `test_tax_calculations.py`, `test_tax_metrics.py`
+- [ ] **Rates Domain Testing**
+  - [ ] Models: `test_rate_model.py`, `test_rate_history_model.py`
+  - [ ] Services: `test_rate_service.py`, `test_rate_calculation_service.py`
+  - [ ] Calculations: `test_rate_calculations.py`, `test_rate_metrics.py`
+
+**Success Criteria**:
+- All domain models have comprehensive test coverage
+- All domain services have business logic testing
+- All domain calculations have accuracy and performance testing
+- Established patterns from fund domain successfully replicated
+- Zero test failures across all domains
+
+### **Phase 3: Integration & Workflow Testing** ⏳ PENDING
+**Goal**: Test component interactions and end-to-end workflows
+**Timeline**: Weeks 5-6
+**Prerequisite**: All domain testing must be complete
+**Design Principles**:
+- **Integration Focus**: Test how components work together
+- **Workflow Validation**: Test complete business processes
+- **Performance Testing**: Establish performance baselines
+- **Property Testing**: Validate business rule invariants
+
+**Detailed Tasks**:
+- [ ] **Fund Domain Integration Testing**
+  - [ ] `test_capital_call_workflow.py` - Complete capital call flow
+  - [ ] `test_distribution_workflow.py` - Complete distribution flow
+  - [ ] `test_nav_update_workflow.py` - NAV update and recalculation
+  - [ ] `test_fund_realization_workflow.py` - Fund completion workflow
+- [ ] **Cross-Domain Integration Testing**
+  - [ ] `test_fund_entity_integration.py` - Fund-Entity interactions
+  - [ ] `test_fund_banking_integration.py` - Fund-Banking interactions
+  - [ ] `test_fund_tax_integration.py` - Fund-Tax interactions
+  - [ ] `test_fund_rates_integration.py` - Fund-Rates interactions
+- [ ] **Performance Testing & Baselines**
+  - [ ] `test_database_performance.py` - Database query performance
+  - [ ] `test_api_performance.py` - API endpoint performance
+  - [ ] `test_calculation_performance.py` - Calculation algorithm performance
+  - [ ] `test_memory_performance.py` - Memory usage and optimization
+- [ ] **Property Testing for Business Rules**
+  - [ ] `test_financial_properties.py` - Financial calculation invariants
+  - [ ] `test_business_rule_properties.py` - Business rule invariants
+  - [ ] `test_data_integrity_properties.py` - Data consistency invariants
+- [ ] **End-to-End Workflow Validation**
+  - [ ] `test_complete_fund_lifecycle.py` - Full fund lifecycle
+  - [ ] `test_complete_investment_cycle.py` - Full investment cycle
+  - [ ] `test_complete_tax_cycle.py` - Full tax reporting cycle
+
+**Success Criteria**:
+- All critical workflows covered by integration tests
+- Performance baselines established and monitored
+- Business rule invariants validated through property tests
+- End-to-end workflows validated and reliable
+- Zero integration test failures
+**Goal**: Complete fund domain testing before expanding to other domains
+**Design Principles**:
+- **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
+- **Quality Over Speed**: Ensure each migrated test meets enterprise standards
+- **Pattern Establishment**: Establish consistent test patterns in fund domain first
+- **Comprehensive Coverage**: Achieve 100% coverage of fund domain functionality
+
+### Phase 4: Integration & Workflow Testing (Weeks 5-6)
 **Goal**: Validate component interactions and complete business workflows
 **Design Principles**:
 - Test real database interactions with minimal mocking
@@ -374,7 +410,7 @@ Test files work together as a **cohesive testing ecosystem**:
 - Transaction boundaries properly enforced and tested
 - Event system orchestrates correctly under various scenarios
 
-### Phase 4: API & Contract Testing (Weeks 7-8)
+### Phase 5: API & Contract Testing (Weeks 7-8)
 **Goal**: Comprehensive API testing with contract validation and error handling
 **Design Principles**:
 - Validate API contracts and response schemas
@@ -395,7 +431,7 @@ Test files work together as a **cohesive testing ecosystem**:
 - Consistent error response format across all endpoints
 - API documentation accurately reflects implementation
 
-### Phase 5: End-to-End & User Journey Testing (Weeks 9-10)
+### Phase 6: End-to-End & User Journey Testing (Weeks 9-10)
 **Goal**: Validate complete user journeys and system integration
 **Design Principles**:
 - Test from user perspective with real business scenarios
@@ -416,7 +452,7 @@ Test files work together as a **cohesive testing ecosystem**:
 - System performance meets production SLA requirements
 - Zero regression of previously fixed issues
 
-### Phase 6: Performance & Property Testing (Weeks 11-12)
+### Phase 7: Performance & Property Testing (Weeks 11-12)
 **Goal**: Validate system performance and business property invariants
 **Design Principles**:
 - Establish performance baselines and regression detection
