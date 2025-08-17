@@ -3,6 +3,9 @@
 ## Overview
 Establish a comprehensive, enterprise-grade testing suite for the fund management system that eliminates redundancies, establishes consistent testing patterns, and ensures the reliability, performance, and maintainability of our first-class professional system.
 
+**CURRENT FOCUS: FUND DOMAIN COMPLETION**
+We are currently focused on completing 100% test coverage of the fund domain before expanding to other domains. This ensures we establish solid testing patterns and achieve comprehensive coverage of our core business logic before building out the broader testing suite.
+
 ## Design Philosophy
 - **Test-Driven Quality**: Every piece of business logic must have corresponding tests
 - **Layered Testing Strategy**: Unit → Integration → API → E2E → Performance → Property
@@ -56,34 +59,47 @@ Establish a comprehensive, enterprise-grade testing suite for the fund managemen
 - **First folder migration completed successfully**
 
 ### Phase 3: Core Business Logic Testing (Weeks 3-4)
-**Goal**: Systematic migration and enhancement of core business logic tests
+**Goal**: Complete fund domain testing before expanding to other domains
 **Design Principles**:
-- **Migration-First**: Start with existing tests, then expand coverage
+- **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
-- **Dependency Order**: Follow established migration priority order
-- **Pattern Consistency**: Establish consistent test patterns across all domains
+- **Pattern Establishment**: Establish consistent test patterns in fund domain first
+- **Comprehensive Coverage**: Achieve 100% coverage of fund domain functionality
 **Tasks**:
-- [ ] **Complete Models Migration**: Finish all `unit/models/` folders
-  - [ ] Complete `fund/` folder migration (started in Phase 2)
-  - [ ] Migrate `investment_company/` folder tests
-  - [ ] Migrate `entity/` folder tests
-  - [ ] Migrate `banking/` folder tests
-  - [ ] Migrate `tax/` folder tests
-  - [ ] Migrate `rates/` folder tests
-- [ ] **Begin Services Migration**: Start `unit/services/` folders
-  - [ ] Migrate `fund/` service tests
-  - [ ] Migrate `investment_company/` service tests
-  - [ ] Migrate `entity/` service tests
-  - [ ] Migrate `banking/` service tests
-  - [ ] Migrate `tax/` service tests
-- [ ] **Enhance Test Coverage**: Add missing tests for uncovered functionality
-- [ ] **Establish Test Patterns**: Create consistent patterns across all domains
+- [ ] **Complete Fund Models Testing**: Finish all `unit/models/fund/` functionality
+  - [x] Basic fund model validation (already complete)
+  - [ ] Fund event model validation (expand existing tests)
+  - [ ] Domain event model validation (create new tests)
+  - [ ] Cash flow model validation (create new tests)
+- [ ] **Complete Fund Services Testing**: Finish all `unit/services/fund/` functionality
+  - [x] Fund calculation service tests (already complete)
+  - [ ] Fund status service tests (expand existing tests)
+  - [ ] Fund event service tests (create new tests)
+  - [ ] Tax calculation service tests (create new tests)
+  - [ ] Incremental calculation service tests (create new tests)
+- [ ] **Complete Fund Calculations Testing**: Finish all `unit/calculations/fund/` functionality
+  - [x] IRR calculations (already complete)
+  - [x] Debt cost calculations (already complete)
+  - [ ] NAV calculations (create new tests)
+  - [ ] FIFO calculations (create new tests)
+- [ ] **Complete Fund Events Testing**: Finish all `unit/events/fund/` functionality
+  - [ ] Event orchestration tests (create new tests)
+  - [ ] Event handler tests (create new tests)
+  - [ ] Event registry tests (create new tests)
+  - [ ] Base handler tests (create new tests)
+- [ ] **Complete Fund Repositories Testing**: Finish all `unit/repositories/fund/` functionality
+  - [ ] Fund repository tests (create new tests)
+  - [ ] Fund event repository tests (create new tests)
+  - [ ] Domain event repository tests (create new tests)
+- [ ] **Complete Fund Enums Testing**: Finish all `unit/enums/fund/` functionality
+  - [x] Fund enums (already complete)
+  - [ ] Expand enum validation coverage
 **Success Criteria**:
-- All `unit/models/` folders migrated and enhanced
-- All `unit/services/` folders migrated and enhanced
-- 90%+ code coverage for all business logic components
-- Consistent test patterns established across all domains
-- All financial calculations pass property-based validation
+- 100% fund domain functionality covered by tests
+- All fund domain tests passing consistently
+- Consistent test patterns established across fund domain
+- Fund domain serves as template for future domain testing
+- Zero fund domain functionality gaps
 
 ### Phase 3: Integration & Workflow Testing (Weeks 5-6)
 **Goal**: Validate component interactions and complete business workflows
@@ -190,20 +206,28 @@ Our approach focuses on **systematic, folder-by-folder migration** rather than b
 4. **Expand Coverage**: Add missing tests for uncovered functionality
 
 #### **Migration Priority Order**
+**PHASE 1: FUND DOMAIN COMPLETION (Current Focus - Complete Before Moving to Other Domains)**
 Based on dependencies and business criticality:
 
-1. **Core Models** (`unit/models/`) - Foundation for all other tests
-   - `fund/` → `investment_company/` → `entity/` → `banking/` → `tax/` → `rates/`
-2. **Core Services** (`unit/services/`) - Business logic layer
-   - `fund/` → `investment_company/` → `entity/` → `banking/` → `tax/`
-3. **Calculations** (`unit/calculations/`) - Mathematical and financial logic
-   - `fund/` → `shared/` → `rates/` → `tax/` → `entity/` → `investment_company/`
-4. **Events** (`unit/events/`) - Event handling and orchestration
-   - `fund/` → `tax/` → `shared/`
-5. **Repositories** (`unit/repositories/`) - Data access layer
-   - `fund/` → `investment_company/` → `entity/` → `banking/` → `tax/`
-6. **Enums** (`unit/enums/`) - Business rule validation
-   - `fund/` → `investment_company/` → `entity/` → `banking/` → `tax/` → `rates/`
+1. **Fund Models** (`unit/models/fund/`) - Foundation for all fund tests
+   - Complete all fund model functionality testing
+2. **Fund Services** (`unit/services/fund/`) - Business logic layer
+   - Complete all fund service functionality testing
+3. **Fund Calculations** (`unit/calculations/fund/`) - Mathematical and financial logic
+   - Complete all fund calculation functionality testing
+4. **Fund Events** (`unit/events/fund/`) - Event handling and orchestration
+   - Complete all fund event handling functionality testing
+5. **Fund Repositories** (`unit/repositories/fund/`) - Data access layer
+   - Complete all fund data access functionality testing
+6. **Fund Enums** (`unit/enums/fund/`) - Business rule validation
+   - Complete all fund business rule validation testing
+
+**PHASE 2: OTHER DOMAINS (Future - Only After Fund Domain is 100% Complete)**
+7. **Investment Company Models** - Only after fund domain is 100% complete
+8. **Entity Models** - Only after fund domain is 100% complete
+9. **Banking Models** - Only after fund domain is 100% complete
+10. **Tax Models** - Only after fund domain is 100% complete
+11. **Rates Models** - Only after fund domain is 100% complete
 
 #### **Quality Assessment Criteria**
 For each existing test file, evaluate:
