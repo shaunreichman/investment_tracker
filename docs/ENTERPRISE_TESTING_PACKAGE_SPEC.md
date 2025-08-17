@@ -6,6 +6,20 @@ Establish a comprehensive, enterprise-grade testing suite for the fund managemen
 **CURRENT FOCUS: FUND DOMAIN COMPLETION**
 We are currently focused on completing 100% test coverage of the fund domain before expanding to other domains. This ensures we establish solid testing patterns and achieve comprehensive coverage of our core business logic before building out the broader testing suite.
 
+## **SPECIFICATION STATUS: UPDATED WITH PHASE 1 DETAILS** ✅
+**Last Updated**: Current session
+**Phase 1 Status**: Detailed task breakdown completed
+**Current Sprint**: Fund Domain Models Completion (Week 1)
+**Next Sprint**: Fund Services Testing (Week 2)
+
+### **What's New in This Update**
+- ✅ **Detailed Phase 1 breakdown** with week-by-week tasks
+- ✅ **Current sprint planning** with specific deliverables and timelines
+- ✅ **Updated migration status** showing exact progress and next steps
+- ✅ **Specific test file requirements** with effort estimates
+- ✅ **Success criteria** for each phase and sprint
+- ✅ **Dependencies and risks** identified and mitigated
+
 ## Design Philosophy
 - **Test-Driven Quality**: Every piece of business logic must have corresponding tests
 - **Layered Testing Strategy**: Unit → Integration → API → E2E → Performance → Property
@@ -65,35 +79,231 @@ We are currently focused on completing 100% test coverage of the fund domain bef
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
 - **Pattern Establishment**: Establish consistent test patterns in fund domain first
 - **Comprehensive Coverage**: Achieve 100% coverage of fund domain functionality
+
+#### **Week 1: Fund Models & Services Foundation**
+
+##### **1.1 Complete Fund Models Testing** (`tests/unit/models/fund/`)
+**Current Status**: ✅ Good foundation with 2 test files
+**Existing Tests**:
+- [x] `test_fund_models.py` - Basic fund model validation (330 lines, well-structured)
+- [x] `test_fund_event_grouping.py` - Fund event grouping logic (350 lines, good quality)
+
+**Missing Tests to Create**:
+- [ ] `test_domain_event_model.py` - Domain event validation and business rules
+  - Test domain event creation, validation, and state transitions
+  - Validate event metadata, timestamps, and business rule compliance
+  - Test event serialization and deserialization
+- [ ] `test_fund_event_cash_flow_model.py` - Cash flow model validation
+  - Test cash flow creation, validation, and business rules
+  - Validate cash flow calculations and balance consistency
+  - Test cash flow event relationships and constraints
+
+**Expand Existing Tests**:
+- [ ] Enhance `test_fund_models.py` with missing business rules
+  - Add fund status transition validation tests
+  - Add fund type-specific validation tests
+  - Add fund lifecycle state validation tests
+- [ ] Enhance `test_fund_event_grouping.py` with edge cases
+  - Add event ordering validation tests
+  - Add event grouping boundary condition tests
+  - Add event relationship constraint tests
+
+**Success Criteria**:
+- 100% fund model business logic covered by tests
+- All model validation rules tested with edge cases
+- Business rule invariants validated through property tests
+- Model relationships and constraints properly tested
+
+##### **1.2 Complete Fund Services Testing** (`tests/unit/services/fund/`)
+**Current Status**: ✅ Good foundation with 1 comprehensive test file
+**Existing Tests**:
+- [x] `test_fund_calculation_services.py` - Fund calculation service tests (545 lines, comprehensive)
+
+**Missing Tests to Create**:
+- [ ] `test_fund_status_service.py` - Fund status transition logic
+  - Test valid and invalid status transitions
+  - Test status change business rules and constraints
+  - Test status change event generation and validation
+- [ ] `test_fund_event_service.py` - Fund event processing logic
+  - Test event creation, validation, and processing
+  - Test event business rule enforcement
+  - Test event side effects and state updates
+- [ ] `test_tax_calculation_service.py` - Tax calculation logic
+  - Test tax calculation algorithms and business rules
+  - Test tax event processing and validation
+  - Test tax reporting and compliance validation
+- [ ] `test_fund_incremental_calculation_service.py` - Incremental calculations
+  - Test incremental calculation algorithms
+  - Test calculation performance and accuracy
+  - Test calculation state management and persistence
+
+**Expand Existing Tests**:
+- [ ] Enhance `test_fund_calculation_services.py` with missing service methods
+  - Add missing calculation method tests
+  - Add error handling and edge case tests
+  - Add performance and scalability tests
+
+**Success Criteria**:
+- 100% fund service business logic covered by tests
+- All service methods tested with various input scenarios
+- Error handling and edge cases properly tested
+- Service integration and coordination validated
+
+##### **1.3 Complete Fund Calculations Testing** (`tests/unit/calculations/fund/`)
+**Current Status**: ✅ Excellent foundation with 2 test files
+**Existing Tests**:
+- [x] `test_irr_calculations.py` - IRR calculation algorithms (354 lines, excellent)
+- [x] `test_debt_cost_calculations.py` - Debt cost calculations (132 lines, good)
+
+**Missing Tests to Create**:
+- [ ] `test_nav_calculations.py` - NAV-based calculations
+  - Test NAV calculation algorithms and accuracy
+  - Test NAV update workflows and validation
+  - Test NAV-based performance metrics
+- [ ] `test_fifo_calculations.py` - FIFO unit calculations
+  - Test FIFO calculation algorithms and accuracy
+  - Test FIFO unit tracking and validation
+  - Test FIFO-based performance metrics
+
+**Expand Existing Tests**:
+- [ ] Enhance `test_irr_calculations.py` with edge cases
+  - Add complex cash flow scenario tests
+  - Add error handling and validation tests
+  - Add performance and precision tests
+- [ ] Enhance `test_debt_cost_calculations.py` with comprehensive scenarios
+  - Add various debt instrument tests
+  - Add cost calculation edge cases
+  - Add performance and accuracy tests
+
+**Success Criteria**:
+- 100% fund calculation algorithms covered by tests
+- All calculation edge cases and error scenarios tested
+- Calculation accuracy validated against known results
+- Performance characteristics established and monitored
+
+#### **Week 2: Fund Events & Repositories**
+
+##### **1.4 Complete Fund Events Testing** (`tests/unit/events/fund/`)
+**Current Status**: ❌ No tests exist - complete creation required
+**Required Tests to Create**:
+- [ ] `test_orchestrator.py` - Event orchestration logic
+  - Test event routing and dispatching
+  - Test event ordering and sequencing
+  - Test event failure handling and recovery
+- [ ] `test_event_handlers.py` - Individual event handlers
+  - Test each event type handler implementation
+  - Test handler business logic and validation
+  - Test handler error handling and rollback
+- [ ] `test_event_registry.py` - Event routing and registration
+  - Test event handler registration and discovery
+  - Test event routing rules and validation
+  - Test event registry performance and scalability
+- [ ] `test_base_handler.py` - Base handler functionality
+  - Test base handler common functionality
+  - Test handler lifecycle and state management
+  - Test handler integration and coordination
+
+**Success Criteria**:
+- 100% fund event system functionality covered by tests
+- All event types properly handled and validated
+- Event system performance and reliability validated
+- Event failure scenarios and recovery tested
+
+##### **1.5 Complete Fund Repositories Testing** (`tests/unit/repositories/fund/`)
+**Current Status**: ❌ No tests exist - complete creation required
+**Required Tests to Create**:
+- [ ] `test_fund_repository.py` - Fund data access logic
+  - Test fund CRUD operations and validation
+  - Test fund query performance and optimization
+  - Test fund data consistency and integrity
+- [ ] `test_fund_event_repository.py` - Fund event query logic
+  - Test event query operations and performance
+  - Test event filtering and sorting capabilities
+  - Test event relationship and constraint validation
+- [ ] `test_domain_event_repository.py` - Domain event persistence
+  - Test domain event storage and retrieval
+  - Test event persistence performance and reliability
+  - Test event audit trail and history management
+
+**Success Criteria**:
+- 100% fund repository functionality covered by tests
+- All data access operations tested and validated
+- Repository performance and scalability established
+- Data consistency and integrity properly validated
+
+#### **Week 3: Fund Integration & Validation**
+
+##### **1.6 Complete Fund Integration Testing** (`tests/integration/workflows/fund/`)
+**Current Status**: ⚠️ Some integration tests exist but need modernization
+**Existing Tests to Modernize**:
+- [ ] Refactor existing integration tests for new architecture
+  - Update test data and fixtures for new models
+  - Modernize test assertions and validation
+  - Ensure proper test isolation and cleanup
+
+**Missing Tests to Create**:
+- [ ] `test_capital_call_workflow.py` - Complete capital call flow
+  - Test end-to-end capital call workflow
+  - Test capital call business rules and validation
+  - Test capital call event generation and processing
+- [ ] `test_distribution_workflow.py` - Complete distribution flow
+  - Test end-to-end distribution workflow
+  - Test distribution business rules and validation
+  - Test distribution event generation and processing
+- [ ] `test_nav_update_workflow.py` - NAV update and recalculation
+  - Test NAV update workflow and validation
+  - Test NAV recalculation triggers and accuracy
+  - Test NAV-based performance metrics
+- [ ] `test_fund_realization_workflow.py` - Fund completion workflow
+  - Test fund realization workflow and validation
+  - Test fund completion business rules
+  - Test fund closure event processing
+
+**Success Criteria**:
+- All critical fund workflows covered by integration tests
+- Workflow business rules and validation properly tested
+- Event system integration and coordination validated
+- Data consistency maintained across workflow boundaries
+
+##### **1.7 Fund Data Consistency Testing** (`tests/integration/data_consistency/fund/`)
+**Current Status**: ❌ No tests exist - complete creation required
+**Required Tests to Create**:
+- [ ] `test_fund_equity_balance.py` - Equity balance consistency
+  - Test equity balance calculations across all operations
+  - Test balance consistency validation and enforcement
+  - Test balance reconciliation and error detection
+- [ ] `test_event_ordering.py` - Event sequence validation
+  - Test event ordering rules and constraints
+  - Test event sequence validation and enforcement
+  - Test event ordering error handling and recovery
+- [ ] `test_calculation_consistency.py` - Cross-calculation validation
+  - Test calculation consistency across different methods
+  - Test cross-calculation validation and enforcement
+  - Test calculation accuracy and precision validation
+
+**Success Criteria**:
+- All fund data consistency rules validated by tests
+- Cross-calculation consistency properly enforced
+- Data integrity maintained across all operations
+- Consistency validation performance and reliability established
+
+#### **Week 4: Fund Testing Completion & Validation**
+
+##### **1.8 Fund Testing Quality Assurance**
 **Tasks**:
-- [ ] **Complete Fund Models Testing**: Finish all `unit/models/fund/` functionality
-  - [x] Basic fund model validation (already complete)
-  - [ ] Fund event model validation (expand existing tests)
-  - [ ] Domain event model validation (create new tests)
-  - [ ] Cash flow model validation (create new tests)
-- [ ] **Complete Fund Services Testing**: Finish all `unit/services/fund/` functionality
-  - [x] Fund calculation service tests (already complete)
-  - [ ] Fund status service tests (expand existing tests)
-  - [ ] Fund event service tests (create new tests)
-  - [ ] Tax calculation service tests (create new tests)
-  - [ ] Incremental calculation service tests (create new tests)
-- [ ] **Complete Fund Calculations Testing**: Finish all `unit/calculations/fund/` functionality
-  - [x] IRR calculations (already complete)
-  - [x] Debt cost calculations (already complete)
-  - [ ] NAV calculations (create new tests)
-  - [ ] FIFO calculations (create new tests)
-- [ ] **Complete Fund Events Testing**: Finish all `unit/events/fund/` functionality
-  - [ ] Event orchestration tests (create new tests)
-  - [ ] Event handler tests (create new tests)
-  - [ ] Event registry tests (create new tests)
-  - [ ] Base handler tests (create new tests)
-- [ ] **Complete Fund Repositories Testing**: Finish all `unit/repositories/fund/` functionality
-  - [ ] Fund repository tests (create new tests)
-  - [ ] Fund event repository tests (create new tests)
-  - [ ] Domain event repository tests (create new tests)
-- [ ] **Complete Fund Enums Testing**: Finish all `unit/enums/fund/` functionality
-  - [x] Fund enums (already complete)
-  - [ ] Expand enum validation coverage
+- [ ] Execute complete fund domain test suite
+- [ ] Validate 100% business logic coverage
+- [ ] Establish performance baselines for all tests
+- [ ] Document test patterns and best practices
+- [ ] Create fund domain testing templates for other domains
+
+**Success Criteria**:
+- 100% fund domain functionality covered by tests
+- All fund domain tests passing consistently
+- Consistent test patterns established across fund domain
+- Fund domain serves as template for future domain testing
+- Zero fund domain functionality gaps
+- Test execution performance meets enterprise standards
 **Success Criteria**:
 - 100% fund domain functionality covered by tests
 - All fund domain tests passing consistently
@@ -841,50 +1051,69 @@ Track migration progress for each folder and domain:
 
 #### **Unit Tests Migration Status**
 - [ ] **Models** (`unit/models/`)
-  - [x] `fund/` - Directory created, assessment needed
-  - [ ] `investment_company/` - Directory created, no tests
-  - [ ] `entity/` - Directory created, no tests
-  - [ ] `banking/` - Directory created, no tests
-  - [ ] `tax/` - Directory created, no tests
-  - [ ] `rates/` - Directory created, no tests
+  - [x] `fund/` - **PHASE 1 PRIORITY**: 2 test files exist, 2 missing tests to create
+    - [x] `test_fund_models.py` - 330 lines, well-structured ✅
+    - [x] `test_fund_event_grouping.py` - 350 lines, good quality ✅
+    - [ ] `test_domain_event_model.py` - **NEXT: Create domain event tests**
+    - [ ] `test_fund_event_cash_flow_model.py` - **NEXT: Create cash flow tests**
+  - [ ] `investment_company/` - Directory created, no tests (PHASE 2)
+  - [ ] `entity/` - Directory created, no tests (PHASE 2)
+  - [ ] `banking/` - Directory created, no tests (PHASE 2)
+  - [ ] `tax/` - Directory created, no tests (PHASE 2)
+  - [ ] `rates/` - Directory created, no tests (PHASE 2)
 
 - [ ] **Services** (`unit/services/`)
-  - [x] `fund/` - Directory created, some tests exist
-  - [ ] `investment_company/` - Directory created, no tests
-  - [ ] `entity/` - Directory created, no tests
-  - [ ] `banking/` - Directory created, no tests
-  - [ ] `tax/` - Directory created, no tests
+  - [x] `fund/` - **PHASE 1 PRIORITY**: 1 comprehensive test file exists, 3 missing tests to create
+    - [x] `test_fund_calculation_services.py` - 545 lines, comprehensive ✅
+    - [ ] `test_fund_status_service.py` - **NEXT: Refactor existing test to new architecture**
+    - [ ] `test_fund_event_service.py` - **NEXT: Create event service tests**
+    - [ ] `test_tax_calculation_service.py` - **NEXT: Create tax service tests**
+  - [ ] `investment_company/` - Directory created, no tests (PHASE 2)
+  - [ ] `entity/` - Directory created, no tests (PHASE 2)
+  - [ ] `banking/` - Directory created, no tests (PHASE 2)
+  - [ ] `tax/` - Directory created, no tests (PHASE 2)
 
 - [ ] **Calculations** (`unit/calculations/`)
-  - [x] `fund/` - Directory created, some tests exist
-  - [x] `rates/` - Directory created, some tests exist
-  - [ ] `investment_company/` - Directory created, no tests
-  - [ ] `entity/` - Directory created, no tests
-  - [ ] `tax/` - Directory created, no tests
-  - [ ] `shared/` - Directory created, no tests
+  - [x] `fund/` - **PHASE 1 PRIORITY**: 2 excellent test files exist, 2 missing tests to create
+    - [x] `test_irr_calculations.py` - 354 lines, excellent ✅
+    - [x] `test_debt_cost_calculations.py` - 132 lines, good ✅
+    - [ ] `test_nav_calculations.py` - **NEXT: Create NAV calculation tests**
+    - [ ] `test_fifo_calculations.py` - **NEXT: Create FIFO calculation tests**
+  - [x] `rates/` - Directory created, some tests exist ✅
+  - [ ] `investment_company/` - Directory created, no tests (PHASE 2)
+  - [ ] `entity/` - Directory created, no tests (PHASE 2)
+  - [ ] `tax/` - Directory created, no tests (PHASE 2)
+  - [ ] `shared/` - Directory created, no tests (PHASE 2)
 
 - [ ] **Events** (`unit/events/`)
-  - [ ] `fund/` - Directory created, no tests
-  - [ ] `tax/` - Directory created, no tests
-  - [ ] `shared/` - Directory created, no tests
+  - [ ] `fund/` - **PHASE 1 PRIORITY**: Directory created, **4 tests to create from scratch**
+    - [ ] `test_orchestrator.py` - **NEXT: Create event orchestration tests**
+    - [ ] `test_event_handlers.py` - **NEXT: Create event handler tests**
+    - [ ] `test_event_registry.py` - **NEXT: Create event registry tests**
+    - [ ] `test_base_handler.py` - **NEXT: Create base handler tests**
+  - [ ] `tax/` - Directory created, no tests (PHASE 2)
+  - [ ] `shared/` - Directory created, no tests (PHASE 2)
 
 - [ ] **Repositories** (`unit/repositories/`)
-  - [ ] `fund/` - Directory created, no tests
-  - [ ] `investment_company/` - Directory created, no tests
-  - [ ] `entity/` - Directory created, no tests
-  - [ ] `banking/` - Directory created, no tests
-  - [ ] `tax/` - Directory created, no tests
+  - [ ] `fund/` - **PHASE 1 PRIORITY**: Directory created, **3 tests to create from scratch**
+    - [ ] `test_fund_repository.py` - **NEXT: Create fund repository tests**
+    - [ ] `test_fund_event_repository.py` - **NEXT: Create event repository tests**
+    - [ ] `test_domain_event_repository.py` - **NEXT: Create domain event repository tests**
+  - [ ] `investment_company/` - Directory created, no tests (PHASE 2)
+  - [ ] `entity/` - Directory created, no tests (PHASE 2)
+  - [ ] `banking/` - Directory created, no tests (PHASE 2)
+  - [ ] `tax/` - Directory created, no tests (PHASE 2)
 
 - [ ] **Enums** (`unit/enums/`)
-  - [x] `fund/` - Directory created, some tests exist
-  - [ ] `investment_company/` - Directory created, no tests
-  - [ ] `entity/` - Directory created, no tests
-  - [ ] `banking/` - Directory created, no tests
-  - [ ] `tax/` - Directory created, no tests
-  - [ ] `rates/` - Directory created, no tests
+  - [x] `fund/` - Directory created, some tests exist ✅
+  - [ ] `investment_company/` - Directory created, no tests (PHASE 2)
+  - [ ] `entity/` - Directory created, no tests (PHASE 2)
+  - [ ] `banking/` - Directory created, no tests (PHASE 2)
+  - [ ] `tax/` - Directory created, no tests (PHASE 2)
+  - [ ] `rates/` - Directory created, no tests (PHASE 2)
 
 - [ ] **Shared** (`unit/shared/`)
-  - [ ] Directory created, no tests
+  - [ ] Directory created, no tests (PHASE 2)
 
 #### **Migration Quality Metrics**
 - **Keep Rate**: Percentage of existing tests that meet quality standards
@@ -942,6 +1171,58 @@ Track migration progress for each folder and domain:
 - Enterprise-grade testing suite complete
 - Performance regression detection working
 - Business property validation automated
+
+## **IMMEDIATE NEXT STEPS & CURRENT SPRINT PLANNING**
+
+### **Current Sprint: Fund Domain Models Completion (Week 1)**
+**Goal**: Complete all fund model testing to establish solid foundation
+**Timeline**: This week
+**Priority**: HIGH - Foundation for all other fund domain testing
+
+#### **Sprint Tasks (In Priority Order)**
+1. **Create `test_domain_event_model.py`** - Domain event validation tests
+   - **Effort**: 1-2 days
+   - **Dependencies**: Domain event model implementation
+   - **Deliverable**: Comprehensive domain event testing
+
+2. **Create `test_fund_event_cash_flow_model.py`** - Cash flow model validation tests
+   - **Effort**: 1-2 days  
+   - **Dependencies**: Cash flow model implementation
+   - **Deliverable**: Comprehensive cash flow testing
+
+3. **Enhance `test_fund_models.py`** - Add missing business rule tests
+   - **Effort**: 1 day
+   - **Dependencies**: Existing test file
+   - **Deliverable**: Enhanced fund model validation
+
+4. **Enhance `test_fund_event_grouping.py`** - Add edge case tests
+   - **Effort**: 1 day
+   - **Dependencies**: Existing test file
+   - **Deliverable**: Enhanced event grouping validation
+
+#### **Sprint Success Criteria**
+- [ ] All 4 fund model test files complete and passing
+- [ ] 100% fund model business logic covered by tests
+- [ ] Test patterns established for future model testing
+- [ ] Ready to move to fund services testing next week
+
+#### **Sprint Dependencies & Risks**
+- **Dependencies**: Ensure domain event and cash flow models are implemented
+- **Risks**: Model implementation delays could block test creation
+- **Mitigation**: Start with model implementation if needed, then create tests
+
+### **Next Sprint Preview: Fund Services Testing (Week 2)**
+**Goal**: Complete all fund service testing
+**Timeline**: Next week
+**Priority**: HIGH - Business logic layer testing
+
+#### **Next Sprint Tasks**
+1. **Refactor `test_fund_status_service.py`** - Update to new architecture
+2. **Create `test_fund_event_service.py`** - Event processing tests
+3. **Create `test_tax_calculation_service.py`** - Tax logic tests
+4. **Enhance existing calculation service tests**
+
+---
 
 ## Current Test Landscape Assessment
 
