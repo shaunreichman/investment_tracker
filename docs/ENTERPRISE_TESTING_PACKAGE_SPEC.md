@@ -231,13 +231,6 @@ Test files work together as a **cohesive testing ecosystem**:
 - **Mock Architecture**: Established reliable mock patterns for event handler testing ✅
 - **Unit Validation**: Complete coverage of event handler business logic validation ✅
 - **Test Reliability**: Eliminated flaky tests through proper mock configuration ✅
-- **File Organization**: Moved test file to correct location following directory spec ✅
-
-**File Organization Update**:
-- **Moved** `test_event_handlers.py` from `tests/unit/event_system/` to `tests/unit/events/fund/` ✅
-- **Reasoning**: All handlers are fund-specific (CapitalCallHandler, DistributionHandler, NAVUpdateHandler, etc.)
-- **Result**: Directory structure now matches the end state specification ✅
-- **Tests**: All 61 tests continue to pass after the move ✅
 
 ##### **1.5 Complete Fund Repositories Testing** (`tests/unit/repositories/fund/`)
 **Current Status**: ❌ No tests exist - complete creation required

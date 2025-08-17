@@ -75,6 +75,11 @@ class DistributionHandler(BaseFundEventHandler):
         Raises:
             ValueError: If validation fails
         """
+        # Validate that withholding tax is only valid for INTEREST distributions
+        distribution_type = event_data.get('distribution_type')
+        if distribution_type != DistributionType.INTEREST:
+            raise ValueError(f"Withholding tax (has_withholding_tax=True) is only valid for INTEREST distributions, not {distribution_type}")
+        
         # For withholding tax distributions, we need either gross + tax amount
         # or gross + tax rate, or net + tax amount, or net + tax rate
         gross_amount = event_data.get('gross_interest_amount')

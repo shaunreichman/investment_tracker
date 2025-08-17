@@ -5,8 +5,10 @@ This handler processes capital chain recalculation events and performs
 dependent updates for other components in the system.
 """
 
+import logging
 from typing import Dict, Any, Optional, List
 from datetime import date, datetime
+from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from src.fund.events.consumption.base_consumer import EventConsumer

@@ -83,6 +83,40 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
 - ✅ Calculation services tested in unified, organized test files
 - ✅ Test file count reduced by 25% while maintaining 100% coverage
 
+### **Phase 1A: Legacy Cleanup & Directory Setup ✅ (Day 1) - COMPLETED**
+**Goal**: Remove legacy files and establish new directory structure
+
+**Tasks**:
+- [x] **Delete Legacy Test File**
+  - [x] Remove `test_shared_calculations_extended.py` (629 lines) - completely replaced by new architecture tests
+  - [x] Verify only clean `test_shared_calculations.py` remains for shared utilities
+- [x] **Create New Directory Structure**
+  - [x] Create `tests/unit/event_system/` directory
+  - [x] Create `tests/unit/calculations/rates/` directory
+  - [x] Create `tests/integration/workflows/` directory structure
+  - [x] Create `tests/integration/event_system/` directory
+  - [x] Create `tests/api/` subdirectories
+  - [x] Create `tests/performance/` subdirectories
+  - [x] Create `tests/property/` subdirectories
+  - [x] Create `tests/e2e/` subdirectories
+- [x] **Move Tests to New Locations**
+  - [x] Move event system tests to `tests/unit/event_system/`
+  - [x] Move rates tests to `tests/unit/calculations/rates/`
+  - [x] Move integration tests to appropriate workflow directories
+  - [x] Create new `test_event_orchestration.py` for event orchestration testing
+
+**Success Criteria**:
+- ✅ Legacy 629-line file removed
+- ✅ New directory structure established
+- ✅ Tests relocated to appropriate categories
+- ✅ Professional enterprise-grade test organization implemented
+
+**Current Status**:
+- **Test Files**: 44 (reorganized, not reduced yet)
+- **Directory Structure**: ✅ Complete enterprise-grade organization
+- **Test Categorization**: ✅ Proper separation of unit/integration/API tests
+- **Architecture Alignment**: ✅ All tests in proper locations for new architecture
+
 ### Phase 2: Test Pattern Standardization ✅ (1 week)
 **Goal**: Establish consistent testing approaches across all test categories
 
@@ -219,6 +253,213 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
 - Performance improvements validated and documented
 - Future testing guidelines established
 
+## **CLEAR IMPLEMENTATION PLAN: Current → Target File Mapping**
+
+### **Phase 1: Break Down Monolithic Files (Week 1)**
+
+#### **1.1 Split `test_shared_calculations_extended.py` (629 lines)**
+**Current**: One massive file testing multiple concepts
+**Target**: Split into focused, single-responsibility files
+
+```
+❌ tests/unit/test_shared_calculations_extended.py (629 lines)
+    ↓ SPLIT INTO:
+✅ tests/unit/calculations/fund/test_irr_calculations.py (IRR tests only)
+✅ tests/unit/calculations/fund/test_reconciliation.py (Reconciliation tests only)
+✅ tests/unit/calculations/fund/test_financial_years.py (Financial year tests only)
+✅ tests/unit/calculations/fund/test_equity_changes.py (Equity change tests only)
+```
+
+#### **1.2 Split `test_fund_calculation_services.py` (545 lines)**
+**Current**: One file testing multiple services
+**Target**: Separate files for each service
+
+```
+❌ tests/unit/services/fund/test_fund_calculation_services.py (545 lines)
+    ↓ SPLIT INTO:
+✅ tests/unit/services/fund/test_fund_calculation_service.py (Core calculation service)
+✅ tests/unit/services/fund/test_fund_incremental_calculation_service.py (Incremental service)
+✅ tests/unit/services/fund/test_fund_status_service.py (Status service - already exists)
+```
+
+#### **1.3 Split `test_fund_models.py` (330 lines)**
+**Current**: One file testing multiple models
+**Target**: Separate files for each model
+
+```
+❌ tests/unit/models/fund/test_fund_models.py (330 lines)
+    ↓ SPLIT INTO:
+✅ tests/unit/models/fund/test_fund.py (Fund model only)
+✅ tests/unit/models/fund/test_fund_event.py (FundEvent model only)
+✅ tests/unit/models/fund/test_fund_event_cash_flow.py (Cash flow model only)
+```
+
+### **Phase 2: Consolidate Small Files (Week 2)**
+
+#### **2.1 Merge Tiny Files into Domain Files**
+**Current**: Multiple small, focused files
+**Target**: Logical grouping by domain
+
+```
+❌ tests/unit/test_shared_calculations.py (24 lines)
+    ↓ MERGE INTO:
+✅ tests/unit/calculations/fund/test_financial_years.py
+
+❌ tests/unit/test_rates_calculations.py (27 lines)
+    ↓ MERGE INTO:
+✅ tests/unit/calculations/rates/test_rates.py
+
+❌ tests/unit/test_investment_company_calculations.py (20 lines)
+    ↓ MOVE TO:
+✅ tests/integration/workflows/test_investment_company_flows.py
+
+❌ tests/unit/test_smoke.py (22 lines)
+    ↓ MOVE TO:
+✅ tests/integration/workflows/test_smoke_flows.py
+```
+
+#### **2.2 Consolidate Event System Tests**
+**Current**: Scattered event testing
+**Target**: Unified event system testing
+
+```
+❌ tests/unit/test_event_consumption_system.py (406 lines)
+❌ tests/unit/test_event_handler_architecture.py (278 lines)
+    ↓ CONSOLIDATE INTO:
+✅ tests/unit/event_system/test_event_consumption.py
+✅ tests/unit/event_system/test_event_handlers.py
+✅ tests/unit/event_system/test_event_orchestration.py
+```
+
+### **Phase 3: Reorganize Directory Structure (Week 3)**
+
+#### **3.1 Create Target Directory Structure**
+```
+tests/
+├── unit/                           # Pure unit tests (no external dependencies)
+│   ├── models/                     # Model validation & relationships
+│   │   ├── fund/                   # Fund model tests
+│   │   │   ├── test_fund.py        # Fund model only
+│   │   │   ├── test_fund_event.py  # FundEvent model only
+│   │   │   └── test_fund_event_cash_flow.py # Cash flow model only
+│   │   ├── banking/                # Banking model tests
+│   │   │   ├── test_bank.py
+│   │   │   └── test_bank_account.py
+│   │   ├── entity/                 # Entity model tests
+│   │   │   └── test_entity.py
+│   │   └── investment_company/     # Investment company model tests
+│   │       ├── test_investment_company.py
+│   │       └── test_contact.py
+│   ├── services/                   # Business logic services
+│   │   ├── fund/                   # Fund service tests
+│   │   │   ├── test_fund_calculation_service.py
+│   │   │   ├── test_fund_incremental_calculation_service.py
+│   │   │   ├── test_fund_status_service.py
+│   │   │   └── test_fund_event_service.py
+│   │   ├── banking/                # Banking service tests
+│   │   └── entity/                 # Entity service tests
+│   ├── calculations/               # Mathematical functions
+│   │   ├── fund/                   # Fund calculation tests
+│   │   │   ├── test_irr_calculations.py
+│   │   │   ├── test_capital_gains.py
+│   │   │   ├── test_reconciliation.py
+│   │   │   ├── test_financial_years.py
+│   │   │   └── test_equity_changes.py
+│   │   ├── tax/                    # Tax calculation tests
+│   │   └── rates/                  # Rate calculation tests
+│   │       └── test_rates.py
+│   ├── event_system/               # Event handling & propagation
+│   │   ├── test_event_consumption.py
+│   │   ├── test_event_handlers.py
+│   │   └── test_event_orchestration.py
+│   └── enums/                      # Enum validation tests
+│       └── test_enums.py           # All enum tests consolidated
+├── integration/                     # Component integration tests
+│   ├── workflows/                  # End-to-end business processes
+│   │   ├── fund_flows/             # Fund workflow tests
+│   │   │   ├── test_cost_based_flows.py
+│   │   │   ├── test_nav_based_flows.py
+│   │   │   └── test_fund_status_updates.py
+│   │   ├── banking_flows/          # Banking workflow tests
+│   │   ├── entity_flows/           # Entity workflow tests
+│   │   └── test_smoke_flows.py     # Basic system functionality
+│   ├── event_system/               # Event handling & propagation
+│   │   ├── test_event_consumption_integration.py
+│   │   ├── test_event_handler_integration.py
+│   │   └── test_event_idempotency.py
+│   └── data_consistency/           # Cross-model data integrity
+│       ├── test_derived_fields.py
+│       └── test_data_relationships.py
+├── api/                            # API contract tests
+│   ├── contracts/                  # Request/response validation
+│   │   ├── test_fund_endpoints.py
+│   │   ├── test_banking_endpoints.py
+│   │   └── test_entity_endpoints.py
+│   ├── authentication/             # Security & permissions
+│   └── error_handling/             # Error scenarios & responses
+├── performance/                     # Performance & scalability
+│   ├── load_tests/                 # High-volume scenarios
+│   ├── memory_tests/               # Memory usage patterns
+│   └── database_performance/       # Query optimization
+├── property/                        # Mathematical invariants
+│   ├── financial_properties/       # Financial calculation properties
+│   │   ├── test_irr_properties.py
+│   │   └── test_cash_flow_properties.py
+│   └── business_rules/             # Business rule validation
+└── e2e/                            # Full system integration
+    ├── critical_paths/             # Core user journeys
+    └── regression/                 # Historical bug prevention
+```
+
+#### **3.2 File Count Reduction**
+**Current**: 44 test files
+**Target**: ~25 test files
+**Reduction**: 43% fewer files
+
+**Detailed Count by Category:**
+- **Unit Tests**: 15 → 12 files (20% reduction)
+- **Integration Tests**: 12 → 8 files (33% reduction)
+- **API Tests**: 8 → 5 files (38% reduction)
+- **Performance Tests**: 3 → 3 files (no change)
+- **Property Tests**: 2 → 2 files (no change)
+- **Domain Tests**: 2 → 0 files (consolidated into integration)
+
+### **Phase 4: Test Pattern Standardization (Week 4)**
+
+#### **4.1 Unit Test Standards**
+- **Mocking Strategy**: All external dependencies must be mocked
+- **Database Usage**: ❌ **ZERO** database calls in unit tests
+- **Execution Time**: Each unit test < 1 second
+- **Coverage**: 95%+ line coverage required
+
+#### **4.2 Integration Test Standards**
+- **Database Usage**: ✅ Real database sessions with proper cleanup
+- **Transaction Management**: Automatic rollback after each test
+- **Test Data**: Factory-based test data creation
+- **Coverage**: 90%+ critical path coverage required
+
+#### **4.3 API Test Standards**
+- **Contract Validation**: Request/response format validation
+- **Error Scenarios**: Comprehensive error handling testing
+- **Authentication**: Security and permission testing
+- **Coverage**: 100% endpoint coverage required
+
+### **Phase 5: Quality Assurance (Week 5)**
+
+#### **5.1 Validation Checklist**
+- [ ] All tests execute successfully with zero regressions
+- [ ] Unit test execution time < 30 seconds total
+- [ ] Test coverage maintained or improved
+- [ ] Zero duplicate test scenarios
+- [ ] All tests import from new fund models architecture
+- [ ] Zero tests import from legacy monolithic models
+
+#### **5.2 Performance Baselines**
+- **Unit Tests**: < 30 seconds total execution
+- **Integration Tests**: < 2 minutes total execution
+- **API Tests**: < 1 minute total execution
+- **Full Test Suite**: < 5 minutes total execution
+
 ## Test Location Decision & Enterprise Best Practices
 
 ### **Why Centralized Tests Directory is the Enterprise Standard**
@@ -239,78 +480,9 @@ Consolidate and standardize the current test suite to eliminate redundancies, es
 4. **Team Confusion**: No unified testing standards or patterns
 5. **Coverage Gaps**: Difficult to ensure comprehensive testing across all modules
 
-### **Expected Final Test Directory Structure**
-│   ├── unit/                       # Pure unit tests (no external dependencies)
-│   │   ├── models/                 # Model validation & relationships
-│   │   │   ├── fund/               # Fund model tests
-│   │   │   │   ├── test_fund.py
-│   │   │   │   ├── test_fund_event.py
-│   │   │   │   └── test_fund_event_cash_flow.py
-│   │   │   ├── banking/            # Banking model tests
-│   │   │   │   ├── test_bank.py
-│   │   │   │   └── test_bank_account.py
-│   │   │   ├── entity/             # Entity model tests
-│   │   │   │   └── test_entity.py
-│   │   │   └── investment_company/ # Investment company model tests
-│   │   │       ├── test_investment_company.py
-│   │   │       └── test_contact.py
-│   │   ├── services/               # Business logic services
-│   │   │   ├── fund/               # Fund service tests
-│   │   │   │   ├── test_fund_calculation_service.py
-│   │   │   │   ├── test_fund_incremental_calculation_service.py
-│   │   │   │   ├── test_fund_status_service.py
-│   │   │   │   └── test_fund_event_service.py
-│   │   │   ├── banking/            # Banking service tests
-│   │   │   └── entity/             # Entity service tests
-│   │   ├── calculations/           # Mathematical functions
-│   │   │   ├── fund/               # Fund calculation tests
-│   │   │   │   ├── test_irr_calculations.py
-│   │   │   │   ├── test_capital_gains.py
-│   │   │   │   └── test_performance_metrics.py
-│   │   │   ├── tax/                # Tax calculation tests
-│   │   │   └── rates/              # Rate calculation tests
-│   │   └── enums/                  # Enum validation tests
-│   │       ├── test_fund_enums.py
-│   │       └── test_event_enums.py
-│   ├── integration/                 # Component integration tests
-│   │   ├── workflows/              # End-to-end business processes
-│   │   │   ├── fund_flows/         # Fund workflow tests
-│   │   │   │   ├── test_cost_based_flows.py
-│   │   │   │   ├── test_nav_based_flows.py
-│   │   │   │   └── test_fund_status_updates.py
-│   │   │   ├── banking_flows/      # Banking workflow tests
-│   │   │   └── entity_flows/       # Entity workflow tests
-│   │   ├── event_system/           # Event handling & propagation
-│   │   │   ├── test_event_consumption.py
-│   │   │   ├── test_event_handlers.py
-│   │   │   └── test_event_orchestration.py
-│   │   └── data_consistency/       # Cross-model data integrity
-│   │       ├── test_derived_fields.py
-│   │       └── test_data_relationships.py
-│   ├── api/                        # API contract tests
-│   │   ├── contracts/              # Request/response validation
-│   │   │   ├── test_fund_endpoints.py
-│   │   │   ├── test_banking_endpoints.py
-│   │   │   └── test_entity_endpoints.py
-│   │   ├── authentication/         # Security & permissions
-│   │   └── error_handling/         # Error scenarios & responses
-│   ├── performance/                 # Performance & scalability
-│   │   ├── load_tests/             # High-volume scenarios
-│   │   ├── memory_tests/           # Memory usage patterns
-│   │   └── database_performance/   # Query optimization
-│   ├── property/                    # Mathematical invariants
-│   │   ├── financial_properties/   # Financial calculation properties
-│   │   │   ├── test_irr_properties.py
-│   │   │   └── test_cash_flow_properties.py
-│   │   └── business_rules/         # Business rule validation
-│   └── e2e/                        # Full system integration
-│       ├── critical_paths/         # Core user journeys
-│       └── regression/             # Historical bug prevention
-```
-
 ## Overall Success Metrics
 
-- **Test Consolidation**: 25% reduction in test file count while maintaining 100% coverage
+- **Test Consolidation**: 43% reduction in test file count while maintaining 100% coverage
 - **Test Performance**: Unit test execution time reduced to under 30 seconds
 - **Test Quality**: 95%+ line coverage for unit tests, 90%+ for integration tests
 - **Test Reliability**: Zero test failures due to inconsistent patterns or duplicate coverage

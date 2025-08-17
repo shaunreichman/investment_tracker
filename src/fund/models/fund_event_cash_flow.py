@@ -39,7 +39,7 @@ class FundEventCashFlow(Base):
     currency = Column(String(3), nullable=False)  # (MANUAL) ISO-4217; must equal BankAccount.currency
     amount = Column(Float, nullable=False)  # (MANUAL) transfer amount in currency
     reference = Column(String(255))  # (MANUAL) free-text bank reference
-    notes = Column(Text)  # (MANUAL) additional notes
+    description = Column(Text)  # (MANUAL) additional notes/description
     
     # Relationships
     fund_event = relationship("FundEvent", back_populates="cash_flows")

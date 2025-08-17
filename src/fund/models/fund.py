@@ -63,6 +63,7 @@ class Fund(Base):
     
     # Status and metadata
     status = Column(Enum(FundStatus), default=FundStatus.ACTIVE)  # (CALCULATED) fund status (ACTIVE/REALIZED/COMPLETED)
+    start_date = Column(Date, nullable=True)  # (CALCULATED) fund start date based on first capital call or unit purchase
     end_date = Column(Date, nullable=True)  # (CALCULATED) fund end date based on last equity/distribution event after equity balance reached zero
     description = Column(Text)  # (MANUAL) fund description
     currency = Column(String(10), default="AUD")  # (MANUAL) currency code for the fund
@@ -84,6 +85,8 @@ class Fund(Base):
         # Composite indexes for common query patterns
         Index('idx_funds_status_tracking_type', 'status', 'tracking_type'),
         Index('idx_funds_equity_status', 'current_equity_balance', 'status'),
+        Index('idx_funds_start_date', 'start_date'),
+        Index('idx_funds_end_date', 'end_date'),
     )
     
     def __repr__(self) -> str:
@@ -149,6 +152,97 @@ class Fund(Base):
         
         return True
     
+    def validate_date_constraints(self) -> bool:
+        """Validate date-related constraints.
+        
+        Returns:
+            bool: True if validation passes
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValueError("Start date cannot be after end date")
+        
+        if self.start_date and self.start_date > date.today():
+            raise ValueError("Start date cannot be in the future")
+        
+        if self.end_date and self.end_date > date.today():
+            raise ValueError("End date cannot be in the future")
+        
+        return True
+    
+    def validate_commitment_constraints(self) -> bool:
+        """Validate commitment-related constraints.
+        
+        Returns:
+            bool: True if validation passes
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        if self.commitment_amount is not None and self.commitment_amount < 0:
+            raise ValueError("Commitment amount cannot be negative")
+        
+        if self.current_equity_balance < 0:
+            raise ValueError("Current equity balance cannot be negative")
+        
+        if self.average_equity_balance < 0:
+            raise ValueError("Average equity balance cannot be negative")
+        
+        return True
+    
+    def validate_irr_constraints(self) -> bool:
+        """Validate IRR-related constraints.
+        
+        Returns:
+            bool: True if validation passes
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        for irr_field in [self.irr_gross, self.irr_after_tax, self.irr_real]:
+            if irr_field is not None and (irr_field < -100 or irr_field > 1000):
+                raise ValueError("IRR values must be between -100% and 1000%")
+        
+        return True
+    
+    def validate_nav_constraints(self) -> bool:
+        """Validate NAV-related constraints.
+        
+        Returns:
+            bool: True if validation passes
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        if self.tracking_type == FundType.NAV_BASED:
+            if self.current_units < 0:
+                raise ValueError("Current units cannot be negative")
+            if self.current_unit_price < 0:
+                raise ValueError("Current unit price cannot be negative")
+            if self.current_nav_total < 0:
+                raise ValueError("Current NAV total cannot be negative")
+        
+        return True
+    
+    def validate_all_constraints(self) -> bool:
+        """Validate all constraints for the fund.
+        
+        Returns:
+            bool: True if validation passes
+            
+        Raises:
+            ValueError: If validation fails
+        """
+        self.validate_basic_constraints()
+        self.validate_tracking_type_constraints()
+        self.validate_date_constraints()
+        self.validate_commitment_constraints()
+        self.validate_irr_constraints()
+        self.validate_nav_constraints()
+        return True
+    
     def is_nav_based(self) -> bool:
         """Check if fund is NAV-based.
         
@@ -197,13 +291,21 @@ class Fund(Base):
         """
         return self.current_equity_balance > 0
     
+    def has_commitment(self) -> bool:
+        """Check if fund has a commitment amount.
+        
+        Returns:
+            bool: True if fund has commitment amount
+        """
+        return self.commitment_amount is not None and self.commitment_amount > 0
+    
     def get_commitment_utilization(self) -> float:
         """Get commitment utilization percentage.
         
         Returns:
             float: Commitment utilization as percentage (0-100)
         """
-        if not self.commitment_amount or self.commitment_amount <= 0:
+        if not self.has_commitment():
             return 0.0
         
         return (self.current_equity_balance / self.commitment_amount) * 100
@@ -214,7 +316,77 @@ class Fund(Base):
         Returns:
             float: Remaining commitment amount
         """
-        if not self.commitment_amount:
+        if not self.has_commitment():
             return 0.0
         
         return max(0, self.commitment_amount - self.current_equity_balance)
+    
+    def get_fund_duration_months(self) -> Optional[int]:
+        """Get the fund duration in months.
+        
+        Returns:
+            int or None: Duration in months if start and end dates are available
+        """
+        if not self.start_date or not self.end_date:
+            return None
+        
+        # Calculate months between start and end dates
+        year_diff = self.end_date.year - self.start_date.year
+        month_diff = self.end_date.month - self.start_date.month
+        
+        total_months = year_diff * 12 + month_diff
+        
+        # Adjust for day of month
+        if self.end_date.day < self.start_date.day:
+            total_months -= 1
+        
+        return max(0, total_months)
+    
+    def get_fund_age_months(self) -> Optional[int]:
+        """Get the fund age in months from start date to current date.
+        
+        Returns:
+            int or None: Age in months if start date is available
+        """
+        if not self.start_date:
+            return None
+        
+        today = date.today()
+        year_diff = today.year - self.start_date.year
+        month_diff = today.month - self.start_date.month
+        
+        total_months = year_diff * 12 + month_diff
+        
+        # Adjust for day of month
+        if today.day < self.start_date.day:
+            total_months -= 1
+        
+        return max(0, total_months)
+    
+    def get_expected_completion_date(self) -> Optional[date]:
+        """Get the expected completion date based on start date and expected duration.
+        
+        Returns:
+            date or None: Expected completion date if start date and duration are available
+        """
+        if not self.start_date or not self.expected_duration_months:
+            return None
+        
+        # Add months to start date
+        year = self.start_date.year
+        month = self.start_date.month + self.expected_duration_months
+        
+        # Adjust year if month exceeds 12
+        while month > 12:
+            year += 1
+            month -= 12
+        
+        # Create new date, handling month overflow
+        try:
+            return date(year, month, self.start_date.day)
+        except ValueError:
+            # Handle month overflow (e.g., Jan 31 + 1 month = Feb 28/29)
+            last_day = (date(year, month + 1, 1) - date(year, month, 1)).days
+            return date(year, month, min(self.start_date.day, last_day))
+    
+

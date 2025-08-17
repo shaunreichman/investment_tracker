@@ -302,7 +302,7 @@ class TaxCalculationService:
                    if event.event_type == EventType.DISTRIBUTION and 
                    event.amount and 
                    event.distribution_type and 
-                   event.distribution_type in [DistributionType.INCOME, DistributionType.CAPITAL_GAINS])
+                   event.distribution_type in [DistributionType.INCOME, DistributionType.CAPITAL_GAIN])
         return float(total) if total else 0.0
     
     def get_gross_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:

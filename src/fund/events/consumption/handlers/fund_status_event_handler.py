@@ -5,6 +5,7 @@ This handler processes fund status update events and performs
 dependent updates for other components in the system.
 """
 
+import logging
 from typing import Dict, Any, Optional, List
 from datetime import date, datetime
 from sqlalchemy.orm import Session
