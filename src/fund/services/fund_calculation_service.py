@@ -615,7 +615,7 @@ class FundCalculationService:
         
         total = session.query(func.sum(FundEvent.amount)).filter(
             FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.DAILY_INTEREST_CHARGE
+            FundEvent.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE
         ).scalar()
         
         return float(total) if total else 0.0
@@ -728,7 +728,7 @@ class FundCalculationService:
         from src.fund.enums import EventType, DistributionType
         
         # Taxable distributions are typically dividends and interest
-        taxable_types = [DistributionType.DIVIDEND, DistributionType.INTEREST]
+        taxable_types = [DistributionType.DIVIDEND_FRANKED, DistributionType.DIVIDEND_UNFRANKED, DistributionType.INTEREST]
         
         total = session.query(func.sum(FundEvent.amount)).filter(
             FundEvent.fund_id == fund.id,

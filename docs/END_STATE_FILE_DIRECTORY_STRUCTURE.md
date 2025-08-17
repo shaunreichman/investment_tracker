@@ -43,7 +43,7 @@ tests/
 │   │       └── test_rate_calculation_model.py # Rate calculation models
 │   ├── services/                        # Business logic and service layer
 │   │   ├── __init__.py
-│   │   ├── fund/                        # Fund services ✅ **COMPLETED** (All 5 files created and passing)
+│   │   ├── fund/                        # Fund services ✅ **COMPLETED**
 │   │   │   ├── __init__.py
 │   │   │   ├── test_fund_calculation_services.py     # Financial calculation logic ✅ **COMPLETED**
 │   │   │   ├── test_fund_status_service.py           # Status transition logic ✅ **COMPLETED**
