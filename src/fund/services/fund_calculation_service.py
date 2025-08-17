@@ -16,6 +16,7 @@ from datetime import date, datetime
 import numpy as np
 import numpy_financial as npf
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 # Use string references to avoid circular imports
 # from src.fund.models import Fund, FundEvent, EventType, FundType
@@ -23,6 +24,7 @@ from src.fund.calculations import calculate_irr, calculate_debt_cost
 from src.shared.calculations import orchestrate_irr_base
 from src.shared.utils import with_session
 from src.fund.enums import FundStatus, EventType
+from src.fund.models import FundEvent
 
 
 class FundCalculationService:
@@ -456,3 +458,318 @@ class FundCalculationService:
         # TODO: This method will be implemented in the TaxCalculationService
         # For now, it's a placeholder to maintain the interface
         pass
+    
+    # ============================================================================
+    # FINANCIAL AGGREGATION METHODS (MIGRATED FROM LEGACY)
+    # ============================================================================
+    
+    def get_total_capital_calls(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total capital calls for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        capital call aggregation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total capital calls amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType
+        
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.CAPITAL_CALL
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_total_capital_returns(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total capital returns for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        capital return aggregation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total capital returns amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType
+        
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.RETURN_OF_CAPITAL
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_total_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total distributions for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        distribution aggregation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total distributions amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType
+        
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.DISTRIBUTION
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_total_tax_withheld(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total tax withheld for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        tax withholding aggregation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total tax withheld amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType
+        
+        total = session.query(func.sum(FundEvent.tax_withholding)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.DISTRIBUTION,
+            FundEvent.tax_withholding.isnot(None)
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_total_tax_payments(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total tax payments for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        tax payment aggregation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total tax payments amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType
+        
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.TAX_PAYMENT
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_total_daily_interest_charges(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total daily interest charges for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        interest charge aggregation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total daily interest charges amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType
+        
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.DAILY_INTEREST_CHARGE
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_total_unit_purchases(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total unit purchases for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        unit purchase aggregation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total unit purchases amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType
+        
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.UNIT_PURCHASE
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_total_unit_sales(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total unit sales for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        unit sale aggregation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total unit sales amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType
+        
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.UNIT_SALE
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_distributions_by_type(self, fund: 'Fund', session: Optional[Session] = None) -> Dict[str, float]:
+        """
+        [MIGRATED] Get distributions broken down by type.
+        
+        This method was migrated from the legacy Fund model to provide
+        distribution type analysis capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            dict: Distribution amounts by type
+        """
+        if not session:
+            return {}
+        
+        from src.fund.enums import EventType, DistributionType
+        
+        # Get all distribution events with their types
+        distributions = session.query(
+            FundEvent.distribution_type,
+            func.sum(FundEvent.amount).label('total_amount')
+        ).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.DISTRIBUTION,
+            FundEvent.distribution_type.isnot(None)
+        ).group_by(FundEvent.distribution_type).all()
+        
+        result = {}
+        for dist_type, total_amount in distributions:
+            type_name = dist_type.value if hasattr(dist_type, 'value') else str(dist_type)
+            result[type_name] = float(total_amount) if total_amount else 0.0
+        
+        return result
+    
+    def get_taxable_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get total taxable distributions for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        taxable distribution calculation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Total taxable distributions amount
+        """
+        if not session:
+            return 0.0
+        
+        from src.fund.enums import EventType, DistributionType
+        
+        # Taxable distributions are typically dividends and interest
+        taxable_types = [DistributionType.DIVIDEND, DistributionType.INTEREST]
+        
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.DISTRIBUTION,
+            FundEvent.distribution_type.in_(taxable_types)
+        ).scalar()
+        
+        return float(total) if total else 0.0
+    
+    def get_gross_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get gross distributions (before tax withholding) for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        gross distribution calculation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Gross distributions amount
+        """
+        # Gross distributions are the same as total distributions
+        return self.get_total_distributions(fund, session)
+    
+    def get_net_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
+        """
+        [MIGRATED] Get net distributions (after tax withholding) for the fund.
+        
+        This method was migrated from the legacy Fund model to provide
+        net distribution calculation capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            float: Net distributions amount
+        """
+        total_distributions = self.get_total_distributions(fund, session)
+        total_tax_withheld = self.get_total_tax_withheld(fund, session)
+        
+        return total_distributions - total_tax_withheld

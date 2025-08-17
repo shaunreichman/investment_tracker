@@ -531,3 +531,181 @@ class FundManager:
         return self.orchestrator.status_service.calculate_end_date(
             fund=self.fund, session=session
         )
+    
+    # ============================================================================
+    # FUND SUMMARY AND ANALYTICS METHODS (NEW ARCHITECTURE)
+    # ============================================================================
+    
+    def get_enhanced_fund_metrics(self, session: Optional[Session] = None) -> Dict[str, Any]:
+        """
+        Get comprehensive fund performance metrics and analytics.
+        
+        This method provides access to the enhanced fund metrics
+        through the status service.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            dict: Comprehensive fund metrics and analytics
+        """
+        return self.status_service.get_enhanced_fund_metrics(self.fund, session)
+    
+    def get_distribution_summary(self, session: Optional[Session] = None) -> Dict[str, Any]:
+        """
+        Get comprehensive distribution analysis and summaries.
+        
+        This method provides access to the distribution summary
+        through the status service.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            dict: Distribution summary and analysis
+        """
+        return self.status_service.get_distribution_summary(self.fund, session)
+    
+    def get_total_capital_calls(self, session: Optional[Session] = None) -> float:
+        """
+        Get total capital calls for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total capital calls amount
+        """
+        return self.calculation_service.get_total_capital_calls(self.fund, session)
+    
+    def get_total_capital_returns(self, session: Optional[Session] = None) -> float:
+        """
+        Get total capital returns for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total capital returns amount
+        """
+        return self.calculation_service.get_total_capital_returns(self.fund, session)
+    
+    def get_total_distributions(self, session: Optional[Session] = None) -> float:
+        """
+        Get total distributions for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total distributions amount
+        """
+        return self.calculation_service.get_total_distributions(self.fund, session)
+    
+    def get_total_tax_withheld(self, session: Optional[Session] = None) -> float:
+        """
+        Get total tax withheld for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total tax withheld amount
+        """
+        return self.calculation_service.get_total_tax_withheld(self.fund, session)
+    
+    def get_total_tax_payments(self, session: Optional[Session] = None) -> float:
+        """
+        Get total tax payments for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total tax payments amount
+        """
+        return self.calculation_service.get_total_tax_payments(self.fund, session)
+    
+    def get_total_daily_interest_charges(self, session: Optional[Session] = None) -> float:
+        """
+        Get total daily interest charges for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total daily interest charges amount
+        """
+        return self.calculation_service.get_total_daily_interest_charges(self.fund, session)
+    
+    def get_total_unit_purchases(self, session: Optional[Session] = None) -> float:
+        """
+        Get total unit purchases for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total unit purchases amount
+        """
+        return self.calculation_service.get_total_unit_purchases(self.fund, session)
+    
+    def get_total_unit_sales(self, session: Optional[Session] = None) -> float:
+        """
+        Get total unit sales for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total unit sales amount
+        """
+        return self.calculation_service.get_total_unit_sales(self.fund, session)
+    
+    def get_distributions_by_type(self, session: Optional[Session] = None) -> Dict[str, float]:
+        """
+        Get distributions broken down by type.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            dict: Distribution amounts by type
+        """
+        return self.calculation_service.get_distributions_by_type(self.fund, session)
+    
+    def get_taxable_distributions(self, session: Optional[Session] = None) -> float:
+        """
+        Get total taxable distributions for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Total taxable distributions amount
+        """
+        return self.calculation_service.get_taxable_distributions(self.fund, session)
+    
+    def get_gross_distributions(self, session: Optional[Session] = None) -> float:
+        """
+        Get gross distributions (before tax withholding) for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Gross distributions amount
+        """
+        return self.calculation_service.get_gross_distributions(self.fund, session)
+    
+    def get_net_distributions(self, session: Optional[Session] = None) -> float:
+        """
+        Get net distributions (after tax withholding) for the fund.
+        
+        Args:
+            session: Database session (optional)
+            
+        Returns:
+            float: Net distributions amount
+        """
+        return self.calculation_service.get_net_distributions(self.fund, session)

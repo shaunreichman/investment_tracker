@@ -369,3 +369,162 @@ class FundStatusService:
                 'to_active': self.validate_status_transition(fund, FundStatus.ACTIVE, session)
             }
         }
+    
+    # ============================================================================
+    # FUND SUMMARY AND ANALYTICS METHODS (MIGRATED FROM LEGACY)
+    # ============================================================================
+    
+    def get_enhanced_fund_metrics(self, fund: 'Fund', session: Optional[Session] = None) -> Dict[str, Any]:
+        """
+        [MIGRATED] Get comprehensive fund performance metrics and analytics.
+        
+        This method was migrated from the legacy Fund model to provide
+        comprehensive fund analytics and reporting capabilities.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            dict: Comprehensive fund metrics and analytics
+        """
+        if not session:
+            return {}
+        
+        # Get basic fund information
+        metrics = {
+            'fund_id': fund.id,
+            'fund_name': fund.name,
+            'tracking_type': fund.tracking_type.value if hasattr(fund.tracking_type, 'value') else fund.tracking_type,
+            'status': fund.status.value if hasattr(fund.status, 'value') else fund.status,
+            'commitment_amount': fund.commitment_amount,
+            'current_equity_balance': fund.current_equity_balance,
+            'average_equity_balance': fund.average_equity_balance,
+            'start_date': fund.start_date,
+            'end_date': fund.end_date,
+            'expected_irr': fund.expected_irr,
+            'expected_duration_months': fund.expected_duration_months
+        }
+        
+        # Get financial aggregations
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        calc_service = FundCalculationService()
+        
+        metrics.update({
+            'total_capital_calls': calc_service.get_total_capital_calls(fund, session),
+            'total_capital_returns': calc_service.get_total_capital_returns(fund, session),
+            'total_distributions': calc_service.get_total_distributions(fund, session),
+            'total_tax_withheld': calc_service.get_total_tax_withheld(fund, session),
+            'total_tax_payments': calc_service.get_total_tax_payments(fund, session),
+            'total_unit_purchases': calc_service.get_total_unit_purchases(fund, session),
+            'total_unit_sales': calc_service.get_total_unit_sales(fund, session),
+            'total_daily_interest_charges': calc_service.get_total_daily_interest_charges(fund, session)
+        })
+        
+        # Get NAV-specific metrics for NAV-based funds
+        if fund.tracking_type == 'NAV_BASED':
+            metrics.update({
+                'current_units': fund.current_units,
+                'current_unit_price': fund.current_unit_price,
+                'current_nav_total': fund.current_nav_total
+            })
+        
+        # Get cost-specific metrics for cost-based funds
+        if fund.tracking_type == 'COST_BASED':
+            metrics.update({
+                'total_cost_basis': fund.total_cost_basis
+            })
+        
+        # Get IRR metrics
+        metrics.update({
+            'irr_gross': fund.irr_gross,
+            'irr_after_tax': fund.irr_after_tax,
+            'irr_real': fund.irr_real
+        })
+        
+        # Calculate derived metrics
+        if fund.commitment_amount and fund.commitment_amount > 0:
+            metrics['commitment_utilization'] = (fund.current_equity_balance / fund.commitment_amount) * 100
+            metrics['remaining_commitment'] = max(0, fund.commitment_amount - fund.current_equity_balance)
+        else:
+            metrics['commitment_utilization'] = 0.0
+            metrics['remaining_commitment'] = 0.0
+        
+        # Calculate fund duration
+        if fund.start_date and fund.end_date:
+            metrics['actual_duration_months'] = self._calculate_months_between(fund.start_date, fund.end_date)
+        elif fund.start_date:
+            from datetime import date
+            today = date.today()
+            metrics['fund_age_months'] = self._calculate_months_between(fund.start_date, today)
+        
+        return metrics
+    
+    def get_distribution_summary(self, fund: 'Fund', session: Optional[Session] = None) -> Dict[str, Any]:
+        """
+        [MIGRATED] Get comprehensive distribution analysis and summaries.
+        
+        This method was migrated from the legacy Fund model to provide
+        detailed distribution analytics and reporting.
+        
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+            
+        Returns:
+            dict: Distribution summary and analysis
+        """
+        if not session:
+            return {}
+        
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        calc_service = FundCalculationService()
+        
+        # Get basic distribution totals
+        total_distributions = calc_service.get_total_distributions(fund, session)
+        total_tax_withheld = calc_service.get_total_tax_withheld(fund, session)
+        
+        # Calculate net distributions
+        net_distributions = total_distributions - total_tax_withheld if total_distributions else 0
+        
+        # Get distribution breakdown by type
+        distributions_by_type = calc_service.get_distributions_by_type(fund, session)
+        
+        # Get taxable vs non-taxable breakdown
+        taxable_distributions = calc_service.get_taxable_distributions(fund, session)
+        gross_distributions = calc_service.get_gross_distributions(fund, session)
+        
+        return {
+            'fund_id': fund.id,
+            'fund_name': fund.name,
+            'total_distributions': total_distributions,
+            'total_tax_withheld': total_tax_withheld,
+            'net_distributions': net_distributions,
+            'distributions_by_type': distributions_by_type,
+            'taxable_distributions': taxable_distributions,
+            'gross_distributions': gross_distributions,
+            'tax_withholding_rate': (total_tax_withheld / total_distributions * 100) if total_distributions else 0,
+            'net_distribution_rate': (net_distributions / total_distributions * 100) if total_distributions else 0
+        }
+    
+    def _calculate_months_between(self, start_date: date, end_date: date) -> int:
+        """
+        Calculate the number of months between two dates.
+        
+        Args:
+            start_date: Start date
+            end_date: End date
+            
+        Returns:
+            int: Number of months between dates
+        """
+        year_diff = end_date.year - start_date.year
+        month_diff = end_date.month - start_date.month
+        
+        total_months = year_diff * 12 + month_diff
+        
+        # Adjust for day of month
+        if end_date.day < start_date.day:
+            total_months -= 1
+        
+        return max(0, total_months)
