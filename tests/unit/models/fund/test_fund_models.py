@@ -705,6 +705,345 @@ class TestFundModelBusinessRules:
         assert total_inflow == total_outflow
 
 
+class TestFundBusinessLogicMethods:
+    """Test suite for Fund model business logic methods"""
+    
+    @pytest.fixture
+    def mock_session(self):
+        """Mock database session for testing."""
+        mock_session = Mock()
+        # Mock the query method to return an empty result (no existing events)
+        mock_query = Mock()
+        mock_query.filter.return_value.first.return_value = None
+        mock_session.query.return_value = mock_query
+        return mock_session
+    
+    @pytest.fixture
+    def mock_orchestrator(self):
+        """Mock orchestrator for testing."""
+        mock_orch = Mock()
+        mock_orch.process_fund_event.return_value = Mock(spec=FundEvent)
+        return mock_orch
+    
+    @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
+    def test_add_capital_call_basic(self, mock_orchestrator_class, mock_session):
+        """Test basic capital call creation."""
+        # Setup
+        mock_orchestrator_class.return_value = Mock()
+        mock_orchestrator_class.return_value.process_fund_event.return_value = Mock(spec=FundEvent)
+        
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.COST_BASED,
+            commitment_amount=1000000.0,
+            current_equity_balance=0.0,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Execute
+        event = fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=mock_session)
+        
+        # Verify
+        assert event is not None
+        mock_orchestrator_class.return_value.process_fund_event.assert_called_once()
+        
+        # Verify event data passed to orchestrator
+        call_args = mock_orchestrator_class.return_value.process_fund_event.call_args
+        event_data = call_args[0][0]  # First positional argument
+        assert event_data['event_type'] == EventType.CAPITAL_CALL
+        assert event_data['amount'] == 50000.0
+        assert event_data['date'] == date(2023, 1, 1)
+        assert event_data['description'] == "Initial call"
+    
+    def test_add_capital_call_validation_errors(self, mock_session):
+        """Test capital call validation error cases."""
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,  # NAV-based funds can't have capital calls
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Test: NAV-based funds cannot have capital calls
+        with pytest.raises(ValueError, match="Capital calls are only applicable for cost-based funds"):
+            fund.add_capital_call(50000.0, date(2023, 1, 1), "Test call", session=mock_session)
+        
+        # Test: Invalid amount
+        fund.tracking_type = FundType.COST_BASED
+        with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
+            fund.add_capital_call(0.0, date(2023, 1, 1), "Test call", session=mock_session)
+        
+        with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
+            fund.add_capital_call(-10000.0, date(2023, 1, 1), "Test call", session=mock_session)
+        
+        # Test: Missing date
+        with pytest.raises(ValueError, match="Date is required"):
+            fund.add_capital_call(50000.0, None, "Test call", session=mock_session)
+    
+    def test_add_capital_call_commitment_validation(self, mock_session):
+        """Test capital call commitment amount validation."""
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.COST_BASED,
+            commitment_amount=100000.0,
+            current_equity_balance=60000.0,  # Already called 60k
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Test: Cannot call more than remaining commitment
+        with pytest.raises(ValueError, match="Cannot call more capital than remaining commitment"):
+            fund.add_capital_call(50000.0, date(2023, 1, 1), "Excessive call", session=mock_session)
+        
+        # Test: Valid call within remaining commitment
+        with patch('src.fund.events.orchestrator.FundUpdateOrchestrator') as mock_orchestrator_class:
+            mock_orchestrator_class.return_value = Mock()
+            mock_orchestrator_class.return_value.process_fund_event.return_value = Mock(spec=FundEvent)
+            
+            event = fund.add_capital_call(30000.0, date(2023, 1, 1), "Valid call", session=mock_session)
+            assert event is not None
+    
+    @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
+    def test_add_distribution_basic(self, mock_orchestrator_class, mock_session):
+        """Test basic distribution creation."""
+        # Setup
+        mock_orchestrator_class.return_value = Mock()
+        mock_orchestrator_class.return_value.process_fund_event.return_value = Mock(spec=FundEvent)
+        
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Execute
+        event = fund.add_distribution(
+            event_date=date(2023, 6, 1),
+            distribution_type=DistributionType.INTEREST,
+            distribution_amount=25000.0,
+            description="Interest distribution",
+            session=mock_session
+        )
+        
+        # Verify
+        assert event is not None
+        mock_orchestrator_class.return_value.process_fund_event.assert_called_once()
+        
+        # Verify event data passed to orchestrator
+        call_args = mock_orchestrator_class.return_value.process_fund_event.call_args
+        event_data = call_args[0][0]
+        assert event_data['event_type'] == EventType.DISTRIBUTION
+        assert event_data['event_date'] == date(2023, 6, 1)
+        assert event_data['distribution_type'] == DistributionType.INTEREST
+        assert event_data['distribution_amount'] == 25000.0
+        assert event_data['description'] == "Interest distribution"
+    
+    @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
+    def test_add_distribution_with_tax(self, mock_orchestrator_class, mock_session):
+        """Test distribution creation with withholding tax."""
+        # Setup
+        mock_orchestrator_class.return_value = Mock()
+        mock_orchestrator_class.return_value.process_fund_event.return_value = Mock(spec=FundEvent)
+        
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Execute with withholding tax
+        event = fund.add_distribution(
+            event_date=date(2023, 6, 1),
+            distribution_type=DistributionType.INTEREST,
+            has_withholding_tax=True,
+            gross_interest_amount=30000.0,
+            net_interest_amount=25500.0,
+            withholding_tax_amount=4500.0,
+            withholding_tax_rate=15.0,
+            description="Interest with tax",
+            session=mock_session
+        )
+        
+        # Verify
+        assert event is not None
+        mock_orchestrator_class.return_value.process_fund_event.assert_called_once()
+        
+        # Verify tax-related data passed to orchestrator
+        call_args = mock_orchestrator_class.return_value.process_fund_event.call_args
+        event_data = call_args[0][0]
+        assert event_data['has_withholding_tax'] is True
+        assert event_data['gross_interest_amount'] == 30000.0
+        assert event_data['net_interest_amount'] == 25500.0
+        assert event_data['withholding_tax_amount'] == 4500.0
+        assert event_data['withholding_tax_rate'] == 15.0
+    
+    @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
+    def test_add_nav_update_basic(self, mock_orchestrator_class, mock_session):
+        """Test basic NAV update creation."""
+        # Setup
+        mock_orchestrator_class.return_value = Mock()
+        mock_orchestrator_class.return_value.process_fund_event.return_value = Mock(spec=FundEvent)
+        
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Execute
+        event = fund.add_nav_update(25.50, date(2023, 6, 1), "Monthly NAV update", session=mock_session)
+        
+        # Verify
+        assert event is not None
+        mock_orchestrator_class.return_value.process_fund_event.assert_called_once()
+        
+        # Verify event data passed to orchestrator
+        call_args = mock_orchestrator_class.return_value.process_fund_event.call_args
+        event_data = call_args[0][0]
+        assert event_data['event_type'] == EventType.NAV_UPDATE
+        assert event_data['nav_per_share'] == 25.50
+        assert event_data['date'] == date(2023, 6, 1)
+        assert event_data['description'] == "Monthly NAV update"
+    
+    def test_add_nav_update_validation_errors(self, mock_session):
+        """Test NAV update validation error cases."""
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Test: Invalid NAV per share
+        with pytest.raises(ValueError, match="NAV per share must be a positive number"):
+            fund.add_nav_update(0.0, date(2023, 6, 1), "Test update", session=mock_session)
+        
+        with pytest.raises(ValueError, match="NAV per share must be a positive number"):
+            fund.add_nav_update(-10.0, date(2023, 6, 1), "Test update", session=mock_session)
+        
+        # Test: Missing date
+        with pytest.raises(ValueError, match="Date is required"):
+            fund.add_nav_update(25.50, None, "Test update", session=mock_session)
+    
+    @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
+    def test_add_unit_purchase_basic(self, mock_orchestrator_class, mock_session):
+        """Test basic unit purchase creation."""
+        # Setup
+        mock_orchestrator_class.return_value = Mock()
+        mock_orchestrator_class.return_value.process_fund_event.return_value = Mock(spec=FundEvent)
+        
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Execute
+        event = fund.add_unit_purchase(1000.0, 25.50, date(2023, 6, 1), "Initial purchase", session=mock_session)
+        
+        # Verify
+        assert event is not None
+        mock_orchestrator_class.return_value.process_fund_event.assert_called_once()
+        
+        # Verify event data passed to orchestrator
+        call_args = mock_orchestrator_class.return_value.process_fund_event.call_args
+        event_data = call_args[0][0]
+        assert event_data['event_type'] == EventType.UNIT_PURCHASE
+        assert event_data['units_purchased'] == 1000.0
+        assert event_data['unit_price'] == 25.50
+        assert event_data['date'] == date(2023, 6, 1)
+        assert event_data['description'] == "Initial purchase"
+    
+    def test_add_unit_purchase_validation_errors(self, mock_session):
+        """Test unit purchase validation error cases."""
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Test: Invalid units
+        with pytest.raises(ValueError, match="Units must be a positive number"):
+            fund.add_unit_purchase(0.0, 25.50, date(2023, 6, 1), "Test purchase", session=mock_session)
+        
+        with pytest.raises(ValueError, match="Units must be a positive number"):
+            fund.add_unit_purchase(-100.0, 25.50, date(2023, 6, 1), "Test purchase", session=mock_session)
+        
+        # Test: Invalid price
+        with pytest.raises(ValueError, match="Unit price must be a positive number"):
+            fund.add_unit_purchase(1000.0, 0.0, date(2023, 6, 1), "Test purchase", session=mock_session)
+        
+        with pytest.raises(ValueError, match="Unit price must be a positive number"):
+            fund.add_unit_purchase(1000.0, -10.0, date(2023, 6, 1), "Test purchase", session=mock_session)
+        
+        # Test: Missing date
+        with pytest.raises(ValueError, match="Date is required"):
+            fund.add_unit_purchase(1000.0, 25.50, None, "Test purchase", session=mock_session)
+    
+    @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
+    def test_add_unit_sale_basic(self, mock_orchestrator_class, mock_session):
+        """Test basic unit sale creation."""
+        # Setup
+        mock_orchestrator_class.return_value = Mock()
+        mock_orchestrator_class.return_value.process_fund_event.return_value = Mock(spec=FundEvent)
+        
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Execute
+        event = fund.add_unit_sale(500.0, 30.00, date(2023, 6, 1), "Partial sale", session=mock_session)
+        
+        # Verify
+        assert event is not None
+        mock_orchestrator_class.return_value.process_fund_event.assert_called_once()
+        
+        # Verify event data passed to orchestrator
+        call_args = mock_orchestrator_class.return_value.process_fund_event.call_args
+        event_data = call_args[0][0]
+        assert event_data['event_type'] == EventType.UNIT_SALE
+        assert event_data['units_sold'] == 500.0
+        assert event_data['unit_price'] == 30.00
+        assert event_data['date'] == date(2023, 6, 1)
+        assert event_data['description'] == "Partial sale"
+    
+    def test_add_unit_sale_validation_errors(self, mock_session):
+        """Test unit sale validation error cases."""
+        fund = Fund(
+            name='Test Fund',
+            tracking_type=FundType.NAV_BASED,
+            investment_company_id=1,
+            entity_id=1
+        )
+        
+        # Test: Invalid units
+        with pytest.raises(ValueError, match="Units must be a positive number"):
+            fund.add_unit_sale(0.0, 30.00, date(2023, 6, 1), "Test sale", session=mock_session)
+        
+        with pytest.raises(ValueError, match="Units must be a positive number"):
+            fund.add_unit_sale(-100.0, 30.00, date(2023, 6, 1), "Test sale", session=mock_session)
+        
+        # Test: Invalid price
+        with pytest.raises(ValueError, match="Unit price must be a positive number"):
+            fund.add_unit_sale(500.0, 0.0, date(2023, 6, 1), "Test sale", session=mock_session)
+        
+        with pytest.raises(ValueError, match="Unit price must be a positive number"):
+            fund.add_unit_sale(500.0, -10.0, date(2023, 6, 1), "Test sale", session=mock_session)
+        
+        # Test: Missing date
+        with pytest.raises(ValueError, match="Date is required"):
+            fund.add_unit_sale(500.0, 30.00, None, "Test sale", session=mock_session)
+
+
 class TestFundEnums:
     """Test suite for fund enums"""
     

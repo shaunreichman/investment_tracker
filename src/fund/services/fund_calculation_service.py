@@ -402,6 +402,84 @@ class FundCalculationService:
         delta = end_date - fund.start_date
         return delta.days / 30.44  # Average days per month
     
+    def calculate_current_equity_balance(self, fund: 'Fund', session: Session) -> float:
+        """
+        [NEW] Calculate current equity balance from all events.
+        
+        This method centralizes equity balance calculation logic that was
+        previously scattered across event handlers.
+        
+        Args:
+            fund: The fund object
+            session: Database session (required)
+            
+        Returns:
+            float: Current equity balance
+            
+        Raises:
+            ValueError: If session is not provided
+        """
+        if not session:
+            raise ValueError("Session required for equity balance calculation")
+        
+        # Get all fund events
+        events = fund.get_all_fund_events(session=session)
+        
+        # Sum all capital-increasing events
+        capital_events = [
+            e for e in events 
+            if e.event_type in [EventType.CAPITAL_CALL, EventType.UNIT_PURCHASE] 
+            and e.amount
+        ]
+        
+        # Sum all capital-decreasing events  
+        distribution_events = [
+            e for e in events 
+            if e.event_type in [
+                EventType.DISTRIBUTION, 
+                EventType.RETURN_OF_CAPITAL, 
+                EventType.UNIT_SALE
+            ] 
+            and e.amount
+        ]
+        
+        total_capital = sum(e.amount for e in capital_events)
+        total_distributions = sum(e.amount for e in distribution_events)
+        
+        return total_capital - total_distributions
+    
+    def recalculate_fund_equity_balance(self, fund: 'Fund', session: Session) -> float:
+        """
+        [NEW] Recalculate and update fund equity balance.
+        
+        This method updates both the fund's current_equity_balance and
+        the latest event's current_equity_balance field.
+        
+        Args:
+            fund: The fund object
+            session: Database session (required)
+            
+        Returns:
+            float: The new equity balance
+        """
+        new_balance = self.calculate_current_equity_balance(fund, session)
+        
+        # Update fund's calculated field
+        fund.current_equity_balance = new_balance
+        
+        # Update latest event's equity balance field
+        events = fund.get_all_fund_events(session=session)
+        if events:
+            latest_event = events[-1]
+            latest_event.current_equity_balance = new_balance
+            
+            # Ensure changes are tracked by session
+            session.add(fund)
+            session.add(latest_event)
+            session.flush()
+        
+        return new_balance
+    
     # ============================================================================
     # PRIVATE HELPER METHODS
     # ============================================================================

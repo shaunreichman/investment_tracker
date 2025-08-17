@@ -142,6 +142,14 @@ class FundUpdateOrchestrator:
             event: The event that was just processed
             session: Database session for all operations
         """
+        # Use centralized calculation service for equity balance updates
+        # This ensures consistency and centralizes business logic
+        if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
+            from src.fund.services.fund_calculation_service import FundCalculationService
+            
+            calculation_service = FundCalculationService()
+            calculation_service.recalculate_fund_equity_balance(event.fund, session)
+        
         # Update fund summary fields if needed
         if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
             # Instead of calling fund method directly, publish a domain event

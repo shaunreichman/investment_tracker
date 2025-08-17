@@ -14,7 +14,6 @@ from src.fund.enums import (
     TaxPaymentType,
     GroupType
 )
-from src.fund.fund_manager import FundManager
 
 __all__ = [
     'Fund',
@@ -26,6 +25,5 @@ __all__ = [
     'DistributionType',
     'CashFlowDirection',
     'TaxPaymentType',
-    'GroupType',
-    'FundManager'
+    'GroupType'
 ] 

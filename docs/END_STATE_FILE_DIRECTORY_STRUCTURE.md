@@ -47,7 +47,7 @@ tests/
 │   │   ├── __init__.py
 │   │   ├── ✅ fund/                        # Fund services
 │   │   │   ├── ✅ __init__.py
-│   │   │   ├── ✅ test_fund_calculation_services.py     # Financial calculation logic
+│   │   │   ├── ✅ test_fund_calculation_services.py     # Financial + equity balance calculation logic
 │   │   │   ├── ✅ test_fund_status_service.py           # Status transition logic
 │   │   │   ├── ✅ test_fund_event_service.py            # Event processing logic
 │   │   │   ├── ✅ test_tax_calculation_service.py       # Tax calculation logic
@@ -154,7 +154,7 @@ tests/
 │   │   ├── __init__.py
 │   │   ├── fund/                         # Fund-specific workflows
 │   │   │   ├── __init__.py
-│   │   │   ├── test_capital_call_workflow.py         # Complete capital call flow
+│   │   │   ├── ✅ test_capital_call_workflow.py         # Complete capital call flow (ARCHITECTURE FIXED)
 │   │   │   ├── test_distribution_workflow.py         # Complete distribution flow
 │   │   │   ├── test_nav_update_workflow.py           # NAV update and recalculation
 │   │   │   ├── test_fund_realization_workflow.py     # Fund completion workflow
@@ -403,7 +403,6 @@ tests/
 │   │   ├── user_scaling/                     # User concurrency scaling
 │   │   │   ├── __init__.py
 │   │   │   ├── test_investor_concurrency_scaling.py  # Investor concurrency
-│   │   │   ├── test_fund_manager_scaling.py          # Fund manager scaling
 │   │   │   └── test_administrator_scaling.py         # Administrator scaling
 │   │   └── system_scaling/                   # System resource scaling
 │   │       ├── __init__.py

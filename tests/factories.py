@@ -208,6 +208,6 @@ class FundEventCashFlowFactory(SessionedFactory):
     currency = factory.LazyAttribute(lambda obj: obj.bank_account.currency)
     amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=100, max_value=50000, right_digits=2))
     reference = factory.LazyAttribute(lambda _: fake.bothify(text='REF-????-????', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'))
-    notes = factory.LazyAttribute(lambda _: fake.sentence())
+    description = factory.LazyAttribute(lambda _: fake.sentence())
 
 

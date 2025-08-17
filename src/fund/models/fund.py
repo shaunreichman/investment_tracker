@@ -5,13 +5,15 @@ This module provides the Fund model class,
 representing investment funds in the system.
 """
 
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import date, datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
 from src.fund.enums import FundType, FundStatus, GroupType
+from src.fund.enums import EventType, DistributionType
+from src.fund.models.fund_event import FundEvent
 
 
 class Fund(Base):
@@ -388,5 +390,588 @@ class Fund(Base):
             # Handle month overflow (e.g., Jan 31 + 1 month = Feb 28/29)
             last_day = (date(year, month + 1, 1) - date(year, month, 1)).days
             return date(year, month, min(self.start_date.day, last_day))
+    
+    # ============================================================================
+    # CORE BUSINESS LOGIC METHODS - Capital Movement Operations
+    # ============================================================================
+    
+    def add_capital_call(self, amount: float, call_date: date, description: str, 
+                        reference_number: str = None, session=None) -> 'FundEvent':
+        """
+        Add a capital call event using the event-driven architecture.
+        
+        Args:
+            amount: Capital call amount (must be positive)
+            call_date: Date of the capital call
+            description: Description of the capital call
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created capital call event
+            
+        Raises:
+            ValueError: If fund is not cost-based or amount is invalid
+        """
+        if self.tracking_type != FundType.COST_BASED:
+            raise ValueError("Capital calls are only applicable for cost-based funds")
+        
+        if not amount or amount <= 0:
+            raise ValueError("Capital call amount must be a positive number")
+        if not call_date:
+            raise ValueError("Date is required")
+        
+        # Check if amount exceeds remaining commitment
+        if self.commitment_amount and amount > self.get_remaining_commitment():
+            raise ValueError("Cannot call more capital than remaining commitment")
+        
+        # Check for existing duplicate event (idempotent behavior)
+        existing_event = session.query(FundEvent).filter(
+            FundEvent.fund_id == self.id,
+            FundEvent.event_type == EventType.CAPITAL_CALL,
+            FundEvent.event_date == call_date,
+            FundEvent.amount == amount,
+            FundEvent.reference_number == reference_number
+        ).first()
+        
+        if existing_event:
+            return existing_event
+        
+        # Route to new architecture through orchestrator
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
+        
+        event_data = {
+            'event_type': EventType.CAPITAL_CALL,
+            'amount': amount,
+            'date': call_date,
+            'description': description or f"Capital call: ${amount:,.2f}",
+            'reference_number': reference_number
+        }
+        
+        orchestrator = FundUpdateOrchestrator()
+        return orchestrator.process_fund_event(event_data, session, self)
+    
+    def add_return_of_capital(self, amount: float, return_date: date, description: str,
+                             reference_number: str = None, session=None) -> 'FundEvent':
+        """
+        Add a return of capital event using the event-driven architecture.
+        
+        Args:
+            amount: Return amount (must be positive)
+            return_date: Date of the return
+            description: Description of the return
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created return of capital event
+            
+        Raises:
+            ValueError: If fund is not cost-based or amount is invalid
+        """
+        if self.tracking_type != FundType.COST_BASED:
+            raise ValueError("Returns of capital are only applicable for cost-based funds")
+        
+        if not amount or amount <= 0:
+            raise ValueError("Return amount must be a positive number")
+        if not return_date:
+            raise ValueError("Date is required")
+        
+        # Route to new architecture through orchestrator
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
+        
+        event_data = {
+            'event_type': EventType.RETURN_OF_CAPITAL,
+            'amount': amount,
+            'date': return_date,
+            'description': description or f"Return of capital: ${amount:,.2f}",
+            'reference_number': reference_number
+        }
+        
+        orchestrator = FundUpdateOrchestrator()
+        return orchestrator.process_fund_event(event_data, session, self)
+    
+    def add_distribution(self, event_date: date, distribution_type: 'DistributionType',
+                        distribution_amount: float = None, has_withholding_tax: bool = False,
+                        gross_interest_amount: float = None, net_interest_amount: float = None,
+                        withholding_tax_amount: float = None, withholding_tax_rate: float = None,
+                        description: str = None, reference_number: str = None,
+                        session=None) -> Union['FundEvent', tuple['FundEvent', Optional['FundEvent']]]:
+        """
+        Add a distribution event using the event-driven architecture.
+        
+        Args:
+            event_date: Distribution date
+            distribution_type: Type of distribution
+            distribution_amount: Simple distribution amount (when has_withholding_tax=False)
+            has_withholding_tax: Whether this distribution has withholding tax
+            gross_interest_amount: Gross interest amount (when has_withholding_tax=True)
+            net_interest_amount: Net interest amount (when has_withholding_tax=True)
+            withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
+            withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
+            description: Event description
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent or tuple: Distribution event, or (distribution_event, tax_event) for withholding tax
+        """
+        # Route to new architecture through orchestrator
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
+        
+        event_data = {
+            'event_type': EventType.DISTRIBUTION,
+            'event_date': event_date,
+            'distribution_type': distribution_type,
+            'distribution_amount': distribution_amount,
+            'has_withholding_tax': has_withholding_tax,
+            'gross_interest_amount': gross_interest_amount,
+            'net_interest_amount': net_interest_amount,
+            'withholding_tax_amount': withholding_tax_amount,
+            'withholding_tax_rate': withholding_tax_rate,
+            'description': description,
+            'reference_number': reference_number
+        }
+        
+        orchestrator = FundUpdateOrchestrator()
+        return orchestrator.process_fund_event(event_data, session, self)
+    
+    def add_nav_update(self, nav_per_share: float, update_date: date, description: str = None,
+                       reference_number: str = None, session=None) -> 'FundEvent':
+        """
+        Add an NAV update event using the event-driven architecture.
+        
+        Args:
+            nav_per_share: NAV per share value
+            update_date: Date of the NAV update
+            description: Description of the update
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created NAV update event
+            
+        Raises:
+            ValueError: If NAV per share is invalid
+        """
+        if not nav_per_share or nav_per_share <= 0:
+            raise ValueError("NAV per share must be a positive number")
+        if not update_date:
+            raise ValueError("Date is required")
+        
+        # Route to new architecture through orchestrator
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
+        
+        event_data = {
+            'event_type': EventType.NAV_UPDATE,
+            'nav_per_share': nav_per_share,
+            'date': update_date,
+            'description': description or f"NAV update: ${nav_per_share:.4f}",
+            'reference_number': reference_number
+        }
+        
+        orchestrator = FundUpdateOrchestrator()
+        return orchestrator.process_fund_event(event_data, session, self)
+    
+    def add_unit_purchase(self, units: float, price: float, date: date,
+                          description: str = None, reference_number: str = None,
+                          session=None) -> 'FundEvent':
+        """
+        Add a unit purchase event using the event-driven architecture.
+        
+        Args:
+            units: Number of units purchased
+            unit_price: Price per unit
+            purchase_date: Date of the purchase
+            description: Description of the purchase
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created unit purchase event
+            
+        Raises:
+            ValueError: If units or price are invalid
+        """
+        if not units or units <= 0:
+            raise ValueError("Units must be a positive number")
+        if not price or price <= 0:
+            raise ValueError("Unit price must be a positive number")
+        if not date:
+            raise ValueError("Date is required")
+        
+        # Route to new architecture through orchestrator
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
+        
+        event_data = {
+            'event_type': EventType.UNIT_PURCHASE,
+            'units_purchased': units,
+            'unit_price': price,
+            'date': date,
+            'description': description or f"Unit purchase: {units:.4f} units @ ${price:.4f}",
+            'reference_number': reference_number
+        }
+        
+        orchestrator = FundUpdateOrchestrator()
+        return orchestrator.process_fund_event(event_data, session, self)
+    
+    def add_unit_sale(self, units: float, price: float, date: date,
+                      description: str = None, reference_number: str = None,
+                      session=None) -> 'FundEvent':
+        """
+        Add a unit sale event using the event-driven architecture.
+        
+        Args:
+            units: Number of units sold
+            unit_price: Price per unit
+            sale_date: Date of the sale
+            description: Description of the sale
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created unit sale event
+            
+        Raises:
+            ValueError: If units or price are invalid
+        """
+        if not units or units <= 0:
+            raise ValueError("Units must be a positive number")
+        if not price or price <= 0:
+            raise ValueError("Unit price must be a positive number")
+        if not date:
+            raise ValueError("Date is required")
+        
+        # Route to new architecture through orchestrator
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
+        
+        event_data = {
+            'event_type': EventType.UNIT_SALE,
+            'units_sold': units,
+            'unit_price': price,
+            'date': date,
+            'description': description or f"Unit sale: {units:.4f} units @ ${price:.4f}",
+            'reference_number': reference_number
+        }
+        
+        orchestrator = FundUpdateOrchestrator()
+        return orchestrator.process_fund_event(event_data, session, self)
+    
+    # ============================================================================
+    # CORE BUSINESS PROPERTIES - Intrinsic Fund Properties
+    # ============================================================================
+    
+    def total_capital_called(self, session=None) -> float:
+        """Get total capital called amount.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            float: Total capital called amount
+        """
+        if not session:
+            raise ValueError("Session required for total_capital_called")
+        
+        events = self.get_all_fund_events(session=session)
+        return sum(
+            event.amount for event in events 
+            if event.event_type == EventType.CAPITAL_CALL and event.amount
+        )
+    
+    def total_capital_returned(self, session=None) -> float:
+        """Get total capital returned amount.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            float: Total capital returned amount
+        """
+        if not session:
+            raise ValueError("Session required for total_capital_returned")
+        
+        events = self.get_all_fund_events(session=session)
+        return sum(
+            event.amount for event in events 
+            if event.event_type == EventType.RETURN_OF_CAPITAL and event.amount
+        )
+    
+    def total_distributions(self, session=None) -> float:
+        """Get total distributions amount.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            float: Total distributions amount
+        """
+        if not session:
+            raise ValueError("Session required for total_distributions")
+        
+        events = self.get_all_fund_events(session=session)
+        return sum(
+            event.amount for event in events 
+            if event.event_type == EventType.DISTRIBUTION and event.amount
+        )
+    
+    def total_tax_withheld(self, session=None) -> float:
+        """Get total tax withheld amount.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            float: Total tax withheld amount
+        """
+        if not session:
+            raise ValueError("Session required for total_tax_withheld")
+        
+        events = self.get_all_fund_events(session=session)
+        return sum(
+            event.amount for event in events 
+            if event.event_type == EventType.TAX_PAYMENT and event.amount
+        )
+    
+    def total_unit_purchases(self, session=None) -> float:
+        """Get total unit purchases amount.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            float: Total unit purchases amount
+        """
+        if not session:
+            raise ValueError("Session required for total_unit_purchases")
+        
+        events = self.get_all_fund_events(session=session)
+        return sum(
+            event.amount for event in events 
+            if event.event_type == EventType.UNIT_PURCHASE and event.amount
+        )
+    
+    def total_unit_sales(self, session=None) -> float:
+        """Get total unit sales amount.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            float: Total unit sales amount
+        """
+        if not session:
+            raise ValueError("Session required for total_unit_sales")
+        
+        events = self.get_all_fund_events(session=session)
+        return sum(
+            event.amount for event in events 
+            if event.event_type == EventType.UNIT_SALE and event.amount
+        )
+    
+    # ============================================================================
+    # EVENT QUERY METHODS - Accessing Fund's Own Data
+    # ============================================================================
+    
+    def get_all_fund_events(self, exclude_system_events: bool = True, session=None) -> List['FundEvent']:
+        """Get all fund events.
+        
+        Args:
+            exclude_system_events: Whether to exclude system events
+            session: Database session
+            
+        Returns:
+            List[FundEvent]: List of fund events
+        """
+        if not session:
+            raise ValueError("Session required for get_all_fund_events")
+        
+        query = session.query(FundEvent).filter(FundEvent.fund_id == self.id)
+        if exclude_system_events:
+            # Filter out system events using the enum's is_system_event method
+            system_event_types = [event_type for event_type in EventType if EventType.is_system_event(event_type)]
+            if system_event_types:
+                query = query.filter(~FundEvent.event_type.in_(system_event_types))
+        
+        return query.order_by(FundEvent.event_date).all()
+    
+    def get_recent_events(self, limit: int = 10, exclude_system_events: bool = True, 
+                         session=None) -> List['FundEvent']:
+        """Get recent fund events.
+        
+        Args:
+            limit: Maximum number of events to return
+            exclude_system_events: Whether to exclude system events
+            session: Database session
+            
+        Returns:
+            List[FundEvent]: List of recent fund events
+        """
+        if not session:
+            raise ValueError("Session required for get_recent_events")
+        
+        events = self.get_all_fund_events(exclude_system_events=exclude_system_events, session=session)
+        return events[-limit:] if len(events) > limit else events
+    
+    def get_events(self, event_types: List['EventType'] = None, start_date: date = None, 
+                   end_date: date = None, session=None) -> List['FundEvent']:
+        """Get fund events with optional filtering.
+        
+        Args:
+            event_types: List of event types to filter by
+            start_date: Start date for filtering
+            end_date: End date for filtering
+            session: Database session
+            
+        Returns:
+            List[FundEvent]: List of filtered fund events
+        """
+        if not session:
+            raise ValueError("Session required for get_events")
+        
+        events = self.get_all_fund_events(session=session)
+        
+        if event_types:
+            events = [e for e in events if e.event_type in event_types]
+        
+        if start_date:
+            events = [e for e in events if e.event_date and e.event_date >= start_date]
+        
+        if end_date:
+            events = [e for e in events if e.event_date and e.event_date <= end_date]
+        
+        return events
+    
+    def get_capital_calls(self, start_date: date = None, end_date: date = None, session=None) -> List['FundEvent']:
+        """Get capital call events with optional date filtering.
+        
+        Args:
+            start_date: Start date for filtering
+            end_date: End date for filtering
+            session: Database session
+            
+        Returns:
+            List[FundEvent]: List of capital call events
+        """
+        return self.get_events(event_types=[EventType.CAPITAL_CALL], 
+                             start_date=start_date, end_date=end_date, session=session)
+    
+    def get_capital_returns(self, start_date: date = None, end_date: date = None, session=None) -> List['FundEvent']:
+        """Get capital return events with optional date filtering.
+        
+        Args:
+            start_date: Start date for filtering
+            end_date: End date for filtering
+            session: Database session
+            
+        Returns:
+            List[FundEvent]: List of capital return events
+        """
+        return self.get_events(event_types=[EventType.RETURN_OF_CAPITAL], 
+                             start_date=start_date, end_date=end_date, session=session)
+    
+    def get_distributions(self, start_date: date = None, end_date: date = None, session=None) -> List['FundEvent']:
+        """Get distribution events with optional date filtering.
+        
+        Args:
+            start_date: Start date for filtering
+            end_date: End date for filtering
+            session: Database session
+            
+        Returns:
+            List[FundEvent]: List of distribution events
+        """
+        return self.get_events(event_types=[EventType.DISTRIBUTION], 
+                             start_date=start_date, end_date=end_date, session=session)
+    
+    # ============================================================================
+    # ADDITIONAL BUSINESS PROPERTIES - Convenience Properties
+    # ============================================================================
+    
+    @property
+    def remaining_commitment(self) -> float:
+        """Get remaining commitment amount as a property.
+        
+        Returns:
+            float: Remaining commitment amount
+        """
+        return self.get_remaining_commitment()
+    
+    @property
+    def total_called_capital(self) -> float:
+        """Get total called capital as a property (requires session context).
+        
+        Note: This property requires a session to be available in the current context.
+        For explicit control, use total_capital_called(session) method instead.
+        
+        Returns:
+            float: Total called capital amount
+            
+        Raises:
+            RuntimeError: If no session is available in current context
+        """
+        # Try to get session from current context
+        try:
+            from flask import current_app
+            if hasattr(current_app, 'config') and current_app.config.get('TEST_DB_SESSION'):
+                session = current_app.config['TEST_DB_SESSION']
+                return self.total_capital_called(session=session)
+        except:
+            pass
+        
+        # Try to get session from SQLAlchemy scoped session
+        try:
+            from sqlalchemy.orm import scoped_session
+            session = scoped_session.registry()
+            if session:
+                return self.total_capital_called(session=session)
+        except:
+            pass
+        
+        raise RuntimeError("No database session available. Use total_capital_called(session) method instead.")
+    
+    def get_start_date(self, session=None) -> Optional[date]:
+        """Get fund start date (first event date).
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            date or None: Fund start date if events exist
+        """
+        if not session:
+            raise ValueError("Session required for get_start_date")
+        
+        events = self.get_all_fund_events(session=session)
+        if not events:
+            return None
+        
+        # Get the earliest event date
+        event_dates = [event.event_date for event in events if event.event_date]
+        return min(event_dates) if event_dates else None
+    
+    def get_end_date(self, session=None) -> Optional[date]:
+        """Get fund end date (last event date after equity balance reaches zero).
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            date or None: Fund end date if fund is completed
+        """
+        if not session:
+            raise ValueError("Session required for get_end_date")
+        
+        # Only calculate end date if fund is completed
+        if self.status != FundStatus.COMPLETED:
+            return None
+        
+        events = self.get_all_fund_events(session=session)
+        if not events:
+            return None
+        
+        # Get the latest event date
+        event_dates = [event.event_date for event in events if event.event_date]
+        return max(event_dates) if event_dates else None
     
 

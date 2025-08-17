@@ -62,7 +62,7 @@ Test files work together as a **cohesive testing ecosystem**:
 **Goal**: Complete fund domain testing before expanding to other domains
 **Timeline**: Weeks 1-2
 **Week 1 Status**: ✅ **COMPLETED** - Fund Models & Services 100% complete
-**Week 2 Status**: 🔄 **IN PROGRESS** - Fund Events (5/5 complete) ✅ & Repositories (2/3 complete) ✅
+**Week 2 Status**: ✅ **COMPLETED** - Fund Events (5/5 complete) ✅ & Repositories (3/3 complete) ✅ & Architecture Improvement ✅
 **Design Principles**:
 - **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
@@ -136,6 +136,9 @@ Test files work together as a **cohesive testing ecosystem**:
   - Added error handling and edge case tests ✅
   - Added comprehensive business logic validation ✅
   - All 37 tests now passing with enterprise-grade quality ✅
+  - **NEW**: Added centralized equity balance calculation methods ✅
+  - **NEW**: Added 10 comprehensive tests for equity balance calculation ✅
+  - **NEW**: Implemented `calculate_current_equity_balance()` and `recalculate_fund_equity_balance()` ✅
 
 **Success Criteria**:
 - 100% fund service business logic covered by tests ✅
@@ -261,25 +264,21 @@ Test files work together as a **cohesive testing ecosystem**:
 - Repository performance and scalability established
 - Data consistency and integrity properly validated
 
-#### **Week 3: Fund Integration & Validation**
+#### **Week 3: Fund Integration & Validation** 🔄 **READY TO START**
 
 ##### **1.6 Complete Fund Integration Testing** (`tests/integration/workflows/fund/`)
-**Current Status**: ⚠️ Some integration tests exist but need modernization
+**Current Status**: 🔄 **READY TO START** - Capital call workflow completed + architecture fixed ✅
 **Testing Approach**: **Factory-Based Testing** (Integration Tests)
 **Reasoning**: Integration tests require real database interactions to validate component workflows
 
-**Existing Tests to Modernize**:
-- [ ] Refactor existing integration tests for new architecture
-  - Update test data and fixtures for new models
-  - Modernize test assertions and validation
-  - Ensure proper test isolation and cleanup
-  - **Use Factories**: Create real database objects for workflow validation
-
 **Missing Tests to Create**:
-- [ ] `test_capital_call_workflow.py` - Complete capital call flow
-  - Test end-to-end capital call workflow
-  - Test capital call business rules and validation
-  - Test capital call event generation and processing
+- [x] `test_capital_call_workflow.py` - Complete capital call flow ✅ **COMPLETED + ARCHITECTURE FIXED**
+  - Test end-to-end capital call workflow ✅
+  - Test capital call business rules and validation ✅
+  - Test capital call event generation and processing ✅
+  - **Architecture Fix**: Centralized equity balance calculation implemented ✅
+  - **Event Handlers**: Updated to use centralized service ✅
+  - **Orchestrator**: Coordinates equity balance updates properly ✅
 - [ ] `test_distribution_workflow.py` - Complete distribution flow
   - Test end-to-end distribution workflow
   - Test distribution business rules and validation

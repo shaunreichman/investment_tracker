@@ -836,3 +836,244 @@ class TestFundCalculationServiceIntegration:
         except Exception as e:
             # Should raise some kind of error for invalid fund
             assert isinstance(e, Exception)
+
+
+class TestFundEquityBalanceCalculation:
+    """Test suite for new centralized equity balance calculation methods"""
+    
+    @pytest.fixture
+    def service(self):
+        """Create a FundCalculationService instance for testing."""
+        return FundCalculationService()
+    
+    @pytest.fixture
+    def mock_session(self):
+        """Create a mock database session for testing."""
+        session = Mock()
+        session.add = Mock()
+        session.flush = Mock()
+        return session
+    
+    @pytest.fixture
+    def mock_fund_with_events(self):
+        """Create a mock fund with various events for testing equity balance."""
+        fund = Mock(spec=Fund)
+        fund.id = 1
+        fund.tracking_type = FundType.COST_BASED
+        fund.status = FundStatus.ACTIVE
+        fund.current_equity_balance = 0.0
+        
+        # Create mock events
+        events = []
+        
+        # Capital call event
+        capital_call = Mock(spec=FundEvent)
+        capital_call.id = 1
+        capital_call.event_type = EventType.CAPITAL_CALL
+        capital_call.amount = 100000.0
+        capital_call.event_date = date(2020, 1, 1)
+        events.append(capital_call)
+        
+        # Distribution event
+        distribution = Mock(spec=FundEvent)
+        distribution.id = 2
+        distribution.event_type = EventType.DISTRIBUTION
+        distribution.amount = 25000.0
+        distribution.event_date = date(2020, 6, 1)
+        events.append(distribution)
+        
+        # Return of capital event
+        return_capital = Mock(spec=FundEvent)
+        return_capital.id = 3
+        return_capital.event_type = EventType.RETURN_OF_CAPITAL
+        return_capital.amount = 15000.0
+        return_capital.event_date = date(2020, 12, 1)
+        events.append(return_capital)
+        
+        # Unit purchase event
+        unit_purchase = Mock(spec=FundEvent)
+        unit_purchase.id = 4
+        unit_purchase.event_type = EventType.UNIT_PURCHASE
+        unit_purchase.amount = 50000.0
+        unit_purchase.event_date = date(2021, 1, 1)
+        events.append(unit_purchase)
+        
+        # Unit sale event
+        unit_sale = Mock(spec=FundEvent)
+        unit_sale.id = 5
+        unit_sale.event_type = EventType.UNIT_SALE
+        unit_sale.amount = 20000.0
+        unit_sale.event_date = date(2021, 6, 1)
+        events.append(unit_sale)
+        
+        fund.get_all_fund_events = Mock(return_value=events)
+        return fund
+    
+    def test_calculate_current_equity_balance_basic(self, service, mock_fund_with_events, mock_session):
+        """Test basic equity balance calculation."""
+        # Capital calls: 100000 + 50000 = 150000
+        # Distributions: 25000 + 15000 + 20000 = 60000
+        # Expected: 150000 - 60000 = 90000
+        
+        result = service.calculate_current_equity_balance(mock_fund_with_events, mock_session)
+        
+        assert result == 90000.0
+    
+    def test_calculate_current_equity_balance_only_capital_calls(self, service, mock_session):
+        """Test equity balance calculation with only capital calls."""
+        fund = Mock(spec=Fund)
+        fund.get_all_fund_events = Mock(return_value=[])
+        
+        # Mock a fund with only capital calls
+        events = []
+        for i in range(3):
+            event = Mock(spec=FundEvent)
+            event.event_type = EventType.CAPITAL_CALL
+            event.amount = 10000.0 * (i + 1)
+            events.append(event)
+        
+        fund.get_all_fund_events = Mock(return_value=events)
+        
+        result = service.calculate_current_equity_balance(fund, mock_session)
+        
+        assert result == 60000.0  # 10000 + 20000 + 30000
+    
+    def test_calculate_current_equity_balance_only_distributions(self, service, mock_session):
+        """Test equity balance calculation with only distributions."""
+        fund = Mock(spec=Fund)
+        
+        # Mock a fund with only distributions (should result in negative balance)
+        events = []
+        for i in range(2):
+            event = Mock(spec=FundEvent)
+            event.event_type = EventType.DISTRIBUTION
+            event.amount = 5000.0 * (i + 1)
+            events.append(event)
+        
+        fund.get_all_fund_events = Mock(return_value=events)
+        
+        result = service.calculate_current_equity_balance(fund, mock_session)
+        
+        assert result == -15000.0  # -(5000 + 10000)
+    
+    def test_calculate_current_equity_balance_mixed_events(self, service, mock_session):
+        """Test equity balance calculation with mixed event types."""
+        fund = Mock(spec=Fund)
+        
+        # Mock a fund with mixed events
+        events = [
+            Mock(spec=FundEvent, event_type=EventType.CAPITAL_CALL, amount=100000.0),
+            Mock(spec=FundEvent, event_type=EventType.DISTRIBUTION, amount=30000.0),
+            Mock(spec=FundEvent, event_type=EventType.UNIT_PURCHASE, amount=50000.0),
+            Mock(spec=FundEvent, event_type=EventType.RETURN_OF_CAPITAL, amount=20000.0),
+            Mock(spec=FundEvent, event_type=EventType.UNIT_SALE, amount=10000.0),
+        ]
+        
+        fund.get_all_fund_events = Mock(return_value=events)
+        
+        result = service.calculate_current_equity_balance(fund, mock_session)
+        
+        # Capital: 100000 + 50000 = 150000
+        # Distributions: 30000 + 20000 + 10000 = 60000
+        # Expected: 150000 - 60000 = 90000
+        assert result == 90000.0
+    
+    def test_calculate_current_equity_balance_no_events(self, service, mock_session):
+        """Test equity balance calculation with no events."""
+        fund = Mock(spec=Fund)
+        fund.get_all_fund_events = Mock(return_value=[])
+        
+        result = service.calculate_current_equity_balance(fund, mock_session)
+        
+        assert result == 0.0
+    
+    def test_calculate_current_equity_balance_events_with_none_amounts(self, service, mock_session):
+        """Test equity balance calculation with events that have None amounts."""
+        fund = Mock(spec=Fund)
+        
+        # Mock events with some None amounts
+        events = [
+            Mock(spec=FundEvent, event_type=EventType.CAPITAL_CALL, amount=100000.0),
+            Mock(spec=FundEvent, event_type=EventType.CAPITAL_CALL, amount=None),  # Should be ignored
+            Mock(spec=FundEvent, event_type=EventType.DISTRIBUTION, amount=30000.0),
+            Mock(spec=FundEvent, event_type=EventType.DISTRIBUTION, amount=0.0),   # Should be ignored
+        ]
+        
+        fund.get_all_fund_events = Mock(return_value=events)
+        
+        result = service.calculate_current_equity_balance(fund, mock_session)
+        
+        # Only 100000 - 30000 = 70000 (None and 0 amounts ignored)
+        assert result == 70000.0
+    
+    def test_calculate_current_equity_balance_session_required(self, service, mock_fund_with_events):
+        """Test that session is required for equity balance calculation."""
+        with pytest.raises(ValueError, match="Session required for equity balance calculation"):
+            service.calculate_current_equity_balance(mock_fund_with_events, None)
+    
+    def test_recalculate_fund_equity_balance_updates_fund_and_event(self, service, mock_session):
+        """Test that recalculate_fund_equity_balance updates both fund and latest event."""
+        # Create a fresh mock fund for this test
+        fund = Mock(spec=Fund)
+        fund.id = 1
+        fund.current_equity_balance = 0.0
+        
+        # Create mock events with proper amounts for calculation
+        event1 = Mock(spec=FundEvent)
+        event1.event_type = EventType.CAPITAL_CALL
+        event1.amount = 100000.0
+        
+        event2 = Mock(spec=FundEvent)
+        event2.event_type = EventType.DISTRIBUTION
+        event2.amount = 10000.0
+        
+        # Latest event that should get updated
+        latest_event = Mock(spec=FundEvent)
+        latest_event.id = 3
+        latest_event.event_type = EventType.CAPITAL_CALL
+        latest_event.amount = 50000.0
+        
+        events_list = [event1, event2, latest_event]
+        fund.get_all_fund_events = Mock(return_value=events_list)
+        
+        result = service.recalculate_fund_equity_balance(fund, mock_session)
+        
+        # Expected: 100000 + 50000 - 10000 = 140000
+        expected_balance = 140000.0
+        
+        # Verify fund equity balance was updated
+        assert fund.current_equity_balance == expected_balance
+        
+        # Verify latest event equity balance was updated
+        assert latest_event.current_equity_balance == expected_balance
+        
+        # Verify session was updated
+        mock_session.add.assert_any_call(fund)
+        mock_session.add.assert_any_call(latest_event)
+        mock_session.flush.assert_called_once()
+        
+        # Verify return value
+        assert result == expected_balance
+    
+    def test_recalculate_fund_equity_balance_no_events(self, service, mock_session):
+        """Test recalculate_fund_equity_balance with no events."""
+        fund = Mock(spec=Fund)
+        fund.current_equity_balance = 50000.0
+        fund.get_all_fund_events = Mock(return_value=[])
+        
+        result = service.recalculate_fund_equity_balance(fund, mock_session)
+        
+        # Should return 0.0 when no events
+        assert result == 0.0
+        
+        # Fund equity balance should be updated to 0.0
+        assert fund.current_equity_balance == 0.0
+        
+        # No events to update, so no session operations
+        mock_session.add.assert_not_called()
+        mock_session.flush.assert_not_called()
+    
+    def test_recalculate_fund_equity_balance_session_required(self, service, mock_fund_with_events):
+        """Test that session is required for recalculate_fund_equity_balance."""
+        with pytest.raises(ValueError, match="Session required for equity balance calculation"):
+            service.recalculate_fund_equity_balance(mock_fund_with_events, None)
