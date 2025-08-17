@@ -66,59 +66,9 @@ class TestCompleteCashFlowWorkflows:
         assert event.cash_flows[0].amount == 50000.0
         assert event.cash_flows[0].direction == CashFlowDirection.OUTFLOW
 
-    def test_distribution_workflow_with_withholding_tax(self, db_session):
-        """Test complete workflow for interest distribution with withholding tax"""
-        # Setup
-        entity = EntityFactory.create()
-        bank = BankFactory.create()
-        account = BankAccountFactory.create(entity=entity, bank=bank, currency="AUD")
-        fund = FundFactory.create(entity=entity, currency="AUD")
-        
-        # Create distribution event with GROSS amount (before withholding)
-        event = FundEventFactory.create(
-            fund=fund,
-            event_type=EventType.DISTRIBUTION,
-            amount=11500.0,  # Gross amount before withholding (10000 + 1500)
-            event_date=date(2024, 6, 30),
-            distribution_type=DistributionType.INTEREST
-        )
-        
-        # Create corresponding withholding tax payment
-        tax_statement = TaxStatementFactory.create(
-            fund=fund,
-            entity=entity,
-            financial_year=2024
-        )
-        
-        withholding_event = FundEventFactory.create(
-            fund=fund,
-            event_type=EventType.TAX_PAYMENT,
-            amount=1500.0,  # 15% withholding
-            event_date=date(2024, 6, 30),
-            tax_payment_type=TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING,
-            tax_statement_id=tax_statement.id
-        )
-        
-        # Add cash flow for net distribution (what investor actually received)
-        cash_flow = FundEventCashFlowFactory.create(
-            fund_event=event,
-            bank_account=account,
-            amount=10000.0,  # Net amount received (gross - withholding)
-            currency="AUD",
-            transfer_date=date(2024, 7, 2),
-            direction=CashFlowDirection.INFLOW
-        )
-        
-        # Trigger reconciliation
-        event._recompute_cash_flow_completion(session=db_session)
-        
-        # Verify completion - should reconcile against net amount (10000) after withholding adjustment
-        assert event.is_cash_flow_complete is True
-        
-        # Verify cash flow details
-        assert len(event.cash_flows) == 1
-        assert event.cash_flows[0].amount == 10000.0
-        assert event.cash_flows[0].direction == CashFlowDirection.INFLOW
+    # NOTE: Distribution workflow testing moved to focused test_distribution_workflow.py
+    # This eliminates duplication and follows enterprise testing principles
+    # The test_distribution_workflow.py file provides comprehensive distribution testing
 
     def test_multi_cash_flow_workflow(self, db_session):
         """Test workflow with multiple cash flows for same event"""

@@ -142,64 +142,9 @@ class TestEventHandlerIntegration:
         db_session.refresh(fund)
         assert fund.current_unit_price == 10.50
     
-    def test_distribution_event_flow(self, db_session):
-        """Test complete distribution event flow."""
-        # Create test data
-        company = InvestmentCompany(
-            name="Test Distribution Company",
-            description="Test distribution investment company"
-        )
-        db_session.add(company)
-        db_session.flush()
-        
-        entity = Entity(
-            name="Test Distribution Entity",
-            description="Test distribution entity"
-        )
-        db_session.add(entity)
-        db_session.flush()
-        
-        fund = Fund.create(
-            investment_company_id=company.id,
-            entity_id=entity.id,
-            name="Test Distribution Fund",
-            fund_type="Private Equity",
-            tracking_type=FundType.COST_BASED,
-            description="Test distribution fund for integration testing",
-            session=db_session
-        )
-        
-        # Test the event handler architecture
-        orchestrator = FundUpdateOrchestrator()
-        
-        # Process a distribution event
-        event_data = {
-            'event_type': EventType.DISTRIBUTION,
-            'event_date': '2024-01-15',
-            'distribution_type': DistributionType.INCOME,
-            'distribution_amount': 5000.0,
-            'description': 'Income distribution',
-            'reference_number': 'DIST001'
-        }
-        
-        # Validate event data
-        assert orchestrator.validate_event_data(event_data) is True
-        
-        # Process the event
-        event = orchestrator.process_fund_event(event_data, db_session, fund)
-        
-        # Verify the event was created correctly
-        assert event is not None
-        assert event.event_type == EventType.DISTRIBUTION
-        assert event.distribution_type == DistributionType.INCOME
-        assert event.amount == 5000.0
-        assert event.event_date == date(2024, 1, 15)
-        assert event.description == 'Income distribution'
-        assert event.reference_number == 'DIST001'
-        
-        # Verify the event is persisted
-        db_session.refresh(event)
-        assert event.id is not None
+    # NOTE: Distribution workflow testing moved to focused test_distribution_workflow.py
+    # This eliminates duplication and follows enterprise testing principles
+    # The test_distribution_workflow.py file provides comprehensive distribution testing
     
     def test_bulk_events_processing(self, db_session):
         """Test processing multiple events in a single transaction."""
