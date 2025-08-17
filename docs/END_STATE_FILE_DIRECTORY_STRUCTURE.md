@@ -89,7 +89,7 @@ tests/
 │   │   ├── __init__.py
 │   │   ├── fund/                        # Fund event handling
 │   │   │   ├── __init__.py
-│   │   │   ├── test_orchestrator.py                  # Event orchestration logic
+│   │   │   ├── test_orchestrator.py                  # Event orchestration logic ✅ **COMPLETED**
 │   │   │   ├── test_event_handlers.py                # Individual event handlers
 │   │   │   ├── test_event_registry.py                # Event routing and registration
 │   │   │   ├── test_base_handler.py                  # Base handler functionality
@@ -519,53 +519,3 @@ tests/
     │   └── load_testing_script.py                 # Load testing automation
     └── test_categories.py                        # Test categorization utilities
 ```
-
-## Test Categories & Responsibilities
-
-### **Unit Tests** (`tests/unit/`)
-- **Scope**: Individual components in isolation
-- **Dependencies**: Mocked external dependencies
-- **Focus**: Business logic, algorithms, edge cases
-- **Execution**: Fastest, most granular
-
-### **Integration Tests** (`tests/integration/`)
-- **Scope**: Component interactions with real database
-- **Dependencies**: Real database, minimal mocking
-- **Focus**: Data consistency, workflow completeness
-- **Execution**: Medium speed, component-level validation
-
-### **API Tests** (`tests/api/`)
-- **Scope**: HTTP endpoints and API contracts
-- **Dependencies**: Test database, mocked external services
-- **Focus**: Request/response validation, error handling
-- **Execution**: Medium speed, API contract validation
-
-### **E2E Tests** (`tests/e2e/`)
-- **Scope**: Complete user journeys and system integration
-- **Dependencies**: Full test environment, external services
-- **Focus**: User experience, business workflow completion
-- **Execution**: Slower, full system validation
-
-### **Performance Tests** (`tests/performance/`)
-- **Scope**: System performance under load and stress
-- **Dependencies**: Performance test environment
-- **Focus**: Response times, resource usage, scalability
-- **Execution**: Variable speed, performance validation
-
-### **Property Tests** (`tests/property/`)
-- **Scope**: Business rule invariants and properties
-- **Dependencies**: Property-based testing framework
-- **Focus**: Mathematical correctness, business rule validation
-- **Execution**: Variable speed, property validation
-
-## Test Data Management Strategy
-- **Factories**: Comprehensive test data factories for all domain models
-- **Fixtures**: Reusable test data sets for common business scenarios
-- **Database Management**: Isolated test databases with proper cleanup
-- **Mock Data**: Realistic financial data for calculation validation
-
-## Test Execution Strategy
-- **Parallel Execution**: Parallel test execution where possible
-- **Test Isolation**: Proper test isolation and cleanup
-- **Category Execution**: Support for running specific test categories
-- **CI/CD Integration**: Seamless integration with build pipeline
