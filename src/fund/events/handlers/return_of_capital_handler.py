@@ -153,10 +153,10 @@ class ReturnOfCapitalHandler(BaseFundEventHandler):
             
             event_bus.publish(capital_event, self.session)
             
-            logger.info(f"Published capital chain recalculation event for fund {self.fund.id}")
+            self.logger.info(f"Published capital chain recalculation event for fund {self.fund.id}")
             
         except Exception as e:
-            logger.error(f"Error publishing capital chain recalculation event: {e}")
+            self.logger.error(f"Error publishing capital chain recalculation event: {e}")
             raise
         
         # Update fund summary fields

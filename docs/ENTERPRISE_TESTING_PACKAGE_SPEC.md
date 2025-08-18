@@ -58,11 +58,12 @@ Test files work together as a **cohesive testing ecosystem**:
 - ✅ Documented current state vs. target state for each folder
 - ✅ Established quality criteria for test migration decisions
 
-### **Phase 1: Fund Domain Foundation** 🔄 IN PROGRESS (Week 1 Complete, Week 2 Next)
+### **Phase 1: Fund Domain Foundation** 🔄 IN PROGRESS (Week 1 Complete, Week 2 Complete, Week 3 Next)
 **Goal**: Complete fund domain testing before expanding to other domains
-**Timeline**: Weeks 1-2
+**Timeline**: Weeks 1-3
 **Week 1 Status**: ✅ **COMPLETED** - Fund Models & Services 100% complete
-**Week 2 Status**: ✅ **COMPLETED** - Fund Events (5/5 complete) ✅ & Repositories (3/3 complete) ✅ & Architecture Improvement ✅
+**Week 2 Status**: ✅ **COMPLETED** - Fund Events (5/5 complete) ✅ & Repositories (3/3 complete) ✅ & Integration Testing (3/5 complete) ✅
+**Week 3 Status**: 🔄 **IN PROGRESS** - Fund Integration Testing (3/5 complete) & Data Consistency Testing
 **Design Principles**:
 - **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
@@ -235,12 +236,12 @@ Test files work together as a **cohesive testing ecosystem**:
 - **Unit Validation**: Complete coverage of event handler business logic validation ✅
 - **Test Reliability**: Eliminated flaky tests through proper mock configuration ✅
 
-##### **1.5 Complete Fund Repositories Testing** (`tests/unit/repositories/fund/`)
-**Current Status**: 🔄 **IN PROGRESS** - 2/3 tests completed
+##### **1.5 Complete Fund Repositories Testing** (`tests/unit/repositories/fund/`) ✅ **COMPLETED**
+**Current Status**: ✅ COMPLETED - 3 of 3 test files completed and passing
 **Testing Approach**: **Mock-Based Testing** (Unit Tests)
 **Reasoning**: Repository logic should be tested without database dependencies for fast execution
 
-**Required Tests to Create**:
+**Completed Tests**:
 - [x] `test_fund_repository.py` - Fund data access logic ✅ **COMPLETED**
   - Test fund CRUD operations and validation ✅
   - Test fund query performance and optimization ✅
@@ -258,20 +259,27 @@ Test files work together as a **cohesive testing ecosystem**:
   - **Use Mocks**: Mock domain event storage and retrieval ✅
   - **Enterprise Improvements**: Simplified API, removed confusing limit parameter, focused on single responsibility
 
-**Success Criteria**:
-- 100% fund repository functionality covered by tests
-- All data access operations tested and validated
-- Repository performance and scalability established
-- Data consistency and integrity properly validated
+**Success Criteria**: ✅ **ACHIEVED**
+- 100% fund repository functionality covered by tests ✅
+- All data access operations tested and validated ✅
+- Repository performance and scalability established ✅
+- Data consistency and integrity properly validated ✅
 
-#### **Week 3: Fund Integration & Validation** 🔄 **READY TO START**
+**Week 2 Success Criteria**: ✅ **ACHIEVED**
+- 100% fund event system functionality covered by tests ✅
+- 100% fund repository functionality covered by tests ✅
+- 60% fund integration workflow functionality covered by tests ✅
+- All established test patterns working reliably ✅
+- Foundation established for remaining integration testing ✅
+
+#### **Week 3: Fund Integration & Validation** 🔄 **IN PROGRESS**
 
 ##### **1.6 Complete Fund Integration Testing** (`tests/integration/workflows/fund/`)
-**Current Status**: 🔄 **READY TO START** - Capital call workflow completed + architecture fixed ✅
+**Current Status**: 🔄 **IN PROGRESS** - 3 of 5 workflow tests completed ✅
 **Testing Approach**: **Factory-Based Testing** (Integration Tests)
 **Reasoning**: Integration tests require real database interactions to validate component workflows
 
-**Missing Tests to Create**:
+**Completed Tests**:
 - [x] `test_capital_call_workflow.py` - Complete capital call flow ✅ **COMPLETED + ARCHITECTURE FIXED**
   - Test end-to-end capital call workflow ✅
   - Test capital call business rules and validation ✅
@@ -280,9 +288,18 @@ Test files work together as a **cohesive testing ecosystem**:
   - **Event Handlers**: Updated to use centralized service ✅
   - **Orchestrator**: Coordinates equity balance updates properly ✅
 - [x] `test_distribution_workflow.py` - Complete distribution flow ✅ **COMPLETED**
-- Test end-to-end distribution workflow ✅
-- Test distribution business rules and validation ✅
-- Test distribution event generation and processing ✅
+  - Test end-to-end distribution workflow ✅
+  - Test distribution business rules and validation ✅
+  - Test distribution event generation and processing ✅
+- [x] `test_return_of_capital_workflow.py` - Complete return of capital flow ✅ **COMPLETED**
+  - Test end-to-end return of capital workflow ✅
+  - Test return of capital business rules and validation ✅
+  - Test return of capital event generation and processing ✅
+  - **Bug Fix**: Fixed logger reference issue in return of capital handler ✅
+  - **Test Coverage**: 9 comprehensive integration tests covering all workflow aspects ✅
+  - **Business Logic**: Validated equity balance calculations and data consistency ✅
+
+**Remaining Tests to Create**:
 - [ ] `test_nav_update_workflow.py` - NAV update and recalculation
   - Test NAV update workflow and validation
   - Test NAV recalculation triggers and accuracy
@@ -395,7 +412,7 @@ Test files work together as a **cohesive testing ecosystem**:
 
 **Detailed Tasks**:
 - [ ] **Fund Domain Integration Testing**
-  - [ ] `test_capital_call_workflow.py` - Complete capital call flow
+  - [x] `test_capital_call_workflow.py` - Complete capital call flow ✅ **COMPLETED**
   - [x] `test_distribution_workflow.py` - Complete distribution flow ✅ **COMPLETED**
   - [ ] `test_nav_update_workflow.py` - NAV update and recalculation
   - [ ] `test_fund_realization_workflow.py` - Fund completion workflow

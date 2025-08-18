@@ -154,11 +154,13 @@ tests/
 │   │   ├── __init__.py
 │   │   ├── fund/                         # Fund-specific workflows
 │   │   │   ├── __init__.py
-│   │   │   ├── ✅ test_capital_call_workflow.py         # Complete capital call flow (ARCHITECTURE FIXED)
+│   │   │   ├── ✅ test_capital_call_workflow.py         # Complete capital call flow
+│   │   │   ├── ✅ test_return_of_capital_workflow.py    # Complete capital return flow
 │   │   │   ├── ✅ test_distribution_workflow.py         # Complete distribution flow
 │   │   │   ├── test_nav_update_workflow.py           # NAV update and recalculation
 │   │   │   ├── test_fund_realization_workflow.py     # Fund completion workflow
 │   │   │   └── test_unit_purchase_workflow.py        # Unit purchase and sale flow
+│   │   │   └── test_unit_sale_workflow.py            # Unit purchase and sale flow
 │   │   ├── investment_company/             # Company management workflows
 │   │   │   ├── __init__.py
 │   │   │   ├── test_company_creation_workflow.py     # Company setup workflow
