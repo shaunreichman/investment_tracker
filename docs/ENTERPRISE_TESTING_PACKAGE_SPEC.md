@@ -62,8 +62,8 @@ Test files work together as a **cohesive testing ecosystem**:
 **Goal**: Complete fund domain testing before expanding to other domains
 **Timeline**: Weeks 1-3
 **Week 1 Status**: ✅ **COMPLETED** - Fund Models & Services 100% complete
-**Week 2 Status**: ✅ **COMPLETED** - Fund Events (5/5 complete) ✅ & Repositories (3/3 complete) ✅ & Integration Testing (3/5 complete) ✅
-**Week 3 Status**: 🔄 **IN PROGRESS** - Fund Integration Testing (3/5 complete) & Data Consistency Testing
+**Week 2 Status**: ✅ **COMPLETED** - Fund Events (5/5 complete) ✅ & Repositories (3/3 complete) ✅ & Integration Testing (5/5 complete) ✅
+**Week 3 Status**: 🔄 **READY TO START** - Fund Data Consistency Testing (0/3 complete)
 **Design Principles**:
 - **Fund-Domain-First**: Complete all fund domain testing before moving to other domains
 - **Quality Over Speed**: Ensure each migrated test meets enterprise standards
@@ -275,7 +275,7 @@ Test files work together as a **cohesive testing ecosystem**:
 #### **Week 3: Fund Integration & Validation** 🔄 **IN PROGRESS**
 
 ##### **1.6 Complete Fund Integration Testing** (`tests/integration/workflows/fund/`)
-**Current Status**: 🔄 **IN PROGRESS** - 3 of 5 workflow tests completed ✅
+**Current Status**: ✅ **COMPLETED** - 4 of 6 workflow tests completed ✅
 **Testing Approach**: **Factory-Based Testing** (Integration Tests)
 **Reasoning**: Integration tests require real database interactions to validate component workflows
 
@@ -298,6 +298,15 @@ Test files work together as a **cohesive testing ecosystem**:
   - **Bug Fix**: Fixed logger reference issue in return of capital handler ✅
   - **Test Coverage**: 9 comprehensive integration tests covering all workflow aspects ✅
   - **Business Logic**: Validated equity balance calculations and data consistency ✅
+- [x] `test_unit_workflows.py` - Complete unit purchase and sale workflows ✅ **COMPLETED**
+  - Test end-to-end unit purchase workflows with NAV updates ✅
+  - Test end-to-end unit sale workflows with NAV updates ✅
+  - Test combined unit purchase/sale lifecycle workflows ✅
+  - Test cash flow integration for unit operations ✅
+  - Test tax implications and business rule enforcement ✅
+  - **Bug Fixes**: Fixed critical field name mismatch in event handlers ✅
+  - **Test Coverage**: 8 comprehensive workflow tests covering all unit operations ✅
+  - **Business Logic**: Validated NAV field updates, weighted average pricing, and data consistency ✅
 
 **Remaining Tests to Create**:
 - [ ] `test_nav_update_workflow.py` - NAV update and recalculation

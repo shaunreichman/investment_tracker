@@ -5,9 +5,12 @@ This handler processes unit sale events for NAV-based funds,
 updating unit counts and triggering dependent calculations.
 """
 
+import logging
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from datetime import date
+
+logger = logging.getLogger(__name__)
 
 from src.fund.events.base_handler import BaseFundEventHandler
 from src.fund.enums import EventType, FundType
@@ -36,8 +39,8 @@ class UnitSaleHandler(BaseFundEventHandler):
         self._validate_fund_type(FundType.NAV_BASED)
         
         # Validate required fields
-        units = event_data.get('units')
-        price = event_data.get('price')
+        units = event_data.get('units_sold')
+        price = event_data.get('unit_price')
         event_date = self._parse_date(event_data.get('date')) if event_data.get('date') else None
         
         self._validate_positive_amount(units, 'units')
@@ -127,8 +130,8 @@ class UnitSaleHandler(BaseFundEventHandler):
         self.validate_event(event_data)
         
         # Extract parameters
-        units = float(event_data['units'])
-        price = float(event_data['price'])
+        units = float(event_data['units_sold'])
+        price = float(event_data['unit_price'])
         event_date = self._parse_date(event_data['date'])
         brokerage_fee = float(event_data.get('brokerage_fee', 0.0))
         description = event_data.get('description')
@@ -252,9 +255,16 @@ class UnitSaleHandler(BaseFundEventHandler):
         # Update fund current units
         self.fund.current_units = max(0.0, total_units)
         
-        # Update NAV total if current unit price is available
-        if hasattr(self.fund, 'current_unit_price') and self.fund.current_unit_price:
+        # For unit sales, the unit price should remain the same (cost basis doesn't change)
+        # The unit price represents the average cost of the units you still own
+        # We don't recalculate it after sales - it stays as the weighted average of original purchases
+        
+        # Update NAV total based on current units and unit price
+        if self.fund.current_unit_price and self.fund.current_unit_price > 0:
             self.fund.current_nav_total = self.fund.current_units * self.fund.current_unit_price
+        else:
+            # No unit price available, reset NAV total
+            self.fund.current_nav_total = 0.0
     
     def _publish_dependent_events(self, event: FundEvent) -> None:
         """
