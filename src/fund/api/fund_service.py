@@ -272,9 +272,9 @@ class FundService:
         # Add fund_id to event data
         event_data['fund_id'] = fund_id
         
-        # For backward compatibility, map event_date to date if it exists
-        if 'event_date' in event_data and 'date' not in event_data:
-            event_data['date'] = event_data['event_date']
+        # Ensure event_date is present
+        if 'event_date' not in event_data:
+            raise ValueError("Required field 'event_date' is missing")
         
         # Process the event through the orchestrator
         try:

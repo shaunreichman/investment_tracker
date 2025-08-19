@@ -11,7 +11,7 @@ from datetime import date, datetime
 from sqlalchemy.orm import Session
 
 from src.fund.events.consumption.base_consumer import EventConsumer
-from src.fund.events.domain import FundStatusUpdateEvent
+from src.fund.events.domain import FundStatusUpdateEvent, FundSummaryUpdatedEvent
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
@@ -31,12 +31,26 @@ class FundStatusEventHandler(EventConsumer):
         """Initialize the fund status event handler."""
         super().__init__(
             name="FundStatusEventHandler",
-            event_types=[FundStatusUpdateEvent]
+            event_types=[FundStatusUpdateEvent, FundSummaryUpdatedEvent]
         )
         
         logger.info("Initialized FundStatusEventHandler")
     
-    def handle_event(self, event: FundStatusUpdateEvent) -> None:
+    def handle_event(self, event) -> None:
+        """
+        Handle fund status related events.
+        
+        Args:
+            event: The event to handle (FundStatusUpdateEvent or FundSummaryUpdatedEvent)
+        """
+        if isinstance(event, FundStatusUpdateEvent):
+            self._handle_status_update_event(event)
+        elif isinstance(event, FundSummaryUpdatedEvent):
+            self._handle_summary_updated_event(event)
+        else:
+            logger.warning(f"Unknown event type: {type(event).__name__}")
+    
+    def _handle_status_update_event(self, event: FundStatusUpdateEvent) -> None:
         """
         Handle a fund status update event.
         
@@ -62,6 +76,32 @@ class FundStatusEventHandler(EventConsumer):
             logger.error(f"Error handling fund status update event: {e}")
             raise
     
+    def _handle_summary_updated_event(self, event: FundSummaryUpdatedEvent) -> None:
+        """
+        Handle a fund summary updated event.
+        
+        This event is triggered when equity events occur and we need to
+        check if the fund status should be updated.
+        
+        Args:
+            event: The fund summary updated event to handle
+        """
+        logger.info(f"Processing fund summary update for fund {event.fund_id}")
+        
+        try:
+            # Get the fund to check its current state
+            fund = self._get_fund(event.fund_id)
+            if not fund:
+                logger.warning(f"Fund {event.fund_id} not found, skipping summary update")
+                return
+            
+            # Check if we need to update the fund status based on equity changes
+            self._check_and_update_fund_status(fund)
+            
+        except Exception as e:
+            logger.error(f"Error handling fund summary update event: {e}")
+            raise
+    
     def _update_fund_status(self, event: FundStatusUpdateEvent, fund: Fund) -> None:
         """
         Update fund status based on the event.
@@ -83,12 +123,18 @@ class FundStatusEventHandler(EventConsumer):
             if event.new_status == FundStatus.COMPLETED:
                 # Fund is completed, trigger final calculations
                 self._handle_fund_completion(event, fund)
+                # Update current_duration for completed status (uses end_date)
+                fund.calculate_and_update_current_duration()
             elif event.new_status == FundStatus.REALIZED:
                 # Fund is realized, trigger IRR calculations
                 self._handle_fund_realization(event, fund)
+                # Update current_duration for realized status (uses end_date)
+                fund.calculate_and_update_current_duration()
             elif event.new_status == FundStatus.ACTIVE:
                 # Fund is active, ensure proper state
                 self._handle_fund_active(event, fund)
+                # Update current_duration for active status (uses today's date)
+                fund.calculate_and_update_current_duration()
             
             logger.info(f"Successfully updated fund status to {event.new_status} for fund {event.fund_id}")
             
@@ -214,6 +260,33 @@ class FundStatusEventHandler(EventConsumer):
             
         except Exception as e:
             logger.error(f"Error publishing dependent events: {e}")
+            raise
+    
+    def _check_and_update_fund_status(self, fund: Fund) -> None:
+        """
+        Check and update fund status based on current equity balance.
+        
+        This method is called when equity events occur and we need to
+        determine if the fund status should change (e.g., from ACTIVE to REALIZED).
+        
+        Args:
+            fund: The fund to check and potentially update
+        """
+        try:
+            logger.info(f"Checking fund status for fund {fund.id} (current status: {fund.status})")
+            
+            # Import the status service
+            from src.fund.services.fund_status_service import FundStatusService
+            status_service = FundStatusService()
+            
+            # Update status based on current equity balance
+            # This will trigger IRR calculations if status changes to REALIZED
+            status_service.update_status_after_equity_event(fund, self.session)
+            
+            logger.info(f"Fund status check completed for fund {fund.id}")
+            
+        except Exception as e:
+            logger.error(f"Error checking and updating fund status: {e}")
             raise
     
     def _get_fund(self, fund_id: int) -> Optional[Fund]:

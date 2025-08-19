@@ -22,6 +22,7 @@ from src.fund.models.fund import Fund
 from src.fund.models.fund_event import FundEvent
 from src.fund.models.fund_event_cash_flow import FundEventCashFlow
 from src.fund.enums import FundType, EventType, FundStatus, DistributionType
+from tests.factories import FundFactory
 
 
 class TestFundModel:
@@ -1076,3 +1077,51 @@ class TestFundEnums:
         # Test enum membership
         assert 'ACTIVE' in FundStatus.__members__
         assert 'COMPLETED' in FundStatus.__members__
+
+    def test_current_duration_calculation_and_storage(self):
+        """Test the current_duration calculation and storage for different fund statuses."""
+        from datetime import date
+        from src.fund.enums import FundStatus
+        
+        # Test ACTIVE fund - should use today's date
+        fund = FundFactory.create(
+            start_date=date(2023, 1, 1),
+            status=FundStatus.ACTIVE
+        )
+        
+        # Mock today's date to be 2024-01-01 (12 months later)
+        with patch('src.fund.models.fund.date') as mock_date:
+            mock_date.today.return_value = date(2024, 1, 1)
+            fund.calculate_and_update_current_duration()
+            duration = fund.current_duration
+            assert duration == 12, f"Expected 12 months for active fund, got {duration}"
+        
+        # Test REALIZED fund - should use end_date
+        fund.status = FundStatus.REALIZED
+        fund.end_date = date(2023, 6, 30)  # 5 months after start
+        
+        fund.calculate_and_update_current_duration()
+        duration = fund.current_duration
+        assert duration == 5, f"Expected 5 months for realized fund, got {duration}"
+        
+        # Test COMPLETED fund - should use end_date
+        fund.status = FundStatus.COMPLETED
+        fund.end_date = date(2023, 12, 31)  # 11 months after start
+        
+        fund.calculate_and_update_current_duration()
+        duration = fund.current_duration
+        assert duration == 11, f"Expected 11 months for completed fund, got {duration}"
+        
+        # Test fund without start_date
+        fund.start_date = None
+        fund.calculate_and_update_current_duration()
+        duration = fund.current_duration
+        assert duration == None, f"Expected None for fund without start_date, got {duration}"
+        
+        # Test REALIZED fund without end_date
+        fund.start_date = date(2023, 1, 1)
+        fund.status = FundStatus.REALIZED
+        fund.end_date = None
+        fund.calculate_and_update_current_duration()
+        duration = fund.current_duration
+        assert duration == None, f"Expected None for realized fund without end_date, got {duration}"

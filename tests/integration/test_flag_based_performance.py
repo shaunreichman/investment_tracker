@@ -118,7 +118,7 @@ class TestFlagBasedPerformance:
                 CAPITAL_CALL_data = {
                     'event_type': EventType.CAPITAL_CALL,
                     'amount': float(Decimal("5000.00")),
-                    'date': current_date,
+                    'event_date': current_date,
                     'reference_number': f"PERF_CAP{i:04d}",
                     'description': f"Performance test capital call {i}"
                 }

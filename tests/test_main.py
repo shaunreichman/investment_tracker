@@ -306,8 +306,8 @@ def setup_test_data(session):
     # Add events for ABC Ltd NAV-based fund (match original test)
     # Initial unit purchase
     abc_fund.add_unit_purchase(
-        units=85.0,
-        price=58.00,
+        units_purchased=85.0,
+        unit_price=58.00,
         date=date(2013, 3, 28),
         brokerage_fee=19.95,
         description="Initial unit purchase",
@@ -352,8 +352,8 @@ def setup_test_data(session):
     )
     # Partial unit sale
     abc_fund.add_unit_sale(
-        units=40.0,
-        price=61.20,
+        units_sold=40.0,
+        unit_price=61.20,
         date=date(2013, 9, 4),
         brokerage_fee=24.95,
         description="Partial unit sale",
@@ -412,8 +412,8 @@ def setup_test_data(session):
     )
     # Additional unit purchase
     abc_fund.add_unit_purchase(
-        units=120.0,
-        price=61.4,
+        units_purchased=120.0,
+        unit_price=61.4,
         date=date(2014, 4, 30),
         brokerage_fee=19.95,
         description="Additional unit purchase",
@@ -428,8 +428,8 @@ def setup_test_data(session):
     )
     # Final unit sale
     abc_fund.add_unit_sale(
-        units=165.0,
-        price=62.62,
+        units_sold=165.0,
+        unit_price=62.62,
         date=date(2014, 5, 13),
         brokerage_fee=19.95,
         description="Full unit sale",

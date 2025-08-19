@@ -138,6 +138,9 @@ class DistributionHandler(BaseFundEventHandler):
         # Validate event data
         self.validate_event(event_data)
         
+        # Validate first event business rules
+        self._validate_first_event(EventType.DISTRIBUTION)
+        
         # Extract parameters
         event_date = self._parse_date(event_data['event_date'])
         distribution_type = event_data['distribution_type']
@@ -159,6 +162,9 @@ class DistributionHandler(BaseFundEventHandler):
         
         # Update fund state
         self._update_fund_after_distribution(event)
+        
+        # Handle status transitions
+        self._handle_status_transition(event)
         
         # Publish domain events
         self._publish_dependent_events(event)
@@ -270,6 +276,7 @@ class DistributionHandler(BaseFundEventHandler):
             distribution_type=DistributionType.INTEREST,
             amount=net_amount,
             has_withholding_tax=True,
+            tax_withholding=tax_amount,
             description=description or f"Interest distribution: ${net_amount:,.2f} (net)",
             reference_number=reference_number
         )
@@ -298,7 +305,7 @@ class DistributionHandler(BaseFundEventHandler):
         # specific fields or trigger other updates
         
         # Update fund summary fields if needed
-        self._update_fund_summary_fields()
+        self._update_fund_summary_fields(event)
     
     def _publish_dependent_events(self, event: FundEvent) -> None:
         """

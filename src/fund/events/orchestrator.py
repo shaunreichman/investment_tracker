@@ -142,16 +142,9 @@ class FundUpdateOrchestrator:
             event: The event that was just processed
             session: Database session for all operations
         """
-        # Use centralized calculation service for equity balance updates
-        # This ensures consistency and centralizes business logic
-        if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
-            from src.fund.services.fund_calculation_service import FundCalculationService
-            
-            calculation_service = FundCalculationService()
-            calculation_service.recalculate_fund_equity_balance(event.fund, session)
-        
+
         # Update fund summary fields if needed
-        if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
+        if EventType.is_equity_event(event.event_type):
             # Instead of calling fund method directly, publish a domain event
             # This enables loose coupling and allows other components to react
             from src.fund.events.domain import FundSummaryUpdatedEvent
@@ -167,7 +160,7 @@ class FundUpdateOrchestrator:
                     "amount": event.amount
                 }
             )
-            event_bus.publish(summary_event)
+            event_bus.publish(summary_event, session)
         
         # Handle NAV-specific updates
         if event.event_type == EventType.NAV_UPDATE:
@@ -351,11 +344,11 @@ class FundUpdateOrchestrator:
                 raise ValueError(f"Invalid event_type: {e}")
         
         # Validate date if present
-        if 'date' in event_data and event_data['date']:
+        if 'event_date' in event_data and event_data['event_date']:
             try:
                 
-                if isinstance(event_data['date'], str):
-                    date.fromisoformat(event_data['date'])
+                if isinstance(event_data['event_date'], str):
+                    date.fromisoformat(event_data['event_date'])
             except ValueError:
                 raise ValueError("Invalid date format. Use YYYY-MM-DD")
         

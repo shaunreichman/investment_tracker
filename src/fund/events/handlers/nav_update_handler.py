@@ -38,7 +38,7 @@ class NAVUpdateHandler(BaseFundEventHandler):
         
         # Validate required fields
         nav_per_share = event_data.get('nav_per_share')
-        event_date = event_data.get('date')
+        event_date = event_data.get('event_date')
         
         if not nav_per_share:
             raise ValueError("nav_per_share is required")
@@ -50,7 +50,7 @@ class NAVUpdateHandler(BaseFundEventHandler):
         except (ValueError, TypeError):
             raise ValueError("nav_per_share must be a valid positive number")
         
-        self._validate_required_date(event_date, 'date')
+        self._validate_required_date(event_date, 'event_date')
     
     def handle(self, event_data: Dict[str, Any]) -> FundEvent:
         """
@@ -77,9 +77,12 @@ class NAVUpdateHandler(BaseFundEventHandler):
         # Validate event data
         self.validate_event(event_data)
         
+        # Validate first event business rules
+        self._validate_first_event(EventType.NAV_UPDATE)
+        
         # Extract parameters
         nav_per_share = float(event_data['nav_per_share'])
-        event_date = self._parse_date(event_data['date'])
+        event_date = self._parse_date(event_data['event_date'])
         description = event_data.get('description')
         reference_number = event_data.get('reference_number')
         

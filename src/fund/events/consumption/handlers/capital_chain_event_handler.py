@@ -14,8 +14,9 @@ from sqlalchemy.orm import Session
 from src.fund.events.consumption.base_consumer import EventConsumer
 from src.fund.events.domain import CapitalChainRecalculatedEvent
 from src.fund.repositories.fund_repository import FundRepository
-from src.fund.models import Fund
-from src.fund.enums import FundType
+from src.fund.models import Fund, FundEvent
+from src.fund.enums import FundType, EventType
+from src.fund.services.fund_calculation_service import FundCalculationService
 
 logger = logging.getLogger(__name__)
 
@@ -74,22 +75,39 @@ class CapitalChainEventHandler(EventConsumer):
         logger.info(f"Updating fund summary fields for fund {event.fund_id}")
         
         try:
-            # Update fund summary fields based on the recalculation
-            # This replaces the direct call to fund.recalculate_capital_chain_from()
+            # Get all capital events for this fund, ordered by date and ID
+            capital_events = self._get_capital_events(fund)
             
-            # Get the current equity balance from the fund
-            current_equity = fund.current_equity_balance or Decimal('0.0')
+            if not capital_events:
+                logger.warning(f"No capital events found for fund {event.fund_id}")
+                fund.current_equity_balance = 0.0
+                return
             
-            # Update fund summary fields
-            fund.current_equity_balance = current_equity
+            # Use the calculation service to recalculate equity balance
+            calc_service = FundCalculationService()
             
-            # Calculate and update other summary fields as needed
-            if fund.tracking_type == FundType.COST_BASED:
+            if fund.tracking_type == FundType.NAV_BASED:
+                # Recalculate NAV-based fields including equity balance
+                calc_service.calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event(
+                    fund, capital_events, 0, self.session
+                )
+            elif fund.tracking_type == FundType.COST_BASED:
+                # Recalculate cost-based fields including equity balance
+                calc_service.calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event(
+                    fund, capital_events, 0, self.session
+                )
+            
+            # Update fund summary fields from the latest capital event
+            latest_capital_event = capital_events[-1]
+            fund.current_equity_balance = latest_capital_event.current_equity_balance or 0.0
+            
+            # Update other fund summary fields based on fund type
+            if fund.tracking_type == FundType.NAV_BASED:
                 # For cost-based funds, update capital-related fields
-                self._update_cost_based_summary_fields(fund)
-            else:
+                self._update_nav_based_summary_fields(fund, capital_events)
+            elif fund.tracking_type == FundType.COST_BASED:
                 # For NAV-based funds, update unit-related fields
-                self._update_nav_based_summary_fields(fund)
+                self._update_cost_based_summary_fields(fund, capital_events)
             
             logger.info(f"Successfully updated fund summary fields for fund {event.fund_id}")
             
@@ -97,17 +115,48 @@ class CapitalChainEventHandler(EventConsumer):
             logger.error(f"Error updating fund summary fields: {e}")
             raise
     
-    def _update_cost_based_summary_fields(self, fund: Fund) -> None:
+    def _get_capital_events(self, fund: Fund) -> List[FundEvent]:
+        """
+        Get all capital events for the fund, ordered by date and ID.
+        
+        Args:
+            fund: The fund to get capital events for
+            
+        Returns:
+            List of capital events ordered by date and ID
+        """
+        if fund.tracking_type == FundType.NAV_BASED:
+            # For NAV-based funds, get unit purchase/sale events
+            capital_event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
+        elif fund.tracking_type == FundType.COST_BASED:
+            # For cost-based funds, get capital call/return events
+            capital_event_types = [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]
+        
+        return self.session.query(FundEvent).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type.in_(capital_event_types)
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+    
+    def _update_cost_based_summary_fields(self, fund: Fund, capital_events: List[FundEvent]) -> None:
         """
         Update summary fields for cost-based funds.
         
         Args:
             fund: The fund to update
+            capital_events: List of capital events for the fund
         """
         try:
-            # Update capital-related summary fields
-            # This would include fields like total_capital_called, remaining_commitment, etc.
-            # The actual implementation would depend on the specific business logic
+            # Calculate total cost basis from capital events
+            total_calls = sum(e.amount or 0.0 for e in capital_events if e.event_type == EventType.CAPITAL_CALL)
+            total_returns = sum(e.amount or 0.0 for e in capital_events if e.event_type == EventType.RETURN_OF_CAPITAL)
+            fund.total_cost_basis = total_calls - total_returns
+            
+            # Update average equity balance
+            if capital_events:
+                calc_service = FundCalculationService()
+                fund.average_equity_balance = calc_service.calculate_average_equity_balance(
+                    fund, self.session, capital_events
+                )
             
             logger.debug(f"Updated cost-based summary fields for fund {fund.id}")
             
@@ -115,17 +164,46 @@ class CapitalChainEventHandler(EventConsumer):
             logger.error(f"Error updating cost-based summary fields: {e}")
             raise
     
-    def _update_nav_based_summary_fields(self, fund: Fund) -> None:
+    def _update_nav_based_summary_fields(self, fund: Fund, capital_events: List[FundEvent]) -> None:
         """
         Update summary fields for NAV-based funds.
         
         Args:
             fund: The fund to update
+            capital_events: List of capital events for the fund
         """
         try:
-            # Update unit-related summary fields
-            # This would include fields like total_units, average_unit_cost, etc.
-            # The actual implementation would depend on the specific business logic
+            if not capital_events:
+                fund.current_units = 0.0
+                fund.current_unit_price = 0.0
+                fund.current_nav_total = 0.0
+                return
+            
+            # Get the latest capital event for current units
+            latest_event = capital_events[-1]
+            fund.current_units = latest_event.units_owned or 0.0
+            
+            # Find the most recent NAV_UPDATE event for unit price
+            latest_nav_event = self.session.query(FundEvent).filter(
+                FundEvent.fund_id == fund.id,
+                FundEvent.event_type == EventType.NAV_UPDATE
+            ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+            
+            if latest_nav_event and latest_nav_event.nav_per_share is not None:
+                fund.current_unit_price = latest_nav_event.nav_per_share
+            elif latest_event.unit_price is not None:
+                fund.current_unit_price = latest_event.unit_price
+            else:
+                fund.current_unit_price = 0.0
+            
+            # Update NAV total
+            fund.current_nav_total = fund.current_units * fund.current_unit_price
+            
+            # Update average equity balance
+            calc_service = FundCalculationService()
+            fund.average_equity_balance = calc_service.calculate_average_equity_balance(
+                fund, self.session, capital_events
+            )
             
             logger.debug(f"Updated NAV-based summary fields for fund {fund.id}")
             

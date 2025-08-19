@@ -152,13 +152,13 @@ tests/
 │   ├── __init__.py
 │   ├── workflows/                        # Complete business workflow testing
 │   │   ├── __init__.py
-│   │   ├── fund/                         # Fund-specific workflows
-│   │   │   ├── __init__.py
+│   │   ├── ✅ fund/                         # Fund-specific workflows
+│   │   │   ├── ✅ __init__.py
 │   │   │   ├── ✅ test_capital_call_workflow.py         # Complete capital call flow
 │   │   │   ├── ✅ test_return_of_capital_workflow.py    # Complete capital return flow
 │   │   │   ├── ✅ test_distribution_workflow.py         # Complete distribution flow
-│   │   │   ├── test_nav_update_workflow.py           # NAV update and recalculation
-│   │   │   ├── test_fund_realization_workflow.py     # Fund completion workflow
+│   │   │   ├── ✅ test_nav_update_workflow.py         # NAV update and recalculation
+│   │   │   ├── ✅ test_fund_realization_workflow.py     # Fund completion workflow
 │   │   │   └── ✅ test_unit_workflows.py                # Unit purchase and sale workflows
 │   │   ├── investment_company/             # Company management workflows
 │   │   │   ├── __init__.py
@@ -193,11 +193,11 @@ tests/
 │   │       └── test_event_handling.py                # Event handling integration
 │   ├── data_consistency/                   # Data consistency validation
 │   │   ├── __init__.py
-│   │   ├── fund/                           # Fund data consistency
-│   │   │   ├── __init__.py
-│   │   │   ├── test_fund_equity_balance.py           # Equity balance consistency
-│   │   │   ├── test_event_ordering.py                # Event sequence validation
-│   │   │   └── test_calculation_consistency.py       # Cross-calculation validation
+│   │   ├── ✅ fund/                           # Fund data consistency
+│   │   │   ├── ✅ __init__.py
+│   │   │   ├── ✅ test_fund_equity_balance.py           # Equity balance consistency
+│   │   │   ├── ✅ test_event_ordering.py                # Event sequence validation
+│   │   │   └── ✅ test_calculation_consistency.py       # Cross-calculation validation
 │   │   ├── cross_domain/                    # Cross-domain consistency
 │   │   │   ├── __init__.py
 │   │   │   ├── test_entity_fund_consistency.py       # Entity-fund consistency

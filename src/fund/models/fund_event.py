@@ -36,7 +36,7 @@ class FundEvent(Base):
     # Event details
     event_type = Column(Enum(EventType), nullable=False, index=True)  # (SYSTEM) type of fund event
     event_date = Column(Date, nullable=False, index=True)  # (MANUAL) date when event occurred
-    amount = Column(Float, nullable=False)  # (MANUAL) event amount (positive for calls, negative for returns)
+    amount = Column(Float, nullable=True)  # (MANUAL) event amount (positive for calls, negative for returns, null for NAV updates)
     description = Column(Text)  # (MANUAL) description of the event
     reference_number = Column(String(255))  # (MANUAL) external reference number
     
@@ -45,7 +45,7 @@ class FundEvent(Base):
     previous_nav_per_share = Column(Float, nullable=True)  # (CALCULATED) previous NAV per share for NAV_UPDATE events
     nav_change_absolute = Column(Float, nullable=True)  # (CALCULATED) absolute change in NAV for NAV_UPDATE events
     nav_change_percentage = Column(Float, nullable=True)  # (CALCULATED) percentage change in NAV for NAV_UPDATE events
-    units_change = Column(Float, nullable=True)  # (MANUAL) change in units for NAV events
+
     units_owned = Column(Float, nullable=True)  # (CALCULATED) cumulative units owned after this event
     
     # Distribution-specific fields
@@ -140,15 +140,14 @@ class FundEvent(Base):
         if not self.event_date:
             raise ValueError("Event date is required")
         
-        if self.amount is None:
+        # Amount is required for most events, but not for NAV updates
+        if self.amount is None and self.event_type != EventType.NAV_UPDATE:
             raise ValueError("Amount is required")
         
         # Validate NAV-specific fields
         if self.event_type == EventType.NAV_UPDATE:
             if self.nav_per_share is None or self.nav_per_share <= 0:
                 raise ValueError("NAV per share must be positive for NAV update events")
-            if self.units_change is None:
-                raise ValueError("Units change is required for NAV update events")
         
         # Validate distribution-specific fields
         if self.event_type == EventType.DISTRIBUTION:
@@ -208,8 +207,6 @@ class FundEvent(Base):
         if self.event_type == EventType.NAV_UPDATE:
             if self.nav_per_share is None:
                 raise ValueError("NAV per share is required for NAV update events")
-            if self.units_change is None:
-                raise ValueError("Units change is required for NAV update events")
         
         # Unit transactions must have unit-related fields
         if self.event_type == EventType.UNIT_PURCHASE:
@@ -620,10 +617,14 @@ class FundEvent(Base):
         Returns:
             float: Effective amount for calculations
         """
+        # NAV update events don't have amounts
+        if self.event_type == EventType.NAV_UPDATE:
+            return 0.0
+        
         if self.is_capital_inflow():
-            return abs(self.amount)
+            return abs(self.amount or 0.0)
         else:
-            return -abs(self.amount)
+            return -abs(self.amount or 0.0)
     
     def set_grouping(self, group_id: int, group_type: GroupType, group_position: int) -> None:
         """Set grouping information for this event.
@@ -656,7 +657,8 @@ class FundEvent(Base):
         elif self.event_type == EventType.UNIT_SALE:
             return -(self.units_sold or 0.0)
         elif self.event_type == EventType.NAV_UPDATE:
-            return self.units_change or 0.0
+            # NAV update events don't change units, they only update NAV per share
+            return 0.0
         else:
             return 0.0
     
@@ -671,5 +673,8 @@ class FundEvent(Base):
             unit_price = self.unit_price or 0.0
             brokerage_fee = self.brokerage_fee or 0.0
             return (units * unit_price) + brokerage_fee
+        elif self.event_type == EventType.NAV_UPDATE:
+            # NAV update events don't have costs
+            return 0.0
         else:
-            return abs(self.amount) if self.amount else 0.0
+            return abs(self.amount or 0.0)

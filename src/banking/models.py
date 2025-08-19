@@ -32,7 +32,6 @@ class Bank(Base):
 
     # Domain methods
     @classmethod
-    @with_session
     def create(
         cls,
         name: str,
@@ -79,7 +78,6 @@ class BankAccount(Base):
 
     # Domain methods
     @classmethod
-    @with_session
     def create(
         cls,
         *,
@@ -128,7 +126,6 @@ class BankAccount(Base):
         return acct
 
     @classmethod
-    @with_session
     def get_by_unique(
         cls, *, entity_id: int, bank_id: int, account_number: str, session=None
     ) -> "BankAccount | None":

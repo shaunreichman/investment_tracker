@@ -333,7 +333,7 @@ class TestFlagBasedEventGrouping:
         event_data = {
             'event_type': EventType.CAPITAL_CALL,  # Required by new architecture
             'amount': float(Decimal("5000.00")),  # Convert Decimal to float for new architecture
-            'date': date(2024, 1, 20),
+            'event_date': date(2024, 1, 20),
             'reference_number': "TEST003",
             'description': "Test capital call using new architecture"
         }

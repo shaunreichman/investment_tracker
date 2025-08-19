@@ -7,7 +7,7 @@ including session management and common database operations.
 
 from typing import Callable, Any, Optional, TypeVar, ParamSpec
 from functools import wraps
-from sqlalchemy.orm import Session, scoped_session, sessionmaker
+from sqlalchemy.orm import Session, scoped_session, sessionmaker, object_session
 from contextlib import contextmanager
 
 from src.shared.base import Base

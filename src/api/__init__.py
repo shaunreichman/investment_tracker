@@ -595,7 +595,7 @@ def create_app(db_config=None):
                         },
                         
                         "returns": {
-                            "completed_irr": fund.irr_gross,
+                            "completed_irr": fund.completed_irr_gross if fund.status.value == 'COMPLETED' else None,
                             "performance_vs_expected": performance_vs_expected
                         },
                         

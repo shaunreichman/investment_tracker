@@ -162,6 +162,40 @@ class BaseFundEventHandler(ABC):
         if not date:
             raise ValueError(f"{field_name} is required")
     
+    def _validate_first_event(self, event_type: EventType) -> None:
+        """
+        Validate that the first event on a fund follows business rules.
+        
+        Business Rules:
+        - Cost-based funds must start with CAPITAL_CALL
+        - NAV-based funds must start with UNIT_PURCHASE
+        
+        Args:
+            event_type: Type of event being created
+            
+        Raises:
+            ValueError: If first event violates business rules
+        """
+        # Check if this is the first event on the fund
+        existing_events = self.session.query(FundEvent).filter(
+            FundEvent.fund_id == self.fund.id
+        ).count()
+        
+        if existing_events == 0:
+            # This is the first event - validate business rules
+            if self.fund.tracking_type == FundType.COST_BASED:
+                if event_type != EventType.CAPITAL_CALL:
+                    raise ValueError(
+                        f"Cost-based funds must start with a Capital Call event, "
+                        f"not {event_type.value}"
+                    )
+            elif self.fund.tracking_type == FundType.NAV_BASED:
+                if event_type != EventType.UNIT_PURCHASE:
+                    raise ValueError(
+                        f"NAV-based funds must start with a Unit Purchase event, "
+                        f"not {event_type.value}"
+                    )
+    
     def _check_duplicate_event(self, event_type: EventType, **filters) -> Optional[FundEvent]:
         """
         Check for existing duplicate event to support idempotent behavior.
@@ -351,50 +385,113 @@ class BaseFundEventHandler(ABC):
         
         return domain_events
     
-    def _update_fund_summary_fields(self) -> None:
+    def _update_fund_summary_fields(self, event: Optional[FundEvent] = None) -> None:
         """
         Update fund summary fields after event processing.
         
         This method updates calculated fields on the fund using
         the new architecture instead of calling old Fund methods.
+        
+        Args:
+            event: Optional event to calculate summary fields as of.
+                   If provided, calculates fields as of this event's date.
+                   If None, calculates fields as of the latest event.
         """
+        # Update start_date if not already set
+        # OPTIMIZATION: This method now uses efficient date comparison instead of querying all events
+        self._update_fund_start_date(event)
+        
         # Update fund summary fields based on fund type
         if self.fund.tracking_type == FundType.COST_BASED:
             # For cost-based funds, update equity balance and related fields
-            self._update_cost_based_fund_summary()
+            self._update_cost_based_fund_summary(event)
         elif self.fund.tracking_type == FundType.NAV_BASED:
             # For NAV-based funds, update NAV-specific fields
-            self._update_nav_based_fund_summary()
+            self._update_nav_based_fund_summary(event)
     
-    def _update_cost_based_fund_summary(self) -> None:
+    def _update_fund_start_date(self, event: Optional[FundEvent] = None) -> None:
+        """
+        Update fund start_date field based on events.
+        
+        This method ensures the fund.start_date is set to the date of the first event.
+        It's called whenever fund summary fields are updated to maintain consistency.
+        
+        OPTIMIZATION: Since we know the first event must be a capital call or unit purchase,
+        we can do a simple comparison instead of querying all events.
+        
+        Args:
+            event: Optional event to calculate start_date as of.
+                   If provided, calculates start_date as of this event's date.
+                   If None, calculates start_date as of the latest event.
+        """
+        # If start_date is already set and we're not recalculating, skip
+        if self.fund.start_date and not event:
+            return
+        
+        if event and event.event_date:
+            # OPTIMIZATION: Simple comparison instead of querying all events
+            # Since the first event must be a capital call/unit purchase, we can just compare dates
+            if not self.fund.start_date or event.event_date < self.fund.start_date:
+                self.fund.start_date = event.event_date
+                self.logger.debug(f"Updated fund {self.fund.id} start_date to {event.event_date}")
+        else:
+            # If no event provided, we need to query to find the earliest event
+            # This is the fallback case for when we're updating summary fields without a specific event
+            from src.fund.models import FundEvent
+            
+            earliest_event = self.session.query(FundEvent).filter(
+                FundEvent.fund_id == self.fund.id
+            ).order_by(FundEvent.event_date, FundEvent.id).first()
+            
+            if earliest_event and earliest_event.event_date:
+                if not self.fund.start_date or earliest_event.event_date < self.fund.start_date:
+                    self.fund.start_date = earliest_event.event_date
+                    self.logger.debug(f"Updated fund {self.fund.id} start_date to {earliest_event.event_date}")
+            elif not earliest_event and self.fund.start_date is not None:
+                # No events, ensure start_date is None
+                self.fund.start_date = None
+                self.logger.debug(f"Cleared fund {self.fund.id} start_date (no events)")
+    
+    def _update_cost_based_fund_summary(self, event: Optional[FundEvent] = None) -> None:
         """
         Update cost-based fund summary fields.
         
         This method updates fields like current_equity_balance,
         total_cost_basis, and average_equity_balance for cost-based funds.
+        
+        Args:
+            event: Optional event to calculate summary fields as of.
+                   If provided, calculates fields as of this event's date.
+                   If None, calculates fields as of the latest event.
         """
-        # Get all capital events for this fund to calculate summary fields
+        # Get capital events for this fund, optionally limited by event date
         from src.fund.models import FundEvent
         from src.fund.enums import EventType
         
-        capital_events = self.session.query(FundEvent).filter(
+        query = self.session.query(FundEvent).filter(
             FundEvent.fund_id == self.fund.id,
             FundEvent.event_type.in_([
                 EventType.CAPITAL_CALL,
                 EventType.RETURN_OF_CAPITAL
             ])
-        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        )
+        
+        # If an event is provided, only include events up to that event's date
+        if event and event.event_date:
+            query = query.filter(FundEvent.event_date <= event.event_date)
+        
+        capital_events = query.order_by(FundEvent.event_date, FundEvent.id).all()
         
         # Calculate total cost basis and equity balance
         total_cost_basis = 0.0
         current_equity_balance = 0.0
         
-        for event in capital_events:
-            if event.event_type == EventType.CAPITAL_CALL:
-                total_cost_basis += event.amount or 0.0
-                current_equity_balance += event.amount or 0.0
-            elif event.event_type == EventType.RETURN_OF_CAPITAL:
-                current_equity_balance -= event.amount or 0.0
+        for capital_event in capital_events:
+            if capital_event.event_type == EventType.CAPITAL_CALL:
+                total_cost_basis += capital_event.amount or 0.0
+                current_equity_balance += capital_event.amount or 0.0
+            elif capital_event.event_type == EventType.RETURN_OF_CAPITAL:
+                current_equity_balance -= capital_event.amount or 0.0
         
         # Update fund fields
         self.fund.total_cost_basis = total_cost_basis
@@ -407,13 +504,42 @@ class BaseFundEventHandler(ABC):
         else:
             self.fund.average_equity_balance = 0.0
     
-    def _update_nav_based_fund_summary(self) -> None:
+    def _update_nav_based_fund_summary(self, event: Optional[FundEvent] = None) -> None:
         """
         Update NAV-based fund summary fields.
         
         This method updates fields like current_units, current_nav_total,
-        and current_unit_price for NAV-based funds.
+        current_unit_price, and current_equity_balance for NAV-based funds.
+        
+        Args:
+            event: Optional event to calculate summary fields as of.
+                   If provided, calculates fields as of this event's date.
+                   If None, calculates fields as of the latest event.
         """
+        # Get all unit events for this fund to find the latest equity balance
+        from src.fund.models import FundEvent
+        from src.fund.enums import EventType
+        
+        unit_events = self.session.query(FundEvent).filter(
+            FundEvent.fund_id == self.fund.id,
+            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        
+        if unit_events:
+            # Get the latest unit event's equity balance
+            latest_event = unit_events[-1]
+            if latest_event.current_equity_balance is not None:
+                self.fund.current_equity_balance = latest_event.current_equity_balance
+            else:
+                # Fallback: calculate from units and price
+                self.fund.current_equity_balance = (
+                    (self.fund.current_units or 0.0) * 
+                    (self.fund.current_unit_price or 0.0)
+                )
+        else:
+            # No unit events, equity balance should be 0
+            self.fund.current_equity_balance = 0.0
+        
         # For NAV-based funds, update NAV-specific fields
         if hasattr(self.fund, 'current_nav_total'):
             self.fund.current_nav_total = (
@@ -425,39 +551,30 @@ class BaseFundEventHandler(ABC):
         """
         Handle fund status transitions if needed.
         
+        This method delegates to the FundStatusService to ensure
+        consistent status transition logic across all handlers.
+        
         Args:
             event: The event that was just processed
         """
-        # Check if status update is needed
-        if self.status_service.should_calculate_irr(self.fund.status, self.fund):
-            # Trigger IRR calculation and status update using new architecture
-            self._update_fund_status_independently()
-    
-    def _update_fund_status_independently(self) -> None:
-        """
-        Update fund status independently using new architecture.
-        
-        This method handles status transitions and IRR calculations
-        without calling old Fund model methods.
-        """
-        # For now, implement basic status logic
-        # This can be enhanced with more sophisticated status transition logic
-        
-        # Check if fund should transition to REALIZED status
-        if (self.fund.status != FundStatus.REALIZED and 
-            self.fund.current_equity_balance == 0.0 and
-            hasattr(self.fund, 'end_date') and self.fund.end_date):
+        try:
+            # Use the centralized status service for all status transitions
+            # This ensures consistency and proper business rule enforcement
             
-            # Transition to REALIZED status
-            old_status = self.fund.status
-            self.fund.status = FundStatus.REALIZED
-            
-            # Log the status change
-            print(f"Fund {self.fund.name} status updated to {self.fund.status} after equity event")
-            
-            # TODO: Implement IRR calculation logic here
-            # For now, just log that IRRs would be calculated
-            print(f"IRRs calculated and stored for realized fund {self.fund.name}")
+            # Check if this is an equity event that should trigger status updates
+            if EventType.is_equity_event(event.event_type):
+                
+                # Update status after equity event using the status service
+                self.status_service.update_status_after_equity_event(self.fund, self.session)
+                
+                # Log the status update for debugging
+                self.logger.info(f"Status transition processed for fund {self.fund.id} after {event.event_type} event")
+                
+        except Exception as e:
+            # Log the error but don't fail the main event processing
+            # Status transitions are important but not critical for event processing
+            self.logger.error(f"Error during status transition for fund {self.fund.id}: {e}")
+            # Don't raise - this is a non-critical operation
     
     def _commit_changes(self) -> None:
         """

@@ -161,7 +161,7 @@ class TestFundEventHandlerRegistry:
             event_data = {
                 'event_type': EventType.CAPITAL_CALL,
                 'amount': 1000.0,
-                'date': '2024-01-15'
+                'event_date': '2024-01-15'
             }
             
             result = self.registry.handle_event(event_data, self.mock_session, self.mock_fund)
@@ -175,21 +175,21 @@ class TestFundEventHandlerRegistry:
     
     def test_handle_event_missing_event_type(self):
         """Test event handling with missing event_type."""
-        event_data = {'amount': 1000.0, 'date': '2024-01-15'}
+        event_data = {'amount': 1000.0, 'event_date': '2024-01-15'}
         
         with pytest.raises(ValueError, match="event_type is required in event_data"):
             self.registry.handle_event(event_data, self.mock_session, self.mock_fund)
     
     def test_handle_event_empty_event_type(self):
         """Test event handling with empty event_type."""
-        event_data = {'event_type': '', 'amount': 1000.0, 'date': '2024-01-15'}
+        event_data = {'event_type': '', 'amount': 1000.0, 'event_date': '2024-01-15'}
         
         with pytest.raises(ValueError, match="event_type is required in event_data"):
             self.registry.handle_event(event_data, self.mock_session, self.mock_fund)
     
     def test_handle_event_invalid_event_type_string(self):
         """Test event handling with invalid event_type string."""
-        event_data = {'event_type': 'INVALID_TYPE', 'amount': 1000.0, 'date': '2024-01-15'}
+        event_data = {'event_type': 'INVALID_TYPE', 'amount': 1000.0, 'event_date': '2024-01-15'}
         
         with pytest.raises(ValueError, match="Invalid event_type"):
             self.registry.handle_event(event_data, self.mock_session, self.mock_fund)
@@ -208,7 +208,7 @@ class TestFundEventHandlerRegistry:
             event_data = {
                 'event_type': EventType.CAPITAL_CALL,  # Enum object, not string
                 'amount': 1000.0,
-                'date': '2024-01-15'
+                'event_date': '2024-01-15'
             }
             
             result = self.registry.handle_event(event_data, self.mock_session, self.mock_fund)
@@ -234,7 +234,7 @@ class TestFundEventHandlerRegistry:
             event_data = {
                 'event_type': 'CAPITAL_CALL',  # String that gets converted
                 'amount': 1000.0,
-                'date': '2024-01-15'
+                'event_date': '2024-01-15'
             }
             
             result = self.registry.handle_event(event_data, self.mock_session, self.mock_fund)
@@ -477,7 +477,7 @@ class TestFundEventHandlerRegistry:
             event_data = {
                 'event_type': EventType.CAPITAL_CALL,
                 'amount': 1000.0,
-                'date': '2024-01-15'
+                'event_date': '2024-01-15'
             }
             
             # The registry should propagate the handler's validation error

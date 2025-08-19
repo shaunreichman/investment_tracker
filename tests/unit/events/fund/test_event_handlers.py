@@ -54,7 +54,7 @@ class TestCapitalCallHandler:
         """Test validation for cost-based funds."""
         event_data = {
             'amount': 1000.0,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         # Should not raise
@@ -66,7 +66,7 @@ class TestCapitalCallHandler:
         
         event_data = {
             'amount': 1000.0,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="Event requires COST_BASED fund"):
@@ -75,7 +75,7 @@ class TestCapitalCallHandler:
     def test_validate_event_missing_amount(self):
         """Test validation rejects missing amount."""
         event_data = {
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="amount must be a valid positive number"):
@@ -94,7 +94,7 @@ class TestCapitalCallHandler:
         """Test validation rejects invalid amount."""
         event_data = {
             'amount': 'invalid',
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="amount must be a valid positive number"):
@@ -104,7 +104,7 @@ class TestCapitalCallHandler:
         """Test validation rejects negative amount."""
         event_data = {
             'amount': -1000.0,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="amount must be a valid positive number"):
@@ -114,7 +114,7 @@ class TestCapitalCallHandler:
         """Test validation rejects zero amount."""
         event_data = {
             'amount': 0.0,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="amount must be a valid positive number"):
@@ -137,7 +137,7 @@ class TestCapitalCallHandler:
         
         event_data = {
             'amount': 5000.0,
-            'date': date(2024, 1, 15),
+            'event_date': date(2024, 1, 15),
             'description': 'Test capital call',
             'reference_number': 'CC001'
         }
@@ -182,7 +182,7 @@ class TestCapitalCallHandler:
         
         event_data = {
             'amount': 5000.0,
-            'date': date(2024, 1, 15),
+            'event_date': date(2024, 1, 15),
             'description': 'Test capital call',
             'reference_number': 'CC001'
         }
@@ -204,7 +204,7 @@ class TestCapitalCallHandler:
         """Test that invalid event data raises ValueError."""
         event_data = {
             'amount': -1000.0,  # Invalid negative amount
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="amount must be a valid positive number"):
@@ -238,7 +238,7 @@ class TestReturnOfCapitalHandler:
         """Test validation for cost-based funds."""
         event_data = {
             'amount': 1000.0,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         # Should not raise
@@ -250,7 +250,7 @@ class TestReturnOfCapitalHandler:
         
         event_data = {
             'amount': 1000.0,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="Event requires COST_BASED fund"):
@@ -259,7 +259,7 @@ class TestReturnOfCapitalHandler:
     def test_validate_event_missing_amount(self):
         """Test validation rejects missing amount."""
         event_data = {
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="amount must be a valid positive number"):
@@ -278,7 +278,7 @@ class TestReturnOfCapitalHandler:
         """Test validation rejects invalid amount."""
         event_data = {
             'amount': 'invalid',
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="amount must be a valid positive number"):
@@ -288,7 +288,7 @@ class TestReturnOfCapitalHandler:
         """Test validation rejects negative amount."""
         event_data = {
             'amount': -1000.0,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="amount must be a valid positive number"):
@@ -311,7 +311,7 @@ class TestReturnOfCapitalHandler:
         
         event_data = {
             'amount': 2000.0,
-            'date': date(2024, 1, 15),
+            'event_date': date(2024, 1, 15),
             'description': 'Test return of capital',
             'reference_number': 'ROC001'
         }
@@ -374,7 +374,7 @@ class TestNAVUpdateHandler:
         """Test validation for NAV-based funds."""
         event_data = {
             'nav_per_share': 10.50,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         # Should not raise
@@ -386,7 +386,7 @@ class TestNAVUpdateHandler:
         
         event_data = {
             'nav_per_share': 10.50,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="Event requires NAV_BASED fund"):
@@ -395,7 +395,7 @@ class TestNAVUpdateHandler:
     def test_validate_event_missing_nav(self):
         """Test validation rejects missing NAV."""
         event_data = {
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="nav_per_share is required"):
@@ -414,7 +414,7 @@ class TestNAVUpdateHandler:
         """Test validation rejects invalid NAV."""
         event_data = {
             'nav_per_share': 'invalid',
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="nav_per_share must be a valid positive number"):
@@ -424,7 +424,7 @@ class TestNAVUpdateHandler:
         """Test validation rejects negative NAV."""
         event_data = {
             'nav_per_share': -10.50,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="nav_per_share must be a valid positive number"):
@@ -434,7 +434,7 @@ class TestNAVUpdateHandler:
         """Test validation rejects zero NAV."""
         event_data = {
             'nav_per_share': 0.0,
-            'date': date(2024, 1, 15)
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="nav_per_share is required"):
@@ -461,7 +461,7 @@ class TestNAVUpdateHandler:
         
         event_data = {
             'nav_per_share': 12.75,
-            'date': date(2024, 1, 15),
+            'event_date': date(2024, 1, 15),
             'description': 'Test NAV update',
             'reference_number': 'NAV001'
         }
@@ -636,9 +636,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_NAV_BASED_fund(self):
         """Test validation for NAV-based funds."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_purchased': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         # Should not raise
@@ -649,9 +649,9 @@ class TestUnitPurchaseHandler:
         self.mock_fund.tracking_type = FundType.COST_BASED
         
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_purchased': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="Event requires NAV_BASED fund"):
@@ -660,8 +660,8 @@ class TestUnitPurchaseHandler:
     def test_validate_event_missing_units(self):
         """Test validation rejects missing units."""
         event_data = {
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="units must be a valid positive number"):
@@ -670,8 +670,8 @@ class TestUnitPurchaseHandler:
     def test_validate_event_missing_price(self):
         """Test validation rejects missing price."""
         event_data = {
-            'units': 100.0,
-            'date': date(2024, 1, 15)
+            'units_purchased': 100.0,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="price must be a valid positive number"):
@@ -680,8 +680,8 @@ class TestUnitPurchaseHandler:
     def test_validate_event_missing_date(self):
         """Test validation rejects missing date."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50
+            'units_purchased': 100.0,
+            'unit_price': 10.50
         }
         
         with pytest.raises(ValueError, match="date is required"):
@@ -690,9 +690,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_invalid_units(self):
         """Test validation rejects invalid units."""
         event_data = {
-            'units': 'invalid',
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_purchased': 'invalid',
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="units must be a valid positive number"):
@@ -701,9 +701,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_invalid_price(self):
         """Test validation rejects invalid price."""
         event_data = {
-            'units': 100.0,
-            'price': 'invalid',
-            'date': date(2024, 1, 15)
+            'units_purchased': 100.0,
+            'unit_price': 'invalid',
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="price must be a valid positive number"):
@@ -712,9 +712,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_negative_units(self):
         """Test validation rejects negative units."""
         event_data = {
-            'units': -100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_purchased': -100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="units must be a valid positive number"):
@@ -723,9 +723,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_negative_price(self):
         """Test validation rejects negative price."""
         event_data = {
-            'units': 100.0,
-            'price': -10.50,
-            'date': date(2024, 1, 15)
+            'units_purchased': 100.0,
+            'unit_price': -10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="price must be a valid positive number"):
@@ -734,9 +734,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_zero_units(self):
         """Test validation rejects zero units."""
         event_data = {
-            'units': 0.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_purchased': 0.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="units must be a valid positive number"):
@@ -745,9 +745,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_zero_price(self):
         """Test validation rejects zero price."""
         event_data = {
-            'units': 100.0,
-            'price': 0.0,
-            'date': date(2024, 1, 15)
+            'units_purchased': 100.0,
+            'unit_price': 0.0,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="price must be a valid positive number"):
@@ -756,9 +756,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_with_brokerage_fee(self):
         """Test validation with valid brokerage fee."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15),
+            'units_purchased': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15),
             'brokerage_fee': 25.0
         }
         
@@ -768,9 +768,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_negative_brokerage_fee(self):
         """Test validation rejects negative brokerage fee."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15),
+            'units_purchased': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15),
             'brokerage_fee': -25.0
         }
         
@@ -780,9 +780,9 @@ class TestUnitPurchaseHandler:
     def test_validate_event_invalid_brokerage_fee(self):
         """Test validation rejects invalid brokerage fee."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15),
+            'units_purchased': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15),
             'brokerage_fee': 'invalid'
         }
         
@@ -850,9 +850,9 @@ class TestUnitSaleHandler:
     def test_validate_event_NAV_BASED_fund(self):
         """Test validation for NAV-based funds."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_sold': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         # Should not raise
@@ -863,9 +863,9 @@ class TestUnitSaleHandler:
         self.mock_fund.tracking_type = FundType.COST_BASED
         
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_sold': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="Event requires NAV_BASED fund"):
@@ -874,8 +874,8 @@ class TestUnitSaleHandler:
     def test_validate_event_missing_units(self):
         """Test validation rejects missing units."""
         event_data = {
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="units must be a valid positive number"):
@@ -884,8 +884,8 @@ class TestUnitSaleHandler:
     def test_validate_event_missing_price(self):
         """Test validation rejects missing price."""
         event_data = {
-            'units': 100.0,
-            'date': date(2024, 1, 15)
+            'units_sold': 100.0,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="price must be a valid positive number"):
@@ -894,8 +894,8 @@ class TestUnitSaleHandler:
     def test_validate_event_missing_date(self):
         """Test validation rejects missing date."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50
+            'units_sold': 100.0,
+            'unit_price': 10.50
         }
         
         with pytest.raises(ValueError, match="date is required"):
@@ -904,9 +904,9 @@ class TestUnitSaleHandler:
     def test_validate_event_invalid_units(self):
         """Test validation rejects invalid units."""
         event_data = {
-            'units': 'invalid',
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_sold': 'invalid',
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="units must be a valid positive number"):
@@ -915,9 +915,9 @@ class TestUnitSaleHandler:
     def test_validate_event_invalid_price(self):
         """Test validation rejects invalid price."""
         event_data = {
-            'units': 100.0,
-            'price': 'invalid',
-            'date': date(2024, 1, 15)
+            'units_sold': 100.0,
+            'unit_price': 'invalid',
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="price must be a valid positive number"):
@@ -926,9 +926,9 @@ class TestUnitSaleHandler:
     def test_validate_event_negative_units(self):
         """Test validation rejects negative units."""
         event_data = {
-            'units': -100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_sold': -100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="units must be a valid positive number"):
@@ -937,9 +937,9 @@ class TestUnitSaleHandler:
     def test_validate_event_negative_price(self):
         """Test validation rejects negative price."""
         event_data = {
-            'units': 100.0,
-            'price': -10.50,
-            'date': date(2024, 1, 15)
+            'units_sold': 100.0,
+            'unit_price': -10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="price must be a valid positive number"):
@@ -948,9 +948,9 @@ class TestUnitSaleHandler:
     def test_validate_event_zero_units(self):
         """Test validation rejects zero units."""
         event_data = {
-            'units': 0.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15)
+            'units_sold': 0.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="units must be a valid positive number"):
@@ -959,9 +959,9 @@ class TestUnitSaleHandler:
     def test_validate_event_zero_price(self):
         """Test validation rejects zero price."""
         event_data = {
-            'units': 100.0,
-            'price': 0.0,
-            'date': date(2024, 1, 15)
+            'units_sold': 100.0,
+            'unit_price': 0.0,
+            'event_date': date(2024, 1, 15)
         }
         
         with pytest.raises(ValueError, match="price must be a valid positive number"):
@@ -970,9 +970,9 @@ class TestUnitSaleHandler:
     def test_validate_event_with_brokerage_fee(self):
         """Test validation with valid brokerage fee."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15),
+            'units_sold': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15),
             'brokerage_fee': 25.0
         }
         
@@ -982,9 +982,9 @@ class TestUnitSaleHandler:
     def test_validate_event_negative_brokerage_fee(self):
         """Test validation rejects negative brokerage fee."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15),
+            'units_sold': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15),
             'brokerage_fee': -25.0
         }
         
@@ -994,9 +994,9 @@ class TestUnitSaleHandler:
     def test_validate_event_invalid_brokerage_fee(self):
         """Test validation rejects invalid brokerage fee."""
         event_data = {
-            'units': 100.0,
-            'price': 10.50,
-            'date': date(2024, 1, 15),
+            'units_sold': 100.0,
+            'unit_price': 10.50,
+            'event_date': date(2024, 1, 15),
             'brokerage_fee': 'invalid'
         }
         

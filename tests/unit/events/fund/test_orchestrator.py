@@ -96,7 +96,7 @@ class TestEventDataValidation:
         # Test valid date string
         valid_data = {
             'event_type': EventType.CAPITAL_CALL,
-            'date': '2024-01-15'
+            'event_date': '2024-01-15'
         }
         assert orchestrator.validate_event_data(valid_data) is True
         
@@ -104,7 +104,7 @@ class TestEventDataValidation:
         with pytest.raises(ValueError, match="Invalid date format"):
             orchestrator.validate_event_data({
                 'event_type': EventType.CAPITAL_CALL,
-                'date': 'invalid-date'
+                'event_date': 'invalid-date'
             })
     
     def test_validate_event_data_amount_validation(self):

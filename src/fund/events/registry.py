@@ -24,6 +24,7 @@ from src.fund.events.handlers.distribution_handler import DistributionHandler
 from src.fund.events.handlers.nav_update_handler import NAVUpdateHandler
 from src.fund.events.handlers.unit_purchase_handler import UnitPurchaseHandler
 from src.fund.events.handlers.unit_sale_handler import UnitSaleHandler
+from src.fund.events.handlers.tax_payment_handler import TaxPaymentHandler
 
 
 class FundEventHandlerRegistry:
@@ -193,3 +194,4 @@ class FundEventHandlerRegistry:
         self.register_handler(EventType.NAV_UPDATE, NAVUpdateHandler)
         self.register_handler(EventType.UNIT_PURCHASE, UnitPurchaseHandler)
         self.register_handler(EventType.UNIT_SALE, UnitSaleHandler)
+        self.register_handler(EventType.TAX_PAYMENT, TaxPaymentHandler)

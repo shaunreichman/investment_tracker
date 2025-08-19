@@ -51,9 +51,9 @@ class Fund(Base):
     expected_duration_months = Column(Integer)  # (MANUAL) expected fund duration in months
     
     # IRR storage fields (CALCULATED)
-    irr_gross = Column(Float, nullable=True)  # (CALCULATED) Gross IRR when realized/completed
-    irr_after_tax = Column(Float, nullable=True)  # (CALCULATED) After-tax IRR when completed
-    irr_real = Column(Float, nullable=True)  # (CALCULATED) Real IRR when completed
+    completed_irr_gross = Column(Float, nullable=True)  # (CALCULATED) Completed gross IRR when realized/completed
+    completed_irr_after_tax = Column(Float, nullable=True)  # (CALCULATED) Completed after-tax IRR when completed
+    completed_irr_real = Column(Float, nullable=True)  # (CALCULATED) Completed real IRR when completed
     
     # NAV-based fund specific fields (CALCULATED)
     current_units = Column(Float, default=0.0)  # (CALCULATED) current number of units owned
@@ -67,6 +67,7 @@ class Fund(Base):
     status = Column(Enum(FundStatus), default=FundStatus.ACTIVE)  # (CALCULATED) fund status (ACTIVE/REALIZED/COMPLETED)
     start_date = Column(Date, nullable=True)  # (CALCULATED) fund start date based on first capital call or unit purchase
     end_date = Column(Date, nullable=True)  # (CALCULATED) fund end date based on last equity/distribution event after equity balance reached zero
+    current_duration = Column(Integer, nullable=True)  # (CALCULATED) current fund duration in months based on status
     description = Column(Text)  # (MANUAL) fund description
     currency = Column(String(10), default="AUD")  # (MANUAL) currency code for the fund
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
@@ -365,6 +366,44 @@ class Fund(Base):
         
         return max(0, total_months)
     
+    def calculate_and_update_current_duration(self) -> Optional[int]:
+        """Calculate and update the current_duration field based on fund status.
+        
+        For ACTIVE funds: calculates duration from start_date to today
+        For REALIZED/COMPLETED funds: calculates duration from start_date to end_date
+        
+        Returns:
+            int or None: Calculated duration in months
+        """
+        if not self.start_date:
+            self.current_duration = None
+            return None
+        
+        # Determine the end date based on fund status
+        if self.status in [FundStatus.REALIZED, FundStatus.COMPLETED]:
+            # Use the fund's end_date for completed funds
+            if not self.end_date:
+                self.current_duration = None
+                return None
+            end_date = self.end_date
+        else:
+            # Use today's date for active funds
+            end_date = date.today()
+        
+        # Calculate months between start and end dates
+        year_diff = end_date.year - self.start_date.year
+        month_diff = end_date.month - self.start_date.month
+        
+        total_months = year_diff * 12 + month_diff
+        
+        # Adjust for day of month
+        if end_date.day < self.start_date.day:
+            total_months -= 1
+        
+        calculated_duration = max(0, total_months)
+        self.current_duration = calculated_duration
+        return calculated_duration
+    
     def get_expected_completion_date(self) -> Optional[date]:
         """Get the expected completion date based on start date and expected duration.
         
@@ -443,7 +482,7 @@ class Fund(Base):
         event_data = {
             'event_type': EventType.CAPITAL_CALL,
             'amount': amount,
-            'date': call_date,
+            'event_date': call_date,
             'description': description or f"Capital call: ${amount:,.2f}",
             'reference_number': reference_number
         }
@@ -483,7 +522,7 @@ class Fund(Base):
         event_data = {
             'event_type': EventType.RETURN_OF_CAPITAL,
             'amount': amount,
-            'date': return_date,
+            'event_date': return_date,
             'description': description or f"Return of capital: ${amount:,.2f}",
             'reference_number': reference_number
         }
@@ -565,7 +604,7 @@ class Fund(Base):
         event_data = {
             'event_type': EventType.NAV_UPDATE,
             'nav_per_share': nav_per_share,
-            'date': update_date,
+            'event_date': update_date,
             'description': description or f"NAV update: ${nav_per_share:.4f}",
             'reference_number': reference_number
         }
@@ -607,7 +646,7 @@ class Fund(Base):
             'event_type': EventType.UNIT_PURCHASE,
             'units_purchased': units,
             'unit_price': price,
-            'date': date,
+            'event_date': date,
             'description': description or f"Unit purchase: {units:.4f} units @ ${price:.4f}",
             'reference_number': reference_number
         }
@@ -649,7 +688,7 @@ class Fund(Base):
             'event_type': EventType.UNIT_SALE,
             'units_sold': units,
             'unit_price': price,
-            'date': date,
+            'event_date': date,
             'description': description or f"Unit sale: {units:.4f} units @ ${price:.4f}",
             'reference_number': reference_number
         }
@@ -957,21 +996,18 @@ class Fund(Base):
             session: Database session
             
         Returns:
-            date or None: Fund end date if fund is completed
+            date or None: Fund end date if fund is completed or realized
         """
         if not session:
             raise ValueError("Session required for get_end_date")
         
-        # Only calculate end date if fund is completed
-        if self.status != FundStatus.COMPLETED:
+        # Calculate end date for both COMPLETED and REALIZED funds
+        if self.status not in [FundStatus.COMPLETED, FundStatus.REALIZED]:
             return None
         
-        events = self.get_all_fund_events(session=session)
-        if not events:
-            return None
-        
-        # Get the latest event date
-        event_dates = [event.event_date for event in events if event.event_date]
-        return max(event_dates) if event_dates else None
+        # Use the status service for consistent end date calculation
+        from src.fund.services.fund_status_service import FundStatusService
+        status_service = FundStatusService()
+        return status_service.calculate_end_date(self, session)
     
 

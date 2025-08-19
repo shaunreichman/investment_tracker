@@ -54,7 +54,7 @@ class TestEventHandlerIntegration:
         event_data = {
             'event_type': EventType.CAPITAL_CALL,
             'amount': 100000.0,
-            'date': '2024-01-15',
+            'event_date': '2024-01-15',
             'description': 'Initial capital call',
             'reference_number': 'CC001'
         }
@@ -115,7 +115,7 @@ class TestEventHandlerIntegration:
         event_data = {
             'event_type': EventType.NAV_UPDATE,
             'nav_per_share': 10.50,
-            'date': '2024-01-15',
+            'event_date': '2024-01-15',
             'description': 'Initial NAV update',
             'reference_number': 'NAV001'
         }
@@ -181,14 +181,14 @@ class TestEventHandlerIntegration:
             {
                 'event_type': EventType.CAPITAL_CALL,
                 'amount': 50000.0,
-                'date': '2024-01-15',
+                'event_date': '2024-01-15',
                 'description': 'First capital call',
                 'reference_number': 'CC001'
             },
             {
                 'event_type': EventType.CAPITAL_CALL,
                 'amount': 50000.0,
-                'date': '2024-02-15',
+                'event_date': '2024-02-15',
                 'description': 'Second capital call',
                 'reference_number': 'CC002'
             }

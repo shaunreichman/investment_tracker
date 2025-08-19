@@ -275,7 +275,7 @@ class TestReturnOfCapitalWorkflow:
         event_data = {
             'event_type': EventType.RETURN_OF_CAPITAL,
             'amount': 20000.0,
-            'date': date(2023, 6, 30),
+            'event_date': date(2023, 6, 30),
             'description': 'Orchestrator test return',
             'reference_number': 'ORCH001'
         }
