@@ -22,6 +22,9 @@ from src.fund.models import Fund, FundEvent, FundEventCashFlow
 from src.fund.enums import FundType, FundStatus, EventType, CashFlowDirection
 from src.banking.models import Bank, BankAccount
 
+# Import route blueprints
+from src.api.routes import fund
+
 def create_app(db_config=None):
     app = Flask(__name__)
     CORS(app)
@@ -867,36 +870,6 @@ def create_app(db_config=None):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/funds', methods=['POST'])
-    def create_fund():
-        """Create a new fund using the new FundController architecture"""
-        try:
-            from src.fund.api import FundController
-            controller = FundController()
-            return controller.create_fund()
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-    @app.route('/api/funds/<int:fund_id>/events', methods=['POST'])
-    def create_fund_event(fund_id):
-        """Create a new fund event using the new FundController architecture"""
-        try:
-            from src.fund.api import FundController
-            controller = FundController()
-            return controller.add_fund_event(fund_id)
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-
-    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>', methods=['DELETE'])
-    def delete_fund_event(fund_id, event_id):
-        """Delete a specific fund event using the new FundController architecture"""
-        try:
-            from src.fund.api import FundController
-            controller = FundController()
-            return controller.delete_fund_event(fund_id, event_id)
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
     # Edit functionality removed - use delete + create pattern instead
     # PUT endpoint removed as per Phase 6: Complete Legacy Cleanup
 
@@ -1504,246 +1477,15 @@ def create_app(db_config=None):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows', methods=['GET'])
-    def get_fund_event_cash_flows(fund_id, event_id):
-        """Get all cash flows for a specific fund event"""
-        try:
-            session = get_db_session()
-            
-            try:
-                # Validate fund exists
-                fund = Fund.get_by_id(fund_id, session=session)
-                if not fund:
-                    return jsonify({"error": "Fund not found"}), 404
-                
-                # Validate event exists and belongs to fund
-                event = session.query(FundEvent).filter(
-                    FundEvent.id == event_id,
-                    FundEvent.fund_id == fund_id
-                ).first()
-                
-                if not event:
-                    return jsonify({"error": "Fund event not found"}), 404
-                
-                cash_flows_data = []
-                for cf in event.cash_flows:
-                    cf_data = {
-                        "id": cf.id,
-                        "bank_account_id": cf.bank_account_id,
-                        "bank_name": cf.bank_account.bank.name,
-                        "account_name": cf.bank_account.account_name,
-                        "direction": cf.direction.value,
-                        "transfer_date": cf.transfer_date.isoformat(),
-                        "currency": cf.currency,
-                        "amount": float(cf.amount),
-                        "reference": cf.reference,
-                        "notes": cf.notes
-                    }
-                    cash_flows_data.append(cf_data)
-                
-                response_data = {
-                    "fund_id": fund_id,
-                    "event_id": event_id,
-                    "event_type": event.event_type.value,
-                    "event_date": event.event_date.isoformat(),
-                    "event_amount": float(event.amount) if event.amount else None,
-                    "is_cash_flow_complete": event.is_cash_flow_complete,
-                    "cash_flows": cash_flows_data
-                }
-                
-                return jsonify(response_data), 200
-                
-            finally:
-                session.close()
-                
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows', methods=['POST'])
-    def add_fund_event_cash_flow(fund_id, event_id):
-        """Add a cash flow to a fund event"""
-        try:
-            data = request.get_json()
-            if not data:
-                return jsonify({"error": "No data provided"}), 400
-            
-            required_fields = ['bank_account_id', 'transfer_date', 'currency', 'amount']
-            for field in required_fields:
-                if field not in data or not data[field]:
-                    return jsonify({"error": f"Missing required field: {field}"}), 400
-            
-            session = get_db_session()
-            
-            try:
-                # Validate fund exists
-                fund = Fund.get_by_id(fund_id, session=session)
-                if not fund:
-                    return jsonify({"error": "Fund not found"}), 404
-                
-                # Validate event exists and belongs to fund
-                event = session.query(FundEvent).filter(
-                    FundEvent.id == event_id,
-                    FundEvent.fund_id == fund_id
-                ).first()
-                
-                if not event:
-                    return jsonify({"error": "Fund event not found"}), 404
-                
-                # Validate bank account exists
-                bank_account = session.query(BankAccount).filter(BankAccount.id == data['bank_account_id']).first()
-                if not bank_account:
-                    return jsonify({"error": "Bank account not found"}), 404
-                
-                # Validate currency matches bank account
-                if data['currency'].upper() != bank_account.currency.upper():
-                    return jsonify({"error": "Cash flow currency must match bank account currency"}), 400
-                
-                # Parse transfer date
-                try:
-                    from datetime import datetime
-                    transfer_date = datetime.strptime(data['transfer_date'], '%Y-%m-%d').date()
-                except ValueError:
-                    return jsonify({"error": "Invalid transfer_date format. Use YYYY-MM-DD"}), 400
-                
-                # Add cash flow using domain method
-                cash_flow = event.add_cash_flow(
-                    bank_account_id=data['bank_account_id'],
-                    transfer_date=transfer_date,
-                    currency=data['currency'],
-                    amount=float(data['amount']),
-                    reference=data.get('reference'),
-                    notes=data.get('notes'),
-                    session=session
-                )
-                
-                session.commit()
-                
-                response_data = {
-                    "id": cash_flow.id,
-                    "fund_event_id": cash_flow.fund_event_id,
-                    "bank_account_id": cash_flow.bank_account_id,
-                    "bank_name": bank_account.bank.name,
-                    "account_name": bank_account.account_name,
-                    "direction": cash_flow.direction.value,
-                    "transfer_date": cash_flow.transfer_date.isoformat(),
-                    "currency": cash_flow.currency,
-                    "amount": float(cash_flow.amount),
-                    "reference": cash_flow.reference,
-                    "notes": cash_flow.notes,
-                    "message": "Cash flow added successfully"
-                }
-                
-                return jsonify(response_data), 201
-                
-            finally:
-                session.close()
-                
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows/<int:cash_flow_id>', methods=['DELETE'])
-    def remove_fund_event_cash_flow(fund_id, event_id, cash_flow_id):
-        """Remove a cash flow from a fund event"""
-        try:
-            session = get_db_session()
-            
-            try:
-                # Validate fund exists
-                fund = Fund.get_by_id(fund_id, session=session)
-                if not fund:
-                    return jsonify({"error": "Fund not found"}), 404
-                
-                # Validate event exists and belongs to fund
-                event = session.query(FundEvent).filter(
-                    FundEvent.id == event_id,
-                    FundEvent.fund_id == fund_id
-                ).first()
-                
-                if not event:
-                    return jsonify({"error": "Fund event not found"}), 404
-                
-                # Remove cash flow using domain method
-                event.remove_cash_flow(cash_flow_id, session=session)
-                session.commit()
-                
-                return jsonify({"message": "Cash flow removed successfully"}), 200
-                
-            finally:
-                session.close()
-                
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/cash-flows', methods=['GET'])
-    def get_cash_flows():
-        """Get cash flows with optional filtering"""
-        try:
-            session = get_db_session()
-            
-            try:
-                # Get query parameters for filtering
-                fund_id = request.args.get('fund_id', type=int)
-                bank_account_id = request.args.get('bank_account_id', type=int)
-                start_date = request.args.get('start_date')
-                end_date = request.args.get('end_date')
-                currency = request.args.get('currency')
-                
-                query = session.query(FundEventCashFlow).join(FundEvent)
-                
-                # Apply filters
-                if fund_id:
-                    query = query.filter(FundEvent.fund_id == fund_id)
-                if bank_account_id:
-                    query = query.filter(FundEventCashFlow.bank_account_id == bank_account_id)
-                if currency:
-                    query = query.filter(FundEventCashFlow.currency == currency.upper())
-                
-                # Date filtering
-                if start_date:
-                    try:
-                        from datetime import datetime
-                        start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
-                        query = query.filter(FundEventCashFlow.transfer_date >= start_dt)
-                    except ValueError:
-                        return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
-                
-                if end_date:
-                    try:
-                        from datetime import datetime
-                        end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
-                        query = query.filter(FundEventCashFlow.transfer_date <= end_dt)
-                    except ValueError:
-                        return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
-                
-                cash_flows = query.order_by(FundEventCashFlow.transfer_date.desc()).all()
-                
-                flows_data = []
-                for cf in cash_flows:
-                    cf_data = {
-                        "id": cf.id,
-                        "fund_event_id": cf.fund_event_id,
-                        "fund_id": cf.fund_event.fund_id,
-                        "fund_name": cf.fund_event.fund.name,
-                        "event_type": cf.fund_event.event_type.value,
-                        "event_date": cf.fund_event.event_date.isoformat(),
-                        "bank_account_id": cf.bank_account_id,
-                        "bank_name": cf.bank_account.bank.name,
-                        "account_name": cf.bank_account.account_name,
-                        "direction": cf.direction.value,
-                        "transfer_date": cf.transfer_date.isoformat(),
-                        "currency": cf.currency,
-                        "amount": float(cf.amount),
-                        "reference": cf.reference,
-                        "notes": cf.notes
-                    }
-                    flows_data.append(cf_data)
-                
-                return jsonify({"cash_flows": flows_data}), 200
-                
-            finally:
-                session.close()
-                
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+
+
+
+
+
+    # Register route blueprints
+    app.register_blueprint(fund.fund_bp)
 
     return app 
