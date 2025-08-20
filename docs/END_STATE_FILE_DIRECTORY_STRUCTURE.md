@@ -104,12 +104,12 @@ tests/
 │   │       └── test_event_utilities.py               # Common event utilities
 │   ├── repositories/                    # Data access layer
 │   │   ├── __init__.py
-│   │   ├── fund/                        # Fund data access
-│   │   │   ├── __init__.py
+│   │   ├── ✅ fund/                        # Fund data access
+│   │   │   ├── ✅ __init__.py
 │   │   │   ├── ✅ test_fund_repository.py               # Data access logic
 │   │   │   ├── ✅ test_fund_event_repository.py         # Event query logic
 │   │   │   ├── ✅ test_domain_event_repository.py       # Domain event persistence
-│   │   │   └── test_tax_statement_repository.py      # Tax statement persistence
+│   │   │   └── ✅ test_tax_statement_repository.py      # Tax statement persistence
 │   │   ├── investment_company/          # Company data access
 │   │   │   ├── __init__.py
 │   │   │   └── test_investment_company_repository.py # Company data access
@@ -180,8 +180,8 @@ tests/
 │   │   ├── __init__.py
 │   │   ├── fund/                          # Fund service integration
 │   │   │   ├── __init__.py
-│   │   │   ├── test_fund_calculation_integration.py  # Service interaction tests
-│   │   │   └── test_fund_event_integration.py        # Event service integration
+│   │   │   ├── ❌ test_fund_calculation_integration.py  # Service interaction tests **NOT IMPLEMENTING**
+│   │   │   └── ❌ test_fund_event_integration.py        # Event service integration **NOT IMPLEMENTING**
 │   │   ├── cross_domain/                   # Cross-domain service integration
 │   │   │   ├── __init__.py
 │   │   │   ├── test_fund_company_integration.py      # Fund-company integration
