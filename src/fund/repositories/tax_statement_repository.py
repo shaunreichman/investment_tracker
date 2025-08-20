@@ -13,7 +13,7 @@ Key responsibilities:
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_, func, asc, desc
 
 from src.tax.models import TaxStatement
 from src.fund.enums import SortOrder
@@ -235,7 +235,7 @@ class TaxStatementRepository:
         # Validate required fields
         required_fields = ['fund_id', 'entity_id', 'financial_year']
         for field in required_fields:
-            if field not in statement_data:
+            if field not in statement_data or statement_data[field] is None:
                 raise ValueError(f"Required field '{field}' is missing")
         
         # Create tax statement object
@@ -325,12 +325,16 @@ class TaxStatementRepository:
         """
         Get all final tax statements for a fund.
         
+        Note: This method currently returns all tax statements for the fund.
+        The concept of "final" tax statements is determined by business logic
+        comparing tax_payment_date with fund end date, not by a database field.
+        
         Args:
             fund_id: ID of the fund
             session: Database session
             
         Returns:
-            List of final TaxStatement objects for the fund
+            List of TaxStatement objects for the fund
         """
         cache_key = f"final_tax_statements:fund:{fund_id}"
         
@@ -338,42 +342,9 @@ class TaxStatementRepository:
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        # Query database for final statements
+        # Query database for all statements (final determination is business logic)
         statements = session.query(TaxStatement).filter(
-            and_(
-                TaxStatement.fund_id == fund_id,
-                TaxStatement.is_final == True
-            )
-        ).order_by(desc(TaxStatement.financial_year)).all()
-        
-        # Cache the result
-        self._cache[cache_key] = statements
-        
-        return statements
-    
-    def get_draft_statements(self, fund_id: int, session: Session) -> List[TaxStatement]:
-        """
-        Get all draft tax statements for a fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            
-        Returns:
-            List of draft TaxStatement objects for the fund
-        """
-        cache_key = f"draft_tax_statements:fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database for draft statements
-        statements = session.query(TaxStatement).filter(
-            and_(
-                TaxStatement.fund_id == fund_id,
-                TaxStatement.is_final == False
-            )
+            TaxStatement.fund_id == fund_id
         ).order_by(desc(TaxStatement.financial_year)).all()
         
         # Cache the result
@@ -418,7 +389,7 @@ class TaxStatementRepository:
         if fund_id:
             # Clear all fund-related caches
             for key in list(self._cache.keys()):
-                if f"tax_statements:fund:{fund_id}" in key or f"final_tax_statements:fund:{fund_id}" in key or f"draft_tax_statements:fund:{fund_id}" in key or f"tax_statement_count:fund:{fund_id}" in key:
+                if f"tax_statements:fund:{fund_id}" in key or f"final_tax_statements:fund:{fund_id}" in key or f"tax_statement_count:fund:{fund_id}" in key:
                     self._cache.pop(key, None)
     
     def _clear_entity_cache(self, entity_id: Optional[int]) -> None:
