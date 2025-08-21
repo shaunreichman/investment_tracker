@@ -22,7 +22,7 @@ fund_bp = Blueprint('fund', __name__)
 def fund_detail(fund_id):
     """Get detailed information about a specific fund"""
     try:
-        from src.api import get_db_session
+        from src.api.database import get_db_session
         session = get_db_session()
         
         try:

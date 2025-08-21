@@ -42,16 +42,31 @@ Refactor the monolithic API structure into a maintainable, testable architecture
 - All business logic must go through controller layer
 - Controllers handle request/response formatting and error handling
 - Services handle business logic, repositories handle data access
-**Progress**: 12 of 25 endpoints converted (48% complete)
+**Progress**: 25 of 25 endpoints converted (100% complete) ✅
 **Tasks**:
 - [x] Create `CompanyController` following `FundController` pattern
 - [x] Create `DashboardController` for dashboard endpoints
-- [ ] Convert remaining direct Flask routes to use controllers
-- [ ] Implement consistent error response format across all endpoints
+- [x] **Phase 2A: Entity & Banking Controllers** ✅ **COMPLETED**
+  - [x] Create `EntityController` for entity management
+  - [x] Create `BankingController` for bank and bank account management
+  - [x] Create route files: `src/api/routes/entity.py` and `src/api/routes/banking.py`
+  - [x] Convert all entity and banking endpoints to use controllers
+  - [x] Remove old direct Flask routes from main API file
+  - [x] Fix circular import issues by creating `src/api/database.py`
+- [x] **Phase 2B: Tax & Fund Cleanup** ✅ **COMPLETED**
+  - [x] Create `TaxController` for tax statement endpoints
+  - [x] Create `src/api/routes/tax.py`
+  - [x] Convert tax statement endpoints
+  - [x] Remove duplicate fund endpoint from main API file
+- [x] **Phase 2C: Integration & Testing** ✅ **COMPLETED**
+  - [x] Register all new blueprints in `src/api/__init__.py`
+  - [x] Remove all direct Flask routes from main API file
+  - [x] Implement consistent error response format across all controllers
+  - [x] Ensure all endpoints return proper HTTP status codes
 **Success Criteria**:
-- 100% of endpoints use controller pattern
-- Consistent error response format (JSON with error message and status)
-- All endpoints return proper HTTP status codes
+- ✅ 100% of endpoints use controller pattern
+- ✅ Consistent error response format (JSON with error message and status)
+- ✅ All endpoints return proper HTTP status codes
 
 ### Phase 3: Middleware Implementation
 **Goal**: Add enterprise-grade middleware for validation, error handling, and logging

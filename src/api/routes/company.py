@@ -7,7 +7,7 @@ investment company management and company-specific fund operations.
 
 from flask import Blueprint, jsonify, request
 from src.investment_company.api import CompanyController
-from src.api import get_db_session
+from src.api.database import get_db_session
 
 # Create blueprint for company routes
 company_bp = Blueprint('company', __name__)

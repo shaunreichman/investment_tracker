@@ -7,7 +7,7 @@ portfolio summary, funds list, recent events, and performance data.
 
 from flask import Blueprint, jsonify, request
 from src.api.controllers import DashboardController
-from src.api import get_db_session
+from src.api.database import get_db_session
 
 # Create blueprint for dashboard routes
 dashboard_bp = Blueprint('dashboard', __name__)
