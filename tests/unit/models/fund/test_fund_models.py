@@ -426,38 +426,38 @@ class TestFundIRRValidation:
     def test_irr_range_validation(self, fund):
         """Test IRR range validation."""
         # Valid IRR values
-        fund.irr_gross = 15.5
-        fund.irr_after_tax = 12.0
-        fund.irr_real = 10.5
+        fund.completed_irr_gross = 15.5
+        fund.completed_irr_after_tax = 12.0
+        fund.completed_irr_real = 10.5
         fund.validate_irr_constraints()
         
         # Boundary values
-        fund.irr_gross = -100.0
-        fund.irr_after_tax = 1000.0
-        fund.irr_real = 0.0
+        fund.completed_irr_gross = -100.0
+        fund.completed_irr_after_tax = 1000.0
+        fund.completed_irr_real = 0.0
         fund.validate_irr_constraints()
         
         # Invalid IRR values
-        fund.irr_gross = -150.0
+        fund.completed_irr_gross = -150.0
         with pytest.raises(ValueError, match="IRR values must be between -100% and 1000%"):
             fund.validate_irr_constraints()
         
-        fund.irr_gross = 1500.0
+        fund.completed_irr_gross = 1500.0
         with pytest.raises(ValueError, match="IRR values must be between -100% and 1000%"):
             fund.validate_irr_constraints()
     
     def test_irr_null_values(self, fund):
         """Test IRR validation with null values."""
         # All null values should pass
-        fund.irr_gross = None
-        fund.irr_after_tax = None
-        fund.irr_real = None
+        fund.completed_irr_gross = None
+        fund.completed_irr_after_tax = None
+        fund.completed_irr_real = None
         fund.validate_irr_constraints()
         
         # Mixed null and valid values
-        fund.irr_gross = 15.5
-        fund.irr_after_tax = None
-        fund.irr_real = None
+        fund.completed_irr_gross = 15.5
+        fund.completed_irr_after_tax = None
+        fund.completed_irr_real = None
         fund.validate_irr_constraints()
 
 
@@ -754,7 +754,7 @@ class TestFundBusinessLogicMethods:
         event_data = call_args[0][0]  # First positional argument
         assert event_data['event_type'] == EventType.CAPITAL_CALL
         assert event_data['amount'] == 50000.0
-        assert event_data['date'] == date(2023, 1, 1)
+        assert event_data['event_date'] == date(2023, 1, 1)
         assert event_data['description'] == "Initial call"
     
     def test_add_capital_call_validation_errors(self, mock_session):
@@ -907,7 +907,7 @@ class TestFundBusinessLogicMethods:
         event_data = call_args[0][0]
         assert event_data['event_type'] == EventType.NAV_UPDATE
         assert event_data['nav_per_share'] == 25.50
-        assert event_data['date'] == date(2023, 6, 1)
+        assert event_data['event_date'] == date(2023, 6, 1)
         assert event_data['description'] == "Monthly NAV update"
     
     def test_add_nav_update_validation_errors(self, mock_session):
@@ -957,7 +957,7 @@ class TestFundBusinessLogicMethods:
         assert event_data['event_type'] == EventType.UNIT_PURCHASE
         assert event_data['units_purchased'] == 1000.0
         assert event_data['unit_price'] == 25.50
-        assert event_data['date'] == date(2023, 6, 1)
+        assert event_data['event_date'] == date(2023, 6, 1)
         assert event_data['description'] == "Initial purchase"
     
     def test_add_unit_purchase_validation_errors(self, mock_session):
@@ -1014,7 +1014,7 @@ class TestFundBusinessLogicMethods:
         assert event_data['event_type'] == EventType.UNIT_SALE
         assert event_data['units_sold'] == 500.0
         assert event_data['unit_price'] == 30.00
-        assert event_data['date'] == date(2023, 6, 1)
+        assert event_data['event_date'] == date(2023, 6, 1)
         assert event_data['description'] == "Partial sale"
     
     def test_add_unit_sale_validation_errors(self, mock_session):

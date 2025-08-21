@@ -204,7 +204,7 @@ class Fund(Base):
         Raises:
             ValueError: If validation fails
         """
-        for irr_field in [self.irr_gross, self.irr_after_tax, self.irr_real]:
+        for irr_field in [self.completed_irr_gross, self.completed_irr_after_tax, self.completed_irr_real]:
             if irr_field is not None and (irr_field < -100 or irr_field > 1000):
                 raise ValueError("IRR values must be between -100% and 1000%")
         
