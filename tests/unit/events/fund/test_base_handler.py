@@ -326,10 +326,25 @@ class TestBaseFundEventHandler:
         self.mock_fund.current_units = 100.0
         self.mock_fund.current_unit_price = 10.0
         
+        # Mock the database query chain for unit events
+        mock_unit_event = Mock()
+        mock_unit_event.current_equity_balance = 950.0  # Mock equity balance
+        
+        mock_query = Mock()
+        mock_filter = Mock()
+        mock_order_by = Mock()
+        
+        self.mock_session.query.return_value = mock_query
+        mock_query.filter.return_value = mock_filter
+        mock_filter.order_by.return_value = mock_order_by
+        mock_order_by.all.return_value = [mock_unit_event]  # Return a list with the mock event
+        
         self.handler._update_nav_based_fund_summary()
         
         # Verify NAV total was calculated
         assert self.mock_fund.current_nav_total == 1000.0
+        # Verify equity balance was updated from the mock event
+        assert self.mock_fund.current_equity_balance == 950.0
     
     def test_handle_status_transition_no_transition(self):
         """Test status transition handling when no transition is needed."""

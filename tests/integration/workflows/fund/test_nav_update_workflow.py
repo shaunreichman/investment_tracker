@@ -46,9 +46,19 @@ class TestNAVUpdateWorkflow:
         )
         db_session.commit()
         
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Initial state validation
-        assert fund.current_unit_price == 0.0
-        assert fund.current_nav_total == 0.0
+        assert fund.current_unit_price == 25.00
+        assert fund.current_nav_total == 25000.0  # 1000 units * $25.00
         assert fund.tracking_type == FundType.NAV_BASED
         
         # Execute NAV update
@@ -66,9 +76,10 @@ class TestNAVUpdateWorkflow:
         assert event.nav_per_share == 25.50
         assert event.event_date == date(2023, 6, 1)
         assert event.description == "Initial NAV update"
-        assert event.nav_change_absolute is None  # First NAV update
-        assert event.nav_change_percentage is None  # First NAV update
-        assert event.previous_nav_per_share is None  # First NAV update
+        # First NAV update should have None change fields (no previous NAV to compare against)
+        assert event.nav_change_absolute is None  # No previous NAV event
+        assert event.nav_change_percentage is None  # No previous NAV to calculate percentage from
+        assert event.previous_nav_per_share is None  # No previous NAV event
 
     def test_nav_update_with_change_calculations(self, db_session):
         """Test NAV update workflow with NAV change calculations"""
@@ -81,6 +92,16 @@ class TestNAVUpdateWorkflow:
             tracking_type=FundType.NAV_BASED,
             commitment_amount=100000.0,
             current_units=1000.0
+        )
+        db_session.commit()
+        
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
         )
         db_session.commit()
         
@@ -112,6 +133,16 @@ class TestNAVUpdateWorkflow:
         fund = FundFactory.create(
             tracking_type=FundType.NAV_BASED,
             commitment_amount=100000.0
+        )
+        db_session.commit()
+        
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
         )
         db_session.commit()
         
@@ -169,6 +200,16 @@ class TestNAVUpdateWorkflow:
         )
         db_session.commit()
         
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Create NAV updates in chronological order
         first_event = fund.add_nav_update(25.00, date(2023, 6, 1), "June NAV", session=db_session)
         second_event = fund.add_nav_update(26.00, date(2023, 7, 1), "July NAV", session=db_session)
@@ -211,6 +252,16 @@ class TestNAVUpdateWorkflow:
         )
         db_session.commit()
         
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 6, 1),
+            description="Initial unit purchase",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Initial NAV update
         fund.add_nav_update(25.00, date(2023, 6, 1), "Initial NAV", session=db_session)
         db_session.commit()
@@ -225,9 +276,9 @@ class TestNAVUpdateWorkflow:
         
         # Verify fund state
         fund = db_session.get(Fund, fund.id)
-        assert fund.current_units == 1000.0
+        assert fund.current_units == 2000.0  # 1000 initial + 1000 purchased
         assert fund.current_unit_price == 26.00
-        assert fund.current_nav_total == 26000.0  # 1000 units * $26.00
+        assert fund.current_nav_total == 52000.0  # 2000 units * $26.00
         
         # Purchase more units
         fund.add_unit_purchase(500.0, 26.00, date(2023, 7, 15), "Additional units", session=db_session)
@@ -239,9 +290,9 @@ class TestNAVUpdateWorkflow:
         
         # Verify updated fund state
         fund = db_session.get(Fund, fund.id)
-        assert fund.current_units == 1500.0
+        assert fund.current_units == 2500.0  # 2000 previous + 500 additional
         assert fund.current_unit_price == 27.00
-        assert fund.current_nav_total == 40500.0  # 1500 units * $27.00
+        assert fund.current_nav_total == 67500.0  # 2500 units * $27.00
 
     def test_nav_update_idempotent_behavior(self, db_session):
         """Test that NAV updates are idempotent and don't create duplicates"""
@@ -253,6 +304,16 @@ class TestNAVUpdateWorkflow:
         fund = FundFactory.create(
             tracking_type=FundType.NAV_BASED,
             commitment_amount=100000.0
+        )
+        db_session.commit()
+        
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
         )
         db_session.commit()
         
@@ -286,6 +347,16 @@ class TestNAVUpdateWorkflow:
         fund = FundFactory.create(
             tracking_type=FundType.NAV_BASED,
             commitment_amount=100000.0
+        )
+        db_session.commit()
+        
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
         )
         db_session.commit()
         
@@ -330,6 +401,16 @@ class TestNAVUpdateWorkflow:
         )
         db_session.commit()
         
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Record initial state
         initial_unit_price = fund.current_unit_price
         initial_nav_total = fund.current_nav_total
@@ -371,6 +452,16 @@ class TestNAVUpdateWorkflow:
         )
         db_session.commit()
         
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Create NAV update event
         event = fund.add_nav_update(25.50, date(2023, 6, 1), "NAV update with cash flow", session=db_session)
         db_session.commit()
@@ -404,6 +495,16 @@ class TestNAVUpdateWorkflow:
             tracking_type=FundType.NAV_BASED,
             commitment_amount=100000.0,
             current_units=1000.0
+        )
+        db_session.commit()
+        
+        # Create initial UNIT_PURCHASE event (required for NAV-based funds)
+        initial_event = fund.add_unit_purchase(
+            units=1000.0,
+            price=20.00,
+            date=date(2022, 12, 1),
+            description="Initial unit purchase",
+            session=db_session
         )
         db_session.commit()
         

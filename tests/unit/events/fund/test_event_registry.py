@@ -79,7 +79,7 @@ class TestFundEventHandlerRegistry:
         assert EventType.RETURN_OF_CAPITAL in registry._handlers
         
         # Check total count of registered handlers
-        assert len(registry._handlers) == 6
+        assert len(registry._handlers) == 7
     
     def test_register_handler_success(self):
         """Test successful handler registration."""
@@ -276,8 +276,8 @@ class TestFundEventHandlerRegistry:
         
         assert EventType.CAPITAL_CALL in registered_types
         assert EventType.DISTRIBUTION in registered_types
-        # Note: clear_handlers restores default handlers, so we have 6 total (4 defaults + 2 custom)
-        assert len(registered_types) == 6
+        # Note: clear_handlers restores default handlers, so we have 7 total (5 defaults + 2 custom)
+        assert len(registered_types) == 7
         assert isinstance(registered_types, list)
     
     def test_get_registered_event_types_empty(self):
@@ -287,8 +287,8 @@ class TestFundEventHandlerRegistry:
         
         registered_types = self.registry.get_registered_event_types()
         
-        # Note: clear_handlers restores default handlers, so we have 6 default handlers
-        assert len(registered_types) == 6
+        # Note: clear_handlers restores default handlers, so we have 7 default handlers
+        assert len(registered_types) == 7
         assert isinstance(registered_types, list)
     
     def test_unregister_handler_success(self):
@@ -315,7 +315,7 @@ class TestFundEventHandlerRegistry:
         self.registry.unregister_handler(EventType.CAPITAL_CALL)
         
         # Verify CAPITAL_CALL is no longer registered, but others remain
-        assert len(self.registry.get_registered_event_types()) == 5
+        assert len(self.registry.get_registered_event_types()) == 6
         assert EventType.CAPITAL_CALL not in self.registry.get_registered_event_types()
         assert EventType.DISTRIBUTION in self.registry.get_registered_event_types()
     
@@ -326,14 +326,14 @@ class TestFundEventHandlerRegistry:
         self.registry.register_handler(EventType.CAPITAL_CALL, MockEventHandler)
         self.registry.register_handler(EventType.DISTRIBUTION, MockEventHandler)
         
-        # Verify handlers are registered (2 custom + 4 default = 6 total)
-        assert len(self.registry.get_registered_event_types()) == 6
+        # Verify handlers are registered (2 custom + 5 default = 7 total)
+        assert len(self.registry.get_registered_event_types()) == 7
         
         # Clear all handlers
         self.registry.clear_handlers()
         
-        # Verify default handlers are restored (6 default handlers)
-        assert len(self.registry.get_registered_event_types()) == 6
+        # Verify default handlers are restored (7 default handlers)
+        assert len(self.registry.get_registered_event_types()) == 7
     
     def test_clear_handlers_restores_defaults(self):
         """Test that clearing handlers restores default handlers."""
@@ -562,8 +562,8 @@ class TestEventRegistryIntegration:
         
         # Test clearing and restoration
         self.registry.clear_handlers()
-        # Note: clear_handlers restores default handlers, so we have 6 default handlers
-        assert len(self.registry.get_registered_event_types()) == 6
+        # Note: clear_handlers restores default handlers, so we have 7 default handlers
+        assert len(self.registry.get_registered_event_types()) == 7
         
         # Verify default handlers are restored
         assert EventType.CAPITAL_CALL in self.registry._handlers

@@ -46,8 +46,17 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
+        # Create initial CAPITAL_CALL event (required for cost-based funds)
+        initial_event = fund.add_capital_call(
+            amount=50000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Initial state validation
-        assert fund.current_equity_balance == 0.0
+        assert fund.current_equity_balance == 50000.0
         assert fund.total_distributions(session=db_session) == 0.0
         
         # Execute distribution
@@ -93,6 +102,15 @@ class TestDistributionWorkflow:
             fund=fund,
             entity=entity,
             financial_year=2024
+        )
+        db_session.commit()
+        
+        # Create initial CAPITAL_CALL event (required for cost-based funds)
+        initial_event = fund.add_capital_call(
+            amount=50000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
         )
         db_session.commit()
         
@@ -148,6 +166,15 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
+        # Create initial CAPITAL_CALL event (required for cost-based funds)
+        initial_event = fund.add_capital_call(
+            amount=50000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Execute franked dividend distribution
         event = fund.add_distribution(
             event_date=date(2024, 3, 31),
@@ -186,6 +213,15 @@ class TestDistributionWorkflow:
             tracking_type=FundType.COST_BASED,
             commitment_amount=100000.0,
             currency="AUD"
+        )
+        db_session.commit()
+        
+        # Create initial CAPITAL_CALL event (required for cost-based funds)
+        initial_event = fund.add_capital_call(
+            amount=50000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
         )
         db_session.commit()
         
@@ -230,6 +266,15 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
+        # Create initial CAPITAL_CALL event (required for cost-based funds)
+        initial_event = fund.add_capital_call(
+            amount=50000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Execute first distribution
         event1 = fund.add_distribution(
             event_date=date(2024, 6, 30),
@@ -266,6 +311,15 @@ class TestDistributionWorkflow:
         fund = FundFactory.create(
             tracking_type=FundType.COST_BASED,
             commitment_amount=100000.0
+        )
+        db_session.commit()
+        
+        # Create initial CAPITAL_CALL event (required for cost-based funds)
+        initial_event = fund.add_capital_call(
+            amount=50000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
         )
         db_session.commit()
         
@@ -312,6 +366,15 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
+        # Create initial CAPITAL_CALL event (required for cost-based funds)
+        initial_event = fund.add_capital_call(
+            amount=50000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
+        )
+        db_session.commit()
+        
         # Use orchestrator directly to test event system integration
         orchestrator = FundUpdateOrchestrator()
         
@@ -351,6 +414,15 @@ class TestDistributionWorkflow:
         fund = FundFactory.create(
             tracking_type=FundType.COST_BASED,
             commitment_amount=1000000.0
+        )
+        db_session.commit()
+        
+        # Create initial CAPITAL_CALL event (required for cost-based funds)
+        initial_event = fund.add_capital_call(
+            amount=500000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
         )
         db_session.commit()
         
@@ -394,6 +466,23 @@ class TestDistributionWorkflow:
         nav_fund = FundFactory.create(
             tracking_type=FundType.NAV_BASED,
             commitment_amount=100000.0
+        )
+        db_session.commit()
+        
+        # Create initial events for both fund types (required by business rules)
+        cost_initial = cost_fund.add_capital_call(
+            amount=50000.0,
+            call_date=date(2023, 5, 1),
+            description="Initial capital call",
+            session=db_session
+        )
+        
+        nav_initial = nav_fund.add_unit_purchase(
+            units=1000.0,
+            price=25.00,
+            date=date(2023, 5, 1),
+            description="Initial unit purchase",
+            session=db_session
         )
         db_session.commit()
         
