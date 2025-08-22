@@ -102,7 +102,7 @@ class BankRepository:
     
     def get_by_swift_bic(self, swift_bic: str, session: Session) -> Optional[Bank]:
         """
-        Get a bank by SWIFT/BIC identifier.
+        Get a bank by SWIFT/BIC code.
         
         Args:
             swift_bic: SWIFT/BIC identifier
@@ -111,9 +111,6 @@ class BankRepository:
         Returns:
             Bank object if found, None otherwise
         """
-        if not swift_bic:
-            return None
-            
         cache_key = f"bank:swift_bic:{swift_bic}"
         
         # Check cache first
@@ -128,6 +125,29 @@ class BankRepository:
             self._cache[cache_key] = bank
         
         return bank
+    
+    def get_banks_paginated(self, session: Session, page: int = 1, page_size: int = 50) -> tuple[List[Bank], int]:
+        """
+        Get banks with pagination support.
+        
+        Args:
+            session: Database session
+            page: Page number (1-based)
+            page_size: Number of items per page
+            
+        Returns:
+            Tuple of (banks_list, total_count)
+        """
+        # Calculate offset
+        offset = (page - 1) * page_size
+        
+        # Get total count
+        total_count = session.query(func.count(Bank.id)).scalar()
+        
+        # Get paginated results
+        banks = session.query(Bank).order_by(Bank.name).offset(offset).limit(page_size).all()
+        
+        return banks, total_count
     
     def get_by_country(self, country: str, session: Session) -> List[Bank]:
         """

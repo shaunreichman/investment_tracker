@@ -14,6 +14,7 @@ Key responsibilities:
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
+from sqlalchemy.orm import joinedload
 
 from src.banking.models import BankAccount
 
@@ -111,7 +112,7 @@ class BankAccountRepository:
             session: Database session
             
         Returns:
-            List of bank accounts owned by the entity
+            List of BankAccount objects
         """
         cache_key = f"bank_accounts:entity:{entity_id}"
         
@@ -119,13 +120,41 @@ class BankAccountRepository:
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        # Query database
-        accounts = session.query(BankAccount).filter(BankAccount.entity_id == entity_id).all()
+        # Query database with bank relationship loaded
+        accounts = session.query(BankAccount).options(
+            joinedload(BankAccount.bank)
+        ).filter(BankAccount.entity_id == entity_id).all()
         
         # Cache the result
-        self._cache[cache_key] = accounts
+        if accounts:
+            self._cache[cache_key] = accounts
         
         return accounts
+    
+    def get_bank_accounts_paginated(self, session: Session, page: int = 1, page_size: int = 50) -> tuple[List[BankAccount], int]:
+        """
+        Get bank accounts with pagination support.
+        
+        Args:
+            session: Database session
+            page: Page number (1-based)
+            page_size: Number of items per page
+            
+        Returns:
+            Tuple of (accounts_list, total_count)
+        """
+        # Calculate offset
+        offset = (page - 1) * page_size
+        
+        # Get total count
+        total_count = session.query(func.count(BankAccount.id)).scalar()
+        
+        # Get paginated results with bank relationship loaded
+        accounts = session.query(BankAccount).options(
+            joinedload(BankAccount.bank)
+        ).order_by(BankAccount.account_name).offset(offset).limit(page_size).all()
+        
+        return accounts, total_count
     
     def get_by_bank(self, bank_id: int, session: Session) -> List[BankAccount]:
         """
