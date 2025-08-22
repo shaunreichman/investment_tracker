@@ -16,6 +16,9 @@ from flask import request, jsonify, current_app
 from sqlalchemy.orm import Session
 
 from src.banking.models import Bank, BankAccount
+from src.banking.services.bank_service import BankService
+from src.banking.services.bank_account_service import BankAccountService
+from src.banking.services.banking_validation_service import BankingValidationService
 
 
 class BankingController:
@@ -32,7 +35,9 @@ class BankingController:
     
     def __init__(self):
         """Initialize the banking controller."""
-        pass
+        self.bank_service = BankService()
+        self.bank_account_service = BankAccountService()
+        self.validation_service = BankingValidationService()
     
     def get_banks(self, session: Session) -> tuple:
         """
@@ -45,8 +50,8 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get all banks
-            banks = session.query(Bank).all()
+            # Get all banks using service
+            banks = self.bank_service.get_all_banks(session)
             
             # Format response data
             banks_data = []
@@ -83,20 +88,8 @@ class BankingController:
                 if field not in data or not data[field]:
                     return jsonify({"error": f"Missing required field: {field}"}), 400
             
-            # Validate country format (2-letter ISO code)
-            if not data['country'].isalpha() or len(data['country']) != 2:
-                return jsonify({"error": "Country must be a 2-letter ISO code"}), 400
-            
-            # Check if bank already exists with same name and country
-            existing_bank = session.query(Bank).filter(
-                Bank.name == data['name'],
-                Bank.country == data['country'].upper()
-            ).first()
-            if existing_bank:
-                return jsonify({"error": "Bank with this name already exists in this country"}), 409
-            
-            # Create new bank using domain method
-            new_bank = Bank.create(
+            # Create new bank using service
+            new_bank = self.bank_service.create_bank(
                 name=data['name'],
                 country=data['country'],
                 swift_bic=data.get('swift_bic'),
@@ -133,34 +126,8 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Check if bank exists
-            bank = session.query(Bank).filter(Bank.id == bank_id).first()
-            if not bank:
-                return jsonify({"error": "Bank not found"}), 404
-            
-            # Validate country format if provided
-            if 'country' in data and data['country']:
-                if not data['country'].isalpha() or len(data['country']) != 2:
-                    return jsonify({"error": "Country must be a 2-letter ISO code"}), 400
-                
-                # Check if bank with same name already exists in this country
-                existing_bank = session.query(Bank).filter(
-                    Bank.name == data['name'] if 'name' in data else bank.name,
-                    Bank.country == data['country'].upper(),
-                    Bank.id != bank_id
-                ).first()
-                if existing_bank:
-                    return jsonify({"error": "Bank with this name already exists in this country"}), 409
-            
-            # Update bank fields
-            if 'name' in data:
-                bank.name = data['name'].strip()
-            if 'country' in data:
-                bank.country = data['country'].upper()
-            if 'swift_bic' in data:
-                bank.swift_bic = data['swift_bic']
-            
-            session.commit()
+            # Update bank using service
+            bank = self.bank_service.update_bank(bank_id, data, session)
             
             # Return updated bank data
             bank_data = {
@@ -172,6 +139,10 @@ class BankingController:
             
             return jsonify(bank_data), 200
             
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except RuntimeError as e:
+            return jsonify({"error": str(e)}), 404
         except Exception as e:
             session.rollback()
             current_app.logger.error(f"Error updating bank: {str(e)}")
@@ -189,22 +160,16 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Check if bank exists
-            bank = session.query(Bank).filter(Bank.id == bank_id).first()
-            if not bank:
-                return jsonify({"error": "Bank not found"}), 404
-            
-            # Check if bank has associated accounts
-            accounts = session.query(BankAccount).filter(BankAccount.bank_id == bank_id).count()
-            if accounts > 0:
-                return jsonify({"error": f"Cannot delete bank with {accounts} associated accounts"}), 400
-            
-            # Delete bank
-            session.delete(bank)
-            session.commit()
+            # Delete bank using service
+            self.bank_service.delete_bank(bank_id, session)
             
             return jsonify({"message": "Bank deleted successfully"}), 200
             
+        except RuntimeError as e:
+            if "not found" in str(e).lower():
+                return jsonify({"error": "Bank not found"}), 404
+            else:
+                return jsonify({"error": str(e)}), 400
         except Exception as e:
             session.rollback()
             current_app.logger.error(f"Error deleting bank: {str(e)}")
@@ -221,8 +186,8 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get all bank accounts with bank information
-            accounts = session.query(BankAccount).join(Bank).all()
+            # Get all bank accounts using service
+            accounts = self.bank_account_service.get_all_bank_accounts(session)
             
             # Format response data
             accounts_data = []
@@ -267,23 +232,8 @@ class BankingController:
                 if field not in data or not data[field]:
                     return jsonify({"error": f"Missing required field: {field}"}), 400
             
-            # Validate entity exists
-            from src.entity.models import Entity
-            entity = session.query(Entity).filter(Entity.id == data['entity_id']).first()
-            if not entity:
-                return jsonify({"error": "Entity not found"}), 404
-            
-            # Validate bank exists
-            bank = session.query(Bank).filter(Bank.id == data['bank_id']).first()
-            if not bank:
-                return jsonify({"error": "Bank not found"}), 404
-            
-            # Validate currency format
-            if not data['currency'].isalpha() or len(data['currency']) != 3:
-                return jsonify({"error": "Currency must be a 3-letter ISO code"}), 400
-            
-            # Create new bank account using domain method
-            new_account = BankAccount.create(
+            # Create new bank account using service
+            new_account = self.bank_account_service.create_bank_account(
                 entity_id=data['entity_id'],
                 bank_id=data['bank_id'],
                 account_name=data['account_name'],
@@ -292,6 +242,9 @@ class BankingController:
                 is_active=data.get('is_active', True),
                 session=session
             )
+            
+            # Get bank information for response
+            bank = self.bank_service.get_bank_by_id(data['bank_id'], session)
             
             # Return created account data
             account_data = {
@@ -331,27 +284,8 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Check if account exists
-            account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
-            if not account:
-                return jsonify({"error": "Bank account not found"}), 404
-            
-            # Validate currency format if provided
-            if 'currency' in data and data['currency']:
-                if not data['currency'].isalpha() or len(data['currency']) != 3:
-                    return jsonify({"error": "Currency must be a 3-letter ISO code"}), 400
-            
-            # Update account fields
-            if 'account_name' in data:
-                account.account_name = data['account_name'].strip()
-            if 'account_number' in data:
-                account.account_number = data['account_number'].strip()
-            if 'currency' in data:
-                account.currency = data['currency'].upper()
-            if 'is_active' in data:
-                account.is_active = data['is_active']
-            
-            session.commit()
+            # Update account using service
+            account = self.bank_account_service.update_bank_account(account_id, data, session)
             
             # Return updated account data
             account_data = {
@@ -371,6 +305,10 @@ class BankingController:
             
             return jsonify(account_data), 200
             
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except RuntimeError as e:
+            return jsonify({"error": str(e)}), 404
         except Exception as e:
             session.rollback()
             current_app.logger.error(f"Error updating bank account: {str(e)}")
@@ -388,17 +326,16 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Check if account exists
-            account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
-            if not account:
-                return jsonify({"error": "Bank account not found"}), 404
-            
-            # Delete account
-            session.delete(account)
-            session.commit()
+            # Delete account using service
+            self.bank_account_service.delete_bank_account(account_id, session)
             
             return jsonify({"message": "Bank account deleted successfully"}), 200
             
+        except RuntimeError as e:
+            if "not found" in str(e).lower():
+                return jsonify({"error": "Bank account not found"}), 404
+            else:
+                return jsonify({"error": str(e)}), 400
         except Exception as e:
             session.rollback()
             current_app.logger.error(f"Error deleting bank account: {str(e)}")
@@ -416,8 +353,8 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Check if account exists
-            account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
+            # Check if account exists using service
+            account = self.bank_account_service.get_bank_account_by_id(account_id, session)
             if not account:
                 return jsonify({"error": "Bank account not found"}), 404
             
@@ -449,8 +386,8 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Check if account exists
-            account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
+            # Check if account exists using service
+            account = self.bank_account_service.get_bank_account_by_id(account_id, session)
             if not account:
                 return jsonify({"error": "Bank account not found"}), 404
             

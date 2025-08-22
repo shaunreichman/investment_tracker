@@ -3,6 +3,9 @@ Banking Models.
 
 This module provides the banking-related model classes,
 representing bank accounts and banking operations in the system.
+
+The models now delegate business logic to dedicated services while maintaining
+the exact same public interface for backward compatibility.
 """
 
 from typing import Optional, List
@@ -39,14 +42,16 @@ class Bank(Base):
         swift_bic: str | None = None,
         session=None,
     ) -> "Bank":
-        if not name or not name.strip():
-            raise ValueError("Bank name is required and cannot be empty")
-        if not country or len(country) != 2:
-            raise ValueError("country must be a 2-letter ISO code")
-        bank = cls(name=name.strip(), country=country.upper(), swift_bic=swift_bic)
-        session.add(bank)
-        session.flush()
-        return bank
+        """
+        Create a new bank using the service layer.
+        
+        This method maintains the exact same interface while delegating
+        business logic to the BankService for clean separation of concerns.
+        """
+        from src.banking.services.bank_service import BankService
+        
+        service = BankService()
+        return service.create_bank(name, country, swift_bic, session)
 
 
 class BankAccount(Base):
@@ -89,54 +94,43 @@ class BankAccount(Base):
         is_active: bool = True,
         session=None,
     ) -> "BankAccount":
-        if not entity_id:
-            raise ValueError("entity_id is required")
-        if not bank_id:
-            raise ValueError("bank_id is required")
-        if not account_name or not account_name.strip():
-            raise ValueError("account_name is required")
-        if not account_number or not account_number.strip():
-            raise ValueError("account_number is required")
-        if not currency or len(currency) != 3:
-            raise ValueError("currency must be a 3-letter ISO-4217 code")
-
-        # Enforce uniqueness: (entity_id, bank_id, account_number)
-        existing = (
-            session.query(cls)
-            .filter(
-                cls.entity_id == entity_id,
-                cls.bank_id == bank_id,
-                cls.account_number == account_number.strip(),
-            )
-            .first()
-        )
-        if existing:
-            raise ValueError("Bank account already exists for this entity/bank/account_number")
-
-        acct = cls(
+        """
+        Create a new bank account using the service layer.
+        
+        This method maintains the exact same interface while delegating
+        business logic to the BankAccountService for clean separation of concerns.
+        """
+        from src.banking.services.bank_account_service import BankAccountService
+        
+        service = BankAccountService()
+        return service.create_bank_account(
             entity_id=entity_id,
             bank_id=bank_id,
-            account_name=account_name.strip(),
-            account_number=account_number.strip(),
-            currency=currency.upper(),
-            is_active=bool(is_active),
+            account_name=account_name,
+            account_number=account_number,
+            currency=currency,
+            is_active=is_active,
+            session=session
         )
-        session.add(acct)
-        session.flush()
-        return acct
 
     @classmethod
     def get_by_unique(
         cls, *, entity_id: int, bank_id: int, account_number: str, session=None
     ) -> "BankAccount | None":
-        return (
-            session.query(cls)
-            .filter(
-                cls.entity_id == entity_id,
-                cls.bank_id == bank_id,
-                cls.account_number == account_number,
-            )
-            .first()
+        """
+        Get a bank account by unique combination using the service layer.
+        
+        This method maintains the exact same interface while delegating
+        business logic to the BankAccountService for clean separation of concerns.
+        """
+        from src.banking.services.bank_account_service import BankAccountService
+        
+        service = BankAccountService()
+        return service.get_bank_account_by_unique(
+            entity_id=entity_id,
+            bank_id=bank_id,
+            account_number=account_number,
+            session=session
         )
 
 
