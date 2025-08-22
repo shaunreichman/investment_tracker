@@ -13,12 +13,13 @@ This specification outlines the refactoring of the investment_company module fro
 ## Design Philosophy
 
 - **Architectural Consistency**: Mirror the exact patterns established in the fund refactor
-- **Domain-Driven Design**: Clear boundaries between fund and company domains
+- **Domain-Driven Design**: Clear boundaries between fund and company domains with proper domain entities
 - **Separation of Concerns**: Move complex business logic from models into dedicated services
 - **Event-Driven Architecture**: Use domain events for loose coupling between components
 - **Single Responsibility**: Each class has one clear purpose and reason to change
 - **Enterprise Standards**: Achieve professional-grade maintainability and testability
 - **Performance at Scale**: Support 1000+ companies, 5000+ funds, 100+ contacts with O(1) operations
+- **Clean Architecture**: Models become simple data containers, business logic lives in services
 
 ## Current State Analysis
 
@@ -52,6 +53,28 @@ Portfolio Operations                  Fund Business Logic
     ↓                                        ↓
 Company Events                        Fund Domain Events
 ```
+
+### Key Architectural Decisions
+
+#### 1. **Models vs Domain Entities**
+- **Current Models**: Will be simplified to become simple data containers (under 150 lines)
+- **Domain Entities**: New classes that represent business concepts with behavior
+- **Separation**: Models handle persistence, Domain Entities handle business logic
+
+#### 2. **Service Layer Pattern**
+- **Services**: Contain all business logic, work with domain entities
+- **No Business Logic in Models**: Models become pure data structures
+- **Dependency Direction**: Services depend on domain entities, not on models directly
+
+#### 3. **Repository Pattern**
+- **Data Access**: All database operations go through repository interfaces
+- **Abstraction**: Services never touch database directly
+- **Testability**: Easy to mock repositories for unit testing
+
+#### 4. **Event System**
+- **Loose Coupling**: Services communicate through domain events
+- **Cross-Domain**: Company changes can trigger fund updates without tight coupling
+- **Extensibility**: Easy to add new event handlers without changing existing code
 
 ### Event-Driven Handler Pattern
 ```
@@ -197,61 +220,119 @@ CompanySummaryRepository
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Dependency Flow (No Circular Dependencies)
+
+```
+API Layer
+    ↓ (depends on)
+Business Logic Services
+    ↓ (depends on)
+Repository Classes
+    ↓ (depends on)
+Database Models
+    ↓ (depends on)
+Database
+
+Event System (future: sideways communication, no circular dependencies)
+```
+
+**Key Rule**: Dependencies only flow DOWN. Services never depend on models, models never depend on services.
+
 ## Implementation Strategy
 
-### Phase 1: Foundation & Service Layer (2 weeks) 🏗️ **FOUNDATION PHASE**
+### Phase 1: Repository Layer (1 week) 🗄️ **FOUNDATION PHASE**
+**Goal**: Implement repository pattern for clean data access abstraction
+
+**Design Principles**:
+- **Mirror fund repository patterns exactly** - Use identical repository structure and methods
+- **Clean separation of concerns** - Models become simple data containers
+- **Direct implementations** - No interfaces, just concrete classes like fund refactor
+- **Zero breaking changes** - All existing functionality must continue to work unchanged
+
+**Implementation Order**:
+1. **Create Repository Classes** - Direct implementations that work with models
+2. **Test Repository Layer** - Ensure data access works correctly
+3. **Verify Clean Dependencies** - No circular dependencies
+
+**Key Point**: Repositories provide clean data access abstraction. They depend on models but models do NOT depend on repositories.
+
+**Tasks**:
+- [ ] **Create CompanyRepository**: Handle all company CRUD operations and queries
+- [ ] **Create ContactRepository**: Manage contact persistence and relationship queries  
+- [ ] **Create FundRepository**: Handle fund data access for company operations
+- [ ] **Test Repository Layer**: Test all repositories with existing models
+- [ ] **Performance Validation**: Ensure no performance regression from abstraction
+
+**Success Criteria**:
+- [ ] All repositories working with existing models
+- [ ] Clean data access abstraction implemented
+- [ ] Zero performance regression on database operations
+- [ ] All existing functionality preserved through repository layer
+- [ ] No circular dependencies between repositories and models
+
+### Phase 2: Service Layer (1 week) 🏗️ **SERVICE LAYER PHASE**
 **Goal**: Extract business logic from models into dedicated services while maintaining all existing functionality
 
 **Design Principles**:
-- **Mirror fund refactor patterns exactly** - Use identical service layer structure
+- **Mirror fund service patterns exactly** - Use identical service structure and methods
+- **Direct implementations** - No interfaces, just concrete classes like fund refactor  
+- **Use repositories** - Services depend on repositories for data access
 - **Zero breaking changes** - All existing functionality must continue to work unchanged
-- **Incremental extraction** - Extract one service at a time to maintain stability
-- **Comprehensive testing** - Each extracted service must have 100% test coverage
-- **Domain-driven design** - Clear boundaries between company and fund domains
+
+**Implementation Order**:
+1. **Create Service Classes** - Direct implementations that use repositories
+2. **Test Service Layer** - Ensure business logic works correctly
+3. **Verify Clean Dependencies** - Services → Repositories → Models (one-way flow)
+
+**Key Point**: Services contain all business logic and use repositories for data access. Services do NOT depend on models directly.
 
 **Tasks**:
 - [ ] **Create CompanyPortfolioService**: Extract portfolio operations and fund coordination logic
 - [ ] **Create CompanySummaryService**: Extract portfolio calculations, fund counting, and performance metrics
 - [ ] **Create ContactManagementService**: Extract contact operations, validation, and business rules
 - [ ] **Create CompanyValidationService**: Extract business rule validation and constraint checking
-- [ ] **Update InvestmentCompany Model**: Integrate with new services while maintaining existing interface
-- [ ] **Comprehensive Testing**: Test all extracted services in isolation with 100% coverage
+- [ ] **Test Service Layer**: Test all services with repository mocks
 - [ ] **Performance Validation**: Ensure no performance regression from extraction
 
 **Success Criteria**:
-- [ ] InvestmentCompany model reduced from 403 lines to under 150 lines (250+ lines extracted)
-- [ ] 100% test coverage for all extracted services
+- [ ] All business logic extracted from models into services
+- [ ] Services use repositories for all data access
 - [ ] Zero performance regression on all operations
-- [ ] All existing tests continue to pass
-- [ ] All existing functionality preserved through new service layer
-- [ ] Clear domain boundaries established between company and fund systems
+- [ ] All existing functionality preserved through service layer
+- [ ] Clean dependency flow: Services → Repositories → Models
 
-### Phase 2: Repository Layer & Data Access (1 week) 🗄️ **DATA ACCESS PHASE**
-**Goal**: Implement repository pattern for clean data access abstraction
+### Phase 3: Model Integration & API Update (1 week) 🔄 **INTEGRATION PHASE**
+**Goal**: Integrate new architecture with existing system and simplify models
 
 **Design Principles**:
-- **Mirror fund repository patterns exactly** - Use identical repository structure and methods
-- **Clean separation of concerns** - Models become simple data containers
-- **Optimized queries** - Implement efficient data access patterns
-- **Caching strategy** - Add caching for frequently accessed data
+- **Simplify models** - Reduce models to simple data containers (under 150 lines)
+- **Update API layer** - Controllers use services instead of models directly
+- **Zero breaking changes** - All existing functionality must continue to work unchanged
+- **End-to-end testing** - Ensure complete workflows work correctly
+
+**Implementation Order**:
+1. **Update Models** - Simplify models to use services (maintain existing interface)
+2. **Update API Layer** - Controllers use services instead of models directly
+3. **End-to-End Testing** - Test complete workflows from API to database
+
+**Key Point**: Models become simple data containers. All business logic now lives in services.
 
 **Tasks**:
-- [ ] **Create InvestmentCompanyRepository**: Handle all company CRUD operations and queries
-- [ ] **Create ContactRepository**: Manage contact persistence and relationship queries
-- [ ] **Create CompanySummaryRepository**: Handle summary data and aggregated calculations
-- [ ] **Implement Caching Strategy**: Add Redis-based caching for company summaries
-- [ ] **Optimize Database Queries**: Add proper indexes and query optimization
-- [ ] **Integration Testing**: Test repository layer with real database operations
+- [ ] **Update InvestmentCompany Model**: Integrate with new services while maintaining existing interface
+- [ ] **Update API Controllers**: Use services instead of calling model methods directly
+- [ ] **Simplify Models**: Reduce model complexity by removing business logic
+- [ ] **End-to-End Testing**: Test complete workflows across all layers
+- [ ] **Performance Validation**: Ensure no performance regression from integration
 
 **Success Criteria**:
-- [ ] All database operations abstracted through repository layer
-- [ ] Zero direct database queries in models or services
-- [ ] Caching implemented for company summary data
-- [ ] Database query performance improved by 50%+
-- [ ] 100% test coverage for repository layer
+- [ ] InvestmentCompany model reduced from 403 lines to under 150 lines (250+ lines extracted)
+- [ ] All API endpoints use services instead of model methods
+- [ ] All existing tests continue to pass
+- [ ] All existing functionality preserved through new architecture
+- [ ] Zero performance regression from integration
 
-### Phase 3: Event Handler Architecture (2 weeks) 🔄 **EVENT SYSTEM PHASE**
-**Goal**: Implement event-driven architecture for company updates
+### Phase 4: Event Handler Architecture (2 weeks) 🔄 **EVENT SYSTEM PHASE**
+**Goal**: Implement event-driven architecture for company updates (Future Enhancement)
 
 **Design Principles**:
 - **Mirror fund event handler patterns exactly** - Use identical handler structure and registry
@@ -276,76 +357,51 @@ CompanySummaryRepository
 - [ ] All existing functionality preserved through new architecture
 - [ ] Company events coordinate with fund domain without duplicating logic
 
-### Phase 4: API Layer Implementation (1 week) 🌐 **API PHASE**
-**Goal**: Create comprehensive REST API for investment company operations
-
-**Design Principles**:
-- **Mirror fund API patterns exactly** - Use identical controller and service structure
-- **Consistent response formats** - Standardized error handling and response structures
-- **Comprehensive endpoints** - Full CRUD operations for companies and contacts
-- **Performance optimization** - Sub-500ms response times for all operations (realistic enterprise targets)
-
-**Tasks**:
-- [ ] **Create CompanyController**: Implement REST endpoints for company operations
-- [ ] **Create CompanyService**: API service layer with business logic coordination
-- [ ] **Implement DTOs**: Data transfer objects for request/response handling
-- [ ] **Add Error Handling**: Consistent error responses and validation
-- [ ] **Performance Testing**: Ensure all endpoints meet performance requirements
-- [ ] **API Documentation**: Complete endpoint documentation and examples
-
-**Success Criteria**:
-- [ ] All CRUD operations available through REST API
-- [ ] Consistent error handling across all endpoints
-- [ ] Sub-500ms response times for all operations (realistic enterprise targets)
-- [ ] 100% API test coverage
-- [ ] Complete API documentation with examples
-
-### Phase 5: Integration & Event System (1 week) 🔗 **INTEGRATION PHASE**
-**Goal**: Connect new architecture to existing system and implement cross-module events
+### Phase 5: Cross-Domain Integration (1 week) 🔗 **INTEGRATION PHASE** 
+**Goal**: Connect new architecture to existing fund and entity systems (Future Enhancement)
 
 **Design Principles**:
 - **Seamless integration** - New architecture works alongside existing system
-- **Cross-module events** - Company changes trigger fund and entity updates
+- **Cross-module coordination** - Company changes coordinate with fund and entity updates  
 - **Backward compatibility** - All existing functionality continues to work
 - **Performance validation** - No regression in system performance
 - **Domain coordination** - Company and fund domains work together seamlessly
 
 **Tasks**:
-- [ ] **Connect to Fund System**: Implement cross-module event handling through CompanyPortfolioService
+- [ ] **Connect to Fund System**: Implement cross-module coordination through CompanyPortfolioService
 - [ ] **Connect to Entity System**: Handle entity-related updates
 - [ ] **End-to-End Testing**: Validate complete workflows across all modules
 - [ ] **Performance Validation**: Ensure no performance regression from integration
-- [ ] **Rollback Strategy**: Implement ability to fall back to old system if issues arise
+- [ ] **Documentation Updates**: Complete all technical documentation
 
 **Success Criteria**:
 - [ ] New architecture fully integrated with existing system
-- [ ] Cross-module events working correctly through domain coordination
+- [ ] Cross-module coordination working correctly
 - [ ] All integration tests passing
 - [ ] Zero performance regression from integration
-- [ ] Rollback capability implemented and tested
-- [ ] Company and fund domains coordinate without duplication
+- [ ] Complete technical documentation
 
-### Phase 6: Optimization & Production Readiness (1 week) 🚀 **OPTIMIZATION PHASE**
-**Goal**: Optimize performance and prepare for production deployment
+### Phase 6: Performance Optimization (1 week) 🚀 **OPTIMIZATION PHASE**
+**Goal**: Optimize performance and add caching strategies (Future Enhancement)
 
 **Design Principles**:
 - **Performance optimization** - Achieve target performance benchmarks
-- **Production hardening** - Error handling, logging, and monitoring
+- **Caching strategies** - Add intelligent caching for frequently accessed data
 - **Scalability validation** - Test with realistic data volumes
-- **Documentation completion** - Complete all technical documentation
+- **Production readiness** - Ensure system is ready for enterprise use
 
 **Tasks**:
-- [ ] **Performance Optimization**: Implement caching and query optimization
-- [ ] **Production Hardening**: Add comprehensive error handling and logging
+- [ ] **Implement Caching Strategy**: Add Redis-based caching for company summaries
+- [ ] **Optimize Database Queries**: Add proper indexes and query optimization
+- [ ] **Performance Testing**: Ensure all operations meet performance requirements
 - [ ] **Scalability Testing**: Test with realistic enterprise volumes (100+ companies, 500+ funds)
 - [ ] **Monitoring Setup**: Implement performance metrics and health checks
-- [ ] **Documentation Completion**: Complete all technical documentation
 
 **Success Criteria**:
-- [ ] All performance benchmarks met
+- [ ] Database query performance improved by 50%+
+- [ ] Caching implemented for frequently accessed data
+- [ ] Sub-500ms response times for all operations (realistic enterprise targets)
 - [ ] System scales to realistic enterprise volumes
-- [ ] Comprehensive monitoring and logging implemented
-- [ ] All technical documentation completed
 - [ ] Production deployment ready
 
 ## Detailed Architecture Patterns
@@ -469,47 +525,6 @@ class PortfolioUpdatedEvent(CompanyDomainEvent):
    - **Mitigation**: Use identical patterns to fund refactor for consistency
    - **Mitigation**: Comprehensive documentation and examples
 
-## Success Metrics
-
-### Phase 1 Metrics (Foundation & Service Layer)
-- [ ] InvestmentCompany model reduced from 403 lines to under 150 lines (250+ lines extracted)
-- [ ] 100% test coverage for all extracted services
-- [ ] Zero performance regression on all operations
-- [ ] All existing tests continue to pass
-- [ ] Clear domain boundaries established
-
-### Phase 2 Metrics (Repository Layer)
-- [ ] All database operations abstracted through repository layer
-- [ ] Zero direct database queries in models or services
-- [ ] Caching implemented for company summary data
-- [ ] Database query performance improved by 50%+
-- [ ] 100% test coverage for repository layer
-
-### Phase 3 Metrics (Event Handler Architecture)
-- [ ] All event types have dedicated handlers with clear responsibilities
-- [ ] Event registry properly routes events to appropriate handlers
-- [ ] Complete update pipeline working end-to-end
-- [ ] All existing functionality preserved through new architecture
-- [ ] Company and fund domains coordinate without duplication
-
-### Phase 4 Metrics (API Layer)
-- [ ] All CRUD operations available through REST API
-- [ ] Consistent error handling across all endpoints
-- [ ] Sub-500ms response times for all operations (realistic enterprise targets)
-- [ ] 100% API test coverage
-
-### Phase 5 Metrics (Integration)
-- [ ] New architecture fully integrated with existing system
-- [ ] Cross-module events working correctly through domain coordination
-- [ ] All integration tests passing
-- [ ] Zero performance regression from integration
-
-### Phase 6 Metrics (Optimization)
-- [ ] All performance benchmarks met
-- [ ] System scales to realistic enterprise volumes
-- [ ] Comprehensive monitoring and logging implemented
-- [ ] Production deployment ready
-
 ## Overall Success Metrics
 - [ ] **Maintainability**: InvestmentCompany model complexity reduced by 70% (from 403 to under 150 lines)
 - [ ] **Performance**: All operations achieve sub-500ms response times (realistic enterprise targets)
@@ -530,74 +545,37 @@ src/investment_company/
 └── __init__.py
 ```
 
-### Refactored Structure (Enterprise-Grade Modular) - **TARGET ARCHITECTURE**
-
-#### 1. Event Handling Layer
-```
-src/investment_company/events/
-├── __init__.py
-├── base_handler.py (BaseCompanyEventHandler abstract class)
-├── handlers/
-│   ├── __init__.py
-│   ├── company_created_handler.py
-│   ├── contact_added_handler.py
-│   ├── contact_updated_handler.py
-│   ├── company_updated_handler.py
-│   ├── portfolio_updated_handler.py
-│   └── company_deleted_handler.py
-├── registry.py (CompanyEventHandlerRegistry)
-└── orchestrator.py (CompanyUpdateOrchestrator)
-```
-
-#### 2. Domain Events System
-```
-src/investment_company/events/domain/
-├── __init__.py
-├── base_event.py (CompanyDomainEvent)
-├── company_created_event.py
-├── contact_added_event.py
-├── contact_updated_event.py
-├── company_updated_event.py
-├── portfolio_updated_event.py
-└── company_deleted_event.py
-```
-
-#### 3. Business Logic Services
-```
-src/investment_company/services/
-├── __init__.py
-├── company_portfolio_service.py (portfolio operations, fund coordination)
-├── company_summary_service.py (portfolio calculations, fund counting)
-├── contact_management_service.py (contact operations, validation)
-└── company_validation_service.py (business rules, constraints)
-```
-
-#### 4. Data Access Layer
-```
-src/investment_company/repositories/
-├── __init__.py
-├── investment_company_repository.py (company CRUD operations, caching)
-├── contact_repository.py (contact persistence, bulk operations)
-└── company_summary_repository.py (summary data, materialized views)
-```
-
-#### 5. API Layer
-```
-src/investment_company/api/
-├── __init__.py
-├── company_controller.py (REST endpoints)
-├── company_service.py (API service layer)
-└── dto/
-    ├── company_dto.py (company data transfer objects)
-    └── contact_dto.py (contact data transfer objects)
-```
-
-#### 6. Core Models (Simplified)
+### Complete Directory Structure
 ```
 src/investment_company/
 ├── __init__.py
-├── models.py (simplified - under 150 lines)
-└── calculations.py (minimal - basic calculations only)
+├── models.py (simplified - data only)
+├── calculations.py (minimal)
+├── api/
+│   ├── __init__.py
+│   ├── company_controller.py
+│   └── company_service.py
+├── services/
+│   ├── __init__.py
+│   ├── company_portfolio_service.py
+│   ├── company_summary_service.py
+│   ├── contact_management_service.py
+│   └── company_validation_service.py
+├── repositories/
+│   ├── __init__.py
+│   ├── company_repository.py
+│   ├── contact_repository.py
+│   └── fund_repository.py
+├── events/
+│   ├── __init__.py
+│   ├── base_handler.py
+│   ├── handlers/
+│   ├── registry.py
+│   └── orchestrator.py
+└── events/domain/
+    ├── __init__.py
+    ├── base_event.py
+    └── [specific events]
 ```
 
 ## Key Architectural Decisions
@@ -606,6 +584,20 @@ src/investment_company/
 - **Company Domain**: Owns company portfolio management, contact management, and company operations
 - **Fund Domain**: Owns fund creation logic, fund business rules, and fund lifecycle
 - **Coordination**: CompanyPortfolioService coordinates between domains without duplicating logic
+
+### 2. What We're NOT Doing
+- ❌ **Circular Dependencies**: Services will never depend on models, models will never depend on services
+- ❌ **String Type Hints**: We'll use proper imports
+- ❌ **Complex Interfaces**: We'll use direct implementations like the fund refactor
+- ❌ **Over-Engineering**: We'll build what we need, not what sounds impressive
+- ❌ **Breaking Changes**: All existing functionality must continue to work
+
+### 3. What We ARE Doing
+- ✅ **Clean Dependencies**: One-way dependency flow (API → Services → Repositories → Models)
+- ✅ **Direct Implementations**: Services and repositories as concrete classes (like fund refactor)
+- ✅ **Incremental Refactor**: One piece at a time, test as we go
+- ✅ **Mirror Fund Patterns**: Use exact same structure as the fund refactor
+- ✅ **Enterprise Quality**: Professional, maintainable, testable code
 
 ### 2. Event System Design
 - **Company Events**: Handle company-specific state changes and portfolio updates
@@ -635,9 +627,3 @@ This refactor represents a critical foundation for the investment company system
 
 **Current Progress**: We are ready to begin Phase 1 with a clear architectural vision, proven patterns from the fund refactor, and enterprise-grade domain coordination.
 
-**Next Steps**: 
-1. **IMMEDIATE**: Begin Phase 1 - Foundation & Service Layer with CompanyPortfolioService
-2. **READY FOR IMPLEMENTATION**: All architectural decisions aligned with fund refactor and enterprise standards
-3. **FINAL GOAL**: First-class professional enterprise system with clear domain boundaries and scalable architecture
-
-The investment company refactor will create a cohesive, maintainable, and scalable enterprise system that integrates seamlessly with the existing fund architecture while maintaining clear domain responsibilities and enterprise-grade standards.
