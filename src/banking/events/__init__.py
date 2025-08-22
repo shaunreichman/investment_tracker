@@ -8,6 +8,7 @@ including event handlers, domain events, and orchestration.
 from .base_handler import BaseBankingEventHandler
 from .registry import BankingEventHandlerRegistry
 from .orchestrator import BankingUpdateOrchestrator
+from .cross_module_registry import CrossModuleEventRegistry
 from .domain import (
     BankingDomainEvent,
     BankCreatedEvent,
@@ -35,6 +36,7 @@ __all__ = [
     'BaseBankingEventHandler',
     'BankingEventHandlerRegistry',
     'BankingUpdateOrchestrator',
+    'CrossModuleEventRegistry',
     
     # Domain events
     'BankingDomainEvent',

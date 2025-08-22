@@ -18,6 +18,7 @@ import logging
 
 from src.banking.models import Bank, BankAccount
 from src.banking.events.registry import BankingEventHandlerRegistry
+from src.banking.events.cross_module_registry import CrossModuleEventRegistry
 
 
 class BankingUpdateOrchestrator:
@@ -42,6 +43,7 @@ class BankingUpdateOrchestrator:
             registry: Event handler registry to use. If None, creates a new one.
         """
         self.registry = registry or BankingEventHandlerRegistry()
+        self.cross_module_registry = CrossModuleEventRegistry()
         self.logger = logging.getLogger(__name__)
     
     def process_banking_event(self, event_data: Dict[str, Any], session: Session, banking_entity: Union[Bank, BankAccount]) -> Dict[str, Any]:
@@ -188,6 +190,49 @@ class BankingUpdateOrchestrator:
         # - Notify other systems of new bank
         self.logger.info(f"Bank {bank.id} created - handling dependencies")
     
+    def _handle_account_deleted_dependencies(self, event_result: Dict[str, Any], session: Session, account: BankAccount) -> None:
+        """
+        Handle dependencies for account deletion.
+        
+        Args:
+            event_result: Result from account deletion event
+            session: Database session for all operations
+            account: BankAccount instance that was deleted
+        """
+        try:
+            # Create and route account deletion event to cross-module handlers
+            from src.banking.events.domain.bank_account_deleted_event import BankAccountDeletedEvent
+            
+            event = BankAccountDeletedEvent(
+                account_id=account.id,
+                entity_id=account.entity_id,
+                bank_id=account.bank_id,
+                account_name=account.account_name,
+                account_number=account.account_number,
+                currency=account.currency
+            )
+            
+            # Route to cross-module handlers
+            cross_module_results = self.cross_module_registry.route_event(event, session)
+            
+            self.logger.info(
+                f"Bank account {account.id} deleted - cross-module dependencies handled: "
+                f"{cross_module_results['handlers_executed']} handlers executed"
+            )
+            
+            # Log any warnings or errors
+            if cross_module_results['warnings']:
+                for warning in cross_module_results['warnings']:
+                    self.logger.warning(f"Cross-module warning: {warning}")
+            
+            if cross_module_results['errors']:
+                for error in cross_module_results['errors']:
+                    self.logger.error(f"Cross-module error: {error}")
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to handle account deletion dependencies: {str(e)}")
+            # Don't fail the main operation for dependency issues
+
     def _handle_account_created_dependencies(self, event_result: Dict[str, Any], session: Session, account: BankAccount) -> None:
         """
         Handle dependencies for account creation.
@@ -197,11 +242,40 @@ class BankingUpdateOrchestrator:
             session: Database session for all operations
             account: BankAccount instance that was created
         """
-        # TODO: Implement account creation dependencies
-        # - Update entity banking status
-        # - Update banking summary data
-        # - Notify fund system of new account
-        self.logger.info(f"Bank account {account.id} created - handling dependencies")
+        try:
+            # Create and route account creation event to cross-module handlers
+            from src.banking.events.domain.bank_account_created_event import BankAccountCreatedEvent
+            
+            event = BankAccountCreatedEvent(
+                account_id=account.id,
+                entity_id=account.entity_id,
+                bank_id=account.bank_id,
+                account_name=account.account_name,
+                account_number=account.account_number,
+                currency=account.currency,
+                is_active=account.is_active
+            )
+            
+            # Route to cross-module handlers
+            cross_module_results = self.cross_module_registry.route_event(event, session)
+            
+            self.logger.info(
+                f"Bank account {account.id} created - cross-module dependencies handled: "
+                f"{cross_module_results['handlers_executed']} handlers executed"
+            )
+            
+            # Log any warnings or errors
+            if cross_module_results['warnings']:
+                for warning in cross_module_results['warnings']:
+                    self.logger.warning(f"Cross-module warning: {warning}")
+            
+            if cross_module_results['errors']:
+                for error in cross_module_results['errors']:
+                    self.logger.error(f"Cross-module error: {error}")
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to handle account creation dependencies: {str(e)}")
+            # Don't fail the main operation for dependency issues
     
     def _handle_currency_change_dependencies(self, event_result: Dict[str, Any], session: Session, account: BankAccount) -> None:
         """
@@ -212,11 +286,38 @@ class BankingUpdateOrchestrator:
             session: Database session for all operations
             account: BankAccount instance whose currency changed
         """
-        # TODO: Implement currency change dependencies
-        # - Update fund events that reference this account
-        # - Trigger currency conversion calculations
-        # - Update cross-currency fund balances
-        self.logger.info(f"Currency changed for account {account.id} - handling dependencies")
+        try:
+            # Create and route currency change event to cross-module handlers
+            from src.banking.events.domain.currency_changed_event import CurrencyChangedEvent
+            
+            event = CurrencyChangedEvent(
+                account_id=account.id,
+                entity_id=account.entity_id,
+                bank_id=account.bank_id,
+                old_currency=event_result.get('old_currency', 'Unknown'),
+                new_currency=account.currency
+            )
+            
+            # Route to cross-module handlers
+            cross_module_results = self.cross_module_registry.route_event(event, session)
+            
+            self.logger.info(
+                f"Currency changed for account {account.id} - cross-module dependencies handled: "
+                f"{cross_module_results['handlers_executed']} handlers executed"
+            )
+            
+            # Log any warnings or errors
+            if cross_module_results['warnings']:
+                for warning in cross_module_results['warnings']:
+                    self.logger.warning(f"Cross-module warning: {warning}")
+            
+            if cross_module_results['errors']:
+                for error in cross_module_results['errors']:
+                    self.logger.error(f"Cross-module error: {error}")
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to handle currency change dependencies: {str(e)}")
+            # Don't fail the main operation for dependency issues
     
     def _handle_status_change_dependencies(self, event_result: Dict[str, Any], session: Session, account: BankAccount) -> None:
         """
@@ -227,11 +328,38 @@ class BankingUpdateOrchestrator:
             session: Database session for all operations
             account: BankAccount instance whose status changed
         """
-        # TODO: Implement status change dependencies
-        # - Update entity banking status
-        # - Update fund event processing rules
-        # - Notify other systems of status change
-        self.logger.info(f"Status changed for account {account.id} - handling dependencies")
+        try:
+            # Create and route status change event to cross-module handlers
+            from src.banking.events.domain.account_status_changed_event import AccountStatusChangedEvent
+            
+            event = AccountStatusChangedEvent(
+                account_id=account.id,
+                entity_id=account.entity_id,
+                bank_id=account.bank_id,
+                old_status=event_result.get('old_status', True),
+                new_status=account.is_active
+            )
+            
+            # Route to cross-module handlers
+            cross_module_results = self.cross_module_registry.route_event(event, session)
+            
+            self.logger.info(
+                f"Status changed for account {account.id} - cross-module dependencies handled: "
+                f"{cross_module_results['handlers_executed']} handlers executed"
+            )
+            
+            # Log any warnings or errors
+            if cross_module_results['warnings']:
+                for warning in cross_module_results['warnings']:
+                    self.logger.warning(f"Cross-module warning: {warning}")
+            
+            if cross_module_results['errors']:
+                for error in cross_module_results['errors']:
+                    self.logger.error(f"Cross-module error: {error}")
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to handle status change dependencies: {str(e)}")
+            # Don't fail the main operation for dependency issues
     
     def _commit_changes(self, session: Session) -> None:
         """
