@@ -1,0 +1,70 @@
+================================================================================
+PHASE 6.1 PERFORMANCE BASELINE REPORT
+================================================================================
+Generated: 2025-08-16T14:38:53.683236
+
+MEMORY BASELINE:
+  Initial RSS: 55.86 MB
+  Initial VMS: 32922.30 MB
+  Initial %: 0.34%
+
+EVENT CREATION PERFORMANCE:
+  Iterations: 100
+  Mean Duration: 83.59 ms
+  Median Duration: 75.35 ms
+  Min Duration: 11.93 ms
+  Max Duration: 241.48 ms
+  Std Deviation: 28.53 ms
+
+FUND SUMMARY UPDATE PERFORMANCE:
+  Iterations: 50
+  Mean Duration: 99.18 ms
+  Median Duration: 90.31 ms
+  Min Duration: 12.05 ms
+  Max Duration: 332.88 ms
+
+DATABASE QUERY PERFORMANCE:
+  Fund Lookup:
+    Mean Duration: 53.91 ms
+    Median Duration: 49.47 ms
+    Min Duration: 41.53 ms
+    Max Duration: 83.39 ms
+  Fund Events Query:
+    Mean Duration: 27.27 ms
+    Median Duration: 26.06 ms
+    Min Duration: 23.27 ms
+    Max Duration: 39.72 ms
+  Complex Join Query:
+    Mean Duration: 22.37 ms
+    Median Duration: 20.65 ms
+    Min Duration: 18.62 ms
+    Max Duration: 69.01 ms
+
+API ENDPOINT PERFORMANCE:
+  Get Fund Details:
+    Mean Duration: 54.01 ms
+    Median Duration: 51.87 ms
+    Min Duration: 49.44 ms
+    Max Duration: 120.47 ms
+  Get Fund Events:
+    Mean Duration: 92.15 ms
+    Median Duration: 91.13 ms
+    Min Duration: 85.74 ms
+    Max Duration: 113.80 ms
+
+FINAL MEMORY USAGE:
+  Final RSS: 72.12 MB
+  Final VMS: 33025.39 MB
+  Final %: 0.44%
+
+PERFORMANCE ANALYSIS:
+  This baseline establishes current performance characteristics
+  for Phase 6 optimization planning.
+
+NEXT STEPS:
+  1. Analyze bottlenecks identified in this baseline
+  2. Plan Phase 6.2 incremental calculation optimizations
+  3. Design Redis caching strategy for slow operations
+  4. Identify database query optimization opportunities
+
+================================================================================

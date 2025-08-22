@@ -1,18 +1,18 @@
 """
-Tax domain models.
+Tax Models.
 
-This module contains the core tax models including TaxStatement.
+This module provides the tax-related model classes,
+representing tax statements and tax calculations in the system.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint
+from typing import Optional, List
+from datetime import date, datetime, timezone
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index, UniqueConstraint
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.elements import ColumnElement
-from datetime import datetime, date, timezone
-import enum
 
-# Import the Base from shared
-from ..shared.base import Base
-from ..shared.utils import with_session, with_class_session
+from src.shared.base import Base
+from src.shared.utils import with_session, with_class_session
+from src.shared.calculations import get_financial_year_dates
 from src.fund.models import Fund
 
 
@@ -95,6 +95,9 @@ class TaxStatement(Base):
     # Composite unique constraint to ensure one statement per fund/entity/financial year
     __table_args__ = (
         UniqueConstraint('fund_id', 'entity_id', 'financial_year', name='unique_tax_statement'),
+        # Performance indexes for common queries
+        Index('idx_tax_statements_fund_financial_year', 'fund_id', 'financial_year'),
+        Index('idx_tax_statements_entity_financial_year', 'entity_id', 'financial_year'),
     )
     
     def __repr__(self):
@@ -138,7 +141,7 @@ class TaxStatement(Base):
         """Get the start and end dates for this financial year based on entity jurisdiction.
         Returns a tuple: (start_date, end_date).
         """
-        from ..shared.calculations import get_financial_year_dates
+        from src.shared.calculations import get_financial_year_dates
         from sqlalchemy.orm import object_session
         from src.entity.models import Entity
         session = object_session(self)

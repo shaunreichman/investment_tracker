@@ -1,16 +1,17 @@
 """
-Fund queries module.
+Fund Queries.
 
-This module contains methods for querying fund data and events.
-These methods handle database operations and return data for analysis.
+This module provides query functions for fund operations,
+implementing common database queries with proper session management.
 """
 
+from typing import List, Optional, Dict, Any
 from datetime import date, datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
+from sqlalchemy import and_, or_, func
 
-from .models import Fund, FundEvent, EventType, FundType, DistributionType
-from ..shared.utils import with_session
+from src.shared.utils import with_session
+from src.fund.models import Fund, FundEvent, EventType, FundType, DistributionType
 
 
 class FundQueryMixin:

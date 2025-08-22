@@ -87,12 +87,13 @@ def engine(test_database_name):
     engine = create_postgresql_test_engine(test_database_name)
     
     # Import all model modules so their tables are registered with Base
-    import src.fund.models  # noqa: F401
+    # Import order matters - import dependencies first
     import src.banking.models  # noqa: F401
     import src.entity.models  # noqa: F401
     import src.tax.models  # noqa: F401
     import src.rates.models  # noqa: F401
     import src.investment_company.models  # noqa: F401
+    import src.fund.models  # noqa: F401
 
     # Create all tables
     Base.metadata.create_all(bind=engine)
@@ -207,6 +208,23 @@ def setup_factories(db_session):
     set_session(db_session)
     yield
     # No need to manually rollback - nested transaction handles it automatically
+
+
+@pytest.fixture(autouse=True)
+def cleanup_event_bus():
+    """
+    Clean up event bus between tests to prevent hanging.
+    
+    This fixture ensures that event handler subscriptions don't accumulate
+    across tests, which can cause memory leaks and resource conflicts.
+    """
+    yield
+    try:
+        from src.fund.events.consumption.event_bus import event_bus
+        event_bus.clear_subscriptions()
+        print("✅ Event bus subscriptions cleared")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not clear event bus subscriptions: {e}")
 
 
 class BaseTestCase:

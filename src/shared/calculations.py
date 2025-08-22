@@ -143,13 +143,13 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
     filtered_events = []
     for event in cash_flow_events:
         include_event = False
-        if event.event_type.name in ['UNIT_PURCHASE', 'UNIT_SALE', 'CAPITAL_CALL', 'RETURN_OF_CAPITAL', 'DISTRIBUTION']:
+        if event.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION]:
             include_event = True
-        elif include_tax_payments and event.event_type.name == 'TAX_PAYMENT':
+        elif include_tax_payments and event.event_type == EventType.TAX_PAYMENT:
             include_event = True
-        elif include_risk_free_charges and event.event_type.name == 'DAILY_RISK_FREE_INTEREST_CHARGE':
+        elif include_risk_free_charges and event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
             include_event = True
-        elif include_eofy_debt_cost and event.event_type.name == 'EOFY_DEBT_COST':
+        elif include_eofy_debt_cost and event.event_type == EventType.EOFY_DEBT_COST:
             include_event = True
         if include_event:
             filtered_events.append(event)
@@ -164,13 +164,13 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
     for event in filtered_events:
         amount = event.amount or 0
         # Adjust sign based on event type
-        if event.event_type.name in ['UNIT_PURCHASE', 'CAPITAL_CALL']:
+        if event.event_type in [EventType.UNIT_PURCHASE, EventType.CAPITAL_CALL]:
             amount = -abs(amount)  # Outflow
-        elif event.event_type.name in ['UNIT_SALE', 'RETURN_OF_CAPITAL', 'DISTRIBUTION', 'EOFY_DEBT_COST']:
+        elif event.event_type in [EventType.UNIT_SALE, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION, EventType.EOFY_DEBT_COST]:
             amount = abs(amount)  # Inflow
-        elif event.event_type.name == 'TAX_PAYMENT':
+        elif event.event_type == EventType.TAX_PAYMENT:
             amount = -abs(amount)  # Outflow
-        elif event.event_type.name == 'DAILY_RISK_FREE_INTEREST_CHARGE':
+        elif event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
             amount = -abs(amount)  # Outflow
         
         cash_flows.append(amount)

@@ -4,7 +4,8 @@ from datetime import datetime
 
 from src.entity.models import Entity
 from src.investment_company.models import InvestmentCompany, Contact
-from src.fund.models import Fund, FundType, FundEvent, EventType, DistributionType, TaxPaymentType, FundEventCashFlow, CashFlowDirection
+from src.fund.models import Fund, FundEvent, FundEventCashFlow
+from src.fund.enums import FundType, EventType, DistributionType, TaxPaymentType, CashFlowDirection, FundStatus
 from src.tax.models import TaxStatement
 from src.rates.models import RiskFreeRate
 from src.banking.models import Bank, BankAccount
@@ -107,6 +108,7 @@ class FundFactory(SessionedFactory):
     name = factory.Sequence(lambda n: f"Fund {n:04d}")
     fund_type = "Private Debt"
     tracking_type = FundType.COST_BASED
+    status = FundStatus.ACTIVE  # Set default status
     currency = "AUD"
     description = factory.LazyAttribute(lambda _: fake.sentence())
     commitment_amount = 100000.0
@@ -207,6 +209,6 @@ class FundEventCashFlowFactory(SessionedFactory):
     currency = factory.LazyAttribute(lambda obj: obj.bank_account.currency)
     amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=100, max_value=50000, right_digits=2))
     reference = factory.LazyAttribute(lambda _: fake.bothify(text='REF-????-????', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'))
-    notes = factory.LazyAttribute(lambda _: fake.sentence())
+    description = factory.LazyAttribute(lambda _: fake.sentence())
 
 
