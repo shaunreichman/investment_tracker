@@ -67,22 +67,20 @@ class BankingController:
             current_app.logger.error(f"Error getting banks: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
-    def create_bank(self, session: Session) -> tuple:
+
+    
+    def create_bank_with_data(self, session: Session, data: Dict[str, Any]) -> tuple:
         """
-        Create a new bank.
+        Create a new bank with pre-validated data.
         
         Args:
             session: Database session
+            data: Pre-validated bank data
             
         Returns:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get request data
-            data = request.get_json()
-            if not data:
-                return jsonify({"error": "No data provided"}), 400
-            
             # Validate required fields
             required_fields = ['name', 'routing_number']
             for field in required_fields:
@@ -98,96 +96,91 @@ class BankingController:
             if existing_bank:
                 return jsonify({"error": "Bank with this routing number already exists"}), 409
             
-            # Create bank
-            bank = Bank(
-                name=data['name'].strip(),
+            # Create new bank
+            new_bank = Bank(
+                name=data['name'],
                 routing_number=data['routing_number'],
                 is_active=data.get('is_active', True)
             )
             
-            session.add(bank)
+            session.add(new_bank)
             session.commit()
             
-            # Format response data
-            response_data = {
-                "id": bank.id,
-                "name": bank.name,
-                "routing_number": bank.routing_number,
-                "is_active": bank.is_active,
-                "created_date": bank.created_date.isoformat() if bank.created_date else None,
-                "updated_date": bank.updated_date.isoformat() if bank.updated_date else None,
-                "message": "Bank created successfully"
+            # Return created bank data
+            bank_data = {
+                "id": new_bank.id,
+                "name": new_bank.name,
+                "routing_number": new_bank.routing_number,
+                "is_active": new_bank.is_active,
+                "created_date": new_bank.created_date.isoformat() if new_bank.created_date else None,
+                "updated_date": new_bank.updated_date.isoformat() if new_bank.updated_date else None
             }
             
-            return jsonify(response_data), 201
+            return jsonify(bank_data), 201
             
         except Exception as e:
+            session.rollback()
             current_app.logger.error(f"Error creating bank: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
             return jsonify({"error": "Internal server error"}), 500
     
-    def update_bank(self, bank_id: int, session: Session) -> tuple:
+
+    
+    def update_bank_with_data(self, bank_id: int, session: Session, data: Dict[str, Any]) -> tuple:
         """
-        Update a bank.
+        Update a bank with pre-validated data.
         
         Args:
             bank_id: ID of the bank to update
             session: Database session
+            data: Pre-validated bank data
             
         Returns:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get request data
-            data = request.get_json()
-            if not data:
-                return jsonify({"error": "No data provided"}), 400
-            
-            # Get the bank
+            # Check if bank exists
             bank = session.query(Bank).filter(Bank.id == bank_id).first()
             if not bank:
                 return jsonify({"error": "Bank not found"}), 404
             
-            # Update allowed fields
-            if 'name' in data:
-                bank.name = data['name'].strip()
-            if 'routing_number' in data:
-                # Validate routing number format
+            # Validate routing number format if provided
+            if 'routing_number' in data and data['routing_number']:
                 if not data['routing_number'].isdigit() or len(data['routing_number']) != 9:
                     return jsonify({"error": "Routing number must be exactly 9 digits"}), 400
                 
-                # Check if routing number already exists on another bank
+                # Check if routing number already exists for another bank
                 existing_bank = session.query(Bank).filter(
                     Bank.routing_number == data['routing_number'],
                     Bank.id != bank_id
                 ).first()
                 if existing_bank:
                     return jsonify({"error": "Bank with this routing number already exists"}), 409
-                
+            
+            # Update bank fields
+            if 'name' in data:
+                bank.name = data['name']
+            if 'routing_number' in data:
                 bank.routing_number = data['routing_number']
             if 'is_active' in data:
-                bank.is_active = bool(data['is_active'])
+                bank.is_active = data['is_active']
             
             session.commit()
             
-            # Format response data
-            response_data = {
+            # Return updated bank data
+            bank_data = {
                 "id": bank.id,
                 "name": bank.name,
                 "routing_number": bank.routing_number,
                 "is_active": bank.is_active,
                 "created_date": bank.created_date.isoformat() if bank.created_date else None,
-                "updated_date": bank.updated_date.isoformat() if bank.updated_date else None,
-                "message": "Bank updated successfully"
+                "updated_date": bank.updated_date.isoformat() if bank.updated_date else None
             }
             
-            return jsonify(response_data), 200
+            return jsonify(bank_data), 200
             
         except Exception as e:
-            current_app.logger.error(f"Error updating bank {bank_id}: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
+            session.rollback()
+            current_app.logger.error(f"Error updating bank: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
     def delete_bank(self, bank_id: int, session: Session) -> tuple:
@@ -202,25 +195,25 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get the bank
+            # Check if bank exists
             bank = session.query(Bank).filter(Bank.id == bank_id).first()
             if not bank:
                 return jsonify({"error": "Bank not found"}), 404
             
-            # Check if bank has accounts
+            # Check if bank has associated accounts
             accounts = session.query(BankAccount).filter(BankAccount.bank_id == bank_id).count()
             if accounts > 0:
                 return jsonify({"error": f"Cannot delete bank with {accounts} associated accounts"}), 400
             
+            # Delete bank
             session.delete(bank)
             session.commit()
             
             return jsonify({"message": "Bank deleted successfully"}), 200
             
         except Exception as e:
-            current_app.logger.error(f"Error deleting bank {bank_id}: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
+            session.rollback()
+            current_app.logger.error(f"Error deleting bank: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
     def get_bank_accounts(self, session: Session) -> tuple:
@@ -234,22 +227,24 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get all bank accounts with bank and entity info
-            accounts = session.query(BankAccount).join(Bank).join(Entity).all()
+            # Get all bank accounts with bank information
+            accounts = session.query(BankAccount).join(Bank).all()
             
             # Format response data
             accounts_data = []
             for account in accounts:
                 account_data = {
                     "id": account.id,
-                    "entity_id": account.entity_id,
-                    "entity_name": account.entity.name if account.entity else None,
-                    "bank_id": account.bank_id,
-                    "bank_name": account.bank.name if account.bank else None,
-                    "account_name": account.account_name,
                     "account_number": account.account_number,
                     "currency": account.currency,
+                    "balance": float(account.balance) if account.balance else 0.0,
                     "is_active": account.is_active,
+                    "bank": {
+                        "id": account.bank.id,
+                        "name": account.bank.name,
+                        "routing_number": account.bank.routing_number
+                    },
+                    "entity_id": account.entity_id,
                     "created_date": account.created_date.isoformat() if account.created_date else None,
                     "updated_date": account.updated_date.isoformat() if account.updated_date else None
                 }
@@ -261,24 +256,22 @@ class BankingController:
             current_app.logger.error(f"Error getting bank accounts: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
-    def create_bank_account(self, session: Session) -> tuple:
+
+    
+    def create_bank_account_with_data(self, session: Session, data: Dict[str, Any]) -> tuple:
         """
-        Create a new bank account.
+        Create a new bank account with pre-validated data.
         
         Args:
             session: Database session
+            data: Pre-validated bank account data
             
         Returns:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get request data
-            data = request.get_json()
-            if not data:
-                return jsonify({"error": "No data provided"}), 400
-            
             # Validate required fields
-            required_fields = ['entity_id', 'bank_id', 'account_name', 'account_number']
+            required_fields = ['entity_id', 'bank_id', 'account_number', 'currency']
             for field in required_fields:
                 if field not in data or not data[field]:
                     return jsonify({"error": f"Missing required field: {field}"}), 400
@@ -295,107 +288,113 @@ class BankingController:
                 return jsonify({"error": "Bank not found"}), 404
             
             # Validate currency format
-            if 'currency' in data and len(data['currency']) != 3:
+            if not data['currency'].isalpha() or len(data['currency']) != 3:
                 return jsonify({"error": "Currency must be a 3-letter ISO code"}), 400
             
-            # Check if account already exists
+            # Check if account already exists at this bank
             existing_account = session.query(BankAccount).filter(
-                BankAccount.bank_id == data['bank_id'],
-                BankAccount.account_number == data['account_number']
+                BankAccount.account_number == data['account_number'],
+                BankAccount.bank_id == data['bank_id']
             ).first()
             if existing_account:
                 return jsonify({"error": "Bank account with this number already exists at this bank"}), 409
             
-            # Create bank account
-            account = BankAccount(
+            # Create new bank account
+            new_account = BankAccount(
                 entity_id=data['entity_id'],
                 bank_id=data['bank_id'],
-                account_name=data['account_name'].strip(),
-                account_number=data['account_number'].strip(),
-                currency=data.get('currency', 'USD').upper(),
+                account_number=data['account_number'],
+                currency=data['currency'],
+                balance=data.get('balance', 0.0),
                 is_active=data.get('is_active', True)
             )
             
-            session.add(account)
+            session.add(new_account)
             session.commit()
             
-            # Format response data
-            response_data = {
-                "id": account.id,
-                "entity_id": account.entity_id,
-                "entity_name": account.entity.name if account.entity else None,
-                "bank_id": account.bank_id,
-                "bank_name": account.bank.name if account.bank else None,
-                "account_name": account.account_name,
-                "account_number": account.account_number,
-                "currency": account.currency,
-                "is_active": account.is_active,
-                "message": "Bank account created successfully"
+            # Return created account data
+            account_data = {
+                "id": new_account.id,
+                "account_number": new_account.account_number,
+                "currency": new_account.currency,
+                "balance": float(new_account.balance) if new_account.balance else 0.0,
+                "is_active": new_account.is_active,
+                "bank": {
+                    "id": bank.id,
+                    "name": bank.name,
+                    "routing_number": bank.routing_number
+                },
+                "entity_id": new_account.entity_id,
+                "created_date": new_account.created_date.isoformat() if new_account.created_date else None,
+                "updated_date": new_account.updated_date.isoformat() if new_account.updated_date else None
             }
             
-            return jsonify(response_data), 201
+            return jsonify(account_data), 201
             
         except Exception as e:
+            session.rollback()
             current_app.logger.error(f"Error creating bank account: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
             return jsonify({"error": "Internal server error"}), 500
     
-    def update_bank_account(self, account_id: int, session: Session) -> tuple:
+
+    
+    def update_bank_account_with_data(self, account_id: int, session: Session, data: Dict[str, Any]) -> tuple:
         """
-        Update a bank account.
+        Update a bank account with pre-validated data.
         
         Args:
             account_id: ID of the account to update
             session: Database session
+            data: Pre-validated bank account data
             
         Returns:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get request data
-            data = request.get_json()
-            if not data:
-                return jsonify({"error": "No data provided"}), 400
-            
-            # Get the account
+            # Check if account exists
             account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
             if not account:
                 return jsonify({"error": "Bank account not found"}), 404
             
-            # Update allowed fields
-            if 'account_name' in data:
-                account.account_name = data['account_name'].strip()
-            if 'is_active' in data:
-                account.is_active = bool(data['is_active'])
-            if 'currency' in data:
-                # Validate currency format
-                if len(data['currency']) != 3:
+            # Validate currency format if provided
+            if 'currency' in data and data['currency']:
+                if not data['currency'].isalpha() or len(data['currency']) != 3:
                     return jsonify({"error": "Currency must be a 3-letter ISO code"}), 400
-                account.currency = data['currency'].upper()
+            
+            # Update account fields
+            if 'account_number' in data:
+                account.account_number = data['account_number']
+            if 'currency' in data:
+                account.currency = data['currency']
+            if 'balance' in data:
+                account.balance = data['balance']
+            if 'is_active' in data:
+                account.is_active = data['is_active']
             
             session.commit()
             
-            # Format response data
-            response_data = {
+            # Return updated account data
+            account_data = {
                 "id": account.id,
-                "entity_id": account.entity_id,
-                "entity_name": account.entity.name if account.entity else None,
-                "bank_id": account.bank_id,
-                "bank_name": account.bank.name if account.bank else None,
-                "account_name": account.account_name,
                 "account_number": account.account_number,
                 "currency": account.currency,
+                "balance": float(account.balance) if account.balance else 0.0,
                 "is_active": account.is_active,
-                "message": "Bank account updated successfully"
+                "bank": {
+                    "id": account.bank.id,
+                    "name": account.bank.name,
+                    "routing_number": account.bank.routing_number
+                },
+                "entity_id": account.entity_id,
+                "created_date": account.created_date.isoformat() if account.created_date else None,
+                "updated_date": account.updated_date.isoformat() if account.updated_date else None
             }
             
-            return jsonify(response_data), 200
+            return jsonify(account_data), 200
             
         except Exception as e:
-            current_app.logger.error(f"Error updating bank account {account_id}: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
+            session.rollback()
+            current_app.logger.error(f"Error updating bank account: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
     def delete_bank_account(self, account_id: int, session: Session) -> tuple:
@@ -410,18 +409,82 @@ class BankingController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get the account
+            # Check if account exists
             account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
             if not account:
                 return jsonify({"error": "Bank account not found"}), 404
             
+            # Delete account
             session.delete(account)
             session.commit()
             
             return jsonify({"message": "Bank account deleted successfully"}), 200
             
         except Exception as e:
-            current_app.logger.error(f"Error deleting bank account {account_id}: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
+            session.rollback()
+            current_app.logger.error(f"Error deleting bank account: {str(e)}")
+            return jsonify({"error": "Internal server error"}), 500
+    
+    def get_bank_account_balance(self, account_id: int, session: Session) -> tuple:
+        """
+        Get current balance for a bank account.
+        
+        Args:
+            account_id: ID of the account
+            session: Database session
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Check if account exists
+            account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
+            if not account:
+                return jsonify({"error": "Bank account not found"}), 404
+            
+            balance_data = {
+                "account_id": account.id,
+                "account_number": account.account_number,
+                "currency": account.currency,
+                "balance": float(account.balance) if account.balance else 0.0,
+                "last_updated": account.updated_date.isoformat() if account.updated_date else None
+            }
+            
+            return jsonify(balance_data), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting bank account balance: {str(e)}")
+            return jsonify({"error": "Internal server error"}), 500
+    
+    def get_bank_account_transactions(self, account_id: int, session: Session) -> tuple:
+        """
+        Get transaction history for a bank account.
+        
+        Args:
+            account_id: ID of the account
+            session: Database session
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Check if account exists
+            account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
+            if not account:
+                return jsonify({"error": "Bank account not found"}), 404
+            
+            # For now, return basic account info - transaction history would be implemented
+            # when the transaction system is built
+            transaction_data = {
+                "account_id": account.id,
+                "account_number": account.account_number,
+                "currency": account.currency,
+                "message": "Transaction history not yet implemented",
+                "transactions": []
+            }
+            
+            return jsonify(transaction_data), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting bank account transactions: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500

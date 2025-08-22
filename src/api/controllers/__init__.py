@@ -9,5 +9,6 @@ from .dashboard_controller import DashboardController
 from .entity_controller import EntityController
 from .banking_controller import BankingController
 from .tax_controller import TaxController
+from .fund_controller import FundController
 
-__all__ = ['DashboardController', 'EntityController', 'BankingController', 'TaxController']
+__all__ = ['DashboardController', 'EntityController', 'BankingController', 'TaxController', 'FundController']

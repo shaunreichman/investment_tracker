@@ -219,65 +219,51 @@ tests/
 │   ├── __init__.py
 │   ├── contracts/                        # API contract validation
 │   │   ├── __init__.py
-│   │   ├── fund/                         # Fund API contracts
-│   │   │   ├── __init__.py
-│   │   │   ├── test_fund_api_contracts.py            # Fund API schema validation
-│   │   │   └── test_fund_event_api_contracts.py     # Fund event API contracts
-│   │   ├── investment_company/             # Company API contracts
-│   │   │   ├── __init__.py
-│   │   │   └── test_company_api_contracts.py         # Company API schema validation
-│   │   ├── entity/                        # Entity API contracts
-│   │   │   ├── __init__.py
-│   │   │   └── test_entity_api_contracts.py          # Entity API schema validation
-│   │   ├── banking/                       # Banking API contracts
-│   │   │   ├── __init__.py
-│   │   │   └── test_banking_api_contracts.py         # Banking API schema validation
-│   │   ├── tax/                           # Tax API contracts
-│   │   │   ├── __init__.py
-│   │   │   └── test_tax_api_contracts.py             # Tax API schema validation
-│   │   └── shared/                        # Shared API contracts
-│   │       ├── __init__.py
-│   │       ├── test_error_response_contracts.py      # Error response formats
-│   │       └── test_common_api_contracts.py          # Common API patterns
+│   │   ├── test_banking_contracts.py     # Banking API schema validation
+│   │   ├── test_fund_contracts.py        # Fund API schema validation
+│   │   ├── test_company_contracts.py     # Company API schema validation
+│   │   └── test_tax_contracts.py         # Tax API schema validation
 │   ├── endpoints/                         # API endpoint testing
 │   │   ├── __init__.py
-│   │   ├── fund/                          # Fund endpoints
+│   │   ├── banking/                      # Banking domain endpoints
 │   │   │   ├── __init__.py
-│   │   │   ├── test_fund_endpoints.py                # Fund CRUD operations
-│   │   │   ├── test_fund_event_endpoints.py          # Event management endpoints
-│   │   │   ├── test_calculation_endpoints.py         # Calculation endpoints
-│   │   │   └── test_reporting_endpoints.py           # Reporting and analysis endpoints
-│   │   ├── investment_company/             # Company endpoints
+│   │   │   ├── test_bank_accounts.py     # Account management endpoints
+│   │   │   └── test_bank_transactions.py # Transaction management endpoints
+│   │   ├── fund/                         # Fund domain endpoints
 │   │   │   ├── __init__.py
-│   │   │   ├── test_company_endpoints.py             # Company CRUD operations
-│   │   │   └── test_company_relationship_endpoints.py # Relationship management
-│   │   ├── entity/                        # Entity endpoints
+│   │   │   ├── test_fund_operations.py   # Fund CRUD operations
+│   │   │   ├── test_fund_calculations.py # Calculation endpoints
+│   │   │   └── test_fund_events.py       # Event management endpoints
+│   │   ├── company/                      # Company domain endpoints
 │   │   │   ├── __init__.py
-│   │   │   ├── test_entity_endpoints.py              # Entity CRUD operations
-│   │   │   └── test_entity_investment_endpoints.py   # Investment management
-│   │   ├── banking/                       # Banking endpoints
-│   │   │   ├── __init__.py
-│   │   │   ├── test_bank_account_endpoints.py        # Account management
-│   │   │   └── test_bank_transaction_endpoints.py    # Transaction management
-│   │   ├── tax/                           # Tax endpoints
-│   │   │   ├── __init__.py
-│   │   │   ├── test_tax_statement_endpoints.py       # Tax statement management
-│   │   │   └── test_tax_calculation_endpoints.py     # Tax calculation endpoints
-│   │   └── rates/                         # Rate endpoints
+│   │   │   ├── test_company_operations.py # Company CRUD operations
+│   │   │   └── test_company_calculations.py # Company calculation endpoints
+│   │   └── tax/                          # Tax domain endpoints
 │   │       ├── __init__.py
-│   │       └── test_rate_endpoints.py                # Rate management endpoints
-│   ├── validation/                        # Input validation testing
+│   │       ├── test_tax_calculations.py   # Tax calculation endpoints
+│   │       └── test_tax_integration.py    # Tax integration endpoints
+│   ├── integration/                      # Cross-domain integration testing
 │   │   ├── __init__.py
-│   │   ├── test_input_validation.py                  # Request validation
-│   │   ├── test_authentication.py                    # Auth and permissions
-│   │   ├── test_rate_limiting.py                     # API rate limiting
-│   │   └── test_business_rule_validation.py          # Business rule validation
-│   └── error_handling/                    # Error handling testing
+│   │   ├── test_banking_fund_integration.py      # Banking-fund integration
+│   │   ├── test_company_fund_integration.py      # Company-fund integration
+│   │   └── test_tax_fund_integration.py          # Tax-fund integration
+│   ├── middleware/                       # Middleware functionality testing
+│   │   ├── __init__.py
+│   │   ├── test_error_handling.py        # Error handling middleware
+│   │   ├── test_logging.py               # Logging middleware
+│   │   ├── test_authentication.py        # Authentication middleware
+│   │   └── test_validation.py            # Validation middleware
+│   ├── performance/                      # API performance testing
+│   │   ├── __init__.py
+│   │   ├── test_response_times.py        # Response time validation
+│   │   ├── test_concurrent_requests.py   # Concurrent request handling
+│   │   └── test_memory_usage.py         # Memory usage validation
+│   └── security/                         # Security testing
 │       ├── __init__.py
-│       ├── test_error_responses.py                   # Error handling consistency
-│       ├── test_validation_errors.py                 # Input validation errors
-│       ├── test_business_rule_violations.py          # Business rule violations
-│       └── test_system_errors.py                     # System error handling
+│       ├── test_authentication.py        # Authentication mechanisms
+│       ├── test_authorization.py         # Access control validation
+│       ├── test_input_validation.py     # Input validation security
+│       └── test_rate_limiting.py        # Rate limiting security
 │
 ├── e2e/                                  # End-to-end tests - complete user journeys
 │   ├── __init__.py

@@ -377,6 +377,30 @@ class FundService:
             'limit': limit
         }
     
+    def get_fund_event(self, fund_id: int, event_id: int, session: Session) -> Optional[Any]:
+        """
+        Get a specific fund event by ID.
+        
+        Args:
+            fund_id: ID of the fund
+            event_id: ID of the event
+            session: Database session
+            
+        Returns:
+            FundEvent object if found, None otherwise
+        """
+        # First verify the fund exists
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            return None
+        
+        # Get the specific event
+        event = self.fund_event_repository.get_by_id(event_id, session)
+        if not event or event.fund_id != fund_id:
+            return None
+        
+        return event
+    
     def get_fund_summary(self, fund_id: int, session: Session) -> Optional[Dict[str, Any]]:
         """
         Get a comprehensive summary of a fund.

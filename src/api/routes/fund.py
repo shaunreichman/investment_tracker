@@ -3,6 +3,8 @@ Fund API Routes.
 
 This module contains all fund-related API endpoints including
 fund management, fund events, tax statements, and cash flows.
+
+All endpoints use middleware validation for input data.
 """
 
 from flask import Blueprint, jsonify, request
@@ -13,6 +15,7 @@ from src.fund.enums import FundStatus, FundType, EventType, CashFlowDirection
 from src.entity.models import Entity
 from src.banking.models import BankAccount
 from src.tax.models import TaxStatement
+from src.api.middleware.validation import validate_fund_data, validate_fund_event_data, validate_cash_flow_data
 
 # Create blueprint for fund routes
 fund_bp = Blueprint('fund', __name__)
@@ -141,10 +144,11 @@ def fund_detail(fund_id):
 
 
 @fund_bp.route('/api/funds', methods=['POST'])
+@validate_fund_data
 def create_fund():
     """Create a new fund using the new FundController architecture"""
     try:
-        from src.fund.api import FundController
+        from src.api.controllers.fund_controller import FundController
         controller = FundController()
         return controller.create_fund()
     except Exception as e:
@@ -152,12 +156,15 @@ def create_fund():
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events', methods=['POST'])
+@validate_fund_event_data
 def create_fund_event(fund_id):
     """Create a new fund event using the new FundController architecture"""
     try:
-        from src.fund.api import FundController
+        from src.api.controllers.fund_controller import FundController
         controller = FundController()
-        return controller.add_fund_event(fund_id)
+        # Use validated data from middleware
+        validated_data = request.validated_data
+        return controller.add_fund_event_with_data(fund_id, validated_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -166,138 +173,15 @@ def create_fund_event(fund_id):
 def delete_fund_event(fund_id, event_id):
     """Delete a specific fund event using the new FundController architecture"""
     try:
-        from src.fund.api import FundController
+        from src.api.controllers.fund_controller import FundController
         controller = FundController()
         return controller.delete_fund_event(fund_id, event_id)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@fund_bp.route('/api/funds/<int:fund_id>/tax-statements', methods=['POST'])
-def create_tax_statement(fund_id):
-    """Create a new tax statement for a fund"""
-    try:
-        from src.api import get_db_session
-        session = get_db_session()
-        
-        try:
-            # Get fund and validate it exists
-            fund = Fund.get_by_id(fund_id, session=session)
-            if not fund:
-                return jsonify({"error": "Fund not found"}), 404
-            
-            # Get request data
-            data = request.get_json()
-            if not data:
-                return jsonify({"error": "No data provided"}), 400
-            
-            # Extract required fields
-            entity_id = data.get('entity_id')
-            financial_year = data.get('financial_year')
-            statement_date = data.get('statement_date')
-            eofy_debt_interest_deduction_rate = data.get('eofy_debt_interest_deduction_rate')
-            
-            # Validate required fields
-            if not entity_id:
-                return jsonify({"error": "Entity ID is required"}), 400
-            if not financial_year:
-                return jsonify({"error": "Financial year is required"}), 400
-            if not statement_date:
-                return jsonify({"error": "Statement date is required"}), 400
-            if eofy_debt_interest_deduction_rate is None:
-                return jsonify({"error": "End of financial year debt interest deduction rate is required"}), 400
-            
-            # Validate entity exists
-            entity = session.query(Entity).filter(Entity.id == entity_id).first()
-            if not entity:
-                return jsonify({"error": "Entity not found"}), 404
-            
-            # Parse statement date
-            try:
-                if isinstance(statement_date, str):
-                    statement_date = datetime.strptime(statement_date, '%Y-%m-%d').date()
-            except ValueError:
-                return jsonify({"error": "Invalid statement date format. Use YYYY-MM-DD"}), 400
-            
-            # Validate numeric fields
-            numeric_fields = [
-                'eofy_debt_interest_deduction_rate',
-                'interest_received_in_cash',
-                'interest_receivable_this_fy',
-                'interest_receivable_prev_fy',
-                'interest_non_resident_withholding_tax_from_statement',
-                'interest_income_tax_rate',
-                'dividend_franked_income_amount',
-                'dividend_unfranked_income_amount',
-                'dividend_franked_income_tax_rate',
-                'dividend_unfranked_income_tax_rate',
-                'capital_gain_income_amount',
-                'capital_gain_income_tax_rate'
-            ]
-            
-            for field in numeric_fields:
-                if field in data and data[field] is not None:
-                    try:
-                        float(data[field])
-                    except (ValueError, TypeError):
-                        return jsonify({"error": f"Invalid numeric value for {field}"}), 400
-            
-            # Create tax statement using domain method
-            tax_statement = fund.create_tax_statement(
-                entity_id=entity_id,
-                financial_year=financial_year,
-                statement_date=statement_date,
-                eofy_debt_interest_deduction_rate=float(eofy_debt_interest_deduction_rate),
-                interest_received_in_cash=data.get('interest_received_in_cash'),
-                interest_receivable_this_fy=data.get('interest_receivable_this_fy'),
-                interest_receivable_prev_fy=data.get('interest_receivable_prev_fy'),
-                interest_non_resident_withholding_tax_from_statement=data.get('interest_non_resident_withholding_tax_from_statement'),
-                interest_income_tax_rate=data.get('interest_income_tax_rate'),
-                interest_income_amount=data.get('interest_income_amount'),
-                interest_tax_amount=data.get('interest_tax_amount'),
-                dividend_franked_income_amount=data.get('dividend_franked_income_amount'),
-                dividend_franked_income_tax_rate=data.get('dividend_franked_income_tax_rate'),
-                dividend_unfranked_income_amount=data.get('dividend_unfranked_income_amount'),
-                dividend_unfranked_income_tax_rate=data.get('dividend_unfranked_income_tax_rate'),
-                capital_gain_income_amount=data.get('capital_gain_income_amount'),
-                capital_gain_income_tax_rate=data.get('capital_gain_income_tax_rate'),
-                session=session
-            )
-            
-            session.commit()
-            
-            # Return created tax statement
-            response_data = {
-                "id": tax_statement.id,
-                "fund_id": fund_id,
-                "entity_id": tax_statement.entity_id,
-                "financial_year": tax_statement.financial_year,
-                "statement_date": tax_statement.statement_date.isoformat() if tax_statement.statement_date else None,
-                "eofy_debt_interest_deduction_rate": float(tax_statement.eofy_debt_interest_deduction_rate) if tax_statement.eofy_debt_interest_deduction_rate else None,
-                "interest_received_in_cash": float(tax_statement.interest_received_in_cash) if tax_statement.interest_received_in_cash else None,
-                "interest_receivable_this_fy": float(tax_statement.interest_receivable_this_fy) if tax_statement.interest_receivable_this_fy else None,
-                "interest_receivable_prev_fy": float(tax_statement.interest_receivable_prev_fy) if tax_statement.interest_receivable_prev_fy else None,
-                "interest_non_resident_withholding_tax_from_statement": float(tax_statement.interest_non_resident_withholding_tax_from_statement) if tax_statement.interest_non_resident_withholding_tax_from_statement else None,
-                "interest_income_tax_rate": float(tax_statement.interest_income_tax_rate) if tax_statement.interest_income_tax_rate else None,
-                "interest_income_amount": float(tax_statement.interest_income_amount) if tax_statement.interest_income_amount else None,
-                "interest_tax_amount": float(tax_statement.interest_tax_amount) if tax_statement.interest_tax_amount else None,
-                "dividend_franked_income_amount": float(tax_statement.dividend_franked_income_amount) if tax_statement.dividend_franked_income_amount else None,
-                "dividend_franked_income_tax_rate": float(tax_statement.dividend_franked_income_tax_rate) if tax_statement.dividend_franked_income_tax_rate else None,
-                "dividend_unfranked_income_amount": float(tax_statement.dividend_unfranked_income_amount) if tax_statement.dividend_unfranked_income_amount else None,
-                "dividend_unfranked_income_tax_rate": float(tax_statement.dividend_unfranked_income_tax_rate) if tax_statement.dividend_unfranked_income_tax_rate else None,
-                "capital_gain_income_amount": float(tax_statement.capital_gain_income_amount) if tax_statement.capital_gain_income_amount else None,
-                "capital_gain_income_tax_rate": float(tax_statement.capital_gain_income_tax_rate) if tax_statement.capital_gain_income_tax_rate else None,
-                "created_at": tax_statement.created_at.isoformat() if tax_statement.created_at else None,
-                "updated_at": tax_statement.updated_at.isoformat() if tax_statement.updated_at else None
-            }
-            
-            return jsonify(response_data), 201
-            
-        finally:
-            session.close()
-            
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+# Tax statement creation is now handled by the tax routes with middleware validation
+# This duplicate route has been removed to eliminate duplication and use the centralized validation
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/tax-statements', methods=['GET'])
@@ -413,84 +297,15 @@ def get_fund_event_cash_flows(fund_id, event_id):
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows', methods=['POST'])
+@validate_cash_flow_data
 def add_fund_event_cash_flow(fund_id, event_id):
     """Add a cash flow to a fund event"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-        
-        required_fields = ['bank_account_id', 'transfer_date', 'currency', 'amount']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return jsonify({"error": f"Missing required field: {field}"}), 400
-        
-        from src.api import get_db_session
-        session = get_db_session()
-        
-        try:
-            # Validate fund exists
-            fund = Fund.get_by_id(fund_id, session=session)
-            if not fund:
-                return jsonify({"error": "Fund not found"}), 404
-            
-            # Validate event exists and belongs to fund
-            event = session.query(FundEvent).filter(
-                FundEvent.id == event_id,
-                FundEvent.fund_id == fund_id
-            ).first()
-            
-            if not event:
-                return jsonify({"error": "Fund event not found"}), 404
-            
-            # Validate bank account exists
-            bank_account = session.query(BankAccount).filter(BankAccount.id == data['bank_account_id']).first()
-            if not bank_account:
-                return jsonify({"error": "Bank account not found"}), 404
-            
-            # Validate currency matches bank account
-            if data['currency'].upper() != bank_account.currency.upper():
-                return jsonify({"error": "Cash flow currency must match bank account currency"}), 400
-            
-            # Parse transfer date
-            try:
-                transfer_date = datetime.strptime(data['transfer_date'], '%Y-%m-%d').date()
-            except ValueError:
-                return jsonify({"error": "Invalid transfer_date format. Use YYYY-MM-DD"}), 400
-            
-            # Add cash flow using domain method
-            cash_flow = event.add_cash_flow(
-                bank_account_id=data['bank_account_id'],
-                transfer_date=transfer_date,
-                currency=data['currency'],
-                amount=float(data['amount']),
-                reference=data.get('reference'),
-                notes=data.get('notes'),
-                session=session
-            )
-            
-            session.commit()
-            
-            response_data = {
-                "id": cash_flow.id,
-                "fund_event_id": cash_flow.fund_event_id,
-                "bank_account_id": cash_flow.bank_account_id,
-                "bank_name": bank_account.bank.name,
-                "account_name": bank_account.account_name,
-                "direction": cash_flow.direction.value,
-                "transfer_date": cash_flow.transfer_date.isoformat(),
-                "currency": cash_flow.currency,
-                "amount": float(cash_flow.amount),
-                "reference": cash_flow.reference,
-                "notes": cash_flow.notes,
-                "message": "Cash flow added successfully"
-            }
-            
-            return jsonify(response_data), 201
-            
-        finally:
-            session.close()
-            
+        from src.api.controllers.fund_controller import FundController
+        controller = FundController()
+        # Use validated data from middleware
+        validated_data = request.validated_data
+        return controller.add_cash_flow_to_event(fund_id, event_id, validated_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

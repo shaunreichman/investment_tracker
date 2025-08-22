@@ -12,10 +12,11 @@ Key responsibilities:
 """
 
 from typing import List, Optional, Dict, Any
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 from sqlalchemy.orm import Session
 
 from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.services.fund_service import FundService
 
 
 class FundController:
@@ -69,17 +70,19 @@ class FundController:
         
         Returns:
             Tuple of (response_data, status_code)
+            
+        Note: Input data is pre-validated by middleware validation decorator.
         """
         try:
-            # Get request data
-            fund_data = request.get_json()
+            # Get pre-validated data from middleware
+            fund_data = getattr(request, 'validated_data', {})
             if not fund_data:
-                return jsonify({'error': 'No data provided'}), 400
+                return jsonify({'error': 'No validated data available'}), 400
             
             # Get database session
             session = self._get_session()
             
-            # Create the fund
+            # Create the fund with validated data
             fund = self.fund_service.create_fund(fund_data, session)
             
             # Commit the transaction
@@ -107,17 +110,19 @@ class FundController:
             
         Returns:
             Tuple of (response_data, status_code)
+            
+        Note: Input data is pre-validated by middleware validation decorator.
         """
         try:
-            # Get request data
-            fund_data = request.get_json()
+            # Get pre-validated data from middleware
+            fund_data = getattr(request, 'validated_data', {})
             if not fund_data:
-                return jsonify({'error': 'No data provided'}), 400
+                return jsonify({'error': 'No validated data available'}), 400
             
             # Get database session
             session = self._get_session()
             
-            # Update the fund
+            # Update the fund with validated data
             fund = self.fund_service.update_fund(fund_id, fund_data, session)
             
             if not fund:
@@ -238,6 +243,45 @@ class FundController:
             session = self._get_session()
             
             # Add the event
+            event = self.fund_service.add_fund_event(fund_id, event_data, session)
+            
+            # Commit the transaction
+            session.commit()
+            
+            return jsonify(event), 201
+            
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        except RuntimeError as e:
+            # Check if this is a "not found" error
+            if "not found" in str(e).lower():
+                return jsonify({'error': str(e)}), 404
+            return jsonify({'error': str(e)}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error adding fund event: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def add_fund_event_with_data(self, fund_id: int, event_data: dict) -> tuple:
+        """
+        Add a fund event with pre-validated data.
+        
+        Args:
+            fund_id: ID of the fund
+            event_data: Pre-validated event data
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get database session
+            session = self._get_session()
+            
+            # Add the event using pre-validated data
             event = self.fund_service.add_fund_event(fund_id, event_data, session)
             
             # Commit the transaction
@@ -462,3 +506,78 @@ class FundController:
         engine = create_database_engine()
         Session = sessionmaker(bind=engine)
         return Session()
+    
+    def add_cash_flow_to_event(self, fund_id: int, event_id: int, cash_flow_data: dict) -> tuple:
+        """
+        Add a cash flow to a fund event with pre-validated data.
+        
+        Args:
+            fund_id: ID of the fund
+            event_id: ID of the event
+            cash_flow_data: Pre-validated cash flow data
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get database session
+            session = self._get_session()
+            
+            # Validate fund exists
+            fund = self.fund_service.get_fund(fund_id, session)
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Validate event exists and belongs to fund
+            event = self.fund_service.get_fund_event(fund_id, event_id, session)
+            if not event:
+                return jsonify({'error': 'Fund event not found'}), 404
+            
+            # Validate bank account exists
+            from src.banking.models import BankAccount
+            bank_account = session.query(BankAccount).filter(BankAccount.id == cash_flow_data['bank_account_id']).first()
+            if not bank_account:
+                return jsonify({'error': 'Bank account not found'}), 404
+            
+            # Validate currency matches bank account
+            if cash_flow_data['currency'].upper() != bank_account.currency.upper():
+                return jsonify({'error': 'Cash flow currency must match bank account currency'}), 400
+            
+            # Add cash flow using domain method
+            cash_flow = event.add_cash_flow(
+                bank_account_id=cash_flow_data['bank_account_id'],
+                transfer_date=cash_flow_data['transfer_date'],
+                currency=cash_flow_data['currency'],
+                amount=cash_flow_data['amount'],
+                reference=cash_flow_data.get('reference'),
+                notes=cash_flow_data.get('notes'),
+                session=session
+            )
+            
+            session.commit()
+            
+            response_data = {
+                "id": cash_flow.id,
+                "fund_event_id": cash_flow.fund_event_id,
+                "bank_account_id": cash_flow.bank_account_id,
+                "bank_name": bank_account.bank.name,
+                "account_name": bank_account.account_name,
+                "direction": cash_flow.direction.value,
+                "transfer_date": cash_flow.transfer_date.isoformat(),
+                "currency": cash_flow.currency,
+                "amount": float(cash_flow.amount),
+                "reference": cash_flow.reference,
+                "notes": cash_flow.notes,
+                "message": "Cash flow added successfully"
+            }
+            
+            return jsonify(response_data), 201
+            
+        except Exception as e:
+            current_app.logger.error(f"Error adding cash flow to event: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()

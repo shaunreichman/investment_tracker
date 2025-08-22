@@ -147,6 +147,48 @@ class CompanyController:
             session.rollback()
             return jsonify({"error": "Internal server error"}), 500
     
+    def create_investment_company_with_data(self, session: Session, data: dict) -> tuple:
+        """
+        Create a new investment company with pre-validated data.
+        
+        Args:
+            session: Database session
+            data: Pre-validated company data
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Use domain method to create company (handles duplicate checking)
+            company = InvestmentCompany.create(
+                name=data['name'],
+                description=data.get('description'),
+                website=data.get('website'),
+                company_type=data.get('company_type'),
+                business_address=data.get('business_address'),
+                session=session
+            )
+            
+            # Commit the transaction
+            session.commit()
+            
+            return jsonify({
+                "id": company.id,
+                "name": company.name,
+                "description": company.description,
+                "website": company.website,
+                "company_type": company.company_type,
+                "business_address": company.business_address,
+                "created_at": company.created_at.isoformat() if company.created_at else None
+            }), 201
+            
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error creating investment company: {str(e)}")
+            session.rollback()
+            return jsonify({"error": "Internal server error"}), 500
+    
     def get_company_funds(self, company_id: int, session: Session) -> tuple:
         """
         Get funds for a specific investment company.

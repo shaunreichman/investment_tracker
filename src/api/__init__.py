@@ -11,9 +11,15 @@ if project_root not in sys.path:
 # Import route blueprints
 from src.api.routes import fund, company, dashboard, entity, banking, tax
 
+# Import middleware
+from src.api.middleware import setup_error_handlers, setup_logging_middleware
+
 def create_app(db_config=None):
     app = Flask(__name__)
     CORS(app)
+    
+    # Set up logging configuration
+    app.config['LOGGING_LEVEL'] = 'INFO'
     
     # Initialize event consumption system
     try:
@@ -24,6 +30,10 @@ def create_app(db_config=None):
         app.logger.warning(f"Could not initialize event consumption system: {e}")
         # Don't fail app startup if event system fails
 
+    # Set up middleware
+    setup_error_handlers(app)
+    setup_logging_middleware(app)
+    
     # Register route blueprints
     app.register_blueprint(fund.fund_bp)
     app.register_blueprint(company.company_bp)

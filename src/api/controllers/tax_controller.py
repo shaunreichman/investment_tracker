@@ -6,8 +6,10 @@ providing RESTful endpoints for tax statement management.
 
 Key responsibilities:
 - Tax statement CRUD endpoints
-- Tax validation and error handling
-- Input sanitization and type validation
+- Business logic delegation to domain models
+- Response formatting and error handling
+
+Note: All input validation is handled by middleware validation decorators.
 """
 
 from typing import List, Optional, Dict, Any
@@ -28,6 +30,8 @@ class TaxController:
     for tax operations. It delegates business logic to the domain
     models and handles request/response formatting.
     
+    All input validation is handled by middleware validation decorators.
+    
     Attributes:
         None - Direct domain model usage for simplicity
     """
@@ -46,6 +50,8 @@ class TaxController:
             
         Returns:
             Tuple of (response_data, status_code)
+            
+        Note: Input data is pre-validated by middleware validation decorator.
         """
         try:
             # Get fund and validate it exists
@@ -53,80 +59,21 @@ class TaxController:
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
-            # Get request data
-            data = request.get_json()
+            # Get pre-validated data from middleware
+            data = getattr(request, 'validated_data', {})
             if not data:
-                return jsonify({"error": "No data provided"}), 400
+                return jsonify({"error": "No validated data available"}), 400
             
-            # Extract required fields
-            entity_id = data.get('entity_id')
-            financial_year = data.get('financial_year')
-            statement_date = data.get('statement_date')
-            eofy_debt_interest_deduction_rate = data.get('eofy_debt_interest_deduction_rate')
-            
-            # Validate required fields
-            if not entity_id:
-                return jsonify({"error": "Entity ID is required"}), 400
-            if not financial_year:
-                return jsonify({"error": "Financial year is required"}), 400
-            if not statement_date:
-                return jsonify({"error": "Statement date is required"}), 400
-            if eofy_debt_interest_deduction_rate is None:
-                return jsonify({"error": "End of financial year debt interest deduction rate is required"}), 400
+            # Extract validated fields
+            entity_id = data['entity_id']
+            financial_year = data['financial_year']
+            statement_date = data['statement_date']
+            eofy_debt_interest_deduction_rate = data['eofy_debt_interest_deduction_rate']
             
             # Validate entity exists
             entity = session.query(Entity).filter(Entity.id == entity_id).first()
             if not entity:
                 return jsonify({"error": "Entity not found"}), 404
-            
-            # Parse statement date
-            try:
-                if isinstance(statement_date, str):
-                    statement_date = datetime.strptime(statement_date, '%Y-%m-%d').date()
-            except ValueError:
-                return jsonify({"error": "Invalid statement date format. Use YYYY-MM-DD"}), 400
-            
-            # Validate numeric fields
-            numeric_fields = [
-                'eofy_debt_interest_deduction_rate',
-                'interest_received_in_cash',
-                'interest_receivable_this_fy',
-                'interest_receivable_prev_fy',
-                'interest_non_resident_withholding_tax_from_statement',
-                'interest_income_tax_rate',
-                'dividend_franked_income_amount',
-                'dividend_unfranked_income_amount',
-                'dividend_franked_income_tax_rate',
-                'dividend_unfranked_income_tax_rate',
-                'capital_gain_income_amount',
-                'capital_gain_income_tax_rate'
-            ]
-            
-            for field in numeric_fields:
-                value = data.get(field)
-                if value is not None:
-                    try:
-                        float_value = float(value)
-                        if float_value < 0:
-                            return jsonify({"error": f"{field.replace('_', ' ').title()} must be non-negative"}), 400
-                        data[field] = float_value
-                    except (ValueError, TypeError):
-                        return jsonify({"error": f"{field.replace('_', ' ').title()} must be a valid number"}), 400
-            
-            # Validate percentage fields (0-100%)
-            percentage_fields = [
-                'eofy_debt_interest_deduction_rate',
-                'interest_income_tax_rate',
-                'dividend_franked_income_tax_rate',
-                'dividend_unfranked_income_tax_rate',
-                'capital_gain_income_tax_rate'
-            ]
-            
-            for field in percentage_fields:
-                value = data.get(field)
-                if value is not None:
-                    if not (0 <= float(value) <= 100):
-                        return jsonify({"error": f"{field.replace('_', ' ').title()} must be between 0 and 100"}), 400
             
             # Check for existing tax statement
             existing_statement = session.query(TaxStatement).filter(
@@ -138,13 +85,13 @@ class TaxController:
             if existing_statement:
                 return jsonify({"error": "Tax statement already exists for this fund, entity, and financial year"}), 409
             
-            # Create tax statement
+            # Create tax statement with validated data
             tax_statement = TaxStatement(
                 fund_id=fund_id,
                 entity_id=entity_id,
                 financial_year=financial_year,
                 statement_date=statement_date,
-                eofy_debt_interest_deduction_rate=data.get('eofy_debt_interest_deduction_rate'),
+                eofy_debt_interest_deduction_rate=eofy_debt_interest_deduction_rate,
                 interest_received_in_cash=data.get('interest_received_in_cash'),
                 interest_receivable_this_fy=data.get('interest_receivable_this_fy'),
                 interest_receivable_prev_fy=data.get('interest_receivable_prev_fy'),

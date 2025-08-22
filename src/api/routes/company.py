@@ -8,6 +8,7 @@ investment company management and company-specific fund operations.
 from flask import Blueprint, jsonify, request
 from src.investment_company.api import CompanyController
 from src.api.database import get_db_session
+from src.api.middleware.validation import validate_investment_company_data
 
 # Create blueprint for company routes
 company_bp = Blueprint('company', __name__)
@@ -30,12 +31,15 @@ def investment_companies():
 
 
 @company_bp.route('/api/investment-companies', methods=['POST'])
+@validate_investment_company_data
 def create_investment_company():
     """Create a new investment company using domain methods"""
     try:
         session = get_db_session()
         try:
-            return company_controller.create_investment_company(session)
+            # Use validated data from middleware
+            validated_data = request.validated_data
+            return company_controller.create_investment_company_with_data(session, validated_data)
         finally:
             session.close()
     except Exception as e:
