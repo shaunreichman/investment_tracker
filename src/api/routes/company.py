@@ -33,7 +33,7 @@ def investment_companies():
 @company_bp.route('/api/investment-companies', methods=['POST'])
 @validate_investment_company_data
 def create_investment_company():
-    """Create a new investment company using domain methods"""
+    """Create a new investment company using services"""
     try:
         session = get_db_session()
         try:

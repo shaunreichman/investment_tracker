@@ -48,53 +48,52 @@ class CompanyService:
         self.contact_service = ContactManagementService()
         self.validation_service = CompanyValidationService()
     
-    def create_company(self, company_data: Dict[str, Any], session: Session) -> Dict[str, Any]:
+    def create_company(self, name: str, description: str = None, website: str = None, 
+                      company_type: str = None, business_address: str = None, 
+                      session: Session = None) -> InvestmentCompany:
         """
         Create a new investment company.
         
         Args:
-            company_data: Dictionary containing company data
-            session: Database session
+            name: Company name (required)
+            description: Company description (optional)
+            website: Company website URL (optional)
+            company_type: Type of company (optional)
+            business_address: Business address (optional)
+            session: Database session (required)
             
         Returns:
-            Dictionary containing the created company information
+            InvestmentCompany: The created company object
             
         Raises:
             ValueError: If required fields are missing or invalid
         """
         # Validate company data
         validation_errors = self.validation_service.validate_company_creation(
-            name=company_data.get('name'),
-            description=company_data.get('description'),
-            website=company_data.get('website'),
-            company_type=company_data.get('company_type'),
-            business_address=company_data.get('business_address'),
+            name=name,
+            description=description,
+            website=website,
+            company_type=company_type,
+            business_address=business_address,
             session=session
         )
         
         if validation_errors:
             raise ValueError(f"Validation failed: {validation_errors}")
         
-        # Create the company
-        company = InvestmentCompany.create(
-            name=company_data['name'],
-            description=company_data.get('description'),
-            website=company_data.get('website'),
-            company_type=company_data.get('company_type'),
-            business_address=company_data.get('business_address'),
-            session=session
+        # Create the company directly
+        company = InvestmentCompany(
+            name=name.strip(),
+            description=description,
+            website=website,
+            company_type=company_type,
+            business_address=business_address
         )
         
-        # Return company information
-        return {
-            'id': company.id,
-            'name': company.name,
-            'description': company.description,
-            'website': company.website,
-            'company_type': company.company_type,
-            'business_address': company.business_address,
-            'created_at': company.created_at.isoformat() if company.created_at else None
-        }
+        session.add(company)
+        session.flush()  # Get the ID without committing
+        
+        return company
     
     def update_company(self, company_id: int, company_data: Dict[str, Any], 
                       session: Session) -> Optional[Dict[str, Any]]:
@@ -207,20 +206,47 @@ class CompanyService:
     
     def get_company_performance(self, company_id: int, session: Session) -> Optional[Dict[str, Any]]:
         """
-        Get company performance summary.
+        Get company performance summary for completed funds only.
         
         Args:
             company_id: ID of the company
             session: Database session
             
         Returns:
-            Company performance data if found, None otherwise
+            Dictionary containing performance summary, None if not found
         """
+        # Get existing company
         company = self.company_repository.get_by_id(company_id, session)
         if not company:
             return None
         
+        # Get performance summary using summary service
         return self.summary_service.get_company_performance_summary(company, session)
+    
+    def get_all_companies(self, session: Session) -> List[InvestmentCompany]:
+        """
+        Get all investment companies.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            List of all investment companies
+        """
+        return self.company_repository.get_all(session)
+    
+    def get_company_by_id(self, company_id: int, session: Session) -> Optional[InvestmentCompany]:
+        """
+        Get an investment company by ID.
+        
+        Args:
+            company_id: Company ID
+            session: Database session
+            
+        Returns:
+            InvestmentCompany if found, None otherwise
+        """
+        return self.company_repository.get_by_id(company_id, session)
     
     def add_contact_to_company(self, company_id: int, contact_data: Dict[str, Any], 
                               session: Session) -> Optional[Dict[str, Any]]:

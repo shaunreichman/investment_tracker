@@ -1,4 +1,5 @@
 from tests.factories import InvestmentCompanyFactory, FundFactory, EntityFactory
+from src.investment_company.services import CompanyPortfolioService
 
 
 def test_total_commitments_simple(db_session):
@@ -13,7 +14,9 @@ def test_total_commitments_simple(db_session):
     FundFactory(investment_company=company, entity=entity)
     db_session.commit()
 
-    total = company.get_total_commitments(session=db_session)
+    # Use service instead of model method
+    portfolio_service = CompanyPortfolioService()
+    total = portfolio_service.get_total_commitments(company, db_session)
     assert total == 200000.0
 
 
