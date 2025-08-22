@@ -11,11 +11,15 @@ The banking module now follows enterprise architecture patterns with:
 
 from src.banking.models import Bank, BankAccount
 from src.banking.services import BankService, BankAccountService, BankingValidationService
+from src.banking.repositories import BankRepository, BankAccountRepository, BankingSummaryRepository
 
 __all__ = [
     'Bank',
     'BankAccount',
     'BankService',
     'BankAccountService',
-    'BankingValidationService'
+    'BankingValidationService',
+    'BankRepository',
+    'BankAccountRepository',
+    'BankingSummaryRepository'
 ]

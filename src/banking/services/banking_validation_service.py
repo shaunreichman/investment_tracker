@@ -17,6 +17,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from src.banking.models import Bank, BankAccount
+from src.banking.repositories.bank_repository import BankRepository
+from src.banking.repositories.bank_account_repository import BankAccountRepository
 
 
 class BankingValidationService:
@@ -30,9 +32,16 @@ class BankingValidationService:
     - Business rule enforcement
     """
     
-    def __init__(self):
-        """Initialize the BankingValidationService."""
-        pass
+    def __init__(self, bank_repository: Optional[BankRepository] = None, bank_account_repository: Optional[BankAccountRepository] = None):
+        """
+        Initialize the BankingValidationService.
+        
+        Args:
+            bank_repository: Bank repository to use. If None, creates a new one.
+            bank_account_repository: Bank account repository to use. If None, creates a new one.
+        """
+        self.bank_repository = bank_repository or BankRepository()
+        self.bank_account_repository = bank_account_repository or BankAccountRepository()
     
     # ============================================================================
     # COUNTRY CODE VALIDATION
@@ -291,16 +300,15 @@ class BankingValidationService:
         Returns:
             True if unique, False if duplicate exists
         """
-        query = session.query(Bank).filter(
-            Bank.name == name.strip(),
-            Bank.country == country.upper()
-        )
+        existing_bank = self.bank_repository.get_by_name_and_country(name.strip(), country.upper(), session)
         
-        if exclude_id is not None:
-            query = query.filter(Bank.id != exclude_id)
+        if existing_bank is None:
+            return True
         
-        existing_bank = query.first()
-        return existing_bank is None
+        if exclude_id is not None and existing_bank.id == exclude_id:
+            return True
+        
+        return False
     
     def validate_bank_uniqueness_or_raise(self, name: str, country: str, session: Session, exclude_id: Optional[int] = None) -> None:
         """
@@ -332,17 +340,15 @@ class BankingValidationService:
         Returns:
             True if unique, False if duplicate exists
         """
-        query = session.query(BankAccount).filter(
-            BankAccount.entity_id == entity_id,
-            BankAccount.bank_id == bank_id,
-            BankAccount.account_number == account_number.strip()
-        )
+        existing_account = self.bank_account_repository.get_by_unique(entity_id, bank_id, account_number.strip(), session)
         
-        if exclude_id is not None:
-            query = query.filter(BankAccount.id != exclude_id)
+        if existing_account is None:
+            return True
         
-        existing_account = query.first()
-        return existing_account is None
+        if exclude_id is not None and existing_account.id == exclude_id:
+            return True
+        
+        return False
     
     def validate_bank_account_uniqueness_or_raise(self, entity_id: int, bank_id: int, account_number: str, session: Session, exclude_id: Optional[int] = None) -> None:
         """
@@ -412,8 +418,7 @@ class BankingValidationService:
         if not bank_id:
             return False
         
-        bank = session.query(Bank).filter(Bank.id == bank_id).first()
-        return bank is not None
+        return self.bank_repository.exists(bank_id, session)
     
     def validate_bank_exists_or_raise(self, bank_id: int, session: Session) -> None:
         """

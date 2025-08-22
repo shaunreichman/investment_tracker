@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from src.banking.models import Bank
 from src.banking.services.banking_validation_service import BankingValidationService
+from src.banking.repositories.bank_repository import BankRepository
 
 
 class BankService:
@@ -29,14 +30,16 @@ class BankService:
     - Bank business rule enforcement
     """
     
-    def __init__(self, validation_service: Optional[BankingValidationService] = None):
+    def __init__(self, validation_service: Optional[BankingValidationService] = None, bank_repository: Optional[BankRepository] = None):
         """
         Initialize the BankService.
         
         Args:
             validation_service: Validation service to use. If None, creates a new one.
+            bank_repository: Bank repository to use. If None, creates a new one.
         """
         self.validation_service = validation_service or BankingValidationService()
+        self.bank_repository = bank_repository or BankRepository()
     
     # ============================================================================
     # BANK CREATION
@@ -82,11 +85,8 @@ class BankService:
             swift_bic=swift_bic
         )
         
-        # Add to session and flush to get ID
-        session.add(bank)
-        session.flush()
-        
-        return bank
+        # Use repository to create bank
+        return self.bank_repository.create(bank, session)
     
     # ============================================================================
     # BANK UPDATES
@@ -223,7 +223,7 @@ class BankService:
         Returns:
             List[Bank]: List of all banks
         """
-        return session.query(Bank).all()
+        return self.bank_repository.get_all(session)
     
     def get_banks_by_country(self, country: str, session: Session) -> List[Bank]:
         """
@@ -236,7 +236,7 @@ class BankService:
         Returns:
             List[Bank]: List of banks in the country
         """
-        return session.query(Bank).filter(Bank.country == country.upper()).all()
+        return self.bank_repository.get_by_country(country.upper(), session)
     
     # ============================================================================
     # DEPENDENCY CHECKING
@@ -253,9 +253,10 @@ class BankService:
         Returns:
             bool: True if bank has dependent accounts
         """
-        from src.banking.models import BankAccount
+        from src.banking.repositories.bank_account_repository import BankAccountRepository
         
-        count = session.query(BankAccount).filter(BankAccount.bank_id == bank_id).count()
+        account_repo = BankAccountRepository()
+        count = account_repo.count_by_bank(bank_id, session)
         return count > 0
     
     def get_dependent_accounts_count(self, bank_id: int, session: Session) -> int:
@@ -269,9 +270,10 @@ class BankService:
         Returns:
             int: Number of dependent accounts
         """
-        from src.banking.models import BankAccount
+        from src.banking.repositories.bank_account_repository import BankAccountRepository
         
-        return session.query(BankAccount).filter(BankAccount.bank_id == bank_id).count()
+        account_repo = BankAccountRepository()
+        return account_repo.count_by_bank(bank_id, session)
     
     # ============================================================================
     # BUSINESS RULE ENFORCEMENT

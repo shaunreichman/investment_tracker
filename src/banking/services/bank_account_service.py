@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from src.banking.models import BankAccount
 from src.banking.services.banking_validation_service import BankingValidationService
+from src.banking.repositories.bank_account_repository import BankAccountRepository
 
 
 class BankAccountService:
@@ -29,14 +30,16 @@ class BankAccountService:
     - Bank account business rule enforcement
     """
     
-    def __init__(self, validation_service: Optional[BankingValidationService] = None):
+    def __init__(self, validation_service: Optional[BankingValidationService] = None, bank_account_repository: Optional[BankAccountRepository] = None):
         """
         Initialize the BankAccountService.
         
         Args:
             validation_service: Validation service to use. If None, creates a new one.
+            bank_account_repository: Bank account repository to use. If None, creates a new one.
         """
         self.validation_service = validation_service or BankingValidationService()
+        self.bank_account_repository = bank_account_repository or BankAccountRepository()
     
     # ============================================================================
     # BANK ACCOUNT CREATION
@@ -96,11 +99,8 @@ class BankAccountService:
             is_active=bool(is_active)
         )
         
-        # Add to session and flush to get ID
-        session.add(account)
-        session.flush()
-        
-        return account
+        # Use repository to create account
+        return self.bank_account_repository.create(account, session)
     
     # ============================================================================
     # BANK ACCOUNT UPDATES
@@ -233,11 +233,7 @@ class BankAccountService:
         Returns:
             BankAccount: Account instance if found, None otherwise
         """
-        return session.query(BankAccount).filter(
-            BankAccount.entity_id == entity_id,
-            BankAccount.bank_id == bank_id,
-            BankAccount.account_number == account_number
-        ).first()
+        return self.bank_account_repository.get_by_unique(entity_id, bank_id, account_number, session)
     
     def get_all_bank_accounts(self, session: Session) -> List[BankAccount]:
         """
@@ -249,7 +245,7 @@ class BankAccountService:
         Returns:
             List[BankAccount]: List of all bank accounts
         """
-        return session.query(BankAccount).all()
+        return self.bank_account_repository.get_all(session)
     
     def get_bank_accounts_by_entity(self, entity_id: int, session: Session) -> List[BankAccount]:
         """
@@ -262,7 +258,7 @@ class BankAccountService:
         Returns:
             List[BankAccount]: List of bank accounts for the entity
         """
-        return session.query(BankAccount).filter(BankAccount.entity_id == entity_id).all()
+        return self.bank_account_repository.get_by_entity(entity_id, session)
     
     def get_bank_accounts_by_bank(self, bank_id: int, session: Session) -> List[BankAccount]:
         """
@@ -275,7 +271,7 @@ class BankAccountService:
         Returns:
             List[BankAccount]: List of bank accounts for the bank
         """
-        return session.query(BankAccount).filter(BankAccount.bank_id == bank_id).all()
+        return self.bank_account_repository.get_by_bank(bank_id, session)
     
     def get_bank_accounts_by_currency(self, currency: str, session: Session) -> List[BankAccount]:
         """
@@ -288,7 +284,7 @@ class BankAccountService:
         Returns:
             List[BankAccount]: List of bank accounts with the currency
         """
-        return session.query(BankAccount).filter(BankAccount.currency == currency.upper()).all()
+        return self.bank_account_repository.get_by_currency(currency.upper(), session)
     
     def get_active_bank_accounts(self, session: Session) -> List[BankAccount]:
         """
@@ -300,7 +296,7 @@ class BankAccountService:
         Returns:
             List[BankAccount]: List of active bank accounts
         """
-        return session.query(BankAccount).filter(BankAccount.is_active == True).all()
+        return self.bank_account_repository.get_active_accounts(session)
     
     # ============================================================================
     # DEPENDENCY CHECKING
