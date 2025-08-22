@@ -6,8 +6,8 @@ in the investment company domain, following the repository pattern established
 in the fund refactor.
 """
 
-from .company_repository import CompanyRepository
-from .contact_repository import ContactRepository
+from src.investment_company.repositories.company_repository import CompanyRepository
+from src.investment_company.repositories.contact_repository import ContactRepository
 
 __all__ = [
     'CompanyRepository',

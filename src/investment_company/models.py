@@ -69,16 +69,23 @@ class InvestmentCompany(Base):
         Raises:
             ValueError: If name is empty or company already exists
         """
-        # Validation
-        if not name or not name.strip():
-            raise ValueError("Company name is required and cannot be empty")
+        from src.investment_company.services import CompanyValidationService
+        validation_service = CompanyValidationService()
+        
+        # Validate company data
+        validation_errors = validation_service.validate_company_creation(
+            name=name,
+            description=description,
+            website=website,
+            company_type=company_type,
+            business_address=business_address,
+            session=session
+        )
+        
+        if validation_errors:
+            raise ValueError(f"Validation failed: {validation_errors}")
         
         name = name.strip()
-        
-        # Check for existing company with same name
-        existing = session.query(cls).filter(cls.name == name).first()
-        if existing:
-            raise ValueError(f"Investment company with name '{name}' already exists")
         
         # Create the company
         company = cls(
@@ -109,22 +116,17 @@ class InvestmentCompany(Base):
         Returns:
             Contact: The created contact
         """
-        if not name or not name.strip():
-            raise ValueError("Contact name is required and cannot be empty")
-        
-        contact = Contact(
-            investment_company_id=self.id,
-            name=name.strip(),
+        from src.investment_company.services import ContactManagementService
+        contact_service = ContactManagementService()
+        return contact_service.add_contact(
+            company=self,
+            name=name,
             title=title,
             direct_number=direct_number,
             direct_email=direct_email,
-            notes=notes
+            notes=notes,
+            session=session
         )
-        
-        session.add(contact)
-        session.flush()
-        
-        return contact
     
     def __repr__(self):
         return f"<InvestmentCompany(id={self.id}, name='{self.name}')>"
@@ -181,10 +183,9 @@ class InvestmentCompany(Base):
         Returns:
             list: List of fund summary data dictionaries
         """
-        funds_data = []
-        for fund in self.funds:
-            funds_data.append(fund.get_summary_data(session=session))
-        return funds_data
+        from src.investment_company.services import CompanyPortfolioService
+        portfolio_service = CompanyPortfolioService()
+        return portfolio_service.get_funds_with_summary(self, session)
     
     def get_total_funds_under_management(self, session):
         """Get the total number of funds managed by this investment company.
@@ -195,8 +196,9 @@ class InvestmentCompany(Base):
         Returns:
             int: Total number of funds
         """
-        from .calculations import calculate_total_funds_under_management
-        return calculate_total_funds_under_management(self, session)
+        from src.investment_company.services import CompanyPortfolioService
+        portfolio_service = CompanyPortfolioService()
+        return portfolio_service.get_total_funds_under_management(self, session)
     
     def get_total_commitments(self, session):
         """Get the total commitments across all funds managed by this investment company.
@@ -207,8 +209,9 @@ class InvestmentCompany(Base):
         Returns:
             float: Total commitments across all funds
         """
-        from .calculations import calculate_total_commitments
-        return calculate_total_commitments(self, session)
+        from src.investment_company.services import CompanyPortfolioService
+        portfolio_service = CompanyPortfolioService()
+        return portfolio_service.get_total_commitments(self, session)
     
     @with_session
     def create_fund(self, entity, name, fund_type, tracking_type, 
@@ -240,16 +243,11 @@ class InvestmentCompany(Base):
         Raises:
             ValueError: If required fields are missing or invalid
         """
-        from src.fund.models import Fund
-        
-        # Validate entity
-        if entity is None:
-            raise ValueError("Entity is required")
-        
-        # Create the fund using the domain method
-        fund = Fund.create(
-            investment_company_id=self.id,  # Use self.id
-            entity_id=entity.id,           # Use entity.id
+        from src.investment_company.services import CompanyPortfolioService
+        portfolio_service = CompanyPortfolioService()
+        return portfolio_service.create_fund(
+            company=self,
+            entity=entity,
             name=name,
             fund_type=fund_type,
             tracking_type=tracking_type,
@@ -259,9 +257,7 @@ class InvestmentCompany(Base):
             expected_irr=expected_irr,
             expected_duration_months=expected_duration_months,
             session=session
-        )
-        
-        return fund 
+        ) 
 
     @with_session
     def get_company_summary_data(self, session=None):
@@ -274,99 +270,9 @@ class InvestmentCompany(Base):
         Returns:
             dict: Company summary data matching the API contract structure
         """
-        from src.fund.models import FundStatus
-        
-        # Get all funds for this company
-        funds = self.funds
-        
-        # Calculate portfolio summary
-        total_committed_capital = sum(fund.commitment_amount or 0 for fund in funds)
-        total_current_value = sum(fund.current_equity_balance or 0 for fund in funds)
-        total_invested_capital = sum(fund.current_equity_balance or 0 for fund in funds)
-        
-        # Count funds by status
-        active_funds_count = sum(1 for fund in funds if fund.status == FundStatus.ACTIVE)
-        completed_funds_count = sum(1 for fund in funds if fund.status == FundStatus.COMPLETED)
-        suspended_funds_count = sum(1 for fund in funds if fund.status == FundStatus.SUSPENDED)
-        realized_funds_count = sum(1 for fund in funds if fund.status == FundStatus.REALIZED)
-        
-        fund_status_breakdown = {
-            "active_funds_count": active_funds_count,
-            "completed_funds_count": completed_funds_count,
-            "suspended_funds_count": suspended_funds_count,
-            "realized_funds_count": realized_funds_count
-        }
-        
-        # Calculate performance summary (only for completed funds)
-        completed_funds = [f for f in funds if f.status == FundStatus.COMPLETED]
-        if completed_funds:
-            # Calculate average IRR from completed funds
-            irr_values = [f.irr_gross for f in completed_funds if f.irr_gross is not None]
-            average_completed_irr = sum(irr_values) / len(irr_values) if irr_values else None
-            
-            # Calculate total realized gains/losses from completed funds
-            total_realized_gains = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross > 0)
-            total_realized_losses = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross < 0)
-        else:
-            average_completed_irr = None
-            total_realized_gains = 0  # (SYSTEM) return 0 instead of None for test compatibility
-            total_realized_losses = 0  # (SYSTEM) return 0 instead of None for test compatibility
-        
-        # Calculate last activity across all funds
-        last_activity_date = None
-        days_since_last_activity = None
-        
-        if funds:
-            # Find the most recent event date across all funds
-            all_event_dates = []
-            for fund in funds:
-                if fund.fund_events:
-                    fund_event_dates = [event.event_date for event in fund.fund_events]
-                    all_event_dates.extend(fund_event_dates)
-            
-            if all_event_dates:
-                last_activity_date = max(all_event_dates)
-                from datetime import date
-                days_since_last_activity = (date.today() - last_activity_date).days
-        
-        return {
-            "company": {
-                "id": self.id,
-                "name": self.name,
-                "company_type": self.company_type,
-                "business_address": self.business_address,
-                "website": self.website,
-                "contacts": [
-                    {
-                        "id": contact.id,
-                        "name": contact.name,
-                        "title": contact.title,
-                        "direct_number": contact.direct_number,
-                        "direct_email": contact.direct_email,
-                        "notes": contact.notes
-                    }
-                    for contact in self.contacts
-                ]
-            },
-            "portfolio_summary": {
-                "total_committed_capital": total_committed_capital,
-                "total_current_value": total_current_value,
-                "total_invested_capital": total_invested_capital,
-                "active_funds_count": active_funds_count,  # (SYSTEM) kept for test compatibility
-                "completed_funds_count": completed_funds_count,  # (SYSTEM) kept for test compatibility
-                "fund_status_breakdown": fund_status_breakdown
-            },
-            "fund_status_breakdown": fund_status_breakdown,  # (SYSTEM) Added for test compatibility
-            "performance_summary": {
-                "average_completed_irr": average_completed_irr,
-                "total_realized_gains": total_realized_gains,
-                "total_realized_losses": total_realized_losses
-            },
-            "last_activity": {
-                "last_activity_date": last_activity_date.isoformat() if last_activity_date else None,
-                "days_since_last_activity": days_since_last_activity
-            }
-        }
+        from src.investment_company.services import CompanySummaryService
+        summary_service = CompanySummaryService()
+        return summary_service.get_company_summary_data(self, session)
     
     @with_session
     def get_company_performance_summary(self, session=None):
@@ -379,28 +285,6 @@ class InvestmentCompany(Base):
         Returns:
             dict: Performance summary data for completed funds
         """
-        from src.fund.models import FundStatus
-        
-        completed_funds = [f for f in self.funds if f.status == FundStatus.COMPLETED]
-        
-        if not completed_funds:
-            return {
-                "average_completed_irr": None,
-                "total_realized_gains": None,
-                "total_realized_losses": None,
-                "completed_funds_count": 0
-            }
-        
-        # Calculate performance metrics
-        irr_values = [f.irr_gross for f in completed_funds if f.irr_gross is not None]
-        average_completed_irr = sum(irr_values) / len(irr_values) if irr_values else None
-        
-        total_realized_gains = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross > 0)
-        total_realized_losses = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross < 0)
-        
-        return {
-            "average_completed_irr": average_completed_irr,
-            "total_realized_gains": total_realized_gains,
-            "total_realized_losses": total_realized_losses,
-            "completed_funds_count": len(completed_funds)
-        } 
+        from src.investment_company.services import CompanySummaryService
+        summary_service = CompanySummaryService()
+        return summary_service.get_company_performance_summary(self, session) 
