@@ -17,13 +17,13 @@ from src.api.middleware.validation import (
 )
 
 # Create blueprint for enhanced banking routes
-enhanced_banking_bp = Blueprint('enhanced_banking', __name__)
+banking_bp = Blueprint('banking', __name__)
 
 # Initialize enhanced controller
 enhanced_controller = EnhancedBankingController()
 
 
-@enhanced_banking_bp.route('/api/v2/banks', methods=['GET'])
+@banking_bp.route('/api/v2/banks', methods=['GET'])
 def get_banks():
     """
     Get list of all banks with pagination and summary data.
@@ -65,7 +65,7 @@ def get_banks():
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/banks', methods=['POST'])
+@banking_bp.route('/api/v2/banks', methods=['POST'])
 @validate_bank_data
 def create_bank():
     """
@@ -98,7 +98,7 @@ def create_bank():
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/banks/<int:bank_id>', methods=['PUT'])
+@banking_bp.route('/api/v2/banks/<int:bank_id>', methods=['PUT'])
 @validate_bank_data
 def update_bank(bank_id):
     """
@@ -134,7 +134,7 @@ def update_bank(bank_id):
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/banks/<int:bank_id>', methods=['DELETE'])
+@banking_bp.route('/api/v2/banks/<int:bank_id>', methods=['DELETE'])
 def delete_bank(bank_id):
     """
     Delete a bank.
@@ -162,7 +162,7 @@ def delete_bank(bank_id):
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/bank-accounts', methods=['GET'])
+@banking_bp.route('/api/v2/bank-accounts', methods=['GET'])
 def get_bank_accounts():
     """
     Get list of all bank accounts with pagination and summary data.
@@ -204,7 +204,7 @@ def get_bank_accounts():
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/bank-accounts', methods=['POST'])
+@banking_bp.route('/api/v2/bank-accounts', methods=['POST'])
 @validate_bank_account_data
 def create_bank_account():
     """
@@ -240,7 +240,7 @@ def create_bank_account():
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/bank-accounts/<int:account_id>', methods=['PUT'])
+@banking_bp.route('/api/v2/bank-accounts/<int:account_id>', methods=['PUT'])
 @validate_bank_account_data
 def update_bank_account(account_id):
     """
@@ -279,7 +279,7 @@ def update_bank_account(account_id):
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/bank-accounts/<int:account_id>', methods=['DELETE'])
+@banking_bp.route('/api/v2/bank-accounts/<int:account_id>', methods=['DELETE'])
 def delete_bank_account(account_id):
     """
     Delete a bank account.
@@ -307,7 +307,7 @@ def delete_bank_account(account_id):
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/bank-accounts/<int:account_id>/balance', methods=['GET'])
+@banking_bp.route('/api/v2/bank-accounts/<int:account_id>/balance', methods=['GET'])
 def get_bank_account_balance(account_id):
     """
     Get current balance for a bank account.
@@ -335,7 +335,7 @@ def get_bank_account_balance(account_id):
         }), 500
 
 
-@enhanced_banking_bp.route('/api/v2/bank-accounts/<int:account_id>/transactions', methods=['GET'])
+@banking_bp.route('/api/v2/bank-accounts/<int:account_id>/transactions', methods=['GET'])
 def get_bank_account_transactions(account_id):
     """
     Get transaction history for a bank account.
