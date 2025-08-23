@@ -30,11 +30,10 @@ tests/
 │   │   │   ├── ✅ test_fund_event_grouping.py # FundEvent grouping with enhanced business rules
 │   │   │   ├── ✅ test_domain_event_model.py # DomainEvent model tests
 │   │   │   └── ✅ test_fund_event_cash_flow_model.py # Cash flow model tests
-│   │   ├── investment_company/          # Investment company models
-│   │   │   ├── __init__.py
+│   │   ├── ✅ investment_company/          # Investment company models
+│   │   │   ├── ✅ __init__.py
 │   │   │   ├── ✅ test_investment_company_model.py        # InvestmentCompany validation
-│   │   │   ├── ✅ test_contact_model.py                   # Contact model validation
-│   │   │   └── test_company_relationship_model.py      # Company relationships
+│   │   │   └── ✅ test_contact_model.py                   # Contact model validation
 │   │   ├── entity/                      # Entity models
 │   │   │   ├── __init__.py
 │   │   │   ├── test_entity_model.py     # Entity model validation
