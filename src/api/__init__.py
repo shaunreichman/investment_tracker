@@ -9,7 +9,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # Import route blueprints
-from src.api.routes import fund, company, dashboard, entity, banking, tax
+from src.api.routes import fund, company, dashboard, entity, banking, tax, health
 
 # Import middleware
 from src.api.middleware import setup_error_handlers, setup_logging_middleware
@@ -41,5 +41,6 @@ def create_app(db_config=None):
     app.register_blueprint(entity.entity_bp)
     app.register_blueprint(banking.banking_bp)
     app.register_blueprint(tax.tax_bp)
+    app.register_blueprint(health.health_bp)
 
     return app 

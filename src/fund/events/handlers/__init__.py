@@ -12,6 +12,7 @@ from src.fund.events.handlers.distribution_handler import DistributionHandler
 from src.fund.events.handlers.nav_update_handler import NAVUpdateHandler
 from src.fund.events.handlers.unit_purchase_handler import UnitPurchaseHandler
 from src.fund.events.handlers.unit_sale_handler import UnitSaleHandler
+from src.fund.events.handlers.banking_integration_handler import BankingIntegrationHandler
 
 __all__ = [
     'CapitalCallHandler',
@@ -20,4 +21,5 @@ __all__ = [
     'NAVUpdateHandler',
     'UnitPurchaseHandler',
     'UnitSaleHandler',
+    'BankingIntegrationHandler',
 ]
