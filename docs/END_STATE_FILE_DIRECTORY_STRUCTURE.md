@@ -78,7 +78,7 @@ tests/
 │   │   │   └── test_banking_service.py               # Banking operations logic
 │   │   └── tax/                         # Tax services
 │   │       ├── __init__.py
-│       └── test_tax_service.py                      # Tax processing logic
+│   │       └── test_tax_service.py                      # Tax processing logic
 │   ├── calculations/                    # Financial and business calculations
 │   │   ├── __init__.py
 │   │   ├── ✅  fund/                        # Fund-specific calculations
@@ -87,11 +87,6 @@ tests/
 │   │   │   ├── ✅ test_debt_cost_calculations.py        # Debt cost calculations
 │   │   │   ├── ✅ test_fifo_calculations.py             # FIFO unit calculations
 │   │   │   └── ✅ test_nav_calculations.py              # NAV-based calculations
-│   │   ├── investment_company/          # Company calculations
-│   │   │   ├── __init__.py
-│   │   │   ├── test_company_calculations.py            # Company performance metrics
-│   │   │   ├── test_portfolio_calculations.py          # Portfolio calculations
-│   │   │   └── test_summary_calculations.py            # Summary calculations
 │   │   ├── entity/                      # Entity calculations
 │   │   │   ├── __init__.py
 │   │   │   └── test_entity_calculations.py           # Entity financial metrics
