@@ -180,9 +180,17 @@ class CompanyPortfolioService:
             operation=operation
         )
         
-        # Get the registry and publish the event
+        # Get the registry and handle the event
         registry = CompanyEventHandlerRegistry()
-        registry.publish_event(event, session)
+        # Convert event to dictionary format expected by handle_event
+        event_data = {
+            'event_type': 'PORTFOLIO_UPDATED',
+            'company_id': company.id,
+            'event_date': event.event_date.isoformat(),
+            'fund_id': fund.id,
+            'operation': operation
+        }
+        registry.handle_event(event_data, session, company)
     
     def get_portfolio_summary(self, company: InvestmentCompany, session: Session) -> Dict[str, Any]:
         """
@@ -316,9 +324,9 @@ class CompanyPortfolioService:
         updated_fund = fund_service.update_fund(fund_id, fund_data, session)
         
         # Publish company domain event for portfolio update
-        self._publish_portfolio_updated_event(company, fund, 'updated', session)
+        self._publish_portfolio_updated_event(company, updated_fund, 'updated', session)
         
-        return fund
+        return updated_fund
     
     def update_portfolio_summary(self, company: InvestmentCompany, session: Session) -> None:
         """

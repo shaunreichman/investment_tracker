@@ -60,22 +60,29 @@ class ContactManagementService:
         if not name or not name.strip():
             raise ValueError("Contact name is required and cannot be empty")
         
-        # Validate email format if provided
-        if direct_email and not self._is_valid_email(direct_email):
+        # Trim whitespace from all fields first
+        trimmed_name = name.strip()
+        trimmed_title = title.strip() if title else None
+        trimmed_direct_number = direct_number.strip() if direct_number else None
+        trimmed_direct_email = direct_email.strip() if direct_email else None
+        trimmed_notes = notes.strip() if notes else None
+        
+        # Validate email format if provided (after trimming)
+        if trimmed_direct_email and not self._is_valid_email(trimmed_direct_email):
             raise ValueError("Invalid email format")
         
-        # Validate phone number format if provided
-        if direct_number and not self._is_valid_phone_number(direct_number):
+        # Validate phone number format if provided (after trimming)
+        if trimmed_direct_number and not self._is_valid_phone_number(trimmed_direct_number):
             raise ValueError("Invalid phone number format")
         
         # Create the contact
         contact = Contact(
             investment_company_id=company.id,
-            name=name.strip(),
-            title=title.strip() if title else None,
-            direct_number=direct_number.strip() if direct_number else None,
-            direct_email=direct_email.strip() if direct_email else None,
-            notes=notes.strip() if notes else None
+            name=trimmed_name,
+            title=trimmed_title,
+            direct_number=trimmed_direct_number,
+            direct_email=trimmed_direct_email,
+            notes=trimmed_notes
         )
         
         # Add to session
@@ -105,31 +112,38 @@ class ContactManagementService:
         Raises:
             ValueError: If validation fails
         """
-        # Validate email format if provided
-        if direct_email and not self._is_valid_email(direct_email):
+        # Trim whitespace from all fields first
+        trimmed_name = name.strip() if name is not None else None
+        trimmed_title = title.strip() if title is not None else None
+        trimmed_direct_number = direct_number.strip() if direct_number is not None else None
+        trimmed_direct_email = direct_email.strip() if direct_email is not None else None
+        trimmed_notes = notes.strip() if notes is not None else None
+        
+        # Validate email format if provided (after trimming)
+        if trimmed_direct_email and not self._is_valid_email(trimmed_direct_email):
             raise ValueError("Invalid email format")
         
-        # Validate phone number format if provided
-        if direct_number and not self._is_valid_phone_number(direct_number):
+        # Validate phone number format if provided (after trimming)
+        if trimmed_direct_number and not self._is_valid_phone_number(trimmed_direct_number):
             raise ValueError("Invalid phone number format")
         
         # Update fields if provided
         if name is not None:
-            if not name.strip():
+            if not trimmed_name:
                 raise ValueError("Contact name cannot be empty")
-            contact.name = name.strip()
+            contact.name = trimmed_name
         
         if title is not None:
-            contact.title = title.strip() if title else None
+            contact.title = trimmed_title
         
         if direct_number is not None:
-            contact.direct_number = direct_number.strip() if direct_number else None
+            contact.direct_number = trimmed_direct_number
         
         if direct_email is not None:
-            contact.direct_email = direct_email.strip() if direct_email else None
+            contact.direct_email = trimmed_direct_email
         
         if notes is not None:
-            contact.notes = notes.strip() if notes else None
+            contact.notes = trimmed_notes
         
         # Update timestamp
         from datetime import datetime, timezone
