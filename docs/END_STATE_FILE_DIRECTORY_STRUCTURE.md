@@ -53,12 +53,14 @@ tests/
 │   │   │   ├── ✅ test_fund_event_service.py            # Event processing logic
 │   │   │   ├── ✅ test_tax_calculation_service.py       # Tax calculation logic
 │   │   │   └── ✅ test_fund_incremental_calculation_service.py # Incremental calculations
-│   │   ├── investment_company/          # Investment company services
+│   │   ├── investment_company/          # Investment company services (7/7 test files completed)
 │   │   │   ├── __init__.py
 │   │   │   ├── ✅ test_company_portfolio_service.py        # Portfolio operations & fund coordination
 │   │   │   ├── ✅ test_company_summary_service.py          # Summary calculations & metrics
 │   │   │   ├── ✅ test_contact_management_service.py       # Contact operations & validation
 │   │   │   ├── ✅ test_company_validation_service.py       # Business rule validation
+│   │   │   ├── ✅ test_company_calculation_service.py      # Portfolio calculations & metrics
+│   │   │   ├── ✅ test_fund_coordination_service.py        # Fund creation coordination
 │   │   │   ├── test_company_status_transitions.py       # Status transition logic
 │   │   │   ├── ✅ test_company_service.py                  # Core company operations
 │   │   │   └── test_service_integration.py              # Service interaction testing

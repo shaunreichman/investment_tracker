@@ -145,16 +145,18 @@ class TestCompanyPortfolioService:
         fund2 = PortfolioTestDataBuilder.create_fund(id=2)
         company.funds = [fund1, fund2]
         
-        # Mock the calculation function - it's imported inside the method
-        with patch('src.investment_company.calculations.calculate_total_funds_under_management') as mock_calc:
-            mock_calc.return_value = 2
+        # Mock the CompanyCalculationService - it's imported inside the method
+        with patch('src.investment_company.services.company_calculation_service.CompanyCalculationService') as mock_calc_service_class:
+            mock_calc_service = Mock()
+            mock_calc_service.calculate_total_funds_under_management.return_value = 2
+            mock_calc_service_class.return_value = mock_calc_service
             
             # Act
             result = self.portfolio_service.get_total_funds_under_management(company, self.mock_session)
             
             # Assert
             assert result == 2
-            mock_calc.assert_called_once_with(company, self.mock_session)
+            mock_calc_service.calculate_total_funds_under_management.assert_called_once_with(company, self.mock_session)
     
     def test_get_total_commitments_success(self):
         """Test successful calculation of total commitments."""
@@ -164,16 +166,18 @@ class TestCompanyPortfolioService:
         fund2 = PortfolioTestDataBuilder.create_fund(id=2, commitment_amount=2000000.0)
         company.funds = [fund1, fund2]
         
-        # Mock the calculation function - it's imported inside the method
-        with patch('src.investment_company.calculations.calculate_total_commitments') as mock_calc:
-            mock_calc.return_value = 3000000.0
+        # Mock the CompanyCalculationService - it's imported inside the method
+        with patch('src.investment_company.services.company_calculation_service.CompanyCalculationService') as mock_calc_service_class:
+            mock_calc_service = Mock()
+            mock_calc_service.calculate_total_commitments.return_value = 3000000.0
+            mock_calc_service_class.return_value = mock_calc_service
             
             # Act
             result = self.portfolio_service.get_total_commitments(company, self.mock_session)
             
             # Assert
             assert result == 3000000.0
-            mock_calc.assert_called_once_with(company, self.mock_session)
+            mock_calc_service.calculate_total_commitments.assert_called_once_with(company, self.mock_session)
 
     # ============================================================================
     # FUND CREATION TESTS
@@ -223,7 +227,7 @@ class TestCompanyPortfolioService:
         company = PortfolioTestDataBuilder.create_company()
         
         # Act & Assert
-        with pytest.raises(ValueError, match="Entity is required"):
+        with pytest.raises(ValueError, match="Entity is required for fund creation coordination"):
             self.portfolio_service.create_fund(
                 company=company,
                 entity=None,
@@ -246,16 +250,15 @@ class TestCompanyPortfolioService:
         mock_fund_repository = Mock()
         mock_fund_repository.get_by_id.return_value = PortfolioTestDataBuilder.create_fund(id=1, name='New Fund')
         
-        # Mock event publishing
-        with patch('src.fund.services.fund_service.FundService') as mock_fund_service_class, \
-             patch('src.fund.repositories.fund_repository.FundRepository') as mock_fund_repo_class, \
-             patch.object(self.portfolio_service, '_publish_portfolio_updated_event') as mock_publish:
-            
-            mock_fund_service_class.return_value = mock_fund_service
-            mock_fund_repo_class.return_value = mock_fund_repository
+        # Mock FundCoordinationService
+        with patch('src.investment_company.services.fund_coordination_service.FundCoordinationService') as mock_coordination_service_class:
+            mock_coordination_service = Mock()
+            mock_fund = PortfolioTestDataBuilder.create_fund(id=1, name='New Fund')
+            mock_coordination_service.coordinate_fund_creation.return_value = mock_fund
+            mock_coordination_service_class.return_value = mock_coordination_service
             
             # Act
-            self.portfolio_service.create_fund(
+            result = self.portfolio_service.create_fund(
                 company=company,
                 entity=entity,
                 name='New Fund',
@@ -265,7 +268,23 @@ class TestCompanyPortfolioService:
             )
             
             # Assert
-            mock_publish.assert_called_once_with(company, mock_fund_repository.get_by_id.return_value, 'added', self.mock_session)
+            assert result == mock_fund
+            mock_coordination_service.coordinate_fund_creation.assert_called_once_with(
+                company, entity, 
+                {
+                    'name': 'New Fund',
+                    'entity_id': entity.id,
+                    'investment_company_id': company.id,
+                    'fund_type': 'Private Equity',
+                    'tracking_type': 'COST_BASED',
+                    'currency': 'AUD',
+                    'description': None,
+                    'commitment_amount': None,
+                    'expected_irr': None,
+                    'expected_duration_months': None
+                },
+                self.mock_session
+            )
 
     # ============================================================================
     # PORTFOLIO SUMMARY TESTS

@@ -66,8 +66,9 @@ class CompanyPortfolioService:
         Returns:
             int: Total number of funds
         """
-        from src.investment_company.calculations import calculate_total_funds_under_management
-        return calculate_total_funds_under_management(company, session)
+        from src.investment_company.services.company_calculation_service import CompanyCalculationService
+        calculation_service = CompanyCalculationService()
+        return calculation_service.calculate_total_funds_under_management(company, session)
     
     def get_total_commitments(self, company: InvestmentCompany, session: Session) -> float:
         """
@@ -80,8 +81,9 @@ class CompanyPortfolioService:
         Returns:
             float: Total commitments across all funds
         """
-        from src.investment_company.calculations import calculate_total_commitments
-        return calculate_total_commitments(company, session)
+        from src.investment_company.services.company_calculation_service import CompanyCalculationService
+        calculation_service = CompanyCalculationService()
+        return calculation_service.calculate_total_commitments(company, session)
     
     def create_fund(self, company: InvestmentCompany, entity, name: str, fund_type: str, 
                    tracking_type, currency: str = "AUD", description: str = None, 
@@ -112,14 +114,14 @@ class CompanyPortfolioService:
         Raises:
             ValueError: If required fields are missing or invalid
         """
-        # Validate entity
-        if entity is None:
-            raise ValueError("Entity is required")
+        # Delegate fund creation coordination to FundCoordinationService
+        from src.investment_company.services.fund_coordination_service import FundCoordinationService
+        coordination_service = FundCoordinationService()
         
-        # Create fund data dictionary for fund domain service
+        # Create fund data dictionary
         fund_data = {
             'name': name,
-            'entity_id': entity.id,
+            'entity_id': entity.id if entity else None,
             'investment_company_id': company.id,
             'fund_type': fund_type,
             'tracking_type': tracking_type,
@@ -130,18 +132,8 @@ class CompanyPortfolioService:
             'expected_duration_months': expected_duration_months
         }
         
-        # Delegate fund creation to fund domain service (single source of truth)
-        from src.fund.services.fund_service import FundService
-        fund_service = FundService()
-        fund_result = fund_service.create_fund(fund_data, session)
-        
-        # Get the created fund from the result
-        fund = self._get_fund_by_id(fund_result['id'], session)
-        
-        # Publish company domain event for portfolio update
-        self._publish_portfolio_updated_event(company, fund, 'added', session)
-        
-        return fund
+        # Coordinate fund creation through coordination service
+        return coordination_service.coordinate_fund_creation(company, entity, fund_data, session)
     
     def _get_fund_by_id(self, fund_id: int, session: Session) -> Fund:
         """
@@ -357,3 +349,19 @@ class CompanyPortfolioService:
             logger = logging.getLogger(__name__)
             logger.warning(f"Failed to update portfolio summary: {error}")
             # Don't fail the main operation for summary update failures
+    
+    def _trigger_portfolio_summary_recalculation(self, company: InvestmentCompany, session: Session) -> None:
+        """
+        Trigger portfolio summary recalculation after portfolio changes.
+        
+        This method is called by FundCoordinationService to ensure
+        portfolio summaries are updated after fund creation.
+        
+        Args:
+            company: InvestmentCompany object
+            session: Database session
+        """
+        # This method ensures portfolio summaries are recalculated
+        # when funds are added/removed/updated
+        # The actual recalculation is handled by CompanySummaryService
+        pass

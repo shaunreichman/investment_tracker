@@ -7,6 +7,8 @@ Test files:
 - test_contact_management_service.py: Tests for contact operations & validation
 - test_company_validation_service.py: Tests for business rule validation
 - test_company_service.py: Tests for core company operations
+- test_company_calculation_service.py: Tests for portfolio calculations & metrics
+- test_fund_coordination_service.py: Tests for fund creation coordination
 """
 
 __all__ = [
@@ -14,5 +16,7 @@ __all__ = [
     'test_company_summary_service', 
     'test_contact_management_service',
     'test_company_validation_service',
-    'test_company_service'
+    'test_company_service',
+    'test_company_calculation_service',
+    'test_fund_coordination_service'
 ]
