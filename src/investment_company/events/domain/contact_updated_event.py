@@ -10,6 +10,7 @@ from datetime import date, datetime, timezone
 import uuid
 
 from .base_event import CompanyDomainEvent
+from src.investment_company.enums import CompanyDomainEventType
 
 
 class ContactUpdatedEvent(CompanyDomainEvent):
@@ -34,9 +35,7 @@ class ContactUpdatedEvent(CompanyDomainEvent):
         """
         super().__init__(
             company_id=company_id,
-            event_date=event_date,
-            timestamp=datetime.now(timezone.utc),
-            event_id=str(uuid.uuid4())
+            event_date=event_date
         )
         
         # Contact-specific fields
@@ -45,13 +44,17 @@ class ContactUpdatedEvent(CompanyDomainEvent):
         self.updated_fields = updated_fields  # (SYSTEM) List of updated field names
         
         # Event metadata
-        self.event_type = 'CONTACT_UPDATED'  # (SYSTEM) Event type identifier
         self.audit_trail = {
             'contact_id': contact_id,
             'previous_values': previous_values,
             'updated_fields': updated_fields,
             'update_timestamp': self.timestamp.isoformat()
         }
+    
+    @property
+    def event_type(self) -> CompanyDomainEventType:
+        """Get the type of this event."""
+        return CompanyDomainEventType.CONTACT_UPDATED
     
     def __str__(self) -> str:
         """Return string representation of the event."""
@@ -77,7 +80,7 @@ class ContactUpdatedEvent(CompanyDomainEvent):
             'contact_id': self.contact_id,
             'previous_values': self.previous_values,
             'updated_fields': self.updated_fields,
-            'event_type': self.event_type,
+            'event_type': self.event_type.value,
             'audit_trail': self.audit_trail
         })
         return base_dict

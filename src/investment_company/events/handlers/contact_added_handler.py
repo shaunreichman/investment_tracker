@@ -156,21 +156,63 @@ class ContactAddedHandler(BaseCompanyEventHandler):
         Args:
             contact: The contact that was added
         """
+        # Track which services succeeded/failed for monitoring
+        results = {
+            'contact_count': {'status': 'pending', 'error': None},
+            'company_summary': {'status': 'pending', 'error': None}
+        }
+        
+        # Trigger contact count updates with individual fault isolation
         try:
-            # Trigger contact count updates
             self.contact_service.update_contact_count(self.company.id, self.session)
-            
-            # Trigger company summary updates if needed
-            self.summary_service.recalculate_company_summary(self.company.id, self.session)
-            
-            self.logger.info(
-                f"Triggered contact calculations for contact {contact.id} "
-                f"in company {self.company.id}"
-            )
-            
+            results['contact_count']['status'] = 'success'
+            self.logger.info(f"Contact count updates triggered for company {self.company.id}")
         except Exception as error:
+            results['contact_count']['status'] = 'failed'
+            results['contact_count']['error'] = str(error)
             self.logger.warning(
-                f"Failed to trigger contact calculations for contact {contact.id} "
-                f"in company {self.company.id}: {error}"
+                f"Contact count updates failed for company {self.company.id}: {error}"
             )
-            # Don't fail the event if calculations fail - this is a non-critical operation
+        
+        # Trigger company summary updates with individual fault isolation
+        try:
+            self.summary_service.update_company_summary(self.company, self.session)
+            results['company_summary']['status'] = 'success'
+            self.logger.info(f"Company summary updates triggered for company {self.company.id}")
+        except Exception as error:
+            results['company_summary']['status'] = 'failed'
+            results['company_summary']['error'] = str(error)
+            self.logger.warning(
+                f"Company summary updates failed for company {self.company.id}: {error}"
+            )
+        
+        # Log overall results for monitoring and alerting
+        self._log_calculation_results(results, contact)
+    
+    def _log_calculation_results(self, results: Dict[str, Dict], contact: Contact) -> None:
+        """
+        Log calculation results for monitoring and alerting.
+        
+        Args:
+            results: Dictionary containing results for each service
+            contact: The contact that was added
+        """
+        success_count = sum(1 for r in results.values() if r['status'] == 'success')
+        total_count = len(results)
+        
+        self.logger.info(
+            f"Contact {contact.id} calculations completed: {success_count}/{total_count} successful",
+            extra={
+                'company_id': self.company.id,
+                'contact_id': contact.id,
+                'calculation_results': results,
+                'success_rate': success_count / total_count if total_count > 0 else 0
+            }
+        )
+        
+        # Alert if critical calculations failed
+        if success_count < total_count:
+            self.logger.warning(
+                f"Some contact calculations failed for contact {contact.id} in company {self.company.id}",
+                extra={'failed_services': [k for k, v in results.items() if v['status'] == 'failed']}
+            )

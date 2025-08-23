@@ -53,9 +53,10 @@ class CompanyCreatedEvent(CompanyDomainEvent):
         if metadata is None:
             metadata = {}
         metadata.update({
-            'company_name': company_name,
-            'company_type': company_type
+            'company_name': company_name
         })
+        if company_type is not None:
+            metadata['company_type'] = company_type
         self.metadata = metadata
     
     @property

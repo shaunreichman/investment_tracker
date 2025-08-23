@@ -145,7 +145,7 @@ class PortfolioUpdatedHandler(BaseCompanyEventHandler):
     
     def _trigger_portfolio_calculations(self, event_data: Dict[str, Any]) -> None:
         """
-        Trigger portfolio and summary calculations.
+        Trigger portfolio and company summary calculations.
         
         This method triggers the necessary calculations after portfolio updates
         to ensure all dependent data is properly updated.
@@ -153,34 +153,81 @@ class PortfolioUpdatedHandler(BaseCompanyEventHandler):
         Args:
             event_data: The event data that triggered the update
         """
+        # Track which services succeeded/failed for monitoring
+        results = {
+            'portfolio_summary': {'status': 'pending', 'error': None},
+            'company_summary': {'status': 'pending', 'error': None}
+        }
+        
+        # Trigger portfolio summary calculations with individual fault isolation
         try:
-            # Trigger portfolio summary calculations
-            self.portfolio_service.recalculate_portfolio_summary(self.company.id, self.session)
+            self.portfolio_service.update_portfolio_summary(self.company, self.session)
+            results['portfolio_summary']['status'] = 'success'
+            self.logger.info(f"Portfolio summary calculations triggered for company {self.company.id}")
+        except Exception as error:
+            results['portfolio_summary']['status'] = 'failed'
+            results['portfolio_summary']['error'] = str(error)
+            self.logger.warning(
+                f"Portfolio summary calculations failed for company {self.company.id}: {error}"
+            )
+        
+        # Trigger company summary calculations with individual fault isolation
+        try:
+            self.summary_service.update_company_summary(self.company, self.session)
+            results['company_summary']['status'] = 'success'
+            self.logger.info(f"Company summary calculations triggered for company {self.company.id}")
+        except Exception as error:
+            results['company_summary']['status'] = 'failed'
+            results['company_summary']['error'] = str(error)
+            self.logger.warning(
+                f"Company summary calculations failed for company {self.company.id}: {error}"
+            )
+        
+        # If a specific fund was involved, trigger fund-specific updates
+        if 'fund_id' in event_data and event_data['fund_id']:
+            fund_id = event_data['fund_id']
+            operation = event_data.get('operation', 'updated')
             
-            # Trigger company summary calculations
-            self.summary_service.recalculate_company_summary(self.company.id, self.session)
-            
-            # If a specific fund was involved, trigger fund-specific updates
-            if 'fund_id' in event_data and event_data['fund_id']:
-                fund_id = event_data['fund_id']
-                operation = event_data.get('operation', 'updated')
-                
+            try:
                 if operation == 'added':
                     self.portfolio_service.handle_fund_addition(self.company.id, fund_id, self.session)
                 elif operation == 'removed':
                     self.portfolio_service.handle_fund_removal(self.company.id, fund_id, self.session)
                 elif operation == 'updated':
                     self.portfolio_service.handle_fund_update(self.company.id, fund_id, self.session)
-            
-            self.logger.info(
-                f"Triggered portfolio calculations for company {self.company.id}"
-            )
-            
-        except Exception as error:
+                
+                self.logger.info(f"Fund-specific updates completed for fund {fund_id}, operation: {operation}")
+            except Exception as error:
+                self.logger.warning(f"Fund-specific updates failed for fund {fund_id}: {error}")
+        
+        # Log overall results for monitoring and alerting
+        self._log_calculation_results(results)
+    
+    def _log_calculation_results(self, results: Dict[str, Dict]) -> None:
+        """
+        Log calculation results for monitoring and alerting.
+        
+        Args:
+            results: Dictionary containing results for each service
+        """
+        success_count = sum(1 for r in results.values() if r['status'] == 'success')
+        total_count = len(results)
+        
+        self.logger.info(
+            f"Company {self.company.id} portfolio calculations completed: {success_count}/{total_count} successful",
+            extra={
+                'company_id': self.company.id,
+                'calculation_results': results,
+                'success_rate': success_count / total_count if total_count > 0 else 0
+            }
+        )
+        
+        # Alert if critical calculations failed
+        if success_count < total_count:
             self.logger.warning(
-                f"Failed to trigger portfolio calculations for company {self.company.id}: {error}"
+                f"Some portfolio calculations failed for company {self.company.id}",
+                extra={'failed_services': [k for k, v in results.items() if v['status'] == 'failed']}
             )
-            # Don't fail the event if calculations fail - this is a non-critical operation
     
     def _handle_cross_domain_coordination(self, fund_id: int, operation: str, event_date: date) -> None:
         """

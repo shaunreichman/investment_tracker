@@ -5,7 +5,7 @@ This service handles all business rule validation and constraint checking
 for investment companies, ensuring data integrity and business rule compliance.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 
 from src.investment_company.models import InvestmentCompany, Contact
@@ -334,3 +334,92 @@ class CompanyValidationService:
         # Basic phone validation - allows digits, spaces, dashes, parentheses, and plus
         pattern = r'^[\+]?[0-9\s\-\(\)]{7,20}$'
         return bool(re.match(pattern, phone))
+
+    def validate_company_data(self, company_data: Dict[str, Any]) -> None:
+        """
+        Validate company data for updates.
+        
+        Args:
+            company_data: Dictionary containing company data to validate
+            
+        Raises:
+            ValueError: If company data is invalid
+        """
+        errors = []
+        
+        # Validate name if provided
+        if 'name' in company_data:
+            if not company_data['name'] or not company_data['name'].strip():
+                errors.append("Company name is required")
+            elif len(company_data['name'].strip()) > 255:
+                errors.append("Company name must be 255 characters or less")
+        
+        # Validate company type if provided
+        if 'company_type' in company_data and company_data['company_type']:
+            if not self._is_valid_company_type(company_data['company_type']):
+                errors.append("Invalid company type")
+        
+        # Validate website if provided
+        if 'website' in company_data and company_data['website']:
+            if not self._is_valid_website(company_data['website']):
+                errors.append("Invalid website URL format")
+        
+        if errors:
+            raise ValueError(f"Company data validation failed: {'; '.join(errors)}")
+
+    def validate_contact_data(self, contact_data: Dict[str, Any]) -> None:
+        """
+        Validate contact data.
+        
+        Args:
+            contact_data: Dictionary containing contact data to validate
+            
+        Raises:
+            ValueError: If contact data is invalid
+        """
+        errors = []
+        
+        # Validate required fields
+        if not contact_data.get('name') or not contact_data['name'].strip():
+            errors.append("Contact name is required")
+        
+        # Validate email if provided
+        if 'email' in contact_data and contact_data['email']:
+            if not self._is_valid_email(contact_data['email']):
+                errors.append("Invalid email format")
+        
+        # Validate phone if provided
+        if 'phone' in contact_data and contact_data['phone']:
+            if not self._is_valid_phone_number(contact_data['phone']):
+                errors.append("Invalid phone number format")
+        
+        if errors:
+            raise ValueError(f"Contact data validation failed: {'; '.join(errors)}")
+
+    def validate_portfolio_data(self, portfolio_data: Dict[str, Any]) -> None:
+        """
+        Validate portfolio update data.
+        
+        Args:
+            portfolio_data: Dictionary containing portfolio data to validate
+            
+        Raises:
+            ValueError: If portfolio data is invalid
+        """
+        errors = []
+        
+        # Validate required fields
+        if 'operation' not in portfolio_data:
+            errors.append("Operation is required")
+        else:
+            valid_operations = ['added', 'removed', 'updated']
+            if portfolio_data['operation'] not in valid_operations:
+                errors.append(f"Invalid operation. Must be one of: {', '.join(valid_operations)}")
+        
+        # Validate fund_id if operation requires it
+        if portfolio_data.get('operation') in ['added', 'removed']:
+            if 'fund_id' not in portfolio_data or not portfolio_data['fund_id']:
+                errors.append("Fund ID is required for add/remove operations")
+        
+        if errors:
+            raise ValueError(f"Portfolio data validation failed: {'; '.join(errors)}")

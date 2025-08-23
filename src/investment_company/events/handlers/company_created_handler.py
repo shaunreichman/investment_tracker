@@ -133,18 +133,64 @@ class CompanyCreatedHandler(BaseCompanyEventHandler):
         
         This method triggers the necessary calculations after company creation
         to ensure all dependent data is properly initialized.
+        Each service call is wrapped in individual fault isolation to prevent
+        failures from cascading.
         """
+        # Track which services succeeded/failed for monitoring
+        results = {
+            'portfolio_summary': {'status': 'pending', 'error': None},
+            'company_summary': {'status': 'pending', 'error': None}
+        }
+        
+        # Trigger portfolio calculations with individual fault isolation
         try:
-            # Trigger portfolio calculations
-            self.portfolio_service.recalculate_portfolio_summary(self.company.id, self.session)
-            
-            # Trigger summary calculations
-            self.summary_service.recalculate_company_summary(self.company.id, self.session)
-            
-            self.logger.info(f"Triggered calculations for newly created company {self.company.id}")
-            
+            self.portfolio_service.update_portfolio_summary(self.company, self.session)
+            results['portfolio_summary']['status'] = 'success'
+            self.logger.info(f"Portfolio calculations triggered for company {self.company.id}")
         except Exception as error:
+            results['portfolio_summary']['status'] = 'failed'
+            results['portfolio_summary']['error'] = str(error)
             self.logger.warning(
-                f"Failed to trigger calculations for company {self.company.id}: {error}"
+                f"Portfolio calculations failed for company {self.company.id}: {error}"
             )
-            # Don't fail the event if calculations fail - this is a non-critical operation
+        
+        # Trigger summary calculations with individual fault isolation
+        try:
+            self.summary_service.update_company_summary(self.company, self.session)
+            results['company_summary']['status'] = 'success'
+            self.logger.info(f"Company summary calculations triggered for company {self.company.id}")
+        except Exception as error:
+            results['company_summary']['status'] = 'failed'
+            results['company_summary']['error'] = str(error)
+            self.logger.warning(
+                f"Company summary calculations failed for company {self.company.id}: {error}"
+            )
+        
+        # Log overall results for monitoring and alerting
+        self._log_calculation_results(results)
+    
+    def _log_calculation_results(self, results: Dict[str, Dict]) -> None:
+        """
+        Log calculation results for monitoring and alerting.
+        
+        Args:
+            results: Dictionary containing results for each service
+        """
+        success_count = sum(1 for r in results.values() if r['status'] == 'success')
+        total_count = len(results)
+        
+        self.logger.info(
+            f"Company {self.company.id} calculations completed: {success_count}/{total_count} successful",
+            extra={
+                'company_id': self.company.id,
+                'calculation_results': results,
+                'success_rate': success_count / total_count if total_count > 0 else 0
+            }
+        )
+        
+        # Alert if critical calculations failed
+        if success_count < total_count:
+            self.logger.warning(
+                f"Some calculations failed for company {self.company.id}",
+                extra={'failed_services': [k for k, v in results.items() if v['status'] == 'failed']}
+            )

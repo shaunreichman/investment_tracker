@@ -79,14 +79,20 @@ class CompanyEventHandlerRegistry:
         self._operation_handlers[operation_type] = handler_class
         logging.info(f"Registered handler {handler_class.__name__} for operation type {operation_type}")
     
-    def get_handler(self, event_type: CompanyDomainEventType, session, company: InvestmentCompany) -> BaseCompanyEventHandler:
+    def get_handler(self, event_type: CompanyDomainEventType, session, company: InvestmentCompany, **kwargs) -> BaseCompanyEventHandler:
         """
         Get a handler instance for the specified event type.
+        
+        This method intelligently creates handler instances by:
+        1. Checking the handler's constructor signature
+        2. Passing only the required arguments
+        3. Supporting handlers with different constructor patterns
         
         Args:
             event_type: The event type to get a handler for
             session: Database session for the handler
             company: Company instance for the handler
+            **kwargs: Additional context data (e.g., contact, portfolio) for handlers that need it
             
         Returns:
             BaseCompanyEventHandler: Handler instance
@@ -98,9 +104,53 @@ class CompanyEventHandlerRegistry:
         if not handler_class:
             raise ValueError(f"No handler registered for event type: {event_type}")
         
-        return handler_class(session, company)
+        # Smart handler creation based on constructor signature
+        return self._create_handler_instance(handler_class, session, company, **kwargs)
     
-    def get_operation_handler(self, operation_type: CompanyOperationType, session, company: InvestmentCompany) -> BaseCompanyEventHandler:
+    def _create_handler_instance(self, handler_class, session, company: InvestmentCompany, **kwargs) -> BaseCompanyEventHandler:
+        """
+        Create a handler instance with the appropriate constructor arguments.
+        
+        This method inspects the handler's constructor and passes only the required arguments,
+        supporting handlers with different constructor signatures.
+        
+        Args:
+            handler_class: The handler class to instantiate
+            session: Database session for the handler
+            company: Company instance for the handler
+            **kwargs: Additional context data
+            
+        Returns:
+            BaseCompanyEventHandler: Properly instantiated handler
+        """
+        import inspect
+        
+        # Get the constructor signature
+        sig = inspect.signature(handler_class.__init__)
+        params = list(sig.parameters.keys())
+        
+        # Remove 'self' from parameters
+        if 'self' in params:
+            params.remove('self')
+        
+        # Build arguments dict based on what the handler needs
+        args = {}
+        
+        # Always pass session and company if the handler expects them
+        if 'session' in params:
+            args['session'] = session
+        if 'company' in params:
+            args['company'] = company
+        
+        # Pass additional context if the handler expects it
+        for param in params:
+            if param in kwargs and param not in ['session', 'company']:
+                args[param] = kwargs[param]
+        
+        # Create and return the handler instance
+        return handler_class(**args)
+    
+    def get_operation_handler(self, operation_type: CompanyOperationType, session, company: InvestmentCompany, **kwargs) -> BaseCompanyEventHandler:
         """
         Get a handler instance for the specified operation type.
         
@@ -108,6 +158,7 @@ class CompanyEventHandlerRegistry:
             operation_type: The operation type to get a handler for
             session: Database session for the handler
             company: Company instance for the handler
+            **kwargs: Additional context data for handlers that need it
             
         Returns:
             BaseCompanyEventHandler: Handler instance
@@ -119,7 +170,8 @@ class CompanyEventHandlerRegistry:
         if not handler_class:
             raise ValueError(f"No handler registered for operation type: {operation_type}")
         
-        return handler_class(session, company)
+        # Use the same smart handler creation logic
+        return self._create_handler_instance(handler_class, session, company, **kwargs)
     
     def handle_event(self, event_data: Dict, session, company: InvestmentCompany) -> Any:
         """
@@ -151,7 +203,23 @@ class CompanyEventHandlerRegistry:
         except ValueError:
             raise ValueError(f"Invalid event type: {event_data['event_type']}")
         
-        handler = self.get_handler(event_type, session, company)
+        # Extract additional context data for handlers that need it
+        context_kwargs = {}
+        
+        # Extract contact_id if present and create contact object
+        if 'contact_id' in event_data:
+            from src.investment_company.models import Contact
+            contact = session.query(Contact).filter(Contact.id == event_data['contact_id']).first()
+            if contact:
+                context_kwargs['contact'] = contact
+        
+        # Extract portfolio_id if present and create portfolio object
+        if 'portfolio_id' in event_data:
+            # Note: Portfolio model would need to be imported and implemented
+            # For now, we'll skip this until the model is available
+            pass
+        
+        handler = self.get_handler(event_type, session, company, **context_kwargs)
         return handler.handle(event_data)
     
     def handle_operation(self, operation_data: Dict, session, company: InvestmentCompany) -> Any:
