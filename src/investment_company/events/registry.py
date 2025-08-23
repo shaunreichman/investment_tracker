@@ -197,11 +197,17 @@ class CompanyEventHandlerRegistry:
         try:
             from .handlers.company_created_handler import CompanyCreatedHandler
             from .handlers.contact_added_handler import ContactAddedHandler
+            from .handlers.contact_updated_handler import ContactUpdatedHandler
+            from .handlers.company_updated_handler import CompanyUpdatedHandler
+            from .handlers.company_deleted_handler import CompanyDeletedHandler
             from .handlers.portfolio_updated_handler import PortfolioUpdatedHandler
             
             # Register event handlers
             self.register_handler(CompanyDomainEventType.COMPANY_CREATED, CompanyCreatedHandler)
             self.register_handler(CompanyDomainEventType.CONTACT_ADDED, ContactAddedHandler)
+            self.register_handler(CompanyDomainEventType.CONTACT_UPDATED, ContactUpdatedHandler)
+            self.register_handler(CompanyDomainEventType.COMPANY_UPDATED, CompanyUpdatedHandler)
+            self.register_handler(CompanyDomainEventType.COMPANY_DELETED, CompanyDeletedHandler)
             self.register_handler(CompanyDomainEventType.PORTFOLIO_UPDATED, PortfolioUpdatedHandler)
             
             self.logger.info("Successfully registered all default event handlers")

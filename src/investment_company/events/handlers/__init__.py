@@ -13,10 +13,16 @@ Key responsibilities:
 
 from .company_created_handler import CompanyCreatedHandler
 from .contact_added_handler import ContactAddedHandler
+from .contact_updated_handler import ContactUpdatedHandler
+from .company_updated_handler import CompanyUpdatedHandler
+from .company_deleted_handler import CompanyDeletedHandler
 from .portfolio_updated_handler import PortfolioUpdatedHandler
 
 __all__ = [
     'CompanyCreatedHandler',
     'ContactAddedHandler',
+    'ContactUpdatedHandler',
+    'CompanyUpdatedHandler',
+    'CompanyDeletedHandler',
     'PortfolioUpdatedHandler',
 ]

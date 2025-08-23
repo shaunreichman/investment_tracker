@@ -243,3 +243,33 @@ class CompanySummaryService:
             }
             for contact in company.contacts
         ]
+    
+    def update_company_summary(self, company: InvestmentCompany, session: Session) -> None:
+        """
+        Update company summary fields.
+        
+        This method recalculates and updates company summary information
+        when company data changes.
+        
+        Args:
+            company: InvestmentCompany object
+            session: Database session
+        """
+        try:
+            # Recalculate summary data
+            summary_data = self.get_company_summary(company, session)
+            
+            # Update company summary fields if they exist
+            # Note: This is a placeholder for future summary field updates
+            # Currently, summaries are calculated on-demand
+            
+            # Log the update
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug(f"Updated company summary for company {company.id}")
+            
+        except Exception as error:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to update company summary: {error}")
+            # Don't fail the main operation for summary update failures

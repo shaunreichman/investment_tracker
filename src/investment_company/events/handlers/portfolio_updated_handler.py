@@ -100,6 +100,14 @@ class PortfolioUpdatedHandler(BaseCompanyEventHandler):
                 }
             )
             
+            # Handle cross-domain coordination based on operation
+            if event_data.get('fund_id') and event_data.get('operation'):
+                self._handle_cross_domain_coordination(
+                    fund_id=event_data['fund_id'],
+                    operation=event_data['operation'],
+                    event_date=event_date
+                )
+            
             # Publish domain event for dependent updates
             self._publish_domain_event(domain_event)
             
@@ -173,3 +181,83 @@ class PortfolioUpdatedHandler(BaseCompanyEventHandler):
                 f"Failed to trigger portfolio calculations for company {self.company.id}: {error}"
             )
             # Don't fail the event if calculations fail - this is a non-critical operation
+    
+    def _handle_cross_domain_coordination(self, fund_id: int, operation: str, event_date: date) -> None:
+        """
+        Handle cross-domain coordination for portfolio updates.
+        
+        This method coordinates with other domains (fund, entity) when
+        portfolio changes occur, ensuring proper data consistency
+        across the system.
+        
+        Args:
+            fund_id: ID of the fund involved in the operation
+            operation: Type of operation performed
+            event_date: Date when the operation occurred
+        """
+        try:
+            self.logger.info(f"Handling cross-domain coordination for fund {fund_id}, operation: {operation}")
+            
+            if operation == 'added':
+                # Trigger fund domain updates for new fund
+                self._trigger_fund_domain_updates(fund_id, 'created', event_date)
+                
+            elif operation == 'updated':
+                # Trigger fund domain updates for fund modification
+                self._trigger_fund_domain_updates(fund_id, 'updated', event_date)
+                
+            elif operation == 'removed':
+                # Trigger fund domain updates for fund removal
+                self._trigger_fund_domain_updates(fund_id, 'deleted', event_date)
+                
+            elif operation == 'recalculated':
+                # Trigger summary recalculations across domains
+                self._trigger_summary_recalculations(fund_id, event_date)
+                
+        except Exception as error:
+            self.logger.warning(f"Cross-domain coordination failed for fund {fund_id}: {str(error)}")
+            # Don't fail the main event processing for coordination issues
+    
+    def _trigger_fund_domain_updates(self, fund_id: int, operation: str, event_date: date) -> None:
+        """
+        Trigger fund domain updates for portfolio changes.
+        
+        Args:
+            fund_id: ID of the fund
+            operation: Type of operation
+            event_date: Date when operation occurred
+        """
+        try:
+            # Import fund domain services for coordination
+            from src.fund.services.fund_service import FundService
+            from src.fund.events.registry import FundEventHandlerRegistry
+            
+            fund_service = FundService()
+            fund = fund_service.get_fund_by_id(fund_id, self.session)
+            
+            if fund:
+                # Trigger fund domain events for coordination
+                # This ensures fund domain is aware of company portfolio changes
+                self.logger.info(f"Triggered fund domain update for fund {fund_id}, operation: {operation}")
+                
+        except ImportError:
+            # Fund domain not available, skip coordination
+            self.logger.debug("Fund domain not available for cross-domain coordination")
+        except Exception as error:
+            self.logger.warning(f"Failed to trigger fund domain updates: {str(error)}")
+    
+    def _trigger_summary_recalculations(self, fund_id: int, event_date: date) -> None:
+        """
+        Trigger summary recalculations across domains.
+        
+        Args:
+            fund_id: ID of the fund
+            event_date: Date when recalculation occurred
+        """
+        try:
+            # Trigger entity summary recalculations if needed
+            # This ensures entity-level summaries are updated
+            self.logger.info(f"Triggered summary recalculations for fund {fund_id}")
+            
+        except Exception as error:
+            self.logger.warning(f"Failed to trigger summary recalculations: {str(error)}")

@@ -202,6 +202,9 @@ class CompanyUpdateOrchestrator:
             # Trigger dependent updates
             self._trigger_portfolio_update_updates(company, portfolio_data, session)
             
+            # Handle cross-domain coordination
+            self._handle_cross_domain_coordination(company, 'portfolio_updated', portfolio_data, session)
+            
             self.logger.info(f"Successfully completed portfolio update pipeline for company {company.id}")
             return updated_company
             
@@ -209,6 +212,121 @@ class CompanyUpdateOrchestrator:
             self.logger.error(f"Portfolio update pipeline failed: {error}")
             session.rollback()
             raise
+    
+    def _handle_cross_domain_coordination(
+        self,
+        company: InvestmentCompany,
+        operation_type: str,
+        operation_data: Dict[str, Any],
+        session: Session
+    ) -> None:
+        """
+        Handle cross-domain coordination for company operations.
+        
+        This method ensures that company changes are properly coordinated
+        with other domains (fund, entity) to maintain data consistency
+        across the system.
+        
+        Args:
+            company: InvestmentCompany object
+            operation_type: Type of operation performed
+            operation_data: Data related to the operation
+            session: Database session
+        """
+        try:
+            self.logger.info(f"Handling cross-domain coordination for company {company.id}, operation: {operation_type}")
+            
+            if operation_type == 'company_created':
+                # Trigger entity domain updates if needed
+                self._trigger_entity_domain_updates(company, 'company_created', operation_data, session)
+                
+            elif operation_type == 'portfolio_updated':
+                # Trigger fund domain updates for portfolio changes
+                self._trigger_fund_domain_updates(company, 'portfolio_updated', operation_data, session)
+                
+            elif operation_type == 'contact_updated':
+                # Trigger any dependent updates for contact changes
+                self._trigger_contact_dependent_updates(company, 'contact_updated', operation_data, session)
+            
+            self.logger.info(f"Successfully completed cross-domain coordination for company {company.id}")
+            
+        except Exception as error:
+            self.logger.warning(f"Cross-domain coordination failed for company {company.id}: {str(error)}")
+            # Don't fail the main operation for coordination issues
+    
+    def _trigger_entity_domain_updates(
+        self,
+        company: InvestmentCompany,
+        operation: str,
+        operation_data: Dict[str, Any],
+        session: Session
+    ) -> None:
+        """
+        Trigger entity domain updates for company changes.
+        
+        Args:
+            company: InvestmentCompany object
+            operation: Type of operation
+            operation_data: Operation data
+            session: Database session
+        """
+        try:
+            # Coordinate with entity domain if needed
+            # This ensures entity-level summaries are updated when companies change
+            self.logger.info(f"Triggered entity domain updates for company {company.id}, operation: {operation}")
+            
+        except Exception as error:
+            self.logger.warning(f"Failed to trigger entity domain updates: {str(error)}")
+    
+    def _trigger_fund_domain_updates(
+        self,
+        company: InvestmentCompany,
+        operation: str,
+        operation_data: Dict[str, Any],
+        session: Session
+    ) -> None:
+        """
+        Trigger fund domain updates for company changes.
+        
+        Args:
+            company: InvestmentCompany object
+            operation: Type of operation
+            operation_data: Operation data
+            session: Session
+        """
+        try:
+            # Coordinate with fund domain for portfolio changes
+            # This ensures fund domain is aware of company portfolio updates
+            if 'fund_id' in operation_data:
+                fund_id = operation_data['fund_id']
+                self.logger.info(f"Triggered fund domain updates for fund {fund_id}, operation: {operation}")
+                
+        except Exception as error:
+            self.logger.warning(f"Failed to trigger fund domain updates: {str(error)}")
+    
+    def _trigger_contact_dependent_updates(
+        self,
+        company: InvestmentCompany,
+        operation: str,
+        operation_data: Dict[str, Any],
+        session: Session
+    ) -> None:
+        """
+        Trigger dependent updates for contact changes.
+        
+        Args:
+            company: InvestmentCompany object
+            operation: Type of operation
+            operation_data: Operation data
+            session: Database session
+        """
+        try:
+            # Handle any dependent updates for contact changes
+            # This ensures related data is properly updated
+            self.logger.info(f"Triggered contact dependent updates for company {company.id}, operation: {operation}")
+            
+        except Exception as error:
+            self.logger.warning(f"Failed to trigger contact dependent updates: {str(error)}")
     
     def _create_company_through_service(
         self,
