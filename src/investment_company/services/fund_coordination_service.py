@@ -63,8 +63,13 @@ class FundCoordinationService:
         # Validate coordination prerequisites
         self._validate_fund_creation_prerequisites(company, entity, fund_data)
         
+        # Prepare fund data with required fields
+        complete_fund_data = fund_data.copy()
+        complete_fund_data['entity_id'] = entity.id
+        complete_fund_data['investment_company_id'] = company.id
+        
         # Delegate fund creation to fund domain service (single source of truth)
-        fund = self._create_fund_in_fund_domain(fund_data, session)
+        fund = self._create_fund_in_fund_domain(complete_fund_data, session)
         
         # Update company portfolio after fund creation
         self._update_company_portfolio_after_fund_creation(company, fund, session)

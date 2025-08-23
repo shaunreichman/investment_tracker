@@ -221,6 +221,8 @@ class CompanyPortfolioService:
             "total_invested_capital": total_invested_capital,
             "active_funds_count": active_funds_count,
             "completed_funds_count": completed_funds_count,
+            "suspended_funds_count": suspended_funds_count,
+            "realized_funds_count": realized_funds_count,
             "fund_status_breakdown": fund_status_breakdown
         }
     
@@ -313,7 +315,10 @@ class CompanyPortfolioService:
         # Delegate fund update to fund domain service
         from src.fund.services.fund_service import FundService
         fund_service = FundService()
-        updated_fund = fund_service.update_fund(fund_id, fund_data, session)
+        updated_fund_result = fund_service.update_fund(fund_id, fund_data, session)
+        
+        # Get the actual fund object for event publishing
+        updated_fund = self._get_fund_by_id(fund_id, session)
         
         # Publish company domain event for portfolio update
         self._publish_portfolio_updated_event(company, updated_fund, 'updated', session)
