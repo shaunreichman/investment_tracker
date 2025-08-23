@@ -184,7 +184,7 @@ tests/
 │   │   │   ├── ✅ test_company_creation_workflow.py     # Company setup workflow
 │   │   │   ├── ✅ test_company_portfolio_workflow.py    # Portfolio management workflow
 │   │   │   ├── ✅ test_company_contact_workflow.py      # Contact management workflow
-│   │   │   ├── test_cross_domain_coordination.py     # Fund-company-entity coordination
+│   │   │   ├── ✅ test_cross_domain_coordination.py     # Fund-company-entity coordination
 │   │   │   └── test_event_driven_workflows.py        # Event-driven operation flows
 │   │   ├── entity/                        # Entity management workflows
 │   │   │   ├── __init__.py
