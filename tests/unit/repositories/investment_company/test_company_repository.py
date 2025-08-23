@@ -6,11 +6,13 @@ clean data access abstraction without breaking existing functionality.
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 from src.investment_company.repositories.company_repository import CompanyRepository
 from src.investment_company.models import InvestmentCompany
+from src.investment_company.enums import CompanyType, CompanyStatus
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
 
@@ -55,6 +57,26 @@ class TestCompanyRepository:
         # Assert
         assert result is None
     
+    def test_get_by_id_cache_hit(self):
+        """Test that get_by_id returns cached result when available."""
+        # Arrange
+        company_id = 1
+        mock_company = Mock(spec=InvestmentCompany)
+        mock_company.id = company_id
+        mock_company.name = "Test Company"
+        
+        # First call - should hit database and cache
+        self.mock_query.filter.return_value.first.return_value = mock_company
+        result1 = self.repository.get_by_id(company_id, self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.get_by_id(company_id, self.mock_session)
+        
+        # Assert
+        assert result1 == mock_company
+        assert result2 == mock_company
+        assert result1 is result2  # Same object from cache
+    
     def test_get_by_name_success(self):
         """Test successful retrieval of company by name."""
         # Arrange
@@ -71,6 +93,25 @@ class TestCompanyRepository:
         assert result == mock_company
         self.mock_session.query.assert_called_once_with(InvestmentCompany)
         self.mock_query.filter.assert_called_once()
+    
+    def test_get_by_name_cache_hit(self):
+        """Test that get_by_name returns cached result when available."""
+        # Arrange
+        company_name = "Test Company"
+        mock_company = Mock(spec=InvestmentCompany)
+        mock_company.name = company_name
+        
+        # First call - should hit database and cache
+        self.mock_query.filter.return_value.first.return_value = mock_company
+        result1 = self.repository.get_by_name(company_name, self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.get_by_name(company_name, self.mock_session)
+        
+        # Assert
+        assert result1 == mock_company
+        assert result2 == mock_company
+        assert result1 is result2  # Same object from cache
     
     def test_get_all_success(self):
         """Test successful retrieval of all companies."""
@@ -89,6 +130,26 @@ class TestCompanyRepository:
         assert result == mock_companies
         self.mock_session.query.assert_called_once_with(InvestmentCompany)
         self.mock_query.all.assert_called_once()
+    
+    def test_get_all_cache_hit(self):
+        """Test that get_all returns cached result when available."""
+        # Arrange
+        mock_companies = [
+            Mock(spec=InvestmentCompany, id=1, name="Company 1"),
+            Mock(spec=InvestmentCompany, id=2, name="Company 2")
+        ]
+        
+        # First call - should hit database and cache
+        self.mock_query.all.return_value = mock_companies
+        result1 = self.repository.get_all(self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.get_all(self.mock_session)
+        
+        # Assert
+        assert result1 == mock_companies
+        assert result2 == mock_companies
+        assert result1 is result2  # Same object from cache
     
     def test_create_success(self):
         """Test successful creation of company."""
@@ -234,3 +295,302 @@ class TestCompanyRepository:
         assert result[0]['total_commitments'] == 1000000.0
         assert result[1]['fund_count'] == 1
         assert result[1]['total_commitments'] == 500000.0
+    
+    def test_get_companies_with_fund_counts_cache_hit(self):
+        """Test that get_companies_with_fund_counts returns cached result when available."""
+        # Arrange
+        mock_companies_data = [
+            (Mock(spec=InvestmentCompany, id=1, name="Company 1"), 2, 1000000.0, 500000.0)
+        ]
+        
+        # First call - should hit database and cache
+        self.mock_query.outerjoin.return_value.group_by.return_value.all.return_value = mock_companies_data
+        result1 = self.repository.get_companies_with_fund_counts(self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.get_companies_with_fund_counts(self.mock_session)
+        
+        # Assert
+        assert result1 == result2
+        assert result1 is result2  # Same object from cache
+    
+    def test_get_companies_with_summary_success(self):
+        """Test successful retrieval of companies with summary data."""
+        # Arrange
+        mock_companies = [
+            Mock(spec=InvestmentCompany, id=1, name="Company 1", description="Desc 1"),
+            Mock(spec=InvestmentCompany, id=2, name="Company 2", description="Desc 2")
+        ]
+        
+        # Mock the funds relationship for each company
+        mock_companies[0].funds = [Mock(commitment_amount=1000000.0, current_equity_balance=500000.0)]
+        mock_companies[1].funds = [Mock(commitment_amount=500000.0, current_equity_balance=250000.0)]
+        
+        # Mock the query with load_only
+        self.mock_query.options.return_value.all.return_value = mock_companies
+        
+        # Act
+        result = self.repository.get_companies_with_summary(self.mock_session)
+        
+        # Assert
+        assert len(result) == 2
+        assert result[0]['fund_count'] == 1
+        assert result[0]['total_commitments'] == 1000000.0
+        assert result[1]['fund_count'] == 1
+        assert result[1]['total_commitments'] == 500000.0
+    
+    def test_get_companies_with_summary_cache_hit(self):
+        """Test that get_companies_with_summary returns cached result when available."""
+        # Arrange
+        mock_companies = [Mock(spec=InvestmentCompany, id=1, name="Company 1")]
+        mock_companies[0].funds = []
+        
+        # First call - should hit database and cache
+        self.mock_query.options.return_value.all.return_value = mock_companies
+        result1 = self.repository.get_companies_with_summary(self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.get_companies_with_summary(self.mock_session)
+        
+        # Assert
+        assert result1 == result2
+        assert result1 is result2  # Same object from cache
+    
+    def test_get_companies_by_type_success(self):
+        """Test successful retrieval of companies by type."""
+        # Arrange
+        company_type = CompanyType.PRIVATE_EQUITY
+        mock_companies = [
+            Mock(spec=InvestmentCompany, id=1, name="Company 1", company_type=company_type),
+            Mock(spec=InvestmentCompany, id=2, name="Company 2", company_type=company_type)
+        ]
+        
+        self.mock_query.filter.return_value.all.return_value = mock_companies
+        
+        # Act
+        result = self.repository.get_companies_by_type(company_type.value, self.mock_session)
+        
+        # Assert
+        assert result == mock_companies
+        self.mock_session.query.assert_called_once_with(InvestmentCompany)
+        self.mock_query.filter.assert_called_once()
+    
+    def test_get_companies_by_type_cache_hit(self):
+        """Test that get_companies_by_type returns cached result when available."""
+        # Arrange
+        company_type = CompanyType.VENTURE_CAPITAL
+        mock_companies = [Mock(spec=InvestmentCompany, id=1, name="Company 1")]
+        
+        # First call - should hit database and cache
+        self.mock_query.filter.return_value.all.return_value = mock_companies
+        result1 = self.repository.get_companies_by_type(company_type.value, self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.get_companies_by_type(company_type.value, self.mock_session)
+        
+        # Assert
+        assert result1 == result2
+        assert result1 is result2  # Same object from cache
+    
+    def test_get_companies_by_status_success(self):
+        """Test successful retrieval of companies by status."""
+        # Arrange
+        status = CompanyStatus.ACTIVE
+        mock_companies = [
+            Mock(spec=InvestmentCompany, id=1, name="Company 1", status=status),
+            Mock(spec=InvestmentCompany, id=2, name="Company 2", status=status)
+        ]
+        
+        self.mock_query.filter.return_value.all.return_value = mock_companies
+        
+        # Act
+        result = self.repository.get_companies_by_status(status.value, self.mock_session)
+        
+        # Assert
+        assert result == mock_companies
+        self.mock_session.query.assert_called_once_with(InvestmentCompany)
+        self.mock_query.filter.assert_called_once()
+    
+    def test_get_companies_by_status_cache_hit(self):
+        """Test that get_companies_by_status returns cached result when available."""
+        # Arrange
+        status = CompanyStatus.INACTIVE
+        mock_companies = [Mock(spec=InvestmentCompany, id=1, name="Company 1")]
+        
+        # First call - should hit database and cache
+        self.mock_query.filter.return_value.all.return_value = mock_companies
+        result1 = self.repository.get_companies_by_status(status.value, self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.get_companies_by_status(status.value, self.mock_session)
+        
+        # Assert
+        assert result1 == result2
+        assert result1 is result2  # Same object from cache
+    
+    def test_search_companies_success(self):
+        """Test successful search of companies."""
+        # Arrange
+        search_term = "Private Equity"
+        mock_companies = [
+            Mock(spec=InvestmentCompany, id=1, name="Company 1", company_type=CompanyType.PRIVATE_EQUITY),
+            Mock(spec=InvestmentCompany, id=2, name="Company 2", description="Private equity firm")
+        ]
+        
+        self.mock_query.filter.return_value.all.return_value = mock_companies
+        
+        # Act
+        result = self.repository.search_companies(search_term, self.mock_session)
+        
+        # Assert
+        assert result == mock_companies
+        self.mock_session.query.assert_called_once_with(InvestmentCompany)
+        self.mock_query.filter.assert_called_once()
+    
+    def test_search_companies_cache_hit(self):
+        """Test that search_companies returns cached result when available."""
+        # Arrange
+        search_term = "Venture"
+        mock_companies = [Mock(spec=InvestmentCompany, id=1, name="Company 1")]
+        
+        # First call - should hit database and cache
+        self.mock_query.filter.return_value.all.return_value = mock_companies
+        result1 = self.repository.search_companies(search_term, self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.search_companies(search_term, self.mock_session)
+        
+        # Assert
+        assert result1 == result2
+        assert result1 is result2  # Same object from cache
+    
+    def test_get_companies_with_active_funds_success(self):
+        """Test successful retrieval of companies with active funds."""
+        # Arrange
+        mock_companies = [
+            Mock(spec=InvestmentCompany, id=1, name="Company 1"),
+            Mock(spec=InvestmentCompany, id=2, name="Company 2")
+        ]
+        
+        self.mock_query.join.return_value.filter.return_value.distinct.return_value.all.return_value = mock_companies
+        
+        # Act
+        result = self.repository.get_companies_with_active_funds(self.mock_session)
+        
+        # Assert
+        assert result == mock_companies
+        self.mock_session.query.assert_called_once_with(InvestmentCompany)
+        self.mock_query.join.assert_called_once()
+        self.mock_query.join.return_value.filter.assert_called_once()
+        self.mock_query.join.return_value.filter.return_value.distinct.assert_called_once()
+    
+    def test_get_companies_with_active_funds_cache_hit(self):
+        """Test that get_companies_with_active_funds returns cached result when available."""
+        # Arrange
+        mock_companies = [Mock(spec=InvestmentCompany, id=1, name="Company 1")]
+        
+        # First call - should hit database and cache
+        self.mock_query.join.return_value.filter.return_value.distinct.return_value.all.return_value = mock_companies
+        result1 = self.repository.get_companies_with_active_funds(self.mock_session)
+        
+        # Second call - should hit cache, not database
+        result2 = self.repository.get_companies_with_active_funds(self.mock_session)
+        
+        # Assert
+        assert result1 == result2
+        assert result1 is result2  # Same object from cache
+    
+    def test_cache_cleared_after_create(self):
+        """Test that cache is cleared after creating a company."""
+        # Arrange
+        company_data = {'name': 'New Company'}
+        mock_company = Mock(spec=InvestmentCompany)
+        
+        # Mock get_by_name to return None
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(self.repository, 'get_by_name', lambda name, session: None)
+            m.setattr(InvestmentCompany, '__new__', lambda cls, **kwargs: mock_company)
+            m.setattr(InvestmentCompany, '__init__', lambda self, **kwargs: None)
+            
+            # Populate cache first
+            self.repository._cache['companies:all'] = ['cached_data']
+            self.repository._cache['company:1'] = 'cached_company'
+            
+            # Act
+            self.repository.create(company_data, self.mock_session)
+            
+            # Assert
+            assert len(self.repository._cache) == 0  # Cache should be cleared
+    
+    def test_cache_cleared_after_update(self):
+        """Test that cache is cleared after updating a company."""
+        # Arrange
+        company_id = 1
+        update_data = {'description': 'Updated'}
+        mock_company = Mock(spec=InvestmentCompany)
+        
+        # Mock get_by_id to return existing company
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(self.repository, 'get_by_id', lambda cid, session: mock_company if cid == company_id else None)
+            
+            # Populate cache first
+            self.repository._cache['companies:all'] = ['cached_data']
+            self.repository._cache[f'company:{company_id}'] = 'cached_company'
+            
+            # Act
+            self.repository.update(company_id, update_data, self.mock_session)
+            
+            # Assert
+            assert len(self.repository._cache) == 0  # Cache should be cleared
+    
+    def test_cache_cleared_after_delete(self):
+        """Test that cache is cleared after deleting a company."""
+        # Arrange
+        company_id = 1
+        mock_company = Mock(spec=InvestmentCompany)
+        
+        # Mock get_by_id to return existing company
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(self.repository, 'get_by_id', lambda cid, session: mock_company if cid == company_id else None)
+            
+            # Populate cache first
+            self.repository._cache['companies:all'] = ['cached_data']
+            self.repository._cache[f'company:{company_id}'] = 'cached_company'
+            
+            # Act
+            self.repository.delete(company_id, self.mock_session)
+            
+            # Assert
+            assert len(self.repository._cache) == 0  # Cache should be cleared
+    
+    def test_clear_cache_method(self):
+        """Test the _clear_cache method."""
+        # Arrange
+        self.repository._cache['key1'] = 'value1'
+        self.repository._cache['key2'] = 'value2'
+        
+        # Act
+        self.repository._clear_cache()
+        
+        # Assert
+        assert len(self.repository._cache) == 0
+    
+    def test_clear_company_cache_method(self):
+        """Test the _clear_company_cache method."""
+        # Arrange
+        company_id = 1
+        self.repository._cache['company:1'] = 'company1'
+        self.repository._cache['companies:all'] = 'all_companies'
+        self.repository._cache['companies:with_fund_counts'] = 'fund_counts'
+        self.repository._cache['companies:with_active_funds'] = 'active_funds'
+        self.repository._cache['other_key'] = 'other_value'
+        
+        # Act
+        self.repository._clear_company_cache(company_id)
+        
+        # Assert
+        assert 'company:1' not in self.repository._cache
+        assert 'companies:all' not in self.repository._cache
+        assert 'companies:with_fund_counts' not in self.repository._cache
+        assert 'companies:with_active_funds' not in self.repository._cache
+        assert 'other_key' in self.repository._cache  # Should remain
