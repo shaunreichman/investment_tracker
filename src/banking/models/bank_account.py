@@ -26,7 +26,7 @@ class BankAccount(Base):
     account_name = Column(String(255), nullable=False)  # (MANUAL) human-readable account name/label
     account_number = Column(String(64), nullable=False)  # (MANUAL) account number stored as provided
     currency = Column(Enum(Currency), nullable=False)  # (MANUAL) ISO-4217 currency code
-    is_active = Column(Enum(AccountStatus), nullable=False, default=AccountStatus.ACTIVE)  # (MANUAL) active status flag
+    status = Column(Enum(AccountStatus), nullable=False, default=AccountStatus.ACTIVE)  # (MANUAL) account status
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) creation timestamp
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) last update timestamp
 
@@ -54,7 +54,7 @@ class BankAccount(Base):
         account_name: str,
         account_number: str,
         currency: Union[str, Currency],
-        is_active: Union[bool, AccountStatus] = True,
+        status: Union[bool, AccountStatus] = AccountStatus.ACTIVE,
         session=None,
     ) -> "BankAccount":
         """
@@ -69,7 +69,7 @@ class BankAccount(Base):
             account_name: Human-readable account name/label
             account_number: Account number
             currency: Currency code (3-letter ISO) or Currency enum
-            is_active: Active status (boolean or AccountStatus enum)
+            status: Account status (AccountStatus enum)
             session: Database session
         """
         from src.banking.services.bank_account_service import BankAccountService
@@ -81,6 +81,6 @@ class BankAccount(Base):
             account_name=account_name,
             account_number=account_number,
             currency=currency,
-            is_active=is_active,
+            status=status,
             session=session
         )

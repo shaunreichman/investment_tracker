@@ -208,12 +208,12 @@ class BankingValidationService:
     # ACCOUNT STATUS VALIDATION
     # ============================================================================
     
-    def validate_account_status(self, status: Union[bool, AccountStatus]) -> bool:
+    def validate_account_status(self, status: AccountStatus) -> bool:
         """
         Validate account status.
         
         Args:
-            status: Account status to validate (boolean or AccountStatus enum)
+            status: Account status to validate (AccountStatus enum)
             
         Returns:
             True if valid, False otherwise
@@ -225,31 +225,27 @@ class BankingValidationService:
         if isinstance(status, AccountStatus):
             return True
         
-        # Handle boolean input (for backward compatibility)
-        if isinstance(status, bool):
-            return True
-        
         return False
     
-    def validate_account_status_or_raise(self, status: Union[bool, AccountStatus]) -> None:
+    def validate_account_status_or_raise(self, status: AccountStatus) -> None:
         """
         Validate account status and raise ValueError if invalid.
         
         Args:
-            status: Account status to validate (boolean or AccountStatus enum)
+            status: Account status to validate (AccountStatus enum)
             
         Raises:
             ValueError: If account status is invalid
         """
         if not self.validate_account_status(status):
-            raise ValueError(f"Account status must be a valid AccountStatus enum or boolean. Got: {type(status)}")
+            raise ValueError(f"Account status must be a valid AccountStatus enum. Got: {type(status)}")
     
-    def normalize_account_status(self, status: Union[bool, AccountStatus]) -> AccountStatus:
+    def normalize_account_status(self, status: AccountStatus) -> AccountStatus:
         """
         Normalize account status input to AccountStatus enum.
         
         Args:
-            status: Account status (boolean or AccountStatus enum)
+            status: Account status (AccountStatus enum)
             
         Returns:
             AccountStatus: Normalized AccountStatus enum
@@ -260,10 +256,7 @@ class BankingValidationService:
         if isinstance(status, AccountStatus):
             return status
         
-        if isinstance(status, bool):
-            return AccountStatus.ACTIVE if status else AccountStatus.SUSPENDED
-        
-        raise ValueError(f"Account status must be a boolean or AccountStatus enum. Got: {type(status)}")
+        raise ValueError(f"Account status must be an AccountStatus enum. Got: {type(status)}")
     
     # ============================================================================
     # SWIFT/BIC VALIDATION

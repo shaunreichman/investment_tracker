@@ -54,7 +54,7 @@ class BankAccountService:
         account_name: str,
         account_number: str,
         currency: Union[str, Currency],
-        is_active: Union[bool, AccountStatus] = True,
+        status: AccountStatus = AccountStatus.ACTIVE,
         session: Optional[Session] = None
     ) -> BankAccount:
         """
@@ -69,7 +69,7 @@ class BankAccountService:
             account_name: Human-readable account name/label
             account_number: Account number stored as provided
             currency: ISO-4217 currency code (string or Currency enum)
-            is_active: Active status flag (boolean or AccountStatus enum)
+            status: Account status (AccountStatus enum)
             session: Database session
             
         Returns:
@@ -84,11 +84,11 @@ class BankAccountService:
         self.validation_service.validate_account_name_or_raise(account_name)
         self.validation_service.validate_account_number_or_raise(account_number)
         self.validation_service.validate_currency_code_or_raise(currency)
-        self.validation_service.validate_account_status_or_raise(is_active)
+        self.validation_service.validate_account_status_or_raise(status)
         
         # Normalize inputs to enums
         normalized_currency = self.validation_service.normalize_currency(currency)
-        normalized_status = self.validation_service.normalize_account_status(is_active)
+        normalized_status = self.validation_service.normalize_account_status(status)
         
         # Validate uniqueness
         self.validation_service.validate_bank_account_uniqueness_or_raise(
@@ -102,7 +102,7 @@ class BankAccountService:
             account_name=account_name.strip(),
             account_number=account_number.strip(),
             currency=normalized_currency,
-            is_active=normalized_status
+            status=normalized_status
         )
         
         # Use repository to create account
@@ -157,11 +157,11 @@ class BankAccountService:
             normalized_currency = self.validation_service.normalize_currency(data['currency'])
             account.currency = normalized_currency
         
-        if 'is_active' in data:
+        if 'status' in data:
             # Validate and normalize account status
-            self.validation_service.validate_account_status_or_raise(data['is_active'])
-            normalized_status = self.validation_service.normalize_account_status(data['is_active'])
-            account.is_active = normalized_status
+            self.validation_service.validate_account_status_or_raise(data['status'])
+            normalized_status = self.validation_service.normalize_account_status(data['status'])
+            account.status = normalized_status
         
         # Commit changes
         session.commit()
@@ -428,17 +428,17 @@ class BankAccountService:
         if not account:
             raise RuntimeError("Bank account not found")
         
-        account.is_active = True
+        account.status = AccountStatus.ACTIVE
         session.commit()
         
         return account
     
-    def deactivate_account(self, account_id: int, session: Session) -> BankAccount:
+    def suspend_account(self, account_id: int, session: Session) -> BankAccount:
         """
-        Deactivate a bank account.
+        Suspend a bank account.
         
         Args:
-            account_id: ID of the account to deactivate
+            account_id: ID of the account to suspend
             session: Database session
             
         Returns:
@@ -451,14 +451,14 @@ class BankAccountService:
         if not account:
             raise RuntimeError("Bank account not found")
         
-        account.is_active = False
+        account.status = AccountStatus.SUSPENDED
         session.commit()
         
         return account
     
     def toggle_account_status(self, account_id: int, session: Session) -> BankAccount:
         """
-        Toggle the active status of a bank account.
+        Toggle the account status between ACTIVE and SUSPENDED.
         
         Args:
             account_id: ID of the account to toggle
@@ -474,7 +474,7 @@ class BankAccountService:
         if not account:
             raise RuntimeError("Bank account not found")
         
-        account.is_active = not account.is_active
+        account.status = AccountStatus.SUSPENDED if account.status == AccountStatus.ACTIVE else AccountStatus.ACTIVE
         session.commit()
         
         return account

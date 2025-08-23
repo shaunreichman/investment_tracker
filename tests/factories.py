@@ -189,7 +189,7 @@ class BankAccountFactory(SessionedFactory):
     account_name = factory.LazyAttribute(lambda _: fake.bothify(text='Account ????', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'))
     account_number = factory.LazyAttribute(lambda _: fake.bothify(text='????-????-????-????', letters='0123456789'))
     currency = "AUD"  # Default to AUD
-    is_active = True
+    status = "ACTIVE"
 
 
 class FundEventCashFlowFactory(SessionedFactory):
