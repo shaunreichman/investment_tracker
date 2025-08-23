@@ -1,39 +1,19 @@
 """
-Investment Company Models.
+Investment Company Model.
 
-This module provides the investment company model classes,
-representing investment management companies in the system.
-
-Models are now pure data containers with no business logic.
+This module provides the InvestmentCompany model class.
+InvestmentCompany is a pure data container with no business logic.
 All business logic has been moved to dedicated services.
 """
 
-from typing import Optional, List
-from datetime import date, datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
+from datetime import datetime, timezone
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Boolean, Enum, Index
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
 from src.investment_company.enums import CompanyType, CompanyStatus
-
-class Contact(Base):
-    """Model representing a contact person at an investment company."""
-    __tablename__ = 'contacts'
-    
-    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    investment_company_id = Column(Integer, ForeignKey('investment_companies.id'), nullable=False)  # (SYSTEM) foreign key to investment company
-    name = Column(String(255), nullable=False)  # (MANUAL) contact person's name
-    title = Column(String(255))  # (MANUAL) contact person's job title
-    direct_number = Column(String(50))  # (MANUAL) direct phone number
-    direct_email = Column(String(255))  # (MANUAL) direct email address
-    notes = Column(Text)  # (MANUAL) additional notes about the contact
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) creation timestamp
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) last update timestamp
-    
-    # Relationships
-    investment_company = relationship("InvestmentCompany", back_populates="contacts")
 
 class InvestmentCompany(Base):
     """Model representing an investment company/firm.
@@ -72,4 +52,4 @@ class InvestmentCompany(Base):
     )
     
     def __repr__(self):
-        return f"<InvestmentCompany(id={self.id}, name='{self.name}', company_type={self.company_type.value if self.company_type else None}, status={self.status.value})>" 
+        return f"<InvestmentCompany(id={self.id}, name='{self.name}', company_type={self.company_type.value if self.company_type else None}, status={self.status.value})>"
