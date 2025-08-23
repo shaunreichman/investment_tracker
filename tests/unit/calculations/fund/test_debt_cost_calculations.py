@@ -7,12 +7,17 @@ including edge cases and boundary conditions.
 
 import pytest
 from datetime import date
-from src.fund.calculations import calculate_debt_cost
+from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.enums import EventType, FundType
 
 
 class TestDebtCostCalculation:
     """Tests for debt cost calculation function"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_debt_cost_no_events(self):
         """Test debt cost calculation with no events"""
@@ -22,7 +27,7 @@ class TestDebtCostCalculation:
         end_date = date(2024, 12, 31)
         currency = "AUD"
     
-        result = calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
+        result = self.calculation_service._calculate_debt_cost_utility(events, risk_free_rates, start_date, end_date, currency)
     
         assert result['total_debt_cost'] == 0.0
         assert result['average_risk_free_rate'] == 0.0
@@ -45,7 +50,7 @@ class TestDebtCostCalculation:
         end_date = date(2024, 12, 31)
         currency = "AUD"
         
-        result = calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
+        result = self.calculation_service._calculate_debt_cost_utility(events, risk_free_rates, start_date, end_date, currency)
         
         assert result['total_debt_cost'] == 0.0
         assert result['average_risk_free_rate'] == 0.0
@@ -64,7 +69,7 @@ class TestDebtCostCalculation:
         end_date = date(2024, 12, 31)
         currency = "AUD"
         
-        result = calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
+        result = self.calculation_service._calculate_debt_cost_utility(events, risk_free_rates, start_date, end_date, currency)
         
         assert result['total_debt_cost'] == 0.0
         assert result['average_equity'] == 0.0
@@ -82,7 +87,7 @@ class TestDebtCostCalculation:
         end_date = date(2024, 1, 1)
         currency = "AUD"
     
-        result = calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
+        result = self.calculation_service._calculate_debt_cost_utility(events, risk_free_rates, start_date, end_date, currency)
     
         # For single day, we expect at least 1 day of calculation
         assert result['total_days'] >= 1
@@ -103,7 +108,7 @@ class TestDebtCostCalculation:
         end_date = date(2024, 12, 31)
         currency = "AUD"
         
-        result = calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
+        result = self.calculation_service._calculate_debt_cost_utility(events, risk_free_rates, start_date, end_date, currency)
         
         assert result['total_debt_cost'] > 0
         assert result['average_risk_free_rate'] == 50.0
@@ -124,7 +129,7 @@ class TestDebtCostCalculation:
         end_date = date(2024, 12, 31)
         currency = "AUD"
         
-        result = calculate_debt_cost(events, risk_free_rates, start_date, end_date, currency)
+        result = self.calculation_service._calculate_debt_cost_utility(events, risk_free_rates, start_date, end_date, currency)
         
         # Should handle negative equity gracefully
         assert 'total_debt_cost' in result

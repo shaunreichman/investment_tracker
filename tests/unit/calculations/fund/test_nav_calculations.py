@@ -16,18 +16,23 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import Mock, patch
 
-from src.fund.calculations import calculate_nav_based_capital_gains
+from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.enums import EventType, FundType
 from tests.factories import FundEventFactory, FundFactory
 
 
 class TestNAVBasedCapitalGainsCalculations:
     """Tests for NAV-based capital gains calculations using FIFO method"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_nav_based_capital_gains_no_events(self):
         """Test NAV-based capital gains with no events"""
         events = []
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         assert result == 0.0
     
     def test_nav_based_capital_gains_only_purchases(self):
@@ -52,7 +57,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         assert result == 0.0  # No sales, so no capital gains
     
     def test_nav_based_capital_gains_simple_sale_profit(self):
@@ -77,7 +82,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation:
         # Purchase: cost per unit = 10.0 + (50.0 / 100.0) = 10.5
@@ -109,7 +114,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation:
         # Purchase: cost per unit = 15.0 + (50.0 / 100.0) = 15.5
@@ -149,7 +154,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation:
         # First purchase: cost per unit = 10.0 + (50.0 / 100.0) = 10.5
@@ -183,7 +188,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation:
         # Purchase: cost per unit = 10.0 + (50.0 / 100.0) = 10.5
@@ -231,7 +236,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation:
         # First purchase: cost per unit = 10.0 + (50.0 / 100.0) = 10.5
@@ -259,7 +264,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         assert result == 0.0
     
     def test_nav_based_capital_gains_zero_units_sale(self):
@@ -284,7 +289,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         assert result == 0.0
     
     def test_nav_based_capital_gains_zero_unit_price_purchase(self):
@@ -301,7 +306,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         assert result == 0.0
     
     def test_nav_based_capital_gains_zero_unit_price_sale(self):
@@ -326,7 +331,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         assert result == 0.0
     
     def test_nav_based_capital_gains_no_brokerage_fees(self):
@@ -351,7 +356,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation:
         # Purchase: cost per unit = 10.0 + (0.0 / 100.0) = 10.0
@@ -390,7 +395,7 @@ class TestNAVBasedCapitalGainsCalculations:
             event.validate_basic_constraints()
         
         # Now calculate capital gains (should work with valid data)
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation with valid brokerage fees:
         # Purchase: cost per unit = 10.0 + (50.0 / 100.0) = 10.5
@@ -434,7 +439,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation: Only purchase and sale events count
         # Purchase: cost per unit = 10.0 + (50.0 / 100.0) = 10.5
@@ -466,7 +471,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation with high precision:
         # Purchase: cost per unit = 10.456 + (50.789 / 100.123) = 10.963
@@ -498,7 +503,7 @@ class TestNAVBasedCapitalGainsCalculations:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation with very small amounts:
         # Purchase: cost per unit = 0.01 + (0.001 / 0.001) = 1.01
@@ -511,6 +516,11 @@ class TestNAVBasedCapitalGainsCalculations:
 
 class TestNAVCalculationEdgeCases:
     """Tests for NAV calculation edge cases and boundary conditions"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_nav_based_capital_gains_insufficient_units_for_sale(self):
         """Test NAV-based capital gains when sale exceeds available units"""
@@ -534,7 +544,7 @@ class TestNAVCalculationEdgeCases:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation: Only 100 units can be sold
         # Purchase: cost per unit = 10.0 + (50.0 / 100.0) = 10.5
@@ -593,7 +603,7 @@ class TestNAVCalculationEdgeCases:
             )
         ]
         
-        result = calculate_nav_based_capital_gains(events)
+        result = self.calculation_service._calculate_nav_based_capital_gains_utility(events)
         
         # Expected calculation with large numbers:
         # Purchase: cost per unit = 1000000.0 + (50000.0 / 1000000.0) = 1000000.05

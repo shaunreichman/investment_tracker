@@ -181,9 +181,10 @@ def orchestrate_irr_base(cash_flow_events, start_date, include_tax_payments=Fals
     if len(cash_flows) < 2:
         return None
     
-    # Import the IRR calculation function from fund calculations
-    from src.fund.calculations import calculate_irr
-    irr_result = calculate_irr(cash_flows, days_from_start)
+    # Import the IRR calculation function from fund calculation service
+    from src.fund.services.fund_calculation_service import FundCalculationService
+    calculation_service = FundCalculationService()
+    irr_result = calculation_service._calculate_irr_utility(cash_flows, days_from_start)
     
     if return_cashflows:
         # Generate labels from event descriptions

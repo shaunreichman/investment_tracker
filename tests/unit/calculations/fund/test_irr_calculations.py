@@ -22,7 +22,7 @@ from decimal import Decimal
 from unittest.mock import Mock, patch, MagicMock
 
 # NEW ARCHITECTURE IMPORTS - NOT legacy monolithic models
-from src.fund.calculations import calculate_irr
+from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.models.fund import Fund
 from src.fund.models.fund_event import FundEvent
 from src.fund.enums import EventType, DistributionType, FundType
@@ -31,12 +31,16 @@ from src.fund.enums import EventType, DistributionType, FundType
 class TestIRRBasicCalculations:
     """Basic IRR calculation scenarios and edge cases"""
     
+    def setup_method(self):
+        """Set up test fixtures"""
+        self.calculation_service = FundCalculationService()
+    
     def test_calculate_irr_simple_case_high_precision(self):
         """Test IRR with simple case for high precision validation"""
         # Invest 100 at day 0, receive 110 at 1 year ~ 10%
         cash_flows = [-100.0, 110.0]
         days_from_start = [0, 365]
-        irr = calculate_irr(cash_flows, days_from_start)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days_from_start)
         assert irr is not None
         assert abs(irr - 0.10) < 1e-4  # within 0.01%
 
@@ -56,7 +60,7 @@ class TestIRRBasicCalculations:
         start = flows[0][0]
         cash_flows = [amt for _, amt in flows]
         days = [(d - start).days for d, _ in flows]
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert irr is not None
         assert abs(irr - 0.1192) < 1e-4  # 11.92%
 
@@ -82,7 +86,7 @@ class TestIRRBasicCalculations:
         start = flows[0][0]
         cash_flows = [amt for _, amt in flows]
         days = [(d - start).days for d, _ in flows]
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert irr is not None
         assert abs(irr - 0.1654) < 1e-4  # 16.54%
 
@@ -98,7 +102,7 @@ class TestIRRBasicCalculations:
         start = flows[0][0]
         cash_flows = [amt for _, amt in flows]
         days = [(d - start).days for d, _ in flows]
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert irr is not None
         assert abs(irr - 0.1143) < 1e-4  # 11.43%
 
@@ -106,12 +110,16 @@ class TestIRRBasicCalculations:
 class TestIRREdgeCases:
     """Edge cases and boundary conditions for IRR calculations"""
     
+    def setup_method(self):
+        """Set up test fixtures"""
+        self.calculation_service = FundCalculationService()
+    
     def test_irr_single_cash_flow(self):
         """Test IRR with single cash flow (should return None)"""
         cash_flows = [1000.0]
         days = [0]
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert result is None
     
     def test_irr_zero_cash_flows(self):
@@ -119,7 +127,7 @@ class TestIRREdgeCases:
         cash_flows = [0.0, 0.0, 0.0]
         days = [0, 30, 60]
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert result is None
     
     def test_irr_all_positive_cash_flows(self):
@@ -127,7 +135,7 @@ class TestIRREdgeCases:
         cash_flows = [1000.0, 500.0, 300.0]
         days = [0, 30, 60]
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert result is None
     
     def test_irr_all_negative_cash_flows(self):
@@ -135,7 +143,7 @@ class TestIRREdgeCases:
         cash_flows = [-1000.0, -500.0, -300.0]
         days = [0, 30, 60]
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert result is None
     
     def test_irr_very_small_amounts(self):
@@ -143,7 +151,7 @@ class TestIRREdgeCases:
         cash_flows = [-0.01, 0.02]
         days = [0, 365]
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # Should handle small amounts without crashing
         assert result is not None or result is None
     
@@ -152,7 +160,7 @@ class TestIRREdgeCases:
         cash_flows = [-1000000000.0, 2000000000.0]
         days = [0, 365]
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # Should handle large amounts without crashing
         assert result is not None or result is None
     
@@ -162,13 +170,18 @@ class TestIRREdgeCases:
         cash_flows = [-1000.0, 10000.0]
         days = [0, 30]  # 30 days for 10x return
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # Should handle extreme rates gracefully
         assert result is not None or result is None
 
 
 class TestIRRConvergenceAndPerformance:
     """IRR convergence testing and performance characteristics"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_irr_convergence_edge_cases(self):
         """Test IRR convergence in edge cases"""
@@ -176,11 +189,11 @@ class TestIRRConvergenceAndPerformance:
         cash_flows = [-1000.0, 1100.0]
         days = [0, 365]
     
-        result = calculate_irr(cash_flows, days, tolerance=1e-12)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days, tolerance=1e-12)
         assert result is not None
         
         # Test with reasonable tolerance for edge cases
-        result = calculate_irr(cash_flows, days, tolerance=1e-8)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days, tolerance=1e-8)
         assert result is not None
     
     def test_irr_max_iterations(self):
@@ -189,11 +202,11 @@ class TestIRRConvergenceAndPerformance:
         days = [0, 365]
         
         # Test with reasonable max iterations
-        result = calculate_irr(cash_flows, days, max_iterations=100)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days, max_iterations=100)
         assert result is not None
         
         # Test with very low max iterations (should still work for simple cases)
-        result = calculate_irr(cash_flows, days, max_iterations=10)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days, max_iterations=10)
         assert result is not None
     
     def test_irr_irregular_timing(self):
@@ -202,7 +215,7 @@ class TestIRRConvergenceAndPerformance:
         cash_flows = [-1000.0, 100.0, 1100.0]
         days = [0, 15, 365]  # Uneven spacing
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # This should work and give a reasonable rate
         assert result is not None, f"IRR should be calculable for investment with return, got {result}"
         assert result > 0.0, f"IRR should be positive for profitable investment, got {result}"
@@ -211,7 +224,7 @@ class TestIRRConvergenceAndPerformance:
         cash_flows = [-1000.0, 1100.0]
         days = [0, 1]  # 1 day period
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # Very short periods return None - this is the actual behavior
         assert result is None, "1-day IRR returns None - this is the function's behavior"
     
@@ -220,25 +233,30 @@ class TestIRRConvergenceAndPerformance:
         cash_flows = [-1000.0, 2000.0]
         days = [0, 3650]  # 10 years
         
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # 10-year periods return None - this is the actual behavior
         assert result is None, "10-year IRR returns None - this is the function's behavior"
 
 
 class TestIRRMathematicalProperties:
     """Mathematical properties and invariants for IRR calculations"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_irr_proportional_scaling(self):
         """Test IRR invariance under proportional scaling"""
         base_cash_flows = [-1000.0, 1100.0]
         base_days = [0, 365]
         
-        base_irr = calculate_irr(base_cash_flows, base_days)
+        base_irr = self.calculation_service._calculate_irr_utility(base_cash_flows, base_days)
         assert base_irr is not None
         
         # Scale by factor of 10
         scaled_cash_flows = [-10000.0, 11000.0]
-        scaled_irr = calculate_irr(scaled_cash_flows, base_days)
+        scaled_irr = self.calculation_service._calculate_irr_utility(scaled_cash_flows, base_days)
         
         # IRR should be identical under proportional scaling
         assert abs(base_irr - scaled_irr) < 1e-10
@@ -248,14 +266,14 @@ class TestIRRMathematicalProperties:
         base_cash_flows = [-1000.0, 1100.0]
         base_days = [0, 365]
         
-        base_irr = calculate_irr(base_cash_flows, base_days)
+        base_irr = self.calculation_service._calculate_irr_utility(base_cash_flows, base_days)
         assert base_irr is not None
         
         # Add zero cash flows
         extended_cash_flows = [-1000.0, 0.0, 0.0, 1100.0]
         extended_days = [0, 30, 180, 365]
         
-        extended_irr = calculate_irr(extended_cash_flows, extended_days)
+        extended_irr = self.calculation_service._calculate_irr_utility(extended_cash_flows, extended_days)
         
         # IRR should be identical
         assert abs(base_irr - extended_irr) < 1e-10
@@ -265,13 +283,13 @@ class TestIRRMathematicalProperties:
         base_cash_flows = [-1000.0, 1100.0]
         base_days = [0, 365]
         
-        base_irr = calculate_irr(base_cash_flows, base_days)
+        base_irr = self.calculation_service._calculate_irr_utility(base_cash_flows, base_days)
         assert base_irr is not None
         
         # Shift all days by 30
         shifted_days = [30, 395]
         
-        shifted_irr = calculate_irr(base_cash_flows, shifted_days)
+        shifted_irr = self.calculation_service._calculate_irr_utility(base_cash_flows, shifted_days)
         
         # IRR should be identical under time shift
         assert abs(base_irr - shifted_irr) < 1e-10
@@ -279,6 +297,11 @@ class TestIRRMathematicalProperties:
 
 class TestIRRIntegrationScenarios:
     """Integration scenarios and real-world IRR calculations"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_fund_irr_calculation_with_events(self):
         """Test IRR calculation in fund context with multiple events"""
@@ -291,7 +314,7 @@ class TestIRRIntegrationScenarios:
         ]
         days = [0, 180, 365, 730]  # 2-year fund
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # This should work - it's a standard investment scenario
         # Investment: $100k, Return: $140k over 2 years = 40% total return
         assert irr is not None, f"Fund IRR should be calculable for standard investment scenario, got {irr}"
@@ -321,7 +344,7 @@ class TestIRRIntegrationScenarios:
         ]
         days = [0, 90, 180, 270, 365]
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # Tax payment scenarios create complex cash flow patterns
         # IRR may not converge for these scenarios
         assert irr is None or irr is not None, "IRR should either return a valid rate or None for tax scenarios"
@@ -342,7 +365,7 @@ class TestIRRIntegrationScenarios:
         ]
         days = [0, 180, 365, 730]
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # Return of capital scenarios create complex cash flow patterns
         # IRR may not converge for these scenarios
         assert irr is None or irr is not None, "IRR should either return a valid rate or None for return of capital scenarios"
@@ -355,15 +378,20 @@ class TestIRRIntegrationScenarios:
 
 class TestIRRErrorHandlingAndValidation:
     """Enhanced error handling and input validation tests"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_irr_input_validation_empty_lists(self):
         """Test IRR with empty input lists"""
         # Empty cash flows - function raises IndexError
         with pytest.raises(IndexError):
-            calculate_irr([], [])
+            self.calculation_service._calculate_irr_utility([], [])
         
         # Empty days - function handles this gracefully and returns None
-        result = calculate_irr([100.0], [])
+        result = self.calculation_service._calculate_irr_utility([100.0], [])
         assert result is None
     
     def test_irr_input_validation_mismatched_lengths(self):
@@ -372,17 +400,17 @@ class TestIRRErrorHandlingAndValidation:
         days = [0]  # Only one day for two cash flows
         
         # Function actually handles this gracefully
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert result is None
     
     def test_irr_input_validation_invalid_types(self):
         """Test IRR with invalid input types"""
         # Test with None values
         with pytest.raises(TypeError):
-            calculate_irr(None, [0, 365])
+            self.calculation_service._calculate_irr_utility(None, [0, 365])
         
         with pytest.raises(TypeError):
-            calculate_irr([-1000.0, 1100.0], None)
+            self.calculation_service._calculate_irr_utility([-1000.0, 1100.0], None)
     
     def test_irr_input_validation_negative_days(self):
         """Test IRR with negative day values"""
@@ -390,7 +418,7 @@ class TestIRRErrorHandlingAndValidation:
         days = [-1, 365]  # Negative start day
         
         # Should handle gracefully or return None
-        result = calculate_irr(cash_flows, days)
+        result = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert result is None or result is not None
     
     def test_irr_input_validation_non_numeric_cash_flows(self):
@@ -399,11 +427,16 @@ class TestIRRErrorHandlingAndValidation:
         days = [0, 365]
         
         with pytest.raises(TypeError):
-            calculate_irr(cash_flows, days)
+            self.calculation_service._calculate_irr_utility(cash_flows, days)
 
 
 class TestIRRPerformanceAndPrecision:
     """Enhanced performance and precision validation tests"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_irr_precision_validation_known_scenarios(self):
         """Test IRR precision against known mathematical scenarios"""
@@ -411,7 +444,7 @@ class TestIRRPerformanceAndPrecision:
         cash_flows = [-1000.0, 1100.0]
         days = [0, 365]
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert irr is not None
         
         # Should be close to 10% (adjusting tolerance based on actual function behavior)
@@ -426,7 +459,7 @@ class TestIRRPerformanceAndPrecision:
         cash_flows = [-1000.0, 25.0, 25.0, 25.0, 1025.0]  # 10% quarterly
         days = [0, 90, 180, 270, 365]
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert irr is not None
         
         # Should be close to 10% annual (quarterly compounding) - adjusting tolerance
@@ -458,7 +491,7 @@ class TestIRRPerformanceAndPrecision:
         import time
         start_time = time.time()
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         
         end_time = time.time()
         execution_time = end_time - start_time
@@ -479,7 +512,7 @@ class TestIRRPerformanceAndPrecision:
         results = []
         
         for tolerance in tolerances:
-            irr = calculate_irr(cash_flows, days, tolerance=tolerance)
+            irr = self.calculation_service._calculate_irr_utility(cash_flows, days, tolerance=tolerance)
             results.append(irr)
             assert irr is not None
         
@@ -498,7 +531,7 @@ class TestIRRPerformanceAndPrecision:
         results = []
         
         for max_iter in max_iterations_list:
-            irr = calculate_irr(cash_flows, days, max_iterations=max_iter)
+            irr = self.calculation_service._calculate_irr_utility(cash_flows, days, max_iterations=max_iter)
             results.append(irr)
             assert irr is not None
         
@@ -510,6 +543,11 @@ class TestIRRPerformanceAndPrecision:
 
 class TestIRRComplexCashFlowScenarios:
     """Enhanced complex cash flow scenario tests"""
+    def setup_method(self):
+        """Set up test fixtures"""
+        from src.fund.services.fund_calculation_service import FundCalculationService
+        self.calculation_service = FundCalculationService()
+
     
     def test_irr_private_equity_fund_scenario(self):
         """Test IRR with complex private equity fund cash flow pattern"""
@@ -526,7 +564,7 @@ class TestIRRComplexCashFlowScenarios:
         ]
         days = [0, 180, 365, 540, 730, 900, 1095, 1460]  # 4-year fund
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # Complex PE fund scenarios may not converge - this is expected behavior
         if irr is not None:
             # Validate business logic if IRR is calculated
@@ -553,7 +591,7 @@ class TestIRRComplexCashFlowScenarios:
         ]
         days = [0, 90, 180, 270, 365, 455, 545, 635, 730, 1095]  # 3-year fund
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert irr is not None, "RE fund IRR should be calculable"
         
         # Validate business logic
@@ -575,7 +613,7 @@ class TestIRRComplexCashFlowScenarios:
         ]
         days = [0, 365, 730, 1095, 1460, 1825, 2190]  # 6-year fund
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         # VC fund scenarios may not converge due to long periods with no cash flows
         if irr is not None:
             # Validate business logic if IRR is calculated
@@ -607,7 +645,7 @@ class TestIRRComplexCashFlowScenarios:
         ]
         days = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 365]
         
-        irr = calculate_irr(cash_flows, days)
+        irr = self.calculation_service._calculate_irr_utility(cash_flows, days)
         assert irr is not None, "Hedge fund IRR should be calculable"
         
         # Validate business logic - adjusting expectations based on actual function behavior
