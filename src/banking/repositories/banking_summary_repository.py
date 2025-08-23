@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, desc, asc
 
 from src.banking.models import Bank, BankAccount
+from src.banking.enums import AccountStatus
 
 
 class BankingSummaryRepository:
@@ -62,8 +63,8 @@ class BankingSummaryRepository:
         # Get total counts
         total_banks = session.query(Bank).count()
         total_accounts = session.query(BankAccount).count()
-        active_accounts = session.query(BankAccount).filter(BankAccount.is_active == True).count()
-        inactive_accounts = session.query(BankAccount).filter(BankAccount.is_active == False).count()
+        active_accounts = session.query(BankAccount).filter(BankAccount.status == AccountStatus.ACTIVE).count()
+        inactive_accounts = session.query(BankAccount).filter(BankAccount.status != AccountStatus.ACTIVE).count()
         
         # Get currency distribution
         currency_counts = session.query(
@@ -117,10 +118,10 @@ class BankingSummaryRepository:
         # Get account counts and currency distribution
         account_stats = session.query(
             BankAccount.currency,
-            BankAccount.is_active,
+            BankAccount.status,
             func.count(BankAccount.id).label('count')
         ).filter(BankAccount.bank_id == bank_id).group_by(
-            BankAccount.currency, BankAccount.is_active
+            BankAccount.currency, BankAccount.status
         ).all()
         
         # Format account statistics
@@ -128,11 +129,11 @@ class BankingSummaryRepository:
         active_count = 0
         inactive_count = 0
         
-        for currency, is_active, count in account_stats:
+        for currency, status, count in account_stats:
             if currency not in currency_stats:
                 currency_stats[currency] = {'active': 0, 'inactive': 0}
             
-            if is_active:
+            if status == AccountStatus.ACTIVE:
                 currency_stats[currency]['active'] = count
                 active_count += count
             else:
@@ -177,10 +178,10 @@ class BankingSummaryRepository:
         account_stats = session.query(
             BankAccount.bank_id,
             BankAccount.currency,
-            BankAccount.is_active,
+            BankAccount.status,
             func.count(BankAccount.id).label('count')
         ).filter(BankAccount.entity_id == entity_id).group_by(
-            BankAccount.bank_id, BankAccount.currency, BankAccount.is_active
+            BankAccount.bank_id, BankAccount.currency, BankAccount.status
         ).all()
         
         # Get bank information
@@ -194,16 +195,17 @@ class BankingSummaryRepository:
         active_count = 0
         inactive_count = 0
         
-        for bank_id, currency, is_active, count in account_stats:
+        for bank_id, currency, status, count in account_stats:
             # Bank statistics
             if bank_id not in bank_stats:
+                bank = bank_map.get(bank_id)
                 bank_stats[bank_id] = {
-                    'bank_name': bank_map.get(bank_id, {}).get('name', 'Unknown'),
-                    'bank_country': bank_map.get(bank_id, {}).get('country', 'Unknown'),
+                    'bank_name': getattr(bank, 'name', 'Unknown') if bank else 'Unknown',
+                    'bank_country': getattr(bank, 'country', 'Unknown') if bank else 'Unknown',
                     'accounts': {'active': 0, 'inactive': 0}
                 }
             
-            if is_active:
+            if status == AccountStatus.ACTIVE:
                 bank_stats[bank_id]['accounts']['active'] += count
                 active_count += count
             else:
@@ -214,7 +216,7 @@ class BankingSummaryRepository:
             if currency not in currency_stats:
                 currency_stats[currency] = {'active': 0, 'inactive': 0}
             
-            if is_active:
+            if status == AccountStatus.ACTIVE:
                 currency_stats[currency]['active'] += count
             else:
                 currency_stats[currency]['inactive'] += count
@@ -253,17 +255,17 @@ class BankingSummaryRepository:
         # Get currency statistics
         currency_stats = session.query(
             BankAccount.currency,
-            BankAccount.is_active,
+            BankAccount.status,
             func.count(BankAccount.id).label('count')
-        ).group_by(BankAccount.currency, BankAccount.is_active).all()
+        ).group_by(BankAccount.currency, BankAccount.status).all()
         
         # Format currency statistics
         currency_summary = {}
-        for currency, is_active, count in currency_stats:
+        for currency, status, count in currency_stats:
             if currency not in currency_summary:
                 currency_summary[currency] = {'active': 0, 'inactive': 0}
             
-            if is_active:
+            if status == AccountStatus.ACTIVE:
                 currency_summary[currency]['active'] = count
             else:
                 currency_summary[currency]['inactive'] = count
@@ -376,7 +378,7 @@ class BankingSummaryRepository:
         # Get various statistics
         total_banks = session.query(Bank).count()
         total_accounts = session.query(BankAccount).count()
-        active_accounts = session.query(BankAccount).filter(BankAccount.is_active == True).count()
+        active_accounts = session.query(BankAccount).filter(BankAccount.status == AccountStatus.ACTIVE).count()
         
         # Get unique currencies and countries
         unique_currencies = session.query(BankAccount.currency).distinct().count()

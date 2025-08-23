@@ -17,6 +17,7 @@ from sqlalchemy import and_, or_, func
 from sqlalchemy.orm import joinedload
 
 from src.banking.models import BankAccount
+from src.banking.enums import AccountStatus
 
 
 class BankAccountRepository:
@@ -223,7 +224,7 @@ class BankAccountRepository:
             return self._cache[cache_key]
         
         # Query database
-        accounts = session.query(BankAccount).filter(BankAccount.is_active == True).all()
+        accounts = session.query(BankAccount).filter(BankAccount.status == AccountStatus.ACTIVE).all()
         
         # Cache the result
         self._cache[cache_key] = accounts
@@ -247,7 +248,7 @@ class BankAccountRepository:
             return self._cache[cache_key]
         
         # Query database
-        accounts = session.query(BankAccount).filter(BankAccount.is_active == False).all()
+        accounts = session.query(BankAccount).filter(BankAccount.status != AccountStatus.ACTIVE).all()
         
         # Cache the result
         self._cache[cache_key] = accounts
@@ -310,7 +311,7 @@ class BankAccountRepository:
                 'account_name': account.account_name,
                 'account_number': account.account_number,
                 'currency': account.currency,
-                'is_active': account.is_active,
+                'is_active': account.status == AccountStatus.ACTIVE,
                 'bank_name': bank.name,
                 'bank_country': bank.country,
                 'bank_swift_bic': bank.swift_bic
@@ -355,7 +356,7 @@ class BankAccountRepository:
                 'account_name': account.account_name,
                 'account_number': account.account_number,
                 'currency': account.currency,
-                'is_active': account.is_active,
+                'is_active': account.status == AccountStatus.ACTIVE,
                 'bank_name': bank.name,
                 'bank_country': bank.country,
                 'bank_swift_bic': bank.swift_bic
