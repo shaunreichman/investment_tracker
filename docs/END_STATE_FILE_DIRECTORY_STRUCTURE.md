@@ -24,8 +24,8 @@ tests/
 │   │   │   └── ✅ test_fund_event_cash_flow_model.py # Cash flow model tests
 │   │   ├── investment_company/          # Investment company models
 │   │   │   ├── __init__.py
-│   │   │   ├── test_investment_company_model.py        # InvestmentCompany validation
-│   │   │   ├── test_contact_model.py                   # Contact model validation
+│   │   │   ├── ✅ test_investment_company_model.py        # InvestmentCompany validation
+│   │   │   ├── ✅ test_contact_model.py                   # Contact model validation
 │   │   │   └── test_company_relationship_model.py      # Company relationships
 │   │   ├── entity/                      # Entity models
 │   │   │   ├── __init__.py
@@ -156,9 +156,9 @@ tests/
 │   │   ├── ✅ fund/                        # Fund enums
 │   │   │   ├── ✅ __init__.py
 │   │   │   └── ✅ test_fund_enums.py                    # Fund enum validation
-│   │   ├── investment_company/          # Company enums
-│   │   │   ├── __init__.py
-│   │   │   └── test_company_enums.py                   # Company enum validation
+│   │   ├── ✅ investment_company/          # Company enums
+│   │   │   ├── ✅ __init__.py
+│   │   │   └── ✅ test_company_enums.py                   # Company enum validation
 │   │   ├── entity/                      # Entity enums
 │   │   │   ├── __init__.py
 │   │   │   └── test_entity_enums.py                  # Entity enum validation

@@ -75,17 +75,6 @@ class EntityFactory(SessionedFactory):
     tax_jurisdiction = "AU"
 
 
-class ContactFactory(SessionedFactory):
-    class Meta:
-        model = Contact
-
-    name = factory.LazyAttribute(lambda _: fake.name())
-    title = factory.LazyAttribute(lambda _: fake.job())
-    direct_number = factory.LazyAttribute(lambda _: fake.phone_number())
-    direct_email = factory.LazyAttribute(lambda _: fake.email())
-    notes = factory.LazyAttribute(lambda _: fake.sentence())
-
-
 class InvestmentCompanyFactory(SessionedFactory):
     class Meta:
         model = InvestmentCompany
@@ -107,6 +96,20 @@ class InvestmentCompanyFactory(SessionedFactory):
     ]))
     status = CompanyStatus.ACTIVE  # Default to active status
     business_address = factory.LazyAttribute(lambda _: fake.address())
+
+
+class ContactFactory(SessionedFactory):
+    class Meta:
+        model = Contact
+
+    # Create required relationships automatically
+    investment_company = factory.SubFactory(InvestmentCompanyFactory)
+    
+    name = factory.LazyAttribute(lambda _: fake.name())
+    title = factory.LazyAttribute(lambda _: fake.job())
+    direct_number = factory.LazyAttribute(lambda _: fake.phone_number())
+    direct_email = factory.LazyAttribute(lambda _: fake.email())
+    notes = factory.LazyAttribute(lambda _: fake.sentence())
 
 
 class FundFactory(SessionedFactory):
