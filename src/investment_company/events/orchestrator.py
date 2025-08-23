@@ -338,23 +338,21 @@ class CompanyUpdateOrchestrator:
     def _trigger_company_creation_updates(self, company: InvestmentCompany, session: Session) -> None:
         """Trigger updates that depend on company creation."""
         # Trigger portfolio summary calculations
-        self.portfolio_service.recalculate_portfolio_summary(company.id, session)
+        self.portfolio_service.update_portfolio_summary(company, session)
         
         # Trigger company summary calculations
         self.summary_service.update_company_summary(company, session)
     
     def _trigger_contact_addition_updates(self, company: InvestmentCompany, contact: Contact, session: Session) -> None:
         """Trigger updates that depend on contact addition."""
-        # Trigger contact count updates
-        self.contact_service.update_contact_count(company.id, session)
-        
+        # Note: update_contact_count method doesn't exist in ContactManagementService
         # Trigger company summary updates
         self.summary_service.update_company_summary(company, session)
     
     def _trigger_portfolio_update_updates(self, company: InvestmentCompany, portfolio_data: Dict[str, Any], session: Session) -> None:
         """Trigger updates that depend on portfolio updates."""
         # Trigger portfolio summary calculations
-        self.portfolio_service.recalculate_portfolio_summary(company.id, session)
+        self.portfolio_service.update_portfolio_summary(company, session)
         
         # Trigger company summary calculations
         self.summary_service.update_company_summary(company, session)
@@ -374,9 +372,7 @@ class CompanyUpdateOrchestrator:
 
     def _trigger_contact_update_updates(self, company: InvestmentCompany, contact: Contact, session: Session) -> None:
         """Trigger updates that depend on contact updates."""
-        # Trigger contact summary updates
-        self.contact_service.update_contact_summary(contact.id, session)
-        
+        # Note: update_contact_summary method doesn't exist in ContactManagementService
         # Trigger company summary updates
         self.summary_service.update_company_summary(company, session)
     
@@ -385,9 +381,18 @@ class CompanyUpdateOrchestrator:
         company_data: Dict[str, Any],
         session: Session
     ) -> InvestmentCompany:
-        """Create company through the contact service."""
-        # Call the actual company creation service
-        return self.contact_service.create_company(company_data, session)
+        """Create company through the company service."""
+        from src.investment_company.services.company_service import CompanyService
+        company_service = CompanyService()
+        return company_service.create_company(
+            name=company_data['name'],
+            description=company_data.get('description'),
+            website=company_data.get('website'),
+            company_type=company_data.get('company_type'),
+            business_address=company_data.get('business_address'),
+            status=company_data.get('status'),
+            session=session
+        )
     
     def _add_contact_through_service(
         self,
@@ -396,8 +401,15 @@ class CompanyUpdateOrchestrator:
         session: Session
     ) -> Contact:
         """Add contact through the contact management service."""
-        # Call the actual contact addition service
-        return self.contact_service.add_contact(company.id, contact_data, session)
+        return self.contact_service.add_contact(
+            company=company,
+            name=contact_data['name'],
+            title=contact_data.get('title'),
+            direct_number=contact_data.get('phone'),
+            direct_email=contact_data.get('email'),
+            notes=contact_data.get('notes'),
+            session=session
+        )
     
     def _update_portfolio_through_service(
         self,
@@ -606,11 +618,13 @@ class CompanyUpdateOrchestrator:
         handler.handle(event_data)
     
     def _update_company_through_service(self, company: InvestmentCompany, update_data: Dict[str, Any], session: Session) -> InvestmentCompany:
-        """Update company through the contact service."""
-        # Call the actual company update service
-        return self.contact_service.update_company(company.id, update_data, session)
+        """Update company through the company service."""
+        from src.investment_company.services.company_service import CompanyService
+        company_service = CompanyService()
+        return company_service.update_company(company.id, update_data, session)
 
     def _delete_company_through_service(self, company: InvestmentCompany, session: Session) -> None:
-        """Delete company through the contact service."""
-        # Call the actual company deletion service
-        self.contact_service.delete_company(company.id, session)
+        """Delete company through the company service."""
+        from src.investment_company.services.company_service import CompanyService
+        company_service = CompanyService()
+        company_service.delete_company(company.id, session)

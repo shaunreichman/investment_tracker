@@ -57,16 +57,13 @@ class TestCompanyUpdateOrchestrator:
         self.mock_validation_service = Mock(spec=CompanyValidationService)
         
         # Mock the actual methods that exist in the services
-        self.mock_portfolio_service.recalculate_portfolio_summary = Mock()
+        self.mock_portfolio_service.update_portfolio_summary = Mock()
         self.mock_portfolio_service.update_portfolio = Mock()
         self.mock_portfolio_service.cleanup_deleted_company_portfolio = Mock()
         self.mock_summary_service.update_company_summary = Mock()
-        self.mock_contact_service.update_contact_count = Mock()
-        self.mock_contact_service.update_contact_summary = Mock()
+        # Note: update_contact_count and update_contact_summary don't exist in ContactManagementService
         self.mock_contact_service.get_company = Mock()
-        self.mock_contact_service.create_company = Mock()
-        self.mock_contact_service.update_company = Mock()
-        self.mock_contact_service.delete_company = Mock()
+        # Note: create_company, update_company, delete_company don't exist in ContactManagementService
         self.mock_contact_service.add_contact = Mock()
         self.mock_contact_service.get_contact = Mock()
         self.mock_contact_service.update_contact = Mock()
@@ -117,11 +114,15 @@ class TestCompanyUpdateOrchestrator:
         
         # Mock successful service calls
         self.mock_validation_service.validate_company_data.return_value = None
-        self.mock_contact_service.create_company.return_value = self.mock_company
         
-        # Mock the private methods
-        with patch.object(self.orchestrator, '_process_company_created_event') as mock_process, \
+        # Mock the CompanyService.create_company call
+        with patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(self.orchestrator, '_process_company_created_event') as mock_process, \
              patch.object(self.orchestrator, '_trigger_company_creation_updates') as mock_trigger:
+            
+            mock_company_service = Mock()
+            mock_company_service.create_company.return_value = self.mock_company
+            mock_company_service_class.return_value = mock_company_service
             
             result = self.orchestrator.create_company(company_data, self.mock_session)
             
@@ -141,11 +142,15 @@ class TestCompanyUpdateOrchestrator:
         
         # Mock successful service calls
         self.mock_validation_service.validate_company_data.return_value = None
-        self.mock_contact_service.update_company.return_value = self.mock_company
         
-        # Mock the private methods
-        with patch.object(self.orchestrator, '_process_company_updated_event') as mock_process, \
+        # Mock the CompanyService.update_company call
+        with patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(self.orchestrator, '_process_company_updated_event') as mock_process, \
              patch.object(self.orchestrator, '_trigger_company_update_updates') as mock_trigger:
+            
+            mock_company_service = Mock()
+            mock_company_service.update_company.return_value = self.mock_company
+            mock_company_service_class.return_value = mock_company_service
             
             result = self.orchestrator.update_company(company_id, update_data, self.mock_session)
             
@@ -173,11 +178,15 @@ class TestCompanyUpdateOrchestrator:
         
         # Mock successful service calls
         self.mock_validation_service.validate_company_deletion.return_value = None
-        self.mock_contact_service.delete_company.return_value = None
         
-        # Mock the private methods
-        with patch.object(self.orchestrator, '_process_company_deleted_event') as mock_process, \
+        # Mock the CompanyService.delete_company call
+        with patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(self.orchestrator, '_process_company_deleted_event') as mock_process, \
              patch.object(self.orchestrator, '_trigger_company_deletion_updates') as mock_trigger:
+            
+            mock_company_service = Mock()
+            mock_company_service.delete_company.return_value = None
+            mock_company_service_class.return_value = mock_company_service
             
             result = self.orchestrator.delete_company(company_id, deletion_reason, self.mock_session)
             
@@ -348,7 +357,7 @@ class TestCompanyUpdateOrchestrator:
         self.orchestrator._trigger_company_creation_updates(self.mock_company, self.mock_session)
         
         # Verify portfolio and summary services were called
-        self.mock_portfolio_service.recalculate_portfolio_summary.assert_called_once_with(1, self.mock_session)
+        self.mock_portfolio_service.update_portfolio_summary.assert_called_once_with(self.mock_company, self.mock_session)
         self.mock_summary_service.update_company_summary.assert_called_once_with(self.mock_company, self.mock_session)
     
     def test_trigger_contact_addition_updates(self):
@@ -358,8 +367,7 @@ class TestCompanyUpdateOrchestrator:
         
         self.orchestrator._trigger_contact_addition_updates(self.mock_company, mock_contact, self.mock_session)
         
-        # Verify contact and summary services were called
-        self.mock_contact_service.update_contact_count.assert_called_once_with(1, self.mock_session)
+        # Verify summary service was called (update_contact_count doesn't exist)
         self.mock_summary_service.update_company_summary.assert_called_once_with(self.mock_company, self.mock_session)
     
     def test_trigger_portfolio_update_updates(self):
@@ -369,7 +377,7 @@ class TestCompanyUpdateOrchestrator:
         self.orchestrator._trigger_portfolio_update_updates(self.mock_company, portfolio_data, self.mock_session)
         
         # Verify portfolio and summary services were called
-        self.mock_portfolio_service.recalculate_portfolio_summary.assert_called_once_with(1, self.mock_session)
+        self.mock_portfolio_service.update_portfolio_summary.assert_called_once_with(self.mock_company, self.mock_session)
         self.mock_summary_service.update_company_summary.assert_called_once_with(self.mock_company, self.mock_session)
     
     def test_trigger_company_update_updates(self):
@@ -395,8 +403,7 @@ class TestCompanyUpdateOrchestrator:
         
         self.orchestrator._trigger_contact_update_updates(self.mock_company, mock_contact, self.mock_session)
         
-        # Verify contact and summary services were called
-        self.mock_contact_service.update_contact_summary.assert_called_once_with(100, self.mock_session)
+        # Verify summary service was called (update_contact_summary doesn't exist)
         self.mock_summary_service.update_company_summary.assert_called_once_with(self.mock_company, self.mock_session)
     
     def test_get_company_success(self):

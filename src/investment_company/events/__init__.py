@@ -20,6 +20,7 @@ from .domain import (
     CompanyUpdatedEvent,
     CompanyDeletedEvent,
     ContactAddedEvent,
+    ContactUpdatedEvent,
     PortfolioUpdatedEvent
 )
 
@@ -32,5 +33,6 @@ __all__ = [
     'CompanyUpdatedEvent',
     'CompanyDeletedEvent',
     'ContactAddedEvent',
+    'ContactUpdatedEvent',
     'PortfolioUpdatedEvent',
 ]
