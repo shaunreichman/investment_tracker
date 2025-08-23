@@ -21,7 +21,7 @@ from sqlalchemy import func
 # Use string references to avoid circular imports
 # from src.fund.models import Fund, FundEvent, EventType, FundType
 # Migrated calculation functions are now internal utility methods
-from src.shared.calculations import orchestrate_irr_base
+
 from src.shared.utils import with_session
 from src.fund.enums import FundStatus, EventType
 from src.fund.models import FundEvent
@@ -447,8 +447,8 @@ class FundCalculationService:
         # Get events using the session instead of accessing the relationship directly
         events = fund.get_all_fund_events(session=session)
         
-        # Delegate to the shared IRR calculation function
-        result = orchestrate_irr_base(
+        # Use internal orchestration method
+        result = self._orchestrate_irr_base(
             events, 
             fund.start_date,
             include_tax_payments=include_tax_payments,
@@ -457,6 +457,97 @@ class FundCalculationService:
         )
         
         return result
+    
+    def _orchestrate_irr_base(
+        self, 
+        cash_flow_events, 
+        start_date, 
+        include_tax_payments: bool = False, 
+        include_risk_free_charges: bool = False, 
+        include_eofy_debt_cost: bool = False, 
+        return_cashflows: bool = False
+    ):
+        """
+        [MIGRATED] Orchestrate IRR calculation with configurable cash flow inclusion.
+        
+        This method was migrated from shared calculations to eliminate circular dependencies.
+        
+        Args:
+            cash_flow_events (list): List of FundEvent objects
+            start_date (date): Start date for IRR calculation
+            include_tax_payments (bool): Whether to include tax payment events
+            include_risk_free_charges (bool): Whether to include risk-free interest charges
+            include_eofy_debt_cost (bool): Whether to include EOFY debt cost events
+            return_cashflows (bool): Whether to return cash flow details
+            
+        Returns:
+            float or dict: IRR value or dict with cash flow details
+        """
+        from src.fund.models import EventType
+        
+        # Filter events based on options
+        filtered_events = []
+        for event in cash_flow_events:
+            include_event = False
+            if event.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION]:
+                include_event = True
+            elif include_tax_payments and event.event_type == EventType.TAX_PAYMENT:
+                include_event = True
+            elif include_risk_free_charges and event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
+                include_event = True
+            elif include_eofy_debt_cost and event.event_type == EventType.EOFY_DEBT_COST:
+                include_event = True
+            if include_event:
+                filtered_events.append(event)
+        
+        # Sort events by date
+        filtered_events.sort(key=lambda e: e.event_date)
+        
+        # Prepare cash flows for IRR calculation
+        cash_flows = []
+        days_from_start = []
+        
+        for event in filtered_events:
+            amount = event.amount or 0
+            # Adjust sign based on event type
+            if event.event_type in [EventType.UNIT_PURCHASE, EventType.CAPITAL_CALL]:
+                amount = -abs(amount)  # Outflow
+            elif event.event_type in [EventType.UNIT_SALE, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION, EventType.EOFY_DEBT_COST]:
+                amount = abs(amount)  # Inflow
+            elif event.event_type == EventType.TAX_PAYMENT:
+                amount = -abs(amount)  # Outflow
+            elif event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
+                amount = -abs(amount)  # Outflow
+            
+            cash_flows.append(amount)
+            days = (event.event_date - start_date).days
+            days_from_start.append(days)
+        
+        # Calculate IRR
+        if len(cash_flows) < 2:
+            return None
+        
+        # Use internal IRR calculation utility
+        irr_result = self._calculate_irr_utility(cash_flows, days_from_start)
+        
+        if return_cashflows:
+            # Generate labels from event descriptions
+            labels = []
+            for event in filtered_events:
+                if event.description:
+                    labels.append(f"{event.event_type.value} | {event.event_date} | {event.amount:,.2f} | {event.description}")
+                else:
+                    labels.append(f"{event.event_type.value} | {event.event_date} | {event.amount:,.2f}")
+            
+            return {
+                'irr': irr_result,
+                'cash_flows': cash_flows,
+                'days_from_start': days_from_start,
+                'events': filtered_events,
+                'labels': labels
+            }
+        else:
+            return irr_result
     
     def _create_daily_risk_free_interest_charges(
         self, 
@@ -873,7 +964,7 @@ class FundCalculationService:
             Used for real IRR calculations in Fund models, to account for the opportunity cost of capital.
         """
         from datetime import timedelta
-        from src.shared.calculations import get_equity_change_for_event
+        from src.fund.enums import EventType, FundType
         
         # Filter events to the relevant period
         events = [e for e in events if e.event_date >= start_date and e.event_date <= end_date]
@@ -895,7 +986,26 @@ class FundCalculationService:
             if event.event_date > last_date:
                 equity_periods.append((last_date, event.event_date, current_equity))
             if hasattr(event, 'fund'):
-                equity_change = get_equity_change_for_event(event, event.fund.tracking_type)
+                # Calculate equity change based on fund type and event type
+                fund_type = event.fund.tracking_type
+                if fund_type == FundType.NAV_BASED:
+                    if event.event_type == EventType.UNIT_PURCHASE:
+                        # Exclude brokerage: equity is units * unit_price
+                        equity_change = (event.units_purchased or 0.0) * (event.unit_price or 0.0)
+                    elif event.event_type == EventType.UNIT_SALE:
+                        # Exclude brokerage: equity is units * unit_price
+                        equity_change = -((event.units_sold or 0.0) * (event.unit_price or 0.0))
+                    else:
+                        equity_change = 0
+                elif fund_type == FundType.COST_BASED:
+                    if event.event_type == EventType.CAPITAL_CALL:
+                        equity_change = event.amount or 0.0
+                    elif event.event_type == EventType.RETURN_OF_CAPITAL:
+                        equity_change = -(event.amount or 0.0)
+                    else:
+                        equity_change = 0
+                else:
+                    equity_change = 0
             else:
                 equity_change = 0
             current_equity += equity_change

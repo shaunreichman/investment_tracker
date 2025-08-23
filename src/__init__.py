@@ -11,7 +11,7 @@ from src.entity.calculations import get_financial_years_for_fund_period
 # Fund domain
 from src.fund.models import Fund, FundEvent
 from src.fund.enums import FundType, EventType, DistributionType, TaxPaymentType
-from src.shared.calculations import orchestrate_irr_base
+
 
 # Tax domain
 from src.tax.models import TaxStatement
@@ -36,7 +36,7 @@ __all__ = [
     
     # Fund
     'Fund', 'FundEvent', 'FundType', 'EventType', 'DistributionType', 'TaxPaymentType',
-    'orchestrate_irr_base',
+
     
     # Tax
     'TaxStatement',
@@ -49,6 +49,6 @@ __all__ = [
     
     # Shared
     'with_session',
-    'get_equity_change_for_event', 'get_reconciliation_explanation',
+
     'get_financial_year_dates',
 ] 
