@@ -226,8 +226,9 @@ class ContactRepository:
         session.delete(contact)
         session.flush()
         
-        # Clear cache
-        self._clear_cache()
+        # Clear specific contact cache and company contacts cache
+        self._clear_contact_cache(contact_id)
+        self._clear_company_contacts_cache(contact.investment_company_id)
         
         return True
     
