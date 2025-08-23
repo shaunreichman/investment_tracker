@@ -25,7 +25,7 @@ from src.investment_company.models import InvestmentCompany
 
 # Shared utilities
 from src.shared.utils import with_session
-from src.shared.calculations import *
+
 
 __version__ = "1.0.0"
 __author__ = "Investment Tracker"
@@ -50,5 +50,5 @@ __all__ = [
     # Shared
     'with_session',
 
-    'get_financial_year_dates',
+
 ] 

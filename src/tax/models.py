@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
 from src.shared.utils import with_session, with_class_session
-from src.shared.calculations import get_financial_year_dates
+from src.tax.calculations import get_financial_year_dates
 from src.fund.models import Fund
 
 
@@ -141,7 +141,7 @@ class TaxStatement(Base):
         """Get the start and end dates for this financial year based on entity jurisdiction.
         Returns a tuple: (start_date, end_date).
         """
-        from src.shared.calculations import get_financial_year_dates
+        from src.tax.calculations import get_financial_year_dates
         from sqlalchemy.orm import object_session
         from src.entity.models import Entity
         session = object_session(self)
