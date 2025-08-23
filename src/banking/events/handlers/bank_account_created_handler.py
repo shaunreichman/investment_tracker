@@ -95,7 +95,7 @@ class BankAccountCreatedHandler(BaseBankingEventHandler):
                     'account_name': self.account.account_name,
                     'account_number': self.account.account_number,
                     'currency': self.account.currency,
-                    'is_active': self.account.is_active
+                    'status': self.account.status
                 }
             )
             
@@ -109,7 +109,6 @@ class BankAccountCreatedHandler(BaseBankingEventHandler):
                 'account_name': self.account.account_name,
                 'account_number': self.account.account_number,
                 'currency': self.account.currency,
-                'is_active': self.account.is_active,
                 'status': 'created',
                 'domain_event_published': True
             }

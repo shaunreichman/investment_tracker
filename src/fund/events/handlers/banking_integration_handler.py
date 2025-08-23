@@ -8,24 +8,32 @@ particularly FundEventCashFlow records that reference bank accounts.
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
+import logging
 
-from src.fund.events.base_handler import BaseFundEventHandler
 from src.fund.models.fund_event_cash_flow import FundEventCashFlow
 from src.banking.events.domain.base_event import BankingDomainEvent
 
 
-class BankingIntegrationHandler(BaseFundEventHandler):
+class BankingIntegrationHandler:
     """
     Handles banking events that affect fund operations.
     
     This handler ensures that banking changes properly update
     related fund cash flow records and maintain data consistency.
+    
+    Note: This is a cross-module integration handler, not a fund event handler,
+    so it doesn't inherit from BaseFundEventHandler.
     """
     
     def __init__(self):
         """Initialize the banking integration handler."""
-        super().__init__()
         self.handler_name = "BankingIntegrationHandler"
+        self.logger = logging.getLogger(__name__)
+    
+    def _get_current_timestamp(self):
+        """Get current timestamp for updates."""
+        from datetime import datetime
+        return datetime.utcnow()
     
     def handle_bank_account_deleted(self, event: BankingDomainEvent, session: Session) -> Dict[str, Any]:
         """
@@ -214,8 +222,3 @@ class BankingIntegrationHandler(BaseFundEventHandler):
         except Exception as e:
             session.rollback()
             raise RuntimeError(f"Failed to handle status change: {str(e)}")
-    
-    def _get_current_timestamp(self):
-        """Get current timestamp for updates."""
-        from datetime import datetime
-        return datetime.utcnow()
