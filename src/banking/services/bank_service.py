@@ -11,12 +11,13 @@ Extracted functionality:
 - Bank business rule enforcement
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from sqlalchemy.orm import Session
 
 from src.banking.models import Bank
 from src.banking.services.banking_validation_service import BankingValidationService
 from src.banking.repositories.bank_repository import BankRepository
+from src.banking.enums import Country
 
 
 class BankService:
@@ -48,7 +49,7 @@ class BankService:
     def create_bank(
         self,
         name: str,
-        country: str,
+        country: Union[str, Country],
         swift_bic: Optional[str] = None,
         session: Optional[Session] = None
     ) -> Bank:
@@ -60,7 +61,7 @@ class BankService:
         
         Args:
             name: Bank name
-            country: Country code (2-letter ISO)
+            country: Country code (2-letter ISO) or Country enum
             swift_bic: Optional SWIFT/BIC identifier
             session: Database session
             
@@ -75,13 +76,16 @@ class BankService:
         self.validation_service.validate_country_code_or_raise(country)
         self.validation_service.validate_swift_bic_or_raise(swift_bic)
         
+        # Normalize inputs to enums
+        normalized_country = self.validation_service.normalize_country(country)
+        
         # Validate uniqueness
-        self.validation_service.validate_bank_uniqueness_or_raise(name, country, session)
+        self.validation_service.validate_bank_uniqueness_or_raise(name, normalized_country, session)
         
         # Create bank instance
         bank = Bank(
             name=name.strip(),
-            country=country.upper(),
+            country=normalized_country,
             swift_bic=swift_bic
         )
         

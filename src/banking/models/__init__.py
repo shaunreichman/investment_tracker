@@ -1,18 +1,30 @@
 """
 Banking Models Package.
 
-This package contains the banking models with professional architecture.
-Models handle only data persistence and basic validation, with business logic
-delegated to services through the orchestrator.
+This package contains all banking-related models following enterprise best practices
+for clean separation of concerns and maintainability.
+
+Models:
+- Bank: Banking institution model
+- BankAccount: Bank account model
+
+Enums:
+- Country: ISO 3166-1 alpha-2 country codes
+- Currency: ISO 4217 currency codes
+- AccountStatus: Bank account lifecycle status
+- BankType: Banking institution classification
+- AccountType: Bank account classification types
+
+All models delegate business logic to services for clean separation of concerns.
 """
 
-# Import banking models
 from src.banking.models.bank import Bank
 from src.banking.models.bank_account import BankAccount
 
+# Export models
 __all__ = [
     'Bank',
-    'BankAccount'
+    'BankAccount',
 ]
 
 # Version information

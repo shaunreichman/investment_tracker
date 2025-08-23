@@ -1,25 +1,41 @@
 """
-Banking domain module.
+Banking Module.
 
-This module contains the core banking models, services, and business logic.
+This module provides comprehensive banking functionality with enterprise-grade architecture.
+Following the exact patterns established in the fund refactor for consistency and maintainability.
 
-The banking module now follows enterprise architecture patterns with:
-- Clean separation of concerns through service layer
-- Comprehensive validation and business rule enforcement
-- Improved testability and maintainability
+Core Components:
+- Models: Bank and BankAccount with clean data persistence
+- Services: Business logic and validation services
+- Repositories: Data access abstraction layer
+- Events: Event-driven architecture for banking updates
+- Enums: Type-safe enums for countries, currencies, and statuses
+
+Architecture Features:
+- Clean separation of concerns
+- Event-driven updates
+- Comprehensive validation
+- Repository pattern
+- Service layer business logic
+- Cross-module integration
 """
 
+# Import core components
 from src.banking.models import Bank, BankAccount
-from src.banking.services import BankService, BankAccountService, BankingValidationService
-from src.banking.repositories import BankRepository, BankAccountRepository, BankingSummaryRepository
+from src.banking.enums import Country, Currency, AccountStatus, BankType, AccountType, SortOrder, BankingDomainEventType
 
+# Export main components
 __all__ = [
+    # Models
     'Bank',
     'BankAccount',
-    'BankService',
-    'BankAccountService',
-    'BankingValidationService',
-    'BankRepository',
-    'BankAccountRepository',
-    'BankingSummaryRepository'
+    
+    # Enums
+    'Country',
+    'Currency', 
+    'AccountStatus',
+    'BankType',
+    'AccountType',
+    'SortOrder',
+    'BankingDomainEventType',
 ]

@@ -6,12 +6,13 @@ The model handles only data persistence and basic validation, with business logi
 delegated to services for clean separation of concerns.
 """
 
-from typing import Optional
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint
+from typing import Optional, Union
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint, Enum, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from src.shared.base import Base
+from src.banking.enums import Currency, AccountStatus
 
 
 class BankAccount(Base):
@@ -24,8 +25,8 @@ class BankAccount(Base):
     bank_id = Column(Integer, ForeignKey("banks.id"), nullable=False, index=True)  # (MANUAL) linked bank
     account_name = Column(String(255), nullable=False)  # (MANUAL) human-readable account name/label
     account_number = Column(String(64), nullable=False)  # (MANUAL) account number stored as provided
-    currency = Column(String(3), nullable=False)  # (MANUAL) ISO-4217 currency code
-    is_active = Column(Boolean, nullable=False, default=True)  # (MANUAL) active status flag
+    currency = Column(Enum(Currency), nullable=False)  # (MANUAL) ISO-4217 currency code
+    is_active = Column(Enum(AccountStatus), nullable=False, default=AccountStatus.ACTIVE)  # (MANUAL) active status flag
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) creation timestamp
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) last update timestamp
 
@@ -52,8 +53,8 @@ class BankAccount(Base):
         bank_id: int,
         account_name: str,
         account_number: str,
-        currency: str,
-        is_active: bool = True,
+        currency: Union[str, Currency],
+        is_active: Union[bool, AccountStatus] = True,
         session=None,
     ) -> "BankAccount":
         """
@@ -61,6 +62,15 @@ class BankAccount(Base):
         
         This method maintains the exact same interface while delegating
         business logic to the BankAccountService for clean separation of concerns.
+        
+        Args:
+            entity_id: Owner entity ID
+            bank_id: Linked bank ID
+            account_name: Human-readable account name/label
+            account_number: Account number
+            currency: Currency code (3-letter ISO) or Currency enum
+            is_active: Active status (boolean or AccountStatus enum)
+            session: Database session
         """
         from src.banking.services.bank_account_service import BankAccountService
         

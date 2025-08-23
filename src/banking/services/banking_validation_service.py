@@ -12,13 +12,14 @@ Extracted functionality:
 - Business rule enforcement
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from src.banking.models import Bank, BankAccount
 from src.banking.repositories.bank_repository import BankRepository
 from src.banking.repositories.bank_account_repository import BankAccountRepository
+from src.banking.enums import Country, Currency, AccountStatus
 
 
 class BankingValidationService:
@@ -47,12 +48,12 @@ class BankingValidationService:
     # COUNTRY CODE VALIDATION
     # ============================================================================
     
-    def validate_country_code(self, country: str) -> bool:
+    def validate_country_code(self, country: Union[str, Country]) -> bool:
         """
         Validate that a country code is a valid 2-letter ISO code.
         
         Args:
-            country: Country code to validate
+            country: Country code to validate (string or Country enum)
             
         Returns:
             True if valid, False otherwise
@@ -60,39 +61,79 @@ class BankingValidationService:
         if not country:
             return False
         
+        # Handle enum input
+        if isinstance(country, Country):
+            return True
+        
+        # Handle string input
+        if not isinstance(country, str):
+            return False
+        
         # Must be exactly 2 letters
-        if not isinstance(country, str) or len(country) != 2:
+        if len(country) != 2:
             return False
         
         # Must be alphabetic
         if not country.isalpha():
             return False
         
-        return True
+        # Check if it's a valid enum value
+        try:
+            Country(country.upper())
+            return True
+        except ValueError:
+            return False
     
-    def validate_country_code_or_raise(self, country: str) -> None:
+    def validate_country_code_or_raise(self, country: Union[str, Country]) -> None:
         """
         Validate country code and raise ValueError if invalid.
         
         Args:
-            country: Country code to validate
+            country: Country code to validate (string or Country enum)
             
         Raises:
             ValueError: If country code is invalid
         """
         if not self.validate_country_code(country):
-            raise ValueError("Country must be a 2-letter ISO code")
+            if isinstance(country, str):
+                raise ValueError(f"Country must be a valid 2-letter ISO code. Got: {country}")
+            else:
+                raise ValueError(f"Country must be a valid Country enum or string. Got: {type(country)}")
+    
+    def normalize_country(self, country: Union[str, Country]) -> Country:
+        """
+        Normalize country input to Country enum.
+        
+        Args:
+            country: Country code (string or Country enum)
+            
+        Returns:
+            Country: Normalized Country enum
+            
+        Raises:
+            ValueError: If country code is invalid
+        """
+        if isinstance(country, Country):
+            return country
+        
+        if isinstance(country, str):
+            try:
+                return Country(country.upper())
+            except ValueError:
+                raise ValueError(f"Invalid country code: {country}")
+        
+        raise ValueError(f"Country must be a string or Country enum. Got: {type(country)}")
     
     # ============================================================================
     # CURRENCY CODE VALIDATION
     # ============================================================================
     
-    def validate_currency_code(self, currency: str) -> bool:
+    def validate_currency_code(self, currency: Union[str, Currency]) -> bool:
         """
         Validate that a currency code is a valid 3-letter ISO code.
         
         Args:
-            currency: Currency code to validate
+            currency: Currency code to validate (string or Currency enum)
             
         Returns:
             True if valid, False otherwise
@@ -100,28 +141,129 @@ class BankingValidationService:
         if not currency:
             return False
         
+        # Handle enum input
+        if isinstance(currency, Currency):
+            return True
+        
+        # Handle string input
+        if not isinstance(currency, str):
+            return False
+        
         # Must be exactly 3 letters
-        if not isinstance(currency, str) or len(currency) != 3:
+        if len(currency) != 3:
             return False
         
         # Must be alphabetic
         if not currency.isalpha():
             return False
         
-        return True
+        # Check if it's a valid enum value
+        try:
+            Currency(currency.upper())
+            return True
+        except ValueError:
+            return False
     
-    def validate_currency_code_or_raise(self, currency: str) -> None:
+    def validate_currency_code_or_raise(self, currency: Union[str, Currency]) -> None:
         """
         Validate currency code and raise ValueError if invalid.
         
         Args:
-            currency: Currency code to validate
+            currency: Currency code to validate (string or Currency enum)
             
         Raises:
             ValueError: If currency code is invalid
         """
         if not self.validate_currency_code(currency):
-            raise ValueError("Currency must be a 3-letter ISO code")
+            if isinstance(currency, str):
+                raise ValueError(f"Currency must be a valid 3-letter ISO code. Got: {currency}")
+            else:
+                raise ValueError(f"Currency must be a valid Currency enum or string. Got: {type(currency)}")
+    
+    def normalize_currency(self, currency: Union[str, Currency]) -> Currency:
+        """
+        Normalize currency input to Currency enum.
+        
+        Args:
+            currency: Currency code (string or Currency enum)
+            
+        Returns:
+            Currency: Normalized Currency enum
+            
+        Raises:
+            ValueError: If currency code is invalid
+        """
+        if isinstance(currency, Currency):
+            return currency
+        
+        if isinstance(currency, str):
+            try:
+                return Currency(currency.upper())
+            except ValueError:
+                raise ValueError(f"Invalid currency code: {currency}")
+        
+        raise ValueError(f"Currency must be a string or Currency enum. Got: {type(currency)}")
+    
+    # ============================================================================
+    # ACCOUNT STATUS VALIDATION
+    # ============================================================================
+    
+    def validate_account_status(self, status: Union[bool, AccountStatus]) -> bool:
+        """
+        Validate account status.
+        
+        Args:
+            status: Account status to validate (boolean or AccountStatus enum)
+            
+        Returns:
+            True if valid, False otherwise
+        """
+        if status is None:
+            return False
+        
+        # Handle enum input
+        if isinstance(status, AccountStatus):
+            return True
+        
+        # Handle boolean input (for backward compatibility)
+        if isinstance(status, bool):
+            return True
+        
+        return False
+    
+    def validate_account_status_or_raise(self, status: Union[bool, AccountStatus]) -> None:
+        """
+        Validate account status and raise ValueError if invalid.
+        
+        Args:
+            status: Account status to validate (boolean or AccountStatus enum)
+            
+        Raises:
+            ValueError: If account status is invalid
+        """
+        if not self.validate_account_status(status):
+            raise ValueError(f"Account status must be a valid AccountStatus enum or boolean. Got: {type(status)}")
+    
+    def normalize_account_status(self, status: Union[bool, AccountStatus]) -> AccountStatus:
+        """
+        Normalize account status input to AccountStatus enum.
+        
+        Args:
+            status: Account status (boolean or AccountStatus enum)
+            
+        Returns:
+            AccountStatus: Normalized AccountStatus enum
+            
+        Raises:
+            ValueError: If account status is invalid
+        """
+        if isinstance(status, AccountStatus):
+            return status
+        
+        if isinstance(status, bool):
+            return AccountStatus.ACTIVE if status else AccountStatus.SUSPENDED
+        
+        raise ValueError(f"Account status must be a boolean or AccountStatus enum. Got: {type(status)}")
     
     # ============================================================================
     # SWIFT/BIC VALIDATION

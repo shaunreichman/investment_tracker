@@ -6,12 +6,13 @@ The model handles only data persistence and basic validation, with business logi
 delegated to services for clean separation of concerns.
 """
 
-from typing import Optional
-from sqlalchemy import Column, Integer, String, DateTime
+from typing import Optional, Union
+from sqlalchemy import Column, Integer, String, DateTime, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from src.shared.base import Base
+from src.banking.enums import Country
 
 
 class Bank(Base):
@@ -21,7 +22,7 @@ class Bank(Base):
 
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
     name = Column(String(255), nullable=False)  # (MANUAL) bank name
-    country = Column(String(2), nullable=False)  # (MANUAL) ISO 3166-1 alpha-2 country code
+    country = Column(Enum(Country), nullable=False)  # (MANUAL) ISO 3166-1 alpha-2 country code
     swift_bic = Column(String(11), nullable=True)  # (MANUAL) optional SWIFT/BIC identifier
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) creation timestamp
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) last update timestamp
@@ -37,7 +38,7 @@ class Bank(Base):
     def create(
         cls,
         name: str,
-        country: str,
+        country: Union[str, Country],
         swift_bic: str | None = None,
         session=None,
     ) -> "Bank":
@@ -46,6 +47,12 @@ class Bank(Base):
         
         This method maintains the exact same interface while delegating
         business logic to the BankService for clean separation of concerns.
+        
+        Args:
+            name: Bank name
+            country: Country code (2-letter ISO) or Country enum
+            swift_bic: Optional SWIFT/BIC identifier
+            session: Database session
         """
         from src.banking.services.bank_service import BankService
         

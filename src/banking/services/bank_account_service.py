@@ -11,12 +11,13 @@ Extracted functionality:
 - Bank account business rule enforcement
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from sqlalchemy.orm import Session
 
 from src.banking.models import BankAccount
 from src.banking.services.banking_validation_service import BankingValidationService
 from src.banking.repositories.bank_account_repository import BankAccountRepository
+from src.banking.enums import Currency, AccountStatus
 
 
 class BankAccountService:
@@ -52,8 +53,8 @@ class BankAccountService:
         bank_id: int,
         account_name: str,
         account_number: str,
-        currency: str,
-        is_active: bool = True,
+        currency: Union[str, Currency],
+        is_active: Union[bool, AccountStatus] = True,
         session: Optional[Session] = None
     ) -> BankAccount:
         """
@@ -67,8 +68,8 @@ class BankAccountService:
             bank_id: Linked bank ID
             account_name: Human-readable account name/label
             account_number: Account number stored as provided
-            currency: ISO-4217 currency code
-            is_active: Active status flag
+            currency: ISO-4217 currency code (string or Currency enum)
+            is_active: Active status flag (boolean or AccountStatus enum)
             session: Database session
             
         Returns:
@@ -83,6 +84,11 @@ class BankAccountService:
         self.validation_service.validate_account_name_or_raise(account_name)
         self.validation_service.validate_account_number_or_raise(account_number)
         self.validation_service.validate_currency_code_or_raise(currency)
+        self.validation_service.validate_account_status_or_raise(is_active)
+        
+        # Normalize inputs to enums
+        normalized_currency = self.validation_service.normalize_currency(currency)
+        normalized_status = self.validation_service.normalize_account_status(is_active)
         
         # Validate uniqueness
         self.validation_service.validate_bank_account_uniqueness_or_raise(
@@ -95,8 +101,8 @@ class BankAccountService:
             bank_id=bank_id,
             account_name=account_name.strip(),
             account_number=account_number.strip(),
-            currency=currency.upper(),
-            is_active=bool(is_active)
+            currency=normalized_currency,
+            is_active=normalized_status
         )
         
         # Use repository to create account
@@ -146,10 +152,16 @@ class BankAccountService:
             account.account_number = data['account_number'].strip()
         
         if 'currency' in data:
-            account.currency = data['currency'].upper()
+            # Validate and normalize currency
+            self.validation_service.validate_currency_code_or_raise(data['currency'])
+            normalized_currency = self.validation_service.normalize_currency(data['currency'])
+            account.currency = normalized_currency
         
         if 'is_active' in data:
-            account.is_active = data['is_active']
+            # Validate and normalize account status
+            self.validation_service.validate_account_status_or_raise(data['is_active'])
+            normalized_status = self.validation_service.normalize_account_status(data['is_active'])
+            account.is_active = normalized_status
         
         # Commit changes
         session.commit()
