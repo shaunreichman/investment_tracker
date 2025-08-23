@@ -55,7 +55,9 @@ class BankingUpdateOrchestrator:
         1. Event validation and routing
         2. Event processing by appropriate handler
         3. Dependent updates and side effects
-        4. Transaction management
+        
+        Note: Transaction management is handled by the calling layer.
+        This method focuses purely on business logic orchestration.
         
         Args:
             event_data: Dictionary containing event parameters
@@ -69,22 +71,13 @@ class BankingUpdateOrchestrator:
             ValueError: If event data is invalid
             RuntimeError: If event processing fails
         """
-        try:
-            # Step 1: Process the main event through the registry
-            result = self.registry.handle_event(event_data, session, banking_entity)
-            
-            # Step 2: Handle any dependent updates
-            self._handle_dependent_updates(result, session, banking_entity)
-            
-            # Step 3: Commit all changes
-            self._commit_changes(session)
-            
-            return result
-            
-        except Exception as e:
-            # Step 4: Rollback on any error
-            self._rollback_on_error(session, e)
-            raise
+        # Step 1: Process the main event through the registry
+        result = self.registry.handle_event(event_data, session, banking_entity)
+        
+        # Step 2: Handle any dependent updates
+        self._handle_dependent_updates(result, session, banking_entity)
+        
+        return result
     
     def process_bulk_events(self, events_data: list[Dict[str, Any]], session: Session, banking_entity: Union[Bank, BankAccount]) -> list[Dict[str, Any]]:
         """
@@ -93,6 +86,9 @@ class BankingUpdateOrchestrator:
         This method processes multiple events atomically, ensuring that
         either all events succeed or none do. It's useful for bulk
         operations and maintaining data consistency.
+        
+        Note: Transaction management is handled by the calling layer.
+        This method focuses purely on business logic orchestration.
         
         Args:
             events_data: List of event data dictionaries
@@ -106,26 +102,17 @@ class BankingUpdateOrchestrator:
             ValueError: If any event data is invalid
             RuntimeError: If any event processing fails
         """
-        try:
-            results = []
-            
-            # Process each event
-            for event_data in events_data:
-                result = self.registry.handle_event(event_data, session, banking_entity)
-                results.append(result)
-            
-            # Handle dependent updates for all events
-            self._handle_bulk_dependent_updates(results, session, banking_entity)
-            
-            # Commit all changes
-            self._commit_changes(session)
-            
-            return results
-            
-        except Exception as e:
-            # Rollback on any error
-            self._rollback_on_error(session, e)
-            raise
+        results = []
+        
+        # Process each event
+        for event_data in events_data:
+            result = self.registry.handle_event(event_data, session, banking_entity)
+            results.append(result)
+        
+        # Handle dependent updates for all events
+        self._handle_bulk_dependent_updates(results, session, banking_entity)
+        
+        return results
     
     def _handle_dependent_updates(self, event_result: Dict[str, Any], session: Session, banking_entity: Union[Bank, BankAccount]) -> None:
         """
@@ -151,6 +138,8 @@ class BankingUpdateOrchestrator:
                 self._handle_bank_created_dependencies(event_result, session, banking_entity)
             elif event_type == 'bank_account_created':
                 self._handle_account_created_dependencies(event_result, session, banking_entity)
+            elif event_type == 'bank_account_deleted':
+                self._handle_account_deleted_dependencies(event_result, session, banking_entity)
             elif event_type == 'currency_changed':
                 self._handle_currency_change_dependencies(event_result, session, banking_entity)
             elif event_type == 'account_status_changed':
@@ -360,37 +349,6 @@ class BankingUpdateOrchestrator:
         except Exception as e:
             self.logger.error(f"Failed to handle status change dependencies: {str(e)}")
             # Don't fail the main operation for dependency issues
-    
-    def _commit_changes(self, session: Session) -> None:
-        """
-        Commit all changes in the current transaction.
-        
-        Args:
-            session: Database session to commit
-        """
-        try:
-            session.commit()
-            self.logger.info("Successfully committed banking event changes")
-        except Exception as e:
-            self.logger.error(f"Error committing changes: {str(e)}")
-            raise RuntimeError(f"Failed to commit changes: {str(e)}") from e
-    
-    def _rollback_on_error(self, session: Session, error: Exception) -> None:
-        """
-        Rollback the current transaction on error.
-        
-        Args:
-            session: Database session to rollback
-            error: Exception that caused the rollback
-        """
-        try:
-            session.rollback()
-            self.logger.info("Successfully rolled back banking event changes due to error")
-        except Exception as rollback_error:
-            self.logger.error(f"Error during rollback: {str(rollback_error)}")
-            # Don't raise rollback errors as they mask the original error
-        
-        self.logger.error(f"Banking event processing failed: {str(error)}")
     
     def get_registry_info(self) -> Dict[str, Any]:
         """

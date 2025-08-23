@@ -104,7 +104,7 @@ tests/
 │   │   │   ├── __init__.py
 │   │   │   ├── ✅ test_banking_event_handlers.py        # 8 specific event handlers
 │   │   │   ├── ✅ test_banking_event_registry.py        # Event routing and registration
-│   │   │   ├── test_banking_orchestrator.py          # Pipeline coordination
+│   │   │   ├── ✅ test_banking_orchestrator.py          # Pipeline coordination
 │   │   │   ├── test_banking_cross_module_registry.py # Cross-module integration
 │   │   │   └── ✅ test_banking_domain_events.py         # 8 domain events
 │   │   ├── tax/                         # Tax event handling
