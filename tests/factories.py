@@ -4,6 +4,7 @@ from datetime import datetime
 
 from src.entity.models import Entity
 from src.investment_company.models import InvestmentCompany, Contact
+from src.investment_company.enums import CompanyType, CompanyStatus
 from src.fund.models import Fund, FundEvent, FundEventCashFlow
 from src.fund.enums import FundType, EventType, DistributionType, TaxPaymentType, CashFlowDirection, FundStatus
 from src.tax.models import TaxStatement
@@ -92,7 +93,19 @@ class InvestmentCompanyFactory(SessionedFactory):
     name = factory.Sequence(lambda n: f"Company {n:04d}")
     description = factory.LazyAttribute(lambda _: fake.bs())
     website = factory.LazyAttribute(lambda _: fake.url())
-    company_type = factory.LazyAttribute(lambda _: fake.random_element(elements=["Private Equity", "Venture Capital", "Private Debt", "Real Estate"]))
+    company_type = factory.LazyAttribute(lambda _: fake.random_element(elements=[
+        CompanyType.PRIVATE_EQUITY,
+        CompanyType.VENTURE_CAPITAL,
+        CompanyType.REAL_ESTATE,
+        CompanyType.INFRASTRUCTURE,
+        CompanyType.CREDIT,
+        CompanyType.HEDGE_FUND,
+        CompanyType.FAMILY_OFFICE,
+        CompanyType.INVESTMENT_BANK,
+        CompanyType.ASSET_MANAGEMENT,
+        CompanyType.OTHER
+    ]))
+    status = CompanyStatus.ACTIVE  # Default to active status
     business_address = factory.LazyAttribute(lambda _: fake.address())
 
 

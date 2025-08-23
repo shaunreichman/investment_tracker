@@ -26,6 +26,7 @@ from src.investment_company.services import (
     CompanyValidationService
 )
 from src.fund.enums import FundStatus
+from src.investment_company.enums import CompanyStatus
 
 
 class CompanyController:
@@ -80,7 +81,8 @@ class CompanyController:
                     "name": company.name,
                     "description": company.description,
                     "website": company.website,
-                    "company_type": company.company_type,
+                    "company_type": company.company_type.value if company.company_type else None,
+                    "status": company.status.value if company.status else None,
                     "business_address": company.business_address,
                     "fund_count": total_funds,
                     "active_funds": active_funds,
@@ -139,6 +141,7 @@ class CompanyController:
                 website=data.get('website'),
                 company_type=data.get('company_type'),
                 business_address=data.get('business_address'),
+                status=data.get('status'),
                 session=session
             )
             
@@ -150,7 +153,8 @@ class CompanyController:
                 "name": company.name,
                 "description": company.description,
                 "website": company.website,
-                "company_type": company.company_type,
+                "company_type": company.company_type.value if company.company_type else None,
+                "status": company.status.value if company.status else None,
                 "business_address": company.business_address,
                 "created_at": company.created_at.isoformat() if company.created_at else None
             }), 201
@@ -180,6 +184,7 @@ class CompanyController:
                 website=validated_data.get('website'),
                 company_type=validated_data.get('company_type'),
                 business_address=validated_data.get('business_address'),
+                status=validated_data.get('status'),
                 session=session
             )
             
@@ -191,7 +196,8 @@ class CompanyController:
                 "name": company.name,
                 "description": company.description,
                 "website": company.website,
-                "company_type": company.company_type,
+                "company_type": company.company_type.value if company.company_type else None,
+                "status": company.status.value if company.status else None,
                 "business_address": company.business_address,
                 "created_at": company.created_at.isoformat() if company.created_at else None
             }), 201

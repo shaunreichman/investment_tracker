@@ -20,6 +20,7 @@ from src.investment_company.services.company_portfolio_service import CompanyPor
 from src.investment_company.services.company_summary_service import CompanySummaryService
 from src.investment_company.services.contact_management_service import ContactManagementService
 from src.investment_company.services.company_validation_service import CompanyValidationService
+from src.investment_company.enums import CompanyType, CompanyStatus
 
 
 class CompanyService:
@@ -50,7 +51,7 @@ class CompanyService:
     
     def create_company(self, name: str, description: str = None, website: str = None, 
                       company_type: str = None, business_address: str = None, 
-                      session: Session = None) -> InvestmentCompany:
+                      status: str = None, session: Session = None) -> InvestmentCompany:
         """
         Create a new investment company.
         
@@ -60,6 +61,7 @@ class CompanyService:
             website: Company website URL (optional)
             company_type: Type of company (optional)
             business_address: Business address (optional)
+            status: Company status (optional, defaults to ACTIVE)
             session: Database session (required)
             
         Returns:
@@ -74,12 +76,15 @@ class CompanyService:
             description=description,
             website=website,
             company_type=company_type,
-            business_address=business_address,
-            session=session
+            business_address=business_address
         )
         
         if validation_errors:
             raise ValueError(f"Validation failed: {validation_errors}")
+        
+        # Set default status if not provided
+        if status is None:
+            status = CompanyStatus.ACTIVE.value
         
         # Create the company directly
         company = InvestmentCompany(
@@ -87,6 +92,7 @@ class CompanyService:
             description=description,
             website=website,
             company_type=company_type,
+            status=status,
             business_address=business_address
         )
         
@@ -124,7 +130,7 @@ class CompanyService:
             website=company_data.get('website'),
             company_type=company_data.get('company_type'),
             business_address=company_data.get('business_address'),
-            session=session
+            status=company_data.get('status')
         )
         
         if validation_errors:
@@ -139,6 +145,8 @@ class CompanyService:
             company.website = company_data['website']
         if 'company_type' in company_data:
             company.company_type = company_data['company_type']
+        if 'status' in company_data:
+            company.status = company_data['status']
         if 'business_address' in company_data:
             company.business_address = company_data['business_address']
         
@@ -152,7 +160,8 @@ class CompanyService:
             'name': company.name,
             'description': company.description,
             'website': company.website,
-            'company_type': company.company_type,
+            'company_type': company.company_type.value if company.company_type else None,
+            'status': company.status.value if company.status else None,
             'business_address': company.business_address,
             'updated_at': company.updated_at.isoformat() if company.updated_at else None
         }

@@ -1,43 +1,35 @@
 """
 Company Validation Service.
 
-This service handles business rule validation and constraint checking for investment companies,
-implementing clean separation of concerns and enterprise-grade architecture.
-
-Key responsibilities:
-- Business rule validation and constraint checking
-- Company data validation
-- Company creation and update validation
-- Business rule enforcement
+This service handles all business rule validation and constraint checking
+for investment companies, ensuring data integrity and business rule compliance.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 
-from src.investment_company.repositories import CompanyRepository, ContactRepository
 from src.investment_company.models import InvestmentCompany, Contact
+from src.investment_company.enums import CompanyType, CompanyStatus
 
 
 class CompanyValidationService:
     """
-    Service for company business rule validation and constraint checking.
+    Service for validating investment company data and business rules.
     
-    This service handles all validation logic including business rules,
-    data constraints, and validation for company operations.
-    
-    Attributes:
-        company_repository (CompanyRepository): Repository for company data access
-        contact_repository (ContactRepository): Repository for contact data access
+    Responsibilities:
+    - Business rule validation
+    - Data integrity checking
+    - Constraint validation
+    - Business rule documentation
     """
     
     def __init__(self):
-        """Initialize the company validation service."""
-        self.company_repository = CompanyRepository()
-        self.contact_repository = ContactRepository()
+        """Initialize the validation service."""
+        pass
     
-    def validate_company_creation(self, name: str, description: str = None, 
+    def validate_company_creation(self, name: str, description: str = None,
                                 website: str = None, company_type: str = None,
-                                business_address: str = None, session: Session = None) -> Dict[str, List[str]]:
+                                business_address: str = None) -> Dict[str, List[str]]:
         """
         Validate company creation data.
         
@@ -47,47 +39,43 @@ class CompanyValidationService:
             website: Company website URL
             company_type: Type of company
             business_address: Business address
-            session: Database session
             
         Returns:
             dict: Validation errors by field name
         """
         errors = {}
         
-        # Validate name
+        # Validate required fields
         if not name or not name.strip():
-            errors['name'] = ['Company name is required and cannot be empty']
-        else:
-            # Check for existing company with same name
-            existing_company = self.company_repository.get_by_name(name.strip(), session)
-            if existing_company:
-                errors['name'] = [f"Investment company with name '{name}' already exists"]
+            errors['name'] = ['Company name is required']
+        elif len(name.strip()) > 255:
+            errors['name'] = ['Company name must be 255 characters or less']
         
-        # Validate website format if provided
-        if website and not self._is_valid_website(website):
-            errors['website'] = ['Invalid website URL format']
-        
-        # Validate company type if provided
+        # Validate company type
         if company_type and not self._is_valid_company_type(company_type):
             errors['company_type'] = ['Invalid company type']
+        
+        # Validate website if provided
+        if website and not self._is_valid_website(website):
+            errors['website'] = ['Invalid website URL format']
         
         return errors
     
     def validate_company_update(self, company: InvestmentCompany, name: str = None,
                               description: str = None, website: str = None,
                               company_type: str = None, business_address: str = None,
-                              session: Session = None) -> Dict[str, List[str]]:
+                              status: str = None) -> Dict[str, List[str]]:
         """
         Validate company update data.
         
         Args:
-            company: InvestmentCompany object to update
+            company: Existing company object
             name: New company name
             description: New company description
             website: New company website URL
             company_type: New company type
             business_address: New business address
-            session: Database session
+            status: New company status
             
         Returns:
             dict: Validation errors by field name
@@ -96,30 +84,101 @@ class CompanyValidationService:
         
         # Validate name if provided
         if name is not None:
-            if not name or not name.strip():
-                errors['name'] = ['Company name cannot be empty']
-            else:
-                # Check for existing company with same name (excluding current company)
-                existing_company = self.company_repository.get_by_name(name.strip(), session)
-                if existing_company and existing_company.id != company.id:
-                    errors['name'] = [f"Investment company with name '{name}' already exists"]
-        
-        # Validate website format if provided
-        if website is not None and not self._is_valid_website(website):
-            errors['website'] = ['Invalid website URL format']
+            if not name.strip():
+                errors['name'] = ['Company name is required']
+            elif len(name.strip()) > 255:
+                errors['name'] = ['Company name must be 255 characters or less']
         
         # Validate company type if provided
         if company_type is not None and not self._is_valid_company_type(company_type):
             errors['company_type'] = ['Invalid company type']
         
+        # Validate status if provided
+        if status is not None and not self._is_valid_company_status(status):
+            errors['status'] = ['Invalid company status']
+        
+        # Validate website if provided
+        if website is not None and not self._is_valid_website(website):
+            errors['website'] = ['Invalid website URL format']
+        
+        return errors
+    
+    def validate_contact_creation(self, name: str, title: str = None,
+                                direct_number: str = None, direct_email: str = None,
+                                notes: str = None) -> Dict[str, List[str]]:
+        """
+        Validate contact creation data.
+        
+        Args:
+            name: Contact name
+            title: Contact title
+            direct_number: Direct phone number
+            direct_email: Direct email address
+            notes: Additional notes
+            
+        Returns:
+            dict: Validation errors by field name
+        """
+        errors = {}
+        
+        # Validate required fields
+        if not name or not name.strip():
+            errors['name'] = ['Contact name is required']
+        elif len(name.strip()) > 255:
+            errors['name'] = ['Contact name must be 255 characters or less']
+        
+        # Validate email format if provided
+        if direct_email and not self._is_valid_email(direct_email):
+            errors['direct_email'] = ['Invalid email format']
+        
+        # Validate phone number format if provided
+        if direct_number and not self._is_valid_phone_number(direct_number):
+            errors['direct_number'] = ['Invalid phone number format']
+        
+        return errors
+    
+    def validate_contact_update(self, contact: Contact, name: str = None,
+                              title: str = None, direct_number: str = None,
+                              direct_email: str = None, notes: str = None) -> Dict[str, List[str]]:
+        """
+        Validate contact update data.
+        
+        Args:
+            contact: Existing contact object
+            name: New contact name
+            title: New contact title
+            direct_number: New direct phone number
+            direct_email: New direct email address
+            notes: New additional notes
+            
+        Returns:
+            dict: Validation errors by field name
+        """
+        errors = {}
+        
+        # Validate name if provided
+        if name is not None:
+            if not name.strip():
+                errors['name'] = ['Contact name is required']
+            elif len(name.strip()) > 255:
+                errors['name'] = ['Contact name must be 255 characters or less']
+        
+        # Validate email format if provided
+        if direct_email is not None and not self._is_valid_email(direct_email):
+            errors['direct_email'] = ['Invalid email format']
+        
+        # Validate phone number format if provided
+        if direct_number is not None and not self._is_valid_phone_number(direct_number):
+            errors['direct_number'] = ['Invalid phone number format']
+        
         return errors
     
     def validate_company_deletion(self, company: InvestmentCompany, session: Session) -> Dict[str, List[str]]:
         """
-        Validate company deletion.
+        Validate if a company can be deleted.
         
         Args:
-            company: InvestmentCompany object to delete
+            company: Company to validate for deletion
             session: Database session
             
         Returns:
@@ -128,13 +187,13 @@ class CompanyValidationService:
         errors = {}
         
         # Check if company has active funds
-        active_funds = [f for f in company.funds if f.status == 'ACTIVE']
+        active_funds = [fund for fund in company.funds if fund.status.value in ['ACTIVE', 'SUSPENDED']]
         if active_funds:
-            errors['company'] = [f"Cannot delete company with {len(active_funds)} active funds"]
+            errors['funds'] = [f'Cannot delete company with {len(active_funds)} active funds']
         
         # Check if company has contacts
         if company.contacts:
-            errors['company'] = [f"Cannot delete company with {len(company.contacts)} contacts"]
+            errors['contacts'] = [f'Cannot delete company with {len(company.contacts)} contacts']
         
         return errors
     
@@ -195,6 +254,7 @@ class CompanyValidationService:
             "validation": [
                 "Website URL must be valid format if provided",
                 "Company type must be from approved list if specified",
+                "Company status must be from approved list",
                 "All required fields must be provided"
             ]
         }
@@ -216,7 +276,7 @@ class CompanyValidationService:
     
     def _is_valid_company_type(self, company_type: str) -> bool:
         """
-        Validate company type.
+        Validate company type using CompanyType enum.
         
         Args:
             company_type: Company type to validate
@@ -224,16 +284,53 @@ class CompanyValidationService:
         Returns:
             bool: True if valid, False otherwise
         """
-        valid_types = [
-            "Private Equity",
-            "Venture Capital",
-            "Real Estate",
-            "Infrastructure",
-            "Credit",
-            "Hedge Fund",
-            "Family Office",
-            "Investment Bank",
-            "Asset Management",
-            "Other"
-        ]
-        return company_type in valid_types
+        try:
+            CompanyType(company_type)
+            return True
+        except ValueError:
+            return False
+    
+    def _is_valid_company_status(self, status: str) -> bool:
+        """
+        Validate company status using CompanyStatus enum.
+        
+        Args:
+            status: Company status to validate
+            
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        try:
+            CompanyStatus(status)
+            return True
+        except ValueError:
+            return False
+    
+    def _is_valid_email(self, email: str) -> bool:
+        """
+        Validate email format.
+        
+        Args:
+            email: Email address to validate
+            
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        import re
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return bool(re.match(pattern, email))
+    
+    def _is_valid_phone_number(self, phone: str) -> bool:
+        """
+        Validate phone number format.
+        
+        Args:
+            phone: Phone number to validate
+            
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        import re
+        # Basic phone validation - allows digits, spaces, dashes, parentheses, and plus
+        pattern = r'^[\+]?[0-9\s\-\(\)]{7,20}$'
+        return bool(re.match(pattern, phone))

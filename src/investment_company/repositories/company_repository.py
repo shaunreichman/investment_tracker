@@ -18,6 +18,7 @@ from sqlalchemy import and_, or_, func
 from src.investment_company.models import InvestmentCompany
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
+from src.investment_company.enums import CompanyStatus, CompanyType
 
 
 class CompanyRepository:
@@ -254,6 +255,58 @@ class CompanyRepository:
         
         return result
     
+    def get_companies_with_summary(self, session: Session) -> List[Dict[str, Any]]:
+        """
+        Get all companies with summary data including fund counts and totals.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            List of dictionaries containing company data with summary information
+        """
+        cache_key = "companies:with_summary"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Get all companies with their relationships
+        companies = session.query(InvestmentCompany).options(
+            session.query(InvestmentCompany).load_only(
+                InvestmentCompany.id, InvestmentCompany.name, InvestmentCompany.description,
+                InvestmentCompany.website, InvestmentCompany.company_type, InvestmentCompany.status,
+                InvestmentCompany.business_address, InvestmentCompany.created_at, InvestmentCompany.updated_at
+            )
+        ).all()
+        
+        result = []
+        for company in companies:
+            # Calculate summary data
+            total_funds = len(company.funds) if company.funds else 0
+            total_commitments = sum(fund.commitment_amount or 0.0 for fund in company.funds)
+            total_equity = sum(fund.current_equity_balance or 0.0 for fund in company.funds)
+            
+            result.append({
+                "id": company.id,
+                "name": company.name,
+                "description": company.description,
+                "website": company.website,
+                "company_type": company.company_type.value if company.company_type else None,
+                "status": company.status.value if company.status else None,
+                "business_address": company.business_address,
+                "fund_count": total_funds or 0,
+                "total_commitments": float(total_commitments) if total_commitments else 0.0,
+                "total_equity_balance": float(total_equity) if total_equity else 0.0,
+                "created_at": company.created_at.isoformat() if company.created_at else None,
+                "updated_at": company.updated_at.isoformat() if company.updated_at else None
+            })
+        
+        # Cache the result
+        self._cache[cache_key] = result
+        
+        return result
+    
     def get_companies_by_type(self, company_type: str, session: Session) -> List[InvestmentCompany]:
         """
         Get companies by company type.
@@ -273,6 +326,31 @@ class CompanyRepository:
         
         # Query database
         companies = session.query(InvestmentCompany).filter(InvestmentCompany.company_type == company_type).all()
+        
+        # Cache the result
+        self._cache[cache_key] = companies
+        
+        return companies
+    
+    def get_companies_by_status(self, status: str, session: Session) -> List[InvestmentCompany]:
+        """
+        Get companies by status.
+        
+        Args:
+            status: Status to filter by
+            session: Database session
+            
+        Returns:
+            List of companies matching the status
+        """
+        cache_key = f"companies:status:{status}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        companies = session.query(InvestmentCompany).filter(InvestmentCompany.status == status).all()
         
         # Cache the result
         self._cache[cache_key] = companies
