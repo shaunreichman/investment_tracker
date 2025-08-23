@@ -256,7 +256,7 @@ class AccountType(Enum):
         try:
             return cls(value)
         except ValueError:
-            raise ValueError(f"Invalid AccountType: {value}. Must be one of: {[t.value for t in t]}")
+            raise ValueError(f"Invalid AccountType: {value}. Must be one of: {[t.value for t in cls]}")
     
     @classmethod
     def earns_interest(cls, account_type: 'AccountType') -> bool:
@@ -335,6 +335,14 @@ class BankingDomainEventType(Enum):
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
         return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'BankingDomainEventType':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid BankingDomainEventType: {value}. Must be one of: {[t.value for t in cls]}")
 
 
 # Convenience functions for common enum operations
@@ -354,4 +362,4 @@ def validate_enum_value(enum_class: type, value: str) -> bool:
 
 def get_enum_display_name(enum_instance: Enum) -> str:
     """Get a human-readable display name for an enum value."""
-    return enum_instance.value.replace('_', ' ').title()
+    return enum_instance.value

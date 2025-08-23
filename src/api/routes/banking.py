@@ -1,14 +1,14 @@
 """
-Enhanced Banking API Routes.
+Banking API Routes.
 
 This module provides enterprise-grade REST API endpoints for banking operations,
 with standardized response formats, comprehensive error handling, and performance optimization.
 
-All endpoints use the enhanced banking controller with DTO responses.
+All endpoints use the banking controller with DTO responses.
 """
 
 from flask import Blueprint, jsonify, request
-from src.api.controllers.banking_controller import EnhancedBankingController
+from src.api.controllers.banking_controller import BankingController
 from src.api.database import get_db_session
 from src.api.middleware.validation import (
     validate_bank_data, 
@@ -19,8 +19,8 @@ from src.api.middleware.validation import (
 # Create blueprint for enhanced banking routes
 banking_bp = Blueprint('banking', __name__)
 
-# Initialize enhanced controller
-enhanced_controller = EnhancedBankingController()
+# Initialize banking controller
+banking_controller = BankingController()
 
 
 @banking_bp.route('/api/v2/banks', methods=['GET'])
@@ -42,7 +42,7 @@ def get_banks():
         
         session = get_db_session()
         try:
-            response, status_code = enhanced_controller.get_banks(session, page=page, page_size=page_size)
+            response, status_code = banking_controller.get_banks(session, page=page, page_size=page_size)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -84,7 +84,7 @@ def create_bank():
         try:
             # Use validated data from middleware
             validated_data = request.validated_data
-            response, status_code = enhanced_controller.create_bank(session, validated_data)
+            response, status_code = banking_controller.create_bank(session, validated_data)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -120,7 +120,7 @@ def update_bank(bank_id):
         try:
             # Use validated data from middleware
             validated_data = request.validated_data
-            response, status_code = enhanced_controller.update_bank(bank_id, session, validated_data)
+            response, status_code = banking_controller.update_bank(bank_id, session, validated_data)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -148,7 +148,7 @@ def delete_bank(bank_id):
     try:
         session = get_db_session()
         try:
-            response, status_code = enhanced_controller.delete_bank(bank_id, session)
+            response, status_code = banking_controller.delete_bank(bank_id, session)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -181,7 +181,7 @@ def get_bank_accounts():
         
         session = get_db_session()
         try:
-            response, status_code = enhanced_controller.get_bank_accounts(session, page=page, page_size=page_size)
+            response, status_code = banking_controller.get_bank_accounts(session, page=page, page_size=page_size)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -226,7 +226,7 @@ def create_bank_account():
         try:
             # Use validated data from middleware
             validated_data = getattr(request, 'validated_data', request.get_json() or {})
-            response, status_code = enhanced_controller.create_bank_account(session, validated_data)
+            response, status_code = banking_controller.create_bank_account(session, validated_data)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -265,7 +265,7 @@ def update_bank_account(account_id):
         try:
             # Use validated data from middleware
             validated_data = getattr(request, 'validated_data', request.get_json() or {})
-            response, status_code = enhanced_controller.update_bank_account(account_id, session, validated_data)
+            response, status_code = banking_controller.update_bank_account(account_id, session, validated_data)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -293,7 +293,7 @@ def delete_bank_account(account_id):
     try:
         session = get_db_session()
         try:
-            response, status_code = enhanced_controller.delete_bank_account(account_id, session)
+            response, status_code = banking_controller.delete_bank_account(account_id, session)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -321,7 +321,7 @@ def get_bank_account_balance(account_id):
     try:
         session = get_db_session()
         try:
-            response, status_code = enhanced_controller.get_bank_account_balance(account_id, session)
+            response, status_code = banking_controller.get_bank_account_balance(account_id, session)
             return jsonify(response.to_dict()), status_code
         finally:
             session.close()
@@ -357,7 +357,7 @@ def get_bank_account_transactions(account_id):
         
         session = get_db_session()
         try:
-            response, status_code = enhanced_controller.get_bank_account_transactions(
+            response, status_code = banking_controller.get_bank_account_transactions(
                 account_id, session, page=page, page_size=page_size
             )
             return jsonify(response.to_dict()), status_code

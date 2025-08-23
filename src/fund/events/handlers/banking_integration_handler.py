@@ -9,7 +9,7 @@ from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from src.fund.events.handlers.base_handler import BaseFundEventHandler
+from src.fund.events.base_handler import BaseFundEventHandler
 from src.fund.models.fund_event_cash_flow import FundEventCashFlow
 from src.banking.events.domain.base_event import BankingDomainEvent
 

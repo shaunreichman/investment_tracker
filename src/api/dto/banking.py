@@ -177,8 +177,8 @@ class BankingSuccessResponse:
 class BankingErrorResponse:
     """Standardized error response structure."""
     
-    success: bool = False
     error: BankingError
+    success: bool = False
     timestamp: Optional[datetime] = None
     
     def to_dict(self) -> Dict[str, Any]:

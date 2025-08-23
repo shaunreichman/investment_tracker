@@ -32,8 +32,8 @@ from src.api.dto.banking import (
 )
 
 
-class EnhancedBankingController:
-    """Enhanced controller for banking operations with enterprise-grade features."""
+class BankingController:
+    """Enterprise-grade controller for banking operations with comprehensive features."""
     
     def __init__(self):
         """Initialize the enhanced banking controller."""

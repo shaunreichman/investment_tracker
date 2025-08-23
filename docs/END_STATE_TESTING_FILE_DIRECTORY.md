@@ -37,10 +37,10 @@ tests/
 │   │   │   ├── __init__.py
 │   │   │   ├── test_entity_model.py     # Entity model validation
 │   │   │   └── test_entity_relationship_model.py # Entity relationships
-│   │   ├── banking/                     # Banking models
-│   │   │   ├── __init__.py
-│   │   │   ├── test_bank_model.py      # Bank model validation and business rules
-│   │   │   └── test_bank_account_model.py # Bank account validation and business rules
+│   │   ├── ✅ banking/                     # Banking models
+│   │   │   ├── ✅ __init__.py
+│   │   │   ├── ✅ test_bank_model.py      # Bank model validation and business rules
+│   │   │   └── ✅ test_bank_account_model.py # Bank account validation and business rules
 │   │   ├── tax/                         # Tax models
 │   │   │   ├── __init__.py
 │   │   │   ├── test_tax_statement_model.py # Tax statement validation
@@ -154,9 +154,9 @@ tests/
 │   │   ├── entity/                      # Entity enums
 │   │   │   ├── __init__.py
 │   │   │   └── test_entity_enums.py                  # Entity enum validation
-│   │   ├── banking/                     # Banking enums
-│   │   │   ├── __init__.py
-│   │   │   └── test_banking_enums.py                 # Banking enum validation
+│   │   ├── ✅ banking/                     # Banking enums
+│   │   │   ├── ✅ __init__.py
+│   │   │   └── ✅ test_banking_enums.py                 # Banking enum validation
 │   │   ├── tax/                         # Tax enums
 │   │   │   ├── __init__.py
 │   │   │   └── test_tax_enums.py                     # Tax enum validation
