@@ -58,9 +58,9 @@ tests/
 │   │   │   ├── test_company_portfolio_service.py        # Portfolio operations & fund coordination
 │   │   │   ├── test_company_summary_service.py          # Summary calculations & metrics
 │   │   │   ├── test_contact_management_service.py       # Contact operations & validation
-│   │   │   ├── test_company_validation_service.py       # Business rule validation
+│   │   │   ├── ✅ test_company_validation_service.py       # Business rule validation
 │   │   │   ├── test_company_status_transitions.py       # Status transition logic
-│   │   │   ├── test_company_service.py                  # Core company operations
+│   │   │   ├── ✅ test_company_service.py                  # Core company operations
 │   │   │   └── test_service_integration.py              # Service interaction testing
 │   │   ├── entity/                      # Entity services
 │   │   │   ├── __init__.py
