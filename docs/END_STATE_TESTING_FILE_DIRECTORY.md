@@ -183,8 +183,8 @@ tests/
 │   │   │   └── test_entity_investment_workflow.py    # Investment workflow
 │   │   ├── banking/                       # Banking workflows
 │   │   │   ├── __init__.py
-│   │   │   ├── test_account_setup_workflow.py        # Account creation workflow
-│   │   │   ├── test_transaction_workflow.py          # Transaction processing
+│   │   │   ├── ✅ test_account_setup_workflow.py        # Account creation workflow
+│   │   │   ├── ✅ test_transaction_workflow.py          # Transaction processing
 │   │   │   ├── test_banking_event_workflow.py        # Event processing workflow
 │   │   │   └── test_banking_cross_module_workflow.py # Cross-module integration workflow
 │   │   └── tax/                           # Tax workflows

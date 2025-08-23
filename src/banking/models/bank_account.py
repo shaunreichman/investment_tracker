@@ -32,6 +32,7 @@ class BankAccount(Base):
 
     __table_args__ = (
         UniqueConstraint("entity_id", "bank_id", "account_number", name="uq_bank_account_unique"),  # (SYSTEM) prevent duplicates for same owner/bank/number
+        UniqueConstraint("bank_id", "account_number", name="uq_bank_account_number_unique"),  # (SYSTEM) prevent duplicate account numbers across all entities at same bank
     )
 
     # Relationships

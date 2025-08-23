@@ -296,7 +296,7 @@ class BankAccountService:
         Returns:
             List[BankAccount]: List of bank accounts with the currency
         """
-        return self.bank_account_repository.get_by_currency(currency.upper(), session)
+        return self.bank_account_repository.get_by_currency(currency, session)
     
     def get_active_bank_accounts(self, session: Session) -> List[BankAccount]:
         """

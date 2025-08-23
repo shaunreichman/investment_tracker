@@ -133,7 +133,7 @@ class BankService:
             bank.name = data['name'].strip()
         
         if 'country' in data:
-            bank.country = data['country'].upper()
+            bank.country = data['country']  # Should already be a Country enum
         
         if 'swift_bic' in data:
             bank.swift_bic = data['swift_bic']
@@ -214,7 +214,7 @@ class BankService:
         """
         return session.query(Bank).filter(
             Bank.name == name.strip(),
-            Bank.country == country.upper()
+            Bank.country == country
         ).first()
     
     def get_all_banks(self, session: Session) -> List[Bank]:
@@ -240,7 +240,7 @@ class BankService:
         Returns:
             List[Bank]: List of banks in the country
         """
-        return self.bank_repository.get_by_country(country.upper(), session)
+        return self.bank_repository.get_by_country(country, session)
     
     # ============================================================================
     # DEPENDENCY CHECKING

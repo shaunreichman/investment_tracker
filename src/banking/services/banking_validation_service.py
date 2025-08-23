@@ -435,7 +435,7 @@ class BankingValidationService:
         Returns:
             True if unique, False if duplicate exists
         """
-        existing_bank = self.bank_repository.get_by_name_and_country(name.strip(), country.upper(), session)
+        existing_bank = self.bank_repository.get_by_name_and_country(name.strip(), country, session)
         
         if existing_bank is None:
             return True
@@ -475,7 +475,41 @@ class BankingValidationService:
         Returns:
             True if unique, False if duplicate exists
         """
+        # First check: No duplicate account numbers across all entities at the same bank
+        if not self.validate_bank_account_number_uniqueness(bank_id, account_number, session, exclude_id):
+            return False
+        
+        # Second check: No duplicate entity/bank/number combination
         existing_account = self.bank_account_repository.get_by_unique(entity_id, bank_id, account_number.strip(), session)
+        
+        if existing_account is None:
+            return True
+        
+        if exclude_id is not None and existing_account.id == exclude_id:
+            return True
+        
+        return False
+    
+    def validate_bank_account_number_uniqueness(self, bank_id: int, account_number: str, session: Session, exclude_id: Optional[int] = None) -> bool:
+        """
+        Validate that an account number is unique across all entities at the same bank.
+        
+        Args:
+            bank_id: Bank ID to check
+            account_number: Account number to check
+            session: Database session
+            exclude_id: Account ID to exclude from check (for updates)
+            
+        Returns:
+            True if unique, False if duplicate exists
+        """
+        # Query session directly to see accounts that might be in the session but not committed
+        existing_account = session.query(BankAccount).filter(
+            and_(
+                BankAccount.bank_id == bank_id,
+                BankAccount.account_number == account_number.strip()
+            )
+        ).first()
         
         if existing_account is None:
             return True
@@ -500,7 +534,7 @@ class BankingValidationService:
             ValueError: If bank account already exists for this entity/bank/account_number
         """
         if not self.validate_bank_account_uniqueness(entity_id, bank_id, account_number, session, exclude_id):
-            raise ValueError("Bank account already exists for this entity/bank/account_number")
+            raise ValueError("Bank account already exists for this entity/bank/account_number or account number already exists at this bank")
     
     # ============================================================================
     # ENTITY AND BANK EXISTENCE VALIDATION

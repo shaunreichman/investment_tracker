@@ -64,9 +64,8 @@ class BankAccountRepository:
         # Query database
         account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
         
-        # Cache the result
-        if account:
-            self._cache[cache_key] = account
+        # Cache the result (including None to prevent race conditions)
+        self._cache[cache_key] = account
         
         return account
     
@@ -98,9 +97,39 @@ class BankAccountRepository:
             )
         ).first()
         
-        # Cache the result
-        if account:
-            self._cache[cache_key] = account
+        # Cache the result (including None to prevent race conditions)
+        self._cache[cache_key] = account
+        
+        return account
+    
+    def get_by_bank_and_number(self, bank_id: int, account_number: str, session: Session) -> Optional[BankAccount]:
+        """
+        Get a bank account by bank ID and account number (across all entities).
+        
+        Args:
+            bank_id: Linked bank ID
+            account_number: Account number
+            session: Database session
+            
+        Returns:
+            BankAccount object if found, None otherwise
+        """
+        cache_key = f"bank_account:bank_number:{bank_id}:{account_number}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        account = session.query(BankAccount).filter(
+            and_(
+                BankAccount.bank_id == bank_id,
+                BankAccount.account_number == account_number
+            )
+        ).first()
+        
+        # Cache the result (including None to prevent race conditions)
+        self._cache[cache_key] = account
         
         return account
     
@@ -581,6 +610,36 @@ class BankAccountRepository:
         keys_to_remove = [key for key in self._cache.keys() if key.startswith('bank_account')]
         for key in keys_to_remove:
             del self._cache[key]
+    
+    def clear_uniqueness_cache(self, entity_id: int, bank_id: int, account_number: str) -> None:
+        """Clear cache for specific uniqueness check to prevent race conditions."""
+        cache_key = f"bank_account:unique:{entity_id}:{bank_id}:{account_number}"
+        if cache_key in self._cache:
+            del self._cache[cache_key]
+    
+    def check_uniqueness_direct(self, entity_id: int, bank_id: int, account_number: str, session: Session) -> bool:
+        """
+        Check uniqueness directly in database without caching.
+        
+        Args:
+            entity_id: Owner entity ID
+            bank_id: Linked bank ID
+            account_number: Account number
+            session: Database session
+            
+        Returns:
+            True if unique, False if duplicate exists
+        """
+        # Direct database query to check uniqueness
+        existing = session.query(BankAccount).filter(
+            and_(
+                BankAccount.entity_id == entity_id,
+                BankAccount.bank_id == bank_id,
+                BankAccount.account_number == account_number
+            )
+        ).first()
+        
+        return existing is None
     
     def clear_cache(self) -> None:
         """Clear all caches."""
