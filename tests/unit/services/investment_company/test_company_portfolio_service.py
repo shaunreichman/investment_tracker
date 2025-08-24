@@ -461,11 +461,16 @@ class TestCompanyPortfolioService:
         mock_fund_service = Mock()
         mock_fund_service.update_fund.return_value = PortfolioTestDataBuilder.create_fund(id=1, name='Updated Fund')
         
-        # Mock event publishing
+        # Mock event publishing and _get_fund_by_id method
         with patch('src.fund.services.fund_service.FundService') as mock_fund_service_class, \
-             patch.object(self.portfolio_service, '_publish_portfolio_updated_event') as mock_publish:
+             patch.object(self.portfolio_service, '_publish_portfolio_updated_event') as mock_publish, \
+             patch.object(self.portfolio_service, '_get_fund_by_id') as mock_get_fund:
             
             mock_fund_service_class.return_value = mock_fund_service
+            
+            # Mock _get_fund_by_id to return the expected fund
+            expected_fund = PortfolioTestDataBuilder.create_fund(id=1, name='Updated Fund')
+            mock_get_fund.return_value = expected_fund
             
             # Act
             result = self.portfolio_service.update_fund_in_portfolio(company, 1, fund_data, self.mock_session)
@@ -473,7 +478,7 @@ class TestCompanyPortfolioService:
             # Assert
             assert result.name == 'Updated Fund'
             mock_fund_service.update_fund.assert_called_once_with(1, fund_data, self.mock_session)
-            mock_publish.assert_called_once_with(company, mock_fund_service.update_fund.return_value, 'updated', self.mock_session)
+            mock_publish.assert_called_once_with(company, expected_fund, 'updated', self.mock_session)
     
     def test_update_fund_in_portfolio_fund_not_found(self):
         """Test fund update fails when fund is not in portfolio."""

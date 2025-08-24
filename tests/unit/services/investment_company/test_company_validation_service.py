@@ -512,7 +512,7 @@ class TestCompanyDeletionValidation(TestCompanyValidationService):
         assert 'Cannot delete company with 1 active funds' in errors['funds']
     
     def test_validate_company_deletion_with_contacts(self):
-        """Test company deletion validation fails with contacts."""
+        """Test company deletion validation succeeds with contacts (contacts are automatically deleted)."""
         # Arrange
         mock_company = ValidationTestDataBuilder.create_company()
         mock_contact = ValidationTestDataBuilder.create_contact()
@@ -525,11 +525,12 @@ class TestCompanyDeletionValidation(TestCompanyValidationService):
         )
         
         # Assert
-        assert 'contacts' in errors
-        assert 'Cannot delete company with 1 contacts' in errors['contacts']
+        # Contacts are automatically deleted with the company, so no validation error
+        assert 'contacts' not in errors
+        assert errors == {}  # No validation errors
     
     def test_validate_company_deletion_with_multiple_funds_and_contacts(self):
-        """Test company deletion validation fails with multiple funds and contacts."""
+        """Test company deletion validation fails only with active funds (contacts are automatically deleted)."""
         # Arrange
         mock_company = ValidationTestDataBuilder.create_company()
         
@@ -550,10 +551,11 @@ class TestCompanyDeletionValidation(TestCompanyValidationService):
         )
         
         # Assert
+        # Only active funds prevent deletion
         assert 'funds' in errors
         assert 'Cannot delete company with 2 active funds' in errors['funds']
-        assert 'contacts' in errors
-        assert 'Cannot delete company with 3 contacts' in errors['contacts']
+        # Contacts are automatically deleted with the company, so no validation error
+        assert 'contacts' not in errors
 
 
 class TestDataIntegrityValidation(TestCompanyValidationService):
@@ -673,7 +675,8 @@ class TestBusinessRules(TestCompanyValidationService):
         # Verify deletion rules
         deletion_rules = rules['deletion']
         assert 'Company cannot be deleted if it has active funds' in deletion_rules
-        assert 'Company cannot be deleted if it has contacts' in deletion_rules
+        assert 'Company cannot be deleted if it has suspended funds' in deletion_rules
+        assert 'Contacts are automatically deleted with the company' in deletion_rules
         assert 'Deletion is permanent and cannot be undone' in deletion_rules
         
         # Verify validation rules

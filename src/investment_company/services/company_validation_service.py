@@ -175,7 +175,7 @@ class CompanyValidationService:
     
     def validate_company_deletion(self, company: InvestmentCompany, session: Session) -> Dict[str, List[str]]:
         """
-        Validate if a company can be deleted.
+        Validate that the company can be deleted.
         
         Args:
             company: Company to validate for deletion
@@ -186,14 +186,11 @@ class CompanyValidationService:
         """
         errors = {}
         
-        # Check if company has active funds
+        # Check if company has active funds (business constraint)
         active_funds = [fund for fund in company.funds if fund.status.value in ['ACTIVE', 'SUSPENDED']]
         if active_funds:
             errors['funds'] = [f'Cannot delete company with {len(active_funds)} active funds']
         
-        # Check if company has contacts
-        if company.contacts:
-            errors['contacts'] = [f'Cannot delete company with {len(company.contacts)} contacts']
         
         return errors
     
@@ -248,7 +245,8 @@ class CompanyValidationService:
             ],
             "deletion": [
                 "Company cannot be deleted if it has active funds",
-                "Company cannot be deleted if it has contacts",
+                "Company cannot be deleted if it has suspended funds",
+                "Contacts are automatically deleted with the company",
                 "Deletion is permanent and cannot be undone"
             ],
             "validation": [
