@@ -259,7 +259,7 @@ class TestContactUpdatedEvent:
         self.company_id = 1
         self.event_date = date(2024, 1, 15)
         self.contact_id = 100
-        self.previous_values = {'email': 'old@test.com', 'phone': '123-456-7890'}
+        self.new_values = {'email': 'new@test.com', 'phone': '098-765-4321'}
         self.updated_fields = ['email', 'phone']
         self.metadata = {'source': 'test'}
 
@@ -269,14 +269,14 @@ class TestContactUpdatedEvent:
             self.company_id,
             self.contact_id,
             self.event_date,
-            self.previous_values,
-            self.updated_fields
+            self.updated_fields,
+            self.new_values
         )
         
         assert event.company_id == 1
         assert event.event_date == date(2024, 1, 15)
         assert event.contact_id == 100
-        assert event.previous_values == {'email': 'old@test.com', 'phone': '123-456-7890'}
+        assert event.new_values == {'email': 'new@test.com', 'phone': '098-765-4321'}
         assert event.updated_fields == ['email', 'phone']
         assert event.audit_trail['contact_id'] == 100
         assert event.audit_trail['updated_fields'] == ['email', 'phone']
@@ -287,8 +287,8 @@ class TestContactUpdatedEvent:
             self.company_id,
             self.contact_id,
             self.event_date,
-            self.previous_values,
-            self.updated_fields
+            self.updated_fields,
+            self.new_values
         )
         
         assert event.event_type == CompanyDomainEventType.CONTACT_UPDATED
