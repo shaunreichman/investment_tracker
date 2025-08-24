@@ -147,7 +147,9 @@ class TestBankAccountRepository:
         result = bank_account_repository.get_by_id(999, mock_session)
         
         assert result is None
-        assert 'bank_account:999' not in bank_account_repository._cache
+        # Repository caches None values to prevent race conditions
+        assert 'bank_account:999' in bank_account_repository._cache
+        assert bank_account_repository._cache['bank_account:999'] is None
     
     def test_get_by_unique_cache_hit(self, bank_account_repository, mock_session, sample_bank_account):
         """Test get_by_unique returns cached account when available."""
