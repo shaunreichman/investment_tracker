@@ -4,21 +4,21 @@ import os
 
 # Import Base using absolute import
 try:
-    from shared.base import Base
+    from src.shared.base import Base
 except ImportError:
     # Fallback for when running as script
     import sys
     sys.path.append(os.path.join(os.path.dirname(__file__)))
-    from shared.base import Base
+    from src.shared.base import Base
 
 # Import configuration
 try:
-    from config import get_database_url
+    from src.config import get_database_url
 except ImportError:
     # Fallback for when running as script
     import sys
     sys.path.append(os.path.join(os.path.dirname(__file__)))
-    from config import get_database_url
+    from src.config import get_database_url
 
 
 def create_database_engine(database_url=None):

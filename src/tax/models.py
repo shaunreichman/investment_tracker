@@ -1,18 +1,18 @@
 """
-Tax domain models.
+Tax Models.
 
-This module contains the core tax models including TaxStatement.
+This module provides the tax-related model classes,
+representing tax statements and tax calculations in the system.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Date, Boolean, Enum, UniqueConstraint
+from typing import Optional, List
+from datetime import date, datetime, timezone
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index, UniqueConstraint
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.elements import ColumnElement
-from datetime import datetime, date, timezone
-import enum
 
-# Import the Base from shared
-from ..shared.base import Base
-from ..shared.utils import with_session, with_class_session
+from src.shared.base import Base
+from src.shared.utils import with_session, with_class_session
+from src.tax.calculations import get_financial_year_dates
 from src.fund.models import Fund
 
 
@@ -95,6 +95,9 @@ class TaxStatement(Base):
     # Composite unique constraint to ensure one statement per fund/entity/financial year
     __table_args__ = (
         UniqueConstraint('fund_id', 'entity_id', 'financial_year', name='unique_tax_statement'),
+        # Performance indexes for common queries
+        Index('idx_tax_statements_fund_financial_year', 'fund_id', 'financial_year'),
+        Index('idx_tax_statements_entity_financial_year', 'entity_id', 'financial_year'),
     )
     
     def __repr__(self):
@@ -138,7 +141,7 @@ class TaxStatement(Base):
         """Get the start and end dates for this financial year based on entity jurisdiction.
         Returns a tuple: (start_date, end_date).
         """
-        from ..shared.calculations import get_financial_year_dates
+        from src.tax.calculations import get_financial_year_dates
         from sqlalchemy.orm import object_session
         from src.entity.models import Entity
         session = object_session(self)
@@ -296,7 +299,7 @@ class TaxStatement(Base):
         Includes all unit purchases up to the end of the current FY, but only counts sales within the current FY.
         """
         from src.fund.models import FundEvent, EventType
-        from src.fund.calculations import calculate_nav_based_capital_gains
+        from src.fund.services.fund_calculation_service import FundCalculationService
         
         # Get all unit purchase events up to the end of the current FY
         purchases = session.query(FundEvent).filter(
@@ -313,8 +316,9 @@ class TaxStatement(Base):
         ).order_by(FundEvent.event_date).all()
         # Merge and sort all events for FIFO processing
         events = sorted(purchases + sales, key=lambda e: e.event_date)
-        # Calculate capital gains using the existing FIFO function
-        capital_gains = calculate_nav_based_capital_gains(events)
+        # Calculate capital gains using the migrated utility function
+        calculation_service = FundCalculationService()
+        capital_gains = calculation_service._calculate_nav_based_capital_gains_utility(events)
         # Update fields if not manually set
         if self.capital_gain_income_amount is None or self.capital_gain_income_amount == 0.0:
             self.capital_gain_income_amount = capital_gains
