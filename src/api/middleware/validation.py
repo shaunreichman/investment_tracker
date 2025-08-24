@@ -53,6 +53,7 @@ class RequestValidator:
         'date': r'^\d{4}-\d{2}-\d{2}$',
         'routing_number': r'^\d{9}$',
         'currency': r'^[A-Z]{3}$',
+        'country_code': r'^[A-Z]{2}$',  # 2-letter ISO country code
         'postal_code': r'^\d{5}(-\d{4})?$',
         'ssn': r'^\d{3}-\d{2}-\d{4}$',
         'financial_year': r'^\d{4}-\d{2}$'  # e.g., "2023-24"
@@ -359,7 +360,7 @@ def validate_bank_data(func: Callable) -> Callable:
     """Validate bank creation/update data."""
     return validate_request(
         required_fields=['name', 'country'],
-        field_patterns={'country': 'currency'},  # Use 2-letter country code pattern
+        field_patterns={'country': 'country_code'},  # Use 2-letter country code pattern
         sanitize=True
     )(func)
 
