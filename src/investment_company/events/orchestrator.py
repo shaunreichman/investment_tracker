@@ -324,7 +324,7 @@ class CompanyUpdateOrchestrator:
         company = self._get_company(company_id, session)
         
         # Validate company can be deleted
-        self.validation_service.validate_company_deletion(company)
+        self.validation_service.validate_company_deletion(company, session)
         
         # Delete company through service
         self._delete_company_through_service(company, session)

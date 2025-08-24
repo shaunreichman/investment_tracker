@@ -244,6 +244,24 @@ class CompanySummaryService:
             for contact in company.contacts
         ]
     
+    def get_company_summary(self, company: InvestmentCompany, session: Session) -> Dict[str, Any]:
+        """
+        Get comprehensive company summary.
+        
+        Args:
+            company: InvestmentCompany object
+            session: Database session
+            
+        Returns:
+            dict: Company summary data
+        """
+        return {
+            'total_funds': len(company.funds),
+            'total_commitments': sum(f.commitment_amount for f in company.funds if hasattr(f, 'commitment_amount')),
+            'contact_count': len(company.contacts),
+            'last_activity': self._get_last_activity_info(company, session)
+        }
+    
     def update_company_summary(self, company: InvestmentCompany, session: Session) -> None:
         """
         Update company summary fields.
@@ -253,7 +271,7 @@ class CompanySummaryService:
         
         Args:
             company: InvestmentCompany object
-            session: Database session
+            session: Session
         """
         try:
             # Recalculate summary data

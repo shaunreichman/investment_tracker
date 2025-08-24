@@ -158,21 +158,8 @@ class ContactAddedHandler(BaseCompanyEventHandler):
         """
         # Track which services succeeded/failed for monitoring
         results = {
-            'contact_count': {'status': 'pending', 'error': None},
             'company_summary': {'status': 'pending', 'error': None}
         }
-        
-        # Trigger contact count updates with individual fault isolation
-        try:
-            self.contact_service.update_contact_count(self.company.id, self.session)
-            results['contact_count']['status'] = 'success'
-            self.logger.info(f"Contact count updates triggered for company {self.company.id}")
-        except Exception as error:
-            results['contact_count']['status'] = 'failed'
-            results['contact_count']['error'] = str(error)
-            self.logger.warning(
-                f"Contact count updates failed for company {self.company.id}: {error}"
-            )
         
         # Trigger company summary updates with individual fault isolation
         try:
