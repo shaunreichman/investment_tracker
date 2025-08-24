@@ -437,7 +437,10 @@ class Fund(Base):
     def add_capital_call(self, amount: float, call_date: date, description: str, 
                         reference_number: str = None, session=None) -> 'FundEvent':
         """
-        Add a capital call event using the event-driven architecture.
+        Add a capital call event using the service layer.
+        
+        Note: This method delegates to the fund service for proper orchestration.
+        For direct control, use FundService.add_capital_call() instead.
         
         Args:
             amount: Capital call amount (must be positive)
@@ -476,24 +479,18 @@ class Fund(Base):
         if existing_event:
             return existing_event
         
-        # Route to new architecture through orchestrator
-        from src.fund.events.orchestrator import FundUpdateOrchestrator
-        
-        event_data = {
-            'event_type': EventType.CAPITAL_CALL,
-            'amount': amount,
-            'event_date': call_date,
-            'description': description or f"Capital call: ${amount:,.2f}",
-            'reference_number': reference_number
-        }
-        
-        orchestrator = FundUpdateOrchestrator()
-        return orchestrator.process_fund_event(event_data, session, self)
+        # Delegate to service layer for proper orchestration
+        from src.fund.services.fund_service import FundService
+        fund_service = FundService()
+        return fund_service.add_capital_call(self.id, amount, call_date, description, reference_number, session)
     
     def add_return_of_capital(self, amount: float, return_date: date, description: str,
                              reference_number: str = None, session=None) -> 'FundEvent':
         """
-        Add a return of capital event using the event-driven architecture.
+        Add a return of capital event using the service layer.
+        
+        Note: This method delegates to the fund service for proper orchestration.
+        For direct control, use FundService.add_return_of_capital() instead.
         
         Args:
             amount: Return amount (must be positive)
@@ -516,19 +513,10 @@ class Fund(Base):
         if not return_date:
             raise ValueError("Date is required")
         
-        # Route to new architecture through orchestrator
-        from src.fund.events.orchestrator import FundUpdateOrchestrator
-        
-        event_data = {
-            'event_type': EventType.RETURN_OF_CAPITAL,
-            'amount': amount,
-            'event_date': return_date,
-            'description': description or f"Return of capital: ${amount:,.2f}",
-            'reference_number': reference_number
-        }
-        
-        orchestrator = FundUpdateOrchestrator()
-        return orchestrator.process_fund_event(event_data, session, self)
+        # Delegate to service layer for proper orchestration
+        from src.fund.services.fund_service import FundService
+        fund_service = FundService()
+        return fund_service.add_return_of_capital(self.id, amount, return_date, description, reference_number, session)
     
     def add_distribution(self, event_date: date, distribution_type: 'DistributionType',
                         distribution_amount: float = None, has_withholding_tax: bool = False,
@@ -537,7 +525,10 @@ class Fund(Base):
                         description: str = None, reference_number: str = None,
                         session=None) -> Union['FundEvent', tuple['FundEvent', Optional['FundEvent']]]:
         """
-        Add a distribution event using the event-driven architecture.
+        Add a distribution event using the service layer.
+        
+        Note: This method delegates to the fund service for proper orchestration.
+        For direct control, use FundService.add_distribution() instead.
         
         Args:
             event_date: Distribution date
@@ -555,30 +546,29 @@ class Fund(Base):
         Returns:
             FundEvent or tuple: Distribution event, or (distribution_event, tax_event) for withholding tax
         """
-        # Route to new architecture through orchestrator
-        from src.fund.events.orchestrator import FundUpdateOrchestrator
-        
-        event_data = {
-            'event_type': EventType.DISTRIBUTION,
-            'event_date': event_date,
-            'distribution_type': distribution_type,
-            'distribution_amount': distribution_amount,
-            'has_withholding_tax': has_withholding_tax,
-            'gross_interest_amount': gross_interest_amount,
-            'net_interest_amount': net_interest_amount,
-            'withholding_tax_amount': withholding_tax_amount,
-            'withholding_tax_rate': withholding_tax_rate,
-            'description': description,
-            'reference_number': reference_number
-        }
-        
-        orchestrator = FundUpdateOrchestrator()
-        return orchestrator.process_fund_event(event_data, session, self)
+        # Delegate to service layer for proper orchestration
+        from src.fund.services.fund_service import FundService
+        fund_service = FundService()
+        return fund_service.add_distribution(
+            self.id, event_date, distribution_type,
+            distribution_amount=distribution_amount,
+            has_withholding_tax=has_withholding_tax,
+            gross_interest_amount=gross_interest_amount,
+            net_interest_amount=net_interest_amount,
+            withholding_tax_amount=withholding_tax_amount,
+            withholding_tax_rate=withholding_tax_rate,
+            description=description,
+            reference_number=reference_number,
+            session=session
+        )
     
     def add_nav_update(self, nav_per_share: float, update_date: date, description: str = None,
                        reference_number: str = None, session=None) -> 'FundEvent':
         """
-        Add an NAV update event using the event-driven architecture.
+        Add an NAV update event using the service layer.
+        
+        Note: This method delegates to the fund service for proper orchestration.
+        For direct control, use FundService.add_nav_update() instead.
         
         Args:
             nav_per_share: NAV per share value
@@ -598,25 +588,19 @@ class Fund(Base):
         if not update_date:
             raise ValueError("Date is required")
         
-        # Route to new architecture through orchestrator
-        from src.fund.events.orchestrator import FundUpdateOrchestrator
-        
-        event_data = {
-            'event_type': EventType.NAV_UPDATE,
-            'nav_per_share': nav_per_share,
-            'event_date': update_date,
-            'description': description or f"NAV update: ${nav_per_share:.4f}",
-            'reference_number': reference_number
-        }
-        
-        orchestrator = FundUpdateOrchestrator()
-        return orchestrator.process_fund_event(event_data, session, self)
+        # Delegate to service layer for proper orchestration
+        from src.fund.services.fund_service import FundService
+        fund_service = FundService()
+        return fund_service.add_nav_update(self.id, nav_per_share, update_date, description, reference_number, session)
     
     def add_unit_purchase(self, units: float, price: float, date: date,
                           description: str = None, reference_number: str = None,
                           session=None) -> 'FundEvent':
         """
-        Add a unit purchase event using the event-driven architecture.
+        Add a unit purchase event using the service layer.
+        
+        Note: This method delegates to the fund service for proper orchestration.
+        For direct control, use FundService.add_unit_purchase() instead.
         
         Args:
             units: Number of units purchased
@@ -639,26 +623,19 @@ class Fund(Base):
         if not date:
             raise ValueError("Date is required")
         
-        # Route to new architecture through orchestrator
-        from src.fund.events.orchestrator import FundUpdateOrchestrator
-        
-        event_data = {
-            'event_type': EventType.UNIT_PURCHASE,
-            'units_purchased': units,
-            'unit_price': price,
-            'event_date': date,
-            'description': description or f"Unit purchase: {units:.4f} units @ ${price:.4f}",
-            'reference_number': reference_number
-        }
-        
-        orchestrator = FundUpdateOrchestrator()
-        return orchestrator.process_fund_event(event_data, session, self)
+        # Delegate to service layer for proper orchestration
+        from src.fund.services.fund_service import FundService
+        fund_service = FundService()
+        return fund_service.add_unit_purchase(self.id, units, price, date, description, reference_number, session)
     
     def add_unit_sale(self, units: float, price: float, date: date,
                       description: str = None, reference_number: str = None,
                       session=None) -> 'FundEvent':
         """
-        Add a unit sale event using the event-driven architecture.
+        Add a unit sale event using the service layer.
+        
+        Note: This method delegates to the service layer for proper orchestration.
+        For direct control, use FundService.add_unit_sale() instead.
         
         Args:
             units: Number of units sold
@@ -681,20 +658,10 @@ class Fund(Base):
         if not date:
             raise ValueError("Date is required")
         
-        # Route to new architecture through orchestrator
-        from src.fund.events.orchestrator import FundUpdateOrchestrator
-        
-        event_data = {
-            'event_type': EventType.UNIT_SALE,
-            'units_sold': units,
-            'unit_price': price,
-            'event_date': date,
-            'description': description or f"Unit sale: {units:.4f} units @ ${price:.4f}",
-            'reference_number': reference_number
-        }
-        
-        orchestrator = FundUpdateOrchestrator()
-        return orchestrator.process_fund_event(event_data, session, self)
+        # Delegate to service layer for proper orchestration
+        from src.fund.services.fund_service import FundService
+        fund_service = FundService()
+        return fund_service.add_unit_sale(self.id, units, price, date, description, reference_number, session)
     
     # ============================================================================
     # CORE BUSINESS PROPERTIES - Intrinsic Fund Properties
@@ -990,7 +957,10 @@ class Fund(Base):
         return min(event_dates) if event_dates else None
     
     def get_end_date(self, session=None) -> Optional[date]:
-        """Get fund end date (last event date after equity balance reaches zero).
+        """Get fund end date using service layer.
+        
+        Note: This method delegates to the fund service for proper orchestration.
+        For direct control, use FundService.get_fund_end_date() instead.
         
         Args:
             session: Database session
@@ -1005,9 +975,9 @@ class Fund(Base):
         if self.status not in [FundStatus.COMPLETED, FundStatus.REALIZED]:
             return None
         
-        # Use the status service for consistent end date calculation
-        from src.fund.services.fund_status_service import FundStatusService
-        status_service = FundStatusService()
-        return status_service.calculate_end_date(self, session)
+        # Delegate to service layer for proper orchestration
+        from src.fund.services.fund_service import FundService
+        fund_service = FundService()
+        return fund_service.get_fund_end_date(self.id, session)
     
 
