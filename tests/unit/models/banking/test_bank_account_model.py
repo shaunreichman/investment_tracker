@@ -31,7 +31,7 @@ class TestBankAccountModel:
             'account_name': 'Test Account',
             'account_number': '1234-5678-9012-3456',
             'currency': Currency.AUD,
-            'is_active': AccountStatus.ACTIVE
+            'status': AccountStatus.ACTIVE
         }
     
     def test_bank_account_creation(self, bank_account_data):
@@ -43,7 +43,7 @@ class TestBankAccountModel:
         assert account.account_name == 'Test Account'
         assert account.account_number == '1234-5678-9012-3456'
         assert account.currency == Currency.AUD
-        assert account.is_active == AccountStatus.ACTIVE
+        assert account.status == AccountStatus.ACTIVE
         assert account.id is None  # Will be None until database insert
         assert account.created_at is None  # SQLAlchemy defaults only set on insert
         assert account.updated_at is None
@@ -90,20 +90,20 @@ class TestBankAccountModel:
     
     def test_bank_account_optional_fields(self, bank_account_data):
         """Test bank account optional field handling."""
-        # is_active has a default value
+        # status has a default value
         bank_account_data_no_status = bank_account_data.copy()
-        del bank_account_data_no_status['is_active']
+        del bank_account_data_no_status['status']
         
         account = BankAccount(**bank_account_data_no_status)
         # Note: SQLAlchemy defaults are only applied on database insert
-        assert account.is_active is None
+        assert account.status is None
         
         # Test explicit None values
         bank_account_data_none_status = bank_account_data.copy()
-        bank_account_data_none_status['is_active'] = None
+        bank_account_data_none_status['status'] = None
         
         account = BankAccount(**bank_account_data_none_status)
-        assert account.is_active is None
+        assert account.status is None
     
     def test_bank_account_enum_validation(self, bank_account_data):
         """Test bank account enum field validation."""
@@ -113,26 +113,26 @@ class TestBankAccountModel:
         assert account.currency == Currency.AUD
         
         # Test valid status enum
-        assert isinstance(account.is_active, AccountStatus)
-        assert account.is_active == AccountStatus.ACTIVE
+        assert isinstance(account.status, AccountStatus)
+        assert account.status == AccountStatus.ACTIVE
         
         # Test string enum conversion
         bank_account_data_str = bank_account_data.copy()
         bank_account_data_str['currency'] = 'USD'
-        bank_account_data_str['is_active'] = 'SUSPENDED'
+        bank_account_data_str['status'] = 'SUSPENDED'
         
         account = BankAccount(**bank_account_data_str)
         assert account.currency == 'USD'  # SQLAlchemy will handle enum conversion
-        assert account.is_active == 'SUSPENDED'
+        assert account.status == 'SUSPENDED'
         
         # Test invalid enum values (will be caught at database level)
         bank_account_data_invalid = bank_account_data.copy()
         bank_account_data_invalid['currency'] = 'INVALID'
-        bank_account_data_invalid['is_active'] = 'INVALID'
+        bank_account_data_invalid['status'] = 'INVALID'
         
         account = BankAccount(**bank_account_data_invalid)
         assert account.currency == 'INVALID'
-        assert account.is_active == 'INVALID'
+        assert account.status == 'INVALID'
     
     def test_bank_account_relationships(self, bank_account_data):
         """Test bank account relationship setup."""
@@ -207,10 +207,10 @@ class TestBankAccountModel:
         
         for status in supported_statuses:
             bank_account_data_copy = bank_account_data.copy()
-            bank_account_data_copy['is_active'] = status
+            bank_account_data_copy['status'] = status
             
             account = BankAccount(**bank_account_data_copy)
-            assert account.is_active == status
+            assert account.status == status
     
     def test_bank_account_name_validation(self, bank_account_data):
         """Test bank account name validation."""
@@ -296,7 +296,7 @@ class TestBankAccountModel:
                 account_name='Test Account',
                 account_number='1234-5678-9012-3456',
                 currency='AUD',
-                is_active=True,
+                status=AccountStatus.ACTIVE,
                 session=None
             )
             
@@ -308,7 +308,7 @@ class TestBankAccountModel:
                 account_name='Test Account',
                 account_number='1234-5678-9012-3456',
                 currency='AUD',
-                is_active=True,
+                status=AccountStatus.ACTIVE,
                 session=None
             )
             
@@ -331,7 +331,7 @@ class TestBankAccountModel:
                 account_name='Test Account',
                 account_number='1234-5678-9012-3456',
                 currency=Currency.USD,
-                is_active=AccountStatus.SUSPENDED,
+                status=AccountStatus.SUSPENDED,
                 session=None
             )
             
@@ -342,14 +342,14 @@ class TestBankAccountModel:
                 account_name='Test Account',
                 account_number='1234-5678-9012-3456',
                 currency=Currency.USD,
-                is_active=AccountStatus.SUSPENDED,
+                status=AccountStatus.SUSPENDED,
                 session=None
             )
             
             assert result == mock_account
     
     def test_bank_account_domain_method_create_with_boolean_status(self, bank_account_data):
-        """Test bank account domain create method with boolean status."""
+        """Test bank account domain create method with boolean status conversion."""
         with patch('src.banking.services.bank_account_service.BankAccountService') as mock_service:
             mock_service_instance = Mock()
             mock_service.return_value = mock_service_instance
@@ -357,14 +357,14 @@ class TestBankAccountModel:
             mock_account = BankAccount(**bank_account_data)
             mock_service_instance.create_bank_account.return_value = mock_account
             
-            # Test create method with boolean status
+            # Test create method with boolean status (should be converted to enum)
             result = BankAccount.create(
                 entity_id=1,
                 bank_id=100,
                 account_name='Test Account',
                 account_number='1234-5678-9012-3456',
                 currency='AUD',
-                is_active=False,  # Boolean value
+                status=False,  # Boolean value that should be converted to enum
                 session=None
             )
             
@@ -375,7 +375,7 @@ class TestBankAccountModel:
                 account_name='Test Account',
                 account_number='1234-5678-9012-3456',
                 currency='AUD',
-                is_active=False,
+                status=False,
                 session=None
             )
             
@@ -393,7 +393,7 @@ class TestBankAccountModel:
         assert hasattr(BankAccount, 'account_name')
         assert hasattr(BankAccount, 'account_number')
         assert hasattr(BankAccount, 'currency')
-        assert hasattr(BankAccount, 'is_active')
+        assert hasattr(BankAccount, 'status')
         assert hasattr(BankAccount, 'created_at')
         assert hasattr(BankAccount, 'updated_at')
         
@@ -404,7 +404,7 @@ class TestBankAccountModel:
         assert BankAccount.account_name.nullable is False
         assert BankAccount.account_number.nullable is False
         assert BankAccount.currency.nullable is False
-        assert BankAccount.is_active.nullable is False
+        assert BankAccount.status.nullable is False
         assert BankAccount.created_at.nullable is True
         assert BankAccount.updated_at.nullable is True
     

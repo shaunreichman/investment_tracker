@@ -28,10 +28,13 @@ def create_test_database_name() -> str:
 def create_postgresql_test_engine(database_name: str):
     """Create a PostgreSQL engine for testing with the specified database."""
     # Use the same connection parameters as the main database but with test database name
-    from database_config import POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD
+    from src.config import get_postgres_config
+    
+    # Get database configuration
+    db_config = get_postgres_config()
     
     # Connect to default postgres database first to create test database
-    default_url = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/postgres"
+    default_url = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/postgres"
     default_engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
     
     try:
@@ -45,16 +48,19 @@ def create_postgresql_test_engine(database_name: str):
         default_engine.dispose()
     
     # Create engine for the test database
-    test_url = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{database_name}"
+    test_url = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{database_name}"
     return create_engine(test_url, echo=False)
 
 
 def drop_test_database(database_name: str):
     """Drop the test database."""
-    from database_config import POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD
+    from src.config import get_postgres_config
+    
+    # Get database configuration
+    db_config = get_postgres_config()
     
     # Connect to default postgres database to drop test database
-    default_url = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/postgres"
+    default_url = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/postgres"
     default_engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
     
     try:
