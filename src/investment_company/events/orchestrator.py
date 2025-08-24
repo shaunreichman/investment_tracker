@@ -233,16 +233,13 @@ class CompanyUpdateOrchestrator:
         # Validate portfolio data
         self.validation_service.validate_portfolio_data(portfolio_data)
         
-        # Update portfolio through service
-        updated_company = self._update_portfolio_through_service(company, portfolio_data, session)
-        
-        # Process portfolio update event
+        # Process portfolio update event (this handles the actual portfolio logic)
         self._process_portfolio_updated_event(company, portfolio_data, session)
         
         # Trigger dependent updates
         self._trigger_portfolio_update_updates(company, portfolio_data, session)
         
-        return updated_company
+        return company
 
     def update_company(
         self,
@@ -364,11 +361,11 @@ class CompanyUpdateOrchestrator:
 
     def _trigger_company_deletion_updates(self, company_id: int, session: Session) -> None:
         """Trigger updates that depend on company deletion."""
-        # Trigger portfolio cleanup
-        self.portfolio_service.cleanup_deleted_company_portfolio(company_id, session)
-        
         # Entity cleanup logging
         self.logger.info(f"Entity cleanup triggered for deleted company {company_id}")
+        
+        # Note: Portfolio cleanup is handled by the fund domain through event handlers
+        # No direct service calls needed here
 
     def _trigger_contact_update_updates(self, company: InvestmentCompany, contact: Contact, session: Session) -> None:
         """Trigger updates that depend on contact updates."""
@@ -411,15 +408,6 @@ class CompanyUpdateOrchestrator:
             session=session
         )
     
-    def _update_portfolio_through_service(
-        self,
-        company: InvestmentCompany,
-        portfolio_data: Dict[str, Any],
-        session: Session
-    ) -> InvestmentCompany:
-        """Update portfolio through the portfolio service."""
-        # Call the actual portfolio update service
-        return self.portfolio_service.update_portfolio(company, portfolio_data, session)
     
     def _get_company(self, company_id: int, session: Session) -> InvestmentCompany:
         """Get company by ID from session."""
@@ -450,9 +438,16 @@ class CompanyUpdateOrchestrator:
         session: Session
     ) -> Contact:
         """Update contact through the contact management service."""
-        # This would call the actual contact update service
-        # For now, we'll just return the contact
-        return self.contact_service.update_contact(contact.id, update_data, session)
+        # Extract individual fields from update_data to match service signature
+        return self.contact_service.update_contact(
+            contact=contact,
+            name=update_data.get('name'),
+            title=update_data.get('title'),
+            direct_number=update_data.get('phone'),
+            direct_email=update_data.get('email'),
+            notes=update_data.get('notes'),
+            session=session
+        )
     
     def _process_company_created_event(
         self,
@@ -547,6 +542,7 @@ class CompanyUpdateOrchestrator:
         """Process company deletion event through handler."""
         event_data = {
             'event_type': 'COMPANY_DELETED',
+            'company_id': company.id,  # Add the required company_id field
             'company_name': company.name,
             'company_type': company.company_type,
             'deletion_reason': deletion_reason,
@@ -579,14 +575,23 @@ class CompanyUpdateOrchestrator:
             'contact_title': contact.title,
             'event_date': datetime.now().date().isoformat(),
             'timestamp': datetime.now().isoformat(),
-            **update_data  # Include the actual update data
+            'update_fields': update_data  # Include the update data in the format the handler expects
         }
         
         # Get handler from registry
+        updated_fields = list(update_data.keys())
+        
         handler = self.registry.get_handler(
-            ContactUpdatedEvent(company.id, datetime.now().date(), contact.id, contact.name).event_type,
+            ContactUpdatedEvent(
+                company_id=company.id,
+                contact_id=contact.id,
+                event_date=datetime.now().date(),
+                updated_fields=updated_fields,
+                new_values=update_data
+            ).event_type,
             session,
-            company
+            company,
+            contact=contact  # Pass the contact parameter the handler needs
         )
         
         # Process event

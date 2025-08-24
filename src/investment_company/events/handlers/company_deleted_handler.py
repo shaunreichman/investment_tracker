@@ -20,11 +20,14 @@ class CompanyDeletedHandler(BaseCompanyEventHandler):
     """
     Handler for company deletion events.
     
-    This handler processes company deletion operations and ensures:
-    1. Company is properly deleted with all related data
-    2. Portfolio and fund relationships are handled correctly
+    This handler processes company deletion aftermath and ensures:
+    1. Portfolio and fund relationships are cleaned up correctly
+    2. Contact cleanup is performed
     3. Appropriate domain events are published
     4. Data consistency is maintained across the system
+    
+    Note: The actual company deletion is performed by the service layer,
+    this handler manages the cleanup and event coordination.
     """
     
     def __init__(self, session, company: InvestmentCompany):
@@ -79,8 +82,8 @@ class CompanyDeletedHandler(BaseCompanyEventHandler):
             # Handle contact cleanup
             self._cleanup_contacts()
             
-            # Delete the company
-            deleted_company = self._delete_company()
+            # Store company info for event publishing (company was already deleted by service)
+            deleted_company = self.company
             
             # Publish domain event
             self._publish_domain_event(deleted_company, deletion_reason)
@@ -188,23 +191,7 @@ class CompanyDeletedHandler(BaseCompanyEventHandler):
             self.logger.warning(f"Failed to cleanup contacts: {error}")
             # Don't fail the main operation for cleanup failures
     
-    def _delete_company(self) -> InvestmentCompany:
-        """
-        Delete the company from the database.
-        
-        Returns:
-            InvestmentCompany: The deleted company instance (for event publishing)
-        """
-        # Store company info for event publishing
-        deleted_company = self.company
-        
-        # Delete the company
-        self.session.delete(self.company)
-        
-        # Commit changes
-        self.session.commit()
-        
-        return deleted_company
+
     
     def _publish_domain_event(self, deleted_company: InvestmentCompany, deletion_reason: str) -> None:
         """

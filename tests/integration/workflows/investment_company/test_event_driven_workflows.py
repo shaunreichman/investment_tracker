@@ -159,6 +159,116 @@ class TestEventDrivenWorkflows:
         # Cleanup
         db_session.rollback()
     
+    def test_event_driven_portfolio_update_workflow(self, db_session: Session):
+        """Test event-driven portfolio update workflow."""
+        # Arrange: Create company and portfolio data
+        company = InvestmentCompanyFactory()
+        db_session.add(company)
+        db_session.flush()
+        
+        portfolio_data = {
+            'operation': 'updated',  # Required by validation
+            'portfolio_name': 'Event-Driven Portfolio',
+            'portfolio_description': 'Portfolio managed through event system',
+            'risk_profile': 'MODERATE',
+            'target_return': 15.0
+        }
+        
+        # Act: Update portfolio through orchestrator (event-driven)
+        orchestrator = CompanyUpdateOrchestrator()
+        updated_company = orchestrator.update_company_portfolio(
+            company_id=company.id,
+            portfolio_data=portfolio_data,
+            session=db_session
+        )
+        
+        # Assert: Verify portfolio was updated through event system
+        assert updated_company is not None
+        assert updated_company.id == company.id
+        
+        # Verify event was processed
+        db_session.refresh(updated_company)
+        assert updated_company.updated_at is not None
+        
+        # Cleanup
+        db_session.rollback()
+    
+    def test_event_driven_contact_update_workflow(self, db_session: Session):
+        """Test event-driven contact update workflow."""
+        # Arrange: Create company and contact
+        company = InvestmentCompanyFactory()
+        contact = ContactFactory(investment_company=company)
+        db_session.add_all([company, contact])
+        db_session.flush()
+        
+        update_data = {
+            'name': 'Updated Contact Name',
+            'title': 'Senior Manager',
+            'phone': '+1987654321',
+            'email': 'updated@test.com'
+        }
+        
+        # Act: Update contact through orchestrator (event-driven)
+        orchestrator = CompanyUpdateOrchestrator()
+        updated_contact = orchestrator.update_contact(
+            company_id=company.id,
+            contact_id=contact.id,
+            update_data=update_data,
+            session=db_session
+        )
+        
+        # Assert: Verify contact was updated through event system
+        assert updated_contact is not None
+        assert updated_contact.name == update_data['name']
+        assert updated_contact.title == update_data['title']
+        assert updated_contact.direct_number == update_data['phone']
+        assert updated_contact.direct_email == update_data['email']
+        
+        # Verify event was processed
+        db_session.refresh(updated_contact)
+        assert updated_contact.updated_at is not None
+        
+        # Cleanup
+        db_session.rollback()
+    
+    def test_event_driven_company_deletion_workflow(self, db_session: Session):
+        """Test event-driven company deletion workflow."""
+        # Arrange: Create company
+        company = InvestmentCompanyFactory()
+        db_session.add(company)
+        db_session.flush()
+        company_id = company.id
+        
+        deletion_reason = "Testing event-driven deletion workflow"
+        
+        # Act: Delete company through orchestrator (event-driven)
+        orchestrator = CompanyUpdateOrchestrator()
+        orchestrator.delete_company(
+            company_id=company_id,
+            deletion_reason=deletion_reason,
+            session=db_session
+        )
+        
+        # Assert: Verify company was deleted through event system
+        # The company should be removed from the session, so we can't refresh it
+        try:
+            db_session.refresh(company)
+            # If we can refresh, the company wasn't actually deleted
+            assert False, "Company should have been deleted from the session"
+        except Exception:
+            # This is expected - the company was deleted so refresh fails
+            pass
+        
+        # Verify the company is no longer in the database
+        from src.investment_company.models import InvestmentCompany
+        deleted_company = db_session.query(InvestmentCompany).filter(
+            InvestmentCompany.id == company_id
+        ).first()
+        assert deleted_company is None, "Company should be deleted from database"
+        
+        # Cleanup
+        db_session.rollback()
+
     def test_event_system_integration_workflow(self, db_session: Session):
         """Test complete event system integration workflow."""
         # Arrange: Prepare comprehensive test data

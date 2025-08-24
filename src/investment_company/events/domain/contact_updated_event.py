@@ -22,7 +22,7 @@ class ContactUpdatedEvent(CompanyDomainEvent):
     """
     
     def __init__(self, company_id: int, contact_id: int, event_date: date, 
-                 previous_values: Dict[str, Any], updated_fields: List[str]):
+                 updated_fields: List[str], new_values: Dict[str, Any] = None):
         """
         Initialize the contact updated event.
         
@@ -30,8 +30,8 @@ class ContactUpdatedEvent(CompanyDomainEvent):
             company_id: ID of the company the contact belongs to
             contact_id: ID of the contact being updated
             event_date: Date when the update occurred
-            previous_values: Dictionary of previous values for audit
             updated_fields: List of field names that were updated
+            new_values: Dictionary of new values being applied (optional)
         """
         super().__init__(
             company_id=company_id,
@@ -40,14 +40,14 @@ class ContactUpdatedEvent(CompanyDomainEvent):
         
         # Contact-specific fields
         self.contact_id = contact_id  # (SYSTEM) ID of the updated contact
-        self.previous_values = previous_values  # (SYSTEM) Previous values for audit
         self.updated_fields = updated_fields  # (SYSTEM) List of updated field names
+        self.new_values = new_values or {}  # (SYSTEM) New values being applied
         
         # Event metadata
         self.audit_trail = {
             'contact_id': contact_id,
-            'previous_values': previous_values,
             'updated_fields': updated_fields,
+            'new_values': self.new_values,
             'update_timestamp': self.timestamp.isoformat()
         }
     
@@ -66,7 +66,7 @@ class ContactUpdatedEvent(CompanyDomainEvent):
         return (f"ContactUpdatedEvent(company_id={self.company_id}, "
                 f"contact_id={self.contact_id}, event_date={self.event_date}, "
                 f"timestamp={self.timestamp}, event_id={self.event_id}, "
-                f"previous_values={self.previous_values}, updated_fields={self.updated_fields})")
+                f"updated_fields={self.updated_fields}, new_values={self.new_values})")
     
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -78,8 +78,8 @@ class ContactUpdatedEvent(CompanyDomainEvent):
         base_dict = super().to_dict()
         base_dict.update({
             'contact_id': self.contact_id,
-            'previous_values': self.previous_values,
             'updated_fields': self.updated_fields,
+            'new_values': self.new_values,
             'event_type': self.event_type.value,
             'audit_trail': self.audit_trail
         })
