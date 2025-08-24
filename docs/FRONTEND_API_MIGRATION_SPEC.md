@@ -18,10 +18,10 @@ Migrate frontend code to work with the refactored backend API architecture. The 
 - Error handling must use new structured error format
 - No fallback to old formats - complete migration only
 **Tasks**:
-- [ ] Update API client base request method for new response format
-- [ ] Implement DTO response extraction across all API methods
-- [ ] Update error handling for new structured error format
-- [ ] Remove any old response format handling code
+- [x] Update API client base request method for new response format
+- [x] Implement DTO response extraction across all API methods
+- [x] Update error handling for new structured error format
+- [x] Remove any old response format handling code
 **Success Criteria**:
 - All API calls properly extract data from DTO wrappers
 - Error handling uses new structured format consistently
