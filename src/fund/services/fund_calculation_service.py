@@ -20,8 +20,8 @@ from sqlalchemy import func
 
 # Use string references to avoid circular imports
 # from src.fund.models import Fund, FundEvent, EventType, FundType
-from src.fund.calculations import calculate_irr, calculate_debt_cost
-from src.shared.calculations import orchestrate_irr_base
+# Migrated calculation functions are now internal utility methods
+
 from src.shared.utils import with_session
 from src.fund.enums import FundStatus, EventType
 from src.fund.models import FundEvent
@@ -447,8 +447,8 @@ class FundCalculationService:
         # Get events using the session instead of accessing the relationship directly
         events = fund.get_all_fund_events(session=session)
         
-        # Delegate to the shared IRR calculation function
-        result = orchestrate_irr_base(
+        # Use internal orchestration method
+        result = self._orchestrate_irr_base(
             events, 
             fund.start_date,
             include_tax_payments=include_tax_payments,
@@ -457,6 +457,97 @@ class FundCalculationService:
         )
         
         return result
+    
+    def _orchestrate_irr_base(
+        self, 
+        cash_flow_events, 
+        start_date, 
+        include_tax_payments: bool = False, 
+        include_risk_free_charges: bool = False, 
+        include_eofy_debt_cost: bool = False, 
+        return_cashflows: bool = False
+    ):
+        """
+        [MIGRATED] Orchestrate IRR calculation with configurable cash flow inclusion.
+        
+        This method was migrated from shared calculations to eliminate circular dependencies.
+        
+        Args:
+            cash_flow_events (list): List of FundEvent objects
+            start_date (date): Start date for IRR calculation
+            include_tax_payments (bool): Whether to include tax payment events
+            include_risk_free_charges (bool): Whether to include risk-free interest charges
+            include_eofy_debt_cost (bool): Whether to include EOFY debt cost events
+            return_cashflows (bool): Whether to return cash flow details
+            
+        Returns:
+            float or dict: IRR value or dict with cash flow details
+        """
+        from src.fund.models import EventType
+        
+        # Filter events based on options
+        filtered_events = []
+        for event in cash_flow_events:
+            include_event = False
+            if event.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION]:
+                include_event = True
+            elif include_tax_payments and event.event_type == EventType.TAX_PAYMENT:
+                include_event = True
+            elif include_risk_free_charges and event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
+                include_event = True
+            elif include_eofy_debt_cost and event.event_type == EventType.EOFY_DEBT_COST:
+                include_event = True
+            if include_event:
+                filtered_events.append(event)
+        
+        # Sort events by date
+        filtered_events.sort(key=lambda e: e.event_date)
+        
+        # Prepare cash flows for IRR calculation
+        cash_flows = []
+        days_from_start = []
+        
+        for event in filtered_events:
+            amount = event.amount or 0
+            # Adjust sign based on event type
+            if event.event_type in [EventType.UNIT_PURCHASE, EventType.CAPITAL_CALL]:
+                amount = -abs(amount)  # Outflow
+            elif event.event_type in [EventType.UNIT_SALE, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION, EventType.EOFY_DEBT_COST]:
+                amount = abs(amount)  # Inflow
+            elif event.event_type == EventType.TAX_PAYMENT:
+                amount = -abs(amount)  # Outflow
+            elif event.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
+                amount = -abs(amount)  # Outflow
+            
+            cash_flows.append(amount)
+            days = (event.event_date - start_date).days
+            days_from_start.append(days)
+        
+        # Calculate IRR
+        if len(cash_flows) < 2:
+            return None
+        
+        # Use internal IRR calculation utility
+        irr_result = self._calculate_irr_utility(cash_flows, days_from_start)
+        
+        if return_cashflows:
+            # Generate labels from event descriptions
+            labels = []
+            for event in filtered_events:
+                if event.description:
+                    labels.append(f"{event.event_type.value} | {event.event_date} | {event.amount:,.2f} | {event.description}")
+                else:
+                    labels.append(f"{event.event_type.value} | {event.event_date} | {event.amount:,.2f}")
+            
+            return {
+                'irr': irr_result,
+                'cash_flows': cash_flows,
+                'days_from_start': days_from_start,
+                'events': filtered_events,
+                'labels': labels
+            }
+        else:
+            return irr_result
     
     def _create_daily_risk_free_interest_charges(
         self, 
@@ -793,3 +884,246 @@ class FundCalculationService:
         total_tax_withheld = self.get_total_tax_withheld(fund, session)
         
         return total_distributions - total_tax_withheld
+
+    # ============================================================================
+    # MIGRATED CALCULATION FUNCTIONS FROM fund/calculations.py
+    # ============================================================================
+    
+    def _calculate_irr_utility(self, cash_flows, days_from_start, tolerance=1e-6, max_iterations=200):
+        """
+        [MIGRATED] Calculate annual IRR using monthly compounding with the Newton-Raphson method.
+        
+        This method was migrated from the old fund/calculations.py module.
+        
+        Args:
+            cash_flows (list[float]): List of cash flow amounts (negative for outflows, positive for inflows).
+            days_from_start (list[int]): List of days from the start date for each cash flow.
+            tolerance (float): Convergence tolerance for the root-finding algorithm (default: 1e-6 for financial precision).
+            max_iterations (int): Maximum number of iterations to attempt.
+        
+        Returns:
+            float or None: The annual IRR as a decimal (e.g., 0.12 for 12%), or None if not computable.
+        
+        Business context:
+            Used for IRR calculations in Fund models, supporting monthly compounding for investment fund accuracy.
+        """
+        # Initial guess: simple rate of return
+        total_investment = abs(cash_flows[0]) if cash_flows[0] < 0 else 0
+        total_return = sum(cf for cf in cash_flows[1:] if cf > 0)
+        if total_investment == 0:
+            return None
+        simple_return = (total_return - total_investment) / total_investment
+        monthly_guess = (1 + simple_return) ** (1/12) - 1
+        monthly_guess = max(-0.99, min(monthly_guess, 2.0))
+        
+        for iteration in range(max_iterations):
+            npv = 0
+            derivative = 0
+            for i, (cf, days) in enumerate(zip(cash_flows, days_from_start)):
+                # Use monthly compounding for investment fund accuracy
+                months = days / 30.44  # Average days per month
+                discount_factor = (1 + monthly_guess) ** months
+                npv += cf / discount_factor
+                if months > 0:
+                    derivative -= cf * months / (discount_factor * (1 + monthly_guess))
+            if abs(npv) < tolerance:
+                # Convert monthly IRR to annual IRR
+                annual_irr = (1 + monthly_guess) ** 12 - 1
+                return annual_irr
+            if abs(derivative) < 1e-12:
+                break
+            monthly_guess = monthly_guess - npv / derivative
+            if monthly_guess < -0.99 or monthly_guess > 2.0:
+                return None
+        return None
+
+    def _calculate_debt_cost_utility(self, events, risk_free_rates, start_date, end_date, currency):
+        """
+        [MIGRATED] Calculate debt cost (opportunity cost) using daily/period-by-period accuracy.
+        
+        This method was migrated from the old fund/calculations.py module.
+        
+        Args:
+            events (list): List of FundEvent objects (capital movements).
+            risk_free_rates (list): List of RiskFreeRate objects, sorted by date.
+            start_date (date): Start date for the calculation period.
+            end_date (date): End date for the calculation period.
+            currency (str): Currency code for the calculation.
+        
+        Returns:
+            dict: {
+                'total_debt_cost': float,  # Total opportunity cost over the period
+                'average_risk_free_rate': float,  # Weighted average risk-free rate
+                'debt_cost_percentage': float,  # Debt cost as a percentage of average equity
+                'investment_duration_years': float,  # Duration in years
+                'average_equity': float,  # Average equity over the period
+                'total_days': int  # Number of days in the period
+            }
+        
+        Business context:
+            Used for real IRR calculations in Fund models, to account for the opportunity cost of capital.
+        """
+        from datetime import timedelta
+        from src.fund.enums import EventType, FundType
+        
+        # Filter events to the relevant period
+        events = [e for e in events if e.event_date >= start_date and e.event_date <= end_date]
+        events.sort(key=lambda e: e.event_date)
+        # Build periods for each risk-free rate
+        rate_periods = []
+        for i, rate in enumerate(risk_free_rates):
+            rate_start = rate.rate_date
+            if i + 1 < len(risk_free_rates):
+                rate_end = risk_free_rates[i + 1].rate_date
+            else:
+                rate_end = end_date + timedelta(days=1)
+            rate_periods.append((rate_start, rate_end, rate.rate))
+        # Build equity periods between events
+        equity_periods = []
+        current_equity = 0
+        last_date = start_date
+        for event in events:
+            if event.event_date > last_date:
+                equity_periods.append((last_date, event.event_date, current_equity))
+            if hasattr(event, 'fund'):
+                # Calculate equity change based on fund type and event type
+                fund_type = event.fund.tracking_type
+                if fund_type == FundType.NAV_BASED:
+                    if event.event_type == EventType.UNIT_PURCHASE:
+                        # Exclude brokerage: equity is units * unit_price
+                        equity_change = (event.units_purchased or 0.0) * (event.unit_price or 0.0)
+                    elif event.event_type == EventType.UNIT_SALE:
+                        # Exclude brokerage: equity is units * unit_price
+                        equity_change = -((event.units_sold or 0.0) * (event.unit_price or 0.0))
+                    else:
+                        equity_change = 0
+                elif fund_type == FundType.COST_BASED:
+                    if event.event_type == EventType.CAPITAL_CALL:
+                        equity_change = event.amount or 0.0
+                    elif event.event_type == EventType.RETURN_OF_CAPITAL:
+                        equity_change = -(event.amount or 0.0)
+                    else:
+                        equity_change = 0
+                else:
+                    equity_change = 0
+            else:
+                equity_change = 0
+            current_equity += equity_change
+            last_date = event.event_date
+        if last_date < end_date:
+            equity_periods.append((last_date, end_date, current_equity))
+        total_debt_cost = 0
+        total_weighted_rate = 0
+        total_days = 0
+        total_weighted_equity = 0
+        # Calculate debt cost for each equity period
+        for equity_start, equity_end, equity_amount in equity_periods:
+            period_days = (equity_end - equity_start).days
+            if period_days <= 0:
+                continue
+            # Find applicable risk-free rate for this period
+            applicable_rate = None
+            for rate_start, rate_end, rate_value in rate_periods:
+                if rate_start <= equity_start and equity_end <= rate_end:
+                    applicable_rate = rate_value
+                    break
+            if applicable_rate is None:
+                continue
+            # Calculate debt cost for this period
+            period_debt_cost = equity_amount * (applicable_rate / 100) * (period_days / 365.25)
+            total_debt_cost += period_debt_cost
+            total_weighted_rate += applicable_rate * period_days
+            total_days += period_days
+            total_weighted_equity += equity_amount * period_days
+        # Calculate summary statistics
+        # Handle single day periods - ensure at least 1 day
+        if start_date == end_date:
+            total_days = max(total_days, 1)
+        
+        average_risk_free_rate = total_weighted_rate / total_days if total_days > 0 else 0
+        average_equity = total_weighted_equity / total_days if total_days > 0 else 0
+        debt_cost_percentage = (total_debt_cost / average_equity * 100) if average_equity > 0 else 0
+        investment_duration_years = total_days / 365.25
+        return {
+            'total_debt_cost': total_debt_cost,
+            'average_risk_free_rate': average_risk_free_rate,
+            'debt_cost_percentage': debt_cost_percentage,
+            'investment_duration_years': investment_duration_years,
+            'average_equity': average_equity,
+            'total_days': total_days
+        }
+
+    def _calculate_nav_based_capital_gains_utility(self, events):
+        """
+        [MIGRATED] Calculate capital gains for NAV-based funds using FIFO method, including brokerage fees.
+        - Purchase: cost base per unit = (units * unit_price + brokerage_fee) / units
+        - Sale: proceeds per unit = unit_price - (brokerage_fee / units_sold)
+        
+        This method was migrated from the old fund/calculations.py module.
+        
+        Args:
+            events (list): List of FundEvent objects (unit purchases/sales).
+        Returns:
+            float: Total capital gains.
+        Business context:
+            Used for tax calculations and performance reporting in NAV-based funds.
+        """
+        from collections import deque
+        from src.fund.enums import EventType
+        
+        available_units = deque()  # Each entry: (units, cost_per_unit)
+        total_capital_gains = 0
+        for event in events:
+            if event.event_type == EventType.UNIT_PURCHASE:
+                units = event.units_purchased or 0
+                unit_price = event.unit_price or 0
+                brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
+                if units > 0 and unit_price > 0:
+                    # Apportion brokerage per unit and add to cost base
+                    cost_per_unit = unit_price + (brokerage_fee / units)
+                    available_units.append((units, cost_per_unit))
+            elif event.event_type == EventType.UNIT_SALE:
+                units_to_sell = event.units_sold or 0
+                sale_price_per_unit = event.unit_price or 0
+                sale_brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
+                if units_to_sell > 0 and sale_price_per_unit > 0:
+                    # Apportion sale brokerage per unit
+                    proceeds_per_unit = sale_price_per_unit - (sale_brokerage_fee / units_to_sell)
+                    remaining_units_to_sell = units_to_sell
+                    while remaining_units_to_sell > 0 and available_units:
+                        available_units_count, cost_per_unit = available_units[0]
+                        units_from_this_purchase = min(remaining_units_to_sell, available_units_count)
+                        # Calculate capital gain for these units
+                        capital_gain = units_from_this_purchase * (proceeds_per_unit - cost_per_unit)
+                        total_capital_gains += capital_gain
+                        remaining_units_to_sell -= units_from_this_purchase
+                        # Update or remove from available units
+                        if units_from_this_purchase == available_units_count:
+                            available_units.popleft()
+                        else:
+                            available_units[0] = (available_units_count - units_from_this_purchase, cost_per_unit)
+        return total_capital_gains
+
+    def _calculate_cost_based_capital_gains_utility(self, events):
+        """
+        [MIGRATED] Calculate capital gains for cost-based funds.
+        
+        This method was migrated from the old fund/calculations.py module.
+        
+        Args:
+            events (list): List of FundEvent objects (capital calls/returns).
+        
+        Returns:
+            float: Total capital gains.
+        
+        Business context:
+            Used for tax calculations and performance reporting in cost-based funds.
+        """
+        from src.fund.enums import EventType, DistributionType
+        
+        # For cost-based funds, capital gains are typically distributions
+        total_capital_gains = 0
+        for event in events:
+            if event.event_type == EventType.DISTRIBUTION and event.distribution_type and event.distribution_type == DistributionType.CAPITAL_GAIN:
+                total_capital_gains += event.amount or 0
+        return total_capital_gains

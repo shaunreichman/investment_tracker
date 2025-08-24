@@ -32,7 +32,7 @@ from src.fund.services.tax_calculation_service import TaxCalculationService
 from src.fund.services.fund_status_service import FundStatusService
 from src.fund.enums import FundStatus
 from src.fund.events.orchestrator import FundUpdateOrchestrator
-from src.fund.calculations import calculate_irr, calculate_debt_cost
+from src.fund.services.fund_calculation_service import FundCalculationService
 
 
 class TestFundCalculationConsistency:
@@ -90,7 +90,7 @@ class TestFundCalculationConsistency:
         # Calculate IRR using utility function
         cash_flows = [-500000.0, 600000.0]  # Capital call (negative), distribution (positive)
         days_from_start = [0, 364]  # Days from start
-        utility_irr = calculate_irr(cash_flows, days_from_start)
+        utility_irr = calculation_service._calculate_irr_utility(cash_flows, days_from_start)
         
         # Convert utility IRR to annual rate for comparison
         if utility_irr is not None:

@@ -22,10 +22,10 @@ tests/
 │   │   │   ├── ✅ test_fund_event_grouping.py # FundEvent grouping with enhanced business rules
 │   │   │   ├── ✅ test_domain_event_model.py # DomainEvent model tests
 │   │   │   └── ✅ test_fund_event_cash_flow_model.py # Cash flow model tests
-│   │   ├── investment_company/          # Investment company models
-│   │   │   ├── __init__.py
-│   │   │   ├── test_investment_company_model.py # InvestmentCompany validation
-│   │   │   └── test_company_relationship_model.py # Company relationships
+│   │   ├── ✅ investment_company/          # Investment company models
+│   │   │   ├── ✅ __init__.py
+│   │   │   ├── ✅ test_investment_company_model.py        # InvestmentCompany validation
+│   │   │   └── ✅ test_contact_model.py                   # Contact model validation
 │   │   ├── entity/                      # Entity models
 │   │   │   ├── __init__.py
 │   │   │   ├── test_entity_model.py     # Entity model validation
@@ -52,9 +52,15 @@ tests/
 │   │   │   ├── ✅ test_fund_event_service.py            # Event processing logic
 │   │   │   ├── ✅ test_tax_calculation_service.py       # Tax calculation logic
 │   │   │   └── ✅ test_fund_incremental_calculation_service.py # Incremental calculations
-│   │   ├── investment_company/          # Investment company services
-│   │   │   ├── __init__.py
-│   │   │   └── test_investment_company_service.py    # Company management logic
+│   │   ├── ✅ investment_company/          # Investment company services
+│   │   │   ├── ✅ __init__.py
+│   │   │   ├── ✅ test_company_portfolio_service.py        # Portfolio operations & fund coordination
+│   │   │   ├── ✅ test_company_summary_service.py          # Summary calculations & metrics
+│   │   │   ├── ✅ test_contact_management_service.py       # Contact operations & validation
+│   │   │   ├── ✅ test_company_validation_service.py       # Business rule validation
+│   │   │   ├── ✅ test_company_calculation_service.py      # Portfolio calculations & metrics
+│   │   │   ├── ✅ test_fund_coordination_service.py        # Fund creation coordination
+│   │   │   └── ✅ test_company_service.py                  # Core company operations
 │   │   ├── entity/                      # Entity services
 │   │   │   ├── __init__.py
 │   │   │   └── test_entity_service.py                # Entity management logic
@@ -67,7 +73,7 @@ tests/
 │   │   │   └── ✅ test_banking_cache_service.py         # Caching logic and performance
 │   │   └── tax/                         # Tax services
 │   │       ├── __init__.py
-│       └── test_tax_service.py                      # Tax processing logic
+│   │       └── test_tax_service.py                      # Tax processing logic
 │   ├── calculations/                    # Financial and business calculations
 │   │   ├── __init__.py
 │   │   ├── ✅  fund/                        # Fund-specific calculations
@@ -76,9 +82,6 @@ tests/
 │   │   │   ├── ✅ test_debt_cost_calculations.py        # Debt cost calculations
 │   │   │   ├── ✅ test_fifo_calculations.py             # FIFO unit calculations
 │   │   │   └── ✅ test_nav_calculations.py              # NAV-based calculations
-│   │   ├── investment_company/          # Company calculations
-│   │   │   ├── __init__.py
-│   │   │   └── test_company_calculations.py          # Company performance metrics
 │   │   ├── entity/                      # Entity calculations
 │   │   │   ├── __init__.py
 │   │   │   └── test_entity_calculations.py           # Entity financial metrics
@@ -100,6 +103,13 @@ tests/
 │   │   │   ├── ✅ test_event_registry.py                # Event routing and registration
 │   │   │   ├── ✅ test_base_handler.py                  # Base handler functionality
 │   │   │   └── ✅ test_async_processor.py               # Async event processing
+│   │   ├── ✅ investment_company/          # Investment company event handling
+│   │   │   ├── ✅ __init__.py
+│   │   │   ├── ✅ test_base_handler.py                  # Base handler functionality
+│   │   │   ├── ✅ test_registry.py                      # Event registry & routing
+│   │   │   ├── ✅ test_orchestrator.py                  # Update pipeline coordination
+│   │   │   ├── ✅ test_event_handlers.py                # Individual event handlers
+│   │   │   └── ✅ test_domain_events.py                 # Domain event functionality
 │   │   ├── ✅ banking/                     # Banking event handling
 │   │   │   ├── ✅ __init__.py
 │   │   │   ├── ✅ test_banking_event_handlers.py        # 8 specific event handlers
@@ -121,9 +131,10 @@ tests/
 │   │   │   ├── ✅ test_fund_event_repository.py         # Event query logic
 │   │   │   ├── ✅ test_domain_event_repository.py       # Domain event persistence
 │   │   │   └── ✅ test_tax_statement_repository.py      # Tax statement persistence
-│   │   ├── investment_company/          # Company data access
-│   │   │   ├── __init__.py
-│   │   │   └── test_investment_company_repository.py # Company data access
+│   │   ├── ✅ investment_company/          # Company data access
+│   │   │   ├── ✅ __init__.py
+│   │   │   ├── ✅ test_company_repository.py            # Company data access
+│   │   │   └── ✅ test_contact_repository.py            # Contact data access
 │   │   ├── entity/                      # Entity data access
 │   │   │   ├── __init__.py
 │   │   │   └── test_entity_repository.py             # Entity data access
@@ -140,9 +151,9 @@ tests/
 │   │   ├── ✅ fund/                        # Fund enums
 │   │   │   ├── ✅ __init__.py
 │   │   │   └── ✅ test_fund_enums.py                    # Fund enum validation
-│   │   ├── investment_company/          # Company enums
-│   │   │   ├── __init__.py
-│   │   │   └── test_company_enums.py                 # Company enum validation
+│   │   ├── ✅ investment_company/          # Company enums
+│   │   │   ├── ✅ __init__.py
+│   │   │   └── ✅ test_company_enums.py                   # Company enum validation
 │   │   ├── entity/                      # Entity enums
 │   │   │   ├── __init__.py
 │   │   │   └── test_entity_enums.py                  # Entity enum validation
@@ -173,10 +184,13 @@ tests/
 │   │   │   ├── ✅ test_nav_update_workflow.py         # NAV update and recalculation
 │   │   │   ├── ✅ test_fund_realization_workflow.py     # Fund completion workflow
 │   │   │   └── ✅ test_unit_workflows.py                # Unit purchase and sale workflows
-│   │   ├── investment_company/             # Company management workflows
-│   │   │   ├── __init__.py
-│   │   │   ├── test_company_creation_workflow.py     # Company setup workflow
-│   │   │   └── test_company_relationship_workflow.py # Relationship management
+│   │   ├── ✅ investment_company/             # Company management workflows
+│   │   │   ├── ✅ __init__.py
+│   │   │   ├── ✅ test_company_creation_workflow.py     # Company setup workflow
+│   │   │   ├── ✅ test_company_portfolio_workflow.py    # Portfolio management workflow
+│   │   │   ├── ✅ test_company_contact_workflow.py      # Contact management workflow
+│   │   │   ├── ✅ test_cross_domain_coordination.py     # Fund-company-entity coordination
+│   │   │   └── ✅ test_event_driven_workflows.py        # Event-driven operation flows
 │   │   ├── entity/                        # Entity management workflows
 │   │   │   ├── __init__.py
 │   │   │   ├── test_entity_creation_workflow.py      # Entity setup workflow
@@ -258,10 +272,13 @@ tests/
 │   │   │   ├── test_fund_operations.py   # Fund CRUD operations
 │   │   │   ├── test_fund_calculations.py # Calculation endpoints
 │   │   │   └── test_fund_events.py       # Event management endpoints
-│   │   ├── company/                      # Company domain endpoints
+│   │   ├── investment_company/           # Company domain endpoints
 │   │   │   ├── __init__.py
-│   │   │   ├── test_company_operations.py # Company CRUD operations
-│   │   │   └── test_company_calculations.py # Company calculation endpoints
+│   │   │   ├── test_company_operations.py    # Company CRUD operations
+│   │   │   ├── test_company_calculations.py  # Company calculation endpoints
+│   │   │   ├── test_company_validation.py    # Input validation testing
+│   │   │   ├── test_company_error_handling.py # Error handling testing
+│   │   │   └── test_company_integration.py   # API integration testing
 │   │   └── tax/                          # Tax domain endpoints
 │   │       ├── __init__.py
 │   │       ├── test_tax_calculations.py   # Tax calculation endpoints
@@ -542,4 +559,4 @@ tests/
     │   ├── baseline_results_*.txt                 # Performance baseline results
     │   ├── database_analysis_*.txt                # Database performance analysis
     │   └── load_testing_script.py                 # Load testing automation
-    └── test_categories.py                        # Test categorization utilities```
+    └── test_categories.py                        # Test categorization utilities

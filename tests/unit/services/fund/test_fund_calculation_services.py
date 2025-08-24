@@ -154,7 +154,7 @@ class TestFundCalculationService:
     
     def test_calculate_irr(self, service, mock_fund):
         """Test IRR calculation through service layer."""
-        with patch('src.fund.services.fund_calculation_service.orchestrate_irr_base') as mock_orchestrate:
+        with patch.object(service, '_orchestrate_irr_base') as mock_orchestrate:
             mock_orchestrate.return_value = 0.15
             
             result = service.calculate_irr(mock_fund)
@@ -164,7 +164,7 @@ class TestFundCalculationService:
 
     def test_calculate_after_tax_irr(self, service, mock_fund):
         """Test after-tax IRR calculation through service layer."""
-        with patch('src.fund.services.fund_calculation_service.orchestrate_irr_base') as mock_orchestrate:
+        with patch.object(service, '_orchestrate_irr_base') as mock_orchestrate:
             mock_orchestrate.return_value = 0.12
             
             result = service.calculate_after_tax_irr(mock_fund)
@@ -174,7 +174,7 @@ class TestFundCalculationService:
 
     def test_calculate_real_irr(self, service, mock_fund):
         """Test real IRR calculation through service layer."""
-        with patch('src.fund.services.fund_calculation_service.orchestrate_irr_base') as mock_orchestrate:
+        with patch.object(service, '_orchestrate_irr_base') as mock_orchestrate:
             mock_orchestrate.return_value = 0.18
             
             result = service.calculate_real_irr(mock_fund)
@@ -799,7 +799,7 @@ class TestFundCalculationServiceIntegration:
         # This test validates that the new incremental service
         # produces the same results as the traditional service
         
-        with patch('src.fund.services.fund_calculation_service.orchestrate_irr_base') as mock_calc:
+        with patch.object(calculation_service, '_orchestrate_irr_base') as mock_calc:
             mock_calc.return_value = 0.15
             
             calc_result = calculation_service.calculate_irr(mock_fund)

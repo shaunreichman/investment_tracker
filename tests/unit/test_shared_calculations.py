@@ -1,6 +1,6 @@
 from datetime import date
 
-from src.shared.calculations import get_financial_year_dates
+from src.tax.calculations import get_financial_year_dates
 
 
 def test_get_financial_year_dates_au_range_parsing():

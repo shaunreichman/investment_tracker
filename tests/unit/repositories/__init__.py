@@ -1,5 +1,5 @@
 """
 Repositories Tests Module.
 
-This module contains tests for all repository classes across the system.
+This module contains unit tests for all repository functionality across the system.
 """
