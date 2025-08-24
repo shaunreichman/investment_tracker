@@ -21,6 +21,9 @@ import {
   
   // API responses
   ApiError as ApiErrorType,
+  ApiResponse,
+  ApiErrorResponse,
+  ApiResponseWrapper,
   
   // List responses
   FundEventListResponse,
@@ -59,6 +62,21 @@ class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+
+  // Get error code from structured error response
+  get errorCode(): string | undefined {
+    return this.details?.code;
+  }
+
+  // Get additional error details
+  get errorDetails(): any {
+    return this.details?.details;
+  }
+
+  // Check if this is a structured error response
+  get isStructuredError(): boolean {
+    return this.details?.success === false && this.details?.error;
+  }
 }
 
 
@@ -94,9 +112,26 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = await response.json().catch(() => ({})) as any;
+        
+        // Handle new structured error format
+        if (errorData.success === false && errorData.error && typeof errorData.error === 'object') {
+          const apiError = new ApiError(
+            errorData.error.message || 'Unknown error',
+            response.status,
+            {
+              code: errorData.error.code,
+              details: errorData.error.details,
+              ...errorData
+            }
+          );
+          throw apiError;
+        }
+        
+        // Fallback to old error format for compatibility during transition
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
         const apiError = new ApiError(
-          errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+          typeof errorMessage === 'string' ? errorMessage : 'Unknown error',
           response.status,
           errorData
         );
@@ -109,7 +144,20 @@ class ApiClient {
         return {} as T;
       }
 
-      return await response.json();
+      const responseData = await response.json() as ApiResponseWrapper<T>;
+      
+      // Handle new DTO response format: {success: true, data: {...}}
+      if (typeof responseData === 'object' && responseData !== null && 'success' in responseData) {
+        const apiResponse = responseData as ApiResponse<T>;
+        if (apiResponse.success === true && apiResponse.data !== undefined) {
+          // New format: extract data from DTO wrapper
+          return apiResponse.data;
+        }
+      }
+      
+      // Handle legacy response format for backward compatibility during transition
+      // This ensures existing functionality works while backend migrates
+      return responseData as T;
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -301,6 +349,40 @@ class ApiClient {
 
   async healthCheck(): Promise<{ status: string; message: string }> {
     return this.request<{ status: string; message: string }>('/api/health');
+  }
+
+  // ============================================================================
+  // DEBUGGING & TESTING UTILITIES
+  // ============================================================================
+
+  /**
+   * Test endpoint to verify new response format handling
+   * This method can be used to test the new DTO response format
+   */
+  async testResponseFormat(endpoint: string): Promise<{ 
+    isNewFormat: boolean; 
+    rawResponse: any; 
+    extractedData: any 
+  }> {
+    try {
+      const rawResponse = await fetch(`${this.baseUrl}${endpoint}`);
+      const responseData = await rawResponse.json();
+      
+      const isNewFormat = responseData.success === true && responseData.data !== undefined;
+      const extractedData = isNewFormat ? responseData.data : responseData;
+      
+      return {
+        isNewFormat,
+        rawResponse: responseData,
+        extractedData
+      };
+    } catch (error) {
+      return {
+        isNewFormat: false,
+        rawResponse: null,
+        extractedData: null
+      };
+    }
   }
 }
 

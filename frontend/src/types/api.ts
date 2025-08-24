@@ -2,6 +2,39 @@
 // This file defines all TypeScript interfaces for API communication
 
 // ============================================================================
+// NEW API RESPONSE FORMAT TYPES
+// ============================================================================
+
+/**
+ * New standardized API response format with DTO wrapper
+ */
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  timestamp?: string;
+}
+
+/**
+ * New standardized error response format
+ */
+export interface ApiErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: any;
+    timestamp?: string;
+  };
+  timestamp?: string;
+}
+
+/**
+ * Union type for all possible API responses
+ */
+export type ApiResponseWrapper<T> = ApiResponse<T> | T;
+
+// ============================================================================
 // ENUM TYPES
 // ============================================================================
 
