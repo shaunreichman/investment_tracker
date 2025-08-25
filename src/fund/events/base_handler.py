@@ -19,9 +19,7 @@ from abc import ABC, abstractmethod
 
 from src.fund.models import Fund, FundEvent
 from src.fund.enums import EventType, FundType, FundStatus
-from src.fund.services.fund_calculation_service import FundCalculationService
-from src.fund.services.fund_status_service import FundStatusService
-from src.fund.services.tax_calculation_service import TaxCalculationService
+# Services will be injected or lazy-loaded to avoid circular imports
 
 
 class BaseFundEventHandler(ABC):
@@ -51,11 +49,8 @@ class BaseFundEventHandler(ABC):
         
         # Initialize logger
         self.logger = logging.getLogger(__name__)
-        
-        # Initialize services for business logic
-        self.calculation_service = FundCalculationService()
-        self.status_service = FundStatusService()
-        self.tax_service = TaxCalculationService()
+    
+
     
     @abstractmethod
     def handle(self, event_data: Dict[str, Any]) -> FundEvent:
@@ -551,28 +546,24 @@ class BaseFundEventHandler(ABC):
         """
         Handle fund status transitions if needed.
         
-        This method delegates to the FundStatusService to ensure
-        consistent status transition logic across all handlers.
+        This method signals that a status transition should occur,
+        but delegates the actual logic to the orchestrator level.
         
         Args:
             event: The event that was just processed
         """
         try:
-            # Use the centralized status service for all status transitions
-            # This ensures consistency and proper business rule enforcement
-            
             # Check if this is an equity event that should trigger status updates
             if EventType.is_equity_event(event.event_type):
                 
-                # Update status after equity event using the status service
-                self.status_service.update_status_after_equity_event(self.fund, self.session)
+                # Signal that status update is needed (will be handled by orchestrator)
+                self.logger.info(f"Status transition needed for fund {self.fund.id} after {event.event_type} event")
                 
-                # Log the status update for debugging
-                self.logger.info(f"Status transition processed for fund {self.fund.id} after {event.event_type} event")
+                # The orchestrator will handle the actual status update
+                # This keeps handlers focused on event processing, not business logic
                 
         except Exception as e:
             # Log the error but don't fail the main event processing
-            # Status transitions are important but not critical for event processing
             self.logger.error(f"Error during status transition for fund {self.fund.id}: {e}")
             # Don't raise - this is a non-critical operation
     
