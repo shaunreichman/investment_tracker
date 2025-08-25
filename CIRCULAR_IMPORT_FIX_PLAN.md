@@ -421,7 +421,7 @@ def test_fund_model_creation():
 | **1** | Phase 1 | Remove direct imports from models | Models no longer import events/services | ✅ **COMPLETED** |
 | **2** | Phase 2 | Enhance service layer | Service methods for all fund operations | 🔄 **IN PROGRESS** |
 | **3** | Phase 3 | Refactor model methods | Models use service delegation | ✅ **COMPLETED** |
-| **4** | Phase 4 | Refactor event handlers | Event handlers use dependency injection | ⏳ **PENDING** |
+| **4** | Phase 4 | Refactor event handlers | Event handlers use dependency injection | ✅ **COMPLETED** |
 | **5** | Phase 5 | Testing & validation | All tests pass, no circular imports | ✅ **COMPLETED** |
 
 ## ✅ **Success Criteria**
