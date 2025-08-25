@@ -98,6 +98,18 @@ class Fund(Base):
             f"tracking_type={self.tracking_type.value}, status={self.status.value})>"
         )
     
+    @classmethod
+    def get_all(cls, session) -> List['Fund']:
+        """Get all funds from the database.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            List[Fund]: List of all funds
+        """
+        return session.query(cls).all()
+    
     def validate_basic_constraints(self) -> bool:
         """Basic data validation only.
         

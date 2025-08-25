@@ -591,8 +591,8 @@ def create_app(db_config=None):
                     
                     # Calculate performance vs expected
                     performance_vs_expected = None
-                    if fund.irr_gross is not None and fund.expected_irr is not None:
-                        performance_vs_expected = fund.irr_gross - fund.expected_irr
+                            if fund.completed_irr_gross is not None and fund.expected_irr is not None:
+            performance_vs_expected = fund.completed_irr_gross - fund.expected_irr
                     
                     fund_data = {
                         "id": fund.id,

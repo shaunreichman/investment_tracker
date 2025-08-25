@@ -76,13 +76,29 @@ class CompanyController:
                         active_funds += 1
                 total_equity = sum(fund.current_equity_balance or 0.0 for fund in company.funds)
                 
+                # Handle company_type safely - it might be a string from old data or an enum
+                company_type_value = None
+                if company.company_type:
+                    if hasattr(company.company_type, 'value'):
+                        company_type_value = company.company_type.value
+                    else:
+                        company_type_value = str(company.company_type)
+                
+                # Handle status safely
+                status_value = None
+                if company.status:
+                    if hasattr(company.status, 'value'):
+                        status_value = company.status.value
+                    else:
+                        status_value = str(company.status)
+                
                 companies_data.append({
                     "id": company.id,
                     "name": company.name,
                     "description": company.description,
                     "website": company.website,
-                    "company_type": company.company_type.value if company.company_type else None,
-                    "status": company.status.value if company.status else None,
+                    "company_type": company_type_value,
+                    "status": status_value,
                     "business_address": company.business_address,
                     "fund_count": total_funds,
                     "active_funds": active_funds,
