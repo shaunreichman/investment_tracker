@@ -110,6 +110,7 @@ export interface Entity {
   id: number;
   name: string;
   description?: string | undefined;
+  tax_jurisdiction?: string | undefined;
   created_at: string;
   updated_at: string;
 }

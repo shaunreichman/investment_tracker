@@ -142,26 +142,40 @@ export function useMutation<T, R>(
   const { error, withErrorHandling } = useErrorHandler();
 
   const { onSuccess } = options;
+  const [data, setData] = useState<R | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const mutate = useCallback(async (data: T): Promise<R | undefined> => {
     try {
+      setLoading(true);
+      setData(null);
+      
       const result = await withErrorHandling(async () => {
         return await mutationFn(data);
       }, true, 'api_mutation');
       
-      if (result && onSuccess) {
-        onSuccess(result);
+      // Check if the result is valid (not null/undefined)
+      if (result !== null && result !== undefined) {
+        setData(result);
+        if (onSuccess) {
+          onSuccess(result);
+        }
+        return result;
+      } else {
+        // If result is null/undefined, it might be an error
+        // The error should be handled by withErrorHandling
+        return undefined;
       }
-      
-      return result || undefined;
     } catch (error) {
       return undefined;
+    } finally {
+      setLoading(false);
     }
   }, [mutationFn, onSuccess, withErrorHandling]);
 
   return {
-    data: null,
-    loading: false,
+    data,
+    loading,
     error,
     mutate,
   };

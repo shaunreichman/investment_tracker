@@ -34,6 +34,7 @@ import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
+import { useFormCompletion } from '../hooks/useFormCompletion';
 
 
 const OverallDashboard: React.FC = () => {
@@ -45,11 +46,22 @@ const OverallDashboard: React.FC = () => {
   // Centralized API hook
   const { data: companies, loading, error, refetch } = useInvestmentCompanies();
 
+  // Form completion handling for entity creation
+  const { handleSuccess: handleEntitySuccess } = useFormCompletion(
+    { successDuration: 2000, autoClose: true },
+    { 
+      onSuccess: (entity) => {
+        // TODO: Refresh entities list when entities are displayed
+        // For now, just provide immediate feedback
+        console.log('Entity created successfully:', entity);
+      },
+      onClose: () => setShowEntityModal(false)
+    }
+  );
 
   const handleEntityCreated = (entity: { id: number; name: string }) => {
-    // Refresh the page or show a success message
-    // For now, we'll just close the modal
-    setShowEntityModal(false);
+    // Use the standardized form completion handler
+    handleEntitySuccess(entity);
   };
 
   const handleCompanyCreated = (company: { id: number; name: string }) => {

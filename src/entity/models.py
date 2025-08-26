@@ -117,6 +117,24 @@ class Entity(Base):
         """
         return session.query(cls).filter(cls.id == entity_id).first()
     
+    @classmethod
+    def delete(cls, entity_id, session=None):
+        """
+        Delete an entity by ID.
+        
+        Args:
+            entity_id (int): Entity ID to delete
+            session (Session): Database session
+        
+        Returns:
+            bool: True if entity was deleted, False if not found
+        """
+        entity = session.query(cls).filter(cls.id == entity_id).first()
+        if entity:
+            session.delete(entity)
+            return True
+        return False
+    
     def get_financial_year(self, date):
         """Get the financial year for a given date based on the entity's tax jurisdiction."""
         if self.tax_jurisdiction == "AU":

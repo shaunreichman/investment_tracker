@@ -51,17 +51,16 @@ class EntityController:
             # Get all entities using domain methods
             entities = Entity.get_all(session=session)
             
-            # Format response data
+            # Format response data to match actual Entity model
             entities_data = []
             for entity in entities:
                 entity_data = {
                     "id": entity.id,
                     "name": entity.name,
-                    "entity_type": entity.entity_type.value if entity.entity_type else None,
-                    "tax_id": entity.tax_id,
-                    "is_active": entity.is_active,
-                    "created_date": entity.created_date.isoformat() if entity.created_date else None,
-                    "updated_date": entity.updated_date.isoformat() if entity.updated_date else None
+                    "description": entity.description,
+                    "tax_jurisdiction": entity.tax_jurisdiction,
+                    "created_at": entity.created_at.isoformat() if entity.created_at else None,
+                    "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
                 }
                 entities_data.append(entity_data)
             
@@ -89,29 +88,35 @@ class EntityController:
             if not data:
                 return jsonify({"error": "No validated data available"}), 400
             
-            # Create entity using domain method with validated data
+            # Create entity using domain method with correct parameters
             entity = Entity.create(
                 name=data['name'],
-                entity_type=data['entity_type'],
-                tax_id=data.get('tax_id'),
-                is_active=data.get('is_active', True)
+                description=data.get('description'),
+                tax_jurisdiction=data.get('tax_jurisdiction', 'AU'),
+                session=session
             )
             
             # Commit the transaction
             session.commit()
             
-            # Return created entity data
+            # Return created entity data matching actual model
             response_data = {
                 "id": entity.id,
                 "name": entity.name,
-                "entity_type": entity.entity_type.value if entity.entity_type else None,
-                "tax_id": entity.tax_id,
-                "is_active": entity.is_active,
-                "created_date": entity.created_date.isoformat() if entity.created_date else None,
-                "updated_date": entity.updated_date.isoformat() if entity.updated_date else None
+                "description": entity.description,
+                "tax_jurisdiction": entity.tax_jurisdiction,
+                "created_at": entity.created_at.isoformat() if entity.created_at else None,
+                "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
             }
             
             return jsonify(response_data), 201
+            
+        except ValueError as e:
+            # Handle business logic errors (e.g., duplicate names, validation errors)
+            current_app.logger.warning(f"Business logic error creating entity: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({"error": str(e)}), 400
             
         except Exception as e:
             current_app.logger.error(f"Error creating entity: {str(e)}")
@@ -137,15 +142,14 @@ class EntityController:
             if not entity:
                 return jsonify({"error": "Entity not found"}), 404
             
-            # Format response data
+            # Format response data to match actual Entity model
             entity_data = {
                 "id": entity.id,
                 "name": entity.name,
-                "entity_type": entity.entity_type.value if entity.entity_type else None,
-                "tax_id": entity.tax_id,
-                "is_active": entity.is_active,
-                "created_date": entity.created_date.isoformat() if entity.created_date else None,
-                "updated_date": entity.updated_date.isoformat() if entity.updated_date else None
+                "description": entity.description,
+                "tax_jurisdiction": entity.tax_jurisdiction,
+                "created_at": entity.created_at.isoformat() if entity.created_at else None,
+                "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
             }
             
             return jsonify(entity_data), 200
@@ -178,31 +182,35 @@ class EntityController:
             if not data:
                 return jsonify({"error": "No validated data available"}), 400
             
-            # Update entity fields
+            # Update entity fields to match actual model
             if 'name' in data:
                 entity.name = data['name']
-            if 'entity_type' in data:
-                entity.entity_type = data['entity_type']
-            if 'tax_id' in data:
-                entity.tax_id = data['tax_id']
-            if 'is_active' in data:
-                entity.is_active = data['is_active']
+            if 'description' in data:
+                entity.description = data['description']
+            if 'tax_jurisdiction' in data:
+                entity.tax_jurisdiction = data['tax_jurisdiction']
             
             # Commit the transaction
             session.commit()
             
-            # Return updated entity data
+            # Return updated entity data matching actual model
             response_data = {
                 "id": entity.id,
                 "name": entity.name,
-                "entity_type": entity.entity_type.value if entity.entity_type else None,
-                "tax_id": entity.tax_id,
-                "is_active": entity.is_active,
-                "created_date": entity.created_date.isoformat() if entity.created_date else None,
-                "updated_date": entity.updated_date.isoformat() if entity.updated_date else None
+                "description": entity.description,
+                "tax_jurisdiction": entity.tax_jurisdiction,
+                "created_at": entity.created_at.isoformat() if entity.created_at else None,
+                "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
             }
             
             return jsonify(response_data), 200
+            
+        except ValueError as e:
+            # Handle business logic errors
+            current_app.logger.warning(f"Business logic error updating entity {entity_id}: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({"error": str(e)}), 400
             
         except Exception as e:
             current_app.logger.error(f"Error updating entity {entity_id}: {str(e)}")
