@@ -8,7 +8,8 @@ import {
   TextField,
   Box,
   CircularProgress,
-  Typography
+  Typography,
+  useTheme
 } from '@mui/material';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { SuccessBanner } from '../../ui/SuccessBanner';
@@ -25,9 +26,6 @@ import TaxStatementForm from './create/TaxStatementForm';
 import { useCreateEventForm } from '../../../hooks/useCreateEventForm';
 // ExtendedFundEvent type not used directly in this component
 
-// Constants for styling
-const REQUIRED_FIELD_COLOR = '#d32f2f';
-
 interface CreateFundEventModalProps {
   open: boolean;
   onClose: () => void;
@@ -43,6 +41,8 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   fundId,
   fundTrackingType
 }) => {
+  const theme = useTheme();
+  
   // Use the create-only form state management hook
   const {
     eventType,
@@ -202,12 +202,12 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
         {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType))) || eventType === 'TAX_STATEMENT') && (
           <Box mt={2}>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Fields marked with <span style={{ color: REQUIRED_FIELD_COLOR }}>*</span> are required.
+              Fields marked with <span style={{ color: theme.palette.error.main }}>*</span> are required.
             </Typography>
             <Box component="form" noValidate autoComplete="off">
               <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
                 <TextField
-                  label={<span>Event Date <span style={{ color: REQUIRED_FIELD_COLOR }}>*</span></span>}
+                  label={<span>Event Date <span style={{ color: theme.palette.error.main }}>*</span></span>}
                   type="date"
                   value={formData.event_date || ''}
                   onChange={e => handleInputChange('event_date', e.target.value)}
@@ -218,7 +218,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
                 />
                 {(eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') && !(distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') && (
                   <TextField
-                    label={<span>{eventType === 'RETURN_OF_CAPITAL' ? 'Return Amount' : 'Amount'} <span style={{ color: REQUIRED_FIELD_COLOR }}>*</span></span>}
+                    label={<span>{eventType === 'RETURN_OF_CAPITAL' ? 'Return Amount' : 'Amount'} <span style={{ color: theme.palette.error.main }}>*</span></span>}
                     type="text"
                     value={formatNumber(formData.amount || '')}
                     onChange={e => handleInputChange('amount', parseNumber(e.target.value))}

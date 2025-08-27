@@ -7,6 +7,7 @@ import {
   DialogActions,
   Button,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
 
 export interface ConfirmDialogProps {
@@ -15,10 +16,11 @@ export interface ConfirmDialogProps {
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  loading?: boolean;
-  disabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  confirmVariant?: 'error' | 'primary' | 'secondary';
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -27,11 +29,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   description,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
-  loading = false,
-  disabled = false,
   onConfirm,
   onCancel,
+  loading = false,
+  disabled = false,
+  confirmVariant = 'error',
 }) => {
+  const theme = useTheme();
+  
   const titleId = 'confirm-dialog-title';
   const descId = description ? 'confirm-dialog-description' : undefined;
 
@@ -41,21 +46,86 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       onClose={onCancel} 
       aria-labelledby={titleId} 
       {...(descId && { 'aria-describedby': descId })}
+      PaperProps={{
+        sx: {
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: '12px',
+          boxShadow: '0px 8px 32px rgba(0,0,0,0.4)',
+          minWidth: '400px',
+          maxWidth: '500px'
+        }
+      }}
     >
-      <DialogTitle id={titleId}>{title}</DialogTitle>
+      <DialogTitle 
+        id={titleId}
+        sx={{
+          color: theme.palette.text.primary,
+          fontWeight: 600,
+          fontSize: '20px',
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.sidebar,
+          borderRadius: '12px 12px 0 0'
+        }}
+      >
+        {title}
+      </DialogTitle>
+      
       {description && (
-        <DialogContent>
-          <DialogContentText id={descId}>{description}</DialogContentText>
+        <DialogContent sx={{ p: 3 }}>
+          <DialogContentText 
+            id={descId}
+            sx={{
+              color: theme.palette.text.muted,
+              fontSize: '16px',
+              lineHeight: 1.5
+            }}
+          >
+            {description}
+          </DialogContentText>
         </DialogContent>
       )}
-      <DialogActions>
-        <Button onClick={onCancel} disabled={loading}> {cancelLabel} </Button>
+      
+      <DialogActions sx={{ p: 3, pt: 2, gap: 2 }}>
+        <Button 
+          onClick={onCancel} 
+          disabled={loading}
+          variant="outlined"
+          sx={{
+            borderColor: theme.palette.divider,
+            color: theme.palette.text.secondary,
+            '&:hover': {
+              borderColor: theme.palette.text.muted,
+              backgroundColor: theme.palette.background.sidebarHover
+            },
+            '&:disabled': {
+              borderColor: theme.palette.text.disabled || theme.palette.text.muted,
+              color: theme.palette.text.disabled || theme.palette.text.muted
+            },
+            px: 3,
+            py: 1
+          }}
+        >
+          {cancelLabel}
+        </Button>
+        
         <Button
           onClick={onConfirm}
           variant="contained"
-          color="error"
           disabled={loading || disabled}
-          startIcon={loading ? <CircularProgress size={18} /> : null}
+          startIcon={loading ? <CircularProgress size={18} sx={{ color: theme.palette.text.primary }} /> : null}
+          sx={{
+            backgroundColor: theme.palette.error.main,
+            '&:hover': {
+              backgroundColor: theme.palette.error.dark
+            },
+            '&:disabled': {
+              backgroundColor: theme.palette.text.disabled || theme.palette.text.muted
+            },
+            px: 3,
+            py: 1,
+            fontWeight: 500
+          }}
         >
           {loading ? 'Working...' : confirmLabel}
         </Button>

@@ -7,7 +7,7 @@
 # Backend (Terminal 1)
 source venv/bin/activate && FLASK_APP=src/api.py python -m flask run --host=0.0.0.0 --port=5001
 
-# Frontend (Terminal 2)
+# Frontend (Terminal 2) - MUST RUN IN ONE COMMAND
 cd frontend && npm start
 ```
 

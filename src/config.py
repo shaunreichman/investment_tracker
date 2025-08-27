@@ -32,8 +32,8 @@ class DatabaseConfig:
         user = os.getenv("POSTGRES_USER", cls.DEFAULT_USER)
         password = os.getenv("POSTGRES_PASSWORD", cls.DEFAULT_PASSWORD)
         
-        # Use standard PostgreSQL dialect
-        return f"postgresql://{user}:{password}@{host}:{port}/{db}"
+        # Use standard PostgreSQL dialect with public schema
+        return f"postgresql://{user}:{password}@{host}:{port}/{db}?options=-csearch_path%3Dpublic"
     
     @classmethod
     def get_postgres_config(cls) -> dict:

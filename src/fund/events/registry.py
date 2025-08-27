@@ -18,13 +18,6 @@ import logging
 from src.fund.events.base_handler import BaseFundEventHandler
 from src.fund.enums import EventType
 from src.fund.models import FundEvent
-from src.fund.events.handlers.capital_call_handler import CapitalCallHandler
-from src.fund.events.handlers.return_of_capital_handler import ReturnOfCapitalHandler
-from src.fund.events.handlers.distribution_handler import DistributionHandler
-from src.fund.events.handlers.nav_update_handler import NAVUpdateHandler
-from src.fund.events.handlers.unit_purchase_handler import UnitPurchaseHandler
-from src.fund.events.handlers.unit_sale_handler import UnitSaleHandler
-from src.fund.events.handlers.tax_payment_handler import TaxPaymentHandler
 
 
 class FundEventHandlerRegistry:
@@ -178,14 +171,17 @@ class FundEventHandlerRegistry:
         This method registers all implemented handlers for the supported
         event types. It's called during initialization and after clearing
         handlers to ensure all event types have handlers registered.
+        
+        Note: Uses lazy imports to avoid circular dependencies.
         """
-        # Import handlers here to avoid circular imports
-        # from .handlers.capital_call_handler import CapitalCallHandler
-        # from .handlers.return_of_capital_handler import ReturnOfCapitalHandler
-        # from .handlers.distribution_handler import DistributionHandler
-        # from .handlers.nav_update_handler import NAVUpdateHandler
-        # from .handlers.unit_purchase_handler import UnitPurchaseHandler
-        # from .handlers.unit_sale_handler import UnitSaleHandler
+        # Lazy import handlers to avoid circular imports
+        from src.fund.events.handlers.capital_call_handler import CapitalCallHandler
+        from src.fund.events.handlers.return_of_capital_handler import ReturnOfCapitalHandler
+        from src.fund.events.handlers.distribution_handler import DistributionHandler
+        from src.fund.events.handlers.nav_update_handler import NAVUpdateHandler
+        from src.fund.events.handlers.unit_purchase_handler import UnitPurchaseHandler
+        from src.fund.events.handlers.unit_sale_handler import UnitSaleHandler
+        from src.fund.events.handlers.tax_payment_handler import TaxPaymentHandler
         
         # Register all handlers
         self.register_handler(EventType.CAPITAL_CALL, CapitalCallHandler)

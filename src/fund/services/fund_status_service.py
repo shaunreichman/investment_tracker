@@ -415,9 +415,9 @@ class FundStatusService:
         
         # Get IRR metrics
         metrics.update({
-            'irr_gross': fund.irr_gross,
-            'irr_after_tax': fund.irr_after_tax,
-            'irr_real': fund.irr_real
+            'completed_irr_gross': fund.completed_irr_gross,
+            'completed_irr_after_tax': fund.completed_irr_after_tax,
+            'completed_irr_real': fund.completed_irr_real
         })
         
         # Calculate derived metrics

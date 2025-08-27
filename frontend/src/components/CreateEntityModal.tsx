@@ -13,7 +13,8 @@ import {
   Box,
   CircularProgress,
   Typography,
-  Paper
+  Paper,
+  useTheme
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { SuccessBanner } from './ui/SuccessBanner';
@@ -38,6 +39,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   onClose,
   onEntityCreated
 }) => {
+  const theme = useTheme();
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
@@ -151,7 +153,13 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       tax_jurisdiction: formData.tax_jurisdiction
     };
 
-    await createEntity.mutate(payload);
+    try {
+      await createEntity.mutate(payload);
+      // The success will be handled by the useEffect that watches createEntity.data
+    } catch (error) {
+      // Error handling is done by the useErrorHandler hook
+      console.error('Error creating entity:', error);
+    }
   };
 
   const handleClose = () => {
@@ -180,7 +188,20 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   }, [open, validateForm]);
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="sm" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: '12px',
+          boxShadow: '0px 8px 32px rgba(0,0,0,0.4)',
+        }
+      }}
+    >
       <DialogTitle sx={{ pb: 1 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center">
@@ -204,7 +225,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       <DialogContent sx={{ pb: 2 }}>
         {/* Success State */}
         {success && (
-          <SuccessBanner title="Entity created successfully!" subtitle="Redirecting to fund creation..." />
+          <SuccessBanner title="Entity created successfully!" subtitle={`Entity ${formData.name} added to the Investment Tracker!`} />
         )}
 
         {/* Error State */}
@@ -218,7 +239,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           />
         )}
         
-        <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+        <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
           <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
             Entity Details
           </Typography>

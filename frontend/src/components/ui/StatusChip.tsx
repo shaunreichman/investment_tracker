@@ -1,30 +1,65 @@
 import React from 'react';
-import { Chip } from '@mui/material';
-import { FundStatus } from '../../types/api';
-import { getStatusInfo } from '../../utils/helpers';
+import { Chip, useTheme } from '@mui/material';
 
 export interface StatusChipProps {
-  status: FundStatus | string;
+  status: string;
   size?: 'small' | 'medium';
   className?: string;
 }
 
 export const StatusChip: React.FC<StatusChipProps> = ({ status, size = 'small', className }) => {
-  const info = getStatusInfo(String(status));
+  const theme = useTheme();
+  
+  // Get status color based on status value
+  const getStatusColor = () => {
+    const normalizedStatus = status.toLowerCase();
+    
+    switch (normalizedStatus) {
+      case 'active':
+      case 'completed':
+      case 'success':
+        return {
+          backgroundColor: theme.palette.success.main,
+          color: theme.palette.text.primary
+        };
+      case 'pending':
+      case 'processing':
+      case 'warning':
+        return {
+          backgroundColor: theme.palette.warning.main,
+          color: theme.palette.text.primary
+        };
+      case 'error':
+      case 'failed':
+      case 'cancelled':
+        return {
+          backgroundColor: theme.palette.error.main,
+          color: theme.palette.text.primary
+        };
+      case 'info':
+      case 'draft':
+      default:
+        return {
+          backgroundColor: theme.palette.info.main,
+          color: theme.palette.text.primary
+        };
+    }
+  };
 
   return (
     <Chip
       component="div"
-      label={info.value}
+      label={status}
       size={size}
       className={className || ''}
-      aria-label={`status: ${info.value}`}
       sx={{
-        bgcolor: info.color,
-        color: '#fff',
+        ...getStatusColor(),
         fontWeight: 500,
+        textTransform: 'none',
+        '& .MuiChip-label': {
+          px: 1,
+        },
       }}
-      title={info.tooltip}
     />
   );
 };

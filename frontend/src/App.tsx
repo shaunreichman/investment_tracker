@@ -1,29 +1,55 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import OverallDashboard from './components/OverallDashboard';
 import { EnhancedCompaniesPage } from './components/companies';
 import FundDetail from './components/fund/detail/FundDetail';
 import { AppStoreProvider } from './store';
+import { DockerThemeProvider } from './theme/DockerThemeProvider';
+import RouteLayout from './components/layout/RouteLayout';
 import './App.css';
+
+// Wrapper component to provide key for FundDetail
+const FundDetailWrapper: React.FC = () => {
+  const { fundId } = useParams<{ fundId: string }>();
+  return <FundDetail key={fundId} />;
+};
+
+// Wrapper component to provide key for EnhancedCompaniesPage
+const CompaniesPageWrapper: React.FC = () => {
+  const { companyId } = useParams<{ companyId: string }>();
+  return <EnhancedCompaniesPage key={companyId} />;
+};
 
 function App() {
   return (
-    <AppStoreProvider>
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true
-        }}
-      >
-        <div className="App">
+    <DockerThemeProvider>
+      <AppStoreProvider>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true
+          }}
+        >
           <Routes>
-            <Route path="/" element={<OverallDashboard />} />
-            <Route path="/companies/:companyId" element={<EnhancedCompaniesPage />} />
-            <Route path="/funds/:fundId" element={<FundDetail />} />
+            <Route path="/" element={
+              <RouteLayout>
+                <OverallDashboard />
+              </RouteLayout>
+            } />
+            <Route path="/companies/:companyId" element={
+              <RouteLayout>
+                <CompaniesPageWrapper />
+              </RouteLayout>
+            } />
+            <Route path="/funds/:fundId" element={
+              <RouteLayout>
+                <FundDetailWrapper />
+              </RouteLayout>
+            } />
           </Routes>
-        </div>
-      </BrowserRouter>
-    </AppStoreProvider>
+        </BrowserRouter>
+      </AppStoreProvider>
+    </DockerThemeProvider>
   );
 }
 

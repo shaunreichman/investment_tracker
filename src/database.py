@@ -44,6 +44,9 @@ def create_database_engine(database_url=None):
         pool_size=10,        # Base pool size
         max_overflow=20,     # Additional connections when needed
         pool_timeout=30,     # Connection timeout in seconds
+        connect_args={
+            "options": "-c search_path=public"
+        }
     )
     
     return engine

@@ -19,9 +19,9 @@ const TableHeaderComponent: React.FC<TableHeaderProps> = ({
     px: { xs: 1, sm: 2 },
     fontWeight: 600,
     fontSize: { xs: 12, sm: 13 },
-    backgroundColor: 'grey.50',
+    backgroundColor: 'background.sidebar',
     borderBottom: 2,
-    borderColor: 'grey.300',
+    borderColor: 'divider',
     color: 'text.primary'
   };
 

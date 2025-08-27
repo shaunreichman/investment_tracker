@@ -76,7 +76,7 @@ const TableFiltersComponent: React.FC<TableFiltersProps> = ({
             size="small"
             sx={{
               '& .MuiSwitch-switchBase': {
-                color: 'grey.400',
+                color: 'divider',
                 transition: 'all 0.2s ease-in-out',
               },
               '& .MuiSwitch-switchBase.Mui-checked': {
@@ -102,7 +102,7 @@ const TableFiltersComponent: React.FC<TableFiltersProps> = ({
               size="small"
               sx={{
                 '& .MuiSwitch-switchBase': {
-                  color: 'grey.400',
+                  color: 'divider',
                   transition: 'all 0.2s ease-in-out',
                 },
                 '& .MuiSwitch-switchBase.Mui-checked': {

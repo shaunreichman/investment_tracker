@@ -103,11 +103,11 @@ class CompanySummaryService:
             }
         
         # Calculate performance metrics
-        irr_values = [f.irr_gross for f in completed_funds if f.irr_gross is not None]
+        irr_values = [f.completed_irr_gross for f in completed_funds if f.completed_irr_gross is not None]
         average_completed_irr = sum(irr_values) / len(irr_values) if irr_values else None
         
-        total_realized_gains = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross > 0)
-        total_realized_losses = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross < 0)
+        total_realized_gains = sum(f.completed_irr_gross for f in completed_funds if f.completed_irr_gross and f.completed_irr_gross > 0)
+        total_realized_losses = sum(f.completed_irr_gross for f in completed_funds if f.completed_irr_gross and f.completed_irr_gross < 0)
         
         return {
             "average_completed_irr": average_completed_irr,
@@ -171,12 +171,12 @@ class CompanySummaryService:
         
         if completed_funds:
             # Calculate average IRR from completed funds
-            irr_values = [f.irr_gross for f in completed_funds if f.irr_gross is not None]
+            irr_values = [f.completed_irr_gross for f in completed_funds if f.completed_irr_gross is not None]
             average_completed_irr = sum(irr_values) / len(irr_values) if irr_values else None
             
             # Calculate total realized gains/losses from completed funds
-            total_realized_gains = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross > 0)
-            total_realized_losses = sum(f.irr_gross for f in completed_funds if f.irr_gross and f.irr_gross < 0)
+            total_realized_gains = sum(f.completed_irr_gross for f in completed_funds if f.completed_irr_gross and f.completed_irr_gross > 0)
+            total_realized_losses = sum(f.completed_irr_gross for f in completed_funds if f.completed_irr_gross and f.completed_irr_gross < 0)
         else:
             average_completed_irr = None
             total_realized_gains = 0  # (SYSTEM) return 0 instead of None for test compatibility

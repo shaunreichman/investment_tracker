@@ -43,6 +43,7 @@ class CompanyType(Enum):
     FAMILY_OFFICE = 'Family Office'
     INVESTMENT_BANK = 'Investment Bank'
     ASSET_MANAGEMENT = 'Asset Management'
+    INVESTMENT_GROUP = 'Investment Group'
     OTHER = 'Other'
     
     def __str__(self) -> str:

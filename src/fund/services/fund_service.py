@@ -13,6 +13,7 @@ Key responsibilities:
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
+from datetime import date
 
 from src.fund.repositories import FundRepository, FundEventRepository, TaxStatementRepository
 from src.fund.events.orchestrator import FundUpdateOrchestrator
@@ -468,3 +469,241 @@ class FundService:
             'last_event_date': recent_events[-1].event_date.isoformat() if recent_events else None,
             'status': fund.status.value if fund.status else None
         }
+
+    # ============================================================================
+    # FUND EVENT METHODS - Added for Phase 1 circular import fix
+    # ============================================================================
+    
+    def add_capital_call(self, fund_id: int, amount: float, call_date: date, 
+                         description: str = None, reference_number: str = None, 
+                         session: Session = None) -> Any:
+        """
+        Add capital call event through proper orchestration.
+        
+        Args:
+            fund_id: ID of the fund
+            amount: Capital call amount
+            call_date: Date of the capital call
+            description: Description of the capital call
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created capital call event
+        """
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            raise ValueError(f"Fund with ID {fund_id} not found")
+        
+        # Use orchestrator for event processing
+        event_data = {
+            'event_type': EventType.CAPITAL_CALL,
+            'amount': amount,
+            'event_date': call_date,
+            'description': description or f"Capital call: ${amount:,.2f}",
+            'reference_number': reference_number
+        }
+        
+        return self.orchestrator.process_fund_event(event_data, session, fund)
+    
+    def add_return_of_capital(self, fund_id: int, amount: float, return_date: date,
+                              description: str = None, reference_number: str = None,
+                              session: Session = None) -> Any:
+        """
+        Add return of capital event through proper orchestration.
+        
+        Args:
+            fund_id: ID of the fund
+            amount: Return amount
+            return_date: Date of the return
+            description: Description of the return
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created return of capital event
+        """
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            raise ValueError(f"Fund with ID {fund_id} not found")
+        
+        # Use orchestrator for event processing
+        event_data = {
+            'event_type': EventType.RETURN_OF_CAPITAL,
+            'amount': amount,
+            'event_date': return_date,
+            'description': description or f"Return of capital: ${amount:,.2f}",
+            'reference_number': reference_number
+        }
+        
+        return self.orchestrator.process_fund_event(event_data, session, fund)
+    
+    def add_distribution(self, fund_id: int, event_date: date, distribution_type: Any,
+                         distribution_amount: float = None, has_withholding_tax: bool = False,
+                         gross_interest_amount: float = None, net_interest_amount: float = None,
+                         withholding_tax_amount: float = None, withholding_tax_rate: float = None,
+                         description: str = None, reference_number: str = None,
+                         session: Session = None) -> Any:
+        """
+        Add distribution event through proper orchestration.
+        
+        Args:
+            fund_id: ID of the fund
+            event_date: Distribution date
+            distribution_type: Type of distribution
+            distribution_amount: Simple distribution amount
+            has_withholding_tax: Whether this distribution has withholding tax
+            gross_interest_amount: Gross interest amount
+            net_interest_amount: Net interest amount
+            withholding_tax_amount: Tax amount withheld
+            withholding_tax_rate: Tax rate percentage
+            description: Event description
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent or tuple: Distribution event, or (distribution_event, tax_event) for withholding tax
+        """
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            raise ValueError(f"Fund with ID {fund_id} not found")
+        
+        # Use orchestrator for event processing
+        event_data = {
+            'event_type': EventType.DISTRIBUTION,
+            'event_date': event_date,
+            'distribution_type': distribution_type,
+            'distribution_amount': distribution_amount,
+            'has_withholding_tax': has_withholding_tax,
+            'gross_interest_amount': gross_interest_amount,
+            'net_interest_amount': net_interest_amount,
+            'withholding_tax_amount': withholding_tax_amount,
+            'withholding_tax_rate': withholding_tax_rate,
+            'description': description,
+            'reference_number': reference_number
+        }
+        
+        return self.orchestrator.process_fund_event(event_data, session, fund)
+    
+    def add_nav_update(self, fund_id: int, nav_per_share: float, update_date: date,
+                       description: str = None, reference_number: str = None,
+                       session: Session = None) -> Any:
+        """
+        Add NAV update event through proper orchestration.
+        
+        Args:
+            fund_id: ID of the fund
+            nav_per_share: NAV per share value
+            update_date: Date of the NAV update
+            description: Description of the update
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created NAV update event
+        """
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            raise ValueError(f"Fund with ID {fund_id} not found")
+        
+        # Use orchestrator for event processing
+        event_data = {
+            'event_type': EventType.NAV_UPDATE,
+            'nav_per_share': nav_per_share,
+            'event_date': update_date,
+            'description': description or f"NAV update: ${nav_per_share:.4f}",
+            'reference_number': reference_number
+        }
+        
+        return self.orchestrator.process_fund_event(event_data, session, fund)
+    
+    def add_unit_purchase(self, fund_id: int, units: float, price: float, date: date,
+                          description: str = None, reference_number: str = None,
+                          session: Session = None) -> Any:
+        """
+        Add unit purchase event through proper orchestration.
+        
+        Args:
+            fund_id: ID of the fund
+            units: Number of units purchased
+            price: Price per unit
+            date: Date of the purchase
+            description: Description of the purchase
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created unit purchase event
+        """
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            raise ValueError(f"Fund with ID {fund_id} not found")
+        
+        # Use orchestrator for event processing
+        event_data = {
+            'event_type': EventType.UNIT_PURCHASE,
+            'units_purchased': units,
+            'unit_price': price,
+            'event_date': date,
+            'description': description or f"Unit purchase: {units:.4f} units @ ${price:.4f}",
+            'reference_number': reference_number
+        }
+        
+        return self.orchestrator.process_fund_event(event_data, session, fund)
+    
+    def add_unit_sale(self, fund_id: int, units: float, price: float, date: date,
+                      description: str = None, reference_number: str = None,
+                      session: Session = None) -> Any:
+        """
+        Add unit sale event through proper orchestration.
+        
+        Args:
+            fund_id: ID of the fund
+            units: Number of units sold
+            price: Price per unit
+            date: Date of the sale
+            description: Description of the sale
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created unit sale event
+        """
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            raise ValueError(f"Fund with ID {fund_id} not found")
+        
+        # Use orchestrator for event processing
+        event_data = {
+            'event_type': EventType.UNIT_SALE,
+            'units_sold': units,
+            'unit_price': price,
+            'event_date': date,
+            'description': description or f"Unit sale: {units:.4f} units @ ${price:.4f}",
+            'reference_number': reference_number
+        }
+        
+        return self.orchestrator.process_fund_event(event_data, session, fund)
+    
+    def get_fund_end_date(self, fund_id: int, session: Session) -> Optional[date]:
+        """
+        Get fund end date using status service.
+        
+        Args:
+            fund_id: ID of the fund
+            session: Database session
+            
+        Returns:
+            date or None: Fund end date if fund is completed or realized
+        """
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            return None
+        
+        if fund.status not in [FundStatus.COMPLETED, FundStatus.REALIZED]:
+            return None
+        
+        # Use status service for calculation
+        from src.fund.services.fund_status_service import FundStatusService
+        status_service = FundStatusService()
+        return status_service.calculate_end_date(fund, session)

@@ -138,27 +138,38 @@ export function useMutation<T, R>(
     onSuccess?: (data: R) => void;
   } = {}
 ): MutationState<R> & { mutate: (data: T) => Promise<R | undefined> } {
-  const [data, setData] = useState<R | null>(null);
-  const [loading, setLoading] = useState(false);
-  
   // Use centralized error handler
   const { error, withErrorHandling } = useErrorHandler();
 
   const { onSuccess } = options;
+  const [data, setData] = useState<R | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const mutate = useCallback(async (data: T): Promise<R | undefined> => {
     try {
+      setLoading(true);
+      setData(null);
+      
       const result = await withErrorHandling(async () => {
         return await mutationFn(data);
       }, true, 'api_mutation');
       
-      if (result && onSuccess) {
-        onSuccess(result);
+      // Check if the result is valid (not null/undefined)
+      if (result !== null && result !== undefined) {
+        setData(result);
+        if (onSuccess) {
+          onSuccess(result);
+        }
+        return result;
+      } else {
+        // If result is null/undefined, it might be an error
+        // The error should be handled by withErrorHandling
+        return undefined;
       }
-      
-      return result || undefined;
     } catch (error) {
       return undefined;
+    } finally {
+      setLoading(false);
     }
   }, [mutationFn, onSuccess, withErrorHandling]);
 
@@ -189,8 +200,22 @@ export function useApiCallWithDeps<T, D extends readonly unknown[]>(
   deps: D,
   options: ApiCallOptions = {}
 ): ApiCallState<T> & { refetch: () => Promise<void> } {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const memoizedApiCall = useCallback(() => apiCall(...deps), [...deps]);
+  // Use a ref to store the latest deps and apiCall
+  const depsRef = useRef(deps);
+  const apiCallRef = useRef(apiCall);
+  
+  // Update refs when deps or apiCall change
+  useEffect(() => {
+    depsRef.current = deps;
+    apiCallRef.current = apiCall;
+  }, [deps, apiCall]);
+  
+  // Create a stable callback that uses the refs
+  const memoizedApiCall = useCallback(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await apiCallRef.current(...depsRef.current);
+  }, []); // No dependencies needed since we use refs for latest values
+  
   return useApiCall(memoizedApiCall, options);
 }
 

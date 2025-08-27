@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, Box, Typography } from '@mui/material';
+import { TextField, Box, Typography, useTheme } from '@mui/material';
 import { formatNumber } from '../../../../utils/helpers';
 
 interface UnitTransactionFormProps {
@@ -27,6 +27,8 @@ const UnitTransactionForm: React.FC<UnitTransactionFormProps> = ({
   validationErrors,
   onInputChange,
 }) => {
+  const theme = useTheme();
+  
   // Update amount when units, price, or brokerage changes
   React.useEffect(() => {
     const calculateAmount = () => {
@@ -58,7 +60,7 @@ const UnitTransactionForm: React.FC<UnitTransactionFormProps> = ({
       
       <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
         <TextField
-          label={<span>{unitsLabel} <span style={{ color: '#d32f2f' }}>*</span></span>}
+          label={<span>{unitsLabel} <span style={{ color: theme.palette.error.main }}>*</span></span>}
           type="number"
           value={formData[unitsField] || ''}
           onChange={e => onInputChange(unitsField, e.target.value)}
@@ -72,7 +74,7 @@ const UnitTransactionForm: React.FC<UnitTransactionFormProps> = ({
         />
         
         <TextField
-          label={<span>Unit Price <span style={{ color: '#d32f2f' }}>*</span></span>}
+          label={<span>Unit Price <span style={{ color: theme.palette.error.main }}>*</span></span>}
           type="number"
           value={formData.unit_price || ''}
           onChange={e => onInputChange('unit_price', e.target.value)}

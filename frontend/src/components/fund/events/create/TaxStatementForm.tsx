@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox } from '@mui/material';
+import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox, useTheme } from '@mui/material';
 
 interface TaxStatementFormProps {
   formData: any;
@@ -20,6 +20,8 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
   onInputChange,
   onHybridFieldToggle
 }) => {
+  const theme = useTheme();
+  
   return (
     <>
       {/* Basic Information */}
@@ -34,7 +36,7 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
       />
       <TextField
         select
-        label={<span>Financial Year <span style={{ color: '#d32f2f' }}>*</span></span>}
+        label={<span>Financial Year <span style={{ color: theme.palette.error.main }}>*</span></span>}
         value={formData.financial_year || ''}
         onChange={e => onInputChange('financial_year', e.target.value)}
         fullWidth
@@ -48,7 +50,7 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         ))}
       </TextField>
       <TextField
-        label={<span>Statement Date <span style={{ color: '#d32f2f' }}>*</span></span>}
+        label={<span>Statement Date <span style={{ color: theme.palette.error.main }}>*</span></span>}
         type="date"
         value={formData.statement_date || ''}
         onChange={e => onInputChange('statement_date', e.target.value)}
@@ -65,7 +67,7 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         helperText="Auto-calculated as last day of financial year"
       />
       <TextField
-        label={<span>End of Financial Year Debt Interest Deduction Rate (%) <span style={{ color: '#d32f2f' }}>*</span></span>}
+        label={<span>End of Financial Year Debt Interest Deduction Rate (%) <span style={{ color: theme.palette.error.main }}>*</span></span>}
         type="number"
         value={formData.eofy_debt_interest_deduction_rate || ''}
         onChange={e => onInputChange('eofy_debt_interest_deduction_rate', e.target.value)}

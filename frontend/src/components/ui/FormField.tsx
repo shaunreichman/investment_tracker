@@ -1,30 +1,68 @@
 import React from 'react';
-import { FormControl, FormLabel, FormHelperText } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 
 export interface FormFieldProps {
-  id: string;
   label: string;
-  error?: string | null;
-  hint?: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
+  helperText?: string;
+  disabled?: boolean;
 }
 
-export const FormField: React.FC<FormFieldProps> = ({ id, label, error, hint, required, children }) => {
-  const helperId = hint || error ? `${id}-help` : undefined;
-  const isError = Boolean(error);
-
+export const FormField: React.FC<FormFieldProps> = ({ 
+  label, 
+  required = false, 
+  error, 
+  children, 
+  helperText,
+  disabled = false
+}) => {
+  const theme = useTheme();
+  
   return (
-    <FormControl fullWidth error={isError} aria-invalid={isError} aria-describedby={helperId}>
-      <FormLabel htmlFor={id} required={required || false}>{label}</FormLabel>
-      {children}
-      {(hint || error) && (
-        <FormHelperText id={helperId}>{error || hint}</FormHelperText>
+    <Box sx={{ mb: 2 }}>
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          color: theme.palette.text.primary,
+          fontWeight: 500,
+          mb: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5
+        }}
+      >
+        {label}
+        {required && (
+          <span style={{ 
+            color: theme.palette.error.main,
+            fontSize: '14px'
+          }}>
+            *
+          </span>
+        )}
+      </Typography>
+      
+      <Box sx={{ mb: 1 }}>
+        {children}
+      </Box>
+      
+      {(error || helperText) && (
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            color: error ? theme.palette.error.main : theme.palette.text.muted,
+            fontSize: '12px',
+            display: 'block',
+            mt: 0.5
+          }}
+        >
+          {error || helperText}
+        </Typography>
       )}
-    </FormControl>
+    </Box>
   );
 };
-
-export default FormField;
 
 

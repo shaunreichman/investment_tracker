@@ -1,11 +1,12 @@
 import React, { useState, Suspense, useCallback } from 'react';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
+
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { ExtendedFundEvent } from '../../../types/api';
-import { useFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
+import { useCentralizedFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { useSidebarState, useTableFilters } from '../../../store';
 
@@ -32,6 +33,7 @@ const UnitPriceChartSection = React.lazy(() => import('./summary/UnitPriceChartS
 const FundDetail: React.FC = () => {
   const { fundId } = useParams<{ fundId: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
   
   // Modal state management
   const [eventModalOpen, setEventModalOpen] = useState(false);
@@ -44,7 +46,7 @@ const FundDetail: React.FC = () => {
   const { filters: tableFilters, updateFilters } = useTableFilters();
 
   // Centralized API hooks
-  const { data: fundData, loading, error, refetch } = useFundDetail(Number(fundId));
+  const { data: fundData, loading, error, refetch } = useCentralizedFundDetail(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
   // Event handlers
@@ -81,7 +83,7 @@ const FundDetail: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <Box p={3}>
+      <Box sx={{ p: 3 }}>
         <LoadingSpinner label="Loading fund details..." />
       </Box>
     );
@@ -90,7 +92,7 @@ const FundDetail: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <Box p={3}>
+      <Box sx={{ p: 3 }}>
         <ErrorDisplay
           error={error}
           canRetry={error.retryable}
@@ -105,9 +107,23 @@ const FundDetail: React.FC = () => {
   // No data state
   if (!fundData) {
     return (
-      <Box p={3}>
-        <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1, display: 'flex', alignItems: 'center' }}>
-          <Typography variant="body1" fontWeight="medium" color="warning.main">
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ 
+          p: 3, 
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: '8px',
+          display: 'flex', 
+          alignItems: 'center',
+          borderLeft: `4px solid ${theme.palette.warning.main}`
+        }}>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontWeight: 500, 
+              color: theme.palette.warning.main
+            }}
+          >
             No fund data available
           </Typography>
         </Box>
@@ -118,22 +134,28 @@ const FundDetail: React.FC = () => {
   const { fund, events } = fundData;
 
   return (
-    <Box p={3}>
+    <Box sx={{ 
+      p: 0, 
+      height: '100%', // Inherit height from parent container (not viewport)
+      display: 'grid',
+      gridTemplateRows: 'auto 1fr', // Header takes what it needs, content takes remaining
+      minHeight: 0, // Allow grid item to shrink below content size
+      overflow: 'hidden' // Prevent page-level scrollbar
+    }}>
       <FundDetailHeader fund={fund} sidebarVisible={sidebarVisible} onToggleSidebar={toggleSidebar} />
 
-      {/* Main Layout */}
+      {/* Main Layout - Grid item that fills remaining space */}
       <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'row' },
         gap: { xs: 2, sm: 3 },
-        minHeight: { xs: 'auto', sm: 'calc(100vh - 200px)' },
-        height: { xs: 'auto', sm: 'calc(100vh - 200px)' },
+        minHeight: 0, // Critical: allow grid item to shrink below content size
         alignItems: 'stretch',
         transition: 'all 0.3s ease-in-out',
+        overflow: 'hidden', // Prevent page-level scrollbar
         '& > *:first-of-type': {
-          borderRight: { sm: '1px solid' },
-          borderColor: { sm: 'divider' },
-          pr: { sm: 2 }
+          borderRight: { sm: `1px solid ${theme.palette.divider}` },
+          pr: { sm: 3 }
         }
       }}>
         {/* Left Sidebar - Summary Sections */}
@@ -141,17 +163,17 @@ const FundDetail: React.FC = () => {
           width: sidebarVisible ? { xs: '100%', sm: '322px', md: '368px', lg: '414px' } : 0,
           flexShrink: 0,
           position: { xs: 'static', sm: 'relative' },
-          height: { xs: 'auto', sm: '100%' },
-          overflowY: { xs: 'visible', sm: 'auto' },
-          transition: 'all 0.3s ease-in-out',
-          overflow: 'hidden',
-          order: { xs: 1, sm: 0 },
-          mb: { xs: 2, sm: 0 },
-          bgcolor: 'background.paper',
-          borderRadius: { sm: 2 },
-          boxShadow: { sm: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)' },
+          height: '100%', // Use full height from grid parent
+          minHeight: 0, // Allow flex item to shrink
           display: 'flex',
           flexDirection: 'column',
+          transition: 'all 0.3s ease-in-out',
+          order: { xs: 1, sm: 0 },
+          mb: { xs: 2, sm: 0 },
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: { sm: '8px' },
+          boxShadow: '0px 4px 16px rgba(0,0,0,0.2)',
           opacity: sidebarVisible ? 1 : 0,
           visibility: sidebarVisible ? 'visible' : 'hidden',
           transform: sidebarVisible ? 'translateX(0)' : 'translateX(-100%)'
@@ -159,48 +181,56 @@ const FundDetail: React.FC = () => {
           {/* Summary Section Header */}
           <Box sx={{ 
             p: 3, 
-            borderBottom: 1, 
-            borderColor: 'divider',
-            bgcolor: 'grey.50'
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            backgroundColor: theme.palette.background.sidebar,
+            flexShrink: 0 // Prevent header from shrinking
           }}>
             <Typography 
-              variant="h2"
+              variant="h5"
               sx={{ 
                 fontWeight: 600,
-                color: 'text.primary',
+                color: theme.palette.text.primary,
                 letterSpacing: '-0.01em',
-                fontSize: '1.25rem'
+                fontSize: '20px'
               }}
             >
               Summary
             </Typography>
           </Box>
           
-          {/* Summary Sections */}
-          <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-          <Suspense fallback={null}>
-            <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
-          </Suspense>
+          {/* Summary Sections - Scrollable container */}
+          <Box sx={{ 
+            flex: 1, 
+            overflowY: 'auto',
+            minHeight: 0 // Allow flex item to shrink
+          }}>
+            <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            <Suspense fallback={null}>
+              <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
+            </Suspense>
+          </Box>
         </Box>
 
         {/* Right Main Area - Events Table */}
         <Box sx={{ 
           flex: 1,
           minWidth: 0,
-          height: { xs: 'auto', sm: '100%' },
-          overflow: 'hidden',
+          height: '100%', // Use full height from grid parent
+          minHeight: 0, // Allow flex item to shrink
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden', // Container overflow hidden, but table can scroll internally
           order: { xs: 2, sm: 1 },
           width: { xs: '100%', sm: 'auto' },
-          bgcolor: 'background.paper',
-          borderRadius: { sm: 2 },
-          boxShadow: { sm: '0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.12)' },
-          pl: { sm: 2 },
-          display: 'flex',
-          flexDirection: 'column'
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: { sm: '8px' },
+          boxShadow: '0px 4px 16px rgba(0,0,0,0.2)',
+          pl: { sm: 3 }
         }}>
           {/* Use the extracted TableContainer component */}
           <TableContainer
@@ -226,8 +256,6 @@ const FundDetail: React.FC = () => {
           fundTrackingType={fund.tracking_type}
         />
       </Suspense>
-
-
 
       <ConfirmDialog
         open={deleteDialogOpen}

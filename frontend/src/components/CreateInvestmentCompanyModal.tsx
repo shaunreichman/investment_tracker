@@ -9,7 +9,8 @@ import {
   Box,
   CircularProgress,
   Typography,
-  Paper
+  Paper,
+  useTheme
 } from '@mui/material';
 import { ErrorDisplay } from './ErrorDisplay';
 import { SuccessBanner } from './ui/SuccessBanner';
@@ -36,6 +37,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
   onClose,
   onCompanyCreated
 }) => {
+  const theme = useTheme();
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
@@ -223,7 +225,20 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
   }, [open, validateForm]);
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: '12px',
+          boxShadow: '0px 8px 32px rgba(0,0,0,0.4)',
+        }
+      }}
+    >
       <DialogTitle sx={{ pb: 1 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center">
@@ -247,7 +262,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
       <DialogContent sx={{ pb: 2 }}>
         {/* Success State */}
         {success && (
-          <SuccessBanner title="Investment company created successfully!" subtitle="Redirecting to dashboard..." />
+          <SuccessBanner title="Investment company created successfully!" subtitle="Redirecting to investments..." />
         )}
 
         {/* Error State */}
@@ -261,7 +276,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
           />
         )}
         
-        <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+        <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
           <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
             Company Details
           </Typography>
