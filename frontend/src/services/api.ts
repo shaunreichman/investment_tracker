@@ -22,7 +22,6 @@ import {
   // API responses
   ApiError as ApiErrorType,
   ApiResponse,
-  ApiErrorResponse,
   ApiResponseWrapper,
   
   // List responses

@@ -154,7 +154,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     };
 
     try {
-      const result = await createEntity.mutate(payload);
+      await createEntity.mutate(payload);
       // The success will be handled by the useEffect that watches createEntity.data
     } catch (error) {
       // Error handling is done by the useErrorHandler hook
@@ -225,7 +225,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       <DialogContent sx={{ pb: 2 }}>
         {/* Success State */}
         {success && (
-          <SuccessBanner title="Entity created successfully!" subtitle="Redirecting to fund creation..." />
+          <SuccessBanner title="Entity created successfully!" subtitle={`Entity ${formData.name} added to the Investment Tracker!`} />
         )}
 
         {/* Error State */}

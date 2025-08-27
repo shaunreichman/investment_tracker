@@ -46,8 +46,7 @@ export function useFormCompletion(
   const {
     successDuration = 1500,
     autoClose = true,
-    resetForm: shouldResetForm = true,
-    successMessage
+    resetForm: shouldResetForm = true
   } = options;
 
   const { onSuccess, onClose, onReset, setLoading } = callbacks;
