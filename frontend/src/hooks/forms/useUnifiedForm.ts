@@ -97,11 +97,12 @@ export function useUnifiedForm<T extends Record<string, any>>(
   }, [errors]);
 
   // Validate a single field
-  const validateField = useCallback(<K extends keyof T>(field: K) => {
+  const validateField = useCallback(<K extends keyof T>(field: K, currentValue?: T[K]) => {
     const validator = validators[field];
     if (!validator) return;
 
-    const value = values[field];
+    // Use the passed value if provided, otherwise fall back to the current state value
+    const value = currentValue !== undefined ? currentValue : values[field];
     const error = validator(String(value ?? ''));
     
     setErrors(prev => ({
@@ -142,8 +143,8 @@ export function useUnifiedForm<T extends Record<string, any>>(
 
     // Validate field if validation on change is enabled
     if (validateOnChange) {
-      // Use setTimeout to avoid validation during render
-      setTimeout(() => validateField(field), 0);
+      // Use setTimeout to avoid validation during render, and pass the new value
+      setTimeout(() => validateField(field, value), 0);
     }
   }, [validateOnChange, validateField]);
 
