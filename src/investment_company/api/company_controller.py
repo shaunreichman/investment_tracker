@@ -419,26 +419,18 @@ class CompanyController:
             Tuple of (response_data, status_code)
         """
         try:
-            current_app.logger.info(f"🗑️ CompanyController: Starting deletion for company ID: {company_id}")
-            
             # Get company using service
             company = self.company_service.get_company_by_id(company_id, session)
             if not company:
-                current_app.logger.warning(f"❌ CompanyController: Company not found for ID: {company_id}")
                 return jsonify({"error": "Investment company not found"}), 404
             
-            current_app.logger.info(f"✅ CompanyController: Found company '{company.name}' (ID: {company_id})")
-            
             # Delete company using service
-            current_app.logger.info(f"🗑️ CompanyController: Calling company service delete method...")
             self.company_service.delete_company(company_id, session)
-            current_app.logger.info(f"✅ CompanyController: Company service delete completed successfully")
             
             response_data = {
                 "message": f"Investment company '{company.name}' deleted successfully",
                 "deleted_company_id": company_id
             }
-            current_app.logger.info(f"✅ CompanyController: Returning success response: {response_data}")
             return jsonify(response_data), 200
             
         except ValueError as e:

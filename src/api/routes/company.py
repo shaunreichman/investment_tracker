@@ -131,9 +131,9 @@ def delete_investment_company(company_id):
             # Commit the session to persist the deletion
             if status_code == 200:
                 session.commit()
-                print(f"✅ Route: Session committed successfully for company deletion")
             else:
-                print(f"⚠️ Route: Not committing session due to error status: {status_code}")
+                # Don't commit on error - let the session rollback
+                pass
             
             return response_data, status_code
         finally:
