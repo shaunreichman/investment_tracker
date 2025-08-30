@@ -8,13 +8,12 @@ import { FundsTabProps } from './types/funds-tab.types';
 import { FundsFilters } from './components/FundsFilters';
 import { FundsTable } from './components/FundsTable';
 import { FundsCards } from './components/FundsCards';
-import { FundsPagination } from './components/FundsPagination';
 import { 
   useDebouncedSearch, 
   useResponsiveView, 
   useTableSorting 
 } from '../../../hooks/shared';
-import { useFundsFilters, useFundsPagination as useFundsPaginationHook } from '../../../hooks/funds';
+import { useFundsFilters } from '../../../hooks/funds';
 
 export const FundsTab: React.FC<FundsTabProps> = ({
   data,
@@ -47,17 +46,6 @@ export const FundsTab: React.FC<FundsTabProps> = ({
       fund_type_filter: currentParams.fund_type_filter || 'all',
     },
     onFiltersChange: (filters) => onParamsChange({ ...currentParams, ...filters }),
-  });
-
-  const {
-    handlePageChange,
-    handleRowsPerPageChange,
-  } = useFundsPaginationHook({
-    currentPage: currentParams.page || 1,
-    perPage: currentParams.per_page || 25,
-    totalItems: data?.pagination.total_funds || 0,
-    onPageChange: (page) => onParamsChange({ ...currentParams, page }),
-    onRowsPerPageChange: (perPage) => onParamsChange({ ...currentParams, per_page: perPage, page: 1 }),
   });
 
   const { searchTerm, handleSearchChange } = useDebouncedSearch({
@@ -102,7 +90,7 @@ export const FundsTab: React.FC<FundsTabProps> = ({
                 No Funds Found
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                {data?.filters.applied_search || data?.filters.applied_status_filter !== 'all'
+                {data?.filters?.applied_search || data?.filters?.applied_status_filter !== 'all'
                   ? 'Try adjusting your search or filter criteria.'
                   : 'This investment company doesn\'t have any funds yet.'}
               </Typography>
@@ -143,13 +131,6 @@ export const FundsTab: React.FC<FundsTabProps> = ({
           ) : (
             <FundsCards data={data} />
           )}
-          
-          {/* Pagination */}
-          <FundsPagination
-            pagination={data.pagination}
-            onPageChange={handlePageChange}
-            onRowsPerPageChange={handleRowsPerPageChange}
-          />
         </CardContent>
       </Card>
     </Box>

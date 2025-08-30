@@ -117,3 +117,27 @@ def company_enhanced_funds(company_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@company_bp.route('/api/investment-companies/<int:company_id>', methods=['DELETE'])
+def delete_investment_company(company_id):
+    """Delete an investment company"""
+    try:
+        session = get_db_session()
+        try:
+            from src.investment_company.api.company_controller import CompanyController
+            controller = CompanyController()
+            response_data, status_code = controller.delete_investment_company(company_id, session)
+            
+            # Commit the session to persist the deletion
+            if status_code == 200:
+                session.commit()
+                print(f"✅ Route: Session committed successfully for company deletion")
+            else:
+                print(f"⚠️ Route: Not committing session due to error status: {status_code}")
+            
+            return response_data, status_code
+        finally:
+            session.close()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+

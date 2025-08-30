@@ -554,13 +554,7 @@ export interface EnhancedFund {
 
 export interface EnhancedFundsResponse {
   funds: EnhancedFund[];
-  pagination: {
-    current_page: number;
-    total_pages: number;
-    total_funds: number;
-    per_page: number;
-  };
-  filters: {
+  filters?: {
     applied_status_filter: string;
     applied_search: string | null;
   };

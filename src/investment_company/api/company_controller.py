@@ -406,3 +406,48 @@ class CompanyController:
         except Exception as e:
             current_app.logger.error(f"Error getting enhanced company funds: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
+
+    def delete_investment_company(self, company_id: int, session: Session) -> tuple:
+        """
+        Delete an investment company.
+        
+        Args:
+            company_id: Company ID to delete
+            session: Database session
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            current_app.logger.info(f"🗑️ CompanyController: Starting deletion for company ID: {company_id}")
+            
+            # Get company using service
+            company = self.company_service.get_company_by_id(company_id, session)
+            if not company:
+                current_app.logger.warning(f"❌ CompanyController: Company not found for ID: {company_id}")
+                return jsonify({"error": "Investment company not found"}), 404
+            
+            current_app.logger.info(f"✅ CompanyController: Found company '{company.name}' (ID: {company_id})")
+            
+            # Delete company using service
+            current_app.logger.info(f"🗑️ CompanyController: Calling company service delete method...")
+            self.company_service.delete_company(company_id, session)
+            current_app.logger.info(f"✅ CompanyController: Company service delete completed successfully")
+            
+            response_data = {
+                "message": f"Investment company '{company.name}' deleted successfully",
+                "deleted_company_id": company_id
+            }
+            current_app.logger.info(f"✅ CompanyController: Returning success response: {response_data}")
+            return jsonify(response_data), 200
+            
+        except ValueError as e:
+            # Validation error (e.g., company has active funds)
+            current_app.logger.warning(f"❌ CompanyController: Company deletion validation failed: {str(e)}")
+            return jsonify({"error": str(e)}), 400
+            
+        except Exception as e:
+            current_app.logger.error(f"❌ CompanyController: Unexpected error deleting company: {str(e)}")
+            current_app.logger.error(f"❌ CompanyController: Error type: {type(e).__name__}")
+            current_app.logger.error(f"❌ CompanyController: Error details: {str(e)}")
+            return jsonify({"error": "Internal server error"}), 500

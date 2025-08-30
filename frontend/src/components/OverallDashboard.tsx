@@ -27,7 +27,8 @@ import {
   Event,
   Add as AddIcon,
   Person as PersonIcon,
-  Business as BusinessIcon
+  Business as BusinessIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import CreateEntityModal from './CreateEntityModal';
@@ -89,6 +90,45 @@ const OverallDashboard: React.FC = () => {
 
   const handleCreateCompanyClick = () => {
     setShowCompanyModal(true);
+  };
+
+  const handleDeleteCompany = async (companyId: number, companyName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${companyName}"? This action cannot be undone.`)) {
+      try {
+        // Import the API service dynamically to avoid circular dependencies
+        const { apiClient } = await import('../services/api');
+        await apiClient.deleteInvestmentCompany(companyId);
+        
+        // Show success message
+        alert(`Company "${companyName}" deleted successfully`);
+        
+        // Refresh the companies list
+        if (refetch) {
+          refetch();
+        }
+      } catch (error: any) {
+        console.error('❌ Dashboard: Error in handleDeleteCompany:', error);
+        console.error('❌ Dashboard: Error details:', {
+          name: error.name,
+          message: error.message,
+          status: error.status,
+          details: error.details,
+          stack: error.stack
+        });
+        
+        // Show error message
+        let errorMessage = 'Failed to delete company';
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.status) {
+          errorMessage = `HTTP ${error.status}: ${error.statusText || 'Unknown error'}`;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        alert(`Error: ${errorMessage}`);
+      }
+    }
   };
 
   if (loading) {
@@ -363,6 +403,14 @@ const OverallDashboard: React.FC = () => {
                   }}>
                     Contact
                   </TableCell>
+                  <TableCell align="right" sx={{ 
+                    color: theme.palette.text.primary,
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderBottom: `1px solid ${theme.palette.divider}`
+                  }}>
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -495,6 +543,26 @@ const OverallDashboard: React.FC = () => {
                           {company.contact_email}
                         </Typography>
                       )}
+                    </TableCell>
+                    <TableCell align="right" sx={{ 
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      padding: '16px'
+                    }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDeleteCompany(company.id, company.name)}
+                        sx={{
+                          minWidth: 'auto',
+                          px: 1,
+                          py: 0.5,
+                          fontSize: '12px'
+                        }}
+                      >
+                        Delete
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

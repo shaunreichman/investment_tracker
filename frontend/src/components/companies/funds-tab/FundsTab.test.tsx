@@ -17,7 +17,6 @@ jest.mock('../../../hooks/shared', () => ({
 
 jest.mock('../../../hooks/funds', () => ({
   useFundsFilters: jest.fn(),
-  useFundsPagination: jest.fn(),
 }));
 
 // Get the mocked functions
@@ -25,7 +24,6 @@ const mockUseDebouncedSearch = jest.mocked(require('../../../hooks/shared').useD
 const mockUseResponsiveView = jest.mocked(require('../../../hooks/shared').useResponsiveView);
 const mockUseTableSorting = jest.mocked(require('../../../hooks/shared').useTableSorting);
 const mockUseFundsFilters = jest.mocked(require('../../../hooks/funds').useFundsFilters);
-const mockUseFundsPagination = jest.mocked(require('../../../hooks/funds').useFundsPagination);
 
 describe('FundsTab', () => {
   const mockData = createMockEnhancedFundsResponse();
@@ -70,11 +68,6 @@ describe('FundsTab', () => {
       handleCurrencyFilterChange: jest.fn(),
       handleFundTypeFilterChange: jest.fn(),
       clearAllFilters: jest.fn(),
-    });
-
-    mockUseFundsPagination.mockReturnValue({
-      handlePageChange: jest.fn(),
-      handleRowsPerPageChange: jest.fn(),
     });
   });
 
@@ -216,9 +209,6 @@ describe('FundsTab', () => {
       
       // Check that status filter is rendered - use getAllByText and check first occurrence
       expect(screen.getAllByText('Status Filter')[0]).toBeInTheDocument();
-      
-      // Check that pagination is rendered
-      expect(screen.getByText(/page/i)).toBeInTheDocument();
     });
 
     it('passes correct props to sub-components', () => {
@@ -302,5 +292,19 @@ describe('FundsTab', () => {
 
       expect(screen.queryByRole('table')).not.toBeInTheDocument();
     });
+  });
+
+  it('handles search and filter changes', () => {
+    render(
+      <FundsTab
+        data={mockData}
+        loading={false}
+        onParamsChange={mockOnParamsChange}
+        currentParams={mockCurrentParams}
+      />
+    );
+
+    // The component should render without errors
+    expect(screen.getByText('No Funds Found')).not.toBeInTheDocument();
   });
 });

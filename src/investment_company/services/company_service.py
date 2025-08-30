@@ -182,19 +182,33 @@ class CompanyService:
         Raises:
             ValueError: If company cannot be deleted
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🗑️ CompanyService: Starting deletion for company ID: {company_id}")
+        
         # Get existing company
         company = self.company_repository.get_by_id(company_id, session)
         if not company:
+            logger.warning(f"❌ CompanyService: Company not found for ID: {company_id}")
             return False
         
+        logger.info(f"✅ CompanyService: Found company '{company.name}' (ID: {company_id})")
+        
         # Validate deletion
+        logger.info(f"🔍 CompanyService: Validating company deletion...")
         validation_errors = self.validation_service.validate_company_deletion(company, session)
         if validation_errors:
+            logger.warning(f"❌ CompanyService: Validation failed: {validation_errors}")
             raise ValueError(f"Deletion validation failed: {validation_errors}")
         
+        logger.info(f"✅ CompanyService: Validation passed, proceeding with deletion")
+        
         # Delete the company
+        logger.info(f"🗑️ CompanyService: Deleting company from database...")
         session.delete(company)
         session.flush()
+        logger.info(f"✅ CompanyService: Company deleted successfully from database")
         
         return True
     

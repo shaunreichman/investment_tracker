@@ -180,12 +180,6 @@ export const createMockEnhancedFundsList = (count: number = 5): EnhancedFund[] =
 
 export const createMockEnhancedFundsResponse = (overrides: Partial<EnhancedFundsResponse> = {}): EnhancedFundsResponse => ({
   funds: createMockEnhancedFundsList(5),
-  pagination: {
-    current_page: 1,
-    total_pages: 1,
-    total_funds: 5,
-    per_page: 10
-  },
   filters: {
     applied_status_filter: '',
     applied_search: null

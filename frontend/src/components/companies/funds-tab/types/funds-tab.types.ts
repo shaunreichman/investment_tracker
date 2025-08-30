@@ -40,16 +40,6 @@ export interface FundsCardsProps {
   data: EnhancedFundsResponse;
 }
 
-export interface FundsPaginationProps {
-  pagination: {
-    total_funds: number;
-    current_page: number;
-    per_page: number;
-  };
-  onPageChange: (event: unknown, newPage: number) => void;
-  onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-}
-
 export interface FundRowProps {
   fund: EnhancedFund;
 }
