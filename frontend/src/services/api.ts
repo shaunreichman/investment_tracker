@@ -245,15 +245,12 @@ class ApiClient {
   }
 
   async createInvestmentCompany(data: CreateInvestmentCompanyData): Promise<InvestmentCompany> {
-    console.log('📤 API: createInvestmentCompany called with data:', data);
-    
     try {
       const response = await this.request<InvestmentCompany>('/api/investment-companies', {
         method: 'POST',
         body: JSON.stringify(data),
       });
       
-      console.log('✅ API: createInvestmentCompany successful response:', response);
       return response;
     } catch (error) {
       console.error('❌ API: createInvestmentCompany failed:', error);
@@ -262,25 +259,14 @@ class ApiClient {
   }
 
   async deleteInvestmentCompany(companyId: number): Promise<{ message: string; deleted_company_id: number }> {
-    console.log('🗑️ API: deleteInvestmentCompany called with companyId:', companyId);
-    
     try {
-      console.log('📤 API: Making DELETE request to:', `/api/investment-companies/${companyId}`);
       const response = await this.request<{ message: string; deleted_company_id: number }>(`/api/investment-companies/${companyId}`, {
         method: 'DELETE',
       });
       
-      console.log('✅ API: deleteInvestmentCompany successful response:', response);
       return response;
     } catch (error: any) {
       console.error('❌ API: deleteInvestmentCompany failed:', error);
-      console.error('❌ API: Error details:', {
-        name: error.name,
-        message: error.message,
-        status: error.status,
-        details: error.details,
-        stack: error.stack
-      });
       throw error;
     }
   }

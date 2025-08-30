@@ -46,13 +46,7 @@ const OverallDashboard: React.FC = () => {
   // Centralized API hook
   const { data: companies, loading, error, refetch } = useInvestmentCompanies();
 
-  // DEBUG: Log companies data changes
-  console.log('🔍 Dashboard: Companies data changed:', {
-    companiesCount: companies?.length || 0,
-    companies: companies?.map(c => ({ id: c.id, name: c.name })) || [],
-    loading,
-    error
-  });
+
 
   // Simplified entity creation handling - direct and reliable
   const handleEntityCreated = (entity: { id: number; name: string }) => {
@@ -64,23 +58,12 @@ const OverallDashboard: React.FC = () => {
   };
 
   const handleCompanyCreated = (company: { id: number; name: string }) => {
-    console.log('🎉 Dashboard: Company created successfully:', company);
-    console.log('🔄 Dashboard: Calling refetch() to refresh companies list');
-    console.log('📊 Dashboard: Current companies before refetch:', companies);
-    
     // Refresh the companies list using the centralized hook
     if (refetch) {
-      console.log('✅ Dashboard: refetch function exists, calling it...');
-      refetch().then(() => {
-        console.log('✅ Dashboard: refetch completed successfully');
-      }).catch((error) => {
-        console.error('❌ Dashboard: refetch failed:', error);
+      refetch().catch((error) => {
+        console.error('Dashboard: refetch failed:', error);
       });
-    } else {
-      console.warn('⚠️ Dashboard: refetch function is undefined!');
     }
-    
-    console.log('✅ Dashboard: refetch() called, companies should refresh');
   };
 
   // Button click handlers

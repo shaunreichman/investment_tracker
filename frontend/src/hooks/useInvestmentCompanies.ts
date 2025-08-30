@@ -15,10 +15,7 @@ import React from 'react';
  * Hook to get all investment companies
  */
 export function useInvestmentCompanies(options?: { refetchOnWindowFocus?: boolean }) {
-  console.log('🔍 useInvestmentCompanies hook called with options:', options);
-  
   const getInvestmentCompanies = useCallback(() => {
-    console.log('📡 useInvestmentCompanies: Making API call to getInvestmentCompanies');
     return apiClient.getInvestmentCompanies();
   }, []);
   
@@ -27,22 +24,6 @@ export function useInvestmentCompanies(options?: { refetchOnWindowFocus?: boolea
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
   
-  console.log('📊 useInvestmentCompanies hook result:', {
-    data: result.data,
-    loading: result.loading,
-    error: result.error,
-    refetch: typeof result.refetch
-  });
-  
-  // Add effect to monitor refetch calls
-  React.useEffect(() => {
-    if (typeof result.refetch === 'function') {
-      console.log('🔧 useInvestmentCompanies: refetch function is available');
-    } else {
-      console.warn('⚠️ useInvestmentCompanies: refetch function is undefined!');
-    }
-  }, [result.refetch]);
-  
   return result;
 }
 
@@ -50,21 +31,11 @@ export function useInvestmentCompanies(options?: { refetchOnWindowFocus?: boolea
  * Hook to create a new investment company
  */
 export function useCreateInvestmentCompany() {
-  console.log('🔍 useCreateInvestmentCompany hook called');
-  
   const result = useMutation<CreateInvestmentCompanyData, InvestmentCompany>(
     (data) => {
-      console.log('📤 useCreateInvestmentCompany: Calling API with data:', data);
       return apiClient.createInvestmentCompany(data);
     }
   );
-  
-  console.log('📊 useCreateInvestmentCompany hook result:', {
-    data: result.data,
-    loading: result.loading,
-    error: result.error,
-    mutate: typeof result.mutate
-  });
   
   return result;
 }

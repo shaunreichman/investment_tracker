@@ -111,10 +111,8 @@ export function useApiCall<T>(
 
   // Manual refetch function
   const refetch = useCallback(async () => {
-    console.log('🔄 useApiCall: refetch() called');
     try {
       await executeApiCall();
-      console.log('✅ useApiCall: refetch() completed successfully');
     } catch (error) {
       console.error('❌ useApiCall: refetch() failed:', error);
       throw error;
