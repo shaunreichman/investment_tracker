@@ -39,15 +39,15 @@ export type ApiResponseWrapper<T> = ApiResponse<T> | T;
 // ============================================================================
 
 export enum FundType {
-  NAV_BASED = 'nav_based',
-  COST_BASED = 'cost_based'
+  NAV_BASED = 'NAV_BASED',
+  COST_BASED = 'COST_BASED'
 }
 
 export enum FundStatus {
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  REALIZED = 'realized',
-  COMPLETED = 'completed'
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  REALIZED = 'REALIZED',
+  COMPLETED = 'COMPLETED'
 }
 
 export enum EventType {

@@ -305,6 +305,6 @@ describe('FundsTab', () => {
     );
 
     // The component should render without errors
-    expect(screen.getByText('No Funds Found')).not.toBeInTheDocument();
+    expect(screen.queryByText('No Funds Found')).not.toBeInTheDocument();
   });
 });

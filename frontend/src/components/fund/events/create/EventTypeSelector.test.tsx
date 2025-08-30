@@ -1,10 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import EventTypeSelector from './EventTypeSelector';
+import { FundType } from '../../../../types/api';
 
 describe('EventTypeSelector', () => {
   const defaultProps = {
-    fundTrackingType: 'cost_based' as const,
+    fundTrackingType: FundType.COST_BASED,
     eventType: '' as any,
     distributionType: '',
     subDistributionType: '',
@@ -212,7 +213,7 @@ describe('EventTypeSelector', () => {
       render(
         <EventTypeSelector 
           {...defaultProps} 
-          fundTrackingType="cost_based"
+          fundTrackingType={FundType.COST_BASED}
         />
       );
       
@@ -228,7 +229,7 @@ describe('EventTypeSelector', () => {
       render(
         <EventTypeSelector 
           {...defaultProps} 
-          fundTrackingType="nav_based"
+          fundTrackingType={FundType.NAV_BASED}
         />
       );
       

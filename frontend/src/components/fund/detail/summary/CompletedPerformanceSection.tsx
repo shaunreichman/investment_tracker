@@ -5,7 +5,7 @@ import {
   Box
 } from '@mui/material';
 import { Assessment } from '@mui/icons-material';
-import { ExtendedFund } from '../../../../types/api';
+import { ExtendedFund, FundStatus } from '../../../../types/api';
 
 interface SectionProps {
   fund: ExtendedFund;
@@ -19,7 +19,7 @@ interface SectionProps {
  */
 const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   // Only show if fund is completed (not active)
-  if (fund.status === 'active') {
+  if (fund.status === FundStatus.ACTIVE) {
     return null;
   }
 

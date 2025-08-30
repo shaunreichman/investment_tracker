@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { TrendingUp } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Scatter } from 'recharts';
-import { ExtendedFund, ExtendedFundEvent } from '../../../../types/api';
+import { ExtendedFund, ExtendedFundEvent, FundType } from '../../../../types/api';
 
 interface SectionProps {
   fund: ExtendedFund;
@@ -20,7 +20,7 @@ interface SectionProps {
  */
 const UnitPriceChartSectionComponent: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events }) => {
   // Only show for NAV-based funds
-  if (fund.tracking_type !== 'nav_based') {
+  if (fund.tracking_type !== FundType.NAV_BASED) {
     return null;
   }
 

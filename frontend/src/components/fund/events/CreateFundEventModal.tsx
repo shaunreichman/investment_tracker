@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   TextField,
   Box,
@@ -18,13 +18,14 @@ import { FormContainer } from '../../ui/FormContainer';
 import { useUnifiedForm } from '../../../hooks/forms/useUnifiedForm';
 import { createValidator, validationRules } from '../../../utils/validators';
 import { SuccessBanner } from '../../ui/SuccessBanner';
+import { FundType } from '../../../types/api';
 
 interface CreateFundEventModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   fundId: number;
-  fundTrackingType: 'nav_based' | 'cost_based';
+  fundTrackingType: FundType;
 }
 
 // Basic form data interface for common fields
@@ -139,14 +140,11 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
 
   // Centralized error handler
   const { error, setError, clearError } = useErrorHandler();
-  const [fundEntity, setFundEntity] = useState<any>(null);
-  const [financialYears, setFinancialYears] = useState<string[]>([]);
-
   // Centralized API hooks
   const { data: fundData } = useFund(fundId);
   const { handleSubmit: submitEvent, createFundEvent, createTaxStatement } = useEventSubmission({
     fundId,
-    fundEntity,
+    fundEntity: fundData?.entity || null,
     onSuccess: () => {
       setSuccess(true);
       setTimeout(() => {
@@ -162,12 +160,10 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   const {
     values: formData,
     errors: validationErrors,
-    touched,
     isDirty,
     isValid: formIsValid,
     isSubmitting: formIsSubmitting,
     setFieldValue,
-    handleSubmit: handleFormSubmit,
     reset: resetFormData,
     clearErrors
   } = useUnifiedForm<EventFormData>({
@@ -183,6 +179,16 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     },
     onError: setError
   });
+
+  // Reset form function (combines unified form reset with event type reset)
+  const resetForm = useCallback(() => {
+    resetFormData();
+    setEventType('');
+    setDistributionType('');
+    setSubDistributionType('');
+    setSuccess(false);
+    setHybridFieldOverrides({});
+  }, [resetFormData, setEventType, setDistributionType, setSubDistributionType, setHybridFieldOverrides]);
 
   // Handle errors and success from hooks
   useEffect(() => {
@@ -207,7 +213,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
         onClose();
       }, 1000);
     }
-  }, [createFundEvent.data, onSuccess, onClose]);
+  }, [createFundEvent.data, onSuccess, onClose, resetForm]);
 
   useEffect(() => {
     if (createTaxStatement.data) {
@@ -218,7 +224,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
         onClose();
       }, 1000);
     }
-  }, [createTaxStatement.data, onSuccess, onClose]);
+  }, [createTaxStatement.data, onSuccess, onClose, resetForm]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -226,17 +232,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
       resetForm();
       clearErrors();
     }
-  }, [open, clearErrors]);
-
-  // Reset form function (combines unified form reset with event type reset)
-  const resetForm = () => {
-    resetFormData();
-    setEventType('');
-    setDistributionType('');
-    setSubDistributionType('');
-    setSuccess(false);
-    setHybridFieldOverrides({});
-  };
+  }, [open, clearErrors, resetForm]);
 
   // Handle input change (combines unified form with existing logic)
   const handleInputChange = (field: string, value: string) => {
@@ -305,17 +301,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     }
   };
 
-  // Determine button text based on event type
-  const getButtonText = () => {
-    if (eventType === 'TAX_STATEMENT') return 'Create Tax Statement';
-    if (eventType === 'DISTRIBUTION') return 'Create Distribution';
-    if (eventType === 'UNIT_PURCHASE') return 'Create Unit Purchase';
-    if (eventType === 'UNIT_SALE') return 'Create Unit Sale';
-    if (eventType === 'NAV_UPDATE') return 'Update NAV';
-    if (eventType === 'CAPITAL_CALL') return 'Create Capital Call';
-    if (eventType === 'RETURN_OF_CAPITAL') return 'Create Return of Capital';
-    return 'Create Event';
-  };
+
 
   return (
     <FormContainer
@@ -441,8 +427,8 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
                  <TaxStatementForm
                    formData={formData as any}
                    validationErrors={validationErrors as any}
-                   financialYears={financialYears}
-                   fundEntity={fundEntity}
+                   financialYears={[]}
+                   fundEntity={fundData?.entity || null}
                    hybridFieldOverrides={hybridFieldOverrides}
                    onInputChange={handleInputChange}
                    onHybridFieldToggle={handleHybridFieldToggle}

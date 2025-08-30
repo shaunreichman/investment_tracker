@@ -15,6 +15,7 @@ from src.fund.enums import FundStatus, FundType, EventType, CashFlowDirection
 from src.entity.models import Entity
 from src.banking.models import BankAccount
 from src.tax.models import TaxStatement
+from src.fund.repositories import FundRepository
 from src.api.middleware.validation import validate_fund_data, validate_fund_event_data, validate_cash_flow_data
 
 # Create blueprint for fund routes
@@ -29,8 +30,9 @@ def fund_detail(fund_id):
         session = get_db_session()
         
         try:
-            # Use domain methods to get fund
-            fund = Fund.get_by_id(fund_id, session=session)
+            # Use repository to get fund
+            fund_repository = FundRepository()
+            fund = fund_repository.get_by_id(fund_id, session=session)
             
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
@@ -193,7 +195,8 @@ def get_fund_tax_statements(fund_id):
         
         try:
             # Validate fund exists
-            fund = Fund.get_by_id(fund_id, session=session)
+            fund_repository = FundRepository()
+            fund = fund_repository.get_by_id(fund_id, session=session)
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
@@ -248,7 +251,8 @@ def get_fund_event_cash_flows(fund_id, event_id):
         
         try:
             # Validate fund exists
-            fund = Fund.get_by_id(fund_id, session=session)
+            fund_repository = FundRepository()
+            fund = fund_repository.get_by_id(fund_id, session=session)
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
@@ -319,7 +323,8 @@ def remove_fund_event_cash_flow(fund_id, event_id, cash_flow_id):
         
         try:
             # Validate fund exists
-            fund = Fund.get_by_id(fund_id, session=session)
+            fund_repository = FundRepository()
+            fund = fund_repository.get_by_id(fund_id, session=session)
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
