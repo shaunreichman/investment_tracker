@@ -94,7 +94,7 @@ export const FundsCards: React.FC<FundsCardsProps> = ({ data }) => {
               </Box>
 
               {/* Performance Summary */}
-              <Box mt={2} p={1.5} sx={{ bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Box mt={2} p={1.5} sx={{ bgcolor: 'background.default', borderRadius: 1 }}>
                 <Typography variant="caption" color="textSecondary" display="block" mb={1}>
                   Performance Summary
                 </Typography>

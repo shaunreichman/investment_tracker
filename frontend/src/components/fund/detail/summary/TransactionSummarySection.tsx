@@ -67,12 +67,12 @@ const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrenc
               borderRadius: 1,
               backgroundColor: 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200',
+              borderColor: 'divider',
               // Very obvious hover effects for consistent user experience
               transition: 'all 0.2s ease-in-out',
               cursor: 'pointer',
               '&:hover': {
-                backgroundColor: 'primary.100',
+                backgroundColor: 'primary.dark',
                 borderColor: 'primary.main',
                 borderWidth: '2px',
                 transform: 'translateX(4px)',

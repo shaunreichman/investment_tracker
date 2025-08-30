@@ -58,14 +58,14 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
               alignItems: 'center',
               p: 0.5,
               borderRadius: 1,
-              backgroundColor: detail.priority === 1 ? 'success.50' : 'transparent',
+              backgroundColor: detail.priority === 1 ? 'success.dark' : 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200',
+              borderColor: 'divider',
               // Very obvious hover effects for consistent user experience
               transition: 'all 0.2s ease-in-out',
               cursor: 'pointer',
               '&:hover': {
-                backgroundColor: detail.priority === 1 ? 'success.300' : 'success.100',
+                backgroundColor: detail.priority === 1 ? 'success.main' : 'success.dark',
                 borderColor: 'success.main',
                 borderWidth: '2px',
                 transform: 'translateX(4px)',

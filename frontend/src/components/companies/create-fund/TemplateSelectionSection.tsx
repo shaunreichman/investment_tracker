@@ -60,7 +60,7 @@ const TemplateSelectionSection: React.FC<TemplateSelectionSectionProps> = ({ tem
                 </Typography>
                 <Typography
                   variant="caption"
-                  sx={{ bgcolor: 'grey.300', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}
+                  sx={{ bgcolor: 'divider', color: 'text.secondary', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}
                 >
                   {template.currency}
                 </Typography>

@@ -277,7 +277,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
             {Math.round(getFormProgress())}% Complete
           </Typography>
         </Box>
-        <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, height: 8 }}>
+        <Box sx={{ width: '100%', bgcolor: 'background.default', borderRadius: 1, height: 8 }}>
           <Box
             sx={{
               width: `${getFormProgress()}%`,
@@ -340,7 +340,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
           <LoadingSpinner label="Loading entities..." />
         </Box>
       ) : (
-        <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+        <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
           <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
             Fund Details
           </Typography>
@@ -357,7 +357,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                     <Typography variant="caption" sx={{ bgcolor: 'primary.main', color: 'white', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}>
                       {selectedTemplate.tracking_type}
                     </Typography>
-                    <Typography variant="caption" sx={{ bgcolor: 'grey.300', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}>
+                    <Typography variant="caption" sx={{ bgcolor: 'divider', color: 'text.secondary', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}>
                       {selectedTemplate.currency}
                     </Typography>
                   </Box>

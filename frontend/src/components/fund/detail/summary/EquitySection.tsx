@@ -111,14 +111,14 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               alignItems: 'center',
               p: 0.5,
               borderRadius: 1,
-              backgroundColor: index === 0 ? 'primary.50' : 'transparent',
+              backgroundColor: index === 0 ? 'primary.dark' : 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200',
+              borderColor: 'divider',
               // Very obvious hover effects for consistent user experience
               transition: 'all 0.2s ease-in-out',
               cursor: 'pointer',
               '&:hover': {
-                backgroundColor: index === 0 ? 'primary.300' : 'primary.100',
+                backgroundColor: index === 0 ? 'primary.main' : 'primary.dark',
                 borderColor: 'primary.main',
                 borderWidth: '2px',
                 transform: 'translateX(4px)',
