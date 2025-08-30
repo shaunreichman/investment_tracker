@@ -94,7 +94,8 @@ class CompanyRepository:
         
         # Check cache first
         if cache_key in self._cache:
-            return self._cache[cache_key]
+            cached_companies = self._cache[cache_key]
+            return cached_companies
         
         # Query database
         companies = session.query(InvestmentCompany).all()

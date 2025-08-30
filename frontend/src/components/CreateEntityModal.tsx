@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import {
   TextField,
   FormControl,
@@ -69,6 +69,9 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   // Centralized error handler
   const { error, setError, clearError } = useErrorHandler();
 
+  // ENTERPRISE-GRADE SOLUTION: Track entity creation state to prevent re-triggering
+  const entityCreatedRef = useRef<{ id: number; name: string } | null>(null);
+
   // Unified form management
   const {
     values: formData,
@@ -99,18 +102,34 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     onError: setError
   });
 
+  // ENTERPRISE-GRADE SOLUTION: Proper form state cleanup and isolation
+  const handleEntityCreated = useCallback((entity: { id: number; name: string }) => {
+    // 1. Store the created entity to prevent re-triggering
+    entityCreatedRef.current = entity;
+    
+    // 2. Call the parent callback first
+    onEntityCreated(entity);
+    
+    // 3. Clear any API errors
+    clearError();
+    
+    // 4. Reset form state completely
+    reset();
+    clearErrors();
+    
+    // 5. Close modal immediately
+    onClose();
+  }, [onEntityCreated, clearError, reset, clearErrors, onClose]);
+
   // Handle success flow when entity is created
   useEffect(() => {
-    if (createEntity.data) {
-      onEntityCreated({
+    if (createEntity.data && !entityCreatedRef.current) {
+      handleEntityCreated({
         id: createEntity.data.id,
         name: createEntity.data.name
       });
-      onClose();
-      reset();
-      clearErrors();
     }
-  }, [createEntity.data, onEntityCreated, onClose, reset, clearErrors]);
+  }, [createEntity.data, handleEntityCreated]);
 
   // Handle errors from the API
   useEffect(() => {
@@ -119,13 +138,21 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     }
   }, [createEntity.error, setError]);
 
-  // Reset form when modal opens
+  // ENTERPRISE-GRADE SOLUTION: Proper form initialization when modal opens
   useEffect(() => {
     if (open) {
-      reset();
-      clearErrors();
+      // Clear the entity creation tracking when modal opens
+      entityCreatedRef.current = null;
+      
+      // Ensure complete form state reset when modal opens
+      // Use setTimeout to avoid state conflicts during render
+      setTimeout(() => {
+        reset();
+        clearErrors();
+        clearError();
+      }, 0);
     }
-  }, [open, reset, clearErrors]);
+  }, [open, reset, clearErrors, clearError]);
 
   // Handle form submission
   const handleFormSubmit = () => {
@@ -133,15 +160,16 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     handleSubmit();
   };
 
-  // Handle modal close
-  const handleClose = () => {
+  // ENTERPRISE-GRADE SOLUTION: Robust modal close handling
+  const handleClose = useCallback(() => {
     if (!isSubmitting) {
-      onClose();
+      // Clear all state before closing
       clearError();
       reset();
       clearErrors();
+      onClose();
     }
-  };
+  }, [isSubmitting, clearError, reset, clearErrors, onClose]);
 
   return (
     <FormContainer
@@ -155,93 +183,93 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       isDirty={isDirty}
       showCloseConfirmation={true}
     >
-             {/* Success Banner */}
-       {createEntity.data && (
-         <SuccessBanner 
-           title="Entity created successfully!" 
-           subtitle={`Entity ${createEntity.data.name} added to the Investment Tracker!`}
-         />
-       )}
+      {/* Success Banner */}
+      {createEntity.data && entityCreatedRef.current && (
+        <SuccessBanner 
+          title="Entity created successfully!" 
+          subtitle={`Entity ${createEntity.data.name} added to the Investment Tracker!`}
+        />
+      )}
 
-       {/* Error Display */}
-       {error && (
-         <Box sx={{ mb: 2 }}>
-           <Typography color="error" variant="body2">
-             {error.userMessage || error.message || 'An error occurred'}
-           </Typography>
-         </Box>
-       )}
+      {/* Error Display */}
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <Typography color="error" variant="body2">
+            {error.userMessage || error.message || 'An error occurred'}
+          </Typography>
+        </Box>
+      )}
 
       {/* Form Content */}
       <Box component="form" noValidate autoComplete="off">
         <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
-                     {/* Entity Name */}
-           <FormField
-             label="Entity Name"
-             required
-             error={validationErrors.name || undefined}
-             touched={touched.name}
-             showErrorOnlyWhenTouched={true}
-           >
-             <TextField
-               fullWidth
-               value={formData.name}
-               onChange={(e) => setFieldValue('name', e.target.value)}
-               placeholder="Enter entity name"
-               disabled={isSubmitting}
-               error={!!validationErrors.name}
-               size="medium"
-             />
-           </FormField>
+          {/* Entity Name */}
+          <FormField
+            label="Entity Name"
+            required
+            error={validationErrors.name || undefined}
+            touched={touched.name}
+            showErrorOnlyWhenTouched={true}
+          >
+            <TextField
+              fullWidth
+              value={formData.name}
+              onChange={(e) => setFieldValue('name', e.target.value)}
+              placeholder="Enter entity name"
+              disabled={isSubmitting}
+              error={!!validationErrors.name}
+              size="medium"
+            />
+          </FormField>
 
-           {/* Tax Jurisdiction */}
-           <FormField
-             label="Tax Jurisdiction"
-             required
-             error={validationErrors.tax_jurisdiction || undefined}
-             touched={touched.tax_jurisdiction}
-             showErrorOnlyWhenTouched={true}
-           >
-             <FormControl fullWidth error={!!validationErrors.tax_jurisdiction}>
-               <InputLabel>Tax Jurisdiction</InputLabel>
-               <Select
-                 value={formData.tax_jurisdiction}
-                 onChange={(e) => setFieldValue('tax_jurisdiction', e.target.value)}
-                 label="Tax Jurisdiction"
-                 disabled={isSubmitting}
-               >
-                 <MenuItem value="AU">Australia</MenuItem>
-                 <MenuItem value="US">United States</MenuItem>
-                 <MenuItem value="UK">United Kingdom</MenuItem>
-                 <MenuItem value="CA">Canada</MenuItem>
-                 <MenuItem value="NZ">New Zealand</MenuItem>
-               </Select>
-             </FormControl>
-           </FormField>
+          {/* Tax Jurisdiction */}
+          <FormField
+            label="Tax Jurisdiction"
+            required
+            error={validationErrors.tax_jurisdiction || undefined}
+            touched={touched.tax_jurisdiction}
+            showErrorOnlyWhenTouched={true}
+          >
+            <FormControl fullWidth error={!!validationErrors.tax_jurisdiction}>
+              <InputLabel>Tax Jurisdiction</InputLabel>
+              <Select
+                value={formData.tax_jurisdiction}
+                onChange={(e) => setFieldValue('tax_jurisdiction', e.target.value)}
+                label="Tax Jurisdiction"
+                disabled={isSubmitting}
+              >
+                <MenuItem value="AU">Australia</MenuItem>
+                <MenuItem value="US">United States</MenuItem>
+                <MenuItem value="UK">United Kingdom</MenuItem>
+                <MenuItem value="CA">Canada</MenuItem>
+                <MenuItem value="NZ">New Zealand</MenuItem>
+              </Select>
+            </FormControl>
+          </FormField>
 
-           {/* Description */}
-           <Box sx={{ gridColumn: '1 / -1' }}>
-             <FormField
-               label="Description"
-               helperText="Optional description for the entity (max 1000 characters)"
-               error={validationErrors.description || undefined}
-               touched={touched.description}
-               showErrorOnlyWhenTouched={true}
-             >
-               <TextField
-                 fullWidth
-                 multiline
-                 minRows={3}
-                 maxRows={6}
-                 value={formData.description}
-                 onChange={(e) => setFieldValue('description', e.target.value)}
-                 placeholder="Enter entity description (optional)"
-                 disabled={isSubmitting}
-                 error={!!validationErrors.description}
-                 size="medium"
-               />
-             </FormField>
-           </Box>
+          {/* Description */}
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <FormField
+              label="Description"
+              helperText="Optional description for the entity (max 1000 characters)"
+              error={validationErrors.description || undefined}
+              touched={touched.description}
+              showErrorOnlyWhenTouched={true}
+            >
+              <TextField
+                fullWidth
+                multiline
+                minRows={3}
+                maxRows={6}
+                value={formData.description}
+                onChange={(e) => setFieldValue('description', e.target.value)}
+                placeholder="Enter entity description (optional)"
+                disabled={isSubmitting}
+                error={!!validationErrors.description}
+                size="medium"
+              />
+            </FormField>
+          </Box>
         </Box>
       </Box>
     </FormContainer>

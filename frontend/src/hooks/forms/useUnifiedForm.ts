@@ -215,9 +215,10 @@ export function useUnifiedForm<T extends Record<string, any>>(
   }, [values, onSubmit, onSuccess, onError, validateAll, markAllTouched, clearErrors]);
 
   // Reset form when initial values change
-  useEffect(() => {
-    reset();
-  }, [reset]);
+  // REMOVED: This was causing infinite loops and is not needed
+  // useEffect(() => {
+  //   reset();
+  // }, [reset]);
 
   return {
     // Form state

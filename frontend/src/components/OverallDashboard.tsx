@@ -34,8 +34,7 @@ import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
-import { useFormCompletion } from '../hooks/useFormCompletion';
-
+// Remove the useFormCompletion import as it's causing issues
 
 const OverallDashboard: React.FC = () => {
   const theme = useTheme();
@@ -46,27 +45,50 @@ const OverallDashboard: React.FC = () => {
   // Centralized API hook
   const { data: companies, loading, error, refetch } = useInvestmentCompanies();
 
-  // Form completion handling for entity creation
-  const { handleSuccess: handleEntitySuccess } = useFormCompletion(
-    { successDuration: 2000, autoClose: true },
-    { 
-      onSuccess: (entity) => {
-        // TODO: Refresh entities list when entities are displayed
-        // For now, just provide immediate feedback
-        console.log('Entity created successfully:', entity);
-      },
-      onClose: () => setShowEntityModal(false)
-    }
-  );
+  // DEBUG: Log companies data changes
+  console.log('🔍 Dashboard: Companies data changed:', {
+    companiesCount: companies?.length || 0,
+    companies: companies?.map(c => ({ id: c.id, name: c.name })) || [],
+    loading,
+    error
+  });
 
+  // Simplified entity creation handling - direct and reliable
   const handleEntityCreated = (entity: { id: number; name: string }) => {
-    // Use the standardized form completion handler
-    handleEntitySuccess(entity);
+    // Close modal - the modal will handle its own cleanup
+    setShowEntityModal(false);
+    
+    // TODO: Refresh entities list when entities are displayed
+    // For now, just provide immediate feedback
   };
 
   const handleCompanyCreated = (company: { id: number; name: string }) => {
+    console.log('🎉 Dashboard: Company created successfully:', company);
+    console.log('🔄 Dashboard: Calling refetch() to refresh companies list');
+    console.log('📊 Dashboard: Current companies before refetch:', companies);
+    
     // Refresh the companies list using the centralized hook
-    refetch();
+    if (refetch) {
+      console.log('✅ Dashboard: refetch function exists, calling it...');
+      refetch().then(() => {
+        console.log('✅ Dashboard: refetch completed successfully');
+      }).catch((error) => {
+        console.error('❌ Dashboard: refetch failed:', error);
+      });
+    } else {
+      console.warn('⚠️ Dashboard: refetch function is undefined!');
+    }
+    
+    console.log('✅ Dashboard: refetch() called, companies should refresh');
+  };
+
+  // Button click handlers
+  const handleCreateEntityClick = () => {
+    setShowEntityModal(true);
+  };
+
+  const handleCreateCompanyClick = () => {
+    setShowCompanyModal(true);
   };
 
   if (loading) {
@@ -165,7 +187,7 @@ const OverallDashboard: React.FC = () => {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => setShowEntityModal(true)}
+                onClick={handleCreateEntityClick}
                 size="medium"
                 sx={{
                   backgroundColor: theme.palette.primary.main,
@@ -231,7 +253,7 @@ const OverallDashboard: React.FC = () => {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => setShowCompanyModal(true)}
+                onClick={handleCreateCompanyClick}
                 size="medium"
                 sx={{
                   backgroundColor: theme.palette.primary.main,

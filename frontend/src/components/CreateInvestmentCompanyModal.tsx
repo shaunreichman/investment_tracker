@@ -89,11 +89,20 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
   onClose,
   onCompanyCreated
 }) => {
+  console.log('🔍 CreateInvestmentCompanyModal render:', { open, onClose: typeof onClose, onCompanyCreated: typeof onCompanyCreated });
+
   // Centralized API hook
   const createInvestmentCompany = useCreateInvestmentCompany();
 
   // Centralized error handler
   const { error, setError, clearError } = useErrorHandler();
+
+  // DEBUG: Log API state
+  console.log('📊 CreateInvestmentCompany API state:', {
+    data: createInvestmentCompany.data,
+    loading: createInvestmentCompany.loading,
+    error: createInvestmentCompany.error
+  });
 
   // Unified form management
   const {
@@ -111,6 +120,7 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
     initialValues: initialFormValues,
     validators,
     onSubmit: async (values) => {
+      console.log('🚀 Company form submission started with values:', values);
       const payload = {
         name: values.name.trim(),
         description: values.description.trim() || '',
@@ -119,21 +129,29 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
         contact_phone: values.contact_phone.trim() || ''
       };
       
+      console.log('📤 Submitting company creation with payload:', payload);
       await createInvestmentCompany.mutate(payload);
     },
     onSuccess: () => {
+      console.log('✅ Company form submission onSuccess callback triggered');
       // Success will be handled by useEffect watching createInvestmentCompany.data
     },
-    onError: setError
+    onError: (error) => {
+      console.log('❌ Company form submission onError callback triggered:', error);
+      setError(error);
+    }
   });
 
   // Handle success flow when company is created
   useEffect(() => {
+    console.log('👀 useEffect: createInvestmentCompany.data changed:', createInvestmentCompany.data);
     if (createInvestmentCompany.data) {
+      console.log('🎯 Company creation successful, calling onCompanyCreated');
       onCompanyCreated({
         id: createInvestmentCompany.data.id,
         name: createInvestmentCompany.data.name
       });
+      console.log('🚪 Closing modal and resetting form');
       onClose();
       reset();
       clearErrors();
@@ -142,14 +160,18 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
 
   // Handle errors from the API
   useEffect(() => {
+    console.log('👀 useEffect: createInvestmentCompany.error changed:', createInvestmentCompany.error);
     if (createInvestmentCompany.error) {
+      console.log('❌ API error detected, setting error state');
       setError(createInvestmentCompany.error);
     }
   }, [createInvestmentCompany.error, setError]);
 
   // Reset form when modal opens
   useEffect(() => {
+    console.log('👀 useEffect: modal open state changed:', open);
     if (open) {
+      console.log('🚀 Modal opening, resetting form state');
       reset();
       clearErrors();
     }
@@ -157,17 +179,22 @@ const CreateInvestmentCompanyModal: React.FC<CreateInvestmentCompanyModalProps> 
 
   // Handle form submission
   const handleFormSubmit = () => {
+    console.log('📝 Company form submit button clicked');
     clearError();
     handleSubmit();
   };
 
   // Handle modal close
   const handleClose = () => {
+    console.log('🚪 Company modal close requested, isSubmitting:', isSubmitting);
     if (!isSubmitting) {
+      console.log('🧹 Clearing state and closing modal');
       onClose();
       clearError();
       reset();
       clearErrors();
+    } else {
+      console.log('⏳ Cannot close modal while submitting');
     }
   };
 

@@ -132,7 +132,7 @@ class CompanyController:
                     else:
                         status_value = str(company.status)
                 
-                companies_data.append({
+                company_data = {
                     "id": company.id,
                     "name": company.name,
                     "description": company.description,
@@ -146,12 +146,21 @@ class CompanyController:
                     "total_equity_balance": float(total_equity),
                     "created_at": company.created_at.isoformat() if company.created_at else None,
                     "updated_at": company.updated_at.isoformat() if company.updated_at else None
-                })
+                }
+                
+                companies_data.append(company_data)
             
             return jsonify({"companies": companies_data}), 200
             
         except Exception as e:
-            current_app.logger.error(f"Error getting investment companies: {str(e)}")
+            # Use proper Flask logging when available, fallback to print for debugging
+            try:
+                if current_app and current_app.logger:
+                    current_app.logger.error(f"Error getting investment companies: {str(e)}")
+                else:
+                    print(f"Error getting investment companies: {str(e)}")
+            except:
+                print(f"Error getting investment companies: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
     def create_investment_company(self, session: Session) -> tuple:
@@ -233,7 +242,10 @@ class CompanyController:
             Tuple of (response_data, status_code)
         """
         try:
+            print(f"🚀 CompanyController.create_investment_company_with_data: Starting company creation with validated data: {validated_data}")
+            
             # Use service to create company with validated data
+            print("📋 CompanyController.create_investment_company_with_data: Calling CompanyService.create_company")
             company = self.company_service.create_company(
                 name=validated_data['name'],
                 description=validated_data.get('description'),
@@ -244,10 +256,15 @@ class CompanyController:
                 session=session
             )
             
-            # Commit the transaction
-            session.commit()
+            print(f"✅ CompanyController.create_investment_company_with_data: Company created successfully with ID: {company.id}, Name: {company.name}")
             
-            return jsonify({
+            # Commit the transaction
+            print("💾 CompanyController.create_investment_company_with_data: Committing transaction to database")
+            session.commit()
+            print("✅ CompanyController.create_investment_company_with_data: Transaction committed successfully")
+            
+            # Prepare response data
+            response_data = {
                 "id": company.id,
                 "name": company.name,
                 "description": company.description,
@@ -256,7 +273,10 @@ class CompanyController:
                 "status": company.status.value if company.status else None,
                 "business_address": company.business_address,
                 "created_at": company.created_at.isoformat() if company.created_at else None
-            }), 201
+            }
+            
+            print(f"📤 CompanyController.create_investment_company_with_data: Returning response: {response_data}")
+            return jsonify(response_data), 201
             
         except ValueError as e:
             return jsonify({"error": str(e)}), 400

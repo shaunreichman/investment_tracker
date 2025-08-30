@@ -888,54 +888,75 @@ def validate_investment_company_data(func: Callable) -> Callable:
     @wraps(func)
     def decorated_function(*args, **kwargs):
         try:
+            current_app.logger.info("🔍 validate_investment_company_data: Starting validation")
+            
             # Get request data
             data = request.get_json()
+            current_app.logger.info(f"📥 validate_investment_company_data: Received data: {data}")
+            
             if not data:
+                current_app.logger.warning("❌ validate_investment_company_data: No data provided")
                 raise ValidationError("No data provided")
             
             # Validate required fields
             required_fields = ['name']
+            current_app.logger.info(f"🔍 validate_investment_company_data: Validating required fields: {required_fields}")
+            
             for field in required_fields:
                 if field not in data or not data[field]:
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Missing required field: {field}")
                     raise ValidationError(f"Missing required field: {field}", field)
             
             # Validate name length and format
             name = data['name'].strip()
+            current_app.logger.info(f"🔍 validate_investment_company_data: Validating name: '{name}'")
+            
             if len(name) > 255:
+                current_app.logger.warning(f"❌ validate_investment_company_data: Name too long: {len(name)} characters")
                 raise ValidationError("Company name must be 255 characters or less", 'name')
             if len(name) < 2:
+                current_app.logger.warning(f"❌ validate_investment_company_data: Name too short: {len(name)} characters")
                 raise ValidationError("Company name must be at least 2 characters", 'name')
             data['name'] = name
             
             # Validate optional fields
             if 'description' in data and data['description']:
                 if len(data['description']) > 65535:  # Text field limit
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Description too long: {len(data['description'])} characters")
                     raise ValidationError("Description must be 65535 characters or less", 'description')
             
             if 'company_type' in data and data['company_type']:
                 if len(data['company_type']) > 100:
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Company type too long: {len(data['company_type'])} characters")
                     raise ValidationError("Company type must be 100 characters or less", 'company_type')
             
             if 'business_address' in data and data['business_address']:
                 if len(data['business_address']) > 65535:  # Text field limit
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Business address too long: {len(data['business_address'])} characters")
                     raise ValidationError("Business address must be 65535 characters or less", 'business_address')
             
             if 'website' in data and data['website']:
                 if len(data['website']) > 255:
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Website too long: {len(data['website'])} characters")
                     raise ValidationError("Website must be 255 characters or less", 'website')
                 # Basic URL validation
                 if not data['website'].startswith(('http://', 'https://')):
                     data['website'] = 'https://' + data['website']
+                    current_app.logger.info(f"🔧 validate_investment_company_data: Added https:// to website: {data['website']}")
+            
+            current_app.logger.info(f"✅ validate_investment_company_data: Validation passed, storing validated data")
             
             # Store validated data for controller access
             request.validated_data = data
             
+            current_app.logger.info("🚀 validate_investment_company_data: Calling controller function")
             return func(*args, **kwargs)
             
         except ValidationError as e:
+            current_app.logger.warning(f"❌ validate_investment_company_data: Validation error: {e.message} for field: {e.field}")
             return jsonify({"error": e.message, "field": e.field}), e.status_code
         except Exception as e:
-            current_app.logger.error(f"Validation error: {str(e)}")
+            current_app.logger.error(f"❌ validate_investment_company_data: Unexpected error: {str(e)}")
             return jsonify({"error": "Validation failed"}), 400
     
     return decorated_function
