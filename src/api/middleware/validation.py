@@ -381,6 +381,7 @@ def validate_fund_data(func: Callable) -> Callable:
     Validates:
     - Required fields (name, entity_id, investment_company_id, tracking_type)
     - Tracking type validation against FundType enum
+    - Fund type validation (optional string field)
     - String field sanitization
     - Optional field validation
     - Business rule validation
@@ -393,11 +394,11 @@ def validate_fund_data(func: Callable) -> Callable:
             if not data:
                 raise ValidationError("No data provided")
             
-            # REJECT old field names that don't exist in the model FIRST
-            old_field_names = ['fund_type', 'status']
+            # REJECT only the status field that doesn't exist in the model
+            old_field_names = ['status']  # Removed 'fund_type' since it exists in the model
             for old_field in old_field_names:
                 if old_field in data:
-                    raise ValidationError(f"Field '{old_field}' is not valid. Use 'tracking_type' instead.", old_field)
+                    raise ValidationError(f"Field '{old_field}' is not valid.", old_field)
             
             # Validate required fields - CORRECTED to match actual model
             required_fields = ['name', 'entity_id', 'investment_company_id', 'tracking_type']
@@ -410,6 +411,13 @@ def validate_fund_data(func: Callable) -> Callable:
             if not isinstance(name, str) or not name.strip():
                 raise ValidationError("Name must be a non-empty string", 'name')
             data['name'] = name.strip()
+            
+            # Validate fund_type if provided (optional string field)
+            if 'fund_type' in data and data['fund_type'] is not None:
+                fund_type = data['fund_type']
+                if not isinstance(fund_type, str) or not fund_type.strip():
+                    raise ValidationError("Fund type must be a non-empty string", 'fund_type')
+                data['fund_type'] = fund_type.strip()
             
             # Validate tracking_type using actual enum - CORRECTED field name
             try:

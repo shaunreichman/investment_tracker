@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Button, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import CreateEntityModal from '../../CreateEntityModal';
@@ -13,7 +13,6 @@ import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { SuccessBanner } from '../../ui/SuccessBanner';
 import { FormContainer } from '../../ui/FormContainer';
 import { useUnifiedForm } from '../../../hooks/forms/useUnifiedForm';
-import { createValidator } from '../../../utils/validators';
 
 // Form data interface
 interface FundFormData {
@@ -81,7 +80,6 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   const {
     values: formData,
     errors: validationErrors,
-    touched,
     isDirty,
     isValid,
     isSubmitting: formIsSubmitting,
@@ -94,6 +92,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     initialValues: initialFormValues,
     validators,
     onSubmit: async (values) => {
+      
       const fundData = {
         investment_company_id: companyId,
         entity_id: parseInt(values.entity_id),
@@ -182,6 +181,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 
   // Handle form submission
   const handleFormSubmit = () => {
+    
     if (showTemplateSelection) return;
     handleSubmit();
   };
