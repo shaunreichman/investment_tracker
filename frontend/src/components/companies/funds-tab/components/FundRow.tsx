@@ -46,85 +46,64 @@ export const FundRow: React.FC<FundRowProps> = ({ fund }) => {
       
       {/* Estimated Return */}
       <TableCell align="right">
-        {fund.estimated_return.expected_irr !== null
-          ? formatPercentage(fund.estimated_return.expected_irr)
+        {fund.expected_irr !== null
+          ? formatPercentage(fund.expected_irr)
           : '-'}
       </TableCell>
       <TableCell align="right">
-        {fund.estimated_return.duration_months !== null
-          ? fund.estimated_return.duration_months
+        {fund.expected_duration_months !== null
+          ? fund.expected_duration_months
           : '-'}
       </TableCell>
       
       {/* Dates */}
       <TableCell>
-        {new Date(fund.fund_details.start_date).toLocaleDateString()}
+        {fund.start_date ? new Date(fund.start_date).toLocaleDateString() : '-'}
       </TableCell>
       <TableCell>
-        {fund.fund_details.end_date
-          ? new Date(fund.fund_details.end_date).toLocaleDateString()
+        {fund.end_date
+          ? new Date(fund.end_date).toLocaleDateString()
           : '-'}
       </TableCell>
       <TableCell align="right">
-        {fund.fund_details.days_since_last_activity}
+        {fund.current_duration || '-'}
       </TableCell>
       
       {/* Equity */}
       <TableCell align="right">
-        {formatCurrency(fund.equity.commitment)}
+        {formatCurrency(fund.commitment_amount || 0)}
       </TableCell>
       <TableCell align="right">
-        {formatCurrency(fund.equity.invested_capital)}
+        {formatCurrency(fund.total_cost_basis || 0)}
       </TableCell>
       <TableCell align="right">
-        {formatCurrency(fund.equity.current_value)}
+        {formatCurrency(fund.current_nav_total || 0)}
       </TableCell>
       <TableCell align="right">
-        {formatCurrency(fund.equity.current_equity_balance)}
-      </TableCell>
-      
-      {/* Distributions */}
-      <TableCell align="right">
-        {fund.distributions.distribution_count}
-      </TableCell>
-      <TableCell align="right">
-        {formatCurrency(fund.distributions.total_distribution_amount)}
+        {formatCurrency(fund.current_equity_balance || 0)}
       </TableCell>
       
-      {/* Returns */}
+      {/* Completed IRRs */}
       <TableCell align="right">
-        {fund.returns.completed_irr !== null
-          ? formatPercentage(fund.returns.completed_irr)
+        {fund.completed_irr_gross !== null
+          ? formatPercentage(fund.completed_irr_gross)
           : '-'}
       </TableCell>
       <TableCell align="right">
-        {fund.returns.performance_vs_expected !== null
-          ? formatPercentage(fund.returns.performance_vs_expected)
+        {fund.completed_irr_after_tax !== null
+          ? formatPercentage(fund.completed_irr_after_tax)
           : '-'}
       </TableCell>
       
-      {/* Performance */}
+      {/* Additional Info */}
       <TableCell align="right">
-        <Typography
-          color={fund.performance.unrealized_gains_losses >= 0 ? 'success.main' : 'error.main'}
-        >
-          {formatCurrency(fund.performance.unrealized_gains_losses)}
-        </Typography>
+        {fund.average_equity_balance > 0 ? formatCurrency(fund.average_equity_balance) : '-'}
       </TableCell>
       <TableCell align="right">
-        <Typography
-          color={fund.performance.realized_gains_losses >= 0 ? 'success.main' : 'error.main'}
-        >
-          {formatCurrency(fund.performance.realized_gains_losses)}
-        </Typography>
+        {fund.current_units || '-'}
       </TableCell>
       <TableCell align="right">
-        <Typography
-          color={fund.performance.total_profit_loss >= 0 ? 'success.main' : 'error.main'}
-          fontWeight="bold"
-        >
-          {formatCurrency(fund.performance.total_profit_loss)}
-        </Typography>
+        {fund.current_unit_price ? formatCurrency(fund.current_unit_price) : '-'}
       </TableCell>
     </TableRow>
   );

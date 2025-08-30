@@ -66,15 +66,15 @@ export const FundsCards: React.FC<FundsCardsProps> = ({ data }) => {
                 <Box>
                   <Typography variant="caption" color="textSecondary">Expected IRR</Typography>
                   <Typography variant="body2">
-                    {fund.estimated_return.expected_irr !== null
-                      ? formatPercentage(fund.estimated_return.expected_irr)
+                    {fund.expected_irr !== null
+                      ? formatPercentage(fund.expected_irr)
                       : '-'}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="textSecondary">Current Value</Typography>
                   <Typography variant="body2">
-                    {formatCurrency(fund.equity.current_value)}
+                    {formatCurrency(fund.current_nav_total || fund.total_cost_basis || 0)}
                   </Typography>
                 </Box>
 
@@ -82,13 +82,13 @@ export const FundsCards: React.FC<FundsCardsProps> = ({ data }) => {
                 <Box>
                   <Typography variant="caption" color="textSecondary">Start Date</Typography>
                   <Typography variant="body2">
-                    {new Date(fund.fund_details.start_date).toLocaleDateString()}
+                    {fund.start_date ? new Date(fund.start_date).toLocaleDateString() : '-'}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="textSecondary">Days Since Activity</Typography>
+                  <Typography variant="caption" color="textSecondary">Duration</Typography>
                   <Typography variant="body2">
-                    {fund.fund_details.days_since_last_activity}
+                    {fund.current_duration ? `${fund.current_duration} months` : '-'}
                   </Typography>
                 </Box>
               </Box>
@@ -100,20 +100,16 @@ export const FundsCards: React.FC<FundsCardsProps> = ({ data }) => {
                 </Typography>
                 <Box display="flex" justifyContent="space-between">
                   <Box>
-                    <Typography variant="caption" color="textSecondary">Total P/L</Typography>
-                    <Typography 
-                      variant="body2" 
-                      color={fund.performance.total_profit_loss >= 0 ? 'success.main' : 'error.main'}
-                      fontWeight="bold"
-                    >
-                      {formatCurrency(fund.performance.total_profit_loss)}
+                    <Typography variant="caption" color="textSecondary">Equity Balance</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {formatCurrency(fund.current_equity_balance)}
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="textSecondary">Completed IRR</Typography>
                     <Typography variant="body2">
-                      {fund.returns.completed_irr !== null
-                        ? formatPercentage(fund.returns.completed_irr)
+                      {fund.completed_irr_gross !== null
+                        ? formatPercentage(fund.completed_irr_gross)
                         : '-'}
                     </Typography>
                   </Box>

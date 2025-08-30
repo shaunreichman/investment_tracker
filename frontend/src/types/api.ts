@@ -514,42 +514,32 @@ export interface EnhancedFund {
   status: string;
   tracking_type: string;
   
-  fund_details: {
-    start_date: string;
-    end_date: string | null;
-    actual_duration_days: number | null;
-    days_since_last_activity: number;
-  };
+  // Dates
+  start_date: string | null;
+  end_date: string | null;
+  current_duration: number | null;
+  created_at: string;
+  updated_at: string;
   
-  equity: {
-    commitment: number;
-    invested_capital: number;
-    current_value: number;
-    current_equity_balance: number;
-  };
+  // Investment details
+  investment_company_id: number;
+  entity_id: number;
+  commitment_amount: number | null;
+  expected_irr: number | null;
+  expected_duration_months: number | null;
   
-  estimated_return: {
-    expected_irr: number | null;
-    duration_months: number | null;
-  };
+  // Equity and performance
+  current_equity_balance: number;
+  average_equity_balance: number;
+  total_cost_basis: number;
+  current_units: number | null;
+  current_unit_price: number | null;
+  current_nav_total: number | null;
   
-  distributions: {
-    distribution_count: number;
-    total_distribution_amount: number;
-    last_distribution_date: string | null;
-    distribution_frequency_months: number | null;
-  };
-  
-  returns: {
-    completed_irr: number | null;
-    performance_vs_expected: number | null;
-  };
-  
-  performance: {
-    unrealized_gains_losses: number;
-    realized_gains_losses: number;
-    total_profit_loss: number;
-  };
+  // Completed IRRs (if available)
+  completed_irr_gross: number | null;
+  completed_irr_after_tax: number | null;
+  completed_irr_real: number | null;
 }
 
 export interface EnhancedFundsResponse {

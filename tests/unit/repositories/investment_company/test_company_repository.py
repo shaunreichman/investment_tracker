@@ -25,6 +25,16 @@ class TestCompanyRepository:
         self.repository = CompanyRepository()
         self.mock_session = Mock(spec=Session)
         self.mock_query = Mock()
+        self.mock_options = Mock()
+        self.mock_filter = Mock()
+        
+        # Set up the query chain for methods that use options()
+        self.mock_query.options.return_value = self.mock_options
+        self.mock_options.filter.return_value = self.mock_filter
+        
+        # Set up the query chain for methods that don't use options()
+        self.mock_query.filter.return_value = self.mock_filter
+        
         self.mock_session.query.return_value = self.mock_query
     
     def test_get_by_id_success(self):
@@ -35,7 +45,7 @@ class TestCompanyRepository:
         mock_company.id = company_id
         mock_company.name = "Test Company"
         
-        self.mock_query.filter.return_value.first.return_value = mock_company
+        self.mock_filter.first.return_value = mock_company
         
         # Act
         result = self.repository.get_by_id(company_id, self.mock_session)
@@ -43,13 +53,14 @@ class TestCompanyRepository:
         # Assert
         assert result == mock_company
         self.mock_session.query.assert_called_once_with(InvestmentCompany)
-        self.mock_query.filter.assert_called_once()
+        self.mock_query.options.assert_called_once()
+        self.mock_options.filter.assert_called_once()
     
     def test_get_by_id_not_found(self):
         """Test retrieval of non-existent company by ID."""
         # Arrange
         company_id = 999
-        self.mock_query.filter.return_value.first.return_value = None
+        self.mock_filter.first.return_value = None
         
         # Act
         result = self.repository.get_by_id(company_id, self.mock_session)
@@ -66,7 +77,7 @@ class TestCompanyRepository:
         mock_company.name = "Test Company"
         
         # First call - should hit database and cache
-        self.mock_query.filter.return_value.first.return_value = mock_company
+        self.mock_filter.first.return_value = mock_company
         result1 = self.repository.get_by_id(company_id, self.mock_session)
         
         # Second call - should hit cache, not database

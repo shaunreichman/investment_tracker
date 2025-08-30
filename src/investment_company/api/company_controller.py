@@ -364,7 +364,12 @@ class CompanyController:
             # This prevents lazy loading issues after session closes
             company_data = self._extract_company_data(company)
             
-            return jsonify(company_data), 200
+            # Wrap in company object to match frontend interface
+            response_data = {
+                "company": company_data
+            }
+            
+            return jsonify(response_data), 200
             
         except Exception as e:
             current_app.logger.error(f"Error getting company details: {str(e)}")
