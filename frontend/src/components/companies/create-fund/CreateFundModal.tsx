@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Paper, Button } from '@mui/material';
+import { Box, Typography, Paper, Button, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import CreateEntityModal from '../../CreateEntityModal';
 import { useEntities } from '../../../hooks/useEntities';
@@ -264,6 +264,14 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
               Back to Templates
             </Button>
           )}
+          <Button 
+            onClick={handleFormSubmit} 
+            variant="contained" 
+            disabled={isSubmitting || formIsSubmitting || !isFormValid()}
+            startIcon={isSubmitting || formIsSubmitting ? <CircularProgress size={20} /> : null}
+          >
+            {isSubmitting || formIsSubmitting ? 'Creating Fund...' : 'Create Fund'}
+          </Button>
         </>
       }
     >
@@ -373,8 +381,8 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                  entities={entities || []}
                  onInputChange={handleInputChange}
                  onCreateEntity={() => setShowEntityModal(true)}
-                 trackingTypeLocked={true}
-               />
+                 trackingTypeLocked={!!selectedTemplate}
+                               />
             </Box>
           )}
         </Paper>

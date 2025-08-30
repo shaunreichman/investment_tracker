@@ -173,8 +173,36 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
       <TextField
         fullWidth
         label="Commitment Amount"
-        value={formatNumber(formData.commitment_amount)}
-        onChange={(e) => onInputChange('commitment_amount', parseNumber(e.target.value))}
+        value={formData.commitment_amount}
+        onChange={(e) => {
+          // Allow typing with thousand separators
+          const inputValue = e.target.value;
+          // Remove existing separators and parse
+          const cleanValue = inputValue.replace(/,/g, '');
+          // Only allow valid number input
+          if (cleanValue === '' || /^\d*\.?\d*$/.test(cleanValue)) {
+            onInputChange('commitment_amount', cleanValue);
+          }
+        }}
+        onBlur={(e) => {
+          // Format with thousand separators when leaving the field
+          if (formData.commitment_amount) {
+            const num = parseFloat(formData.commitment_amount);
+            if (!isNaN(num)) {
+              const formatted = new Intl.NumberFormat('en-AU').format(num);
+              onInputChange('commitment_amount', formatted);
+            }
+          }
+        }}
+        onFocus={(e) => {
+          // Remove formatting when entering the field for easier editing
+          if (formData.commitment_amount) {
+            const num = parseFloat(formData.commitment_amount.replace(/,/g, ''));
+            if (!isNaN(num)) {
+              onInputChange('commitment_amount', num.toString());
+            }
+          }
+        }}
         error={!!validationErrors.commitment_amount}
         helperText={validationErrors.commitment_amount || 'Total commitment amount (optional)'}
         inputProps={{
