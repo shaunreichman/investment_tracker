@@ -12,7 +12,7 @@ Key responsibilities:
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_, func
 
 from src.investment_company.models import InvestmentCompany
@@ -56,18 +56,11 @@ class CompanyRepository:
         Returns:
             InvestmentCompany object if found, None otherwise
         """
-        cache_key = f"company:{company_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        company = session.query(InvestmentCompany).filter(InvestmentCompany.id == company_id).first()
-        
-        # Cache the result
-        if company:
-            self._cache[cache_key] = company
+        # Query database with eager loading of contacts and funds to prevent lazy loading issues
+        company = session.query(InvestmentCompany).options(
+            joinedload(InvestmentCompany.contacts),
+            joinedload(InvestmentCompany.funds)
+        ).filter(InvestmentCompany.id == company_id).first()
         
         return company
     
@@ -82,18 +75,8 @@ class CompanyRepository:
         Returns:
             InvestmentCompany object if found, None otherwise
         """
-        cache_key = f"company:name:{name}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         company = session.query(InvestmentCompany).filter(InvestmentCompany.name == name).first()
-        
-        # Cache the result
-        if company:
-            self._cache[cache_key] = company
         
         return company
     

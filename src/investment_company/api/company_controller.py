@@ -51,6 +51,41 @@ class CompanyController:
         self.summary_service = CompanySummaryService()
         self.validation_service = CompanyValidationService()
     
+    def _extract_company_data(self, company: InvestmentCompany) -> Dict[str, Any]:
+        """
+        Extract company data into a dictionary while session is still active.
+        
+        This method prevents lazy loading issues by extracting all needed data
+        before the session closes.
+        
+        Args:
+            company: InvestmentCompany instance
+            
+        Returns:
+            Dictionary containing company data
+        """
+        return {
+            "id": company.id,
+            "name": company.name,
+            "company_type": company.company_type,
+            "business_address": company.business_address,
+            "website": company.website,
+            "description": company.description,
+            "created_at": company.created_at.isoformat() if company.created_at else None,
+            "updated_at": company.updated_at.isoformat() if company.updated_at else None,
+            "contacts": [
+                {
+                    "id": contact.id,
+                    "name": contact.name,
+                    "title": contact.title,
+                    "direct_number": contact.direct_number,
+                    "direct_email": contact.direct_email,
+                    "notes": contact.notes
+                }
+                for contact in company.contacts
+            ]
+        }
+    
     def get_investment_companies(self, session: Session) -> tuple:
         """
         Get list of all investment companies with summary data.
@@ -70,11 +105,16 @@ class CompanyController:
                 # Get fund count and summary data using services directly
                 total_funds = self.portfolio_service.get_total_funds_under_management(company, session)
                 total_commitments = self.portfolio_service.get_total_commitments(company, session)
+                
+                # Extract fund data while session is still active
+                # This prevents lazy loading issues after session closes
                 active_funds = 0
-                for fund in company.funds:
-                    if fund.status == FundStatus.ACTIVE:
-                        active_funds += 1
-                total_equity = sum(fund.current_equity_balance or 0.0 for fund in company.funds)
+                total_equity = 0.0
+                if company.funds:
+                    for fund in company.funds:
+                        if fund.status == FundStatus.ACTIVE:
+                            active_funds += 1
+                        total_equity += fund.current_equity_balance or 0.0
                 
                 # Handle company_type safely - it might be a string from old data or an enum
                 company_type_value = None
@@ -244,26 +284,14 @@ class CompanyController:
             # Get funds with summary using service
             funds = self.portfolio_service.get_funds_with_summary(company, session)
             
-            return jsonify({
-                "id": company.id,
-                "name": company.name,
-                "description": company.description,
-                "website": company.website,
-                "company_type": company.company_type,
-                "business_address": company.business_address,
-                "funds": funds,
-                "contacts": [
-                    {
-                        "id": contact.id,
-                        "name": contact.name,
-                        "title": contact.title,
-                        "direct_number": contact.direct_number,
-                        "direct_email": contact.direct_email,
-                        "notes": contact.notes
-                    }
-                    for contact in company.contacts
-                ]
-            }), 200
+            # Extract all needed data while session is still active
+            # This prevents lazy loading issues after session closes
+            company_data = self._extract_company_data(company)
+            company_data.update({
+                "funds": funds
+            })
+            
+            return jsonify(company_data), 200
             
         except Exception as e:
             current_app.logger.error(f"Error getting company funds: {str(e)}")
@@ -312,27 +340,11 @@ class CompanyController:
             if not company:
                 return jsonify({"error": "Investment company not found"}), 404
             
-            return jsonify({
-                "id": company.id,
-                "name": company.name,
-                "company_type": company.company_type,
-                "business_address": company.business_address,
-                "website": company.website,
-                "description": company.description,
-                "created_at": company.created_at.isoformat() if company.created_at else None,
-                "updated_at": company.updated_at.isoformat() if company.updated_at else None,
-                "contacts": [
-                    {
-                        "id": contact.id,
-                        "name": contact.name,
-                        "title": contact.title,
-                        "direct_number": contact.direct_number,
-                        "direct_email": contact.direct_email,
-                        "notes": contact.notes
-                    }
-                    for contact in company.contacts
-                ]
-            }), 200
+            # Extract all needed data while session is still active
+            # This prevents lazy loading issues after session closes
+            company_data = self._extract_company_data(company)
+            
+            return jsonify(company_data), 200
             
         except Exception as e:
             current_app.logger.error(f"Error getting company details: {str(e)}")

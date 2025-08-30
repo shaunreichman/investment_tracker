@@ -185,7 +185,7 @@ export const EnhancedFormDemo: React.FC = () => {
             label="Name"
             value={values.name}
             onChange={(e) => setFieldValue('name', e.target.value)}
-            error={!!errors.name && touched.name}
+            error={Boolean(errors.name && touched.name)}
             helperText={touched.name ? errors.name : ''}
             placeholder="Enter your name"
           />
@@ -196,7 +196,7 @@ export const EnhancedFormDemo: React.FC = () => {
             type="email"
             value={values.email}
             onChange={(e) => setFieldValue('email', e.target.value)}
-            error={!!errors.email && touched.email}
+            error={Boolean(errors.email && touched.email)}
             helperText={touched.email ? errors.email : ''}
             placeholder="Enter your email"
           />
@@ -208,7 +208,7 @@ export const EnhancedFormDemo: React.FC = () => {
             rows={3}
             value={values.description}
             onChange={(e) => setFieldValue('description', e.target.value)}
-            error={!!errors.description && touched.description}
+            error={Boolean(errors.description && touched.description)}
             helperText={touched.description ? errors.description : ''}
             placeholder="Enter a description (optional)"
           />
