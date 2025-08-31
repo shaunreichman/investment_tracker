@@ -485,10 +485,9 @@ const InterestWithholdingGroupRow: React.FC<{
         <TableCell align="right">
           {interestEvent && (
             <Box>
-              {/* Interest amount - normal size */}
+              {/* Interest amount - standard size to match other rows */}
               <Typography 
                 variant="body2" 
-                fontWeight="medium"
                 aria-label={`Interest amount: ${formatCurrency(interestEvent.amount || 0, fund.currency)}`}
               >
                 {formatCurrency(interestEvent.amount || 0, fund.currency)}
@@ -519,16 +518,7 @@ const InterestWithholdingGroupRow: React.FC<{
         {/* Tax Column */}
         {showTaxEvents && (
           <TableCell align="right">
-            {withholdingEvent && (
-              <Box>
-                <Typography variant="body2" color="error.main" fontWeight="medium">
-                  {formatCurrency(-(withholdingEvent.amount || 0), fund.currency)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Withholding
-                </Typography>
-              </Box>
-            )}
+            {/* Tax column left empty for interest withholding groups to avoid duplication */}
           </TableCell>
         )}
         
