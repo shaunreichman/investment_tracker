@@ -499,7 +499,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
               formData={formData as any}
               validationErrors={validationErrors as any}
               financialYears={financialYears}
-              fundEntity={fundData?.entity || null}
               hybridFieldOverrides={hybridFieldOverrides}
               onInputChange={handleInputChange}
               onHybridFieldToggle={handleHybridFieldToggle}

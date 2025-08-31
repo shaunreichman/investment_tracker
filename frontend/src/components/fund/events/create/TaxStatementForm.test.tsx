@@ -33,7 +33,6 @@ const defaultProps = {
   },
   validationErrors: {},
   financialYears: ['2024', '2023', '2022', '2021', '2020', '2019'],
-  fundEntity: { id: 1, name: 'Test Entity' },
   hybridFieldOverrides: {
     dividend_franked_income_amount: false,
     dividend_unfranked_income_amount: false,
@@ -62,10 +61,8 @@ describe('TaxStatementForm', () => {
       
       // Basic Information section
       expect(screen.getByText('Basic Information')).toBeInTheDocument();
-      expect(screen.getByLabelText(/Entity/)).toBeInTheDocument();
       expect(screen.getByRole('combobox', { name: /Financial Year/ })).toBeInTheDocument();
       expect(screen.getByLabelText(/Statement Date/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Tax Payment Date/)).toBeInTheDocument();
       expect(screen.getByLabelText(/End of Financial Year Debt Interest Deduction Rate/)).toBeInTheDocument();
       
       // Interest Income section
@@ -95,13 +92,7 @@ describe('TaxStatementForm', () => {
       expect(screen.getByRole('checkbox', { name: /Non-Resident/ })).toBeInTheDocument();
     });
 
-    it('displays fund entity name correctly', () => {
-      renderWithTheme(<TaxStatementForm {...defaultProps} />);
-      
-      const entityField = screen.getByLabelText(/Entity/);
-      expect(entityField).toHaveValue('Test Entity');
-      expect(entityField).toBeDisabled();
-    });
+
 
     it('renders financial years dropdown correctly', () => {
       renderWithTheme(<TaxStatementForm {...defaultProps} />);

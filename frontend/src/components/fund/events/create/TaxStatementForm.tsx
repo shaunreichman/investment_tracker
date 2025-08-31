@@ -6,7 +6,6 @@ interface TaxStatementFormProps {
   formData: any;
   validationErrors: any;
   financialYears: string[];
-  fundEntity: any;
   hybridFieldOverrides: any;
   onInputChange: (field: string, value: string) => void;
   onHybridFieldToggle: (field: string) => void;
@@ -16,7 +15,6 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
   formData = {},
   validationErrors = {},
   financialYears = [],
-  fundEntity,
   hybridFieldOverrides = {},
   onInputChange,
   onHybridFieldToggle
@@ -44,12 +42,6 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         Basic Information
       </Typography>
       <TextField
-        label="Entity"
-        value={fundEntity?.name || 'Loading...'}
-        disabled
-        fullWidth
-      />
-      <TextField
         select
         label={<span>Financial Year <span style={{ color: theme.palette.error.main }}>*</span></span>}
         value={formData.financial_year || ''}
@@ -73,13 +65,6 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         error={!!validationErrors.statement_date}
         helperText={validationErrors.statement_date}
         InputLabelProps={{ shrink: true }}
-      />
-      <TextField
-        label="Tax Payment Date"
-        value={formData.tax_payment_date || ''}
-        disabled
-        fullWidth
-        helperText="Auto-calculated as last day of financial year"
       />
       <NumberInputField
         label={<span>End of Financial Year Debt Interest Deduction Rate (%) <span style={{ color: theme.palette.error.main }}>*</span></span>}
