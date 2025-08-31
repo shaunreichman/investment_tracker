@@ -163,11 +163,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                 <Typography variant="subtitle1" fontWeight={isSelected ? 'bold' : 'normal'}>
                   {template.label}
                 </Typography>
-                {isSelected && (
-                  <Typography variant="caption" color="primary.main" mt={0.5}>
-                    ✓ Selected
-                  </Typography>
-                )}
+
               </Box>
               {/* Expand indicator for Distribution */}
               {template.value === 'DISTRIBUTION' && isSelected && (
@@ -229,11 +225,6 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                     <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>
                       {dt.label}
                     </Typography>
-                    {isSelected && (
-                      <Typography variant="caption" color="primary.main" mt={0.5}>
-                        ✓ Selected
-                      </Typography>
-                    )}
                   </Box>
                 </Paper>
               );
