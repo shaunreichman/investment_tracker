@@ -84,18 +84,6 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
           helperText={validationErrors.distribution_type}
         />
 
-        {/* Sub-Distribution Type Display */}
-        {(distributionType === 'DIVIDEND' || distributionType === 'INTEREST') && (
-          <TextField
-            label={<span>Sub-Distribution Type <span style={{ color: theme.palette.error.main }}>*</span></span>}
-            value={subDistributionType}
-            disabled
-            fullWidth
-            error={!!validationErrors.sub_distribution_type}
-            helperText={validationErrors.sub_distribution_type}
-          />
-        )}
-
         {/* Notes Field */}
         <TextField
           label="Notes (Optional)"
