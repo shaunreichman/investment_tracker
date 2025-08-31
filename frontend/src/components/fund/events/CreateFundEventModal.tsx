@@ -38,10 +38,13 @@ interface EventFormData {
   unit_price: string;
   nav_per_share: string;
   brokerage_fee: string;
-  gross_amount: string;
-  net_amount: string;
-  withholding_tax_amount: string;
-  withholding_tax_rate: string;
+  
+  // Withholding Tax Fields for Interest Distributions
+  interest_gross_amount: string;
+  interest_net_amount: string;
+  interest_withholding_tax_amount: string;
+  interest_withholding_tax_rate: string;
+  
   financial_year: string;
   statement_date: string;
   eofy_debt_interest_deduction_rate: string;
@@ -69,10 +72,13 @@ const initialFormValues: EventFormData = {
   unit_price: '',
   nav_per_share: '',
   brokerage_fee: '',
-  gross_amount: '',
-  net_amount: '',
-  withholding_tax_amount: '',
-  withholding_tax_rate: '',
+  
+  // Withholding Tax Fields for Interest Distributions
+  interest_gross_amount: '',
+  interest_net_amount: '',
+  interest_withholding_tax_amount: '',
+  interest_withholding_tax_rate: '',
+  
   financial_year: '',
   statement_date: '',
   eofy_debt_interest_deduction_rate: '',
@@ -191,7 +197,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     setSubDistributionType('');
     setSuccess(false);
     setHybridFieldOverrides({});
-  }, [resetFormData, setEventType, setDistributionType, setSubDistributionType, setHybridFieldOverrides]);
+  }, [resetFormData]);
 
   // Handle errors and success from hooks
   useEffect(() => {
@@ -302,6 +308,46 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     if (eventType === 'DISTRIBUTION' && distributionType === 'INTEREST' && !subDistributionType) {
       console.log('❌ Sub-distribution type required for interest');
       return false;
+    }
+    
+    // Validate withholding tax fields for Interest distributions
+    if (eventType === 'DISTRIBUTION' && distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
+      // Must have exactly one amount type (gross or net)
+      const hasGrossAmount = formData.interest_gross_amount && Number(formData.interest_gross_amount) > 0;
+      const hasNetAmount = formData.interest_net_amount && Number(formData.interest_net_amount) > 0;
+      
+      if (!hasGrossAmount && !hasNetAmount) {
+        console.log('❌ Must provide either gross or net interest amount');
+        return false;
+      }
+      
+      if (hasGrossAmount && hasNetAmount) {
+        console.log('❌ Cannot provide both gross and net amounts');
+        return false;
+      }
+      
+      // Must have exactly one tax type (amount or percentage)
+      const hasTaxAmount = formData.interest_withholding_tax_amount && Number(formData.interest_withholding_tax_amount) > 0;
+      const hasTaxRate = formData.interest_withholding_tax_rate && Number(formData.interest_withholding_tax_rate) > 0;
+      
+      if (!hasTaxAmount && !hasTaxRate) {
+        console.log('❌ Must provide either withholding tax amount or rate');
+        return false;
+      }
+      
+      if (hasTaxAmount && hasTaxRate) {
+        console.log('❌ Cannot provide both withholding tax amount and rate');
+        return false;
+      }
+      
+      // Validate tax rate is reasonable (0-100%)
+      if (hasTaxRate) {
+        const taxRate = Number(formData.interest_withholding_tax_rate);
+        if (taxRate < 0 || taxRate > 100) {
+          console.log('❌ Tax rate must be between 0% and 100%');
+          return false;
+        }
+      }
     }
     
     console.log('✅ Form validation passed');

@@ -291,6 +291,13 @@ export interface CreateFundEventData {
   description?: string;
   reference_number?: string;
   distribution_type?: DistributionType;
+  
+  // Withholding Tax Fields for Interest Distributions
+  interest_gross_amount?: number;
+  interest_net_amount?: number;
+  interest_withholding_tax_amount?: number;
+  interest_withholding_tax_rate?: number;
+  
   units_purchased?: number;
   units_sold?: number;
   unit_price?: number;
