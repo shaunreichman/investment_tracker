@@ -278,6 +278,9 @@ class FundService:
             ])):
             # For withholding tax distributions, amount is not required
             pass
+        elif event_data.get('event_type') in ['UNIT_PURCHASE', 'UNIT_SALE', 'NAV_UPDATE']:
+            # For NAV-based events, amount is not required
+            pass
         else:
             # For all other events, amount is required
             required_fields.append('amount')
@@ -317,6 +320,9 @@ class FundService:
                     event_data.get('interest_withholding_tax_rate') is not None
                 ])):
                 # For withholding tax distributions, don't include amount
+                pass
+            elif event_data.get('event_type') in ['UNIT_PURCHASE', 'UNIT_SALE', 'NAV_UPDATE']:
+                # For NAV-based events, don't include amount
                 pass
             else:
                 # For other events, include amount

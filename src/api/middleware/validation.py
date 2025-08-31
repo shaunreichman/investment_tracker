@@ -783,6 +783,21 @@ def validate_fund_event_data(func: Callable) -> Callable:
                     # Keep original data type - don't transform
                 except (ValueError, TypeError):
                     raise ValidationError("Amount must be a valid positive number", 'amount')
+            elif event_type_str in ['UNIT_PURCHASE', 'UNIT_SALE', 'NAV_UPDATE']:
+                # For NAV-based events, amount is not required but specific fields are required
+                if event_type_str == 'UNIT_PURCHASE':
+                    if 'units_purchased' not in data or data['units_purchased'] is None:
+                        raise ValidationError("Units purchased is required for Unit Purchase events", 'units_purchased')
+                    if 'unit_price' not in data or data['unit_price'] is None:
+                        raise ValidationError("Unit price is required for Unit Purchase events", 'unit_price')
+                elif event_type_str == 'UNIT_SALE':
+                    if 'units_sold' not in data or data['units_sold'] is None:
+                        raise ValidationError("Units sold is required for Unit Sale events", 'units_sold')
+                    if 'unit_price' not in data or data['unit_price'] is None:
+                        raise ValidationError("Unit price is required for Unit Sale events", 'unit_price')
+                elif event_type_str == 'NAV_UPDATE':
+                    if 'nav_per_share' not in data or data['nav_per_share'] is None:
+                        raise ValidationError("NAV per share is required for NAV Update events", 'nav_per_share')
             elif 'amount' in data and data['amount'] is not None:
                 # For other event types, amount is optional but must be valid if provided
                 try:

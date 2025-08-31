@@ -5,18 +5,22 @@ import { NumberInputField } from '../../../ui/NumberInputField';
 interface UnitTransactionFormProps {
   eventType: 'UNIT_PURCHASE' | 'UNIT_SALE';
   formData: {
+    event_date?: string;
     units_purchased?: string;
     units_sold?: string;
     unit_price?: string;
     brokerage_fee?: string;
     amount?: string;
+    description?: string;
   };
   validationErrors: {
+    event_date?: string;
     units_purchased?: string;
     units_sold?: string;
     unit_price?: string;
     brokerage_fee?: string;
     amount?: string;
+    description?: string;
   };
   onInputChange: (field: string, value: string) => void;
 }
@@ -73,6 +77,26 @@ const UnitTransactionForm: React.FC<UnitTransactionFormProps> = ({
       </Typography>
       
       <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
+        <TextField
+          label={<span>Event Date <span style={{ color: theme.palette.error.main }}>*</span></span>}
+          type="date"
+          value={formData.event_date || ''}
+          onChange={(e) => onInputChange('event_date', e.target.value)}
+          fullWidth
+          error={!!validationErrors.event_date}
+          helperText={validationErrors.event_date}
+          InputLabelProps={{ shrink: true }}
+        />
+        
+        <TextField
+          label="Description (Optional)"
+          value={formData.description || ''}
+          onChange={(e) => onInputChange('description', e.target.value)}
+          fullWidth
+          error={!!validationErrors.description}
+          helperText={validationErrors.description}
+        />
+        
         <NumberInputField
           label={<span>{unitsLabel} <span style={{ color: theme.palette.error.main }}>*</span></span>}
           value={formData[unitsField] || ''}

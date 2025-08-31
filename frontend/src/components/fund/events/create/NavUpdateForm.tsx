@@ -4,10 +4,14 @@ import { NumberInputField } from '../../../ui/NumberInputField';
 
 interface NavUpdateFormProps {
   formData: {
+    event_date?: string;
     nav_per_share?: string;
+    description?: string;
   };
   validationErrors: {
+    event_date?: string;
     nav_per_share?: string;
+    description?: string;
   };
   onInputChange: (field: string, value: string) => void;
 }
@@ -40,6 +44,26 @@ const NavUpdateForm: React.FC<NavUpdateFormProps> = ({
       </Typography>
       
       <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
+        <TextField
+          label={<span>Event Date <span style={{ color: theme.palette.error.main }}>*</span></span>}
+          type="date"
+          value={formData.event_date || ''}
+          onChange={(e) => onInputChange('event_date', e.target.value)}
+          fullWidth
+          error={!!validationErrors.event_date}
+          helperText={validationErrors.event_date}
+          InputLabelProps={{ shrink: true }}
+        />
+        
+        <TextField
+          label="Description (Optional)"
+          value={formData.description || ''}
+          onChange={(e) => onInputChange('description', e.target.value)}
+          fullWidth
+          error={!!validationErrors.description}
+          helperText={validationErrors.description}
+        />
+        
         <NumberInputField
           label={<span>NAV per Share <span style={{ color: theme.palette.error.main }}>*</span></span>}
           value={formData.nav_per_share || ''}

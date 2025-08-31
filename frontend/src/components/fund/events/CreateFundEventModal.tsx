@@ -439,7 +439,8 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
           <Typography variant="body2" color="text.secondary" mb={2}>
             Fields marked with <span style={{ color: theme.palette.error.main }}>*</span> are required.
           </Typography>
-                    {/* Render appropriate form based on event type */}
+          
+          {/* Render appropriate form based on event type */}
           {eventType === 'CAPITAL_CALL' && (
             <CostBasedEventForm
               eventType={eventType}
