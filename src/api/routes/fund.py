@@ -54,6 +54,7 @@ def fund_detail(fund_id):
                     "reference_number": event.reference_number,
                     "distribution_type": event.distribution_type.value.upper() if event.distribution_type else None,
                     "tax_payment_type": event.tax_payment_type.value.upper() if event.tax_payment_type else None,
+                    "units_owned": float(event.units_owned) if event.units_owned else None,
                     "units_purchased": float(event.units_purchased) if event.units_purchased else None,
                     "units_sold": float(event.units_sold) if event.units_sold else None,
                     "unit_price": float(event.unit_price) if event.unit_price else None,
@@ -62,6 +63,7 @@ def fund_detail(fund_id):
                     "nav_change_absolute": float(event.nav_change_absolute) if event.nav_change_absolute else None,
                     "nav_change_percentage": float(event.nav_change_percentage) if event.nav_change_percentage else None,
                     "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None,
+                    "tax_withholding": float(event.tax_withholding) if event.tax_withholding else None,
                     "has_withholding_tax": bool(event.has_withholding_tax) if event.has_withholding_tax is not None else None,
                     "created_at": event.created_at.isoformat() if event.created_at else None,
                     # CALCULATED: Grouping flags set by backend when creating events

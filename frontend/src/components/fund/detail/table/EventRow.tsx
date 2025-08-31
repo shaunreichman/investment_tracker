@@ -170,6 +170,8 @@ const eventRowPropsAreEqual = (prevProps: EventRowProps, nextProps: EventRowProp
     prevProps.event.capital_gain_income_tax_rate !== nextProps.event.capital_gain_income_tax_rate ||
     prevProps.event.eofy_debt_interest_deduction_sum_of_daily_interest !== nextProps.event.eofy_debt_interest_deduction_sum_of_daily_interest ||
     prevProps.event.eofy_debt_interest_deduction_rate !== nextProps.event.eofy_debt_interest_deduction_rate ||
+    prevProps.event.has_withholding_tax !== nextProps.event.has_withholding_tax ||
+    prevProps.event.tax_withholding !== nextProps.event.tax_withholding ||
     prevProps.fund.id !== nextProps.fund.id ||
     prevProps.fund.tracking_type !== nextProps.fund.tracking_type ||
     prevProps.fund.currency !== nextProps.fund.currency ||

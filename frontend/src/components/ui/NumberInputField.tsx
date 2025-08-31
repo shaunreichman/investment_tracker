@@ -55,11 +55,6 @@ export const NumberInputField: React.FC<NumberInputFieldProps> = ({
     
     // Only log when the raw value actually changes
     if (rawValue !== value) {
-      console.log('🔍 NumberInputField value change:', { 
-        displayValue: newValue, 
-        rawValue, 
-        currentFormValue: value 
-      });
       onInputChange(fieldName, rawValue);
     }
   };

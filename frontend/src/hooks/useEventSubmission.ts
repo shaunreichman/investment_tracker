@@ -19,13 +19,6 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
   const createTaxStatement = useCreateTaxStatement(fundId);
 
   const handleSubmit = async ({ eventType, formData, distributionType, subDistributionType }: SubmitEventParams) => {
-    console.log('🔍 useEventSubmission.handleSubmit called with:', {
-      eventType,
-      formData,
-      distributionType,
-      subDistributionType
-    });
-
     // Prepare payload based on event type
     const payload: any = {
       event_type: eventType,
@@ -36,9 +29,7 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
 
     // Handle different event types
     if (eventType === 'CAPITAL_CALL' || eventType === 'RETURN_OF_CAPITAL') {
-      const amount = formData.amount;
-      console.log('🔍 Processing Capital Call/Return of Capital:', { amount, type: typeof amount });
-      
+      const amount = formData.amount;      
       if (!amount || amount.trim() === '') {
         throw new Error('Amount is required for Capital Call and Return of Capital events');
       }
@@ -47,7 +38,6 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
         throw new Error('Amount must be a valid positive number');
       }
       payload.amount = amountNum;
-      console.log('✅ Amount processed successfully:', amountNum);
     } else if (eventType === 'DISTRIBUTION') {
       // Handle withholding tax distributions differently
       if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {

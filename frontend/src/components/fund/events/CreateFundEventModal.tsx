@@ -279,16 +279,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   const isFormValid = () => {
     // Basic form validation from unified form
     const basicFormValid = isValid;
-    
-    console.log('🔍 Form validation check:', {
-      basicFormValid,
-      eventType,
-      distributionType,
-      subDistributionType,
-      formData,
-      validationErrors
-    });
-    
     // Event type specific validation
     if (!eventType) {
       console.log('❌ No event type selected');
@@ -355,22 +345,8 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   };
 
   // Handle form submission
-  const handleSubmit = () => {
-    console.log('🔍 CreateFundEventModal.handleSubmit called');
-    console.log('🔍 Current state:', {
-      eventType,
-      formData,
-      distributionType,
-      subDistributionType,
-      isValid,
-      formIsSubmitting,
-      isDirty,
-      validationErrors
-    });
-    
+  const handleSubmit = () => {    
     clearError();
-    
-    console.log('🔍 Calling submitEvent...');
     submitEvent({
       eventType,
       formData,

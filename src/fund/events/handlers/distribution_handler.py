@@ -333,10 +333,12 @@ class DistributionHandler(BaseFundEventHandler):
         event.group_id = group_id
         event.group_type = GroupType.INTEREST_WITHHOLDING
         event.group_position = 0
+        event.is_grouped = True  # Set the grouping flag
         
         tax_event.group_id = group_id
         tax_event.group_type = GroupType.INTEREST_WITHHOLDING
         tax_event.group_position = 1
+        tax_event.is_grouped = True  # Set the grouping flag
         
         # Store both events in the session
         self.session.add(event)

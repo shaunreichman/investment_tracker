@@ -142,9 +142,7 @@ class EventType(Enum):
     def is_system_event(cls, event_type: 'EventType') -> bool:
         """Check if an event type is a system-generated event."""
         system_events = {
-            cls.DAILY_RISK_FREE_INTEREST_CHARGE,
-            cls.EOFY_DEBT_COST,
-            cls.TAX_PAYMENT
+            cls.DAILY_RISK_FREE_INTEREST_CHARGE
         }
         return event_type in system_events
 

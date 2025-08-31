@@ -82,8 +82,8 @@ export enum TaxPaymentType {
 }
 
 export enum GroupType {
-  INTEREST_WITHHOLDING = 'interest_withholding',
-  TAX_STATEMENT = 'tax_statement'
+  INTEREST_WITHHOLDING = 'INTEREST_WITHHOLDING',
+  TAX_STATEMENT = 'TAX_STATEMENT'
 }
 
 // ============================================================================
@@ -162,6 +162,11 @@ export interface FundEvent {
   tax_payment_type?: TaxPaymentType | undefined;
   units_owned?: number | undefined;
   cost_of_units?: number | undefined;
+  
+  // Withholding tax fields
+  tax_withholding?: number | undefined;  // (MANUAL) tax withholding amount if applicable
+  has_withholding_tax?: boolean | undefined;  // (MANUAL) flag for distributions with associated withholding tax
+  
   created_at: string;
   updated_at: string;
   
