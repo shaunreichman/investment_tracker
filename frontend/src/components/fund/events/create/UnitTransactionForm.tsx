@@ -53,7 +53,21 @@ const UnitTransactionForm: React.FC<UnitTransactionFormProps> = ({
   const unitsLabel = isPurchase ? 'Units Purchased' : 'Units Sold';
 
   return (
-    <Box>
+    <Box
+      sx={{
+        animation: 'fadeInUp 0.5s ease-out 0.1s both',
+        '@keyframes fadeInUp': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(30px)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0)',
+          }
+        }
+      }}
+    >
       <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
         {isPurchase ? 'Unit Purchase Details' : 'Unit Sale Details'}
       </Typography>

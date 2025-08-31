@@ -19,7 +19,21 @@ const NavUpdateForm: React.FC<NavUpdateFormProps> = ({
   const theme = useTheme();
   
   return (
-    <Box>
+    <Box
+      sx={{
+        animation: 'fadeInUp 0.5s ease-out 0.1s both',
+        '@keyframes fadeInUp': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(30px)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0)',
+          }
+        }
+      }}
+    >
       <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
         NAV Update Details
       </Typography>

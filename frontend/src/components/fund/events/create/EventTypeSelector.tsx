@@ -135,6 +135,14 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
                 position: 'relative',
+                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                '&:hover': {
+                  elevation: isSelected ? 6 : 2,
+                  transform: isSelected ? 'scale(1.02)' : 'scale(1.05)',
+                  boxShadow: isSelected ? theme.shadows[6] : theme.shadows[2],
+                  background: isSelected ? theme.palette.primary.light : theme.palette.action.hover,
+                  borderColor: isSelected ? theme.palette.primary.main : theme.palette.primary.light,
+                }
               }}
               onClick={() => {
                 if (isDisabled) return;
@@ -155,6 +163,11 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                 <Typography variant="subtitle1" fontWeight={isSelected ? 'bold' : 'normal'}>
                   {template.label}
                 </Typography>
+                {isSelected && (
+                  <Typography variant="caption" color="primary.main" mt={0.5}>
+                    ✓ Selected
+                  </Typography>
+                )}
               </Box>
               {/* Expand indicator for Distribution */}
               {template.value === 'DISTRIBUTION' && isSelected && (
@@ -189,6 +202,14 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                     opacity: isDisabled ? 0.5 : 1,
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
+                    transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                    '&:hover': {
+                      elevation: isSelected ? 6 : 2,
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1.05)',
+                      boxShadow: isSelected ? theme.shadows[6] : theme.shadows[2],
+                      background: isSelected ? theme.palette.primary.light : theme.palette.action.hover,
+                      borderColor: isSelected ? theme.palette.primary.main : theme.palette.primary.light,
+                    }
                   }}
                   onClick={() => {
                     if (isDisabled) return;
@@ -207,6 +228,11 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                     <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>
                       {dt.label}
                     </Typography>
+                    {isSelected && (
+                      <Typography variant="caption" color="primary.main" mt={0.5}>
+                        ✓ Selected
+                      </Typography>
+                    )}
                   </Box>
                 </Paper>
               );

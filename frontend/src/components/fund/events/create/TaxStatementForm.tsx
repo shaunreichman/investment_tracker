@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox, useTheme } from '@mui/material';
+import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox, useTheme, Box } from '@mui/material';
 
 interface TaxStatementFormProps {
   formData: any;
@@ -23,7 +23,21 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
   const theme = useTheme();
   
   return (
-    <>
+    <Box
+      sx={{
+        animation: 'fadeInUp 0.5s ease-out 0.1s both',
+        '@keyframes fadeInUp': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(30px)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0)',
+          }
+        }
+      }}
+    >
       {/* Basic Information */}
       <Typography variant="h6" color="primary" sx={{ mt: 2, mb: 1 }}>
         Basic Information
@@ -266,7 +280,7 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         }
         label="Non-Resident"
       />
-    </>
+    </Box>
   );
 };
 
