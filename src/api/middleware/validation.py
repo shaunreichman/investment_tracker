@@ -746,7 +746,32 @@ def validate_fund_event_data(func: Callable) -> Callable:
             
             # Validate amount - CORRECTED: require amount for certain event types
             event_type_str = data['event_type']  # Use the string value
-            if event_type_str in ['CAPITAL_CALL', 'RETURN_OF_CAPITAL']:
+            
+            # Special handling for withholding tax distributions
+            if event_type_str == 'DISTRIBUTION' and data.get('distribution_type') == 'INTEREST':
+                # Check if this is a withholding tax distribution
+                has_withholding_tax_fields = any([
+                    data.get('interest_gross_amount') is not None,
+                    data.get('interest_net_amount') is not None,
+                    data.get('interest_withholding_tax_amount') is not None,
+                    data.get('interest_withholding_tax_rate') is not None
+                ])
+                
+                if has_withholding_tax_fields:
+                    # For withholding tax distributions, validate the specialized fields
+                    # Amount field is not required - the specialized fields are validated by the handler
+                    pass
+                else:
+                    # For simple distributions, amount is required
+                    if 'amount' not in data or data['amount'] is None:
+                        raise ValidationError("Amount is required for simple Distribution events", 'amount')
+                    try:
+                        amount_test = float(data['amount'])
+                        if amount_test <= 0:
+                            raise ValidationError("Amount must be positive for Distribution events", 'amount')
+                    except (ValueError, TypeError):
+                        raise ValidationError("Amount must be a valid positive number", 'amount')
+            elif event_type_str in ['CAPITAL_CALL', 'RETURN_OF_CAPITAL']:
                 # Amount is required for capital call and return of capital events
                 if 'amount' not in data or data['amount'] is None:
                     raise ValidationError("Amount is required for Capital Call and Return of Capital events", 'amount')

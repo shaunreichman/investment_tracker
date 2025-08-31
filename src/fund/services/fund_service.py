@@ -265,7 +265,23 @@ class FundService:
             raise RuntimeError(f"Fund with ID {fund_id} not found")
         
         # Validate required fields
-        required_fields = ['event_type', 'event_date', 'amount']
+        required_fields = ['event_type', 'event_date']
+        
+        # Special handling for withholding tax distributions
+        if (event_data.get('event_type') == 'DISTRIBUTION' and 
+            event_data.get('distribution_type') == 'INTEREST' and
+            any([
+                event_data.get('interest_gross_amount') is not None,
+                event_data.get('interest_net_amount') is not None,
+                event_data.get('interest_withholding_tax_amount') is not None,
+                event_data.get('interest_withholding_tax_rate') is not None
+            ])):
+            # For withholding tax distributions, amount is not required
+            pass
+        else:
+            # For all other events, amount is required
+            required_fields.append('amount')
+        
         for field in required_fields:
             if field not in event_data:
                 raise ValueError(f"Required field '{field}' is missing")
@@ -282,15 +298,31 @@ class FundService:
             result = self.orchestrator.process_fund_event(event_data, session, fund)
             
             # Return event information
-            return {
+            response_data = {
                 'id': result.id,
                 'fund_id': fund_id,
                 'event_type': event_data['event_type'],
                 'event_date': event_data['event_date'].isoformat() if hasattr(event_data['event_date'], 'isoformat') else str(event_data['event_date']),
-                'amount': float(event_data['amount']),
                 'description': event_data.get('description'),
                 'status': 'processed'
             }
+            
+            # Handle amount field based on event type
+            if (event_data.get('event_type') == 'DISTRIBUTION' and 
+                event_data.get('distribution_type') == 'INTEREST' and
+                any([
+                    event_data.get('interest_gross_amount') is not None,
+                    event_data.get('interest_net_amount') is not None,
+                    event_data.get('interest_withholding_tax_amount') is not None,
+                    event_data.get('interest_withholding_tax_rate') is not None
+                ])):
+                # For withholding tax distributions, don't include amount
+                pass
+            else:
+                # For other events, include amount
+                response_data['amount'] = float(event_data['amount'])
+            
+            return response_data
             
         except Exception as e:
             raise RuntimeError(f"Failed to process fund event: {str(e)}")

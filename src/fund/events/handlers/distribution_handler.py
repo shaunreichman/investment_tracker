@@ -84,7 +84,7 @@ class DistributionHandler(BaseFundEventHandler):
         """
         # Validate that withholding tax is only valid for INTEREST distributions
         distribution_type = event_data.get('distribution_type')
-        if distribution_type != DistributionType.INTEREST:
+        if distribution_type != DistributionType.INTEREST.value:
             raise ValueError(f"Withholding tax is only valid for INTEREST distributions, not {distribution_type}")
         
         # Extract new field names
@@ -435,14 +435,40 @@ class DistributionHandler(BaseFundEventHandler):
     
     def _generate_group_id(self) -> int:
         """
-        Generate a unique group ID for event grouping.
+        Generate a unique group ID using database sequence for enterprise-grade uniqueness.
         
         Returns:
             Unique integer group ID
         """
-        # Simple implementation - in production, you might want a more sophisticated approach
-        import time
-        return int(time.time() * 1000)  # Millisecond timestamp as group ID
+        from src.api.database import get_db_session
+        from sqlalchemy import text
+        
+        session = get_db_session()
+        try:
+            # Create sequence if it doesn't exist (idempotent)
+            session.execute(text("""
+                CREATE SEQUENCE IF NOT EXISTS group_id_seq 
+                START WITH 1 
+                INCREMENT BY 1 
+                MINVALUE 1 
+                MAXVALUE 2147483647
+            """))
+            
+            # Get next value from sequence
+            result = session.execute(text("SELECT nextval('group_id_seq')"))
+            group_id = result.scalar()
+            
+            # Ensure we stay within PostgreSQL Integer limits
+            if group_id > 2147483647:
+                # Reset sequence if we're getting close to the limit
+                session.execute(text("ALTER SEQUENCE group_id_seq RESTART WITH 1"))
+                result = session.execute(text("SELECT nextval('group_id_seq')"))
+                group_id = result.scalar()
+            
+            return group_id
+            
+        finally:
+            session.close()
     
     def _update_fund_after_distribution(self, event: FundEvent) -> None:
         """
