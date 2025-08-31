@@ -61,9 +61,19 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         type="date"
         value={formData.statement_date || ''}
         onChange={e => onInputChange('statement_date', e.target.value)}
+        InputLabelProps={{ shrink: true }}
         fullWidth
         error={!!validationErrors.statement_date}
         helperText={validationErrors.statement_date}
+      />
+      
+      {/* Tax Payment Date - Auto-calculated */}
+      <TextField
+        label="Tax Payment Date"
+        type="text"
+        value={formData.tax_payment_date || ''}
+        fullWidth
+        disabled
         InputLabelProps={{ shrink: true }}
       />
       <NumberInputField

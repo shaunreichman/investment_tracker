@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { useFund } from '../../../hooks/useFunds';
-import { formatNumber, parseNumber } from '../../../utils/helpers';
+import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../../../utils/helpers';
 import { useEventSubmission } from '../../../hooks/useEventSubmission';
 import EventTypeSelector from './create/EventTypeSelector';
 import DistributionForm from './create/DistributionForm';
@@ -62,6 +62,7 @@ interface EventFormData {
   capital_gain_income_tax_rate: string;
   accountant: string;
   notes: string;
+  tax_payment_date: string;
 }
 
 // Initial form values
@@ -81,7 +82,7 @@ const initialFormValues: EventFormData = {
   interest_withholding_tax_rate: '',
   
   financial_year: '',
-  statement_date: '',
+  statement_date: new Date().toISOString().slice(0, 10),
   eofy_debt_interest_deduction_rate: '',
   interest_received_in_cash: '',
   interest_receivable_this_fy: '',
@@ -95,7 +96,8 @@ const initialFormValues: EventFormData = {
   capital_gain_income_amount: '',
   capital_gain_income_tax_rate: '',
   accountant: '',
-  notes: ''
+  notes: '',
+  tax_payment_date: 'Will be auto set to the last day in FY... once FY is set'
 };
 
 // Basic validation rules for common fields
@@ -129,6 +131,10 @@ const validators = {
   brokerage_fee: (value: string) => {
     if (!value) return undefined;
     return validationRules.nonNegativeNumber('Brokerage fee')(value);
+  },
+  tax_payment_date: (value: string) => {
+    // Tax payment date is auto-calculated, so no validation needed
+    return undefined;
   }
 };
 
@@ -247,14 +253,21 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
 
   // Handle input change (combines unified form with existing logic)
   const handleInputChange = (field: string, value: string) => {
-    console.log('🔍 handleInputChange:', { field, value, currentFormData: formData });
-    
     setFieldValue(field as keyof EventFormData, value);
     
     // Auto-calculate tax payment date when financial year changes
     if (field === 'financial_year' && eventType === 'TAX_STATEMENT') {
-      // This logic would need to be implemented based on your business rules
-      // setFieldValue('tax_payment_date', calculateTaxPaymentDate(value));
+      let taxPaymentDate: string;
+      if (value && value.trim() !== '') {
+        taxPaymentDate = calculateTaxPaymentDate(value);
+      } else {
+        taxPaymentDate = 'Will be auto set to the last day in FY... once FY is set';
+      }
+      
+      // Use setTimeout to ensure the financial year is set first
+      setTimeout(() => {
+        setFieldValue('tax_payment_date' as keyof EventFormData, taxPaymentDate);
+      }, 0);
     }
   };
 

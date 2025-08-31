@@ -100,10 +100,26 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
     
     // Handle Tax Statement submission
     if (eventType === 'TAX_STATEMENT') {
+      console.log('🔍 Submitting TAX_STATEMENT:', { formData, fundEntity });
+      
+      // Validate required fields
+      if (!formData.financial_year) {
+        throw new Error('Financial year is required for tax statements');
+      }
+      
+      if (!formData.statement_date) {
+        throw new Error('Statement date is required for tax statements');
+      }
+      
+      if (!formData.eofy_debt_interest_deduction_rate) {
+        throw new Error('End of Financial Year Debt Interest Deduction Rate is required for tax statements');
+      }
+      
       const taxStatementPayload = {
         entity_id: fundEntity?.id,
         financial_year: formData.financial_year || '',
         statement_date: formData.statement_date || '',
+        tax_payment_date: formData.tax_payment_date || '',
         eofy_debt_interest_deduction_rate: Number(formData.eofy_debt_interest_deduction_rate || '0'),
         interest_received_in_cash: Number(formData.interest_received_in_cash || '0'),
         interest_receivable_this_fy: Number(formData.interest_receivable_this_fy || '0'),
@@ -118,8 +134,10 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
         capital_gain_income_tax_rate: Number(formData.capital_gain_income_tax_rate || '0'),
         accountant: formData.accountant || '',
         notes: formData.notes || '',
-        non_resident: formData.non_resident || false
+        non_resident: formData.non_resident === 'true' || formData.non_resident === true
       };
+      
+      console.log('🔍 Tax Statement payload:', taxStatementPayload);
       
       await createTaxStatement.mutate(taxStatementPayload);
       return;

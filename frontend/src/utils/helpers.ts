@@ -191,16 +191,46 @@ export const deepEqual = (obj1: any, obj2: any): boolean => {
 
 
 /**
- * Calculate tax payment date from financial year
- * @param financialYear - Financial year string (e.g., "2023-24")
- * @returns Tax payment date string (YYYY-MM-DD)
+ * Calculate tax payment date based on financial year (defaults to last day of financial year)
+ * @param financialYear - Financial year string (e.g., '2024-25' or '2024')
+ * @param taxJurisdiction - Tax jurisdiction code (defaults to 'AU')
+ * @returns Date string in dd/mm/yyyy format
  */
-export const calculateTaxPaymentDate = (financialYear: string): string => {
+export const calculateTaxPaymentDate = (financialYear: string, taxJurisdiction: string = 'AU'): string => {
   if (!financialYear) return '';
-  const [startYear] = financialYear.split('-');
-  if (!startYear) return '';
-  const endYear = parseInt(startYear) + 1;
-  return `${endYear}-06-30`; // Last day of financial year (June 30)
+  
+  let startYear: number;
+  let endYear: number;
+  
+  if (financialYear.includes('-')) {
+    const parts = financialYear.split('-');
+    if (parts.length !== 2) return '';
+    
+    const start = parts[0];
+    const end = parts[1];
+    
+    if (!start || !end) return '';
+    
+    startYear = parseInt(start);
+    if (isNaN(startYear)) return '';
+    
+    endYear = parseInt(end.length === 2 ? `20${end}` : end);
+    if (isNaN(endYear)) return '';
+  } else {
+    startYear = parseInt(financialYear);
+    if (isNaN(startYear)) return '';
+    endYear = startYear + 1;
+  }
+  
+  // For AU tax jurisdiction: FY runs July 1 to June 30
+  // For other jurisdictions: FY runs January 1 to December 31
+  if (taxJurisdiction === 'AU') {
+    // Last day of financial year is June 30 of the end year
+    return `30/06/${endYear}`;
+  } else {
+    // Last day of financial year is December 31 of the start year
+    return `31/12/${startYear}`;
+  }
 };
 
 /**

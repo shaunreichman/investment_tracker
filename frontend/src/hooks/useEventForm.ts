@@ -139,6 +139,8 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
   const validateForm = useCallback((): boolean => {
     const errors: ValidationErrors = {};
     
+    console.log('🔍 Validating form:', { eventType, formData });
+    
     if (!formData.event_date) {
       errors.event_date = 'Event date is required';
     }
@@ -211,6 +213,34 @@ export const useEventForm = (open: boolean, fundTrackingType: 'nav_based' | 'cos
         errors.nav_per_share = 'Enter a valid positive number';
       }
     }
+    
+    // Tax Statement validation
+    if (eventType === 'TAX_STATEMENT') {
+      console.log('🔍 Validating TAX_STATEMENT fields:', {
+        financial_year: formData.financial_year,
+        statement_date: formData.statement_date,
+        eofy_debt_interest_deduction_rate: formData.eofy_debt_interest_deduction_rate
+      });
+      
+      if (!formData.financial_year) {
+        errors.financial_year = 'Financial year is required';
+      }
+      
+      if (!formData.statement_date) {
+        errors.statement_date = 'Statement date is required';
+      }
+      
+      if (!formData.eofy_debt_interest_deduction_rate) {
+        errors.eofy_debt_interest_deduction_rate = 'End of Financial Year Debt Interest Deduction Rate is required';
+      } else {
+        const rate = parseFloat(formData.eofy_debt_interest_deduction_rate);
+        if (isNaN(rate) || rate < 0 || rate > 100) {
+          errors.eofy_debt_interest_deduction_rate = 'Debt interest deduction rate must be between 0 and 100';
+        }
+      }
+    }
+    
+    console.log('🔍 Validation errors:', errors);
     
     setValidationErrors(errors);
     const isValid = Object.keys(errors).length === 0;
