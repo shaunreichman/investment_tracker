@@ -1,11 +1,11 @@
 import React from 'react';
-import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox, useTheme } from '@mui/material';
+import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox, useTheme, Box } from '@mui/material';
+import { NumberInputField } from '../../../ui/NumberInputField';
 
 interface TaxStatementFormProps {
   formData: any;
   validationErrors: any;
   financialYears: string[];
-  fundEntity: any;
   hybridFieldOverrides: any;
   onInputChange: (field: string, value: string) => void;
   onHybridFieldToggle: (field: string) => void;
@@ -15,7 +15,6 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
   formData = {},
   validationErrors = {},
   financialYears = [],
-  fundEntity,
   hybridFieldOverrides = {},
   onInputChange,
   onHybridFieldToggle
@@ -23,17 +22,25 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
   const theme = useTheme();
   
   return (
-    <>
+    <Box
+      sx={{
+        animation: 'fadeInUp 0.5s ease-out 0.1s both',
+        '@keyframes fadeInUp': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(30px)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0)',
+          }
+        }
+      }}
+    >
       {/* Basic Information */}
       <Typography variant="h6" color="primary" sx={{ mt: 2, mb: 1 }}>
         Basic Information
       </Typography>
-      <TextField
-        label="Entity"
-        value={fundEntity?.name || 'Loading...'}
-        disabled
-        fullWidth
-      />
       <TextField
         select
         label={<span>Financial Year <span style={{ color: theme.palette.error.main }}>*</span></span>}
@@ -59,18 +66,13 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         helperText={validationErrors.statement_date}
         InputLabelProps={{ shrink: true }}
       />
-      <TextField
-        label="Tax Payment Date"
-        value={formData.tax_payment_date || ''}
-        disabled
-        fullWidth
-        helperText="Auto-calculated as last day of financial year"
-      />
-      <TextField
+      <NumberInputField
         label={<span>End of Financial Year Debt Interest Deduction Rate (%) <span style={{ color: theme.palette.error.main }}>*</span></span>}
-        type="number"
         value={formData.eofy_debt_interest_deduction_rate || ''}
-        onChange={e => onInputChange('eofy_debt_interest_deduction_rate', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="eofy_debt_interest_deduction_rate"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.eofy_debt_interest_deduction_rate}
         helperText={validationErrors.eofy_debt_interest_deduction_rate}
@@ -83,47 +85,57 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         Interest Income
       </Typography>
       
-      <TextField
+      <NumberInputField
         label="Interest Received in Cash"
-        type="number"
         value={formData.interest_received_in_cash || ''}
-        onChange={e => onInputChange('interest_received_in_cash', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="interest_received_in_cash"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.interest_received_in_cash}
         helperText={validationErrors.interest_received_in_cash}
       />
-      <TextField
+      <NumberInputField
         label="Interest Receivable This FY"
-        type="number"
         value={formData.interest_receivable_this_fy || ''}
-        onChange={e => onInputChange('interest_receivable_this_fy', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="interest_receivable_this_fy"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.interest_receivable_this_fy}
         helperText={validationErrors.interest_receivable_this_fy}
       />
-      <TextField
+      <NumberInputField
         label="Interest Receivable Previous FY"
-        type="number"
         value={formData.interest_receivable_prev_fy || ''}
-        onChange={e => onInputChange('interest_receivable_prev_fy', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="interest_receivable_prev_fy"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.interest_receivable_prev_fy}
         helperText={validationErrors.interest_receivable_prev_fy}
       />
-      <TextField
+      <NumberInputField
         label="Interest Non-Resident Withholding Tax from Statement"
-        type="number"
         value={formData.interest_non_resident_withholding_tax_from_statement || ''}
-        onChange={e => onInputChange('interest_non_resident_withholding_tax_from_statement', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="interest_non_resident_withholding_tax_from_statement"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.interest_non_resident_withholding_tax_from_statement}
         helperText={validationErrors.interest_non_resident_withholding_tax_from_statement}
       />
-      <TextField
+      <NumberInputField
         label="Interest Income Tax Rate (%)"
-        type="number"
         value={formData.interest_income_tax_rate || ''}
-        onChange={e => onInputChange('interest_income_tax_rate', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="interest_income_tax_rate"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.interest_income_tax_rate}
         helperText={validationErrors.interest_income_tax_rate}
@@ -135,11 +147,13 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
       <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
         Dividend Income
       </Typography>
-      <TextField
+      <NumberInputField
         label="Dividend Franked Income Amount"
-        type="number"
         value={formData.dividend_franked_income_amount || ''}
-        onChange={e => onInputChange('dividend_franked_income_amount', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="dividend_franked_income_amount"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.dividend_franked_income_amount}
         helperText={validationErrors.dividend_franked_income_amount}
@@ -156,11 +170,13 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
           )
         }}
       />
-      <TextField
+      <NumberInputField
         label="Dividend Unfranked Income Amount"
-        type="number"
         value={formData.dividend_unfranked_income_amount || ''}
-        onChange={e => onInputChange('dividend_unfranked_income_amount', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="dividend_unfranked_income_amount"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.dividend_unfranked_income_amount}
         helperText={validationErrors.dividend_unfranked_income_amount}
@@ -177,20 +193,24 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
           )
         }}
       />
-      <TextField
+      <NumberInputField
         label="Dividend Franked Income Tax Rate (%)"
-        type="number"
         value={formData.dividend_franked_income_tax_rate || ''}
-        onChange={e => onInputChange('dividend_franked_income_tax_rate', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="dividend_franked_income_tax_rate"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.dividend_franked_income_tax_rate}
         helperText={validationErrors.dividend_franked_income_tax_rate}
       />
-      <TextField
+      <NumberInputField
         label="Dividend Unfranked Income Tax Rate (%)"
-        type="number"
         value={formData.dividend_unfranked_income_tax_rate || ''}
-        onChange={e => onInputChange('dividend_unfranked_income_tax_rate', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="dividend_unfranked_income_tax_rate"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.dividend_unfranked_income_tax_rate}
         helperText={validationErrors.dividend_unfranked_income_tax_rate}
@@ -202,11 +222,13 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
       <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
         Capital Gains
       </Typography>
-      <TextField
+      <NumberInputField
         label="Capital Gain Income Amount"
-        type="number"
         value={formData.capital_gain_income_amount || ''}
-        onChange={e => onInputChange('capital_gain_income_amount', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="capital_gain_income_amount"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.capital_gain_income_amount}
         helperText={validationErrors.capital_gain_income_amount}
@@ -223,11 +245,13 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
           )
         }}
       />
-      <TextField
+      <NumberInputField
         label="Capital Gain Income Tax Rate (%)"
-        type="number"
         value={formData.capital_gain_income_tax_rate || ''}
-        onChange={e => onInputChange('capital_gain_income_tax_rate', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="capital_gain_income_tax_rate"
+        allowDecimals={true}
+        allowNegative={false}
         fullWidth
         error={!!validationErrors.capital_gain_income_tax_rate}
         helperText={validationErrors.capital_gain_income_tax_rate}
@@ -266,7 +290,7 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         }
         label="Non-Resident"
       />
-    </>
+    </Box>
   );
 };
 

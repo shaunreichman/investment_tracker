@@ -6,27 +6,37 @@ investment company management and company-specific fund operations.
 """
 
 from flask import Blueprint, jsonify, request
-from src.investment_company.api import CompanyController
 from src.api.database import get_db_session
 from src.api.middleware.validation import validate_investment_company_data
 
 # Create blueprint for company routes
 company_bp = Blueprint('company', __name__)
 
-# Initialize controller
-company_controller = CompanyController()
-
 
 @company_bp.route('/api/investment-companies', methods=['GET'])
 def investment_companies():
     """Get list of all investment companies with summary data"""
+    session = None
     try:
         session = get_db_session()
-        try:
-            return company_controller.get_investment_companies(session)
-        finally:
-            session.close()
+        
+        # Create a new controller instance to ensure latest code is used
+        from src.investment_company.api.company_controller import CompanyController
+        controller = CompanyController()
+        
+        # Get the response from controller
+        response_data, status_code = controller.get_investment_companies(session)
+        
+        # Close session after getting the data
+        session.close()
+        session = None
+        
+        # Return the response
+        return response_data, status_code
+        
     except Exception as e:
+        if session:
+            session.close()
         return jsonify({"error": str(e)}), 500
 
 
@@ -39,7 +49,9 @@ def create_investment_company():
         try:
             # Use validated data from middleware
             validated_data = request.validated_data
-            return company_controller.create_investment_company_with_data(session, validated_data)
+            from src.investment_company.api.company_controller import CompanyController
+            controller = CompanyController()
+            return controller.create_investment_company_with_data(session, validated_data)
         finally:
             session.close()
     except Exception as e:
@@ -52,7 +64,9 @@ def company_funds(company_id):
     try:
         session = get_db_session()
         try:
-            return company_controller.get_company_funds(company_id, session)
+            from src.investment_company.api.company_controller import CompanyController
+            controller = CompanyController()
+            return controller.get_company_funds(company_id, session)
         finally:
             session.close()
     except Exception as e:
@@ -65,7 +79,9 @@ def company_overview(company_id):
     try:
         session = get_db_session()
         try:
-            return company_controller.get_company_overview(company_id, session)
+            from src.investment_company.api.company_controller import CompanyController
+            controller = CompanyController()
+            return controller.get_company_overview(company_id, session)
         finally:
             session.close()
     except Exception as e:
@@ -78,7 +94,9 @@ def company_details(company_id):
     try:
         session = get_db_session()
         try:
-            return company_controller.get_company_details(company_id, session)
+            from src.investment_company.api.company_controller import CompanyController
+            controller = CompanyController()
+            return controller.get_company_details(company_id, session)
         finally:
             session.close()
     except Exception as e:
@@ -91,8 +109,35 @@ def company_enhanced_funds(company_id):
     try:
         session = get_db_session()
         try:
-            return company_controller.get_company_funds_enhanced(company_id, session)
+            from src.investment_company.api.company_controller import CompanyController
+            controller = CompanyController()
+            return controller.get_company_funds_enhanced(company_id, session)
         finally:
             session.close()
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@company_bp.route('/api/investment-companies/<int:company_id>', methods=['DELETE'])
+def delete_investment_company(company_id):
+    """Delete an investment company"""
+    try:
+        session = get_db_session()
+        try:
+            from src.investment_company.api.company_controller import CompanyController
+            controller = CompanyController()
+            response_data, status_code = controller.delete_investment_company(company_id, session)
+            
+            # Commit the session to persist the deletion
+            if status_code == 200:
+                session.commit()
+            else:
+                # Don't commit on error - let the session rollback
+                pass
+            
+            return response_data, status_code
+        finally:
+            session.close()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+

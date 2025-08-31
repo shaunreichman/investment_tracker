@@ -5,7 +5,7 @@ import {
   Box,
   Typography
 } from '@mui/material';
-import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
+import { ExtendedFundEvent, ExtendedFund, FundType } from '../../../../types/api';
 import TableFilters from './TableFilters';
 import TableHeader from './TableHeader';
 import TableBody from './TableBody';
@@ -84,7 +84,7 @@ const TableContainerComponent: React.FC<TableContainerProps> = ({
           <TableFilters
             showTaxEvents={showTaxEvents}
             showNavUpdates={showNavUpdates}
-            isNavBasedFund={fund.tracking_type === 'nav_based'}
+            isNavBasedFund={fund.tracking_type === FundType.NAV_BASED}
             onShowTaxEventsChange={onShowTaxEventsChange}
             onShowNavUpdatesChange={onShowNavUpdatesChange}
             onAddEventClick={onAddEvent}
@@ -121,7 +121,7 @@ const TableContainerComponent: React.FC<TableContainerProps> = ({
         <Table stickyHeader size="small">
           {/* Table Header */}
           <TableHeader
-            isNavBasedFund={fund.tracking_type === 'nav_based'}
+            isNavBasedFund={fund.tracking_type === FundType.NAV_BASED}
             showTaxEvents={showTaxEvents}
           />
           

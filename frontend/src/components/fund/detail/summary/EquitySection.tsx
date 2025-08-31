@@ -5,7 +5,7 @@ import {
   Box
 } from '@mui/material';
 import { AccountBalance } from '@mui/icons-material';
-import { ExtendedFund } from '../../../../types/api';
+import { ExtendedFund, FundType, FundStatus } from '../../../../types/api';
 // formatCurrency is supplied via props
 
 interface SectionProps {
@@ -20,11 +20,11 @@ interface SectionProps {
  */
 const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
   // Enhanced data organization for equity and NAV metrics
-  const isActiveNavFund = fund.tracking_type === 'nav_based' && fund.status === 'active';
+  const isActiveNavFund = fund.tracking_type === FundType.NAV_BASED && fund.status === FundStatus.ACTIVE;
   
   const equityMetrics = [
     // Current Balance for cost-based funds, Current Cost of Units only for active NAV-based funds
-    ...(fund.tracking_type === 'cost_based' ? [{
+    ...(fund.tracking_type === FundType.COST_BASED ? [{
       label: 'Current Balance',
       value: fund.current_equity_balance ?? null,
       color: 'primary.main',
@@ -38,7 +38,7 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
       priority: 1
     }] : []),
     {
-      label: fund.tracking_type === 'nav_based' ? 'Average Cost of Units' : 'Average Balance',
+      label: fund.tracking_type === FundType.NAV_BASED ? 'Average Cost of Units' : 'Average Balance',
       value: fund.average_equity_balance ?? null,
       color: 'primary.main',
       icon: '📊',
@@ -96,7 +96,7 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
       <Box display="flex" alignItems="center" mb={0.5}>
         <AccountBalance color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>
-          {fund.tracking_type === 'nav_based' ? 'Equity & NAV Summary' : 'Equity Position'}
+          {fund.tracking_type === FundType.NAV_BASED ? 'Equity & NAV Summary' : 'Equity Position'}
         </Typography>
       </Box>
       
@@ -111,14 +111,14 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
               alignItems: 'center',
               p: 0.5,
               borderRadius: 1,
-              backgroundColor: index === 0 ? 'primary.50' : 'transparent',
+              backgroundColor: index === 0 ? 'primary.dark' : 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200',
+              borderColor: 'divider',
               // Very obvious hover effects for consistent user experience
               transition: 'all 0.2s ease-in-out',
               cursor: 'pointer',
               '&:hover': {
-                backgroundColor: index === 0 ? 'primary.300' : 'primary.100',
+                backgroundColor: index === 0 ? 'primary.main' : 'primary.dark',
                 borderColor: 'primary.main',
                 borderWidth: '2px',
                 transform: 'translateX(4px)',

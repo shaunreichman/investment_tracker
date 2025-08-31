@@ -29,16 +29,62 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
 
     // Handle different event types
     if (eventType === 'CAPITAL_CALL' || eventType === 'RETURN_OF_CAPITAL') {
-      payload.amount = Number(formData.amount || '0');
+      const amount = formData.amount;      
+      if (!amount || amount.trim() === '') {
+        throw new Error('Amount is required for Capital Call and Return of Capital events');
+      }
+      const amountNum = Number(amount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        throw new Error('Amount must be a valid positive number');
+      }
+      payload.amount = amountNum;
     } else if (eventType === 'DISTRIBUTION') {
-      payload.amount = Number(formData.amount || '0');
+      // Handle withholding tax distributions differently
       if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
-        payload.gross_amount = Number(formData.gross_amount || '0');
-        payload.net_amount = Number(formData.net_amount || '0');
-        payload.withholding_tax_amount = Number(formData.withholding_tax_amount || '0');
-        payload.withholding_tax_rate = Number(formData.withholding_tax_rate || '0');
-      } else {
+        // For withholding tax, we need the specialized interest fields
+        const interestGrossAmount = formData.interest_gross_amount;
+        const interestNetAmount = formData.interest_net_amount;
+        const interestWithholdingTaxAmount = formData.interest_withholding_tax_amount;
+        const interestWithholdingTaxRate = formData.interest_withholding_tax_rate;
+        
+        // Validate that we have at least one amount type and one tax type
+        const hasAmountType = interestGrossAmount || interestNetAmount;
+        const hasTaxType = interestWithholdingTaxAmount || interestWithholdingTaxRate;
+        
+        if (!hasAmountType) {
+          throw new Error('Either Gross Amount or Net Amount is required for Interest Distribution with Withholding Tax');
+        }
+        
+        if (!hasTaxType) {
+          throw new Error('Either Withholding Tax Amount or Withholding Tax Rate is required for Interest Distribution with Withholding Tax');
+        }
+        
+        // Add the specialized fields to payload
         payload.distribution_type = distributionType;
+        payload.interest_gross_amount = interestGrossAmount ? Number(interestGrossAmount) : undefined;
+        payload.interest_net_amount = interestNetAmount ? Number(interestNetAmount) : undefined;
+        payload.interest_withholding_tax_amount = interestWithholdingTaxAmount ? Number(interestWithholdingTaxAmount) : undefined;
+        payload.interest_withholding_tax_rate = interestWithholdingTaxRate ? Number(interestWithholdingTaxRate) : undefined;
+      } else {
+        // For simple distributions, amount is required
+        const amount = formData.amount;
+        
+        if (!amount || amount.trim() === '') {
+          throw new Error('Amount is required for Distribution events');
+        }
+        const amountNum = Number(amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
+          throw new Error('Amount must be a valid positive number');
+        }
+        payload.amount = amountNum;
+        
+        // For dividend distributions, use subDistributionType as the distribution_type
+        // since the backend expects the specific type (e.g., DIVIDEND_FRANKED, not DIVIDEND)
+        if (distributionType === 'DIVIDEND') {
+          payload.distribution_type = subDistributionType;
+        } else {
+          payload.distribution_type = distributionType;
+        }
       }
     } else if (eventType === 'UNIT_PURCHASE') {
       payload.units_purchased = Number(formData.units_purchased || '0');

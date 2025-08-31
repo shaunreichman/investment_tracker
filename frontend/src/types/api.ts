@@ -39,15 +39,15 @@ export type ApiResponseWrapper<T> = ApiResponse<T> | T;
 // ============================================================================
 
 export enum FundType {
-  NAV_BASED = 'nav_based',
-  COST_BASED = 'cost_based'
+  NAV_BASED = 'NAV_BASED',
+  COST_BASED = 'COST_BASED'
 }
 
 export enum FundStatus {
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  REALIZED = 'realized',
-  COMPLETED = 'completed'
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  REALIZED = 'REALIZED',
+  COMPLETED = 'COMPLETED'
 }
 
 export enum EventType {
@@ -82,8 +82,8 @@ export enum TaxPaymentType {
 }
 
 export enum GroupType {
-  INTEREST_WITHHOLDING = 'interest_withholding',
-  TAX_STATEMENT = 'tax_statement'
+  INTEREST_WITHHOLDING = 'INTEREST_WITHHOLDING',
+  TAX_STATEMENT = 'TAX_STATEMENT'
 }
 
 // ============================================================================
@@ -162,6 +162,11 @@ export interface FundEvent {
   tax_payment_type?: TaxPaymentType | undefined;
   units_owned?: number | undefined;
   cost_of_units?: number | undefined;
+  
+  // Withholding tax fields
+  tax_withholding?: number | undefined;  // (MANUAL) tax withholding amount if applicable
+  has_withholding_tax?: boolean | undefined;  // (MANUAL) flag for distributions with associated withholding tax
+  
   created_at: string;
   updated_at: string;
   
@@ -291,6 +296,13 @@ export interface CreateFundEventData {
   description?: string;
   reference_number?: string;
   distribution_type?: DistributionType;
+  
+  // Withholding Tax Fields for Interest Distributions
+  interest_gross_amount?: number;
+  interest_net_amount?: number;
+  interest_withholding_tax_amount?: number;
+  interest_withholding_tax_rate?: number;
+  
   units_purchased?: number;
   units_sold?: number;
   unit_price?: number;
@@ -514,53 +526,37 @@ export interface EnhancedFund {
   status: string;
   tracking_type: string;
   
-  fund_details: {
-    start_date: string;
-    end_date: string | null;
-    actual_duration_days: number | null;
-    days_since_last_activity: number;
-  };
+  // Dates
+  start_date: string | null;
+  end_date: string | null;
+  current_duration: number | null;
+  created_at: string;
+  updated_at: string;
   
-  equity: {
-    commitment: number;
-    invested_capital: number;
-    current_value: number;
-    current_equity_balance: number;
-  };
+  // Investment details
+  investment_company_id: number;
+  entity_id: number;
+  commitment_amount: number | null;
+  expected_irr: number | null;
+  expected_duration_months: number | null;
   
-  estimated_return: {
-    expected_irr: number | null;
-    duration_months: number | null;
-  };
+  // Equity and performance
+  current_equity_balance: number;
+  average_equity_balance: number;
+  total_cost_basis: number;
+  current_units: number | null;
+  current_unit_price: number | null;
+  current_nav_total: number | null;
   
-  distributions: {
-    distribution_count: number;
-    total_distribution_amount: number;
-    last_distribution_date: string | null;
-    distribution_frequency_months: number | null;
-  };
-  
-  returns: {
-    completed_irr: number | null;
-    performance_vs_expected: number | null;
-  };
-  
-  performance: {
-    unrealized_gains_losses: number;
-    realized_gains_losses: number;
-    total_profit_loss: number;
-  };
+  // Completed IRRs (if available)
+  completed_irr_gross: number | null;
+  completed_irr_after_tax: number | null;
+  completed_irr_real: number | null;
 }
 
 export interface EnhancedFundsResponse {
   funds: EnhancedFund[];
-  pagination: {
-    current_page: number;
-    total_pages: number;
-    total_funds: number;
-    per_page: number;
-  };
-  filters: {
+  filters?: {
     applied_status_filter: string;
     applied_search: string | null;
   };

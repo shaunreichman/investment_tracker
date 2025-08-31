@@ -72,14 +72,14 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
               alignItems: 'center',
               p: 0.5,
               borderRadius: 1,
-              backgroundColor: 'success.50',
+              backgroundColor: 'success.dark',
               border: '1px solid',
-              borderColor: 'grey.200',
+              borderColor: 'divider',
               // Very obvious hover effects for consistent user experience
               transition: 'all 0.2s ease-in-out',
               cursor: 'pointer',
               '&:hover': {
-                backgroundColor: 'success.300',
+                backgroundColor: 'success.main',
                 borderColor: 'success.main',
                 borderWidth: '2px',
                 transform: 'translateX(4px)',

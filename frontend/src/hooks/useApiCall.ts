@@ -111,7 +111,12 @@ export function useApiCall<T>(
 
   // Manual refetch function
   const refetch = useCallback(async () => {
-    await executeApiCall();
+    try {
+      await executeApiCall();
+    } catch (error) {
+      console.error('❌ useApiCall: refetch() failed:', error);
+      throw error;
+    }
   }, [executeApiCall]);
 
   return {

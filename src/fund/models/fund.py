@@ -5,7 +5,7 @@ This module provides the Fund model class,
 representing investment funds in the system.
 """
 
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict, Any
 from datetime import date, datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
@@ -14,6 +14,7 @@ from src.shared.base import Base
 from src.fund.enums import FundType, FundStatus, GroupType
 from src.fund.enums import EventType, DistributionType
 from src.fund.models.fund_event import FundEvent
+from src.entity.models import Entity
 
 
 class Fund(Base):
@@ -992,4 +993,102 @@ class Fund(Base):
         fund_service = FundService()
         return fund_service.get_fund_end_date(self.id, session)
     
-
+    def get_summary_data(self, session=None) -> Dict[str, Any]:
+        """Get summary data for the fund.
+        
+        This method provides a clean interface for getting fund summary information
+        that can be used by the frontend and other services.
+        
+        Args:
+            session: Database session (required for some calculations)
+            
+        Returns:
+            Dict containing fund summary data
+        """
+        if not session:
+            raise ValueError("Session required for get_summary_data")
+        # Build summary data dictionary
+        summary_data = {
+            'id': self.id,
+            'name': self.name,
+            'fund_type': self.fund_type,
+            'tracking_type': self.tracking_type.value if self.tracking_type else None,
+            'description': self.description,
+            'currency': self.currency,
+            'commitment_amount': self.commitment_amount,
+            'expected_irr': self.expected_irr,
+            'expected_duration_months': self.expected_duration_months,
+            'investment_company_id': self.investment_company_id,
+            'entity_id': self.entity_id,
+            'current_equity_balance': self.current_equity_balance,
+            'average_equity_balance': self.average_equity_balance,
+            'status': self.status.value if self.status else None,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'current_duration': self.current_duration,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+        
+        # Add tracking type specific fields
+        if self.tracking_type == FundType.NAV_BASED:
+            summary_data.update({
+                'current_units': self.current_units,
+                'current_unit_price': self.current_unit_price,
+                'current_nav_total': self.current_nav_total,
+            })
+        elif self.tracking_type == FundType.COST_BASED:
+            summary_data.update({
+                'total_cost_basis': self.total_cost_basis,
+            })
+        
+        # Add IRR fields if available
+        if self.completed_irr_gross is not None:
+            summary_data['completed_irr_gross'] = self.completed_irr_gross
+        if self.completed_irr_after_tax is not None:
+            summary_data['completed_irr_after_tax'] = self.completed_irr_after_tax
+        if self.completed_irr_real is not None:
+            summary_data['completed_irr_real'] = self.completed_irr_real
+        
+        return summary_data
+    
+    def get_financial_years(self, session=None) -> List[str]:
+        """Get all financial years from fund start date to current date.
+        
+        This method provides enterprise-grade financial year management by:
+        - Using the fund's actual start date (from events or creation)
+        - Respecting the entity's tax jurisdiction for financial year calculation
+        - Providing a clean interface for frontend consumption
+        
+        Args:
+            session: Database session (required for entity lookup and date calculations)
+            
+        Returns:
+            List[str]: List of financial years in descending order (most recent first)
+            
+        Raises:
+            ValueError: If session is not provided
+        """
+        if not session:
+            raise ValueError("Session required for get_financial_years")
+        
+        # Get fund start date (use events if available, otherwise creation date)
+        start_date = self.get_start_date(session=session)
+        if not start_date:
+            start_date = self.created_at.date()
+        
+        # Get entity for tax jurisdiction
+        entity = session.query(Entity).filter(Entity.id == self.entity_id).first()
+        if not entity:
+            return []
+        
+        # Import calculation function from entity domain
+        from src.entity.calculations import get_financial_years_for_fund_period
+        from datetime import date
+        
+        # Calculate financial years from start date to current date
+        end_date = date.today()
+        financial_years = get_financial_years_for_fund_period(start_date, end_date, entity)
+        
+        # Return sorted list (most recent first)
+        return sorted(list(financial_years), reverse=True)

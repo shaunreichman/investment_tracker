@@ -146,27 +146,33 @@ export const mockApiResponses = {
       funds: [
         createMockEnhancedFund({ 
           status: 'completed', 
-          fund_details: { ...createMockEnhancedFund().fund_details, end_date: '2023-12-31' }
+          end_date: '2023-12-31'
         }),
         createMockEnhancedFund({ 
           status: 'completed', 
-          fund_details: { ...createMockEnhancedFund().fund_details, end_date: '2023-06-30' }
+          end_date: '2023-06-30'
         }),
         createMockEnhancedFund({ 
           status: 'completed', 
-          fund_details: { ...createMockEnhancedFund().fund_details, end_date: '2023-03-31' }
+          end_date: '2023-03-31'
         })
       ]
     }),
     highPerformance: createMockEnhancedFundsResponse({
       funds: [
         createMockEnhancedFund({ 
-          estimated_return: { expected_irr: 25.0, duration_months: null },
-          equity: { current_equity_balance: 1300000, commitment: 1000000, invested_capital: 1000000, current_value: 1300000 }
+          expected_irr: 25.0,
+          current_equity_balance: 1300000, 
+          commitment_amount: 1000000, 
+          total_cost_basis: 1000000, 
+          current_nav_total: 1300000
         }),
         createMockEnhancedFund({ 
-          estimated_return: { expected_irr: 20.0, duration_months: null },
-          equity: { current_equity_balance: 1200000, commitment: 1000000, invested_capital: 1000000, current_value: 1200000 }
+          expected_irr: 20.0,
+          current_equity_balance: 1200000, 
+          commitment_amount: 1000000, 
+          total_cost_basis: 1000000, 
+          current_nav_total: 1200000
         })
       ]
     }),
@@ -175,7 +181,7 @@ export const mockApiResponses = {
         createMockEnhancedFund({ status: 'active' }),
         createMockEnhancedFund({ 
           status: 'completed', 
-          fund_details: { ...createMockEnhancedFund().fund_details, end_date: '2023-12-31' }
+          end_date: '2023-12-31'
         }),
         createMockEnhancedFund({ status: 'suspended' })
       ]

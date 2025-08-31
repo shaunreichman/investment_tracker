@@ -27,15 +27,15 @@ import {
   Event,
   Add as AddIcon,
   Person as PersonIcon,
-  Business as BusinessIcon
+  Business as BusinessIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
-import { useFormCompletion } from '../hooks/useFormCompletion';
-
+// Remove the useFormCompletion import as it's causing issues
 
 const OverallDashboard: React.FC = () => {
   const theme = useTheme();
@@ -46,27 +46,72 @@ const OverallDashboard: React.FC = () => {
   // Centralized API hook
   const { data: companies, loading, error, refetch } = useInvestmentCompanies();
 
-  // Form completion handling for entity creation
-  const { handleSuccess: handleEntitySuccess } = useFormCompletion(
-    { successDuration: 2000, autoClose: true },
-    { 
-      onSuccess: (entity) => {
-        // TODO: Refresh entities list when entities are displayed
-        // For now, just provide immediate feedback
-        console.log('Entity created successfully:', entity);
-      },
-      onClose: () => setShowEntityModal(false)
-    }
-  );
 
+
+  // Simplified entity creation handling - direct and reliable
   const handleEntityCreated = (entity: { id: number; name: string }) => {
-    // Use the standardized form completion handler
-    handleEntitySuccess(entity);
+    // Close modal - the modal will handle its own cleanup
+    setShowEntityModal(false);
+    
+    // TODO: Refresh entities list when entities are displayed
+    // For now, just provide immediate feedback
   };
 
   const handleCompanyCreated = (company: { id: number; name: string }) => {
     // Refresh the companies list using the centralized hook
-    refetch();
+    if (refetch) {
+      refetch().catch((error) => {
+        console.error('Dashboard: refetch failed:', error);
+      });
+    }
+  };
+
+  // Button click handlers
+  const handleCreateEntityClick = () => {
+    setShowEntityModal(true);
+  };
+
+  const handleCreateCompanyClick = () => {
+    setShowCompanyModal(true);
+  };
+
+  const handleDeleteCompany = async (companyId: number, companyName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${companyName}"? This action cannot be undone.`)) {
+      try {
+        // Import the API service dynamically to avoid circular dependencies
+        const { apiClient } = await import('../services/api');
+        await apiClient.deleteInvestmentCompany(companyId);
+        
+        // Show success message
+        alert(`Company "${companyName}" deleted successfully`);
+        
+        // Refresh the companies list
+        if (refetch) {
+          refetch();
+        }
+      } catch (error: any) {
+        console.error('❌ Dashboard: Error in handleDeleteCompany:', error);
+        console.error('❌ Dashboard: Error details:', {
+          name: error.name,
+          message: error.message,
+          status: error.status,
+          details: error.details,
+          stack: error.stack
+        });
+        
+        // Show error message
+        let errorMessage = 'Failed to delete company';
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.status) {
+          errorMessage = `HTTP ${error.status}: ${error.statusText || 'Unknown error'}`;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        alert(`Error: ${errorMessage}`);
+      }
+    }
   };
 
   if (loading) {
@@ -165,7 +210,7 @@ const OverallDashboard: React.FC = () => {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => setShowEntityModal(true)}
+                onClick={handleCreateEntityClick}
                 size="medium"
                 sx={{
                   backgroundColor: theme.palette.primary.main,
@@ -231,7 +276,7 @@ const OverallDashboard: React.FC = () => {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => setShowCompanyModal(true)}
+                onClick={handleCreateCompanyClick}
                 size="medium"
                 sx={{
                   backgroundColor: theme.palette.primary.main,
@@ -340,6 +385,14 @@ const OverallDashboard: React.FC = () => {
                     borderBottom: `1px solid ${theme.palette.divider}`
                   }}>
                     Contact
+                  </TableCell>
+                  <TableCell align="right" sx={{ 
+                    color: theme.palette.text.primary,
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderBottom: `1px solid ${theme.palette.divider}`
+                  }}>
+                    Actions
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -473,6 +526,26 @@ const OverallDashboard: React.FC = () => {
                           {company.contact_email}
                         </Typography>
                       )}
+                    </TableCell>
+                    <TableCell align="right" sx={{ 
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      padding: '16px'
+                    }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDeleteCompany(company.id, company.name)}
+                        sx={{
+                          minWidth: 'auto',
+                          px: 1,
+                          py: 0.5,
+                          fontSize: '12px'
+                        }}
+                      >
+                        Delete
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

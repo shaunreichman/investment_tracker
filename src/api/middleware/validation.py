@@ -381,6 +381,7 @@ def validate_fund_data(func: Callable) -> Callable:
     Validates:
     - Required fields (name, entity_id, investment_company_id, tracking_type)
     - Tracking type validation against FundType enum
+    - Fund type validation (optional string field)
     - String field sanitization
     - Optional field validation
     - Business rule validation
@@ -393,11 +394,11 @@ def validate_fund_data(func: Callable) -> Callable:
             if not data:
                 raise ValidationError("No data provided")
             
-            # REJECT old field names that don't exist in the model FIRST
-            old_field_names = ['fund_type', 'status']
+            # REJECT only the status field that doesn't exist in the model
+            old_field_names = ['status']  # Removed 'fund_type' since it exists in the model
             for old_field in old_field_names:
                 if old_field in data:
-                    raise ValidationError(f"Field '{old_field}' is not valid. Use 'tracking_type' instead.", old_field)
+                    raise ValidationError(f"Field '{old_field}' is not valid.", old_field)
             
             # Validate required fields - CORRECTED to match actual model
             required_fields = ['name', 'entity_id', 'investment_company_id', 'tracking_type']
@@ -410,6 +411,13 @@ def validate_fund_data(func: Callable) -> Callable:
             if not isinstance(name, str) or not name.strip():
                 raise ValidationError("Name must be a non-empty string", 'name')
             data['name'] = name.strip()
+            
+            # Validate fund_type if provided (optional string field)
+            if 'fund_type' in data and data['fund_type'] is not None:
+                fund_type = data['fund_type']
+                if not isinstance(fund_type, str) or not fund_type.strip():
+                    raise ValidationError("Fund type must be a non-empty string", 'fund_type')
+                data['fund_type'] = fund_type.strip()
             
             # Validate tracking_type using actual enum - CORRECTED field name
             try:
@@ -715,10 +723,11 @@ def validate_fund_event_data(func: Callable) -> Callable:
                 if field not in data or data[field] is None:
                     raise ValidationError(f"Missing required field: {field}", field)
             
-            # Validate event_type using actual enum - CORRECTED
+            # Validate event_type using actual enum - VALIDATE ONLY, DON'T TRANSFORM
             try:
                 event_type = EventType(data['event_type'].upper())
-                data['event_type'] = event_type
+                # Store the validated string value, not the enum object
+                data['event_type'] = data['event_type'].upper()
             except ValueError:
                 valid_event_types = [e.value for e in EventType]
                 raise ValidationError(f"Invalid event_type. Must be one of: {', '.join(valid_event_types)}", 'event_type')
@@ -728,18 +737,73 @@ def validate_fund_event_data(func: Callable) -> Callable:
             if isinstance(event_date, str):
                 try:
                     parsed_date = datetime.strptime(event_date, '%Y-%m-%d').date()
+                    # Store the parsed date object for the service layer
                     data['event_date'] = parsed_date
                 except ValueError:
                     raise ValidationError("Invalid event_date format. Use YYYY-MM-DD", 'event_date')
             elif not isinstance(event_date, date):
                 raise ValidationError("Event date must be a valid date", 'event_date')
             
-            # Validate amount - CORRECTED: allow negative for certain event types
-            if 'amount' in data and data['amount'] is not None:
+            # Validate amount - CORRECTED: require amount for certain event types
+            event_type_str = data['event_type']  # Use the string value
+            
+            # Special handling for withholding tax distributions
+            if event_type_str == 'DISTRIBUTION' and data.get('distribution_type') == 'INTEREST':
+                # Check if this is a withholding tax distribution
+                has_withholding_tax_fields = any([
+                    data.get('interest_gross_amount') is not None,
+                    data.get('interest_net_amount') is not None,
+                    data.get('interest_withholding_tax_amount') is not None,
+                    data.get('interest_withholding_tax_rate') is not None
+                ])
+                
+                if has_withholding_tax_fields:
+                    # For withholding tax distributions, validate the specialized fields
+                    # Amount field is not required - the specialized fields are validated by the handler
+                    pass
+                else:
+                    # For simple distributions, amount is required
+                    if 'amount' not in data or data['amount'] is None:
+                        raise ValidationError("Amount is required for simple Distribution events", 'amount')
+                    try:
+                        amount_test = float(data['amount'])
+                        if amount_test <= 0:
+                            raise ValidationError("Amount must be positive for Distribution events", 'amount')
+                    except (ValueError, TypeError):
+                        raise ValidationError("Amount must be a valid positive number", 'amount')
+            elif event_type_str in ['CAPITAL_CALL', 'RETURN_OF_CAPITAL']:
+                # Amount is required for capital call and return of capital events
+                if 'amount' not in data or data['amount'] is None:
+                    raise ValidationError("Amount is required for Capital Call and Return of Capital events", 'amount')
                 try:
-                    amount = float(data['amount'])
-                    # Allow negative amounts for certain event types (e.g., returns, distributions)
-                    data['amount'] = amount
+                    # Validate it can be converted to float without transforming
+                    amount_test = float(data['amount'])
+                    if amount_test <= 0:
+                        raise ValidationError("Amount must be positive for Capital Call and Return of Capital events", 'amount')
+                    # Keep original data type - don't transform
+                except (ValueError, TypeError):
+                    raise ValidationError("Amount must be a valid positive number", 'amount')
+            elif event_type_str in ['UNIT_PURCHASE', 'UNIT_SALE', 'NAV_UPDATE']:
+                # For NAV-based events, amount is not required but specific fields are required
+                if event_type_str == 'UNIT_PURCHASE':
+                    if 'units_purchased' not in data or data['units_purchased'] is None:
+                        raise ValidationError("Units purchased is required for Unit Purchase events", 'units_purchased')
+                    if 'unit_price' not in data or data['unit_price'] is None:
+                        raise ValidationError("Unit price is required for Unit Purchase events", 'unit_price')
+                elif event_type_str == 'UNIT_SALE':
+                    if 'units_sold' not in data or data['units_sold'] is None:
+                        raise ValidationError("Units sold is required for Unit Sale events", 'units_sold')
+                    if 'unit_price' not in data or data['unit_price'] is None:
+                        raise ValidationError("Unit price is required for Unit Sale events", 'unit_price')
+                elif event_type_str == 'NAV_UPDATE':
+                    if 'nav_per_share' not in data or data['nav_per_share'] is None:
+                        raise ValidationError("NAV per share is required for NAV Update events", 'nav_per_share')
+            elif 'amount' in data and data['amount'] is not None:
+                # For other event types, amount is optional but must be valid if provided
+                try:
+                    # Validate it can be converted to float without transforming
+                    float(data['amount'])
+                    # Keep original data type - don't transform
                 except (ValueError, TypeError):
                     raise ValidationError("Amount must be a valid number", 'amount')
             
@@ -752,7 +816,7 @@ def validate_fund_event_data(func: Callable) -> Callable:
                         float_value = float(value)
                         if float_value < 0:
                             raise ValidationError(f"{field.replace('_', ' ').title()} must be non-negative", field)
-                        data[field] = float_value
+                        # Keep original data type - don't transform
                     except (ValueError, TypeError):
                         raise ValidationError(f"{field.replace('_', ' ').title()} must be a valid number", field)
             
@@ -760,7 +824,8 @@ def validate_fund_event_data(func: Callable) -> Callable:
             if 'distribution_type' in data and data['distribution_type'] is not None:
                 try:
                     distribution_type = DistributionType(data['distribution_type'].upper())
-                    data['distribution_type'] = distribution_type
+                    # Store the validated string value, not the enum object
+                    data['distribution_type'] = data['distribution_type'].upper()
                 except ValueError:
                     valid_distribution_types = [d.value for d in DistributionType]
                     raise ValidationError(f"Invalid distribution_type. Must be one of: {', '.join(valid_distribution_types)}", 'distribution_type')
@@ -769,7 +834,8 @@ def validate_fund_event_data(func: Callable) -> Callable:
             if 'tax_payment_type' in data and data['tax_payment_type'] is not None:
                 try:
                     tax_payment_type = TaxPaymentType(data['tax_payment_type'].upper())
-                    data['tax_payment_type'] = tax_payment_type
+                    # Store the validated string value, not the enum object
+                    data['tax_payment_type'] = data['tax_payment_type'].upper()
                 except ValueError:
                     valid_tax_payment_types = [t.value for t in TaxPaymentType]
                     raise ValidationError(f"Invalid tax_payment_type. Must be one of: {', '.join(valid_tax_payment_types)}", 'tax_payment_type')
@@ -888,54 +954,75 @@ def validate_investment_company_data(func: Callable) -> Callable:
     @wraps(func)
     def decorated_function(*args, **kwargs):
         try:
+            current_app.logger.info("🔍 validate_investment_company_data: Starting validation")
+            
             # Get request data
             data = request.get_json()
+            current_app.logger.info(f"📥 validate_investment_company_data: Received data: {data}")
+            
             if not data:
+                current_app.logger.warning("❌ validate_investment_company_data: No data provided")
                 raise ValidationError("No data provided")
             
             # Validate required fields
             required_fields = ['name']
+            current_app.logger.info(f"🔍 validate_investment_company_data: Validating required fields: {required_fields}")
+            
             for field in required_fields:
                 if field not in data or not data[field]:
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Missing required field: {field}")
                     raise ValidationError(f"Missing required field: {field}", field)
             
             # Validate name length and format
             name = data['name'].strip()
+            current_app.logger.info(f"🔍 validate_investment_company_data: Validating name: '{name}'")
+            
             if len(name) > 255:
+                current_app.logger.warning(f"❌ validate_investment_company_data: Name too long: {len(name)} characters")
                 raise ValidationError("Company name must be 255 characters or less", 'name')
             if len(name) < 2:
+                current_app.logger.warning(f"❌ validate_investment_company_data: Name too short: {len(name)} characters")
                 raise ValidationError("Company name must be at least 2 characters", 'name')
             data['name'] = name
             
             # Validate optional fields
             if 'description' in data and data['description']:
                 if len(data['description']) > 65535:  # Text field limit
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Description too long: {len(data['description'])} characters")
                     raise ValidationError("Description must be 65535 characters or less", 'description')
             
             if 'company_type' in data and data['company_type']:
                 if len(data['company_type']) > 100:
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Company type too long: {len(data['company_type'])} characters")
                     raise ValidationError("Company type must be 100 characters or less", 'company_type')
             
             if 'business_address' in data and data['business_address']:
                 if len(data['business_address']) > 65535:  # Text field limit
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Business address too long: {len(data['business_address'])} characters")
                     raise ValidationError("Business address must be 65535 characters or less", 'business_address')
             
             if 'website' in data and data['website']:
                 if len(data['website']) > 255:
+                    current_app.logger.warning(f"❌ validate_investment_company_data: Website too long: {len(data['website'])} characters")
                     raise ValidationError("Website must be 255 characters or less", 'website')
                 # Basic URL validation
                 if not data['website'].startswith(('http://', 'https://')):
                     data['website'] = 'https://' + data['website']
+                    current_app.logger.info(f"🔧 validate_investment_company_data: Added https:// to website: {data['website']}")
+            
+            current_app.logger.info(f"✅ validate_investment_company_data: Validation passed, storing validated data")
             
             # Store validated data for controller access
             request.validated_data = data
             
+            current_app.logger.info("🚀 validate_investment_company_data: Calling controller function")
             return func(*args, **kwargs)
             
         except ValidationError as e:
+            current_app.logger.warning(f"❌ validate_investment_company_data: Validation error: {e.message} for field: {e.field}")
             return jsonify({"error": e.message, "field": e.field}), e.status_code
         except Exception as e:
-            current_app.logger.error(f"Validation error: {str(e)}")
+            current_app.logger.error(f"❌ validate_investment_company_data: Unexpected error: {str(e)}")
             return jsonify({"error": "Validation failed"}), 400
     
     return decorated_function

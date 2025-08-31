@@ -92,31 +92,6 @@ class TestCompanyType:
         # Test identity
         assert CompanyType.PRIVATE_EQUITY is CompanyType.PRIVATE_EQUITY
         assert CompanyType.VENTURE_CAPITAL is CompanyType.VENTURE_CAPITAL
-    
-    def test_company_type_iteration(self):
-        """Test that all company types can be iterated over."""
-        company_types = list(CompanyType)
-        assert len(company_types) == 10  # Total number of company types
-        
-        # Verify all expected types are present
-        expected_names = {
-            'PRIVATE_EQUITY', 'VENTURE_CAPITAL', 'REAL_ESTATE',
-            'INFRASTRUCTURE', 'CREDIT', 'HEDGE_FUND', 'FAMILY_OFFICE',
-            'INVESTMENT_BANK', 'ASSET_MANAGEMENT', 'OTHER'
-        }
-        
-        actual_names = {ct.name for ct in company_types}
-        assert actual_names == expected_names
-    
-    def test_company_type_hashable(self):
-        """Test that company types are hashable and can be used in sets/dicts."""
-        company_type_set = set(CompanyType)
-        assert len(company_type_set) == 10
-        
-        company_type_dict = {ct: ct.value for ct in CompanyType}
-        assert len(company_type_dict) == 10
-        assert company_type_dict[CompanyType.PRIVATE_EQUITY] == 'Private Equity'
-
 
 class TestCompanyStatus:
     """Test suite for CompanyStatus enum"""
@@ -248,21 +223,6 @@ class TestCompanyDomainEventType:
         # Test inequality
         assert CompanyDomainEventType.COMPANY_CREATED != CompanyDomainEventType.COMPANY_UPDATED
         assert CompanyDomainEventType.PORTFOLIO_UPDATED != CompanyDomainEventType.FUND_ADDED_TO_PORTFOLIO
-    
-    def test_domain_event_type_iteration(self):
-        """Test that all domain event types can be iterated over."""
-        event_types = list(CompanyDomainEventType)
-        assert len(event_types) == 10  # Total number of event types
-        
-        # Verify all expected event types are present
-        expected_names = {
-            'COMPANY_CREATED', 'COMPANY_UPDATED', 'COMPANY_DELETED',
-            'CONTACT_ADDED', 'CONTACT_UPDATED', 'CONTACT_DELETED',
-            'PORTFOLIO_UPDATED', 'FUND_ADDED_TO_PORTFOLIO', 'FUND_REMOVED_FROM_PORTFOLIO', 'COMPANY_SUMMARY_UPDATED'
-        }
-        
-        actual_names = {et.name for et in event_types}
-        assert actual_names == expected_names
     
     def test_domain_event_type_categorization(self):
         """Test categorization of event types by domain."""

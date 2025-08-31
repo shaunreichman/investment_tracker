@@ -124,37 +124,25 @@ export const createMockEnhancedFund = (overrides: Partial<EnhancedFund> = {}): E
   fund_type: 'Private Equity',
   status: 'active',
   tracking_type: 'nav_based',
-  fund_details: {
-    start_date: '2023-01-01',
-    end_date: null,
-    actual_duration_days: 365,
-    days_since_last_activity: 30
-  },
-  equity: {
-    commitment: 1000000,
-    invested_capital: 900000,
-    current_value: 950000,
-    current_equity_balance: 950000
-  },
-  estimated_return: {
-    expected_irr: 15.0,
-    duration_months: 60
-  },
-  distributions: {
-    distribution_count: 2,
-    total_distribution_amount: 50000,
-    last_distribution_date: '2023-12-01',
-    distribution_frequency_months: 6
-  },
-  returns: {
-    completed_irr: null,
-    performance_vs_expected: null
-  },
-  performance: {
-    unrealized_gains_losses: 100000,
-    realized_gains_losses: 50000,
-    total_profit_loss: 150000
-  },
+  start_date: '2023-01-01',
+  end_date: null,
+  current_duration: 12,
+  created_at: '2023-01-01T00:00:00Z',
+  updated_at: '2023-01-01T00:00:00Z',
+  investment_company_id: 1,
+  entity_id: 1,
+  commitment_amount: 1000000,
+  expected_irr: 15.0,
+  expected_duration_months: 60,
+  current_equity_balance: 950000,
+  average_equity_balance: 900000,
+  total_cost_basis: 900000,
+  current_units: 1000,
+  current_unit_price: 0.95,
+  current_nav_total: 950000,
+  completed_irr_gross: null,
+  completed_irr_after_tax: null,
+  completed_irr_real: null,
   ...overrides
 });
 
@@ -164,12 +152,9 @@ export const createMockEnhancedFundsList = (count: number = 5): EnhancedFund[] =
       id: index + 1,
       name: `Test Enhanced Fund ${index + 1}`,
       status: index < 3 ? 'active' : 'completed',
-      fund_details: {
-        start_date: '2023-01-01',
-        end_date: index < 3 ? null : '2023-12-31',
-        actual_duration_days: 365,
-        days_since_last_activity: 30
-      }
+      start_date: '2023-01-01',
+      end_date: index < 3 ? null : '2023-12-31',
+      current_duration: 12
     })
   );
 };
@@ -180,12 +165,6 @@ export const createMockEnhancedFundsList = (count: number = 5): EnhancedFund[] =
 
 export const createMockEnhancedFundsResponse = (overrides: Partial<EnhancedFundsResponse> = {}): EnhancedFundsResponse => ({
   funds: createMockEnhancedFundsList(5),
-  pagination: {
-    current_page: 1,
-    total_pages: 1,
-    total_funds: 5,
-    per_page: 10
-  },
   filters: {
     applied_status_filter: '',
     applied_search: null

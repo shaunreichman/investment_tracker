@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, CircularProgress, Typography, Paper } from '@mui/material';
-import { ErrorDisplay } from '../../ErrorDisplay';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Paper, Button, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import CreateEntityModal from '../../CreateEntityModal';
 import { useEntities } from '../../../hooks/useEntities';
@@ -12,11 +11,24 @@ import FundFormSection from './FundFormSection';
 import { FUND_TEMPLATES, FundTemplate } from './templates';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { SuccessBanner } from '../../ui/SuccessBanner';
-import { useFormState } from '../../../hooks/forms/useFormState';
-import { useFormValidation } from '../../../hooks/forms/useFormValidation';
+import { FormContainer } from '../../ui/FormContainer';
+import { useUnifiedForm } from '../../../hooks/forms/useUnifiedForm';
 
-// Form fields - constant values that don't change
-const initialFormValues = {
+// Form data interface
+interface FundFormData {
+  entity_id: string;
+  name: string;
+  fund_type: string;
+  tracking_type: string;
+  currency: string;
+  commitment_amount: string;
+  expected_irr: string;
+  expected_duration_months: string;
+  description: string;
+}
+
+// Initial form values
+const initialFormValues: FundFormData = {
   entity_id: '',
   name: '',
   fund_type: '',
@@ -28,6 +40,19 @@ const initialFormValues = {
   description: ''
 };
 
+// Validation rules
+const validators = {
+  entity_id: validationRules.required('Entity'),
+  name: fundValidators.name,
+  fund_type: fundValidators.fundType,
+  tracking_type: validationRules.required('Tracking type'),
+  currency: validationRules.required('Currency'),
+  commitment_amount: fundValidators.commitmentAmount,
+  expected_irr: fundValidators.expectedIrr,
+  expected_duration_months: fundValidators.expectedDuration,
+  description: fundValidators.description,
+};
+
 interface CreateFundModalProps {
   open: boolean;
   onClose: () => void;
@@ -36,10 +61,6 @@ interface CreateFundModalProps {
   companyName: string;
 }
 
-//
-
-// Fund type templates with predefined values
-
 const CreateFundModal: React.FC<CreateFundModalProps> = ({
   open,
   onClose,
@@ -47,63 +68,79 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   companyId,
   companyName
 }) => {
-  const [success, setSuccess] = useState(false);
   const [showEntityModal, setShowEntityModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<FundTemplate | null>(null);
   const [showTemplateSelection, setShowTemplateSelection] = useState(true);
-
-
-  const { values: formData, setFieldValue, setValues, reset } = useFormState(initialFormValues);
-
-  // Validation using centralized validators
-  const { errors: validationErrors, validateField, validateAll, setErrors } = useFormValidation<typeof initialFormValues>({
-    entity_id: validationRules.required('Entity'),
-    name: fundValidators.name,
-    fund_type: fundValidators.fundType,
-    tracking_type: validationRules.required('Tracking type'),
-    // currency: optional, no validator
-    commitment_amount: fundValidators.commitmentAmount,
-    expected_irr: fundValidators.expectedIrr,
-    expected_duration_months: fundValidators.expectedDuration,
-    description: fundValidators.description,
-  });
 
   // Centralized API hooks
   const { data: entities, loading, error: entitiesError } = useEntities({ refetchOnWindowFocus: true });
   const { mutate: createFund, loading: isSubmitting, error: submitError, data: createdFund } = useCreateFund();
 
+  // Unified form management
+  const {
+    values: formData,
+    errors: validationErrors,
+    isDirty,
+    isValid,
+    isSubmitting: formIsSubmitting,
+    setFieldValue,
+    handleSubmit,
+    reset,
+    clearErrors,
+    setFieldError
+  } = useUnifiedForm<FundFormData>({
+    initialValues: initialFormValues,
+    validators,
+    onSubmit: async (values) => {
+      
+      const fundData = {
+        investment_company_id: companyId,
+        entity_id: parseInt(values.entity_id),
+        name: values.name.trim(),
+        fund_type: values.fund_type,
+        tracking_type: values.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED,
+        currency: values.currency,
+        ...(values.commitment_amount && { commitment_amount: parseFloat(values.commitment_amount) }),
+        ...(values.expected_irr && { expected_irr: parseFloat(values.expected_irr) }),
+        ...(values.expected_duration_months && { expected_duration_months: parseInt(values.expected_duration_months) }),
+        ...(values.description && { description: values.description.trim() })
+      };
+      
+      await createFund(fundData);
+    },
+    onSuccess: () => {
+      // Success will be handled by useEffect watching createdFund
+    },
+    onError: (error) => {
+      console.error('Form submission error:', error);
+    }
+  });
+
   // Handle success flow when fund is created
   useEffect(() => {
     if (createdFund) {
-      setSuccess(true);
-      const timer = setTimeout(() => {
-        onFundCreated();
-        onClose();
-        setSuccess(false);
-        reset(initialFormValues);
-        setErrors({});
-      }, 2000);
-      
-      return () => clearTimeout(timer);
+      onFundCreated();
+      onClose();
+      reset();
+      clearErrors();
+      setSelectedTemplate(null);
+      setShowTemplateSelection(true);
     }
-    return undefined; // Explicit return for noImplicitReturns
-  }, [createdFund, onFundCreated, onClose, reset, setErrors]);
+  }, [createdFund, onFundCreated, onClose, reset, clearErrors]);
 
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      reset(initialFormValues);
+      reset();
+      clearErrors();
       setSelectedTemplate(null);
       setShowTemplateSelection(true);
-      setErrors({});
-      setSuccess(false);
     }
-    // No cleanup needed for this effect
-  }, [open, reset, setErrors]);
+  }, [open, reset, clearErrors]);
 
   // Apply template to form data
   const applyTemplate = (template: FundTemplate) => {
-    setValues({
+    const templateValues = {
       entity_id: '',
       name: '',
       fund_type: template.fund_type,
@@ -113,108 +150,87 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
       expected_irr: template.expected_irr?.toString() || '',
       expected_duration_months: template.expected_duration_months?.toString() || '',
       description: template.description_template
+    };
+
+    // Update form values
+    Object.entries(templateValues).forEach(([key, value]) => {
+      setFieldValue(key as keyof FundFormData, value);
     });
+
     setSelectedTemplate(template);
     setShowTemplateSelection(false);
 
-    // Clear validation errors only for fields that are filled by the template
-    setErrors({
-      tracking_type: undefined,
-      currency: undefined,
-      fund_type: template.fund_type ? undefined : validationErrors.fund_type,
-      commitment_amount: template.commitment_amount ? undefined : validationErrors.commitment_amount,
-      expected_irr: template.expected_irr ? undefined : validationErrors.expected_irr,
-      expected_duration_months: template.expected_duration_months ? undefined : validationErrors.expected_duration_months,
-      description: template.description_template ? undefined : validationErrors.description
+    // Clear validation errors for fields filled by template
+    const errorsToClear: Partial<Record<keyof FundFormData, string | undefined>> = {};
+    Object.keys(templateValues).forEach(key => {
+      if (templateValues[key as keyof FundFormData]) {
+        errorsToClear[key as keyof FundFormData] = undefined;
+      }
+    });
+    
+    // Clear the errors
+    Object.entries(errorsToClear).forEach(([key, value]) => {
+      setFieldError(key as keyof FundFormData, value);
     });
   };
 
-  const validateForm = useCallback((): boolean => {
-    // Run all validators
-    const allValid = validateAll(formData as typeof initialFormValues);
-    // Preserve required field semantics for submit enablement
-    const requiredFieldsValid = Boolean(
-      formData.entity_id && formData.name.trim() && formData.fund_type && formData.tracking_type
-    );
-    return allValid && requiredFieldsValid;
-  }, [formData, validateAll]);
-
-  useEffect(() => {
-    if (open) {
-      validateForm();
-    }
-  }, [open, validateForm]);
-
-  // Remove the problematic useEffect that depends on formData
-  // This was causing infinite loops
-  // useEffect(() => {
-  //   if (open && !showTemplateSelection) {
-  //     validateForm();
-  //   }
-  // }, [formData, open, showTemplateSelection, validateForm]);
-
+  // Handle input change
   const handleInputChange = (field: string, value: string) => {
-    setFieldValue(field as keyof typeof initialFormValues, value);
-    validateField(field as keyof typeof initialFormValues, value);
+    setFieldValue(field as keyof FundFormData, value);
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
+  // Handle form submission
+  const handleFormSubmit = () => {
     
-    const fundData = {
-      investment_company_id: companyId,
-      entity_id: parseInt(formData.entity_id),
-      name: formData.name.trim(),
-      fund_type: formData.fund_type,
-      tracking_type: formData.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED,
-      currency: formData.currency,
-      ...(formData.commitment_amount && { commitment_amount: parseFloat(formData.commitment_amount) }),
-      ...(formData.expected_irr && { expected_irr: parseFloat(formData.expected_irr) }),
-      ...(formData.expected_duration_months && { expected_duration_months: parseInt(formData.expected_duration_months) }),
-      ...(formData.description && { description: formData.description.trim() })
-    };
-    
-    await createFund(fundData);
+    if (showTemplateSelection) return;
+    handleSubmit();
   };
 
+  // Handle modal close
   const handleClose = () => {
-    if (!isSubmitting) { // Use isSubmitting from hook
+    if (!isSubmitting && !formIsSubmitting) {
       onClose();
-      setSuccess(false);
-      setErrors({});
-      reset(initialFormValues);
+      reset();
+      clearErrors();
       setSelectedTemplate(null);
       setShowTemplateSelection(true);
     }
   };
 
+  // Handle entity creation
   const handleEntityCreated = (entity: { id: number; name: string }) => {
     setFieldValue('entity_id', entity.id.toString());
-    setErrors({ entity_id: undefined });
+    setFieldError('entity_id', undefined);
   };
 
+  // Form validation status
   const isFormValid = () => {
-    const requiredFieldsValid = formData.entity_id && formData.name.trim() && formData.fund_type && formData.tracking_type;
-    const noValidationErrors = Object.values(validationErrors).every(error => !error);
-    return requiredFieldsValid && noValidationErrors;
+    const requiredFields = ['entity_id', 'name', 'fund_type', 'tracking_type'];
+    const requiredFieldsValid = requiredFields.every(field => {
+      const value = formData[field as keyof FundFormData];
+      return value && value.toString().trim() !== '';
+    });
+    return requiredFieldsValid && isValid;
   };
 
+  // Form progress calculation
   const getFormProgress = () => {
     const requiredFields = ['entity_id', 'name', 'fund_type', 'tracking_type'];
     const completedFields = requiredFields.filter(field => {
-      const value = (formData as any)[field];
+      const value = formData[field as keyof FundFormData];
       return value && value.toString().trim() !== '';
     });
     return (completedFields.length / requiredFields.length) * 100;
   };
 
+  // Validation status
   const getValidationStatus = () => {
     const requiredFields = ['entity_id', 'name', 'fund_type', 'tracking_type'];
     const missingFields = requiredFields.filter(field => {
-      const value = (formData as any)[field];
+      const value = formData[field as keyof FundFormData];
       return !value || value.toString().trim() === '';
     });
-    const errorFields = Object.keys(validationErrors).filter(key => (validationErrors as any)[key]);
+    const errorFields = Object.keys(validationErrors).filter(key => validationErrors[key as keyof FundFormData]);
     return {
       missingFields,
       errorFields,
@@ -224,165 +240,161 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center">
-            <AddIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Create New Fund</Typography>
-          </Box>
-          {isSubmitting && ( // Use isSubmitting from hook
-            <Box display="flex" alignItems="center">
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-              <Typography variant="body2" color="text.secondary">
-                Creating...
-              </Typography>
-            </Box>
+    <FormContainer
+      open={open}
+      title="Create New Fund"
+      subtitle={`Adding fund to ${companyName}`}
+      onClose={handleClose}
+      onSubmit={handleFormSubmit}
+      isSubmitting={isSubmitting || formIsSubmitting}
+      isValid={!showTemplateSelection ? isFormValid() : true}
+      isDirty={isDirty}
+      showCloseConfirmation={true}
+      maxWidth="md"
+      fullWidth={true}
+      actions={
+        <>
+          {!showTemplateSelection && selectedTemplate && (
+            <Button 
+              onClick={() => setShowTemplateSelection(true)} 
+              variant="outlined" 
+              disabled={isSubmitting || formIsSubmitting} 
+              startIcon={<AddIcon />}
+            >
+              Back to Templates
+            </Button>
           )}
+          <Button 
+            onClick={handleFormSubmit} 
+            variant="contained" 
+            disabled={isSubmitting || formIsSubmitting || !isFormValid()}
+            startIcon={isSubmitting || formIsSubmitting ? <CircularProgress size={20} /> : null}
+          >
+            {isSubmitting || formIsSubmitting ? 'Creating Fund...' : 'Create Fund'}
+          </Button>
+        </>
+      }
+    >
+      {/* Progress Indicator */}
+      <Box sx={{ mb: 3 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+          <Typography variant="body2" color="text.secondary">
+            Form Progress
+          </Typography>
+          <Typography variant="body2" color="primary.main" fontWeight="medium">
+            {Math.round(getFormProgress())}% Complete
+          </Typography>
         </Box>
-        <Typography variant="body2" color="text.secondary">
-          Adding fund to <strong>{companyName}</strong>
-        </Typography>
-      </DialogTitle>
-
-      <DialogContent sx={{ pb: 2 }}>
-        {/* Progress Indicator */}
-        <Box sx={{ mb: 3 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-            <Typography variant="body2" color="text.secondary">
-              Form Progress
-            </Typography>
-            <Typography variant="body2" color="primary.main" fontWeight="medium">
-              {Math.round(getFormProgress())}% Complete
-            </Typography>
-          </Box>
-          <Box sx={{ width: '100%', bgcolor: 'grey.200', borderRadius: 1, height: 8 }}>
-            <Box
-              sx={{
-                width: `${getFormProgress()}%`,
-                bgcolor: 'primary.main',
-                height: 8,
-                borderRadius: 1,
-                transition: 'width 0.3s ease'
-              }}
-            />
-          </Box>
-          {!showTemplateSelection && (
-            <Box sx={{ mt: 1 }}>
-              {(() => {
-                const status = getValidationStatus();
-                if (status.missingFields.length > 0) {
-                  return (
-                    <Typography variant="caption" color="warning.main">
-                      Missing required fields: {status.missingFields.join(', ')}
-                    </Typography>
-                  );
-                } else if (status.hasErrors) {
-                  return (
-                    <Typography variant="caption" color="error.main">
-                      Please fix validation errors
-                    </Typography>
-                  );
-                } else {
-                  return (
-                    <Typography variant="caption" color="success.main">
-                      ✓ All required fields completed
-                    </Typography>
-                  );
-                }
-              })()}
-            </Box>
-          )}
-        </Box>
-
-        {/* Success State */}
-        {success && (
-          <SuccessBanner title="Fund created successfully!" subtitle="Redirecting to fund details..." />
-        )}
-
-        {/* Error State */}
-        {(submitError || entitiesError) && (
-          <ErrorDisplay
-            error={submitError || entitiesError}
-            canRetry={(submitError || entitiesError)!.retryable}
-            onRetry={() => handleSubmit()}
-            onDismiss={() => {}}
-            variant="inline"
+        <Box sx={{ width: '100%', bgcolor: 'background.default', borderRadius: 1, height: 8 }}>
+          <Box
+            sx={{
+              width: `${getFormProgress()}%`,
+              bgcolor: 'primary.main',
+              height: 8,
+              borderRadius: 1,
+              transition: 'width 0.3s ease'
+            }}
           />
-        )}
-
-        {loading ? (
-          <Box p={4}>
-            <LoadingSpinner label="Loading entities..." />
+        </Box>
+        {!showTemplateSelection && (
+          <Box sx={{ mt: 1 }}>
+            {(() => {
+              const status = getValidationStatus();
+              if (status.missingFields.length > 0) {
+                return (
+                  <Typography variant="caption" color="warning.main">
+                    Missing required fields: {status.missingFields.join(', ')}
+                  </Typography>
+                );
+              } else if (status.hasErrors) {
+                return (
+                  <Typography variant="caption" color="error.main">
+                    Please fix validation errors
+                  </Typography>
+                );
+              } else {
+                return (
+                  <Typography variant="caption" color="success.main">
+                    ✓ All required fields completed
+                  </Typography>
+                );
+              }
+            })()}
           </Box>
-        ) : (
-          <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-              Fund Details
-            </Typography>
+        )}
+      </Box>
 
-            {showTemplateSelection ? (
-              <TemplateSelectionSection templates={FUND_TEMPLATES} onSelect={applyTemplate} />
-            ) : (
-              <Box>
-                {selectedTemplate && (
-                  <Box sx={{ mb: 3, p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      {selectedTemplate.icon}
-                      <Typography variant="h6">Using Template: {selectedTemplate.name}</Typography>
-                      <Typography variant="caption" sx={{ bgcolor: 'primary.main', color: 'white', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}>
-                        {selectedTemplate.tracking_type}
-                      </Typography>
-                      <Typography variant="caption" sx={{ bgcolor: 'grey.300', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}>
-                        {selectedTemplate.currency}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      {selectedTemplate.description}
+      {/* Success State */}
+      {createdFund && (
+        <SuccessBanner 
+          title="Fund created successfully!" 
+          subtitle="Redirecting to fund details..." 
+        />
+      )}
+
+      {/* Error State */}
+      {(submitError || entitiesError) && (
+        <Box sx={{ mb: 2 }}>
+          <Typography color="error" variant="body2">
+            {submitError?.userMessage || submitError?.message || 
+             entitiesError?.userMessage || entitiesError?.message || 
+             'An error occurred'}
+          </Typography>
+        </Box>
+      )}
+
+      {loading ? (
+        <Box p={4}>
+          <LoadingSpinner label="Loading entities..." />
+        </Box>
+      ) : (
+        <Paper elevation={0} sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+            Fund Details
+          </Typography>
+
+          {showTemplateSelection ? (
+            <TemplateSelectionSection templates={FUND_TEMPLATES} onSelect={applyTemplate} />
+          ) : (
+            <Box>
+              {selectedTemplate && (
+                <Box sx={{ mb: 3, p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    {selectedTemplate.icon}
+                    <Typography variant="h6">Using Template: {selectedTemplate.name}</Typography>
+                    <Typography variant="caption" sx={{ bgcolor: 'primary.main', color: 'white', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}>
+                      {selectedTemplate.tracking_type}
+                    </Typography>
+                    <Typography variant="caption" sx={{ bgcolor: 'divider', color: 'text.secondary', px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem' }}>
+                      {selectedTemplate.currency}
                     </Typography>
                   </Box>
-                )}
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    {selectedTemplate.description}
+                  </Typography>
+                </Box>
+              )}
 
-                <FundFormSection
-                  formData={formData as any}
-                  validationErrors={validationErrors as any}
-                  entities={entities as any}
-                  onInputChange={handleInputChange}
-                  onCreateEntity={() => setShowEntityModal(true)}
-                  trackingTypeLocked={true}
-                />
-              </Box>
-            )}
-          </Paper>
-        )}
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        {!showTemplateSelection && selectedTemplate && (
-          <Button onClick={() => setShowTemplateSelection(true)} variant="outlined" disabled={isSubmitting} startIcon={<AddIcon />}>
-            Back to Templates
-          </Button>
-        )}
-        <Button onClick={handleClose} disabled={isSubmitting} variant="outlined">
-          Cancel
-        </Button>
-        {!showTemplateSelection && (
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={isSubmitting || !isFormValid()}
-            startIcon={isSubmitting ? <CircularProgress size={20} /> : <AddIcon />}
-            sx={{ minWidth: 120 }}
-            title={!isFormValid() ? 'Please fill in all required fields and fix any validation errors' : ''}
-          >
-            {isSubmitting ? 'Creating...' : 'Create Fund'}
-          </Button>
-        )}
-      </DialogActions>
+                             <FundFormSection
+                 formData={formData}
+                 validationErrors={validationErrors as any}
+                 entities={entities || []}
+                 onInputChange={handleInputChange}
+                 onCreateEntity={() => setShowEntityModal(true)}
+                 trackingTypeLocked={!!selectedTemplate}
+                               />
+            </Box>
+          )}
+        </Paper>
+      )}
 
       {/* Entity Creation Modal */}
-      <CreateEntityModal open={showEntityModal} onClose={() => setShowEntityModal(false)} onEntityCreated={handleEntityCreated} />
-    </Dialog>
+      <CreateEntityModal 
+        open={showEntityModal} 
+        onClose={() => setShowEntityModal(false)} 
+        onEntityCreated={handleEntityCreated} 
+      />
+    </FormContainer>
   );
 };
 

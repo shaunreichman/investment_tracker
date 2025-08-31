@@ -51,6 +51,41 @@ class CompanyController:
         self.summary_service = CompanySummaryService()
         self.validation_service = CompanyValidationService()
     
+    def _extract_company_data(self, company: InvestmentCompany) -> Dict[str, Any]:
+        """
+        Extract company data into a dictionary while session is still active.
+        
+        This method prevents lazy loading issues by extracting all needed data
+        before the session closes.
+        
+        Args:
+            company: InvestmentCompany instance
+            
+        Returns:
+            Dictionary containing company data
+        """
+        return {
+            "id": company.id,
+            "name": company.name,
+            "company_type": company.company_type,
+            "business_address": company.business_address,
+            "website": company.website,
+            "description": company.description,
+            "created_at": company.created_at.isoformat() if company.created_at else None,
+            "updated_at": company.updated_at.isoformat() if company.updated_at else None,
+            "contacts": [
+                {
+                    "id": contact.id,
+                    "name": contact.name,
+                    "title": contact.title,
+                    "direct_number": contact.direct_number,
+                    "direct_email": contact.direct_email,
+                    "notes": contact.notes
+                }
+                for contact in company.contacts
+            ]
+        }
+    
     def get_investment_companies(self, session: Session) -> tuple:
         """
         Get list of all investment companies with summary data.
@@ -70,11 +105,16 @@ class CompanyController:
                 # Get fund count and summary data using services directly
                 total_funds = self.portfolio_service.get_total_funds_under_management(company, session)
                 total_commitments = self.portfolio_service.get_total_commitments(company, session)
+                
+                # Extract fund data while session is still active
+                # This prevents lazy loading issues after session closes
                 active_funds = 0
-                for fund in company.funds:
-                    if fund.status == FundStatus.ACTIVE:
-                        active_funds += 1
-                total_equity = sum(fund.current_equity_balance or 0.0 for fund in company.funds)
+                total_equity = 0.0
+                if company.funds:
+                    for fund in company.funds:
+                        if fund.status == FundStatus.ACTIVE:
+                            active_funds += 1
+                        total_equity += fund.current_equity_balance or 0.0
                 
                 # Handle company_type safely - it might be a string from old data or an enum
                 company_type_value = None
@@ -92,7 +132,7 @@ class CompanyController:
                     else:
                         status_value = str(company.status)
                 
-                companies_data.append({
+                company_data = {
                     "id": company.id,
                     "name": company.name,
                     "description": company.description,
@@ -106,12 +146,21 @@ class CompanyController:
                     "total_equity_balance": float(total_equity),
                     "created_at": company.created_at.isoformat() if company.created_at else None,
                     "updated_at": company.updated_at.isoformat() if company.updated_at else None
-                })
+                }
+                
+                companies_data.append(company_data)
             
             return jsonify({"companies": companies_data}), 200
             
         except Exception as e:
-            current_app.logger.error(f"Error getting investment companies: {str(e)}")
+            # Use proper Flask logging when available, fallback to print for debugging
+            try:
+                if current_app and current_app.logger:
+                    current_app.logger.error(f"Error getting investment companies: {str(e)}")
+                else:
+                    print(f"Error getting investment companies: {str(e)}")
+            except:
+                print(f"Error getting investment companies: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
     def create_investment_company(self, session: Session) -> tuple:
@@ -193,7 +242,10 @@ class CompanyController:
             Tuple of (response_data, status_code)
         """
         try:
+            print(f"🚀 CompanyController.create_investment_company_with_data: Starting company creation with validated data: {validated_data}")
+            
             # Use service to create company with validated data
+            print("📋 CompanyController.create_investment_company_with_data: Calling CompanyService.create_company")
             company = self.company_service.create_company(
                 name=validated_data['name'],
                 description=validated_data.get('description'),
@@ -204,10 +256,15 @@ class CompanyController:
                 session=session
             )
             
-            # Commit the transaction
-            session.commit()
+            print(f"✅ CompanyController.create_investment_company_with_data: Company created successfully with ID: {company.id}, Name: {company.name}")
             
-            return jsonify({
+            # Commit the transaction
+            print("💾 CompanyController.create_investment_company_with_data: Committing transaction to database")
+            session.commit()
+            print("✅ CompanyController.create_investment_company_with_data: Transaction committed successfully")
+            
+            # Prepare response data
+            response_data = {
                 "id": company.id,
                 "name": company.name,
                 "description": company.description,
@@ -216,7 +273,10 @@ class CompanyController:
                 "status": company.status.value if company.status else None,
                 "business_address": company.business_address,
                 "created_at": company.created_at.isoformat() if company.created_at else None
-            }), 201
+            }
+            
+            print(f"📤 CompanyController.create_investment_company_with_data: Returning response: {response_data}")
+            return jsonify(response_data), 201
             
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
@@ -244,26 +304,14 @@ class CompanyController:
             # Get funds with summary using service
             funds = self.portfolio_service.get_funds_with_summary(company, session)
             
-            return jsonify({
-                "id": company.id,
-                "name": company.name,
-                "description": company.description,
-                "website": company.website,
-                "company_type": company.company_type,
-                "business_address": company.business_address,
-                "funds": funds,
-                "contacts": [
-                    {
-                        "id": contact.id,
-                        "name": contact.name,
-                        "title": contact.title,
-                        "direct_number": contact.direct_number,
-                        "direct_email": contact.direct_email,
-                        "notes": contact.notes
-                    }
-                    for contact in company.contacts
-                ]
-            }), 200
+            # Extract all needed data while session is still active
+            # This prevents lazy loading issues after session closes
+            company_data = self._extract_company_data(company)
+            company_data.update({
+                "funds": funds
+            })
+            
+            return jsonify(company_data), 200
             
         except Exception as e:
             current_app.logger.error(f"Error getting company funds: {str(e)}")
@@ -312,27 +360,16 @@ class CompanyController:
             if not company:
                 return jsonify({"error": "Investment company not found"}), 404
             
-            return jsonify({
-                "id": company.id,
-                "name": company.name,
-                "company_type": company.company_type,
-                "business_address": company.business_address,
-                "website": company.website,
-                "description": company.description,
-                "created_at": company.created_at.isoformat() if company.created_at else None,
-                "updated_at": company.updated_at.isoformat() if company.updated_at else None,
-                "contacts": [
-                    {
-                        "id": contact.id,
-                        "name": contact.name,
-                        "title": contact.title,
-                        "direct_number": contact.direct_number,
-                        "direct_email": contact.direct_email,
-                        "notes": contact.notes
-                    }
-                    for contact in company.contacts
-                ]
-            }), 200
+            # Extract all needed data while session is still active
+            # This prevents lazy loading issues after session closes
+            company_data = self._extract_company_data(company)
+            
+            # Wrap in company object to match frontend interface
+            response_data = {
+                "company": company_data
+            }
+            
+            return jsonify(response_data), 200
             
         except Exception as e:
             current_app.logger.error(f"Error getting company details: {str(e)}")
@@ -373,4 +410,41 @@ class CompanyController:
             
         except Exception as e:
             current_app.logger.error(f"Error getting enhanced company funds: {str(e)}")
+            return jsonify({"error": "Internal server error"}), 500
+
+    def delete_investment_company(self, company_id: int, session: Session) -> tuple:
+        """
+        Delete an investment company.
+        
+        Args:
+            company_id: Company ID to delete
+            session: Database session
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get company using service
+            company = self.company_service.get_company_by_id(company_id, session)
+            if not company:
+                return jsonify({"error": "Investment company not found"}), 404
+            
+            # Delete company using service
+            self.company_service.delete_company(company_id, session)
+            
+            response_data = {
+                "message": f"Investment company '{company.name}' deleted successfully",
+                "deleted_company_id": company_id
+            }
+            return jsonify(response_data), 200
+            
+        except ValueError as e:
+            # Validation error (e.g., company has active funds)
+            current_app.logger.warning(f"❌ CompanyController: Company deletion validation failed: {str(e)}")
+            return jsonify({"error": str(e)}), 400
+            
+        except Exception as e:
+            current_app.logger.error(f"❌ CompanyController: Unexpected error deleting company: {str(e)}")
+            current_app.logger.error(f"❌ CompanyController: Error type: {type(e).__name__}")
+            current_app.logger.error(f"❌ CompanyController: Error details: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500

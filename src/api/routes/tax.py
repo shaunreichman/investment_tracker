@@ -38,3 +38,13 @@ def get_fund_tax_statements(fund_id):
         return tax_controller.get_fund_tax_statements(session, fund_id)
     finally:
         session.close()
+
+
+@tax_bp.route('/api/funds/<int:fund_id>/financial-years', methods=['GET'])
+def get_fund_financial_years(fund_id):
+    """Get all financial years from fund start date to current date"""
+    session = get_db_session()
+    try:
+        return tax_controller.get_fund_financial_years(session, fund_id)
+    finally:
+        session.close()

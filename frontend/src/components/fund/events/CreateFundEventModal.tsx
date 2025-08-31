@@ -1,38 +1,136 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   Box,
-  CircularProgress,
   Typography,
   useTheme
 } from '@mui/material';
-import { ErrorDisplay } from '../../ErrorDisplay';
-import { SuccessBanner } from '../../ui/SuccessBanner';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { useFund } from '../../../hooks/useFunds';
 import { formatNumber, parseNumber } from '../../../utils/helpers';
-// imports retained for reference types in hooks, not directly used here
 import { useEventSubmission } from '../../../hooks/useEventSubmission';
 import EventTypeSelector from './create/EventTypeSelector';
 import DistributionForm from './create/DistributionForm';
 import UnitTransactionForm from './create/UnitTransactionForm';
 import NavUpdateForm from './create/NavUpdateForm';
 import TaxStatementForm from './create/TaxStatementForm';
-import { useCreateEventForm } from '../../../hooks/useCreateEventForm';
-// ExtendedFundEvent type not used directly in this component
+import CostBasedEventForm from './create/CostBasedEventForm';
+import { FormContainer } from '../../ui/FormContainer';
+import { useUnifiedForm } from '../../../hooks/forms/useUnifiedForm';
+import { createValidator, validationRules } from '../../../utils/validators';
+import { SuccessBanner } from '../../ui/SuccessBanner';
+import { FundType } from '../../../types/api';
+import { useFundFinancialYears } from '../../../hooks/useFundFinancialYears';
 
 interface CreateFundEventModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   fundId: number;
-  fundTrackingType: 'nav_based' | 'cost_based';
+  fundTrackingType: FundType;
 }
+
+// Basic form data interface for common fields
+interface EventFormData {
+  event_date: string;
+  amount: string;
+  units_purchased: string;
+  units_sold: string;
+  unit_price: string;
+  nav_per_share: string;
+  brokerage_fee: string;
+  
+  // Withholding Tax Fields for Interest Distributions
+  interest_gross_amount: string;
+  interest_net_amount: string;
+  interest_withholding_tax_amount: string;
+  interest_withholding_tax_rate: string;
+  
+  financial_year: string;
+  statement_date: string;
+  eofy_debt_interest_deduction_rate: string;
+  interest_received_in_cash: string;
+  interest_receivable_this_fy: string;
+  interest_receivable_prev_fy: string;
+  interest_non_resident_withholding_tax_from_statement: string;
+  interest_income_tax_rate: string;
+  dividend_franked_income_amount: string;
+  dividend_unfranked_income_amount: string;
+  dividend_franked_income_tax_rate: string;
+  dividend_unfranked_income_tax_rate: string;
+  capital_gain_income_amount: string;
+  capital_gain_income_tax_rate: string;
+  accountant: string;
+  notes: string;
+}
+
+// Initial form values
+const initialFormValues: EventFormData = {
+  event_date: new Date().toISOString().slice(0, 10),
+  amount: '',
+  units_purchased: '',
+  units_sold: '',
+  unit_price: '',
+  nav_per_share: '',
+  brokerage_fee: '',
+  
+  // Withholding Tax Fields for Interest Distributions
+  interest_gross_amount: '',
+  interest_net_amount: '',
+  interest_withholding_tax_amount: '',
+  interest_withholding_tax_rate: '',
+  
+  financial_year: '',
+  statement_date: '',
+  eofy_debt_interest_deduction_rate: '',
+  interest_received_in_cash: '',
+  interest_receivable_this_fy: '',
+  interest_receivable_prev_fy: '',
+  interest_non_resident_withholding_tax_from_statement: '',
+  interest_income_tax_rate: '',
+  dividend_franked_income_amount: '',
+  dividend_unfranked_income_amount: '',
+  dividend_franked_income_tax_rate: '',
+  dividend_unfranked_income_tax_rate: '',
+  capital_gain_income_amount: '',
+  capital_gain_income_tax_rate: '',
+  accountant: '',
+  notes: ''
+};
+
+// Basic validation rules for common fields
+const validators = {
+  event_date: createValidator(
+    validationRules.required('Event date'),
+    validationRules.validDate('Event date')
+  ),
+  amount: (value: string) => {
+    if (!value || value.trim() === '') {
+      return 'Amount is required';
+    }
+    return validationRules.positiveNumber('Amount')(value);
+  },
+  units_purchased: (value: string) => {
+    if (!value) return undefined;
+    return validationRules.positiveNumber('Units purchased')(value);
+  },
+  units_sold: (value: string) => {
+    if (!value) return undefined;
+    return validationRules.positiveNumber('Units sold')(value);
+  },
+  unit_price: (value: string) => {
+    if (!value) return undefined;
+    return validationRules.positiveNumber('Unit price')(value);
+  },
+  nav_per_share: (value: string) => {
+    if (!value) return undefined;
+    return validationRules.positiveNumber('NAV per share')(value);
+  },
+  brokerage_fee: (value: string) => {
+    if (!value) return undefined;
+    return validationRules.nonNegativeNumber('Brokerage fee')(value);
+  }
+};
 
 const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   open,
@@ -43,42 +141,21 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
 }) => {
   const theme = useTheme();
   
-  // Use the create-only form state management hook
-  const {
-    eventType,
-    setEventType,
-    distributionType,
-    setDistributionType,
-    subDistributionType,
-    setSubDistributionType,
-    formData,
-    // setFormData,
-    success,
-    setSuccess,
-    validationErrors,
-    isFormValid,
-    hybridFieldOverrides,
-    // setHybridFieldOverrides,
-    handleInputChange,
-    handleHybridFieldToggle,
-    validateForm,
-    resetForm,
-    handleBack,
-  } = useCreateEventForm({
-    open,
-    fundTrackingType
-  });
+  // Event type state (keeping existing logic for now)
+  const [eventType, setEventType] = useState<string>('');
+  const [distributionType, setDistributionType] = useState<string>('');
+  const [subDistributionType, setSubDistributionType] = useState<string>('');
+  const [success, setSuccess] = useState(false);
+  const [hybridFieldOverrides, setHybridFieldOverrides] = useState<{[key: string]: boolean}>({});
 
   // Centralized error handler
   const { error, setError, clearError } = useErrorHandler();
-  const [fundEntity, setFundEntity] = useState<any>(null);
-  const [financialYears, setFinancialYears] = useState<string[]>([]);
-
   // Centralized API hooks
   const { data: fundData } = useFund(fundId);
+  const { financialYears, isLoading: financialYearsLoading } = useFundFinancialYears(fundId);
   const { handleSubmit: submitEvent, createFundEvent, createTaxStatement } = useEventSubmission({
     fundId,
-    fundEntity,
+    fundEntity: fundData?.entity || null,
     onSuccess: () => {
       setSuccess(true);
       setTimeout(() => {
@@ -90,7 +167,39 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     onError: setError,
   });
 
-  // Edit functionality removed - use delete + create pattern instead
+  // Unified form management for basic form fields
+  const {
+    values: formData,
+    errors: validationErrors,
+    isDirty,
+    isValid,
+    isSubmitting: formIsSubmitting,
+    setFieldValue,
+    reset: resetFormData,
+    clearErrors
+  } = useUnifiedForm<EventFormData>({
+    initialValues: initialFormValues,
+    validators,
+    onSubmit: async (values) => {
+      // This will be handled by the existing event submission logic
+      // For now, just validate and let the existing flow continue
+      return Promise.resolve();
+    },
+    onSuccess: () => {
+      // Success handled by existing flow
+    },
+    onError: setError
+  });
+
+  // Reset form function (combines unified form reset with event type reset)
+  const resetForm = useCallback(() => {
+    resetFormData();
+    setEventType('');
+    setDistributionType('');
+    setSubDistributionType('');
+    setSuccess(false);
+    setHybridFieldOverrides({});
+  }, [resetFormData]);
 
   // Handle errors and success from hooks
   useEffect(() => {
@@ -105,8 +214,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     }
   }, [createTaxStatement.error, setError]);
 
-  // Edit functionality removed - use delete + create pattern instead
-
+  // Handle success flow
   useEffect(() => {
     if (createFundEvent.data) {
       setSuccess(true);
@@ -116,7 +224,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
         onClose();
       }, 1000);
     }
-  }, [createFundEvent.data, onSuccess, onClose, resetForm, setSuccess]);
+  }, [createFundEvent.data, onSuccess, onClose, resetForm]);
 
   useEffect(() => {
     if (createTaxStatement.data) {
@@ -127,33 +235,121 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
         onClose();
       }, 1000);
     }
-  }, [createTaxStatement.data, onSuccess, onClose, resetForm, setSuccess]);
+  }, [createTaxStatement.data, onSuccess, onClose, resetForm]);
 
-  // Edit functionality removed - use delete + create pattern instead
-
-  // Load fund entity and financial years
+  // Reset form when modal opens
   useEffect(() => {
-    if (fundData) {
-      setFundEntity(fundData.entity);
-      // Generate financial years (current year + 5 years back)
-      const currentYear = new Date().getFullYear();
-      const years = [];
-      for (let i = 0; i < 6; i++) {
-        years.push((currentYear - i).toString());
+    if (open) {
+      resetForm();
+      clearErrors();
+    }
+  }, [open, clearErrors, resetForm]);
+
+  // Handle input change (combines unified form with existing logic)
+  const handleInputChange = (field: string, value: string) => {
+    console.log('🔍 handleInputChange:', { field, value, currentFormData: formData });
+    
+    setFieldValue(field as keyof EventFormData, value);
+    
+    // Auto-calculate tax payment date when financial year changes
+    if (field === 'financial_year' && eventType === 'TAX_STATEMENT') {
+      // This logic would need to be implemented based on your business rules
+      // setFieldValue('tax_payment_date', calculateTaxPaymentDate(value));
+    }
+  };
+
+  // Handle hybrid field toggle
+  const handleHybridFieldToggle = (field: string) => {
+    setHybridFieldOverrides(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  // Handle back navigation
+  const handleBack = () => {
+    if (distributionType) {
+      setDistributionType('');
+      setSubDistributionType('');
+      setFieldValue('amount', '');
+    } else {
+      setEventType('');
+    }
+  };
+
+  // Form validation (combines unified form validation with event type validation)
+  const isFormValid = () => {
+    // Basic form validation from unified form
+    const basicFormValid = isValid;
+    // Event type specific validation
+    if (!eventType) {
+      console.log('❌ No event type selected');
+      return false;
+    }
+    
+    if (eventType === 'DISTRIBUTION' && !distributionType) {
+      console.log('❌ Distribution type required');
+      return false;
+    }
+    
+    if (eventType === 'DISTRIBUTION' && distributionType === 'DIVIDEND' && !subDistributionType) {
+      console.log('❌ Sub-distribution type required for dividend');
+      return false;
+    }
+    
+    if (eventType === 'DISTRIBUTION' && distributionType === 'INTEREST' && !subDistributionType) {
+      console.log('❌ Sub-distribution type required for interest');
+      return false;
+    }
+    
+    // Validate withholding tax fields for Interest distributions
+    if (eventType === 'DISTRIBUTION' && distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
+      // Must have exactly one amount type (gross or net)
+      const hasGrossAmount = formData.interest_gross_amount && Number(formData.interest_gross_amount) > 0;
+      const hasNetAmount = formData.interest_net_amount && Number(formData.interest_net_amount) > 0;
+      
+      if (!hasGrossAmount && !hasNetAmount) {
+        console.log('❌ Must provide either gross or net interest amount');
+        return false;
       }
-      setFinancialYears(years);
+      
+      if (hasGrossAmount && hasNetAmount) {
+        console.log('❌ Cannot provide both gross and net amounts');
+        return false;
+      }
+      
+      // Must have exactly one tax type (amount or percentage)
+      const hasTaxAmount = formData.interest_withholding_tax_amount && Number(formData.interest_withholding_tax_amount) > 0;
+      const hasTaxRate = formData.interest_withholding_tax_rate && Number(formData.interest_withholding_tax_rate) > 0;
+      
+      if (!hasTaxAmount && !hasTaxRate) {
+        console.log('❌ Must provide either withholding tax amount or rate');
+        return false;
+      }
+      
+      if (hasTaxAmount && hasTaxRate) {
+        console.log('❌ Cannot provide both withholding tax amount and rate');
+        return false;
+      }
+      
+      // Validate tax rate is reasonable (0-100%)
+      if (hasTaxRate) {
+        const taxRate = Number(formData.interest_withholding_tax_rate);
+        if (taxRate < 0 || taxRate > 100) {
+          console.log('❌ Tax rate must be between 0% and 100%');
+          return false;
+        }
+      }
     }
-  }, [fundData]);
+    
+    console.log('✅ Form validation passed');
+    return basicFormValid;
+  };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
+  // Handle form submission
+  const handleSubmit = () => {    
     clearError();
-
-    // Create mode: Use existing event submission logic
-    await submitEvent({
+    submitEvent({
       eventType,
       formData,
       distributionType,
@@ -161,143 +357,156 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     });
   };
 
-  // Determine loading state and button text (edit mode removed)
-  const isLoading = createFundEvent.loading || createTaxStatement.loading;
+  // Handle modal close
+  const handleClose = () => {
+    if (!formIsSubmitting) {
+      onClose();
+      clearError();
+      resetForm();
+    }
+  };
 
-  const buttonText = isLoading ? 'Adding Event...' : 'Add Event';
 
-  const dialogTitle = 'Add Cash Flow Event';
 
-  // UI rendering
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{dialogTitle}</DialogTitle>
-      <DialogContent>
-        {success && (
-          <SuccessBanner title="Event created successfully!" />
-        )}
-        {error && (
-          <ErrorDisplay
-            error={error}
-            canRetry={error.retryable}
-            onRetry={() => handleSubmit()}
-            onDismiss={clearError}
-            variant="inline"
-          />
-        )}
-        {/* Event Type Selection */}
-        <EventTypeSelector
-          fundTrackingType={fundTrackingType}
-          eventType={eventType}
-          distributionType={distributionType}
-          subDistributionType={subDistributionType}
-          mode="create"
-          onEventTypeSelect={setEventType}
-          onDistributionTypeSelect={setDistributionType}
-          onSubDistributionTypeSelect={setSubDistributionType}
-          onBack={handleBack}
+    <FormContainer
+      open={open}
+      title="Create Fund Event"
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      isSubmitting={formIsSubmitting}
+      isValid={isValid}
+      isDirty={isDirty}
+      showCloseConfirmation={true}
+      maxWidth="lg"
+      fullWidth={true}
+    >
+      {/* Success Banner */}
+      {success && (
+        <SuccessBanner 
+          title="Event created successfully!" 
+          subtitle="Redirecting to fund details..." 
         />
+      )}
 
-        {/* Form appears below all cards (after event type or distribution type selected) */}
-        {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || (eventType === 'DISTRIBUTION' && distributionType && (distributionType === 'OTHER' || (distributionType === 'DIVIDEND' && subDistributionType) || (distributionType === 'INTEREST' && subDistributionType))) || eventType === 'TAX_STATEMENT') && (
-          <Box mt={2}>
-            <Typography variant="body2" color="text.secondary" mb={2}>
-              Fields marked with <span style={{ color: theme.palette.error.main }}>*</span> are required.
-            </Typography>
-            <Box component="form" noValidate autoComplete="off">
-              <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
-                <TextField
-                  label={<span>Event Date <span style={{ color: theme.palette.error.main }}>*</span></span>}
-                  type="date"
-                  value={formData.event_date || ''}
-                  onChange={e => handleInputChange('event_date', e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                  error={!!validationErrors.event_date}
-                  helperText={validationErrors.event_date}
-                />
-                {(eventType === 'CAPITAL_CALL' || eventType === 'DISTRIBUTION' || eventType === 'RETURN_OF_CAPITAL') && !(distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') && (
-                  <TextField
-                    label={<span>{eventType === 'RETURN_OF_CAPITAL' ? 'Return Amount' : 'Amount'} <span style={{ color: theme.palette.error.main }}>*</span></span>}
-                    type="text"
-                    value={formatNumber(formData.amount || '')}
-                    onChange={e => handleInputChange('amount', parseNumber(e.target.value))}
-                    fullWidth
-                    error={!!validationErrors.amount}
-                    helperText={validationErrors.amount}
-                  />
-                )}
-                <DistributionForm
-                  distributionType={distributionType}
-                  subDistributionType={subDistributionType}
-                  formData={formData}
-                  validationErrors={validationErrors}
-                  onInputChange={handleInputChange}
-                  eventType={eventType}
-                />
-                <TextField
-                  label="Description (Optional)"
-                  value={formData.description || ''}
-                  onChange={e => handleInputChange('description', e.target.value)}
-                  fullWidth
-                />
-                <TextField
-                  label="Reference Number (Optional)"
-                  value={formData.reference_number || ''}
-                  onChange={e => handleInputChange('reference_number', e.target.value)}
-                  fullWidth
-                />
-                
-                {/* Unit Transaction Form */}
-                {(eventType === 'UNIT_PURCHASE' || eventType === 'UNIT_SALE') && (
-                  <UnitTransactionForm
-                    eventType={eventType as 'UNIT_PURCHASE' | 'UNIT_SALE'}
-                    formData={formData}
-                    validationErrors={validationErrors}
-                    onInputChange={handleInputChange}
-                  />
-                )}
-                
-                {/* NAV Update Form */}
-                {eventType === 'NAV_UPDATE' && (
-                  <NavUpdateForm
-                    formData={formData}
-                    validationErrors={validationErrors}
-                    onInputChange={handleInputChange}
-                  />
-                )}
-                
-                {/* Tax Statement Form */}
-                {eventType === 'TAX_STATEMENT' && (
-                  <TaxStatementForm
-                    formData={formData}
-                    validationErrors={validationErrors}
-                    financialYears={financialYears}
-                    fundEntity={fundEntity}
-                    hybridFieldOverrides={hybridFieldOverrides}
-                    onInputChange={handleInputChange}
-                    onHybridFieldToggle={handleHybridFieldToggle}
-                  />
-                )}
-              </Box>
-            </Box>
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={isLoading}>
-          Cancel
-        </Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
-          disabled={isLoading || !isFormValid}
-          startIcon={isLoading ? <CircularProgress size={20} /> : null}
+      {/* Error Display */}
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <Typography color="error" variant="body2">
+            {error.userMessage || error.message || 'An error occurred'}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Event Type Selection - Always show, but highlight selection */}
+      <EventTypeSelector
+        fundTrackingType={fundTrackingType}
+        eventType={eventType as any}
+        distributionType={distributionType}
+        subDistributionType={subDistributionType}
+        onEventTypeSelect={setEventType as any}
+        onDistributionTypeSelect={setDistributionType}
+        onSubDistributionTypeSelect={setSubDistributionType}
+        onBack={handleBack}
+      />
+
+      {/* Form appears below all cards (after event type or distribution type selected) */}
+      {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || 
+        (eventType === 'DISTRIBUTION' && distributionType && 
+         (distributionType === 'OTHER' || 
+          (distributionType === 'DIVIDEND' && subDistributionType) || 
+          (distributionType === 'INTEREST' && subDistributionType))) || 
+        eventType === 'TAX_STATEMENT') && (
+        <Box 
+          mt={2}
+          sx={{
+            animation: 'slideDown 0.4s ease-out',
+            '@keyframes slideDown': {
+              '0%': {
+                opacity: 0,
+                transform: 'translateY(-20px)',
+                maxHeight: 0,
+              },
+              '100%': {
+                opacity: 1,
+                transform: 'translateY(0)',
+                maxHeight: '1000px',
+              }
+            },
+            overflow: 'hidden',
+            transition: 'all 0.4s ease-out',
+          }}
         >
-          {buttonText}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          
+          {/* Render appropriate form based on event type */}
+          {eventType === 'CAPITAL_CALL' && (
+            <CostBasedEventForm
+              eventType={eventType}
+              formData={formData as any}
+              validationErrors={validationErrors as any}
+              onInputChange={handleInputChange}
+            />
+          )}
+          
+          {eventType === 'RETURN_OF_CAPITAL' && (
+            <CostBasedEventForm
+              eventType={eventType}
+              formData={formData as any}
+              validationErrors={validationErrors as any}
+              onInputChange={handleInputChange}
+            />
+          )}
+          
+          {eventType === 'DISTRIBUTION' && distributionType && (
+            <DistributionForm
+              distributionType={distributionType}
+              subDistributionType={subDistributionType}
+              formData={formData as any}
+              validationErrors={validationErrors as any}
+              onInputChange={handleInputChange}
+              eventType={eventType}
+            />
+          )}
+          
+          {eventType === 'UNIT_PURCHASE' && (
+            <UnitTransactionForm
+              eventType={eventType}
+              formData={formData as any}
+              validationErrors={validationErrors as any}
+              onInputChange={handleInputChange}
+            />
+          )}
+          
+          {eventType === 'UNIT_SALE' && (
+            <UnitTransactionForm
+              eventType={eventType}
+              formData={formData as any}
+              validationErrors={validationErrors as any}
+              onInputChange={handleInputChange}
+            />
+          )}
+          
+          {eventType === 'NAV_UPDATE' && (
+            <NavUpdateForm
+              formData={formData as any}
+              validationErrors={validationErrors as any}
+              onInputChange={handleInputChange}
+            />
+          )}
+          
+          {eventType === 'TAX_STATEMENT' && (
+            <TaxStatementForm
+              formData={formData as any}
+              validationErrors={validationErrors as any}
+              financialYears={financialYears}
+              hybridFieldOverrides={hybridFieldOverrides}
+              onInputChange={handleInputChange}
+              onHybridFieldToggle={handleHybridFieldToggle}
+            />
+          )}
+        </Box>
+      )}
+    </FormContainer>
   );
 };
 

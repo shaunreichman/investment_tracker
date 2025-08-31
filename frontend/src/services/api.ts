@@ -245,10 +245,30 @@ class ApiClient {
   }
 
   async createInvestmentCompany(data: CreateInvestmentCompanyData): Promise<InvestmentCompany> {
-    return this.request<InvestmentCompany>('/api/investment-companies', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await this.request<InvestmentCompany>('/api/investment-companies', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('❌ API: createInvestmentCompany failed:', error);
+      throw error;
+    }
+  }
+
+  async deleteInvestmentCompany(companyId: number): Promise<{ message: string; deleted_company_id: number }> {
+    try {
+      const response = await this.request<{ message: string; deleted_company_id: number }>(`/api/investment-companies/${companyId}`, {
+        method: 'DELETE',
+      });
+      
+      return response;
+    } catch (error: any) {
+      console.error('❌ API: deleteInvestmentCompany failed:', error);
+      throw error;
+    }
   }
 
   async getCompanyFunds(companyId: number): Promise<{ company: InvestmentCompany; funds: Fund[] }> {
@@ -298,8 +318,8 @@ class ApiClient {
   // ============================================================================
 
   async getEntities(): Promise<EntityListResponse> {
-    const response = await this.request<{ entities: Entity[] }>('/api/entities');
-    return response.entities;
+    const response = await this.request<Entity[]>('/api/entities');
+    return response;
   }
 
   async createEntity(data: CreateEntityData): Promise<Entity> {

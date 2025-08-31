@@ -70,6 +70,7 @@ class CompanyService:
         Raises:
             ValueError: If required fields are missing or invalid
         """
+        
         # Validate company data
         validation_errors = self.validation_service.validate_company_creation(
             name=name,
@@ -96,6 +97,7 @@ class CompanyService:
             business_address=business_address
         )
         
+        # Add company to session
         session.add(company)
         session.flush()  # Get the ID without committing
         
@@ -180,6 +182,8 @@ class CompanyService:
         Raises:
             ValueError: If company cannot be deleted
         """
+
+        
         # Get existing company
         company = self.company_repository.get_by_id(company_id, session)
         if not company:

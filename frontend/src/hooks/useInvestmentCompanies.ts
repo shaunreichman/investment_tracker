@@ -5,6 +5,7 @@ import { apiClient } from '../services/api';
 import { useApiCall, useMutation, useApiCallWithDeps } from './useApiCall';
 import { InvestmentCompany, CreateInvestmentCompanyData } from '../types/api';
 import { useCallback } from 'react';
+import React from 'react';
 
 // ============================================================================
 // INVESTMENT COMPANIES HOOKS
@@ -14,21 +15,29 @@ import { useCallback } from 'react';
  * Hook to get all investment companies
  */
 export function useInvestmentCompanies(options?: { refetchOnWindowFocus?: boolean }) {
-  const getInvestmentCompanies = useCallback(() => apiClient.getInvestmentCompanies(), []);
+  const getInvestmentCompanies = useCallback(() => {
+    return apiClient.getInvestmentCompanies();
+  }, []);
   
-  return useApiCall(
+  const result = useApiCall(
     getInvestmentCompanies,
     { refetchOnWindowFocus: options?.refetchOnWindowFocus }
   );
+  
+  return result;
 }
 
 /**
  * Hook to create a new investment company
  */
 export function useCreateInvestmentCompany() {
-  return useMutation<CreateInvestmentCompanyData, InvestmentCompany>(
-    (data) => apiClient.createInvestmentCompany(data)
+  const result = useMutation<CreateInvestmentCompanyData, InvestmentCompany>(
+    (data) => {
+      return apiClient.createInvestmentCompany(data);
+    }
   );
+  
+  return result;
 }
 
 /**

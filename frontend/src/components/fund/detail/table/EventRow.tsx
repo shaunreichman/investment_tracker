@@ -7,7 +7,7 @@ import {
   IconButton
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
-import { ExtendedFundEvent, ExtendedFund } from '../../../../types/api';
+import { ExtendedFundEvent, ExtendedFund, FundType } from '../../../../types/api';
 import { formatCurrency, formatBrokerageFee, formatDate } from '../../../../utils/formatters';
 // event type label is now rendered via EventTypeChip
 import { EventTypeChip } from '../../../ui/EventTypeChip';
@@ -37,7 +37,7 @@ const EventRowComponent: React.FC<EventRowProps> = ({
 
   onDeleteEvent
 }) => {
-  const isNavBased = fund.tracking_type === 'nav_based';
+  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
   
   // CALCULATED: Event type classification for display logic
   const isEquity = event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE' || 
@@ -170,6 +170,8 @@ const eventRowPropsAreEqual = (prevProps: EventRowProps, nextProps: EventRowProp
     prevProps.event.capital_gain_income_tax_rate !== nextProps.event.capital_gain_income_tax_rate ||
     prevProps.event.eofy_debt_interest_deduction_sum_of_daily_interest !== nextProps.event.eofy_debt_interest_deduction_sum_of_daily_interest ||
     prevProps.event.eofy_debt_interest_deduction_rate !== nextProps.event.eofy_debt_interest_deduction_rate ||
+    prevProps.event.has_withholding_tax !== nextProps.event.has_withholding_tax ||
+    prevProps.event.tax_withholding !== nextProps.event.tax_withholding ||
     prevProps.fund.id !== nextProps.fund.id ||
     prevProps.fund.tracking_type !== nextProps.fund.tracking_type ||
     prevProps.fund.currency !== nextProps.fund.currency ||
@@ -193,7 +195,7 @@ const EquityCellContent: React.FC<{ event: ExtendedFundEvent; fund: ExtendedFund
   event, 
   fund 
 }) => {
-  const isNavBased = fund.tracking_type === 'nav_based';
+  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
 
   if (isNavBased) {
     if (event.event_type === 'UNIT_PURCHASE') {

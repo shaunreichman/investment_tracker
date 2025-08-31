@@ -1,7 +1,7 @@
-import { ExtendedFund, FundStatus } from '../../types/api';
+import { ExtendedFund, FundStatus, FundType } from '../../types/api';
 
 export const isActiveNavFund = (fund: ExtendedFund): boolean => {
-  return fund.tracking_type === 'nav_based' && fund.status === FundStatus.ACTIVE;
+  return fund.tracking_type === FundType.NAV_BASED && fund.status === FundStatus.ACTIVE;
 };
 
 /**

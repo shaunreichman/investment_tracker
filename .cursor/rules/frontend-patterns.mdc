@@ -1,138 +1,46 @@
-name: Use functional components with hooks
+name: Enforce TypeScript and type safety
 scope: typescript
 language: typescript
 severity: error
-if: Class components or components without hooks
-then: Convert to functional components using useState, useEffect, useCallback
-why: Functional components with hooks are the modern React pattern and provide better performance and readability.
-globs: ["frontend/src/components/**/*.tsx", "frontend/src/**/*.tsx"]
-
----
-name: Use TypeScript for all React components
-scope: typescript
-language: typescript
-severity: error
-if: JavaScript files (.js) or components without type annotations
-then: Use TypeScript (.tsx) with proper interfaces and type annotations
-why: TypeScript provides type safety, better IDE support, and catches errors at compile time.
+if: JavaScript files, 'any' types, or missing type annotations
+then: Use TypeScript (.tsx) with proper interfaces from types/api.ts
+why: Type safety prevents runtime errors and ensures data integrity in enterprise applications.
+description: All React components must use TypeScript with proper type definitions. Import interfaces from centralized types/api.ts. Never use 'any' type or duplicate type definitions locally.
+shortDescription: Use TypeScript with centralized types, no 'any' types
 globs: ["frontend/src/**/*.tsx", "frontend/src/**/*.ts"]
 
 ---
-name: Use centralized API hooks instead of direct fetch
+name: Use centralized API hooks for all data operations
 scope: typescript
 language: typescript
 severity: error
-if: Direct fetch() calls in components or local API state management
+if: Direct fetch() calls or local API state management
 then: Use centralized hooks like useFunds(), useCreateFund(), useEntities()
-why: Centralized API integration provides consistent error handling, loading states, and reduces code duplication.
+why: Centralized API integration provides consistent error handling, loading states, and reduces code duplication across teams.
+description: All API calls must go through centralized hooks that provide consistent error handling, loading states, and data management patterns.
+shortDescription: Use centralized API hooks, no direct fetch calls
 globs: ["frontend/src/components/**/*.tsx"]
 
 ---
-name: Implement loading states for async operations
-scope: typescript
-language: typescript
-severity: warning
-if: Components without loading indicators for data fetching
-then: Add loading states using CircularProgress or skeleton components
-why: Loading states improve user experience by providing feedback during async operations.
-globs: ["frontend/src/components/**/*.tsx"]
-
----
-name: Use Material-UI components for consistency
-scope: typescript
-language: typescript
-severity: warning
-if: Custom HTML elements or inconsistent UI components
-then: Use Material-UI components like Box, Card, TextField, Button
-why: Material-UI provides consistent design system and reduces UI development time.
-globs: ["frontend/src/components/**/*.tsx"]
-
----
-name: Add form reset logic for modals
-scope: typescript
-language: typescript
-severity: warning
-if: Modal components that don't reset form state when opened
-then: Add useEffect with [open] dependency to reset form data
-why: Prevents form state persistence between modal opens and improves user experience.
-globs: ["frontend/src/components/**/*.tsx"]
-
----
-name: Use proper TypeScript interfaces for API data
-scope: typescript
-language: typescript
-severity: warning
-if: Components using 'any' type or missing type annotations
-then: Import and use proper interfaces from types/api.ts
-why: Type safety prevents runtime errors and improves code maintainability.
-globs: ["frontend/src/components/**/*.tsx"]
-
----
-name: Handle type coercion for form data
+name: Handle form data type conversion properly
 scope: typescript
 language: typescript
 severity: warning
 if: Form data used directly without type conversion
-then: Convert string form data to proper types (e.g., FundType enum)
-why: Form data comes as strings but API expects typed enums and numbers.
+then: Convert string form data to proper types (e.g., FundType enum, numbers)
+why: Form data comes as strings but API expects typed enums and numbers. Prevents data corruption and runtime errors.
+description: Form inputs return strings, but APIs expect typed data. Always convert form values to proper types before API calls.
+shortDescription: Convert form strings to proper types
 globs: ["frontend/src/components/**/*.tsx"]
 
 ---
-name: Implement proper error boundaries
+name: Implement error boundaries and user-friendly error handling
 scope: typescript
 language: typescript
 severity: warning
 if: Components without error handling for API failures
 then: Add error states with user-friendly messages using Alert component
-why: Graceful error handling improves user experience and debugging.
-globs: ["frontend/src/components/**/*.tsx"]
-
----
-name: Add form validation with user-friendly messages
-scope: typescript
-language: typescript
-severity: warning
-if: Forms without validation or generic error messages
-then: Implement field-level validation with specific error messages
-why: Clear validation feedback helps users understand and fix input errors.
-globs: ["frontend/src/components/**/*.tsx"]
-
----
-name: Test components with React Testing Library
-scope: typescript
-language: typescript
-severity: info
-if: Components without tests or using enzyme
-then: Write tests using React Testing Library with render, screen, fireEvent
-why: React Testing Library promotes testing user behavior rather than implementation details.
-globs: ["frontend/src/**/*.test.tsx", "frontend/src/**/*.spec.tsx"]
-
----
-name: Use null-safe operators for optional data
-scope: typescript
-language: typescript
-severity: warning
-if: Direct access to potentially undefined data like `funds.map()`
-then: Use optional chaining: `funds?.map()` or provide fallbacks
-why: Prevents runtime errors when data is still loading or undefined.
-globs: ["frontend/src/components/**/*.tsx"]
-
----
-name: Implement proper component props interfaces
-scope: typescript
-language: typescript
-severity: warning
-if: Components without proper prop type definitions
-then: Define interfaces for component props with required/optional fields
-why: TypeScript interfaces provide better IDE support and catch prop errors early.
-globs: ["frontend/src/components/**/*.tsx"]
-
----
-name: Use centralized TypeScript interfaces
-scope: typescript
-language: typescript
-severity: error
-if: Local interface definitions that duplicate centralized types
-then: Import and use interfaces from types/api.ts
-why: Centralized types ensure consistency and reduce maintenance overhead.
+why: Graceful error handling is crucial for enterprise user experience and prevents app crashes.
+description: All async operations must have proper error handling with user-friendly messages. Use error boundaries to catch and display errors gracefully.
+shortDescription: Handle errors gracefully with user-friendly messages
 globs: ["frontend/src/components/**/*.tsx"]

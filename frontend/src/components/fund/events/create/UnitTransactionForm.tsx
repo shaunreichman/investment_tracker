@@ -1,22 +1,26 @@
 import React from 'react';
 import { TextField, Box, Typography, useTheme } from '@mui/material';
-import { formatNumber } from '../../../../utils/helpers';
+import { NumberInputField } from '../../../ui/NumberInputField';
 
 interface UnitTransactionFormProps {
   eventType: 'UNIT_PURCHASE' | 'UNIT_SALE';
   formData: {
+    event_date?: string;
     units_purchased?: string;
     units_sold?: string;
     unit_price?: string;
     brokerage_fee?: string;
     amount?: string;
+    description?: string;
   };
   validationErrors: {
+    event_date?: string;
     units_purchased?: string;
     units_sold?: string;
     unit_price?: string;
     brokerage_fee?: string;
     amount?: string;
+    description?: string;
   };
   onInputChange: (field: string, value: string) => void;
 }
@@ -53,58 +57,86 @@ const UnitTransactionForm: React.FC<UnitTransactionFormProps> = ({
   const unitsLabel = isPurchase ? 'Units Purchased' : 'Units Sold';
 
   return (
-    <Box>
+    <Box
+      sx={{
+        animation: 'fadeInUp 0.5s ease-out 0.1s both',
+        '@keyframes fadeInUp': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(30px)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0)',
+          }
+        }
+      }}
+    >
       <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
         {isPurchase ? 'Unit Purchase Details' : 'Unit Sale Details'}
       </Typography>
       
       <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
         <TextField
+          label={<span>Event Date <span style={{ color: theme.palette.error.main }}>*</span></span>}
+          type="date"
+          value={formData.event_date || ''}
+          onChange={(e) => onInputChange('event_date', e.target.value)}
+          fullWidth
+          error={!!validationErrors.event_date}
+          helperText={validationErrors.event_date}
+          InputLabelProps={{ shrink: true }}
+        />
+        
+        <TextField
+          label="Description (Optional)"
+          value={formData.description || ''}
+          onChange={(e) => onInputChange('description', e.target.value)}
+          fullWidth
+          error={!!validationErrors.description}
+          helperText={validationErrors.description}
+        />
+        
+        <NumberInputField
           label={<span>{unitsLabel} <span style={{ color: theme.palette.error.main }}>*</span></span>}
-          type="number"
           value={formData[unitsField] || ''}
-          onChange={e => onInputChange(unitsField, e.target.value)}
+          onInputChange={onInputChange}
+          fieldName={unitsField}
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors[unitsField]}
           helperText={validationErrors[unitsField]}
-          inputProps={{
-            min: 0,
-            step: 'any'
-          }}
         />
         
-        <TextField
+        <NumberInputField
           label={<span>Unit Price <span style={{ color: theme.palette.error.main }}>*</span></span>}
-          type="number"
           value={formData.unit_price || ''}
-          onChange={e => onInputChange('unit_price', e.target.value)}
+          onInputChange={onInputChange}
+          fieldName="unit_price"
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors.unit_price}
           helperText={validationErrors.unit_price}
-          inputProps={{
-            min: 0,
-            step: 'any'
-          }}
         />
         
-        <TextField
+        <NumberInputField
           label="Brokerage Fee (Optional)"
-          type="number"
           value={formData.brokerage_fee || ''}
-          onChange={e => onInputChange('brokerage_fee', e.target.value)}
+          onInputChange={onInputChange}
+          fieldName="brokerage_fee"
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors.brokerage_fee}
           helperText={validationErrors.brokerage_fee}
-          inputProps={{
-            min: 0,
-            step: 'any'
-          }}
         />
         
         <TextField
           label="Total Amount"
           type="text"
-          value={formatNumber(formData.amount || '')}
+          value={formData.amount || ''}
           fullWidth
           disabled
           helperText={`Calculated: (${formData[unitsField] || 0} × ${formData.unit_price || 0}) + ${formData.brokerage_fee || 0}`}

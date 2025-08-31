@@ -1,26 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Box,
-  CircularProgress,
-  Typography,
-  Paper,
-  useTheme
+  Typography
 } from '@mui/material';
-import { ErrorDisplay } from './ErrorDisplay';
-import { SuccessBanner } from './ui/SuccessBanner';
-import { useErrorHandler } from '../hooks/useErrorHandler';
-import { Add as AddIcon } from '@mui/icons-material';
 import { useCreateEntity } from '../hooks/useEntities';
+import { useErrorHandler } from '../hooks/useErrorHandler';
+import { SuccessBanner } from './ui/SuccessBanner';
+import { FormContainer } from './ui/FormContainer';
+import { FormField } from './ui/FormField';
+import { useUnifiedForm } from '../hooks/forms/useUnifiedForm';
+import { createValidator, validationRules } from '../utils/validators';
 
 interface CreateEntityModalProps {
   open: boolean;
@@ -28,283 +22,257 @@ interface CreateEntityModalProps {
   onEntityCreated: (entity: { id: number; name: string }) => void;
 }
 
-interface ValidationErrors {
-  name?: string;
-  description?: string;
-  tax_jurisdiction?: string;
+// Form data interface
+interface EntityFormData {
+  name: string;
+  description: string;
+  tax_jurisdiction: string;
 }
+
+// Initial form values
+const initialFormValues: EntityFormData = {
+  name: '',
+  description: '',
+  tax_jurisdiction: 'AU'
+};
+
+// Validation rules
+const validators = {
+  name: createValidator(
+    validationRules.required('Entity name'),
+    (value: string) => {
+      if (value.trim().length < 2) return 'Entity name must be at least 2 characters';
+      if (value.trim().length > 255) return 'Entity name must be less than 255 characters';
+      if (!/^[a-zA-Z0-9\s\-_()]+$/.test(value.trim())) {
+        return 'Entity name can only contain letters, numbers, spaces, hyphens, underscores, and parentheses';
+      }
+      return undefined;
+    }
+  ),
+  description: (value: string) => {
+    if (value && value.trim().length > 1000) {
+      return 'Description must be less than 1000 characters';
+    }
+    return undefined;
+  },
+  tax_jurisdiction: validationRules.required('Tax jurisdiction')
+};
 
 const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   open,
   onClose,
   onEntityCreated
 }) => {
-  const theme = useTheme();
-  const [success, setSuccess] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-
-  // Form fields
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    tax_jurisdiction: 'AU'
-  });
-
   // Centralized API hook
   const createEntity = useCreateEntity();
 
   // Centralized error handler
   const { error, setError, clearError } = useErrorHandler();
 
-  // Handle errors and success from hooks
+  // ENTERPRISE-GRADE SOLUTION: Track entity creation state to prevent re-triggering
+  const entityCreatedRef = useRef<{ id: number; name: string } | null>(null);
+
+  // Unified form management
+  const {
+    values: formData,
+    errors: validationErrors,
+    touched,
+    isDirty,
+    isValid,
+    isSubmitting,
+    setFieldValue,
+    handleSubmit,
+    reset,
+    clearErrors
+  } = useUnifiedForm<EntityFormData>({
+    initialValues: initialFormValues,
+    validators,
+    onSubmit: async (values) => {
+      const payload = {
+        name: values.name.trim(),
+        description: values.description.trim() || '',
+        tax_jurisdiction: values.tax_jurisdiction
+      };
+      
+      await createEntity.mutate(payload);
+    },
+    onSuccess: () => {
+      // Success will be handled by useEffect watching createEntity.data
+    },
+    onError: setError
+  });
+
+  // ENTERPRISE-GRADE SOLUTION: Proper form state cleanup and isolation
+  const handleEntityCreated = useCallback((entity: { id: number; name: string }) => {
+    // 1. Store the created entity to prevent re-triggering
+    entityCreatedRef.current = entity;
+    
+    // 2. Call the parent callback first
+    onEntityCreated(entity);
+    
+    // 3. Clear any API errors
+    clearError();
+    
+    // 4. Reset form state completely
+    reset();
+    clearErrors();
+    
+    // 5. Close modal immediately
+    onClose();
+  }, [onEntityCreated, clearError, reset, clearErrors, onClose]);
+
+  // Handle success flow when entity is created
+  useEffect(() => {
+    if (createEntity.data && !entityCreatedRef.current) {
+      handleEntityCreated({
+        id: createEntity.data.id,
+        name: createEntity.data.name
+      });
+    }
+  }, [createEntity.data, handleEntityCreated]);
+
+  // Handle errors from the API
   useEffect(() => {
     if (createEntity.error) {
       setError(createEntity.error);
     }
   }, [createEntity.error, setError]);
 
-  useEffect(() => {
-    if (createEntity.data) {
-      setSuccess(true);
-      setTimeout(() => {
-        onEntityCreated({
-          id: createEntity.data!.id,
-          name: createEntity.data!.name
-        });
-        onClose();
-        setSuccess(false);
-        setFormData({
-          name: '',
-          description: '',
-          tax_jurisdiction: 'AU'
-        });
-        setValidationErrors({});
-      }, 2000);
-    }
-  }, [createEntity.data, onEntityCreated, onClose]);
-
-  // Validation rules
-  const validateField = (field: string, value: string): string | undefined => {
-    switch (field) {
-      case 'name':
-        if (!value.trim()) return 'Entity name is required';
-        if (value.trim().length < 2) return 'Entity name must be at least 2 characters';
-        if (value.trim().length > 255) return 'Entity name must be less than 255 characters';
-        if (!/^[a-zA-Z0-9\s\-_()]+$/.test(value.trim())) {
-          return 'Entity name can only contain letters, numbers, spaces, hyphens, underscores, and parentheses';
-        }
-        break;
-      
-      case 'description':
-        if (value && value.trim().length > 1000) {
-          return 'Description must be less than 1000 characters';
-        }
-        break;
-    }
-    return undefined;
-  };
-
-  const validateForm = useCallback((): boolean => {
-    const errors: ValidationErrors = {};
-    
-    // Required fields
-    if (!formData.name.trim()) {
-      errors.name = 'Entity name is required';
-    }
-    
-    // Field-specific validation
-    const nameError = validateField('name', formData.name);
-    if (nameError) errors.name = nameError;
-    
-    const descriptionError = validateField('description', formData.description);
-    if (descriptionError) errors.description = descriptionError;
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [formData]);
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Real-time validation
-    const error = validateField(field, value);
-    setValidationErrors(prev => ({
-      ...prev,
-      [field]: error
-    }));
-  };
-
-  const handleSubmit = async () => {
-    // Clear any previous errors
-    clearError();
-    
-    // Validate form
-    if (!validateForm()) {
-      setError('Please fix the validation errors before submitting');
-      return;
-    }
-
-    const payload = {
-      name: formData.name.trim(),
-      description: formData.description.trim() || '',
-      tax_jurisdiction: formData.tax_jurisdiction
-    };
-
-    try {
-      await createEntity.mutate(payload);
-      // The success will be handled by the useEffect that watches createEntity.data
-    } catch (error) {
-      // Error handling is done by the useErrorHandler hook
-      console.error('Error creating entity:', error);
-    }
-  };
-
-  const handleClose = () => {
-    if (!createEntity.loading) {
-      onClose();
-      clearError();
-      setSuccess(false);
-      setValidationErrors({});
-      // Clear form data when closing
-      setFormData({
-        name: '',
-        description: '',
-        tax_jurisdiction: 'AU'
-      });
-    }
-  };
-
-  const isFormValid = () => {
-    return formData.name.trim() && Object.keys(validationErrors).length === 0;
-  };
-
+  // ENTERPRISE-GRADE SOLUTION: Proper form initialization when modal opens
   useEffect(() => {
     if (open) {
-      validateForm(); // Trigger validation when modal opens
+      // Clear the entity creation tracking when modal opens
+      entityCreatedRef.current = null;
+      
+      // Ensure complete form state reset when modal opens
+      // Use setTimeout to avoid state conflicts during render
+      setTimeout(() => {
+        reset();
+        clearErrors();
+        clearError();
+      }, 0);
     }
-  }, [open, validateForm]);
+  }, [open, reset, clearErrors, clearError]);
+
+  // Handle form submission
+  const handleFormSubmit = () => {
+    clearError();
+    handleSubmit();
+  };
+
+  // ENTERPRISE-GRADE SOLUTION: Robust modal close handling
+  const handleClose = useCallback(() => {
+    if (!isSubmitting) {
+      // Clear all state before closing
+      clearError();
+      reset();
+      clearErrors();
+      onClose();
+    }
+  }, [isSubmitting, clearError, reset, clearErrors, onClose]);
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="sm" 
-      fullWidth
-      PaperProps={{
-        sx: {
-          backgroundColor: theme.palette.background.paper,
-          border: `1px solid ${theme.palette.divider}`,
-          borderRadius: '12px',
-          boxShadow: '0px 8px 32px rgba(0,0,0,0.4)',
-        }
-      }}
+    <FormContainer
+      open={open}
+      title="Create New Entity"
+      subtitle="Enter the details for the new entity"
+      onClose={handleClose}
+      onSubmit={handleFormSubmit}
+      isSubmitting={isSubmitting}
+      isValid={isValid}
+      isDirty={isDirty}
+      showCloseConfirmation={true}
     >
-      <DialogTitle sx={{ pb: 1 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center">
-            <AddIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Create New Entity</Typography>
-          </Box>
-          {createEntity.loading && (
-            <Box display="flex" alignItems="center">
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-              <Typography variant="body2" color="text.secondary">
-                Creating...
-              </Typography>
-            </Box>
-          )}
-        </Box>
-        <Typography variant="body2" color="text.secondary">
-          Add a new investing entity (person or company)
-        </Typography>
-      </DialogTitle>
-      
-      <DialogContent sx={{ pb: 2 }}>
-        {/* Success State */}
-        {success && (
-          <SuccessBanner title="Entity created successfully!" subtitle={`Entity ${formData.name} added to the Investment Tracker!`} />
-        )}
+      {/* Success Banner */}
+      {createEntity.data && entityCreatedRef.current && (
+        <SuccessBanner 
+          title="Entity created successfully!" 
+          subtitle={`Entity ${createEntity.data.name} added to the Investment Tracker!`}
+        />
+      )}
 
-        {/* Error State */}
-        {error && (
-          <ErrorDisplay
-            error={error}
-            canRetry={error.retryable}
-            onRetry={() => createEntity.mutate(formData)}
-            onDismiss={clearError}
-            variant="inline"
-          />
-        )}
-        
-        <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
-          <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-            Entity Details
+      {/* Error Display */}
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <Typography color="error" variant="body2">
+            {error.userMessage || error.message || 'An error occurred'}
           </Typography>
-          
-          <Box display="flex" flexDirection="column" gap={3}>
-            {/* Entity Name */}
+        </Box>
+      )}
+
+      {/* Form Content */}
+      <Box component="form" noValidate autoComplete="off">
+        <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
+          {/* Entity Name */}
+          <FormField
+            label="Entity Name"
+            required
+            error={validationErrors.name || undefined}
+            touched={touched.name}
+            showErrorOnlyWhenTouched={true}
+          >
             <TextField
               fullWidth
-              label="Entity Name *"
               value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
+              onChange={(e) => setFieldValue('name', e.target.value)}
+              placeholder="Enter entity name"
+              disabled={isSubmitting}
               error={!!validationErrors.name}
-              helperText={validationErrors.name || "Enter the entity name (2-255 characters)"}
-              required
+              size="medium"
             />
+          </FormField>
 
-            {/* Tax Jurisdiction */}
-            <FormControl fullWidth>
+          {/* Tax Jurisdiction */}
+          <FormField
+            label="Tax Jurisdiction"
+            required
+            error={validationErrors.tax_jurisdiction || undefined}
+            touched={touched.tax_jurisdiction}
+            showErrorOnlyWhenTouched={true}
+          >
+            <FormControl fullWidth error={!!validationErrors.tax_jurisdiction}>
               <InputLabel>Tax Jurisdiction</InputLabel>
               <Select
                 value={formData.tax_jurisdiction}
-                onChange={(e) => handleInputChange('tax_jurisdiction', e.target.value)}
+                onChange={(e) => setFieldValue('tax_jurisdiction', e.target.value)}
                 label="Tax Jurisdiction"
+                disabled={isSubmitting}
               >
-                <MenuItem value="AU">Australia (AU)</MenuItem>
-                <MenuItem value="US">United States (US)</MenuItem>
-                <MenuItem value="UK">United Kingdom (UK)</MenuItem>
-                <MenuItem value="CA">Canada (CA)</MenuItem>
+                <MenuItem value="AU">Australia</MenuItem>
+                <MenuItem value="US">United States</MenuItem>
+                <MenuItem value="UK">United Kingdom</MenuItem>
+                <MenuItem value="CA">Canada</MenuItem>
+                <MenuItem value="NZ">New Zealand</MenuItem>
               </Select>
             </FormControl>
+          </FormField>
 
-            {/* Description */}
-            <TextField
-              fullWidth
+          {/* Description */}
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <FormField
               label="Description"
-              multiline
-              rows={3}
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              error={!!validationErrors.description}
-              helperText={validationErrors.description || "Optional entity description (max 1000 characters)"}
-            />
+              helperText="Optional description for the entity (max 1000 characters)"
+              error={validationErrors.description || undefined}
+              touched={touched.description}
+              showErrorOnlyWhenTouched={true}
+            >
+              <TextField
+                fullWidth
+                multiline
+                minRows={3}
+                maxRows={6}
+                value={formData.description}
+                onChange={(e) => setFieldValue('description', e.target.value)}
+                placeholder="Enter entity description (optional)"
+                disabled={isSubmitting}
+                error={!!validationErrors.description}
+                size="medium"
+              />
+            </FormField>
           </Box>
-        </Paper>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button 
-          onClick={handleClose} 
-          disabled={createEntity.loading}
-          variant="outlined"
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={createEntity.loading || !isFormValid()}
-          startIcon={createEntity.loading ? <CircularProgress size={20} /> : <AddIcon />}
-          sx={{ minWidth: 120 }}
-        >
-          {createEntity.loading ? 'Creating...' : 'Create Entity'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        </Box>
+      </Box>
+    </FormContainer>
   );
 };
 

@@ -57,7 +57,7 @@ class SummaryTestDataBuilder:
             'investment_company_id': 1,
             'commitment_amount': 1000000.0,
             'current_equity_balance': 950000.0,
-            'irr_gross': None,
+            'completed_irr_gross': None,
             'fund_events': []
         }
         defaults.update(kwargs)

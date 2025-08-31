@@ -6,7 +6,7 @@ import {
   Tooltip as MuiTooltip
 } from '@mui/material';
 import { Info } from '@mui/icons-material';
-import { ExtendedFund } from '../../../../types/api';
+import { ExtendedFund, FundStatus } from '../../../../types/api';
 import { getStatusInfo } from '../../../../utils/helpers';
 import { StatusChip } from '../../../ui/StatusChip';
 
@@ -26,7 +26,7 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
   const fundDetails = [
     { label: 'Status', value: statusInfo.value, color: statusInfo.color, icon: statusInfo.icon, priority: 1, isStatus: true },
     { label: 'Currency', value: fund.currency, color: 'text.primary', icon: '💱', priority: 2 },
-    ...(fund.status === 'active' && fund.actual_duration_months ? [{ label: 'Current Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
+    ...(fund.status === FundStatus.ACTIVE && fund.actual_duration_months ? [{ label: 'Current Duration', value: `${fund.actual_duration_months} months`, color: 'text.primary', icon: '⏱️', priority: 3 }] : [])
   ];
 
   return (
@@ -58,14 +58,14 @@ const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, form
               alignItems: 'center',
               p: 0.5,
               borderRadius: 1,
-              backgroundColor: detail.priority === 1 ? 'success.50' : 'transparent',
+              backgroundColor: detail.priority === 1 ? 'success.dark' : 'transparent',
               border: '1px solid',
-              borderColor: 'grey.200',
+              borderColor: 'divider',
               // Very obvious hover effects for consistent user experience
               transition: 'all 0.2s ease-in-out',
               cursor: 'pointer',
               '&:hover': {
-                backgroundColor: detail.priority === 1 ? 'success.300' : 'success.100',
+                backgroundColor: detail.priority === 1 ? 'success.main' : 'success.dark',
                 borderColor: 'success.main',
                 borderWidth: '2px',
                 transform: 'translateX(4px)',

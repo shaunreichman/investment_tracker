@@ -7,7 +7,7 @@ import {
   IconButton
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
-import { ExtendedFundEvent, ExtendedFund, GroupType } from '../../../../types/api';
+import { ExtendedFundEvent, ExtendedFund, GroupType, FundType } from '../../../../types/api';
 import { formatCurrency, formatDate } from '../../../../utils/formatters';
 import { EventTypeChip } from '../../../ui/EventTypeChip';
 import { GroupedEvent } from './useEventGrouping';
@@ -39,7 +39,7 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
 }) => {
   // CALCULATED: Extract events from the grouped event
   const { events, displayDate, displayDescription, groupType } = groupedEvent;
-  const isNavBased = fund.tracking_type === 'nav_based';
+  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
 
   // CALCULATED: Handle different group types
   if (groupType === GroupType.TAX_STATEMENT) {
@@ -56,7 +56,22 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
     );
   }
 
-  // CALCULATED: Handle INTEREST_WITHHOLDING groups (existing logic)
+  // CALCULATED: Handle INTEREST_WITHHOLDING groups specifically
+  if (groupType === GroupType.INTEREST_WITHHOLDING) {
+    return (
+      <InterestWithholdingGroupRow
+        events={events as ExtendedFundEvent[]}
+        fund={fund}
+        showTaxEvents={showTaxEvents}
+        showNavUpdates={showNavUpdates}
+        displayDate={displayDate}
+        displayDescription={displayDescription}
+        onDeleteEvent={onDeleteEvent}
+      />
+    );
+  }
+
+  // CALCULATED: Handle other grouped events (fallback logic)
   const interestEvent = events.find(e => e.event_type === 'DISTRIBUTION') as ExtendedFundEvent | undefined;
   const withholdingEvent = events.find(e => e.event_type === 'TAX_PAYMENT') as ExtendedFundEvent | undefined;
   const otherEvents = events.filter(e => 
@@ -205,7 +220,9 @@ const groupedEventRowPropsAreEqual = (prevProps: GroupedEventRowProps, nextProps
       prev.id !== next.id ||
       prev.amount !== next.amount ||
       prev.description !== next.description ||
-      prev.event_type !== next.event_type
+      prev.event_type !== next.event_type ||
+      prev.has_withholding_tax !== next.has_withholding_tax ||
+      prev.tax_withholding !== next.tax_withholding
     ) {
       return false;
     }
@@ -230,7 +247,7 @@ const TaxStatementGroupRow: React.FC<{
   displayDescription: string;
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }> = ({ events, fund, showTaxEvents, showNavUpdates, displayDate, displayDescription, onDeleteEvent }) => {
-  const isNavBased = fund.tracking_type === 'nav_based';
+  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
   
   // CALCULATED: Categorize events by type for display
   const taxPaymentEvents = events.filter(e => e.event_type === 'TAX_PAYMENT') as ExtendedFundEvent[];
@@ -388,6 +405,170 @@ const TaxStatementGroupRow: React.FC<{
 };
 
 /**
+ * Component to render interest withholding group rows
+ * Shows interest amount normally with withholding amount below in red with smaller font
+ * Enhanced styling and accessibility for enterprise-grade display
+ */
+const InterestWithholdingGroupRow: React.FC<{
+  events: ExtendedFundEvent[];
+  fund: ExtendedFund;
+  showTaxEvents: boolean;
+  showNavUpdates: boolean;
+  displayDate: string;
+  displayDescription: string;
+  onDeleteEvent: (event: ExtendedFundEvent) => void;
+}> = ({ events, fund, showTaxEvents, showNavUpdates, displayDate, displayDescription, onDeleteEvent }) => {
+  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  
+  // CALCULATED: Extract interest and withholding events
+  const interestEvent = events.find(e => e.event_type === 'DISTRIBUTION') as ExtendedFundEvent | undefined;
+  const withholdingEvent = events.find(e => e.event_type === 'TAX_PAYMENT') as ExtendedFundEvent | undefined;
+  const otherEvents = events.filter(e => 
+    e.event_type !== 'DISTRIBUTION' && e.event_type !== 'TAX_PAYMENT'
+  );
+  // CALCULATED: Determine if the interest event should show edit/delete buttons
+  const isEditable = interestEvent && ![
+    'TAX_PAYMENT', 
+    'DAILY_RISK_FREE_INTEREST_CHARGE', 
+    'EOFY_DEBT_COST', 
+    'MANAGEMENT_FEE', 
+    'CARRIED_INTEREST', 
+    'OTHER'
+  ].includes(interestEvent.event_type);
+
+  return (
+    <React.Fragment>
+      {/* Main interest + withholding row with enhanced styling */}
+      <TableRow hover sx={{ 
+        backgroundColor: 'background.paper',
+        '&:hover': {
+          backgroundColor: 'action.hover',
+          '& .withholding-amount': {
+            color: 'error.dark',
+            fontWeight: 500
+          }
+        }
+      }}>
+        {/* Date Column */}
+        <TableCell>{formatDate(displayDate)}</TableCell>
+        
+        {/* Type Column */}
+        <TableCell>
+          <EventTypeChip 
+            eventType={interestEvent?.distribution_type || "INTEREST"} 
+            size="small" 
+          />
+        </TableCell>
+        
+        {/* Description Column */}
+        <TableCell>
+          <Typography variant="body2" fontWeight="medium">
+            {displayDescription}
+          </Typography>
+          {/* Add additional context for withholding tax */}
+          {withholdingEvent && (
+            <Typography variant="caption" color="text.secondary">
+              Withholding Tax Applied
+            </Typography>
+          )}
+        </TableCell>
+        
+        {/* Equity Column */}
+        <TableCell align="right"></TableCell>
+        
+        {/* NAV Update Column (only for NAV-based funds) */}
+        {isNavBased && (
+          <TableCell align="right"></TableCell>
+        )}
+        
+        {/* Distributions Column - Enhanced display for interest + withholding */}
+        <TableCell align="right">
+          {interestEvent && (
+            <Box>
+              {/* Interest amount - standard size to match other rows */}
+              <Typography 
+                variant="body2" 
+                aria-label={`Interest amount: ${formatCurrency(interestEvent.amount || 0, fund.currency)}`}
+              >
+                {formatCurrency(interestEvent.amount || 0, fund.currency)}
+              </Typography>
+              
+              {/* Withholding amount - smaller red text below */}
+              {withholdingEvent && (
+                <Typography 
+                  variant="caption" 
+                  color="error.main"
+                  className="withholding-amount"
+                  sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    lineHeight: 1.2,
+                    mt: 0.5,
+                    display: 'block'
+                  }}
+                  aria-label={`Withholding tax: ${formatCurrency(-(withholdingEvent.amount || 0), fund.currency)}`}
+                >
+                  {formatCurrency(-(withholdingEvent.amount || 0), fund.currency)}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </TableCell>
+        
+        {/* Tax Column */}
+        {showTaxEvents && (
+          <TableCell align="right">
+            {/* Tax column left empty for interest withholding groups to avoid duplication */}
+          </TableCell>
+        )}
+        
+        {/* Actions Column */}
+        <TableCell align="right" sx={{ 
+          minWidth: { xs: 80, sm: 120 }, 
+          px: { xs: 1, sm: 2 } 
+        }}>
+          <Box display="flex" gap={{ xs: 0.5, sm: 1.5 }} justifyContent="flex-end" alignItems="center">
+            {isEditable && interestEvent && (
+              <IconButton
+                size="small"
+                onClick={() => onDeleteEvent(interestEvent)}
+                sx={{
+                  color: 'error.main',
+                  p: 1,
+                  borderRadius: 1,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    bgcolor: 'error.light',
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }
+                }}
+                title="Delete interest event"
+                aria-label="Delete interest event"
+              >
+                <DeleteIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            )}
+          </Box>
+        </TableCell>
+      </TableRow>
+      
+      {/* Render other events on the same date */}
+      {otherEvents.map((event) => (
+        <OtherEventRow
+          key={event.id}
+          event={event as ExtendedFundEvent}
+          fund={fund}
+          showTaxEvents={showTaxEvents}
+          showNavUpdates={showNavUpdates}
+          onDeleteEvent={onDeleteEvent}
+        />
+      ))}
+    </React.Fragment>
+  );
+};
+
+/**
  * Component to render individual tax events within a tax statement group
  * Shows detailed breakdown of each tax component
  */
@@ -398,7 +579,7 @@ const TaxStatementDetailRow: React.FC<{
   showNavUpdates: boolean;
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }> = ({ event, fund, showTaxEvents, showNavUpdates, onDeleteEvent }) => {
-  const isNavBased = fund.tracking_type === 'nav_based';
+  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
   
   // CALCULATED: Determine if this event is editable
   const isEditable = ![
@@ -519,7 +700,7 @@ const OtherEventRow: React.FC<{
   showNavUpdates: boolean;
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }> = ({ event, fund, showTaxEvents, showNavUpdates, onDeleteEvent }) => {
-  const isNavBased = fund.tracking_type === 'nav_based';
+  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
   const isEquity = event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE' || 
                    event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL';
   const isDistribution = event.event_type === 'DISTRIBUTION';
@@ -628,7 +809,7 @@ const EquityCellContent: React.FC<{ event: ExtendedFundEvent; fund: ExtendedFund
   event, 
   fund 
 }) => {
-  const isNavBased = fund.tracking_type === 'nav_based';
+  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
 
   if (isNavBased) {
     if (event.event_type === 'UNIT_PURCHASE') {

@@ -1,0 +1,41 @@
+name: Separate logic and UI with custom hooks and components
+scope: typescript
+language: typescript
+severity: warning
+if: Components with mixed business logic and UI rendering
+then: Extract logic into custom hooks, keep components focused on UI
+why: Follows enterprise best practices: separation of concerns, reusability, maintainability, and better testing.
+description: Extract business logic into custom hooks (e.g., useNumberInput) and create reusable UI components (e.g., NumberInputField) to maintain clean architecture and follow enterprise-grade patterns.
+description: Use custom hooks for logic, components for UI rendering
+
+## Pattern
+```tsx
+// ✅ Good: Hook for logic
+const useNumberInput = (value, options) => {
+  // Business logic here
+  return { value, onChange, onBlur, onFocus };
+};
+
+// ✅ Good: Component for UI
+const NumberInputField = ({ value, onInputChange, fieldName, ...props }) => {
+  const numberInput = useNumberInput(value, props);
+  return <TextField {...props} {...numberInput} />;
+};
+
+// ❌ Avoid: Mixed logic and UI
+const MyComponent = () => {
+  const [value, setValue] = useState('');
+  // Business logic mixed with UI rendering
+  return <TextField onChange={...} />;
+};
+```
+
+## Benefits
+- Separation of concerns
+- Reusable logic across components
+- Easier testing and maintenance
+- Professional enterprise architecture
+
+globs: ["frontend/src/**/*.tsx"]
+alwaysApply: true
+---

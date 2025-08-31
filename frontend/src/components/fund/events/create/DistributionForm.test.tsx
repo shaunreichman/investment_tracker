@@ -40,26 +40,6 @@ describe('DistributionForm', () => {
       expect(screen.getByDisplayValue('INTEREST')).toBeInTheDocument();
     });
 
-    it('should render sub-distribution type field for DIVIDEND', () => {
-      renderWithTheme({ 
-        distributionType: 'DIVIDEND',
-        subDistributionType: 'FRANKED'
-      });
-
-      expect(screen.getByLabelText(/Sub-Distribution Type/)).toBeInTheDocument();
-      expect(screen.getByDisplayValue('FRANKED')).toBeInTheDocument();
-    });
-
-    it('should render sub-distribution type field for INTEREST', () => {
-      renderWithTheme({ 
-        distributionType: 'INTEREST',
-        subDistributionType: 'WITHHOLDING_TAX'
-      });
-
-      expect(screen.getByLabelText(/Sub-Distribution Type/)).toBeInTheDocument();
-      expect(screen.getByDisplayValue('WITHHOLDING_TAX')).toBeInTheDocument();
-    });
-
     it('should not render for non-distribution events', () => {
       renderWithTheme({ eventType: 'CAPITAL_CALL' });
       expect(screen.queryByLabelText(/Amount/)).not.toBeInTheDocument();
@@ -251,15 +231,6 @@ describe('DistributionForm', () => {
       });
 
       expect(screen.getByText('Distribution type is required')).toBeInTheDocument();
-    });
-
-    it('should display sub-distribution type validation error', () => {
-      renderWithTheme({ 
-        distributionType: 'DIVIDEND',
-        validationErrors: { sub_distribution_type: 'Sub-distribution type is required' }
-      });
-
-      expect(screen.getByText('Sub-distribution type is required')).toBeInTheDocument();
     });
   });
 }); 

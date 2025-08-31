@@ -20,6 +20,7 @@ from datetime import datetime
 from src.tax.models import TaxStatement
 from src.fund.models import Fund
 from src.entity.models import Entity
+from src.fund.enums import SortOrder
 
 
 class TaxController:
@@ -55,7 +56,9 @@ class TaxController:
         """
         try:
             # Get fund and validate it exists
-            fund = Fund.get_by_id(fund_id, session=session)
+            from src.fund.repositories.fund_repository import FundRepository
+            fund = FundRepository().get_by_id(fund_id, session=session)
+            
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
@@ -163,15 +166,15 @@ class TaxController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Get fund and validate it exists
-            fund = Fund.get_by_id(fund_id, session=session)
+            # Get fund using repository pattern (no direct database queries)
+            from src.fund.repositories.fund_repository import FundRepository
+            fund = FundRepository().get_by_id(fund_id, session=session)
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
-            # Get tax statements for this fund
-            tax_statements = session.query(TaxStatement).filter(
-                TaxStatement.fund_id == fund_id
-            ).order_by(TaxStatement.financial_year.desc()).all()
+            # Get tax statements for this fund using repository pattern
+            from src.fund.repositories.tax_statement_repository import TaxStatementRepository
+            tax_statements = TaxStatementRepository().get_by_fund(fund_id, session=session, sort_order=SortOrder.DESC)
             
             statements_data = []
             for statement in tax_statements:
@@ -212,4 +215,31 @@ class TaxController:
             
         except Exception as e:
             current_app.logger.error(f"Error getting fund tax statements: {str(e)}")
+            return jsonify({"error": "Internal server error"}), 500
+    
+    def get_fund_financial_years(self, session: Session, fund_id: int) -> tuple:
+        """
+        Get all financial years from fund start date to current date.
+        
+        Args:
+            session: Database session
+            fund_id: ID of the fund to get financial years for
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get fund using repository pattern (no direct database queries)
+            from src.fund.repositories.fund_repository import FundRepository
+            fund = FundRepository().get_by_id(fund_id, session=session)
+            if not fund:
+                return jsonify({"error": "Fund not found"}), 404
+            
+            # Use domain method to get financial years
+            financial_years = fund.get_financial_years(session=session)
+            
+            return jsonify({"financial_years": financial_years}), 200
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting fund financial years: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500

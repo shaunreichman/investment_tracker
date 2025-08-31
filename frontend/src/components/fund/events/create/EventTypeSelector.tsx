@@ -13,6 +13,7 @@ import {
   MonetizationOn,
   Receipt
 } from '@mui/icons-material';
+import { FundType } from '../../../../types/api';
 
 // Types
 export type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE' | 'NAV_UPDATE' | 'TAX_STATEMENT';
@@ -22,7 +23,7 @@ export interface EventTemplate {
   value: EventType | 'RETURN_OF_CAPITAL';
   description: string;
   icon: React.ReactNode;
-  trackingType: 'nav_based' | 'cost_based' | 'both';
+  trackingType: FundType | 'both';
 }
 
 export interface DistributionTemplate {
@@ -41,11 +42,11 @@ export interface SubDistributionTemplate {
 
 // Constants
 export const EVENT_TEMPLATES: EventTemplate[] = [
-  { label: 'Capital Call', value: 'CAPITAL_CALL', description: 'Add a capital call (cost-based funds)', icon: <AccountBalance color="primary" />, trackingType: 'cost_based' },
-  { label: 'Capital Return', value: 'RETURN_OF_CAPITAL', description: 'Return capital to investors (cost-based funds)', icon: <AccountBalance color="warning" />, trackingType: 'cost_based' },
-  { label: 'Unit Purchase', value: 'UNIT_PURCHASE', description: 'Buy units (NAV-based funds)', icon: <AddIcon color="primary" />, trackingType: 'nav_based' },
-  { label: 'Unit Sale', value: 'UNIT_SALE', description: 'Sell units (NAV-based funds)', icon: <TrendingUp color="warning" />, trackingType: 'nav_based' },
-  { label: 'NAV Update', value: 'NAV_UPDATE', description: 'Update NAV per share (NAV-based funds)', icon: <TrendingUp color="info" />, trackingType: 'nav_based' },
+  { label: 'Capital Call', value: 'CAPITAL_CALL', description: 'Add a capital call (cost-based funds)', icon: <AccountBalance color="primary" />, trackingType: FundType.COST_BASED },
+  { label: 'Capital Return', value: 'RETURN_OF_CAPITAL', description: 'Return capital to investors (cost-based funds)', icon: <AccountBalance color="warning" />, trackingType: FundType.COST_BASED },
+  { label: 'Unit Purchase', value: 'UNIT_PURCHASE', description: 'Buy units (NAV-based funds)', icon: <AddIcon color="primary" />, trackingType: FundType.NAV_BASED },
+  { label: 'Unit Sale', value: 'UNIT_SALE', description: 'Sell units (NAV-based funds)', icon: <TrendingUp color="warning" />, trackingType: FundType.NAV_BASED },
+  { label: 'NAV Update', value: 'NAV_UPDATE', description: 'Update NAV per share (NAV-based funds)', icon: <TrendingUp color="info" />, trackingType: FundType.NAV_BASED },
   { label: 'Distribution', value: 'DISTRIBUTION', description: 'Add a distribution (all funds)', icon: <MonetizationOn color="success" />, trackingType: 'both' },
   { label: 'Tax Statement', value: 'TAX_STATEMENT', description: 'Add a tax statement (all funds)', icon: <Receipt color="secondary" />, trackingType: 'both' },
 ];
@@ -68,7 +69,7 @@ export const INTEREST_SUB_TEMPLATES: SubDistributionTemplate[] = [
 
 // Props interface
 export interface EventTypeSelectorProps {
-  fundTrackingType: 'nav_based' | 'cost_based';
+  fundTrackingType: FundType;
   eventType: EventType | 'RETURN_OF_CAPITAL' | '';
   distributionType: string;
   subDistributionType: string;
@@ -108,7 +109,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
     <Box>
       {/* Edit Mode Info */}
       {mode === 'edit' && (
-        <Box mb={2} p={2} bgcolor="info.light" borderRadius={1}>
+        <Box mb={1.5} p={1.5} bgcolor="info.light" borderRadius={1}>
           <Typography variant="body2" color="info.contrastText">
             Event type cannot be changed in edit mode. To change the event type, delete this event and create a new one.
           </Typography>
@@ -116,7 +117,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
       )}
       
       {/* Event Type Cards */}
-      <Box display="flex" gap={2} mb={2}>
+      <Box display="flex" gap={2} mb={1.5}>
         {filteredTemplates.map(template => {
           const isSelected = eventType === template.value;
           const isDisabled = mode === 'edit' || (eventType && eventType !== template.value && !(eventType === 'DISTRIBUTION' && template.value === 'DISTRIBUTION'));
@@ -126,14 +127,22 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
               key={template.value}
               elevation={isSelected ? 6 : 1}
               sx={{
-                p: 2,
-                minWidth: 120,
+                p: 1.5,
+                minWidth: 130,
                 border: isSelected ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
                 background: isSelected ? theme.palette.primary.light : theme.palette.background.paper,
                 opacity: isDisabled ? 0.5 : 1,
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
                 position: 'relative',
+                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                '&:hover': {
+                  elevation: isSelected ? 6 : 2,
+                  transform: isSelected ? 'scale(1.02)' : 'scale(1.05)',
+                  boxShadow: isSelected ? theme.shadows[6] : theme.shadows[2],
+                  background: isSelected ? theme.palette.primary.light : theme.palette.action.hover,
+                  borderColor: isSelected ? theme.palette.primary.main : theme.palette.primary.light,
+                }
               }}
               onClick={() => {
                 if (isDisabled) return;
@@ -154,6 +163,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                 <Typography variant="subtitle1" fontWeight={isSelected ? 'bold' : 'normal'}>
                   {template.label}
                 </Typography>
+
               </Box>
               {/* Expand indicator for Distribution */}
               {template.value === 'DISTRIBUTION' && isSelected && (
@@ -168,7 +178,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
 
       {/* Distribution Type Options (inline, below cards, always visible when Distribution is selected) */}
       {eventType === 'DISTRIBUTION' && (
-        <Box mb={2}>
+        <Box mb={1.5}>
           <Typography variant="subtitle1" mb={1} color="primary">
             {mode === 'edit' ? 'Distribution Type (Fixed)' : 'Select Distribution Type'}
           </Typography>
@@ -181,13 +191,22 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                   key={dt.value}
                   elevation={isSelected ? 6 : 2}
                   sx={{
-                    p: 2,
-                    minWidth: 120,
+                    p: 1.5,
+                    minWidth: 130,
                     border: isSelected ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
                     background: isSelected ? theme.palette.primary.light : theme.palette.background.paper,
                     opacity: isDisabled ? 0.5 : 1,
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
+                    position: 'relative',
+                    transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                    '&:hover': {
+                      elevation: isSelected ? 6 : 2,
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1.05)',
+                      boxShadow: isSelected ? theme.shadows[6] : theme.shadows[2],
+                      background: isSelected ? theme.palette.primary.light : theme.palette.action.hover,
+                      borderColor: isSelected ? theme.palette.primary.main : theme.palette.primary.light,
+                    }
                   }}
                   onClick={() => {
                     if (isDisabled) return;
@@ -201,7 +220,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                     // In edit mode, no action on click
                   }}
                 >
-                  <Box display="flex" flexDirection="column" alignItems="center">
+                  <Box display="flex" flexDirection="row" alignItems="center" gap={1}>
                     {dt.icon}
                     <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>
                       {dt.label}
@@ -216,34 +235,62 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
 
       {/* Sub-Distribution Type Options (inline, below Distribution Type, only visible when Dividend is selected) */}
       {distributionType === 'DIVIDEND' && (
-        <Box mb={2}>
+        <Box mb={1}>
           <Typography variant="subtitle1" mb={1} color="primary">
             {mode === 'edit' ? 'Dividend Type (Fixed)' : 'Select Dividend Type'}
           </Typography>
           <Box display="flex" gap={2}>
-            {DIVIDEND_SUB_TEMPLATES.map(sub => (
-              <Button
-                key={sub.value}
-                variant={subDistributionType === sub.value ? 'contained' : 'outlined'}
-                color={sub.value === 'DIVIDEND_FRANKED' ? 'success' : 'warning'}
-                disabled={mode === 'edit'}
-                onClick={() => {
-                  if (mode === 'create') {
-                    onSubDistributionTypeSelect(sub.value);
-                  }
-                }}
-                startIcon={sub.icon}
-              >
-                {sub.label}
-              </Button>
-            ))}
+            {DIVIDEND_SUB_TEMPLATES.map(sub => {
+              const isSelected = subDistributionType === sub.value;
+              const isDisabled = mode === 'edit';
+              return (
+                <Paper
+                  key={sub.value}
+                  elevation={isSelected ? 6 : 2}
+                  sx={{
+                    p: 1.5,
+                    minWidth: 130,
+                    border: isSelected ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
+                    background: isSelected ? theme.palette.primary.light : theme.palette.background.paper,
+                    opacity: isDisabled ? 0.5 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    position: 'relative',
+                    transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                    '&:hover': {
+                      elevation: isSelected ? 6 : 2,
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1.05)',
+                      boxShadow: isSelected ? theme.shadows[6] : theme.shadows[2],
+                      background: isSelected ? theme.palette.primary.light : theme.palette.action.hover,
+                      borderColor: isSelected ? theme.palette.primary.main : theme.palette.primary.light,
+                    }
+                  }}
+                  onClick={() => {
+                    if (isDisabled) return;
+                    if (isSelected && mode === 'create') {
+                      onSubDistributionTypeSelect('');
+                    } else if (mode === 'create') {
+                      onSubDistributionTypeSelect(sub.value);
+                    }
+                    // In edit mode, no action on click
+                  }}
+                >
+                  <Box display="flex" flexDirection="row" alignItems="center" gap={1}>
+                    {sub.icon}
+                    <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>
+                      {sub.label}
+                    </Typography>
+                  </Box>
+                </Paper>
+              );
+            })}
           </Box>
         </Box>
       )}
 
       {/* Interest Sub-Distribution Type Options (inline, below Distribution Type, only visible when Interest is selected) */}
       {distributionType === 'INTEREST' && (
-        <Box mb={2}>
+        <Box mb={1}>
           <Typography variant="subtitle1" mb={1} color="primary">
             {mode === 'edit' ? 'Interest Type (Fixed)' : 'Select Interest Sub-Distribution Type'}
           </Typography>
@@ -256,13 +303,22 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                   key={subDt.value}
                   elevation={isSelected ? 6 : 2}
                   sx={{
-                    p: 2,
-                    minWidth: 120,
+                    p: 1.5,
+                    minWidth: 130,
                     border: isSelected ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
                     background: isSelected ? theme.palette.primary.light : theme.palette.background.paper,
                     opacity: isDisabled ? 0.5 : 1,
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
+                    position: 'relative',
+                    transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                    '&:hover': {
+                      elevation: isSelected ? 6 : 2,
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1.05)',
+                      boxShadow: isSelected ? theme.shadows[6] : theme.shadows[2],
+                      background: isSelected ? theme.palette.primary.light : theme.palette.action.hover,
+                      borderColor: isSelected ? theme.palette.primary.main : theme.palette.primary.light,
+                    }
                   }}
                   onClick={() => {
                     if (isDisabled) return;
@@ -274,7 +330,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                     // In edit mode, no action on click
                   }}
                 >
-                  <Box display="flex" flexDirection="column" alignItems="center">
+                  <Box display="flex" flexDirection="row" alignItems="center" gap={1}>
                     {subDt.icon}
                     <Typography variant="subtitle2" fontWeight={isSelected ? 'bold' : 'normal'}>
                       {subDt.label}
@@ -289,7 +345,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
 
       {/* Back Button */}
       {(distributionType || eventType) && (
-        <Box mt={2}>
+        <Box mt={1.5}>
           <Button
             variant="outlined"
             onClick={onBack}

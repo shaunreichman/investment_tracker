@@ -15,6 +15,7 @@ from src.fund.enums import FundStatus, FundType, EventType, CashFlowDirection
 from src.entity.models import Entity
 from src.banking.models import BankAccount
 from src.tax.models import TaxStatement
+from src.fund.repositories import FundRepository
 from src.api.middleware.validation import validate_fund_data, validate_fund_event_data, validate_cash_flow_data
 
 # Create blueprint for fund routes
@@ -29,8 +30,9 @@ def fund_detail(fund_id):
         session = get_db_session()
         
         try:
-            # Use domain methods to get fund
-            fund = Fund.get_by_id(fund_id, session=session)
+            # Use repository to get fund
+            fund_repository = FundRepository()
+            fund = fund_repository.get_by_id(fund_id, session=session)
             
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
@@ -52,6 +54,7 @@ def fund_detail(fund_id):
                     "reference_number": event.reference_number,
                     "distribution_type": event.distribution_type.value.upper() if event.distribution_type else None,
                     "tax_payment_type": event.tax_payment_type.value.upper() if event.tax_payment_type else None,
+                    "units_owned": float(event.units_owned) if event.units_owned else None,
                     "units_purchased": float(event.units_purchased) if event.units_purchased else None,
                     "units_sold": float(event.units_sold) if event.units_sold else None,
                     "unit_price": float(event.unit_price) if event.unit_price else None,
@@ -60,6 +63,7 @@ def fund_detail(fund_id):
                     "nav_change_absolute": float(event.nav_change_absolute) if event.nav_change_absolute else None,
                     "nav_change_percentage": float(event.nav_change_percentage) if event.nav_change_percentage else None,
                     "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None,
+                    "tax_withholding": float(event.tax_withholding) if event.tax_withholding else None,
                     "has_withholding_tax": bool(event.has_withholding_tax) if event.has_withholding_tax is not None else None,
                     "created_at": event.created_at.isoformat() if event.created_at else None,
                     # CALCULATED: Grouping flags set by backend when creating events
@@ -129,9 +133,13 @@ def fund_detail(fund_id):
             
             # Combine all data
             response_data = {
-                **fund_data,
+                "fund": fund_data,
                 "events": events_data,
-                "tax_statements": tax_statements_data
+                "statistics": {
+                    # Add any additional statistics that might be needed
+                    "total_events": len(events_data),
+                    "total_tax_statements": len(tax_statements_data)
+                }
             }
             
             return jsonify(response_data), 200
@@ -161,10 +169,19 @@ def create_fund_event(fund_id):
     """Create a new fund event using the new FundController architecture"""
     try:
         from src.api.controllers.fund_controller import FundController
-        controller = FundController()
-        # Use validated data from middleware
-        validated_data = request.validated_data
-        return controller.add_fund_event_with_data(fund_id, validated_data)
+        from src.api.database import get_db_session
+        
+        # Create database session
+        session = get_db_session()
+        
+        try:
+            controller = FundController()
+            # Use validated data from middleware
+            validated_data = request.validated_data
+            return controller.add_fund_event_with_data(fund_id, validated_data, session)
+        finally:
+            session.close()
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -188,12 +205,13 @@ def delete_fund_event(fund_id, event_id):
 def get_fund_tax_statements(fund_id):
     """Get all tax statements for a specific fund"""
     try:
-        from src.api import get_db_session
+        from src.api.database import get_db_session
         session = get_db_session()
         
         try:
             # Validate fund exists
-            fund = Fund.get_by_id(fund_id, session=session)
+            fund_repository = FundRepository()
+            fund = fund_repository.get_by_id(fund_id, session=session)
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
@@ -243,12 +261,13 @@ def get_fund_tax_statements(fund_id):
 def get_fund_event_cash_flows(fund_id, event_id):
     """Get all cash flows for a specific fund event"""
     try:
-        from src.api import get_db_session
+        from src.api.database import get_db_session
         session = get_db_session()
         
         try:
             # Validate fund exists
-            fund = Fund.get_by_id(fund_id, session=session)
+            fund_repository = FundRepository()
+            fund = fund_repository.get_by_id(fund_id, session=session)
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
@@ -319,7 +338,8 @@ def remove_fund_event_cash_flow(fund_id, event_id, cash_flow_id):
         
         try:
             # Validate fund exists
-            fund = Fund.get_by_id(fund_id, session=session)
+            fund_repository = FundRepository()
+            fund = fund_repository.get_by_id(fund_id, session=session)
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             

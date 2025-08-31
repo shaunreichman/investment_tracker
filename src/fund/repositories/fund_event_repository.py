@@ -308,11 +308,23 @@ class FundEventRepository:
         event_date = event.event_date
         event_type = event.event_type
         
-        # Delete the event
-        session.delete(event)
+        # If this event is grouped, delete all events in the same group
+        if event.is_grouped and event.group_id:
+            # Find all events in the same group
+            group_events = session.query(FundEvent).filter(
+                FundEvent.group_id == event.group_id
+            ).all()
+            
+            # Delete all events in the group
+            for group_event in group_events:
+                session.delete(group_event)
+                self._clear_event_cache(group_event.id)
+        else:
+            # Delete just this single event
+            session.delete(event)
+            self._clear_event_cache(event_id)
         
         # Clear relevant caches
-        self._clear_event_cache(event_id)
         self._clear_fund_cache(fund_id)
         self._clear_date_cache(event_date)
         self._clear_type_cache(event_type)

@@ -13,7 +13,8 @@ import {
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { Entity } from '../../../types/api';
-import { formatNumber, parseNumber } from '../../../utils/helpers';
+import { useNumberInput } from '../../../hooks/useNumberInput';
+import { NumberInputField } from '../../ui/NumberInputField';
 
 export interface ValidationErrors {
   entity_id?: string;
@@ -63,6 +64,19 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
   const trackingTypeSelectId = 'tracking-type-select';
   const currencyLabelId = 'currency-select-label';
   const currencySelectId = 'currency-select';
+
+  // Use the standardized number input hook for commitment amount
+  const commitmentAmountInput = useNumberInput(formData.commitment_amount || '', {
+    allowDecimals: true,
+    allowNegative: false
+  });
+
+  // Sync the hook value with the form when it changes
+  React.useEffect(() => {
+    if (commitmentAmountInput.value !== formData.commitment_amount) {
+      onInputChange('commitment_amount', commitmentAmountInput.value);
+    }
+  }, [commitmentAmountInput.value, formData.commitment_amount, onInputChange]);
 
   return (
     <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -173,8 +187,10 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
       <TextField
         fullWidth
         label="Commitment Amount"
-        value={formatNumber(formData.commitment_amount)}
-        onChange={(e) => onInputChange('commitment_amount', parseNumber(e.target.value))}
+        value={commitmentAmountInput.value}
+        onChange={e => commitmentAmountInput.onChange(e.target.value)}
+        onBlur={commitmentAmountInput.onBlur}
+        onFocus={commitmentAmountInput.onFocus}
         error={!!validationErrors.commitment_amount}
         helperText={validationErrors.commitment_amount || 'Total commitment amount (optional)'}
         inputProps={{
@@ -183,12 +199,14 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
       />
 
       {/* Expected IRR */}
-      <TextField
+      <NumberInputField
         fullWidth
         label="Expected IRR (%)"
-        type="number"
         value={formData.expected_irr}
-        onChange={(e) => onInputChange('expected_irr', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="expected_irr"
+        allowDecimals={true}
+        allowNegative={false}
         error={!!validationErrors.expected_irr}
         helperText={validationErrors.expected_irr || 'Expected annual return 0-100% (optional)'}
         InputProps={{
@@ -203,12 +221,14 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
       />
 
       {/* Expected Duration */}
-      <TextField
+      <NumberInputField
         fullWidth
         label="Expected Duration (months)"
-        type="number"
         value={formData.expected_duration_months}
-        onChange={(e) => onInputChange('expected_duration_months', e.target.value)}
+        onInputChange={onInputChange}
+        fieldName="expected_duration_months"
+        allowDecimals={false}
+        allowNegative={false}
         error={!!validationErrors.expected_duration_months}
         helperText={validationErrors.expected_duration_months || 'Expected fund duration 1-1200 months (optional)'}
       />

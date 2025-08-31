@@ -1,0 +1,34 @@
+name: Use NumberInputField for all numeric inputs
+scope: typescript
+language: typescript
+severity: error
+if: TextField with type="number" or manual number formatting
+then: Use NumberInputField component with proper props
+why: Ensures consistent number input behavior, thousand separators, and professional UX across all forms.
+description: Standardize all numeric input fields to use the NumberInputField component for consistent formatting, thousand separators, and professional user experience across the application.
+
+## Implementation
+```tsx
+import { NumberInputField } from '../ui/NumberInputField';
+
+<NumberInputField
+  value={formData.fieldName}
+  onInputChange={onInputChange}
+  fieldName="fieldName"
+  allowDecimals={true}  // false for integers only
+  allowNegative={false} // true if negative values allowed
+  fullWidth
+  error={!!validationErrors.fieldName}
+  helperText={validationErrors.fieldName}
+/>
+```
+
+## Benefits
+- Thousand separators (1,234.56)
+- Format on blur, unformat on focus
+- Consistent UX across all forms
+- Enterprise-grade maintainability
+
+globs: ["frontend/src/**/*.tsx"]
+alwaysApply: true
+---
