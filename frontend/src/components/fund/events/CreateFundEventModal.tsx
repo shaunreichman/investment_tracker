@@ -20,6 +20,7 @@ import { useUnifiedForm } from '../../../hooks/forms/useUnifiedForm';
 import { createValidator, validationRules } from '../../../utils/validators';
 import { SuccessBanner } from '../../ui/SuccessBanner';
 import { FundType } from '../../../types/api';
+import { useFundFinancialYears } from '../../../hooks/useFundFinancialYears';
 
 interface CreateFundEventModalProps {
   open: boolean;
@@ -151,6 +152,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   const { error, setError, clearError } = useErrorHandler();
   // Centralized API hooks
   const { data: fundData } = useFund(fundId);
+  const { financialYears, isLoading: financialYearsLoading } = useFundFinancialYears(fundId);
   const { handleSubmit: submitEvent, createFundEvent, createTaxStatement } = useEventSubmission({
     fundId,
     fundEntity: fundData?.entity || null,
@@ -435,7 +437,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
             transition: 'all 0.4s ease-out',
           }}
         >
-
           
           {/* Render appropriate form based on event type */}
           {eventType === 'CAPITAL_CALL' && (
@@ -497,7 +498,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
             <TaxStatementForm
               formData={formData as any}
               validationErrors={validationErrors as any}
-              financialYears={[]}
+              financialYears={financialYears}
               fundEntity={fundData?.entity || null}
               hybridFieldOverrides={hybridFieldOverrides}
               onInputChange={handleInputChange}

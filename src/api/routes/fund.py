@@ -205,7 +205,7 @@ def delete_fund_event(fund_id, event_id):
 def get_fund_tax_statements(fund_id):
     """Get all tax statements for a specific fund"""
     try:
-        from src.api import get_db_session
+        from src.api.database import get_db_session
         session = get_db_session()
         
         try:
@@ -261,7 +261,7 @@ def get_fund_tax_statements(fund_id):
 def get_fund_event_cash_flows(fund_id, event_id):
     """Get all cash flows for a specific fund event"""
     try:
-        from src.api import get_db_session
+        from src.api.database import get_db_session
         session = get_db_session()
         
         try:

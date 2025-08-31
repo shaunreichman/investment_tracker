@@ -14,6 +14,7 @@ from src.shared.base import Base
 from src.fund.enums import FundType, FundStatus, GroupType
 from src.fund.enums import EventType, DistributionType
 from src.fund.models.fund_event import FundEvent
+from src.entity.models import Entity
 
 
 class Fund(Base):
@@ -1050,3 +1051,44 @@ class Fund(Base):
             summary_data['completed_irr_real'] = self.completed_irr_real
         
         return summary_data
+    
+    def get_financial_years(self, session=None) -> List[str]:
+        """Get all financial years from fund start date to current date.
+        
+        This method provides enterprise-grade financial year management by:
+        - Using the fund's actual start date (from events or creation)
+        - Respecting the entity's tax jurisdiction for financial year calculation
+        - Providing a clean interface for frontend consumption
+        
+        Args:
+            session: Database session (required for entity lookup and date calculations)
+            
+        Returns:
+            List[str]: List of financial years in descending order (most recent first)
+            
+        Raises:
+            ValueError: If session is not provided
+        """
+        if not session:
+            raise ValueError("Session required for get_financial_years")
+        
+        # Get fund start date (use events if available, otherwise creation date)
+        start_date = self.get_start_date(session=session)
+        if not start_date:
+            start_date = self.created_at.date()
+        
+        # Get entity for tax jurisdiction
+        entity = session.query(Entity).filter(Entity.id == self.entity_id).first()
+        if not entity:
+            return []
+        
+        # Import calculation function from entity domain
+        from src.entity.calculations import get_financial_years_for_fund_period
+        from datetime import date
+        
+        # Calculate financial years from start date to current date
+        end_date = date.today()
+        financial_years = get_financial_years_for_fund_period(start_date, end_date, entity)
+        
+        # Return sorted list (most recent first)
+        return sorted(list(financial_years), reverse=True)
