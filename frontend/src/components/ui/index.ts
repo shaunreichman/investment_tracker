@@ -7,5 +7,6 @@ export { FormField } from './FormField';
 export { FormSection } from './FormSection';
 export { TrackingTypeChip } from './TrackingTypeChip';
 export { SuccessBanner } from './SuccessBanner';
+export { NumberInputField } from './NumberInputField';
 
 

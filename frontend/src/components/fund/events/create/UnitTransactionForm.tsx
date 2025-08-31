@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextField, Box, Typography, useTheme } from '@mui/material';
-import { formatNumber } from '../../../../utils/helpers';
+import { NumberInputField } from '../../../ui/NumberInputField';
 
 interface UnitTransactionFormProps {
   eventType: 'UNIT_PURCHASE' | 'UNIT_SALE';
@@ -73,52 +73,46 @@ const UnitTransactionForm: React.FC<UnitTransactionFormProps> = ({
       </Typography>
       
       <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
-        <TextField
+        <NumberInputField
           label={<span>{unitsLabel} <span style={{ color: theme.palette.error.main }}>*</span></span>}
-          type="number"
           value={formData[unitsField] || ''}
-          onChange={e => onInputChange(unitsField, e.target.value)}
+          onInputChange={onInputChange}
+          fieldName={unitsField}
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors[unitsField]}
           helperText={validationErrors[unitsField]}
-          inputProps={{
-            min: 0,
-            step: 'any'
-          }}
         />
         
-        <TextField
+        <NumberInputField
           label={<span>Unit Price <span style={{ color: theme.palette.error.main }}>*</span></span>}
-          type="number"
           value={formData.unit_price || ''}
-          onChange={e => onInputChange('unit_price', e.target.value)}
+          onInputChange={onInputChange}
+          fieldName="unit_price"
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors.unit_price}
           helperText={validationErrors.unit_price}
-          inputProps={{
-            min: 0,
-            step: 'any'
-          }}
         />
         
-        <TextField
+        <NumberInputField
           label="Brokerage Fee (Optional)"
-          type="number"
           value={formData.brokerage_fee || ''}
-          onChange={e => onInputChange('brokerage_fee', e.target.value)}
+          onInputChange={onInputChange}
+          fieldName="brokerage_fee"
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors.brokerage_fee}
           helperText={validationErrors.brokerage_fee}
-          inputProps={{
-            min: 0,
-            step: 'any'
-          }}
         />
         
         <TextField
           label="Total Amount"
           type="text"
-          value={formatNumber(formData.amount || '')}
+          value={formData.amount || ''}
           fullWidth
           disabled
           helperText={`Calculated: (${formData[unitsField] || 0} × ${formData.unit_price || 0}) + ${formData.brokerage_fee || 0}`}

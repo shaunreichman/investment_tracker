@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextField, Box, Typography, useTheme } from '@mui/material';
-import { formatNumber, parseNumber } from '../../../../utils/helpers';
+import { NumberInputField } from '../../../ui/NumberInputField';
 
 interface CostBasedEventFormProps {
   eventType: 'CAPITAL_CALL' | 'RETURN_OF_CAPITAL';
@@ -61,11 +61,13 @@ const CostBasedEventForm: React.FC<CostBasedEventFormProps> = ({
           helperText={validationErrors.event_date}
         />
         
-        <TextField
+        <NumberInputField
           label={<span>{amountLabel} <span style={{ color: theme.palette.error.main }}>*</span></span>}
-          type="text"
-          value={formatNumber(formData.amount || '')}
-          onChange={e => onInputChange('amount', parseNumber(e.target.value))}
+          value={formData.amount || ''}
+          onInputChange={onInputChange}
+          fieldName="amount"
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors.amount}
           helperText={validationErrors.amount}

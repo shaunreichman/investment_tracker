@@ -1,14 +1,13 @@
 import React from 'react';
 import { TextField, Box, Typography, FormControlLabel, Checkbox, useTheme } from '@mui/material';
-import { formatNumber, parseNumber } from '../../../../utils/helpers';
-import { ValidationErrors, FormData } from '../../../../hooks/useEventForm';
+import { NumberInputField } from '../../../ui/NumberInputField';
 
 interface DistributionFormProps {
   // Form state
   distributionType: string;
   subDistributionType: string;
-  formData: FormData;
-  validationErrors: ValidationErrors;
+  formData: any;
+  validationErrors: any;
   
   // Event handlers
   onInputChange: (field: string, value: string) => void;
@@ -87,11 +86,13 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
         )}
 
         {/* Simple Amount Field for all distributions */}
-        <TextField
+        <NumberInputField
           label={<span>Amount <span style={{ color: theme.palette.error.main }}>*</span></span>}
-          type="text"
-          value={formatNumber(formData.amount || '')}
-          onChange={e => onInputChange('amount', parseNumber(e.target.value))}
+          value={formData.amount || ''}
+          onInputChange={onInputChange}
+          fieldName="amount"
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors.amount}
           helperText={validationErrors.amount}
@@ -133,21 +134,25 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
             </Typography>
             
             <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
-              <TextField
+              <NumberInputField
                 label="Withholding Tax Amount"
-                type="text"
-                value={formatNumber(formData.withholding_tax_amount || '')}
-                onChange={e => onInputChange('withholding_tax_amount', parseNumber(e.target.value))}
+                value={formData.withholding_tax_amount || ''}
+                onInputChange={onInputChange}
+                fieldName="withholding_tax_amount"
+                allowDecimals={true}
+                allowNegative={false}
                 fullWidth
                 error={!!validationErrors.withholding_tax_amount}
                 helperText={validationErrors.withholding_tax_amount}
               />
               
-              <TextField
+              <NumberInputField
                 label="Withholding Tax Rate (%)"
-                type="text"
-                value={formatNumber(formData.withholding_tax_rate || '')}
-                onChange={e => onInputChange('withholding_tax_rate', parseNumber(e.target.value))}
+                value={formData.withholding_tax_rate || ''}
+                onInputChange={onInputChange}
+                fieldName="withholding_tax_rate"
+                allowDecimals={true}
+                allowNegative={false}
                 fullWidth
                 error={!!validationErrors.withholding_tax_rate}
                 helperText={validationErrors.withholding_tax_rate}

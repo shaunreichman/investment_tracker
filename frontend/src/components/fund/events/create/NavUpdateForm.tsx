@@ -1,5 +1,6 @@
 import React from 'react';
 import { TextField, Box, Typography, useTheme } from '@mui/material';
+import { NumberInputField } from '../../../ui/NumberInputField';
 
 interface NavUpdateFormProps {
   formData: {
@@ -17,7 +18,7 @@ const NavUpdateForm: React.FC<NavUpdateFormProps> = ({
   onInputChange,
 }) => {
   const theme = useTheme();
-  
+
   return (
     <Box
       sx={{
@@ -39,18 +40,16 @@ const NavUpdateForm: React.FC<NavUpdateFormProps> = ({
       </Typography>
       
       <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
-        <TextField
-          label={<span>NAV Per Share <span style={{ color: theme.palette.error.main }}>*</span></span>}
-          type="number"
+        <NumberInputField
+          label={<span>NAV per Share <span style={{ color: theme.palette.error.main }}>*</span></span>}
           value={formData.nav_per_share || ''}
-          onChange={e => onInputChange('nav_per_share', e.target.value)}
+          onInputChange={onInputChange}
+          fieldName="nav_per_share"
+          allowDecimals={true}
+          allowNegative={false}
           fullWidth
           error={!!validationErrors.nav_per_share}
           helperText={validationErrors.nav_per_share}
-          inputProps={{
-            min: 0,
-            step: 'any'
-          }}
         />
       </Box>
     </Box>
