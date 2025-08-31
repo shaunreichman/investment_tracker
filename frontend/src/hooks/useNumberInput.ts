@@ -83,6 +83,14 @@ export const useNumberInput = (
     return value;
   }, [value]);
 
+  // Helper to get numeric value (always raw, no formatting)
+  const getNumericValue = useCallback(() => {
+    if (!value) return 0;
+    const cleanValue = value.replace(/,/g, '');
+    const num = parseFloat(cleanValue);
+    return isNaN(num) ? 0 : num;
+  }, [value]);
+
   const reset = useCallback((newValue: string = '') => {
     setValue(newValue);
   }, []);
@@ -94,6 +102,6 @@ export const useNumberInput = (
     onFocus: handleFocus,
     reset,
     // Helper to get numeric value
-    numericValue: value ? parseFloat(value.replace(/,/g, '')) : 0
+    numericValue: getNumericValue()
   };
 };

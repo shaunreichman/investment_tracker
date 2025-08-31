@@ -19,6 +19,13 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
   const createTaxStatement = useCreateTaxStatement(fundId);
 
   const handleSubmit = async ({ eventType, formData, distributionType, subDistributionType }: SubmitEventParams) => {
+    console.log('🔍 useEventSubmission.handleSubmit called with:', {
+      eventType,
+      formData,
+      distributionType,
+      subDistributionType
+    });
+
     // Prepare payload based on event type
     const payload: any = {
       event_type: eventType,
@@ -29,9 +36,31 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
 
     // Handle different event types
     if (eventType === 'CAPITAL_CALL' || eventType === 'RETURN_OF_CAPITAL') {
-      payload.amount = Number(formData.amount || '0');
+      const amount = formData.amount;
+      console.log('🔍 Processing Capital Call/Return of Capital:', { amount, type: typeof amount });
+      
+      if (!amount || amount.trim() === '') {
+        throw new Error('Amount is required for Capital Call and Return of Capital events');
+      }
+      const amountNum = Number(amount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        throw new Error('Amount must be a valid positive number');
+      }
+      payload.amount = amountNum;
+      console.log('✅ Amount processed successfully:', amountNum);
     } else if (eventType === 'DISTRIBUTION') {
-      payload.amount = Number(formData.amount || '0');
+      const amount = formData.amount;
+      console.log('🔍 Processing Distribution:', { amount, type: typeof amount });
+      
+      if (!amount || amount.trim() === '') {
+        throw new Error('Amount is required for Distribution events');
+      }
+      const amountNum = Number(amount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        throw new Error('Amount must be a valid positive number');
+      }
+      payload.amount = amountNum;
+      console.log('✅ Distribution amount processed successfully:', amountNum);
       if (distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX') {
         payload.gross_amount = Number(formData.gross_amount || '0');
         payload.net_amount = Number(formData.net_amount || '0');
@@ -51,6 +80,8 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
     } else if (eventType === 'NAV_UPDATE') {
       payload.nav_per_share = Number(formData.nav_per_share || '0');
     }
+    
+    console.log('📤 Final payload prepared:', payload);
     
     // Handle Tax Statement submission
     if (eventType === 'TAX_STATEMENT') {

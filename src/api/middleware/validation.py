@@ -723,10 +723,11 @@ def validate_fund_event_data(func: Callable) -> Callable:
                 if field not in data or data[field] is None:
                     raise ValidationError(f"Missing required field: {field}", field)
             
-            # Validate event_type using actual enum - CORRECTED
+            # Validate event_type using actual enum - VALIDATE ONLY, DON'T TRANSFORM
             try:
                 event_type = EventType(data['event_type'].upper())
-                data['event_type'] = event_type
+                # Store the validated string value, not the enum object
+                data['event_type'] = data['event_type'].upper()
             except ValueError:
                 valid_event_types = [e.value for e in EventType]
                 raise ValidationError(f"Invalid event_type. Must be one of: {', '.join(valid_event_types)}", 'event_type')
@@ -736,18 +737,33 @@ def validate_fund_event_data(func: Callable) -> Callable:
             if isinstance(event_date, str):
                 try:
                     parsed_date = datetime.strptime(event_date, '%Y-%m-%d').date()
+                    # Store the parsed date object for the service layer
                     data['event_date'] = parsed_date
                 except ValueError:
                     raise ValidationError("Invalid event_date format. Use YYYY-MM-DD", 'event_date')
             elif not isinstance(event_date, date):
                 raise ValidationError("Event date must be a valid date", 'event_date')
             
-            # Validate amount - CORRECTED: allow negative for certain event types
-            if 'amount' in data and data['amount'] is not None:
+            # Validate amount - CORRECTED: require amount for certain event types
+            event_type_str = data['event_type']  # Use the string value
+            if event_type_str in ['CAPITAL_CALL', 'RETURN_OF_CAPITAL']:
+                # Amount is required for capital call and return of capital events
+                if 'amount' not in data or data['amount'] is None:
+                    raise ValidationError("Amount is required for Capital Call and Return of Capital events", 'amount')
                 try:
-                    amount = float(data['amount'])
-                    # Allow negative amounts for certain event types (e.g., returns, distributions)
-                    data['amount'] = amount
+                    # Validate it can be converted to float without transforming
+                    amount_test = float(data['amount'])
+                    if amount_test <= 0:
+                        raise ValidationError("Amount must be positive for Capital Call and Return of Capital events", 'amount')
+                    # Keep original data type - don't transform
+                except (ValueError, TypeError):
+                    raise ValidationError("Amount must be a valid positive number", 'amount')
+            elif 'amount' in data and data['amount'] is not None:
+                # For other event types, amount is optional but must be valid if provided
+                try:
+                    # Validate it can be converted to float without transforming
+                    float(data['amount'])
+                    # Keep original data type - don't transform
                 except (ValueError, TypeError):
                     raise ValidationError("Amount must be a valid number", 'amount')
             
@@ -760,7 +776,7 @@ def validate_fund_event_data(func: Callable) -> Callable:
                         float_value = float(value)
                         if float_value < 0:
                             raise ValidationError(f"{field.replace('_', ' ').title()} must be non-negative", field)
-                        data[field] = float_value
+                        # Keep original data type - don't transform
                     except (ValueError, TypeError):
                         raise ValidationError(f"{field.replace('_', ' ').title()} must be a valid number", field)
             
@@ -768,7 +784,8 @@ def validate_fund_event_data(func: Callable) -> Callable:
             if 'distribution_type' in data and data['distribution_type'] is not None:
                 try:
                     distribution_type = DistributionType(data['distribution_type'].upper())
-                    data['distribution_type'] = distribution_type
+                    # Store the validated string value, not the enum object
+                    data['distribution_type'] = data['distribution_type'].upper()
                 except ValueError:
                     valid_distribution_types = [d.value for d in DistributionType]
                     raise ValidationError(f"Invalid distribution_type. Must be one of: {', '.join(valid_distribution_types)}", 'distribution_type')
@@ -777,7 +794,8 @@ def validate_fund_event_data(func: Callable) -> Callable:
             if 'tax_payment_type' in data and data['tax_payment_type'] is not None:
                 try:
                     tax_payment_type = TaxPaymentType(data['tax_payment_type'].upper())
-                    data['tax_payment_type'] = tax_payment_type
+                    # Store the validated string value, not the enum object
+                    data['tax_payment_type'] = data['tax_payment_type'].upper()
                 except ValueError:
                     valid_tax_payment_types = [t.value for t in TaxPaymentType]
                     raise ValidationError(f"Invalid tax_payment_type. Must be one of: {', '.join(valid_tax_payment_types)}", 'tax_payment_type')

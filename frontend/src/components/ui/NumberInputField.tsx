@@ -48,20 +48,39 @@ export const NumberInputField: React.FC<NumberInputFieldProps> = ({
     locale
   });
 
-  // Sync the hook value with the form when it changes
-  React.useEffect(() => {
-    if (numberInput.value !== value) {
-      onInputChange(fieldName, numberInput.value);
+  // Handle value changes from the number input hook
+  const handleValueChange = (newValue: string) => {
+    // Always pass the raw numeric value to the form, not the formatted display value
+    const rawValue = numberInput.numericValue.toString();
+    
+    // Only log when the raw value actually changes
+    if (rawValue !== value) {
+      console.log('🔍 NumberInputField value change:', { 
+        displayValue: newValue, 
+        rawValue, 
+        currentFormValue: value 
+      });
+      onInputChange(fieldName, rawValue);
     }
-  }, [numberInput.value, value, onInputChange, fieldName]);
+  };
 
   return (
     <TextField
       {...textFieldProps}
       type="text"
       value={numberInput.value}
-      onChange={e => numberInput.onChange(e.target.value)}
-      onBlur={numberInput.onBlur}
+      onChange={e => {
+        const newValue = e.target.value;
+        numberInput.onChange(newValue);
+        handleValueChange(newValue);
+      }}
+      onBlur={() => {
+        numberInput.onBlur();
+        // Sync the formatted value back to form if needed
+        if (numberInput.value !== value) {
+          handleValueChange(numberInput.value);
+        }
+      }}
       onFocus={numberInput.onFocus}
       inputProps={{
         style: { textAlign: 'left' },

@@ -266,20 +266,25 @@ class FundController:
             if 'session' in locals():
                 session.close()
     
-    def add_fund_event_with_data(self, fund_id: int, event_data: dict) -> tuple:
+    def add_fund_event_with_data(self, fund_id: int, event_data: dict, session: Session = None) -> tuple:
         """
         Add a fund event with pre-validated data.
         
         Args:
             fund_id: ID of the fund
             event_data: Pre-validated event data
+            session: Optional database session. If None, creates a new one.
             
         Returns:
             Tuple of (response_data, status_code)
         """
         try:
             # Get database session
-            session = self._get_session()
+            if session is None:
+                session = self._get_session()
+                should_close_session = True
+            else:
+                should_close_session = False
             
             # Add the event using pre-validated data
             event = self.fund_service.add_fund_event(fund_id, event_data, session)
@@ -298,11 +303,11 @@ class FundController:
             return jsonify({'error': str(e)}), 400
         except Exception as e:
             current_app.logger.error(f"Error adding fund event: {str(e)}")
-            if 'session' in locals():
+            if 'session' in locals() and should_close_session:
                 session.rollback()
             return jsonify({'error': 'Internal server error'}), 500
         finally:
-            if 'session' in locals():
+            if 'session' in locals() and should_close_session:
                 session.close()
     
     def get_fund_events(self, fund_id: int) -> tuple:

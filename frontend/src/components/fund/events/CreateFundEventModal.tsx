@@ -98,7 +98,9 @@ const validators = {
     validationRules.validDate('Event date')
   ),
   amount: (value: string) => {
-    if (!value) return undefined;
+    if (!value || value.trim() === '') {
+      return 'Amount is required';
+    }
     return validationRules.positiveNumber('Amount')(value);
   },
   units_purchased: (value: string) => {
@@ -162,7 +164,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     values: formData,
     errors: validationErrors,
     isDirty,
-    isValid: formIsValid,
+    isValid,
     isSubmitting: formIsSubmitting,
     setFieldValue,
     reset: resetFormData,
@@ -237,6 +239,8 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
 
   // Handle input change (combines unified form with existing logic)
   const handleInputChange = (field: string, value: string) => {
+    console.log('🔍 handleInputChange:', { field, value, currentFormData: formData });
+    
     setFieldValue(field as keyof EventFormData, value);
     
     // Auto-calculate tax payment date when financial year changes
@@ -268,23 +272,59 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   // Form validation (combines unified form validation with event type validation)
   const isFormValid = () => {
     // Basic form validation from unified form
-    const basicFormValid = formIsValid;
+    const basicFormValid = isValid;
+    
+    console.log('🔍 Form validation check:', {
+      basicFormValid,
+      eventType,
+      distributionType,
+      subDistributionType,
+      formData,
+      validationErrors
+    });
     
     // Event type specific validation
-    if (!eventType) return false;
+    if (!eventType) {
+      console.log('❌ No event type selected');
+      return false;
+    }
     
-    if (eventType === 'DISTRIBUTION' && !distributionType) return false;
+    if (eventType === 'DISTRIBUTION' && !distributionType) {
+      console.log('❌ Distribution type required');
+      return false;
+    }
     
-    if (eventType === 'DISTRIBUTION' && distributionType === 'DIVIDEND' && !subDistributionType) return false;
+    if (eventType === 'DISTRIBUTION' && distributionType === 'DIVIDEND' && !subDistributionType) {
+      console.log('❌ Sub-distribution type required for dividend');
+      return false;
+    }
     
-    if (eventType === 'DISTRIBUTION' && distributionType === 'INTEREST' && !subDistributionType) return false;
+    if (eventType === 'DISTRIBUTION' && distributionType === 'INTEREST' && !subDistributionType) {
+      console.log('❌ Sub-distribution type required for interest');
+      return false;
+    }
     
+    console.log('✅ Form validation passed');
     return basicFormValid;
   };
 
   // Handle form submission
   const handleSubmit = () => {
+    console.log('🔍 CreateFundEventModal.handleSubmit called');
+    console.log('🔍 Current state:', {
+      eventType,
+      formData,
+      distributionType,
+      subDistributionType,
+      isValid,
+      formIsSubmitting,
+      isDirty,
+      validationErrors
+    });
+    
     clearError();
+    
+    console.log('🔍 Calling submitEvent...');
     submitEvent({
       eventType,
       formData,
@@ -312,7 +352,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
       onClose={handleClose}
       onSubmit={handleSubmit}
       isSubmitting={formIsSubmitting}
-      isValid={isFormValid()}
+      isValid={isValid}
       isDirty={isDirty}
       showCloseConfirmation={true}
       maxWidth="lg"

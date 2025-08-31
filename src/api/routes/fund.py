@@ -167,10 +167,19 @@ def create_fund_event(fund_id):
     """Create a new fund event using the new FundController architecture"""
     try:
         from src.api.controllers.fund_controller import FundController
-        controller = FundController()
-        # Use validated data from middleware
-        validated_data = request.validated_data
-        return controller.add_fund_event_with_data(fund_id, validated_data)
+        from src.api.database import get_db_session
+        
+        # Create database session
+        session = get_db_session()
+        
+        try:
+            controller = FundController()
+            # Use validated data from middleware
+            validated_data = request.validated_data
+            return controller.add_fund_event_with_data(fund_id, validated_data, session)
+        finally:
+            session.close()
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
