@@ -131,9 +131,13 @@ def fund_detail(fund_id):
             
             # Combine all data
             response_data = {
-                **fund_data,
+                "fund": fund_data,
                 "events": events_data,
-                "tax_statements": tax_statements_data
+                "statistics": {
+                    # Add any additional statistics that might be needed
+                    "total_events": len(events_data),
+                    "total_tax_statements": len(tax_statements_data)
+                }
             }
             
             return jsonify(response_data), 200
