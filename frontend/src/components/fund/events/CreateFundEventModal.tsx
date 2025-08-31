@@ -370,7 +370,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
     <FormContainer
       open={open}
       title="Create Fund Event"
-      subtitle="Select event type and enter details"
       onClose={handleClose}
       onSubmit={handleSubmit}
       isSubmitting={formIsSubmitting}
@@ -436,9 +435,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
             transition: 'all 0.4s ease-out',
           }}
         >
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            Fields marked with <span style={{ color: theme.palette.error.main }}>*</span> are required.
-          </Typography>
+
           
           {/* Render appropriate form based on event type */}
           {eventType === 'CAPITAL_CALL' && (
