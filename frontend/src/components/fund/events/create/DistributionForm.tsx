@@ -112,22 +112,8 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
           sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}
         />
 
-        {/* Withholding Tax Checkbox for Interest distributions */}
-        {distributionType === 'INTEREST' && (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.has_withholding_tax === true}
-                onChange={(e) => onInputChange('has_withholding_tax', e.target.checked ? 'true' : 'false')}
-              />
-            }
-            label="Has Withholding Tax"
-            sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}
-          />
-        )}
-
-        {/* Withholding Tax Fields (only shown when checkbox is checked) */}
-        {distributionType === 'INTEREST' && formData.has_withholding_tax === true && (
+        {/* Withholding Tax Fields (only shown when Withholding Tax sub-type is selected) */}
+        {distributionType === 'INTEREST' && subDistributionType === 'WITHHOLDING_TAX' && (
           <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
             <Typography variant="body2" color="text.secondary" mb={1}>
               Withholding Tax Details:

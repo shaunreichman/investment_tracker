@@ -202,6 +202,7 @@ const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
                     opacity: isDisabled ? 0.5 : 1,
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
+                    position: 'relative',
                     transform: isSelected ? 'scale(1.02)' : 'scale(1)',
                     '&:hover': {
                       elevation: isSelected ? 6 : 2,

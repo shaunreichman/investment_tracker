@@ -387,18 +387,6 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
         onBack={handleBack}
       />
 
-      {/* Distribution Type Selection */}
-      {eventType === 'DISTRIBUTION' && !distributionType && (
-        <DistributionForm
-          distributionType={distributionType}
-          subDistributionType={subDistributionType}
-          formData={formData as any}
-          validationErrors={validationErrors as any}
-          onInputChange={handleInputChange}
-          eventType={eventType}
-        />
-      )}
-
       {/* Form appears below all cards (after event type or distribution type selected) */}
       {((eventType && eventType !== 'DISTRIBUTION' && eventType !== 'TAX_STATEMENT') || 
         (eventType === 'DISTRIBUTION' && distributionType && 
