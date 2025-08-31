@@ -87,7 +87,14 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
           throw new Error('Amount must be a valid positive number');
         }
         payload.amount = amountNum;
-        payload.distribution_type = distributionType;
+        
+        // For dividend distributions, use subDistributionType as the distribution_type
+        // since the backend expects the specific type (e.g., DIVIDEND_FRANKED, not DIVIDEND)
+        if (distributionType === 'DIVIDEND') {
+          payload.distribution_type = subDistributionType;
+        } else {
+          payload.distribution_type = distributionType;
+        }
       }
     } else if (eventType === 'UNIT_PURCHASE') {
       payload.units_purchased = Number(formData.units_purchased || '0');
