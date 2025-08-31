@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox, useTheme, Box } from '@mui/material';
+import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox, useTheme, Box, InputAdornment } from '@mui/material';
 import { NumberInputField } from '../../../ui/NumberInputField';
 
 interface TaxStatementFormProps {
@@ -76,6 +76,15 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         fullWidth
         error={!!validationErrors.eofy_debt_interest_deduction_rate}
         helperText={validationErrors.eofy_debt_interest_deduction_rate}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <Typography variant="body2" color="text.secondary">
+                %
+              </Typography>
+            </InputAdornment>
+          )
+        }}
       />
       
       <Divider sx={{ my: 2 }} />
@@ -139,6 +148,15 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         fullWidth
         error={!!validationErrors.interest_income_tax_rate}
         helperText={validationErrors.interest_income_tax_rate}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <Typography variant="body2" color="text.secondary">
+                %
+              </Typography>
+            </InputAdornment>
+          )
+        }}
       />
       
       <Divider sx={{ my: 2 }} />
@@ -203,6 +221,15 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         fullWidth
         error={!!validationErrors.dividend_franked_income_tax_rate}
         helperText={validationErrors.dividend_franked_income_tax_rate}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <Typography variant="body2" color="text.secondary">
+                %
+              </Typography>
+            </InputAdornment>
+          )
+        }}
       />
       <NumberInputField
         label="Dividend Unfranked Income Tax Rate (%)"
@@ -214,6 +241,15 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         fullWidth
         error={!!validationErrors.dividend_unfranked_income_tax_rate}
         helperText={validationErrors.dividend_unfranked_income_tax_rate}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <Typography variant="body2" color="text.secondary">
+                %
+              </Typography>
+            </InputAdornment>
+          )
+        }}
       />
       
       <Divider sx={{ my: 2 }} />
@@ -255,6 +291,15 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
         fullWidth
         error={!!validationErrors.capital_gain_income_tax_rate}
         helperText={validationErrors.capital_gain_income_tax_rate}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <Typography variant="body2" color="text.secondary">
+                %
+              </Typography>
+            </InputAdornment>
+          )
+        }}
       />
       
       <Divider sx={{ my: 2 }} />
@@ -284,7 +329,7 @@ const TaxStatementForm: React.FC<TaxStatementFormProps> = ({
       <FormControlLabel
         control={
           <Checkbox
-            checked={formData.non_resident || false}
+            checked={formData.non_resident === 'true' || formData.non_resident === true}
             onChange={e => onInputChange('non_resident', e.target.checked.toString())}
           />
         }

@@ -5,7 +5,8 @@ import {
   Typography, 
   useTheme,
   ToggleButtonGroup,
-  ToggleButton
+  ToggleButton,
+  InputAdornment
 } from '@mui/material';
 import { NumberInputField } from '../../../ui/NumberInputField';
 
@@ -204,6 +205,15 @@ const DistributionForm: React.FC<DistributionFormProps> = ({
                   error={!!validationErrors.interest_withholding_tax_rate}
                   helperText={validationErrors.interest_withholding_tax_rate}
                   inputProps={{ min: 0, max: 100, step: 0.01 }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Typography variant="body2" color="text.secondary">
+                          %
+                        </Typography>
+                      </InputAdornment>
+                    )
+                  }}
                 />
               )}
             </Box>
