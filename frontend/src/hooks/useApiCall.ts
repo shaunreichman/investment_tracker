@@ -137,7 +137,7 @@ export interface MutationState<T> {
   error: ErrorInfo | null;
 }
 
-export function useMutation<T, R>(
+function useMutation<T, R>(
   mutationFn: (data: T) => Promise<R>,
   options: {
     onSuccess?: (data: R) => void;
@@ -191,7 +191,7 @@ export function useMutation<T, R>(
 // ============================================================================
 
 // Hook for conditional API calls
-export function useConditionalApiCall<T>(
+function useConditionalApiCall<T>(
   apiCall: () => Promise<T>,
   condition: boolean,
   options: ApiCallOptions = {}
@@ -200,7 +200,7 @@ export function useConditionalApiCall<T>(
 }
 
 // Hook for API calls with dependencies
-export function useApiCallWithDeps<T, D extends readonly unknown[]>(
+function useApiCallWithDeps<T, D extends readonly unknown[]>(
   apiCall: (...deps: D) => Promise<T>,
   deps: D,
   options: ApiCallOptions = {}
@@ -224,5 +224,5 @@ export function useApiCallWithDeps<T, D extends readonly unknown[]>(
   return useApiCall(memoizedApiCall, options);
 }
 
-// All types are already exported above 
-// All types are already exported above 
+// Internal exports for use by other hooks
+export { useMutation, useConditionalApiCall, useApiCallWithDeps }; 

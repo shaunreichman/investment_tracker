@@ -12,4 +12,3 @@ export { useInvestmentCompanies } from './useInvestmentCompanies';
 // New organized hooks
 export * from './shared';
 export * from './funds';
-export * from './companies';

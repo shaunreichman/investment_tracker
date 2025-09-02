@@ -140,7 +140,7 @@ export function useCreateTaxStatement(fundId: number) {
 /**
  * Hook to get fund tax statements
  */
-export function useFundTaxStatements(fundId: number, options?: { refetchOnWindowFocus?: boolean }) {
+function useFundTaxStatements(fundId: number, options?: { refetchOnWindowFocus?: boolean }) {
   return useApiCallWithDeps(
     (fundId: number) => apiClient.getFundTaxStatements(fundId),
     [fundId],
@@ -155,7 +155,7 @@ export function useFundTaxStatements(fundId: number, options?: { refetchOnWindow
 /**
  * Hook to get fund with conditional loading
  */
-export function useFundConditional(id: number | null, options?: { refetchOnWindowFocus?: boolean }) {
+function useFundConditional(id: number | null, options?: { refetchOnWindowFocus?: boolean }) {
   const getFund = useCallback(() => apiClient.getFund(id!), [id]);
   
   return useConditionalApiCall(
@@ -168,7 +168,7 @@ export function useFundConditional(id: number | null, options?: { refetchOnWindo
 /**
  * Hook to get fund events with conditional loading
  */
-export function useFundEventsConditional(fundId: number | null, options?: { refetchOnWindowFocus?: boolean }) {
+function useFundEventsConditional(fundId: number | null, options?: { refetchOnWindowFocus?: boolean }) {
   const getFundEvents = useCallback(() => apiClient.getFundEvents(fundId!), [fundId]);
   
   return useConditionalApiCall(
