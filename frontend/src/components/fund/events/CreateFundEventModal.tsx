@@ -20,7 +20,7 @@ import { useUnifiedForm } from '../../../hooks/forms/useUnifiedForm';
 import { createValidator, validationRules } from '../../../utils/validators';
 import { SuccessBanner } from '../../ui/SuccessBanner';
 import { FundType } from '../../../types/api';
-import { useFundFinancialYears } from '../../../hooks/useFundFinancialYears';
+import { useFundFinancialYears } from '../../../hooks';
 
 interface CreateFundEventModalProps {
   open: boolean;

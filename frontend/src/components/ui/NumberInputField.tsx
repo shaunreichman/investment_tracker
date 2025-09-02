@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextField, TextFieldProps } from '@mui/material';
-import { useNumberInput } from '../../hooks/useNumberInput';
+import { useNumberInput } from '../../hooks';
 
 interface NumberInputFieldProps extends Omit<TextFieldProps, 'onChange' | 'onBlur' | 'onFocus'> {
   value: string;

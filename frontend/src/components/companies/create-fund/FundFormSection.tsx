@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { Entity } from '../../../types/api';
-import { useNumberInput } from '../../../hooks/useNumberInput';
+import { useNumberInput } from '../../../hooks';
 import { NumberInputField } from '../../ui/NumberInputField';
 
 export interface ValidationErrors {
