@@ -35,7 +35,7 @@ import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
 import { formatCurrency } from '../utils/formatters';
-// Remove the useFormCompletion import as it's causing issues
+
 
 const OverallDashboard: React.FC = () => {
   const theme = useTheme();
