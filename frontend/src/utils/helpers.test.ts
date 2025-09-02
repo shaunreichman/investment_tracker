@@ -331,8 +331,8 @@ describe('helpers', () => {
 
   describe('calculateTaxPaymentDate', () => {
     it('should calculate tax payment date correctly', () => {
-      expect(calculateTaxPaymentDate('2023-24')).toBe('30/06/2024');
-      expect(calculateTaxPaymentDate('2022-23')).toBe('30/06/2023');
+        expect(calculateTaxPaymentDate('2023-24')).toBe('2024-06-30');
+  expect(calculateTaxPaymentDate('2022-23')).toBe('2023-06-30');
     });
   });
 

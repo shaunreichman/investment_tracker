@@ -162,6 +162,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
   const { handleSubmit: submitEvent, createFundEvent, createTaxStatement } = useEventSubmission({
     fundId,
     fundEntity: fundData?.entity || null,
+    fundData: fundData, // Pass the full fund data to access entity_id
     onSuccess: () => {
       setSuccess(true);
       setTimeout(() => {

@@ -3,6 +3,7 @@ import { useCreateFundEvent, useCreateTaxStatement } from './useFunds';
 interface UseEventSubmissionProps {
   fundId: number;
   fundEntity: any;
+  fundData?: any; // Add fundData to access fund.entity_id
   onSuccess: () => void;
   onError: (error: any) => void;
 }
@@ -14,7 +15,7 @@ interface SubmitEventParams {
   subDistributionType?: string;
 }
 
-export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: UseEventSubmissionProps) => {
+export const useEventSubmission = ({ fundId, fundEntity, fundData, onSuccess, onError }: UseEventSubmissionProps) => {
   const createFundEvent = useCreateFundEvent(fundId);
   const createTaxStatement = useCreateTaxStatement(fundId);
 
@@ -100,8 +101,6 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
     
     // Handle Tax Statement submission
     if (eventType === 'TAX_STATEMENT') {
-      console.log('🔍 Submitting TAX_STATEMENT:', { formData, fundEntity });
-      
       // Validate required fields
       if (!formData.financial_year) {
         throw new Error('Financial year is required for tax statements');
@@ -116,7 +115,8 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
       }
       
       const taxStatementPayload = {
-        entity_id: fundEntity?.id,
+        fund_id: fundId, // Add the required fund_id field
+        entity_id: fundData.entity_id, // Use the direct entity_id field from fund data
         financial_year: formData.financial_year || '',
         statement_date: formData.statement_date || '',
         tax_payment_date: formData.tax_payment_date || '',
@@ -136,8 +136,6 @@ export const useEventSubmission = ({ fundId, fundEntity, onSuccess, onError }: U
         notes: formData.notes || '',
         non_resident: formData.non_resident === 'true' || formData.non_resident === true
       };
-      
-      console.log('🔍 Tax Statement payload:', taxStatementPayload);
       
       await createTaxStatement.mutate(taxStatementPayload);
       return;

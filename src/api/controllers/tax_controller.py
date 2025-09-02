@@ -111,8 +111,20 @@ class TaxController:
                 notes=data.get('notes')
             )
             
+            # Calculate derived fields
+            interest_income = tax_statement.calculate_interest_income_amount(session)
+            dividend_totals = tax_statement.calculate_dividend_totals(session)
+            capital_gain_total = tax_statement.calculate_capital_gain_totals(session)
+            
             session.add(tax_statement)
             session.commit()
+            
+            # Create tax payment events for this tax statement
+            try:
+                created_events = tax_statement.create_tax_payment_events(session)
+            except Exception as e:
+                current_app.logger.error(f"Error creating tax payment events: {str(e)}")
+                # Don't fail the entire request if tax payment events fail to create
             
             # Return created tax statement data
             response_data = {

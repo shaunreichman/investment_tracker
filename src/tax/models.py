@@ -7,7 +7,7 @@ representing tax statements and tax calculations in the system.
 
 from typing import Optional, List
 from datetime import date, datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index, UniqueConstraint, ColumnElement
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base

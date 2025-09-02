@@ -194,7 +194,7 @@ export const deepEqual = (obj1: any, obj2: any): boolean => {
  * Calculate tax payment date based on financial year (defaults to last day of financial year)
  * @param financialYear - Financial year string (e.g., '2024-25' or '2024')
  * @param taxJurisdiction - Tax jurisdiction code (defaults to 'AU')
- * @returns Date string in dd/mm/yyyy format
+ * @returns Date string in YYYY-MM-DD format (ISO format for API compatibility)
  */
 export const calculateTaxPaymentDate = (financialYear: string, taxJurisdiction: string = 'AU'): string => {
   if (!financialYear) return '';
@@ -226,10 +226,10 @@ export const calculateTaxPaymentDate = (financialYear: string, taxJurisdiction: 
   // For other jurisdictions: FY runs January 1 to December 31
   if (taxJurisdiction === 'AU') {
     // Last day of financial year is June 30 of the end year
-    return `30/06/${endYear}`;
+    return `${endYear}-06-30`;
   } else {
     // Last day of financial year is December 31 of the start year
-    return `31/12/${startYear}`;
+    return `${startYear}-12-31`;
   }
 };
 
