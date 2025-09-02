@@ -8,7 +8,8 @@ import { FundType } from '../../../types/api';
 jest.mock('../../../hooks/useErrorHandler');
 jest.mock('../../../hooks/useFunds');
 jest.mock('../../../hooks/useEventSubmission');
-jest.mock('../../../hooks/useCreateEventForm');
+jest.mock('../../../hooks/forms/useUnifiedForm');
+
 
 // Mock the form components
 jest.mock('./create/EventTypeSelector', () => {
@@ -47,30 +48,22 @@ jest.mock('./create/TaxStatementForm', () => {
   };
 });
 
-const mockUseCreateEventForm = {
-  eventType: '',
-  setEventType: jest.fn(),
-  distributionType: '',
-  setDistributionType: jest.fn(),
-  subDistributionType: '',
-  setSubDistributionType: jest.fn(),
-  formData: { event_date: '2024-01-15' },
-  setFormData: jest.fn(),
-  success: false,
-  setSuccess: jest.fn(),
-  validationErrors: {},
-  isFormValid: true,
-  withholdingAmountType: '',
-  setWithholdingAmountType: jest.fn(),
-  withholdingTaxType: '',
-  setWithholdingTaxType: jest.fn(),
-  hybridFieldOverrides: {},
-  setHybridFieldOverrides: jest.fn(),
-  handleInputChange: jest.fn(),
-  handleHybridFieldToggle: jest.fn(),
-  validateForm: jest.fn().mockReturnValue(true),
-  resetForm: jest.fn(),
-  handleBack: jest.fn(),
+const mockUseUnifiedForm = {
+  values: { event_date: '2024-01-15' },
+  errors: {},
+  touched: {},
+  isDirty: false,
+  isValid: true,
+  isSubmitting: false,
+  setFieldValue: jest.fn(),
+  setFieldError: jest.fn(),
+  validateField: jest.fn(),
+  validateAll: jest.fn().mockReturnValue(true),
+  handleSubmit: jest.fn(),
+  reset: jest.fn(),
+  clearErrors: jest.fn(),
+  markFieldTouched: jest.fn(),
+  markAllTouched: jest.fn(),
 };
 
 const mockUseErrorHandler = {
@@ -102,7 +95,7 @@ describe('CreateFundEventModal', () => {
     jest.clearAllMocks();
 
     // Setup default mock implementations
-    (require('../../../hooks/useCreateEventForm') as any).useCreateEventForm = jest.fn().mockReturnValue(mockUseCreateEventForm);
+    (require('../../../hooks/forms/useUnifiedForm') as any).useUnifiedForm = jest.fn().mockReturnValue(mockUseUnifiedForm);
     (require('../../../hooks/useErrorHandler') as any).useErrorHandler = jest.fn().mockReturnValue(mockUseErrorHandler);
     (require('../../../hooks/useFunds') as any).useFund = jest.fn().mockReturnValue(mockUseFund);
     (require('../../../hooks/useFunds') as any).useCreateFundEvent = jest.fn().mockReturnValue(mockUseEventSubmission.createFundEvent);
@@ -148,8 +141,8 @@ describe('CreateFundEventModal', () => {
       });
 
       // Mock form with valid data for submission
-      (require('../../../hooks/useCreateEventForm') as any).useCreateEventForm = jest.fn().mockReturnValue({
-        ...mockUseCreateEventForm,
+      (require('../../../hooks/forms/useUnifiedForm') as any).useUnifiedForm = jest.fn().mockReturnValue({
+        ...mockUseUnifiedForm,
         eventType: 'CAPITAL_CALL',
         formData: { event_date: '2024-01-15', amount: '1000' },
         validateForm: jest.fn().mockReturnValue(true),
@@ -184,8 +177,8 @@ describe('CreateFundEventModal', () => {
 
     it('should show success message after successful creation', () => {
       // Mock the success state to be true
-      (require('../../../hooks/useCreateEventForm') as any).useCreateEventForm = jest.fn().mockReturnValue({
-        ...mockUseCreateEventForm,
+      (require('../../../hooks/forms/useUnifiedForm') as any).useUnifiedForm = jest.fn().mockReturnValue({
+        ...mockUseUnifiedForm,
         success: true,
       });
 
@@ -210,8 +203,8 @@ describe('CreateFundEventModal', () => {
     });
 
     it('should handle validation errors', () => {
-      (require('../../../hooks/useCreateEventForm') as any).useCreateEventForm = jest.fn().mockReturnValue({
-        ...mockUseCreateEventForm,
+      (require('../../../hooks/forms/useUnifiedForm') as any).useUnifiedForm = jest.fn().mockReturnValue({
+        ...mockUseUnifiedForm,
         validationErrors: { event_date: 'Event date is required' },
         isFormValid: false,
       });
@@ -226,8 +219,8 @@ describe('CreateFundEventModal', () => {
 
   describe('Form Fields', () => {
     it('should show distribution form when distribution is selected', () => {
-      (require('../../../hooks/useCreateEventForm') as any).useCreateEventForm = jest.fn().mockReturnValue({
-        ...mockUseCreateEventForm,
+      (require('../../../hooks/forms/useUnifiedForm') as any).useUnifiedForm = jest.fn().mockReturnValue({
+        ...mockUseUnifiedForm,
         eventType: 'DISTRIBUTION',
         distributionType: 'INTEREST',
         subDistributionType: 'REGULAR',
@@ -239,8 +232,8 @@ describe('CreateFundEventModal', () => {
     });
 
     it('should show unit transaction form for NAV-based events', () => {
-      (require('../../../hooks/useCreateEventForm') as any).useCreateEventForm = jest.fn().mockReturnValue({
-        ...mockUseCreateEventForm,
+      (require('../../../hooks/forms/useUnifiedForm') as any).useUnifiedForm = jest.fn().mockReturnValue({
+        ...mockUseUnifiedForm,
         eventType: 'UNIT_PURCHASE',
       });
 
@@ -250,8 +243,8 @@ describe('CreateFundEventModal', () => {
     });
 
     it('should show NAV update form for NAV updates', () => {
-      (require('../../../hooks/useCreateEventForm') as any).useCreateEventForm = jest.fn().mockReturnValue({
-        ...mockUseCreateEventForm,
+      (require('../../../hooks/forms/useUnifiedForm') as any).useUnifiedForm = jest.fn().mockReturnValue({
+        ...mockUseUnifiedForm,
         eventType: 'NAV_UPDATE',
       });
 
@@ -261,8 +254,8 @@ describe('CreateFundEventModal', () => {
     });
 
     it('should show tax statement form for tax statements', () => {
-      (require('../../../hooks/useCreateEventForm') as any).useCreateEventForm = jest.fn().mockReturnValue({
-        ...mockUseCreateEventForm,
+      (require('../../../hooks/forms/useUnifiedForm') as any).useUnifiedForm = jest.fn().mockReturnValue({
+        ...mockUseUnifiedForm,
         eventType: 'TAX_STATEMENT',
       });
 
