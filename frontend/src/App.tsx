@@ -6,7 +6,6 @@ import FundDetail from './components/fund/detail/FundDetail';
 import { AppStoreProvider } from './store';
 import { DockerThemeProvider } from './theme/DockerThemeProvider';
 import RouteLayout from './components/layout/RouteLayout';
-import './App.css';
 
 // Wrapper component to provide key for FundDetail
 const FundDetailWrapper: React.FC = () => {

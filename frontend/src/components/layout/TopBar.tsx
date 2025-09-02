@@ -19,7 +19,7 @@ import {
   AccountCircle as AccountCircleIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { useSidebar } from './MainLayout';
+import { useSidebar } from './RouteLayout';
 import { useInvestmentCompanies } from '../../hooks/useInvestmentCompanies';
 import { useCentralizedFundDetail } from '../../hooks/useFunds';
 

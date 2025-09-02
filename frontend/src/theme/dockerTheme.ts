@@ -25,16 +25,6 @@ declare module '@mui/material/styles' {
   }
 }
 
-// Docker Spacing System - Following spec requirements
-export const dockerSpacing = {
-  xs: 4,      // 4px
-  sm: 8,      // 8px
-  md: 16,     // 16px - inner padding for cards (spec requirement)
-  lg: 24,     // 24px - outer padding between sections (spec requirement)
-  xl: 32,     // 32px - major section spacing
-  xxl: 48,    // 48px - page-level spacing
-} as const;
-
 // Create minimal theme with only essential overrides
 export const dockerTheme = createTheme({
   palette: {
