@@ -197,6 +197,12 @@ class ApiClient {
     });
   }
 
+  async deleteFund(fundId: number): Promise<void> {
+    return this.request<void>(`/api/funds/${fundId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // ============================================================================
   // FUND EVENTS API
   // ============================================================================

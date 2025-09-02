@@ -89,6 +89,15 @@ export function useCreateFund() {
   );
 }
 
+/**
+ * Hook to delete a fund
+ */
+export function useDeleteFund() {
+  return useMutation<number, void>(
+    (fundId) => apiClient.deleteFund(fundId)
+  );
+}
+
 // ============================================================================
 // FUND EVENTS HOOKS
 // ============================================================================

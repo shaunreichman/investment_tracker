@@ -144,7 +144,7 @@ class FundController:
     
     def delete_fund(self, fund_id: int) -> tuple:
         """
-        Delete a fund.
+        Delete a fund with enterprise validation.
         
         Args:
             fund_id: ID of the fund to delete
@@ -156,25 +156,37 @@ class FundController:
             # Get database session
             session = self._get_session()
             
-            # Delete the fund
-            success = self.fund_service.delete_fund(fund_id, session)
-            
-            if not success:
-                return jsonify({'error': 'Fund not found'}), 404
-            
-            # Commit the transaction
-            session.commit()
-            
-            return jsonify({'message': 'Fund deleted successfully'}), 200
+            try:
+                # Delete the fund (now includes validation)
+                success = self.fund_service.delete_fund(fund_id, session)
+                
+                if not success:
+                    return jsonify({'error': 'Fund not found'}), 404
+                
+                # Commit the transaction
+                session.commit()
+                
+                return jsonify({'message': 'Fund deleted successfully'}), 200
+                
+            except ValueError as e:
+                # ENTERPRISE ERROR HANDLING: Validation errors
+                session.rollback()
+                return jsonify({
+                    'error': 'Fund deletion validation failed',
+                    'details': str(e)
+                }), 400
+                
+            except Exception as e:
+                # ENTERPRISE ERROR HANDLING: Unexpected errors
+                session.rollback()
+                return jsonify({'error': 'Internal server error'}), 500
+                
+            finally:
+                session.close()
             
         except Exception as e:
             current_app.logger.error(f"Error deleting fund {fund_id}: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
             return jsonify({'error': 'Internal server error'}), 500
-        finally:
-            if 'session' in locals():
-                session.close()
     
     def get_funds(self) -> tuple:
         """

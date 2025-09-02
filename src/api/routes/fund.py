@@ -163,6 +163,17 @@ def create_fund():
         return jsonify({"error": str(e)}), 500
 
 
+@fund_bp.route('/api/funds/<int:fund_id>', methods=['DELETE'])
+def delete_fund(fund_id):
+    """Delete a fund using enterprise validation"""
+    try:
+        from src.api.controllers.fund_controller import FundController
+        controller = FundController()
+        return controller.delete_fund(fund_id)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @fund_bp.route('/api/funds/<int:fund_id>/events', methods=['POST'])
 @validate_fund_event_data
 def create_fund_event(fund_id):

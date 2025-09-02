@@ -19,6 +19,7 @@ from src.fund.repositories import FundRepository, FundEventRepository, TaxStatem
 from src.fund.events.orchestrator import FundUpdateOrchestrator
 from src.fund.events.registry import FundEventHandlerRegistry
 from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.services.fund_validation_service import FundValidationService
 
 
 class FundService:
@@ -44,6 +45,7 @@ class FundService:
         self.tax_statement_repository = TaxStatementRepository()
         self.orchestrator = FundUpdateOrchestrator()
         self.registry = FundEventHandlerRegistry()
+        self.validation_service = FundValidationService()
     
     def create_fund(self, fund_data: Dict[str, Any], session: Session) -> Dict[str, Any]:
         """
@@ -125,7 +127,7 @@ class FundService:
     
     def delete_fund(self, fund_id: int, session: Session) -> bool:
         """
-        Delete a fund.
+        Delete a fund with enterprise-grade validation.
         
         Args:
             fund_id: ID of the fund to delete
@@ -133,7 +135,21 @@ class FundService:
             
         Returns:
             True if fund was deleted, False if not found
+            
+        Raises:
+            ValueError: If deletion validation fails
         """
+        # Get existing fund
+        fund = self.fund_repository.get_by_id(fund_id, session)
+        if not fund:
+            return False
+        
+        # ENTERPRISE VALIDATION: Validate deletion
+        validation_errors = self.validation_service.validate_fund_deletion(fund, session)
+        if validation_errors:
+            raise ValueError(f"Deletion validation failed: {validation_errors}")
+        
+        # Delete the fund
         return self.fund_repository.delete(fund_id, session)
     
     def get_fund(self, fund_id: int, session: Session) -> Optional[Dict[str, Any]]:
