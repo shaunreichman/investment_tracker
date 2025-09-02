@@ -41,7 +41,7 @@ interface TabData {
 // COMPONENT
 // ============================================================================
 
-export const EnhancedCompaniesPage: React.FC = () => {
+export const CompaniesPage: React.FC = () => {
   const navigate = useNavigate();
   const { companyId } = useParams<{ companyId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
@@ -70,7 +70,7 @@ export const EnhancedCompaniesPage: React.FC = () => {
     view_mode: 'table' as 'table' | 'cards'
   });
 
-  const { data: fundsData, loading: fundsLoading } = useEnhancedFunds(
+  const { data: fundsData, loading: fundsLoading, refetch: refetchFunds } = useEnhancedFunds(
     parseInt(companyId || '0'),
     {
       sort_by: 'start_date',
@@ -102,8 +102,13 @@ export const EnhancedCompaniesPage: React.FC = () => {
 
   // Handle fund creation
   const handleFundCreated = () => {
-    // Refresh the overview data
-    refetchOverview();
+    // Add small delay before refetch to ensure backend has processed the fund creation
+    setTimeout(() => {
+      // Refresh the overview data
+      refetchOverview();
+      // Refresh the funds data (this is what displays the funds list!)
+      refetchFunds();
+    }, 500);
   };
 
   // Error handling - these functions are kept for future use when implementing tab-specific error/loading states

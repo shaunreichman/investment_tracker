@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '../../test-utils';
-import { EnhancedCompaniesPage } from './EnhancedCompaniesPage';
+import { CompaniesPage } from './CompaniesPage';
 import { createMockCompanyOverview, createMockEnhancedFundsResponse, createMockCompanyDetails } from '../../test-utils/mock-data';
 
 // Mock the custom hooks directly in the jest.mock call
@@ -23,7 +23,7 @@ const mockUseCompanyOverview = jest.mocked(require('../../hooks/useInvestmentCom
 const mockUseEnhancedFunds = jest.mocked(require('../../hooks/useInvestmentCompanies').useEnhancedFunds);
 const mockUseCompanyDetails = jest.mocked(require('../../hooks/useInvestmentCompanies').useCompanyDetails);
 
-describe('EnhancedCompaniesPage', () => {
+describe('CompaniesPage', () => {
   // Increase timeout for all tests in this suite
   jest.setTimeout(15000);
   
@@ -57,7 +57,7 @@ describe('EnhancedCompaniesPage', () => {
 
   describe('Page Integration', () => {
     it('renders company header with company information', async () => {
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       // Wait for company data to load
       await waitFor(() => {
@@ -69,7 +69,7 @@ describe('EnhancedCompaniesPage', () => {
     });
 
     it('displays tab navigation with all expected tabs', async () => {
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       await waitFor(() => {
         expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
@@ -89,7 +89,7 @@ describe('EnhancedCompaniesPage', () => {
     });
 
     it('shows Overview tab content by default', async () => {
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       await waitFor(() => {
         expect(screen.getByRole('tabpanel', { name: /overview/i })).toBeInTheDocument();
@@ -105,7 +105,7 @@ describe('EnhancedCompaniesPage', () => {
 
   describe('Tab Navigation', () => {
     it('switches to Funds tab when clicked', async () => {
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       await waitFor(() => {
         expect(screen.getByRole('tabpanel', { name: /overview/i })).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('EnhancedCompaniesPage', () => {
     }, 15000); // Increase test timeout to 15 seconds
 
     it('switches to Company Details tab when clicked', async () => {
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       await waitFor(() => {
         expect(screen.getByRole('tabpanel', { name: /overview/i })).toBeInTheDocument();
@@ -147,7 +147,7 @@ describe('EnhancedCompaniesPage', () => {
     });
 
     it('maintains active tab state correctly', async () => {
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       await waitFor(() => {
         expect(screen.getByRole('tab', { name: /overview/i })).toHaveAttribute('aria-selected', 'true');
@@ -175,14 +175,14 @@ describe('EnhancedCompaniesPage', () => {
         refetch: jest.fn()
       });
       
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       // Should show loading state initially
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('handles loading states for tab content', async () => {
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       // Wait for initial load
       await waitFor(() => {
@@ -210,7 +210,7 @@ describe('EnhancedCompaniesPage', () => {
         refetch: jest.fn()
       });
       
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       await waitFor(() => {
         expect(screen.getByText(/An unexpected error occurred/i)).toBeInTheDocument();
@@ -234,7 +234,7 @@ describe('EnhancedCompaniesPage', () => {
         refetch: mockRefetch
       });
       
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       await waitFor(() => {
         expect(screen.getByText(/Failed to fetch company data/i)).toBeInTheDocument();
@@ -254,7 +254,7 @@ describe('EnhancedCompaniesPage', () => {
 
   describe('Responsive Behavior', () => {
     it('adapts layout for different screen sizes', async () => {
-      render(<EnhancedCompaniesPage />);
+      render(<CompaniesPage />);
       
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: 'Test Investment Company' })).toBeInTheDocument();

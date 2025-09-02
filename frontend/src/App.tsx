@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import OverallDashboard from './components/OverallDashboard';
-import { EnhancedCompaniesPage } from './components/companies';
+import { CompaniesPage } from './components/companies';
 import FundDetail from './components/fund/detail/FundDetail';
 import { AppStoreProvider } from './store';
 import { DockerThemeProvider } from './theme/DockerThemeProvider';
@@ -14,10 +14,10 @@ const FundDetailWrapper: React.FC = () => {
   return <FundDetail key={fundId} />;
 };
 
-// Wrapper component to provide key for EnhancedCompaniesPage
+// Wrapper component to provide key for CompaniesPage
 const CompaniesPageWrapper: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
-  return <EnhancedCompaniesPage key={companyId} />;
+  return <CompaniesPage key={companyId} />;
 };
 
 function App() {
