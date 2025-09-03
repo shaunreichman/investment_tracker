@@ -65,19 +65,6 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
   const currencyLabelId = 'currency-select-label';
   const currencySelectId = 'currency-select';
 
-  // Use the standardized number input hook for commitment amount
-  const commitmentAmountInput = useNumberInput(formData.commitment_amount || '', {
-    allowDecimals: true,
-    allowNegative: false
-  });
-
-  // Sync the hook value with the form when it changes
-  React.useEffect(() => {
-    if (commitmentAmountInput.value !== formData.commitment_amount) {
-      onInputChange('commitment_amount', commitmentAmountInput.value);
-    }
-  }, [commitmentAmountInput.value, formData.commitment_amount, onInputChange]);
-
   return (
     <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr' }}>
       {/* Entity Selection */}
@@ -184,13 +171,14 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
       </FormControl>
 
       {/* Commitment Amount */}
-      <TextField
+      <NumberInputField
         fullWidth
         label="Commitment Amount"
-        value={commitmentAmountInput.value}
-        onChange={e => commitmentAmountInput.onChange(e.target.value)}
-        onBlur={commitmentAmountInput.onBlur}
-        onFocus={commitmentAmountInput.onFocus}
+        value={formData.commitment_amount || ''}
+        onInputChange={onInputChange}
+        fieldName="commitment_amount"
+        allowDecimals={true}
+        allowNegative={false}
         error={!!validationErrors.commitment_amount}
         helperText={validationErrors.commitment_amount || 'Total commitment amount (optional)'}
         inputProps={{

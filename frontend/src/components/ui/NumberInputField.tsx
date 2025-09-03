@@ -53,7 +53,7 @@ export const NumberInputField: React.FC<NumberInputFieldProps> = ({
     // Always pass the raw numeric value to the form, not the formatted display value
     const rawValue = numberInput.numericValue.toString();
     
-    // Only log when the raw value actually changes
+    // Only update when the raw value actually changes
     if (rawValue !== value) {
       onInputChange(fieldName, rawValue);
     }
