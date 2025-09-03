@@ -380,7 +380,7 @@ class FundService:
     
     def delete_fund_event(self, fund_id: int, event_id: int, session: Session) -> bool:
         """
-        Delete a fund event.
+        Delete a fund event and recalculate fund summary fields.
         
         Args:
             fund_id: ID of the fund
@@ -390,7 +390,41 @@ class FundService:
         Returns:
             True if event was deleted, False if not found
         """
-        return self.fund_event_repository.delete(event_id, session)
+        # Delete the event
+        success = self.fund_event_repository.delete(event_id, session)
+        
+        if success:
+            # Recalculate fund summary fields after deletion
+            self._recalculate_fund_summary_after_deletion(fund_id, session)
+        
+        return success
+    
+    def _recalculate_fund_summary_after_deletion(self, fund_id: int, session: Session) -> None:
+        """
+        Recalculate fund summary fields after an event deletion.
+        
+        This method uses domain calculators to ensure consistency and reusability
+        across the codebase.
+        
+        Args:
+            fund_id: ID of the fund to recalculate
+            session: Database session
+        """
+        from src.fund.models.fund import Fund
+        from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
+        
+        # Get the fund
+        fund = session.query(Fund).filter(Fund.id == fund_id).first()
+        if not fund:
+            return
+        
+        # Use domain calculators for consistent calculations
+        equity_fields = FundEquityCalculator.recalculate_all_equity_fields(fund, session)
+        
+        # Update fund fields using calculated values
+        fund.current_equity_balance = equity_fields['current_equity_balance']
+        fund.average_equity_balance = equity_fields['average_equity_balance']
+        fund.total_cost_basis = equity_fields['total_cost_basis']
     
     def get_fund_events(self, fund_id: int, session: Session,
                        skip: int = 0, 

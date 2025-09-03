@@ -477,27 +477,15 @@ class BaseFundEventHandler(ABC):
         
         capital_events = query.order_by(FundEvent.event_date, FundEvent.id).all()
         
-        # Calculate total cost basis and equity balance
-        total_cost_basis = 0.0
-        current_equity_balance = 0.0
+        # Use domain calculators for consistent calculations
+        from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
         
-        for capital_event in capital_events:
-            if capital_event.event_type == EventType.CAPITAL_CALL:
-                total_cost_basis += capital_event.amount or 0.0
-                current_equity_balance += capital_event.amount or 0.0
-            elif capital_event.event_type == EventType.RETURN_OF_CAPITAL:
-                current_equity_balance -= capital_event.amount or 0.0
+        equity_fields = FundEquityCalculator.recalculate_all_equity_fields(self.fund, self.session)
         
-        # Update fund fields
-        self.fund.total_cost_basis = total_cost_basis
-        self.fund.current_equity_balance = current_equity_balance
-        
-        # Calculate average equity balance if we have events
-        if capital_events:
-            # For now, use a simple average - this could be enhanced with time-weighted calculations
-            self.fund.average_equity_balance = current_equity_balance / len(capital_events)
-        else:
-            self.fund.average_equity_balance = 0.0
+        # Update fund fields using calculated values
+        self.fund.current_equity_balance = equity_fields['current_equity_balance']
+        self.fund.average_equity_balance = equity_fields['average_equity_balance']
+        self.fund.total_cost_basis = equity_fields['total_cost_basis']
     
     def _update_nav_based_fund_summary(self, event: Optional[FundEvent] = None) -> None:
         """
