@@ -13,6 +13,7 @@ export interface FundsTabProps {
   loading: boolean;
   onParamsChange: (params: any) => void;
   currentParams: any;
+  onDeleteFund?: (fundId: number, fundName: string) => void;
 }
 
 export interface FundsFiltersProps {
@@ -34,6 +35,7 @@ export interface FundsTableProps {
   onSort: (field: string) => void;
   sortField: string;
   sortDirection: 'asc' | 'desc';
+  onDeleteFund?: (fundId: number, fundName: string) => void;
 }
 
 export interface FundsCardsProps {
@@ -42,6 +44,7 @@ export interface FundsCardsProps {
 
 export interface FundRowProps {
   fund: EnhancedFund;
+  onDeleteFund?: ((fundId: number, fundName: string) => void) | undefined;
 }
 
 // ============================================================================

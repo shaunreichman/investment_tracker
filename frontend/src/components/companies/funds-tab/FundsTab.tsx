@@ -20,6 +20,7 @@ export const FundsTab: React.FC<FundsTabProps> = ({
   loading,
   onParamsChange,
   currentParams,
+  onDeleteFund,
 }) => {
   // Initialize hooks
   const { viewMode, handleViewModeChange } = useResponsiveView({
@@ -127,6 +128,7 @@ export const FundsTab: React.FC<FundsTabProps> = ({
               onSort={handleSort}
               sortField={sortField}
               sortDirection={sortDirection}
+              {...(onDeleteFund && { onDeleteFund })}
             />
           ) : (
             <FundsCards data={data} />

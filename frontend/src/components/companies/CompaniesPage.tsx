@@ -12,6 +12,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ErrorDisplay } from '../ErrorDisplay';
 import { ErrorType, createErrorInfo } from '../../types/errors';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+
 import { TabNavigation } from './TabNavigation';
 import { OverviewTab } from './overview-tab';
 import { CompanyDetailsTab } from './company-details-tab';
@@ -23,6 +25,7 @@ import {
   useCompanyDetails,
   useEnhancedFunds,
 } from '../../hooks/useInvestmentCompanies';
+import { useDeleteFund } from '../../hooks/useFunds';
 
 const CreateFundModal = React.lazy(() => import('../companies/create-fund/CreateFundModal'));
 
@@ -46,6 +49,10 @@ export const CompaniesPage: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedFund, setSelectedFund] = useState<{ id: number; name: string } | null>(null);
+  const [isDeletingFund, setIsDeletingFund] = useState(false);
+  const [deletionError, setDeletionError] = useState<string | null>(null);
   const theme = useTheme();
 
   // API hooks
@@ -82,6 +89,9 @@ export const CompaniesPage: React.FC = () => {
     }
   );
 
+  // Fund deletion hook
+  const { mutate: deleteFund, loading: deletingFund } = useDeleteFund();
+
   const handleFundsParamsChange = (newParams: any) => {
     setFundsParams(prev => ({ ...prev, ...newParams }));
   };
@@ -109,6 +119,72 @@ export const CompaniesPage: React.FC = () => {
       // Refresh the funds data (this is what displays the funds list!)
       refetchFunds();
     }, 500);
+  };
+
+  // Handle fund deletion request (opens confirmation dialog)
+  const handleDeleteFund = (fundId: number, fundName: string) => {
+    setSelectedFund({ id: fundId, name: fundName });
+    setDeletionError(null); // Clear any previous errors
+    setDeleteDialogOpen(true);
+  };
+
+  // Confirm fund deletion
+  const confirmDeleteFund = async () => {
+    if (!selectedFund) return;
+    
+    setIsDeletingFund(true);
+    setDeletionError(null); // Clear any previous errors
+    
+    try {
+      const result = await deleteFund(selectedFund.id);
+      
+      // Check if deletion was successful
+      if (result !== undefined) {
+        // Close dialog and clear selection
+        setDeleteDialogOpen(false);
+        setSelectedFund(null);
+        
+        // Add small delay before refetch to ensure backend has processed the deletion
+        setTimeout(() => {
+          // Refresh the overview data
+          refetchOverview();
+          // Refresh the funds data (this is what displays the funds list!)
+          refetchFunds();
+        }, 500);
+      } else {
+        // Set a generic error message since we can't get the specific error
+        setDeletionError('Fund has associated events and cannot be deleted.');
+      }
+      
+    } catch (error: any) {
+      // Extract error message from the caught error
+      const errorMessage = getErrorMessage(error);
+      setDeletionError(errorMessage);
+    } finally {
+      setIsDeletingFund(false);
+    }
+  };
+
+  // Cancel fund deletion
+  const cancelDeleteFund = () => {
+    setDeleteDialogOpen(false);
+    setSelectedFund(null);
+    setDeletionError(null);
+  };
+
+  // Helper function to extract error message from error object
+  const getErrorMessage = (error: any): string => {
+    if (!error) return 'Fund has associated events and cannot be deleted.';
+    
+    // Try different possible error message properties
+    if (typeof error === 'string') return error;
+    if (error.details) return error.details;
+    if (error.message) return error.message;
+    if (error.error?.message) return error.error.message;
+    if (error.error?.details) return error.error.details;
+    
+    // Fallback
+    return 'Fund has associated events and cannot be deleted.';
   };
 
   // Error handling - these functions are kept for future use when implementing tab-specific error/loading states
@@ -334,6 +410,8 @@ export const CompaniesPage: React.FC = () => {
         />
       </Box>
 
+
+
       {/* Tab Content */}
       <Box sx={{ 
         backgroundColor: theme.palette.background.paper,
@@ -355,6 +433,7 @@ export const CompaniesPage: React.FC = () => {
             loading={fundsLoading}
             onParamsChange={handleFundsParamsChange}
             currentParams={fundsParams}
+            onDeleteFund={handleDeleteFund}
           />
         )}
         
@@ -384,6 +463,23 @@ export const CompaniesPage: React.FC = () => {
           companyName={overviewData.company.name}
         />
       </Suspense>
+
+      {/* Fund Deletion Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete Fund"
+        description={
+          deletionError 
+            ? `Cannot delete fund "${selectedFund?.name}". ${deletionError}`
+            : `Are you sure you want to delete the fund "${selectedFund?.name}"? This action cannot be undone.`
+        }
+        confirmLabel={deletionError ? "OK" : "Delete"}
+        cancelLabel={deletionError ? "" : "Cancel"}
+        onConfirm={deletionError ? cancelDeleteFund : confirmDeleteFund}
+        onCancel={deletionError ? () => {} : cancelDeleteFund}
+        loading={isDeletingFund}
+        confirmVariant={deletionError ? "primary" : "error"}
+      />
     </Box>
   );
 };

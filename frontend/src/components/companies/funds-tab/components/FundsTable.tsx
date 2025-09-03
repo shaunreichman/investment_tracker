@@ -23,6 +23,7 @@ export const FundsTable: React.FC<FundsTableProps> = ({
   onSort,
   sortField,
   sortDirection,
+  onDeleteFund,
 }) => {
   const getSortIcon = (field: string) => {
     if (sortField !== field) {
@@ -83,11 +84,18 @@ export const FundsTable: React.FC<FundsTableProps> = ({
             {renderSortableHeader('unrealized_gains_losses', 'Unrealized G/L', '140px')}
             {renderSortableHeader('realized_gains_losses', 'Realized G/L', '130px')}
             {renderSortableHeader('total_profit_loss', 'Total P/L', '120px')}
+            
+            {/* Actions Section */}
+            <TableCell style={{ width: '100px' }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {data.funds.map((fund) => (
-            <FundRow key={fund.id} fund={fund} />
+            <FundRow 
+              key={fund.id} 
+              fund={fund} 
+              onDeleteFund={onDeleteFund || undefined} 
+            />
           ))}
         </TableBody>
       </Table>

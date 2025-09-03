@@ -17,7 +17,7 @@ export interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
   loading?: boolean;
   disabled?: boolean;
   confirmVariant?: 'error' | 'primary' | 'secondary';
@@ -43,7 +43,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return (
     <Dialog 
       open={open} 
-      onClose={onCancel} 
+      onClose={onCancel || (() => {})} 
       aria-labelledby={titleId} 
       {...(descId && { 'aria-describedby': descId })}
       PaperProps={{
@@ -87,27 +87,29 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       )}
       
       <DialogActions sx={{ p: 3, pt: 2, gap: 2 }}>
-        <Button 
-          onClick={onCancel} 
-          disabled={loading}
-          variant="outlined"
-          sx={{
-            borderColor: theme.palette.divider,
-            color: theme.palette.text.secondary,
-            '&:hover': {
-              borderColor: theme.palette.text.muted,
-              backgroundColor: theme.palette.background.sidebarHover
-            },
-            '&:disabled': {
-              borderColor: theme.palette.text.disabled || theme.palette.text.muted,
-              color: theme.palette.text.disabled || theme.palette.text.muted
-            },
-            px: 3,
-            py: 1
-          }}
-        >
-          {cancelLabel}
-        </Button>
+        {onCancel && cancelLabel && (
+          <Button 
+            onClick={onCancel} 
+            disabled={loading}
+            variant="outlined"
+            sx={{
+              borderColor: theme.palette.divider,
+              color: theme.palette.text.secondary,
+              '&:hover': {
+                borderColor: theme.palette.text.muted,
+                backgroundColor: theme.palette.background.sidebarHover
+              },
+              '&:disabled': {
+                borderColor: theme.palette.text.disabled || theme.palette.text.muted,
+                color: theme.palette.text.disabled || theme.palette.text.muted
+              },
+              px: 3,
+              py: 1
+            }}
+          >
+            {cancelLabel}
+          </Button>
+        )}
         
         <Button
           onClick={onConfirm}

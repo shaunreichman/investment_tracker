@@ -8,15 +8,23 @@ import {
   TableCell,
   Typography,
   Link,
+  Button,
 } from '@mui/material';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { StatusChip } from '../../../ui/StatusChip';
 import { TrackingTypeChip } from '../../../ui/TrackingTypeChip';
 import { formatCurrency, formatPercentage } from '../../../../utils/formatters';
 import { FundRowProps } from '../types/funds-tab.types';
 
-export const FundRow: React.FC<FundRowProps> = ({ fund }) => {
+export const FundRow: React.FC<FundRowProps> = ({ fund, onDeleteFund }) => {
   const navigate = useNavigate();
+
+  const handleDeleteClick = () => {
+    if (onDeleteFund) {
+      onDeleteFund(fund.id, fund.name);
+    }
+  };
 
   return (
     <TableRow hover>
@@ -104,6 +112,27 @@ export const FundRow: React.FC<FundRowProps> = ({ fund }) => {
       </TableCell>
       <TableCell align="right">
         {fund.current_unit_price ? formatCurrency(fund.current_unit_price) : '-'}
+      </TableCell>
+      
+      {/* Actions */}
+      <TableCell align="right">
+        {onDeleteFund && (
+          <Button
+            size="small"
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleDeleteClick}
+            sx={{
+              minWidth: 'auto',
+              px: 1,
+              py: 0.5,
+              fontSize: '12px'
+            }}
+          >
+            Delete
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   );
