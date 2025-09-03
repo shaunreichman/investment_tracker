@@ -44,7 +44,7 @@ const FundDetail: React.FC = () => {
   const [isUpdatingSummary, setIsUpdatingSummary] = useState(false);
   const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
   
-  // ENTERPRISE: Granular loading states for individual sections
+  // Granular loading states for individual sections
   const [sectionLoadingStates, setSectionLoadingStates] = useState({
     equity: false,
     expectedPerformance: false,
@@ -54,32 +54,20 @@ const FundDetail: React.FC = () => {
     unitPriceChart: false
   });
 
-  // ENTERPRISE: Removed smooth transition logic - using proper memoization instead
-
   // Centralized state management using Zustand store
   const { isVisible: sidebarVisible, toggle: toggleSidebar } = useSidebarState('fundDetail');
   const { filters: tableFilters, updateFilters } = useTableFilters();
 
-  // PHASE 2: Clean separate data streams architecture
-  // Events data - refreshes immediately (fast)
+  // Separate data streams for independent refresh
   const { data: eventsData, loading: eventsLoading, refetch: refetchEvents } = useFundEvents(Number(fundId));
-  
-  // Summary data - refreshes with delay (computational sections)
   const { data: summaryData, loading: summaryLoading, refetch: refetchSummary } = useFundSummary(Number(fundId));
-  
-  // Metadata - static data that rarely changes
   const { data: fundMetadata, loading: metadataLoading } = useFundMetadata(Number(fundId));
   
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
-  // ENTERPRISE: Removed smooth transition effects - using proper memoization instead
-
-  // ENTERPRISE: Helper functions for granular loading state management
-  // Note: setSectionLoading removed as it's not currently used
+  // Helper functions for granular loading state management
 
   const setAllSectionsLoading = useCallback((isLoading: boolean) => {
-    console.log(`🔄 [DEBUG] All sections loading state: ${isLoading ? 'STARTING' : 'COMPLETED'}`);
-    console.log(`🔄 [DEBUG] Current section states:`, sectionLoadingStates);
     setSectionLoadingStates({
       equity: isLoading,
       expectedPerformance: isLoading,
@@ -88,9 +76,9 @@ const FundDetail: React.FC = () => {
       transactionSummary: isLoading,
       unitPriceChart: isLoading
     });
-  }, [sectionLoadingStates]);
+  }, []);
 
-  // PHASE 2: Extract data from clean separate streams
+  // Extract data from separate streams
   const fund = React.useMemo(() => 
     summaryData?.fund, 
     [summaryData?.fund]
@@ -149,32 +137,23 @@ const FundDetail: React.FC = () => {
     isLoading: sectionLoadingStates.unitPriceChart
   }), [fund, events, sectionLoadingStates.unitPriceChart]);
 
-  // PHASE 2: Clean targeted refresh handlers using separate data streams
+  // Targeted refresh handlers using separate data streams
   const handleEventCreated = useCallback(() => {
-    console.log('🚀 [PHASE 2] Event created - starting targeted refresh');
     setEventModalOpen(false);
     
-    // Phase 1: Immediate refresh of events table (fast)
-    console.log('⚡ [PHASE 2] Refreshing events table immediately');
+    // Immediate refresh of events table
     refetchEvents();
     
-    // Phase 2: Targeted refresh of summary sections only
-    console.log('🔄 [PHASE 2] Setting summary sections to loading state');
+    // Targeted refresh of summary sections
     setAllSectionsLoading(true);
     setIsUpdatingSummary(true);
     
-    // Use the clean targeted refresh architecture
-    const refreshDelay = 3000; // 3 seconds for visual assessment of refresh behavior
-    console.log(`⏱️ [PHASE 2] Starting ${refreshDelay}ms delay before summary refresh`);
+    const refreshDelay = 3000; // 3 seconds for visual assessment
     setTimeout(() => {
-      console.log('🔄 [PHASE 2] Starting summary refresh after delay');
       refetchSummary().finally(() => {
-        console.log('✅ [PHASE 2] Summary refresh completed - clearing loading states');
-        // Clear all loading states when complete
         setAllSectionsLoading(false);
         setIsUpdatingSummary(false);
         setShowUpdateSuccess(true);
-        // Hide success message after 2 seconds
         setTimeout(() => setShowUpdateSuccess(false), 2000);
       });
     }, refreshDelay);
@@ -192,48 +171,37 @@ const FundDetail: React.FC = () => {
   const confirmDeleteEvent = useCallback(async () => {
     if (!selectedEvent) return;
     
-    console.log('🗑️ [PHASE 2] Event deletion started');
     setDeletingEvent(true);
     try {
       await deleteFundEvent.mutate();
-      console.log('✅ [PHASE 2] Event deletion completed - starting targeted refresh');
       setDeleteDialogOpen(false);
       setSelectedEvent(null);
       
-      // PHASE 2: Clean targeted refresh for deletion using separate data streams
-      // Phase 1: Immediate refresh of events table (fast)
-      console.log('⚡ [PHASE 2] Refreshing events table immediately');
+      // Targeted refresh for deletion using separate data streams
+      // Immediate refresh of events table
       refetchEvents();
       
-      // Phase 2: Targeted refresh of summary sections only
-      console.log('🔄 [PHASE 2] Setting summary sections to loading state');
+      // Targeted refresh of summary sections
       setAllSectionsLoading(true);
       setIsUpdatingSummary(true);
       
-      // Use the clean targeted refresh architecture
-      const refreshDelay = 3000; // 3 seconds for visual assessment of refresh behavior
-      console.log(`⏱️ [PHASE 2] Starting ${refreshDelay}ms delay before summary refresh`);
+      const refreshDelay = 3000; // 3 seconds for visual assessment
       setTimeout(() => {
-        console.log('🔄 [PHASE 2] Starting summary refresh after delay');
         refetchSummary().finally(() => {
-          console.log('✅ [PHASE 2] Summary refresh completed - clearing loading states');
-          // Clear all loading states when complete
           setAllSectionsLoading(false);
           setIsUpdatingSummary(false);
           setShowUpdateSuccess(true);
-          // Hide success message after 2 seconds
           setTimeout(() => setShowUpdateSuccess(false), 2000);
         });
       }, refreshDelay);
     } catch (err) {
-      console.error('❌ [PHASE 2] Failed to delete event:', err);
+      console.error('Failed to delete event:', err);
     } finally {
       setDeletingEvent(false);
     }
   }, [selectedEvent, deleteFundEvent, refetchEvents, refetchSummary, setAllSectionsLoading]);
 
-  // PHASE 2: Only show full-page loading for initial loads, not refreshes
-  // This prevents the "whole page reset" issue during targeted refreshes
+  // Only show full-page loading for initial loads, not refreshes
   if (eventsLoading || summaryLoading || metadataLoading) {
     return (
       <Box sx={{ p: 3 }}>
@@ -242,8 +210,7 @@ const FundDetail: React.FC = () => {
     );
   }
 
-  // PHASE 2: Error state handling for separate data streams
-  // Check for errors in any of the data streams
+  // Error state handling for separate data streams
   const hasError = eventsData === null && eventsLoading === false;
   
   if (hasError) {
@@ -271,9 +238,7 @@ const FundDetail: React.FC = () => {
     );
   }
 
-  // ENTERPRISE: Data and props are now memoized above, before any early returns
-
-  // PHASE 2: No data state check for separate data streams
+  // No data state check
   if (!fund) {
     return (
       <Box sx={{ p: 3 }}>
@@ -403,37 +368,6 @@ const FundDetail: React.FC = () => {
                 </Box>
               )}
             </Box>
-            
-            {/* ENTERPRISE: Debug panel for testing loading states */}
-            {process.env.NODE_ENV === 'development' && (
-              <Box sx={{ 
-                mt: 2, 
-                p: 1, 
-                backgroundColor: theme.palette.grey[100], 
-                borderRadius: 1,
-                fontSize: '10px',
-                fontFamily: 'monospace'
-              }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-                  🔍 DEBUG - Section Loading States (Memoized):
-                </Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  {Object.entries(sectionLoadingStates).map(([section, loading]) => (
-                    <Box key={section} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ 
-                        width: 8, 
-                        height: 8, 
-                        borderRadius: '50%', 
-                        backgroundColor: loading ? theme.palette.primary.main : theme.palette.grey[400]
-                      }} />
-                      <Typography variant="caption" sx={{ fontSize: '9px' }}>
-                        {section}: {loading ? 'LOADING' : 'READY'}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
           </Box>
           
           {/* Summary Sections - Scrollable container */}
@@ -442,7 +376,7 @@ const FundDetail: React.FC = () => {
             overflowY: 'auto',
             minHeight: 0 // Allow flex item to shrink
           }}>
-            {/* ENTERPRISE: Use memoized props to prevent unnecessary re-renders */}
+            {/* Use memoized props to prevent unnecessary re-renders */}
             <EquitySection {...equitySectionProps} />
             <ExpectedPerformanceSection {...expectedPerformanceSectionProps} />
             <CompletedPerformanceSection {...completedPerformanceSectionProps} />

@@ -20,14 +20,6 @@ interface SectionProps {
  * Expected Performance Section - Planned/expected fund metrics
  */
 const ExpectedPerformanceSection: React.FC<SectionProps> = React.memo(({ fund, formatCurrency, formatDate, isLoading = false }) => {
-  // ENTERPRISE: Debug logging for section loading state
-  React.useEffect(() => {
-    if (isLoading) {
-      console.log('🔄 [DEBUG] ExpectedPerformanceSection: Loading state activated');
-    } else {
-      console.log('✅ [DEBUG] ExpectedPerformanceSection: Loading state deactivated');
-    }
-  }, [isLoading]);
 
   // Phase 3.3: Enhanced data organization for performance metrics
   const performanceMetrics = [
@@ -70,7 +62,7 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = React.memo(({ fund, f
       <Box display="flex" alignItems="center" mb={0.5}>
         <TrendingUp color="success" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Expected Performance</Typography>
-        {/* ENTERPRISE: Show loading indicator for this section */}
+        {/* Show loading indicator for this section */}
         {isLoading && (
           <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
             <CircularProgress size={12} sx={{ color: 'success.main' }} />

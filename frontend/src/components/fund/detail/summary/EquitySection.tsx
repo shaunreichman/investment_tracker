@@ -21,14 +21,6 @@ interface SectionProps {
  * Equity & NAV Summary Section - Current investment position and NAV data
  */
 const EquitySection: React.FC<SectionProps> = React.memo(({ fund, formatCurrency, formatDate, isLoading = false }) => {
-  // ENTERPRISE: Debug logging for section loading state
-  React.useEffect(() => {
-    if (isLoading) {
-      console.log('🔄 [DEBUG] EquitySection: Loading state activated');
-    } else {
-      console.log('✅ [DEBUG] EquitySection: Loading state deactivated');
-    }
-  }, [isLoading]);
 
   // Enhanced data organization for equity and NAV metrics
   const isActiveNavFund = fund.tracking_type === FundType.NAV_BASED && fund.status === FundStatus.ACTIVE;
@@ -109,7 +101,7 @@ const EquitySection: React.FC<SectionProps> = React.memo(({ fund, formatCurrency
         <Typography variant="h6" sx={{ fontSize: 16 }}>
           {fund.tracking_type === FundType.NAV_BASED ? 'Equity & NAV Summary' : 'Equity Position'}
         </Typography>
-        {/* ENTERPRISE: Show loading indicator for this section */}
+        {/* Show loading indicator for this section */}
         {isLoading && (
           <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
             <CircularProgress size={12} sx={{ color: 'primary.main' }} />
