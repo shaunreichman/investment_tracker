@@ -6,7 +6,8 @@ import { ErrorDisplay } from '../../ErrorDisplay';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { ExtendedFundEvent } from '../../../types/api';
-import { useCentralizedFundDetail, useDeleteFundEvent, useFundEvents, useFundSummary, useFundMetadata } from '../../../hooks/useFunds';
+import { ErrorType, ErrorSeverity } from '../../../types/errors';
+import { useDeleteFundEvent, useFundEvents, useFundSummary, useFundMetadata } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { useSidebarState, useTableFilters } from '../../../store';
 
@@ -59,7 +60,7 @@ const FundDetail: React.FC = () => {
   const { isVisible: sidebarVisible, toggle: toggleSidebar } = useSidebarState('fundDetail');
   const { filters: tableFilters, updateFilters } = useTableFilters();
 
-  // PHASE 1: Separate data streams for independent refresh
+  // PHASE 2: Clean separate data streams architecture
   // Events data - refreshes immediately (fast)
   const { data: eventsData, loading: eventsLoading, refetch: refetchEvents } = useFundEvents(Number(fundId));
   
@@ -68,9 +69,6 @@ const FundDetail: React.FC = () => {
   
   // Metadata - static data that rarely changes
   const { data: fundMetadata, loading: metadataLoading } = useFundMetadata(Number(fundId));
-  
-  // Legacy hook for backward compatibility (will be removed in Phase 2)
-  const { data: fundData, loading, error, refetch: refetchFundDetail } = useCentralizedFundDetail(Number(fundId));
   
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
@@ -92,21 +90,20 @@ const FundDetail: React.FC = () => {
     });
   }, [sectionLoadingStates]);
 
-  // PHASE 1: Extract data from separate streams
-  // Use new data streams when available, fallback to legacy for backward compatibility
+  // PHASE 2: Extract data from clean separate streams
   const fund = React.useMemo(() => 
-    summaryData?.fund || fundData?.fund, 
-    [summaryData?.fund, fundData?.fund]
+    summaryData?.fund, 
+    [summaryData?.fund]
   );
   
   const events: ExtendedFundEvent[] = React.useMemo(() => 
-    (eventsData as ExtendedFundEvent[]) || fundData?.events || [], 
-    [eventsData, fundData?.events]
+    (eventsData as ExtendedFundEvent[]) || [], 
+    [eventsData]
   );
   
   const statistics = React.useMemo(() => 
-    summaryData?.statistics || fundData?.statistics, 
-    [summaryData?.statistics, fundData?.statistics]
+    summaryData?.statistics, 
+    [summaryData?.statistics]
   );
 
   const equitySectionProps = React.useMemo(() => ({
@@ -152,27 +149,27 @@ const FundDetail: React.FC = () => {
     isLoading: sectionLoadingStates.unitPriceChart
   }), [fund, events, sectionLoadingStates.unitPriceChart]);
 
-  // PHASE 1: Targeted refresh handlers using separate data streams
+  // PHASE 2: Clean targeted refresh handlers using separate data streams
   const handleEventCreated = useCallback(() => {
-    console.log('🚀 [PHASE 1] Event created - starting targeted refresh');
+    console.log('🚀 [PHASE 2] Event created - starting targeted refresh');
     setEventModalOpen(false);
     
     // Phase 1: Immediate refresh of events table (fast)
-    console.log('⚡ [PHASE 1] Refreshing events table immediately');
+    console.log('⚡ [PHASE 2] Refreshing events table immediately');
     refetchEvents();
     
     // Phase 2: Targeted refresh of summary sections only
-    console.log('🔄 [PHASE 1] Setting summary sections to loading state');
+    console.log('🔄 [PHASE 2] Setting summary sections to loading state');
     setAllSectionsLoading(true);
     setIsUpdatingSummary(true);
     
-    // Use the new targeted refresh instead of full page refresh
+    // Use the clean targeted refresh architecture
     const refreshDelay = 3000; // 3 seconds for visual assessment of refresh behavior
-    console.log(`⏱️ [PHASE 1] Starting ${refreshDelay}ms delay before summary refresh`);
+    console.log(`⏱️ [PHASE 2] Starting ${refreshDelay}ms delay before summary refresh`);
     setTimeout(() => {
-      console.log('🔄 [PHASE 1] Starting summary refresh after delay');
+      console.log('🔄 [PHASE 2] Starting summary refresh after delay');
       refetchSummary().finally(() => {
-        console.log('✅ [PHASE 1] Summary refresh completed - clearing loading states');
+        console.log('✅ [PHASE 2] Summary refresh completed - clearing loading states');
         // Clear all loading states when complete
         setAllSectionsLoading(false);
         setIsUpdatingSummary(false);
@@ -195,31 +192,31 @@ const FundDetail: React.FC = () => {
   const confirmDeleteEvent = useCallback(async () => {
     if (!selectedEvent) return;
     
-    console.log('🗑️ [PHASE 1] Event deletion started');
+    console.log('🗑️ [PHASE 2] Event deletion started');
     setDeletingEvent(true);
     try {
       await deleteFundEvent.mutate();
-      console.log('✅ [PHASE 1] Event deletion completed - starting targeted refresh');
+      console.log('✅ [PHASE 2] Event deletion completed - starting targeted refresh');
       setDeleteDialogOpen(false);
       setSelectedEvent(null);
       
-      // PHASE 1: Targeted refresh for deletion using separate data streams
+      // PHASE 2: Clean targeted refresh for deletion using separate data streams
       // Phase 1: Immediate refresh of events table (fast)
-      console.log('⚡ [PHASE 1] Refreshing events table immediately');
+      console.log('⚡ [PHASE 2] Refreshing events table immediately');
       refetchEvents();
       
       // Phase 2: Targeted refresh of summary sections only
-      console.log('🔄 [PHASE 1] Setting summary sections to loading state');
+      console.log('🔄 [PHASE 2] Setting summary sections to loading state');
       setAllSectionsLoading(true);
       setIsUpdatingSummary(true);
       
-      // Use the new targeted refresh instead of full page refresh
+      // Use the clean targeted refresh architecture
       const refreshDelay = 3000; // 3 seconds for visual assessment of refresh behavior
-      console.log(`⏱️ [PHASE 1] Starting ${refreshDelay}ms delay before summary refresh`);
+      console.log(`⏱️ [PHASE 2] Starting ${refreshDelay}ms delay before summary refresh`);
       setTimeout(() => {
-        console.log('🔄 [PHASE 1] Starting summary refresh after delay');
+        console.log('🔄 [PHASE 2] Starting summary refresh after delay');
         refetchSummary().finally(() => {
-          console.log('✅ [PHASE 1] Summary refresh completed - clearing loading states');
+          console.log('✅ [PHASE 2] Summary refresh completed - clearing loading states');
           // Clear all loading states when complete
           setAllSectionsLoading(false);
           setIsUpdatingSummary(false);
@@ -229,15 +226,15 @@ const FundDetail: React.FC = () => {
         });
       }, refreshDelay);
     } catch (err) {
-      console.error('❌ [PHASE 1] Failed to delete event:', err);
+      console.error('❌ [PHASE 2] Failed to delete event:', err);
     } finally {
       setDeletingEvent(false);
     }
   }, [selectedEvent, deleteFundEvent, refetchEvents, refetchSummary, setAllSectionsLoading]);
 
-  // PHASE 1: Only show full-page loading for initial loads, not refreshes
+  // PHASE 2: Only show full-page loading for initial loads, not refreshes
   // This prevents the "whole page reset" issue during targeted refreshes
-  if (loading || eventsLoading || summaryLoading || metadataLoading) {
+  if (eventsLoading || summaryLoading || metadataLoading) {
     return (
       <Box sx={{ p: 3 }}>
         <LoadingSpinner label="Loading fund details..." />
@@ -245,14 +242,28 @@ const FundDetail: React.FC = () => {
     );
   }
 
-  // Error state
-  if (error) {
+  // PHASE 2: Error state handling for separate data streams
+  // Check for errors in any of the data streams
+  const hasError = eventsData === null && eventsLoading === false;
+  
+  if (hasError) {
     return (
       <Box sx={{ p: 3 }}>
         <ErrorDisplay
-          error={error}
-          canRetry={error.retryable}
-          onRetry={() => refetchFundDetail()}
+          error={{ 
+            message: 'Failed to load fund data', 
+            retryable: true,
+            type: ErrorType.NETWORK,
+            severity: ErrorSeverity.HIGH,
+            timestamp: new Date(),
+            userMessage: 'Unable to load fund data. Please try again.'
+          }}
+          canRetry={true}
+          onRetry={() => {
+            // Retry all data streams
+            refetchEvents();
+            refetchSummary();
+          }}
           onDismiss={() => navigate('/')}
           variant="inline"
         />
@@ -262,8 +273,8 @@ const FundDetail: React.FC = () => {
 
   // ENTERPRISE: Data and props are now memoized above, before any early returns
 
-  // No data state
-  if (!fundData || !fund) {
+  // PHASE 2: No data state check for separate data streams
+  if (!fund) {
     return (
       <Box sx={{ p: 3 }}>
         <Box sx={{ 
