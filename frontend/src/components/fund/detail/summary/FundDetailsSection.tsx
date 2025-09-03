@@ -15,12 +15,13 @@ interface SectionProps {
   formatCurrency: (amount: number | null, currency?: string) => string;
   formatDate: (dateString: string | null) => string;
   events?: any[];
+  isLoading?: boolean; // ENTERPRISE: Individual loading state for this section
 }
 
 /**
  * Fund Details Section - Basic fund information
  */
-const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+const FundDetailsSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, isLoading = false }) => {
   const statusInfo = getStatusInfo(fund.status);
   
   const fundDetails = [

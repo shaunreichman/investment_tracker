@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ErrorDisplay } from '../../ErrorDisplay';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
-import { ExtendedFundEvent, FundType } from '../../../types/api';
+import { ExtendedFundEvent } from '../../../types/api';
 import { useCentralizedFundDetail, useDeleteFundEvent, useFundEvents } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { useSidebarState, useTableFilters } from '../../../store';
@@ -42,6 +42,18 @@ const FundDetail: React.FC = () => {
   const [deletingEvent, setDeletingEvent] = useState(false);
   const [isUpdatingSummary, setIsUpdatingSummary] = useState(false);
   const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
+  
+  // ENTERPRISE: Granular loading states for individual sections
+  const [sectionLoadingStates, setSectionLoadingStates] = useState({
+    equity: false,
+    expectedPerformance: false,
+    completedPerformance: false,
+    fundDetails: false,
+    transactionSummary: false,
+    unitPriceChart: false
+  });
+
+  // ENTERPRISE: Removed smooth transition logic - using proper memoization instead
 
   // Centralized state management using Zustand store
   const { isVisible: sidebarVisible, toggle: toggleSidebar } = useSidebarState('fundDetail');
@@ -52,24 +64,106 @@ const FundDetail: React.FC = () => {
   const { data: eventsData, loading: eventsLoading, refetch: refetchEvents } = useFundEvents(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
-  // Progressive refresh handlers
+  // ENTERPRISE: Removed smooth transition effects - using proper memoization instead
+
+  // ENTERPRISE: Helper functions for granular loading state management
+  // Note: setSectionLoading removed as it's not currently used
+
+  const setAllSectionsLoading = useCallback((isLoading: boolean) => {
+    console.log(`🔄 [DEBUG] All sections loading state: ${isLoading ? 'STARTING' : 'COMPLETED'}`);
+    console.log(`🔄 [DEBUG] Current section states:`, sectionLoadingStates);
+    setSectionLoadingStates({
+      equity: isLoading,
+      expectedPerformance: isLoading,
+      completedPerformance: isLoading,
+      fundDetails: isLoading,
+      transactionSummary: isLoading,
+      unitPriceChart: isLoading
+    });
+  }, [sectionLoadingStates]);
+
+  // ENTERPRISE: Memoize data and props BEFORE any early returns to follow Rules of Hooks
+  const fund = fundData?.fund;
+  const events: ExtendedFundEvent[] = React.useMemo(() => 
+    (eventsData as ExtendedFundEvent[]) || fundData?.events || [], 
+    [eventsData, fundData?.events]
+  );
+
+  const equitySectionProps = React.useMemo(() => ({
+    fund: fund!,
+    formatCurrency,
+    formatDate,
+    isLoading: sectionLoadingStates.equity
+  }), [fund, sectionLoadingStates.equity]);
+
+  const expectedPerformanceSectionProps = React.useMemo(() => ({
+    fund: fund!,
+    formatCurrency,
+    formatDate,
+    isLoading: sectionLoadingStates.expectedPerformance
+  }), [fund, sectionLoadingStates.expectedPerformance]);
+
+  const completedPerformanceSectionProps = React.useMemo(() => ({
+    fund: fund!,
+    formatCurrency,
+    formatDate,
+    isLoading: sectionLoadingStates.completedPerformance
+  }), [fund, sectionLoadingStates.completedPerformance]);
+
+  const fundDetailsSectionProps = React.useMemo(() => ({
+    fund: fund!,
+    formatCurrency,
+    formatDate,
+    isLoading: sectionLoadingStates.fundDetails
+  }), [fund, sectionLoadingStates.fundDetails]);
+
+  const transactionSummarySectionProps = React.useMemo(() => ({
+    fund: fund!,
+    formatCurrency,
+    formatDate,
+    isLoading: sectionLoadingStates.transactionSummary
+  }), [fund, sectionLoadingStates.transactionSummary]);
+
+  const unitPriceChartSectionProps = React.useMemo(() => ({
+    fund: fund!,
+    formatCurrency,
+    formatDate,
+    events,
+    isLoading: sectionLoadingStates.unitPriceChart
+  }), [fund, events, sectionLoadingStates.unitPriceChart]);
+
+  // ENTERPRISE: Progressive refresh handlers with granular loading states
   const handleEventCreated = useCallback(() => {
+    console.log('🚀 [DEBUG] Event created - starting progressive refresh');
     setEventModalOpen(false);
     
     // Phase 1: Immediate refresh of events table (fast)
+    console.log('⚡ [DEBUG] Phase 1: Refreshing events table immediately');
     refetchEvents();
     
-    // Phase 2: Delayed refresh of fund summary with complex calculations (slow)
+    // Phase 2: Staggered refresh of fund summary sections with individual loading states
+    // Set all sections to loading state
+    console.log('🔄 [DEBUG] Phase 2: Setting all sections to loading state');
+    setAllSectionsLoading(true);
     setIsUpdatingSummary(true);
+    
+    // Stagger the refresh to give computational sections more time
+    // TEMPORARY: Increased delay for testing visibility (normally 800ms)
+    const refreshDelay = 3000; // 3 seconds for testing
+    console.log(`⏱️ [DEBUG] Starting ${refreshDelay}ms delay before fund detail refresh`);
     setTimeout(() => {
+      console.log('🔄 [DEBUG] Starting fund detail refresh after delay');
       refetchFundDetail().finally(() => {
+        console.log('✅ [DEBUG] Fund detail refresh completed - clearing loading states');
+        // Clear all loading states when complete
+        setAllSectionsLoading(false);
         setIsUpdatingSummary(false);
         setShowUpdateSuccess(true);
         // Hide success message after 2 seconds
         setTimeout(() => setShowUpdateSuccess(false), 2000);
       });
-    }, 800);
-  }, [refetchEvents, refetchFundDetail]);
+    }, refreshDelay);
+  }, [refetchEvents, refetchFundDetail, setAllSectionsLoading]);
 
   const openEventModal = useCallback(() => {
     setEventModalOpen(true);
@@ -83,34 +177,48 @@ const FundDetail: React.FC = () => {
   const confirmDeleteEvent = useCallback(async () => {
     if (!selectedEvent) return;
     
+    console.log('🗑️ [DEBUG] Event deletion started');
     setDeletingEvent(true);
     try {
       await deleteFundEvent.mutate();
+      console.log('✅ [DEBUG] Event deletion completed - starting progressive refresh');
       setDeleteDialogOpen(false);
       setSelectedEvent(null);
       
-      // Progressive refresh for deletion
+      // ENTERPRISE: Progressive refresh for deletion with granular loading states
       // Phase 1: Immediate refresh of events table (fast)
+      console.log('⚡ [DEBUG] Phase 1: Refreshing events table immediately');
       refetchEvents();
       
-      // Phase 2: Delayed refresh of fund summary with complex calculations (slow)
+      // Phase 2: Staggered refresh of fund summary sections with individual loading states
+      console.log('🔄 [DEBUG] Phase 2: Setting all sections to loading state');
+      setAllSectionsLoading(true);
       setIsUpdatingSummary(true);
+      
+      // TEMPORARY: Increased delay for testing visibility (normally 800ms)
+      const refreshDelay = 3000; // 3 seconds for testing
+      console.log(`⏱️ [DEBUG] Starting ${refreshDelay}ms delay before fund detail refresh`);
       setTimeout(() => {
+        console.log('🔄 [DEBUG] Starting fund detail refresh after delay');
         refetchFundDetail().finally(() => {
+          console.log('✅ [DEBUG] Fund detail refresh completed - clearing loading states');
+          // Clear all loading states when complete
+          setAllSectionsLoading(false);
           setIsUpdatingSummary(false);
           setShowUpdateSuccess(true);
           // Hide success message after 2 seconds
           setTimeout(() => setShowUpdateSuccess(false), 2000);
         });
-      }, 800);
+      }, refreshDelay);
     } catch (err) {
-      console.error('Failed to delete event:', err);
+      console.error('❌ [DEBUG] Failed to delete event:', err);
     } finally {
       setDeletingEvent(false);
     }
-  }, [selectedEvent, deleteFundEvent, refetchEvents, refetchFundDetail]);
+  }, [selectedEvent, deleteFundEvent, refetchEvents, refetchFundDetail, setAllSectionsLoading]);
 
-  // Loading state - show loading if either fund data or events are loading
+  // ENTERPRISE: Only show full-page loading for initial loads, not refreshes
+  // This prevents the "whole page reset" issue during progressive refreshes
   if (loading || eventsLoading) {
     return (
       <Box sx={{ p: 3 }}>
@@ -134,8 +242,10 @@ const FundDetail: React.FC = () => {
     );
   }
 
+  // ENTERPRISE: Data and props are now memoized above, before any early returns
+
   // No data state
-  if (!fundData) {
+  if (!fundData || !fund) {
     return (
       <Box sx={{ p: 3 }}>
         <Box sx={{ 
@@ -160,10 +270,6 @@ const FundDetail: React.FC = () => {
       </Box>
     );
   }
-
-  // Combine data from both hooks for progressive refresh
-  const fund = fundData?.fund;
-  const events: ExtendedFundEvent[] = (eventsData as ExtendedFundEvent[]) || fundData?.events || [];
 
   return (
     <Box sx={{ 
@@ -268,6 +374,37 @@ const FundDetail: React.FC = () => {
                 </Box>
               )}
             </Box>
+            
+            {/* ENTERPRISE: Debug panel for testing loading states */}
+            {process.env.NODE_ENV === 'development' && (
+              <Box sx={{ 
+                mt: 2, 
+                p: 1, 
+                backgroundColor: theme.palette.grey[100], 
+                borderRadius: 1,
+                fontSize: '10px',
+                fontFamily: 'monospace'
+              }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
+                  🔍 DEBUG - Section Loading States (Memoized):
+                </Typography>
+                <Box sx={{ mt: 0.5 }}>
+                  {Object.entries(sectionLoadingStates).map(([section, loading]) => (
+                    <Box key={section} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%', 
+                        backgroundColor: loading ? theme.palette.primary.main : theme.palette.grey[400]
+                      }} />
+                      <Typography variant="caption" sx={{ fontSize: '9px' }}>
+                        {section}: {loading ? 'LOADING' : 'READY'}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
           </Box>
           
           {/* Summary Sections - Scrollable container */}
@@ -276,13 +413,15 @@ const FundDetail: React.FC = () => {
             overflowY: 'auto',
             minHeight: 0 // Allow flex item to shrink
           }}>
-            <EquitySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-            <ExpectedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-            <CompletedPerformanceSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-            <FundDetailsSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
-            <TransactionSummarySection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} />
+            {/* ENTERPRISE: Use memoized props to prevent unnecessary re-renders */}
+            <EquitySection {...equitySectionProps} />
+            <ExpectedPerformanceSection {...expectedPerformanceSectionProps} />
+            <CompletedPerformanceSection {...completedPerformanceSectionProps} />
+            <FundDetailsSection {...fundDetailsSectionProps} />
+            <TransactionSummarySection {...transactionSummarySectionProps} />
             <Suspense fallback={null}>
-              <UnitPriceChartSection fund={fund} formatCurrency={formatCurrency} formatDate={formatDate} events={events} />
+              {/* @ts-ignore - Lazy component type inference issue */}
+              <UnitPriceChartSection {...unitPriceChartSectionProps} />
             </Suspense>
           </Box>
         </Box>

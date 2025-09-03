@@ -13,12 +13,13 @@ interface SectionProps {
   formatCurrency: (amount: number | null, currency?: string) => string;
   formatDate: (dateString: string | null) => string;
   events?: ExtendedFundEvent[];
+  isLoading?: boolean; // ENTERPRISE: Individual loading state for this section
 }
 
 /**
  * Unit Price Chart Section - NAV performance chart for NAV-based funds
  */
-const UnitPriceChartSectionComponent: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events }) => {
+const UnitPriceChartSectionComponent: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, events, isLoading = false }) => {
   // Only show for NAV-based funds
   if (fund.tracking_type !== FundType.NAV_BASED) {
     return null;
@@ -243,4 +244,6 @@ const UnitPriceChartSectionComponent: React.FC<SectionProps> = ({ fund, formatCu
   );
 };
 
-export default React.memo(UnitPriceChartSectionComponent);
+// ENTERPRISE: Create proper interface for the exported component
+const UnitPriceChartSection = React.memo(UnitPriceChartSectionComponent);
+export default UnitPriceChartSection;

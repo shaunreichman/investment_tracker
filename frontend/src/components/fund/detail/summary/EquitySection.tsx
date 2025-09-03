@@ -2,7 +2,8 @@ import React from 'react';
 import {
   Typography,
   Paper,
-  Box
+  Box,
+  CircularProgress
 } from '@mui/material';
 import { AccountBalance } from '@mui/icons-material';
 import { ExtendedFund, FundType, FundStatus } from '../../../../types/api';
@@ -13,12 +14,22 @@ interface SectionProps {
   formatCurrency: (amount: number | null, currency?: string) => string;
   formatDate: (dateString: string | null) => string;
   events?: any[];
+  isLoading?: boolean; // ENTERPRISE: Individual loading state for this section
 }
 
 /**
  * Equity & NAV Summary Section - Current investment position and NAV data
  */
-const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+const EquitySection: React.FC<SectionProps> = React.memo(({ fund, formatCurrency, formatDate, isLoading = false }) => {
+  // ENTERPRISE: Debug logging for section loading state
+  React.useEffect(() => {
+    if (isLoading) {
+      console.log('🔄 [DEBUG] EquitySection: Loading state activated');
+    } else {
+      console.log('✅ [DEBUG] EquitySection: Loading state deactivated');
+    }
+  }, [isLoading]);
+
   // Enhanced data organization for equity and NAV metrics
   const isActiveNavFund = fund.tracking_type === FundType.NAV_BASED && fund.status === FundStatus.ACTIVE;
   
@@ -98,6 +109,12 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
         <Typography variant="h6" sx={{ fontSize: 16 }}>
           {fund.tracking_type === FundType.NAV_BASED ? 'Equity & NAV Summary' : 'Equity Position'}
         </Typography>
+        {/* ENTERPRISE: Show loading indicator for this section */}
+        {isLoading && (
+          <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
+            <CircularProgress size={12} sx={{ color: 'primary.main' }} />
+          </Box>
+        )}
       </Box>
       
       {/* Phase 3B: Enhanced card layout with consistent styling */}
@@ -147,6 +164,8 @@ const EquitySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDat
       </Box>
     </Paper>
   );
-};
+});
+
+EquitySection.displayName = 'EquitySection';
 
 export default EquitySection; 

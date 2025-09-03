@@ -2,7 +2,8 @@ import React from 'react';
 import {
   Typography,
   Paper,
-  Box
+  Box,
+  CircularProgress
 } from '@mui/material';
 import { TrendingUp } from '@mui/icons-material';
 import { ExtendedFund } from '../../../../types/api';
@@ -12,12 +13,22 @@ interface SectionProps {
   formatCurrency: (amount: number | null, currency?: string) => string;
   formatDate: (dateString: string | null) => string;
   events?: any[];
+  isLoading?: boolean; // ENTERPRISE: Individual loading state for this section
 }
 
 /**
  * Expected Performance Section - Planned/expected fund metrics
  */
-const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+const ExpectedPerformanceSection: React.FC<SectionProps> = React.memo(({ fund, formatCurrency, formatDate, isLoading = false }) => {
+  // ENTERPRISE: Debug logging for section loading state
+  React.useEffect(() => {
+    if (isLoading) {
+      console.log('🔄 [DEBUG] ExpectedPerformanceSection: Loading state activated');
+    } else {
+      console.log('✅ [DEBUG] ExpectedPerformanceSection: Loading state deactivated');
+    }
+  }, [isLoading]);
+
   // Phase 3.3: Enhanced data organization for performance metrics
   const performanceMetrics = [
     {
@@ -59,6 +70,12 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
       <Box display="flex" alignItems="center" mb={0.5}>
         <TrendingUp color="success" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>Expected Performance</Typography>
+        {/* ENTERPRISE: Show loading indicator for this section */}
+        {isLoading && (
+          <Box sx={{ ml: 1, display: 'flex', alignItems: 'center' }}>
+            <CircularProgress size={12} sx={{ color: 'success.main' }} />
+          </Box>
+        )}
       </Box>
       
       {/* Phase 3.3: Enhanced card layout with better density */}
@@ -108,6 +125,8 @@ const ExpectedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurren
       </Box>
     </Paper>
   );
-};
+});
+
+ExpectedPerformanceSection.displayName = 'ExpectedPerformanceSection';
 
 export default ExpectedPerformanceSection; 

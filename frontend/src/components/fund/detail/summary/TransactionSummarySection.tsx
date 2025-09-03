@@ -13,12 +13,13 @@ interface SectionProps {
   formatCurrency: (amount: number | null, currency?: string) => string;
   formatDate: (dateString: string | null) => string;
   events?: any[];
+  isLoading?: boolean; // ENTERPRISE: Individual loading state for this section
 }
 
 /**
  * Transaction Summary Section - Summary of all transaction types
  */
-const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, isLoading = false }) => {
   const transactionData = [
     // Capital transactions (cost-based funds)
     ...(fund.tracking_type === FundType.COST_BASED ? [

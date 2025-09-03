@@ -12,12 +12,13 @@ interface SectionProps {
   formatCurrency: (amount: number | null, currency?: string) => string;
   formatDate: (dateString: string | null) => string;
   events?: any[];
+  isLoading?: boolean; // ENTERPRISE: Individual loading state for this section
 }
 
 /**
  * Completed Performance Section - Historical performance for finished funds
  */
-const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate }) => {
+const CompletedPerformanceSection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, isLoading = false }) => {
   // Only show if fund is completed (not active)
   if (fund.status === FundStatus.ACTIVE) {
     return null;
