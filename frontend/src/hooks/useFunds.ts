@@ -54,6 +54,48 @@ export function useFundDetail(id: number, options?: { refetchOnWindowFocus?: boo
 }
 
 /**
+ * Hook to get fund summary data (fund + statistics only, no events)
+ * Used for computational sections that need to refresh independently
+ */
+export function useFundSummary(id: number, options?: { refetchOnWindowFocus?: boolean }) {
+  const numericId = useMemo(() => {
+    if (!id) return 0;
+    const parsed = Number(id);
+    return isNaN(parsed) ? 0 : parsed;
+  }, [id]);
+
+  const shouldFetch = numericId > 0;
+  const getFundSummary = useCallback(() => apiClient.getFundDetail(numericId), [numericId]);
+
+  return useConditionalApiCall(
+    getFundSummary,
+    shouldFetch,
+    { refetchOnWindowFocus: options?.refetchOnWindowFocus }
+  );
+}
+
+/**
+ * Hook to get fund metadata only (static fund data, no computed fields)
+ * Used for components that only need basic fund information
+ */
+export function useFundMetadata(id: number, options?: { refetchOnWindowFocus?: boolean }) {
+  const numericId = useMemo(() => {
+    if (!id) return 0;
+    const parsed = Number(id);
+    return isNaN(parsed) ? 0 : parsed;
+  }, [id]);
+
+  const shouldFetch = numericId > 0;
+  const getFundMetadata = useCallback(() => apiClient.getFund(numericId), [numericId]);
+
+  return useConditionalApiCall(
+    getFundMetadata,
+    shouldFetch,
+    { refetchOnWindowFocus: options?.refetchOnWindowFocus }
+  );
+}
+
+/**
  * NEW: Centralized fund data hook that prevents state pollution
  * This hook ensures that all components get the same data for the same fund ID
  * and properly invalidates when the fund ID changes
