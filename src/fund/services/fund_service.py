@@ -18,7 +18,7 @@ from datetime import date
 from src.fund.repositories import FundRepository, FundEventRepository, TaxStatementRepository
 from src.fund.events.orchestrator import FundUpdateOrchestrator
 from src.fund.events.registry import FundEventHandlerRegistry
-from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.enums import FundStatus, FundType, EventType, DistributionType, TaxPaymentType, GroupType
 from src.fund.services.fund_validation_service import FundValidationService
 
 
@@ -419,10 +419,33 @@ class FundService:
             event_list.append({
                 'id': event.id,
                 'fund_id': event.fund_id,
-                'event_type': event.event_type,
+                'event_type': event.event_type.value if event.event_type else None,
                 'event_date': event.event_date.isoformat() if event.event_date else None,
-                'amount': str(event.amount) if event.amount else None,
-                'created_at': event.created_at.isoformat() if event.created_at else None
+                'amount': float(event.amount) if event.amount is not None else None,
+                'description': event.description,
+                'reference_number': event.reference_number,
+                'nav_per_share': float(event.nav_per_share) if event.nav_per_share is not None else None,
+                'previous_nav_per_share': float(event.previous_nav_per_share) if event.previous_nav_per_share is not None else None,
+                'nav_change_absolute': float(event.nav_change_absolute) if event.nav_change_absolute is not None else None,
+                'nav_change_percentage': float(event.nav_change_percentage) if event.nav_change_percentage is not None else None,
+                'units_owned': float(event.units_owned) if event.units_owned is not None else None,
+                'distribution_type': event.distribution_type.value if event.distribution_type else None,
+                'tax_withholding': float(event.tax_withholding) if event.tax_withholding is not None else None,
+                'has_withholding_tax': event.has_withholding_tax,
+                'tax_payment_type': event.tax_payment_type.value if event.tax_payment_type else None,
+                'tax_statement_id': event.tax_statement_id,
+                'units_purchased': float(event.units_purchased) if event.units_purchased is not None else None,
+                'units_sold': float(event.units_sold) if event.units_sold is not None else None,
+                'unit_price': float(event.unit_price) if event.unit_price is not None else None,
+                'brokerage_fee': float(event.brokerage_fee) if event.brokerage_fee is not None else None,
+                'current_equity_balance': float(event.current_equity_balance) if event.current_equity_balance is not None else None,
+                'is_cash_flow_complete': event.is_cash_flow_complete,
+                'is_grouped': event.is_grouped,
+                'group_id': event.group_id,
+                'group_type': event.group_type.value if event.group_type else None,
+                'group_position': event.group_position,
+                'created_at': event.created_at.isoformat() if event.created_at else None,
+                'updated_at': event.updated_at.isoformat() if event.updated_at else None
             })
         
         return {

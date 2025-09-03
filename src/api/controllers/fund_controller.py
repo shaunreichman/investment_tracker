@@ -403,6 +403,36 @@ class FundController:
             if 'session' in locals():
                 session.close()
     
+    def get_fund_events(self, fund_id: int) -> tuple:
+        """
+        Get all events for a specific fund - optimized for fast table updates.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get database session
+            session = self._get_session()
+            
+            # Get fund events
+            result = self.fund_service.get_fund_events(fund_id, session)
+            
+            if result is None:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Return the events list directly (the service already formats them)
+            return jsonify(result['events']), 200
+            
+        except Exception as e:
+            print(f"❌ FundController.get_fund_events error: {e}")
+            return jsonify({'error': str(e)}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
     def delete_fund_event(self, fund_id: int, event_id: int) -> tuple:
         """
         Delete a fund event.

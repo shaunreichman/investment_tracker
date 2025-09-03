@@ -6,7 +6,7 @@ import { ErrorDisplay } from '../../ErrorDisplay';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { ExtendedFundEvent, FundType } from '../../../types/api';
-import { useCentralizedFundDetail, useDeleteFundEvent } from '../../../hooks/useFunds';
+import { useCentralizedFundDetail, useDeleteFundEvent, useFundEvents } from '../../../hooks/useFunds';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { useSidebarState, useTableFilters } from '../../../store';
 
@@ -40,20 +40,36 @@ const FundDetail: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ExtendedFundEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
+  const [isUpdatingSummary, setIsUpdatingSummary] = useState(false);
+  const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
 
   // Centralized state management using Zustand store
   const { isVisible: sidebarVisible, toggle: toggleSidebar } = useSidebarState('fundDetail');
   const { filters: tableFilters, updateFilters } = useTableFilters();
 
-  // Centralized API hooks
-  const { data: fundData, loading, error, refetch } = useCentralizedFundDetail(Number(fundId));
+  // Centralized API hooks - separate for progressive refresh
+  const { data: fundData, loading, error, refetch: refetchFundDetail } = useCentralizedFundDetail(Number(fundId));
+  const { data: eventsData, loading: eventsLoading, refetch: refetchEvents } = useFundEvents(Number(fundId));
   const deleteFundEvent = useDeleteFundEvent(Number(fundId), selectedEvent?.id || 0);
 
-  // Event handlers
+  // Progressive refresh handlers
   const handleEventCreated = useCallback(() => {
     setEventModalOpen(false);
-    refetch();
-  }, [refetch]);
+    
+    // Phase 1: Immediate refresh of events table (fast)
+    refetchEvents();
+    
+    // Phase 2: Delayed refresh of fund summary with complex calculations (slow)
+    setIsUpdatingSummary(true);
+    setTimeout(() => {
+      refetchFundDetail().finally(() => {
+        setIsUpdatingSummary(false);
+        setShowUpdateSuccess(true);
+        // Hide success message after 2 seconds
+        setTimeout(() => setShowUpdateSuccess(false), 2000);
+      });
+    }, 800);
+  }, [refetchEvents, refetchFundDetail]);
 
   const openEventModal = useCallback(() => {
     setEventModalOpen(true);
@@ -72,16 +88,30 @@ const FundDetail: React.FC = () => {
       await deleteFundEvent.mutate();
       setDeleteDialogOpen(false);
       setSelectedEvent(null);
-      refetch();
+      
+      // Progressive refresh for deletion
+      // Phase 1: Immediate refresh of events table (fast)
+      refetchEvents();
+      
+      // Phase 2: Delayed refresh of fund summary with complex calculations (slow)
+      setIsUpdatingSummary(true);
+      setTimeout(() => {
+        refetchFundDetail().finally(() => {
+          setIsUpdatingSummary(false);
+          setShowUpdateSuccess(true);
+          // Hide success message after 2 seconds
+          setTimeout(() => setShowUpdateSuccess(false), 2000);
+        });
+      }, 800);
     } catch (err) {
       console.error('Failed to delete event:', err);
     } finally {
       setDeletingEvent(false);
     }
-  }, [selectedEvent, deleteFundEvent, refetch]);
+  }, [selectedEvent, deleteFundEvent, refetchEvents, refetchFundDetail]);
 
-  // Loading state
-  if (loading) {
+  // Loading state - show loading if either fund data or events are loading
+  if (loading || eventsLoading) {
     return (
       <Box sx={{ p: 3 }}>
         <LoadingSpinner label="Loading fund details..." />
@@ -96,7 +126,7 @@ const FundDetail: React.FC = () => {
         <ErrorDisplay
           error={error}
           canRetry={error.retryable}
-          onRetry={() => refetch()}
+          onRetry={() => refetchFundDetail()}
           onDismiss={() => navigate('/')}
           variant="inline"
         />
@@ -131,7 +161,9 @@ const FundDetail: React.FC = () => {
     );
   }
 
-  const { fund, events } = fundData;
+  // Combine data from both hooks for progressive refresh
+  const fund = fundData?.fund;
+  const events: ExtendedFundEvent[] = (eventsData as ExtendedFundEvent[]) || fundData?.events || [];
 
   return (
     <Box sx={{ 
@@ -185,17 +217,57 @@ const FundDetail: React.FC = () => {
             backgroundColor: theme.palette.background.sidebar,
             flexShrink: 0 // Prevent header from shrinking
           }}>
-            <Typography 
-              variant="h5"
-              sx={{ 
-                fontWeight: 600,
-                color: theme.palette.text.primary,
-                letterSpacing: '-0.01em',
-                fontSize: '20px'
-              }}
-            >
-              Summary
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography 
+                variant="h5"
+                sx={{ 
+                  fontWeight: 600,
+                  color: theme.palette.text.primary,
+                  letterSpacing: '-0.01em',
+                  fontSize: '20px'
+                }}
+              >
+                Summary
+              </Typography>
+              {isUpdatingSummary && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: theme.palette.primary.main,
+                  fontSize: '12px'
+                }}>
+                  <Box sx={{ 
+                    width: 12, 
+                    height: 12, 
+                    border: `2px solid ${theme.palette.primary.main}`,
+                    borderTop: '2px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    '@keyframes spin': {
+                      '0%': { transform: 'rotate(0deg)' },
+                      '100%': { transform: 'rotate(360deg)' }
+                    }
+                  }} />
+                  <Typography variant="caption" sx={{ color: theme.palette.primary.main }}>
+                    Updating...
+                  </Typography>
+                </Box>
+              )}
+              {showUpdateSuccess && !isUpdatingSummary && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  color: theme.palette.success.main,
+                  fontSize: '12px'
+                }}>
+                  <Typography variant="caption" sx={{ color: theme.palette.success.main }}>
+                    ✓ Updated
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
           
           {/* Summary Sections - Scrollable container */}

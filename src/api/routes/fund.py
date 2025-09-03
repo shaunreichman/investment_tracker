@@ -208,6 +208,17 @@ def delete_fund_event(fund_id, event_id):
         return jsonify({"error": str(e)}), 500
 
 
+@fund_bp.route('/api/funds/<int:fund_id>/events', methods=['GET'])
+def get_fund_events(fund_id):
+    """Get all events for a specific fund - optimized for fast table updates"""
+    try:
+        from src.api.controllers.fund_controller import FundController
+        controller = FundController()
+        return controller.get_fund_events(fund_id)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # Tax statement creation is now handled by the tax routes with middleware validation
 # This duplicate route has been removed to eliminate duplication and use the centralized validation
 
