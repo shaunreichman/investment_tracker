@@ -18,6 +18,7 @@ from sqlalchemy import func, and_, or_
 
 from src.fund.enums import FundStatus
 from src.fund.enums import EventType
+from src.fund.services.fund_irr_service import FundIrRService
 
 
 class FundStatusService:
@@ -166,10 +167,11 @@ class FundStatusService:
             
         elif status == FundStatus.REALIZED:
             # REALIZED: Only gross IRR is meaningful (all capital returned)
-            from src.fund.services.fund_calculation_service import FundCalculationService
-            calculation_service = FundCalculationService()
+            if not session:
+                return
             
-            fund.completed_irr_gross = calculation_service.calculate_irr(fund, session=session)
+            irr_service = FundIrRService(session)
+            fund.completed_irr_gross = irr_service.calculate_completed_irr(fund)
             fund.completed_irr_after_tax = None  # Not meaningful until completed
             fund.completed_irr_real = None       # Not meaningful until completed
             
@@ -185,12 +187,13 @@ class FundStatusService:
             
         elif status == FundStatus.COMPLETED:
             # COMPLETED: All IRRs are meaningful (tax obligations complete)
-            from src.fund.services.fund_calculation_service import FundCalculationService
-            calculation_service = FundCalculationService()
+            if not session:
+                return
             
-            fund.completed_irr_gross = calculation_service.calculate_completed_irr(fund, session=session)
-            fund.completed_irr_after_tax = calculation_service.calculate_completed_after_tax_irr(fund, session=session)
-            fund.completed_irr_real = calculation_service.calculate_completed_real_irr(fund, session=session)
+            irr_service = FundIrRService(session)
+            fund.completed_irr_gross = irr_service.calculate_completed_irr(fund)
+            fund.completed_irr_after_tax = irr_service.calculate_completed_after_tax_irr(fund)
+            fund.completed_irr_real = irr_service.calculate_completed_real_irr(fund)
             
             # Update current_duration for completed status (uses end_date)
             fund.calculate_and_update_current_duration()

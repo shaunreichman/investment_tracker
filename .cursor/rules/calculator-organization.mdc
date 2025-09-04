@@ -1,0 +1,21 @@
+---
+description: "Enforces separation of mathematical logic into calculator files with orchestration in services"
+alwaysActive: true
+globs: ["src/**/*.py"]
+---
+
+# Calculator Organization Rule
+
+**All in-depth mathematical logic must be placed in calculator files within a `calculators/` folder.**
+
+## Rules:
+- Complex mathematical algorithms go in `src/*/calculators/` or `src/shared/calculations/`
+- Services handle orchestration, database operations, and business logic
+- Calculators contain pure, stateless mathematical functions
+- No complex math logic in service files
+
+## Examples:
+- ✅ `src/shared/calculations/irr_calculator.py` - Pure IRR math
+- ✅ `src/fund/calculators/fund_equity_calculator.py` - Equity calculations
+- ✅ `src/fund/services/fund_irr_service.py` - Orchestrates IRR calculations
+- ❌ Complex math in `src/fund/services/fund_calculation_service.py`

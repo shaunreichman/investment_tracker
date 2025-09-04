@@ -17,6 +17,7 @@ from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models import Fund, FundEvent
 from src.fund.enums import FundType, EventType
 from src.fund.services.fund_calculation_service import FundCalculationService
+from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -83,23 +84,10 @@ class CapitalChainEventHandler(EventConsumer):
                 fund.current_equity_balance = 0.0
                 return
             
-            # Use the calculation service to recalculate equity balance
-            calc_service = FundCalculationService()
-            
-            if fund.tracking_type == FundType.NAV_BASED:
-                # Recalculate NAV-based fields including equity balance
-                calc_service.calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event(
-                    fund, capital_events, 0, self.session
-                )
-            elif fund.tracking_type == FundType.COST_BASED:
-                # Recalculate cost-based fields including equity balance
-                calc_service.calculate_cost_based_fields_on_subsequent_capital_fund_events_after_capital_event(
-                    fund, capital_events, 0, self.session
-                )
-            
-            # Update fund summary fields from the latest capital event
-            latest_capital_event = capital_events[-1]
-            fund.current_equity_balance = latest_capital_event.current_equity_balance or 0.0
+            # Use the new FundEquityService to update equity fields efficiently
+            from src.fund.services.fund_equity_service import FundEquityService
+            equity_service = FundEquityService(self.session)
+            equity_service.update_fund_equity_fields(fund)
             
             # Update other fund summary fields based on fund type
             if fund.tracking_type == FundType.NAV_BASED:
@@ -153,9 +141,8 @@ class CapitalChainEventHandler(EventConsumer):
             
             # Update average equity balance
             if capital_events:
-                calc_service = FundCalculationService()
-                fund.average_equity_balance = calc_service.calculate_average_equity_balance(
-                    fund, self.session, capital_events
+                fund.average_equity_balance = FundEquityCalculator.calculate_average_equity(
+                    fund, self.session
                 )
             
             logger.debug(f"Updated cost-based summary fields for fund {fund.id}")
@@ -200,9 +187,8 @@ class CapitalChainEventHandler(EventConsumer):
             fund.current_nav_total = fund.current_units * fund.current_unit_price
             
             # Update average equity balance
-            calc_service = FundCalculationService()
-            fund.average_equity_balance = calc_service.calculate_average_equity_balance(
-                fund, self.session, capital_events
+            fund.average_equity_balance = FundEquityCalculator.calculate_average_equity(
+                fund, self.session
             )
             
             logger.debug(f"Updated NAV-based summary fields for fund {fund.id}")

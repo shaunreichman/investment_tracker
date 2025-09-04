@@ -1,0 +1,34 @@
+# Backend Test Focus Rule
+
+## Core Principle
+Each test file tests ONLY its specific functionality. No overlap between test files. Concise tests, not comprehensive for the sake of it.
+
+## Rules
+- **One component per test file** - `test_fund_equity_calculator.py` tests ONLY FundEquityCalculator
+- **No duplicate coverage** - if it's tested in one file, don't test it in another
+- **Quality over quantity** - test essential functionality, not every combination
+- **Clear boundaries** - don't mix concerns in one file
+
+## What NOT to Test
+- Functionality already covered in other files
+- Generic validation tested elsewhere
+- Database operations unless specific to this component
+
+## Anti-Patterns
+❌ Testing the same logic in multiple files  
+❌ Adding tests just to increase coverage  
+❌ Mixing multiple components in one test file
+
+## Good Example
+```python
+# test_fund_equity_calculator.py - ONLY tests FundEquityCalculator
+class TestFundEquityCalculatorCostBased:
+    def test_calculate_current_equity_no_events(self):
+        # Focused test of specific method
+```
+
+---
+
+description: Backend test focus - no overlap, concise coverage
+globs: ["tests/**/*.py", "test_*.py"]
+alwaysApply: false

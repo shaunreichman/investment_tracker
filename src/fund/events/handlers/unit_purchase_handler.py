@@ -199,11 +199,10 @@ class UnitPurchaseHandler(BaseFundEventHandler):
                 logger.warning(f"Event {event.id} not found in unit events list")
                 return
             
-            # Use the calculation service to calculate equity balance
-            calc_service = FundCalculationService()
-            calc_service.calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event(
-                self.fund, unit_events, event_index, self.session
-            )
+            # Use the new FundEquityService to update equity fields efficiently
+            from src.fund.services.fund_equity_service import FundEquityService
+            equity_service = FundEquityService(self.session)
+            equity_service.update_fund_equity_fields(self.fund)
             
             # The calculation service should have updated the event's fields
             logger.debug(f"Updated equity balance fields for event {event.id}")

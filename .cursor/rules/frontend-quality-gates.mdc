@@ -16,5 +16,5 @@ description:
 globs:
   - "frontend/src/**/*.ts"
   - "frontend/src/**/*.tsx"
-alwaysApply: true
+alwaysApply: false
 ---
