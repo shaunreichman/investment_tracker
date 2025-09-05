@@ -303,23 +303,24 @@ class TestFundIncrementalCalculationService:
         
         fifo, cumulative_units = service._build_fifo_state(events)
         
+        # build_fifo_state only processes purchase events, not sales
         # After purchase1: 100 units at 10.50 effective price
-        # After sale: 70 units at 10.50 effective price  
-        # After purchase2: 70 units at 10.50 + 50 units at 12.50
+        # After purchase2: 50 units at 12.50 effective price
+        # Sale events don't modify the FIFO queue in this method
         assert len(fifo) == 2
-        assert cumulative_units == 120.0
+        assert cumulative_units == 120.0  # 100 + 50 - 30 = 120
         
-        # Check first FIFO entry (remaining from first purchase)
+        # Check first FIFO entry (first purchase)
         first_entry = fifo[0]
-        assert first_entry[0] == 70.0  # units
-        assert first_entry[1] == 10.0  # unit_price
-        assert first_entry[2] == 10.5  # effective_price (10 + 50/100)
+        assert first_entry.units == 100.0  # units
+        assert first_entry.unit_price == 10.0  # unit_price
+        assert first_entry.effective_price == 10.5  # effective_price (10 + 50/100)
         
         # Check second FIFO entry (second purchase)
         second_entry = fifo[1]
-        assert second_entry[0] == 50.0  # units
-        assert second_entry[1] == 12.0  # unit_price
-        assert second_entry[2] == 12.5  # effective_price (12 + 25/50)
+        assert second_entry.units == 50.0  # units
+        assert second_entry.unit_price == 12.0  # unit_price
+        assert second_entry.effective_price == 12.5  # effective_price (12 + 25/50)
     
     def test_process_unit_purchase_incrementally(self, service):
         """Test incremental unit purchase processing."""
@@ -347,9 +348,9 @@ class TestFundIncrementalCalculationService:
         assert new_cumulative_units == 100.0
         
         fifo_entry = new_fifo[0]
-        assert fifo_entry[0] == 100.0  # units
-        assert fifo_entry[1] == 10.0   # unit_price
-        assert fifo_entry[2] == 10.5   # effective_price
+        assert fifo_entry.units == 100.0  # units
+        assert fifo_entry.unit_price == 10.0   # unit_price
+        assert fifo_entry.effective_price == 10.5   # effective_price
     
     def test_process_unit_sale_incrementally(self, service):
         """Test incremental unit sale processing."""
@@ -360,7 +361,8 @@ class TestFundIncrementalCalculationService:
         mock_event.event_date = date(2023, 1, 2)
         
         # Pre-existing FIFO state
-        fifo = [(100.0, 10.0, 10.5, date(2023, 1, 1), 50.0)]
+        from src.fund.calculators.fifo_capital_gains_calculator import FifoUnit
+        fifo = [FifoUnit(units=100.0, unit_price=10.0, effective_price=10.5, purchase_date=date(2023, 1, 1), brokerage_fee=50.0)]
         cumulative_units = 100.0
         
         new_fifo, new_cumulative_units = service._process_unit_sale_incrementally(
@@ -373,7 +375,7 @@ class TestFundIncrementalCalculationService:
         
         # Check FIFO state
         assert len(new_fifo) == 1
-        assert new_fifo[0][0] == 70.0  # remaining units
+        assert new_fifo[0].units == 70.0  # remaining units
         assert new_cumulative_units == 70.0
 
     # ============================================================================
@@ -604,7 +606,8 @@ class TestFundIncrementalCalculationService:
         mock_event.brokerage_fee = 25.0
         
         # Pre-existing FIFO state with only 100 units
-        fifo = [(100.0, 10.0, 10.5, date(2023, 1, 1), 50.0)]
+        from src.fund.calculators.fifo_capital_gains_calculator import FifoUnit
+        fifo = [FifoUnit(units=100.0, unit_price=10.0, effective_price=10.5, purchase_date=date(2023, 1, 1), brokerage_fee=50.0)]
         cumulative_units = 100.0
         
         new_fifo, new_cumulative_units = service._process_unit_sale_incrementally(

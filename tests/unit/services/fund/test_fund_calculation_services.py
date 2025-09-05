@@ -32,8 +32,9 @@ class TestFundCalculationService:
     def service(self):
         """Create a FundCalculationService instance for testing."""
         service = FundCalculationService()
-        # Mock the repository dependency
+        # Mock the repository dependencies
         service.fund_event_repository = Mock()
+        service.fund_event_query_repository = Mock()
         return service
     
     @pytest.fixture
@@ -171,14 +172,14 @@ class TestFundCalculationService:
     # ============================================================================
     
     def test_get_total_capital_calls(self, service, mock_fund):
-        """Test total capital calls aggregation - delegates to repository."""
+        """Test total capital calls aggregation - delegates to query repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 50000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 50000.0
         
         result = service.get_total_capital_calls(mock_fund, mock_session)
         
         assert result == 50000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.CAPITAL_CALL, mock_session
         )
 
@@ -191,84 +192,84 @@ class TestFundCalculationService:
     def test_get_total_capital_returns(self, service, mock_fund):
         """Test total capital returns aggregation - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 20000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 20000.0
         
         result = service.get_total_capital_returns(mock_fund, mock_session)
         
         assert result == 20000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.RETURN_OF_CAPITAL, mock_session
         )
 
     def test_get_total_distributions(self, service, mock_fund):
         """Test total distributions aggregation - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 15000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 15000.0
         
         result = service.get_total_distributions(mock_fund, mock_session)
         
         assert result == 15000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.DISTRIBUTION, mock_session
         )
 
     def test_get_total_tax_withheld(self, service, mock_fund):
         """Test total tax withheld aggregation - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_tax_withheld.return_value = 5000.0
+        service.fund_event_query_repository.get_total_tax_withheld.return_value = 5000.0
         
         result = service.get_total_tax_withheld(mock_fund, mock_session)
         
         assert result == 5000.0
-        service.fund_event_repository.get_total_tax_withheld.assert_called_once_with(
+        service.fund_event_query_repository.get_total_tax_withheld.assert_called_once_with(
             mock_fund.id, mock_session
         )
 
     def test_get_total_tax_payments(self, service, mock_fund):
         """Test total tax payments aggregation - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 3000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 3000.0
         
         result = service.get_total_tax_payments(mock_fund, mock_session)
         
         assert result == 3000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.TAX_PAYMENT, mock_session
         )
 
     def test_get_total_daily_interest_charges(self, service, mock_fund):
         """Test total daily interest charges aggregation - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 1000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 1000.0
         
         result = service.get_total_daily_interest_charges(mock_fund, mock_session)
         
         assert result == 1000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, mock_session
         )
 
     def test_get_total_unit_purchases(self, service, mock_fund):
         """Test total unit purchases aggregation - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 25000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 25000.0
         
         result = service.get_total_unit_purchases(mock_fund, mock_session)
         
         assert result == 25000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.UNIT_PURCHASE, mock_session
         )
 
     def test_get_total_unit_sales(self, service, mock_fund):
         """Test total unit sales aggregation - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 12000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 12000.0
         
         result = service.get_total_unit_sales(mock_fund, mock_session)
         
         assert result == 12000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.UNIT_SALE, mock_session
         )
 
@@ -283,24 +284,24 @@ class TestFundCalculationService:
             "DIVIDEND_FRANKED": 8000.0,
             "CAPITAL_GAIN": 7000.0
         }
-        service.fund_event_repository.get_distributions_by_type.return_value = expected
+        service.fund_event_query_repository.get_distributions_by_type.return_value = expected
         
         result = service.get_distributions_by_type(mock_fund, mock_session)
         
         assert result == expected
-        service.fund_event_repository.get_distributions_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_distributions_by_type.assert_called_once_with(
             mock_fund.id, mock_session
         )
 
     def test_get_taxable_distributions(self, service, mock_fund):
         """Test taxable distributions calculation - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_taxable_distributions.return_value = 15000.0
+        service.fund_event_query_repository.get_taxable_distributions.return_value = 15000.0
         
         result = service.get_taxable_distributions(mock_fund, mock_session)
         
         assert result == 15000.0
-        service.fund_event_repository.get_taxable_distributions.assert_called_once_with(
+        service.fund_event_query_repository.get_taxable_distributions.assert_called_once_with(
             mock_fund.id, mock_session
         )
 

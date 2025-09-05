@@ -22,7 +22,8 @@ from src.fund.repositories import FundEventRepository
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.fund.models import Fund, FundEvent
+    from src.fund.models import Fund, FundEvent, RiskFreeRate
+    from src.fund.repositories import TaxEventRepository, FundEventQueryRepository
 
 
 class TaxCalculationService:
@@ -36,9 +37,20 @@ class TaxCalculationService:
     - Tax statement integration and business rules
     """
     
-    def __init__(self):
-        """Initialize the TaxCalculationService."""
-        self.fund_event_repository = FundEventRepository()
+    def __init__(self, 
+                 tax_event_repository: 'TaxEventRepository' = None,
+                 fund_event_query_repository: 'FundEventQueryRepository' = None):
+        """
+        Initialize the TaxCalculationService with specialized repositories.
+        
+        Args:
+            tax_event_repository: Repository for tax events
+            fund_event_query_repository: Repository for complex queries
+        """
+        from src.fund.repositories import TaxEventRepository, FundEventQueryRepository
+        
+        self.tax_event_repository = tax_event_repository or TaxEventRepository()
+        self.fund_event_query_repository = fund_event_query_repository or FundEventQueryRepository()
     
     # ============================================================================
     # DEBT COST CALCULATIONS AND RISK-FREE INTEREST CHARGES
@@ -117,16 +129,18 @@ class TaxCalculationService:
         # Create the daily interest charge events
         for charge in daily_charges:
             if charge.amount and charge.amount > 0:
-                # Create the event
-                event = fund.fund_events.__class__(
-                    fund_id=fund.id,
-                    event_type=fund.fund_events.__class__.__class__('daily_risk_free_interest_charge'),
-                    event_date=charge.date,
-                    amount=charge.amount,
-                    description=f"Daily risk-free interest charge at {charge.rate:.4f}%",
-                    reference_number=f"DRFIC_{charge.date.strftime('%Y%m%d')}"
-                )
-                session.add(event)
+                # Prepare event data
+                event_data = {
+                    'fund_id': fund.id,
+                    'event_type': EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
+                    'event_date': charge.date,
+                    'amount': charge.amount,
+                    'description': f"Daily risk-free interest charge at {charge.rate:.4f}%",
+                    'reference_number': f"DRFIC_{charge.date.strftime('%Y%m%d')}"
+                }
+                
+                # Delegate to specialized repository
+                self.tax_event_repository.create_daily_interest_charge(fund.id, event_data, session)
         
         print(f"Created {len(daily_charges)} daily risk-free interest charge events for fund {fund.name}")
     
@@ -149,7 +163,7 @@ class TaxCalculationService:
         if not session:
             return 0.0
         
-        return self.fund_event_repository.get_daily_interest_charges_by_financial_year(
+        return self.tax_event_repository.get_daily_interest_charges_by_financial_year(
             fund.id, financial_year, session
         )
     
@@ -223,16 +237,18 @@ class TaxCalculationService:
         for distribution_type, events in distributions.items():
             for event in events:
                 if event.tax_withheld and event.tax_withheld > 0:
-                    # Create tax payment event
-                    tax_event = fund.fund_events.__class__(
-                        fund_id=fund.id,
-                        event_type=fund.fund_events.__class__.__class__('tax_payment'),
-                        event_date=event.event_date,
-                        amount=event.tax_withheld,
-                        description=f"Tax payment for {distribution_type} distribution",
-                        reference_number=f"TAX_{event.reference_number or event.id}"
-                    )
-                    session.add(tax_event)
+                    # Prepare event data
+                    event_data = {
+                        'fund_id': fund.id,
+                        'event_type': EventType.TAX_PAYMENT,
+                        'event_date': event.event_date,
+                        'amount': event.tax_withheld,
+                        'description': f"Tax payment for {distribution_type} distribution",
+                        'reference_number': f"TAX_{event.reference_number or event.id}"
+                    }
+                    
+                    # Delegate to specialized repository
+                    self.tax_event_repository.create_tax_payment(fund.id, event_data, session)
         
         print(f"Created tax payment events for fund {fund.name}")
     
@@ -256,7 +272,7 @@ class TaxCalculationService:
         if not session:
             return {}
             
-        return self.fund_event_repository.get_distributions_by_type(fund.id, session)
+        return self.fund_event_query_repository.get_distributions_by_type(fund.id, session)
     
     def get_total_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -274,7 +290,7 @@ class TaxCalculationService:
         if not session:
             return 0.0
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
     
     def get_taxable_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -292,7 +308,7 @@ class TaxCalculationService:
         if not session:
             return 0.0
         
-        return self.fund_event_repository.get_taxable_distributions(fund.id, session)
+        return self.fund_event_query_repository.get_taxable_distributions(fund.id, session)
     
     def get_gross_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -310,7 +326,7 @@ class TaxCalculationService:
         if not session:
             return 0.0
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
     
     def get_net_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -348,7 +364,7 @@ class TaxCalculationService:
         if not session:
             return 0.0
         
-        return self.fund_event_repository.get_total_tax_withheld(fund.id, session)
+        return self.fund_event_query_repository.get_total_tax_withheld(fund.id, session)
     
     def get_distributions_with_tax_details(self, fund: 'Fund', session: Optional[Session] = None) -> List[Dict[str, Any]]:
         """
@@ -445,7 +461,7 @@ class TaxCalculationService:
         from datetime import date
         
         # Get all daily interest charge events for the fund
-        events = self.fund_event_repository.get_events_by_type_and_date_range(
+        events = self.tax_event_repository.get_tax_events_by_type_and_date_range(
             fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, 
             date(1900, 1, 1), date(2100, 12, 31), session
         )
@@ -473,9 +489,7 @@ class TaxCalculationService:
         # Get all cash flow events for the fund
         events = []
         for event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION]:
-            type_events = self.fund_event_repository.get_events_by_type_and_date_range(
-                fund.id, event_type, date(1900, 1, 1), date(2100, 12, 31), session
-            )
+            type_events = self.fund_event_query_repository.get_events_by_type(fund.id, event_type, session)
             events.extend(type_events)
         
         return events
@@ -495,16 +509,18 @@ class TaxCalculationService:
         daily_interest_sum = self.calculate_eofy_debt_interest_deduction_sum_of_daily_interest(fund, fy, session)
         
         if daily_interest_sum > 0:
-            # Create EOFY debt cost event
-            event = fund.fund_events.__class__(
-                fund_id=fund.id,
-                event_type=fund.fund_events.__class__.__class__('eofy_debt_cost'),
-                event_date=date(fy + 1, 6, 30),  # End of financial year
-                amount=daily_interest_sum,
-                description=f"End of financial year debt cost for FY {fy}",
-                reference_number=f"EOFYD_{fy}"
-            )
-            session.add(event)
+            # Prepare event data
+            event_data = {
+                'fund_id': fund.id,
+                'event_type': EventType.EOFY_DEBT_COST,
+                'event_date': date(fy + 1, 6, 30),  # End of financial year
+                'amount': daily_interest_sum,
+                'description': f"End of financial year debt cost for FY {fy}",
+                'reference_number': f"EOFYD_{fy}"
+            }
+            
+            # Delegate to specialized repository
+            self.tax_event_repository.create_eofy_debt_cost(fund.id, event_data, session)
     
     def _delete_debt_cost_events(self, fund: 'Fund', session: Optional[Session] = None) -> None:
         """
@@ -522,19 +538,13 @@ class TaxCalculationService:
         from src.fund.enums import EventType
         from datetime import date
         
-        # Get all debt cost events for the fund
-        daily_interest_events = self.fund_event_repository.get_events_by_type_and_date_range(
-            fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, 
-            date(1900, 1, 1), date(2100, 12, 31), session
+        # Delete all debt cost events using specialized repository
+        daily_interest_count = self.tax_event_repository.delete_tax_events_by_type(
+            fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, session
         )
         
-        eofy_debt_events = self.fund_event_repository.get_events_by_type_and_date_range(
-            fund.id, EventType.EOFY_DEBT_COST, 
-            date(1900, 1, 1), date(2100, 12, 31), session
+        eofy_debt_count = self.tax_event_repository.delete_tax_events_by_type(
+            fund.id, EventType.EOFY_DEBT_COST, session
         )
-        
-        # Delete all debt cost events
-        for event in daily_interest_events + eofy_debt_events:
-            self.fund_event_repository.delete(event.id, session)
         
         print(f"Deleted debt cost events for fund {fund.name}")

@@ -20,6 +20,7 @@ from src.fund.models import Fund, FundEvent, EventType, FundType
 from src.fund.enums import FundStatus
 from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator, FifoUnit
+from src.fund.repositories import FundEventQueryRepository
 
 
 class FundIncrementalCalculationService:
@@ -33,6 +34,7 @@ class FundIncrementalCalculationService:
     def __init__(self):
         """Initialize the FundIncrementalCalculationService."""
         self.calculation_service = FundCalculationService()
+        self.fund_event_query_repository = FundEventQueryRepository()
         # MANUAL: Cache for intermediate calculation results to avoid recomputation
         self._calculation_cache: Dict[int, Dict[str, Any]] = {}
     
@@ -94,9 +96,7 @@ class FundIncrementalCalculationService:
             return []
         
         # SYSTEM: Get all capital events for this fund, ordered by date
-        from src.fund.repositories import FundEventRepository
-        event_repository = FundEventRepository()
-        events = event_repository.get_events_by_fund_and_type(
+        events = self.fund_event_query_repository.get_events_by_fund_and_type(
             fund.id, CAPITAL_EVENT_TYPES, session
         )
         
@@ -152,9 +152,7 @@ class FundIncrementalCalculationService:
         """
         # SYSTEM: Get all capital events up to the first affected event
         first_affected = affected_events[0]
-        from src.fund.repositories import FundEventRepository
-        event_repository = FundEventRepository()
-        previous_events = event_repository.get_events_by_fund_and_date_range(
+        previous_events = self.fund_event_query_repository.get_events_by_fund_and_date_range(
             fund.id, fund.start_date, first_affected.event_date, session
         )
         # Filter for unit events only
@@ -188,9 +186,7 @@ class FundIncrementalCalculationService:
         """
         # SYSTEM: Get all capital events up to the first affected event
         first_affected = affected_events[0]
-        from src.fund.repositories import FundEventRepository
-        event_repository = FundEventRepository()
-        previous_events = event_repository.get_events_by_fund_and_date_range(
+        previous_events = self.fund_event_query_repository.get_events_by_fund_and_date_range(
             fund.id, fund.start_date, first_affected.event_date, session
         )
         # Filter for capital events only
@@ -271,8 +267,11 @@ class FundIncrementalCalculationService:
             Tuple of (updated_fifo, updated_cumulative_units)
         """
         # CALCULATED: Use pure calculator for FIFO unit creation
-        fifo_unit = FifoCapitalGainsCalculator.process_purchase_event(event)
-        fifo.append(fifo_unit)
+        # Handle zero units gracefully - don't create FIFO entry
+        units = event.units_purchased or 0
+        if units > 0:
+            fifo_unit = FifoCapitalGainsCalculator.process_purchase_event(event)
+            fifo.append(fifo_unit)
         
         # SYSTEM: Update event fields
         units = event.units_purchased or 0
@@ -388,13 +387,11 @@ class FundIncrementalCalculationService:
         [NEW] Incremental NAV fund summary updates: Only update affected fields.
         """
         # SYSTEM: Find the latest unit event to get the most current values
-        from src.fund.repositories import FundEventRepository
-        event_repository = FundEventRepository()
-        latest_unit_event = event_repository.get_latest_event_by_type(
+        latest_unit_event = self.fund_event_query_repository.get_latest_event_by_type(
             fund.id, EventType.UNIT_PURCHASE, session
         )
         if not latest_unit_event:
-            latest_unit_event = event_repository.get_latest_event_by_type(
+            latest_unit_event = self.fund_event_query_repository.get_latest_event_by_type(
                 fund.id, EventType.UNIT_SALE, session
             )
         
@@ -418,13 +415,11 @@ class FundIncrementalCalculationService:
         [NEW] Incremental cost-based fund summary updates: Only update affected fields.
         """
         # SYSTEM: Find the latest capital event to get the most current values
-        from src.fund.repositories import FundEventRepository
-        event_repository = FundEventRepository()
-        latest_capital_event = event_repository.get_latest_event_by_type(
+        latest_capital_event = self.fund_event_query_repository.get_latest_event_by_type(
             fund.id, EventType.CAPITAL_CALL, session
         )
         if not latest_capital_event:
-            latest_capital_event = event_repository.get_latest_event_by_type(
+            latest_capital_event = self.fund_event_query_repository.get_latest_event_by_type(
                 fund.id, EventType.RETURN_OF_CAPITAL, session
             )
         

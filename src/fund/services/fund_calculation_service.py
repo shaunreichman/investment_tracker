@@ -29,7 +29,7 @@ from sqlalchemy import func
 from src.shared.utils import with_session
 from src.fund.enums import FundStatus, EventType
 from src.fund.models import FundEvent
-from src.fund.repositories import FundEventRepository
+from src.fund.repositories import FundEventRepository, FundEventQueryRepository
 from src.fund.calculators.debt_cost_calculator import DebtCostCalculator
 from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator
 from typing import TYPE_CHECKING
@@ -56,6 +56,7 @@ class FundCalculationService:
     def __init__(self):
         """Initialize the FundCalculationService."""
         self.fund_event_repository = FundEventRepository()
+        self.fund_event_query_repository = FundEventQueryRepository()
     
     # ============================================================================
     # IRR CALCULATIONS
@@ -124,7 +125,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.CAPITAL_CALL, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.CAPITAL_CALL, session)
     
     def get_total_capital_returns(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -145,7 +146,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.RETURN_OF_CAPITAL, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.RETURN_OF_CAPITAL, session)
     
     def get_total_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -166,7 +167,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
     
     def get_total_tax_withheld(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -185,7 +186,7 @@ class FundCalculationService:
         if not session:
             return 0.0
         
-        return self.fund_event_repository.get_total_tax_withheld(fund.id, session)
+        return self.fund_event_query_repository.get_total_tax_withheld(fund.id, session)
     
     def get_total_tax_payments(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -206,7 +207,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.TAX_PAYMENT, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.TAX_PAYMENT, session)
     
     def get_total_daily_interest_charges(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -227,7 +228,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, session)
     
     def get_total_unit_purchases(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -248,7 +249,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.UNIT_PURCHASE, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.UNIT_PURCHASE, session)
     
     def get_total_unit_sales(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -269,7 +270,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        return self.fund_event_repository.get_total_by_type(fund.id, EventType.UNIT_SALE, session)
+        return self.fund_event_query_repository.get_total_by_type(fund.id, EventType.UNIT_SALE, session)
     
     def get_distributions_by_type(self, fund: 'Fund', session: Optional[Session] = None) -> Dict[str, float]:
         """
@@ -288,7 +289,7 @@ class FundCalculationService:
         if not session:
             return {}
         
-        return self.fund_event_repository.get_distributions_by_type(fund.id, session)
+        return self.fund_event_query_repository.get_distributions_by_type(fund.id, session)
     
     def get_taxable_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -307,7 +308,7 @@ class FundCalculationService:
         if not session:
             return 0.0
         
-        return self.fund_event_repository.get_taxable_distributions(fund.id, session)
+        return self.fund_event_query_repository.get_taxable_distributions(fund.id, session)
     
     def get_gross_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """

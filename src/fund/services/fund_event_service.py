@@ -18,6 +18,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 
 from src.fund.enums import EventType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.fund.models import Fund, FundEvent
+    from src.fund.repositories import CapitalEventRepository, UnitEventRepository, TaxEventRepository, FundEventQueryRepository
 
 
 class FundEventService:
@@ -32,9 +37,26 @@ class FundEventService:
     - Event querying and filtering
     """
     
-    def __init__(self):
-        """Initialize the FundEventService."""
-        pass
+    def __init__(self, 
+                 capital_event_repository: 'CapitalEventRepository' = None,
+                 unit_event_repository: 'UnitEventRepository' = None,
+                 tax_event_repository: 'TaxEventRepository' = None,
+                 fund_event_query_repository: 'FundEventQueryRepository' = None):
+        """
+        Initialize the FundEventService with specialized repositories.
+        
+        Args:
+            capital_event_repository: Repository for capital events
+            unit_event_repository: Repository for unit events
+            tax_event_repository: Repository for tax events
+            fund_event_query_repository: Repository for complex queries
+        """
+        from src.fund.repositories import CapitalEventRepository, UnitEventRepository, TaxEventRepository, FundEventQueryRepository
+        
+        self.capital_event_repository = capital_event_repository or CapitalEventRepository()
+        self.unit_event_repository = unit_event_repository or UnitEventRepository()
+        self.tax_event_repository = tax_event_repository or TaxEventRepository()
+        self.fund_event_query_repository = fund_event_query_repository or FundEventQueryRepository()
     
     # ============================================================================
     # CAPITAL CALL AND RETURN OF CAPITAL EVENTS
@@ -65,19 +87,18 @@ class FundEventService:
         if not date:
             raise ValueError("Capital call date is required")
         
-        # Create the capital call event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.CAPITAL_CALL,
-            event_date=date,
-            amount=amount,
-            description=description or f"Capital call of {amount}",
-            reference_number=reference_number
-        )
+        # Prepare event data
+        event_data = {
+            'fund_id': fund.id,
+            'event_type': EventType.CAPITAL_CALL,
+            'event_date': date,
+            'amount': amount,
+            'description': description or f"Capital call of {amount}",
+            'reference_number': reference_number
+        }
         
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
+        # Delegate to specialized repository
+        event = self.capital_event_repository.create_capital_call(fund.id, event_data, session)
         
         print(f"Added capital call event: {amount} on {date} for fund {fund.name}")
         return event
@@ -107,19 +128,18 @@ class FundEventService:
         if not date:
             raise ValueError("Return of capital date is required")
         
-        # Create the return of capital event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.RETURN_OF_CAPITAL,
-            event_date=date,
-            amount=amount,
-            description=description or f"Return of capital of {amount}",
-            reference_number=reference_number
-        )
+        # Prepare event data
+        event_data = {
+            'fund_id': fund.id,
+            'event_type': EventType.RETURN_OF_CAPITAL,
+            'event_date': date,
+            'amount': amount,
+            'description': description or f"Return of capital of {amount}",
+            'reference_number': reference_number
+        }
         
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
+        # Delegate to specialized repository
+        event = self.capital_event_repository.create_return_of_capital(fund.id, event_data, session)
         
         print(f"Added return of capital event: {amount} on {date} for fund {fund.name}")
         return event
@@ -162,22 +182,21 @@ class FundEventService:
         # Calculate total amount
         total_amount = (units * price) + brokerage_fee
         
-        # Create the unit purchase event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.UNIT_PURCHASE,
-            event_date=date,
-            units_purchased=units,
-            unit_price=price,
-            brokerage_fee=brokerage_fee,
-            amount=total_amount,
-            description=description or f"Purchase of {units} units at {price}",
-            reference_number=reference_number
-        )
+        # Prepare event data
+        event_data = {
+            'fund_id': fund.id,
+            'event_type': EventType.UNIT_PURCHASE,
+            'event_date': date,
+            'units_purchased': units,
+            'unit_price': price,
+            'brokerage_fee': brokerage_fee,
+            'amount': total_amount,
+            'description': description or f"Purchase of {units} units at {price}",
+            'reference_number': reference_number
+        }
         
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
+        # Delegate to specialized repository
+        event = self.unit_event_repository.create_unit_purchase(fund.id, event_data, session)
         
         print(f"Added unit purchase event: {units} units at {price} on {date} for fund {fund.name}")
         return event
@@ -216,22 +235,21 @@ class FundEventService:
         # Calculate total amount
         total_amount = (units * price) - brokerage_fee
         
-        # Create the unit sale event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.UNIT_SALE,
-            event_date=date,
-            units_sold=units,
-            unit_price=price,
-            brokerage_fee=brokerage_fee,
-            amount=total_amount,
-            description=description or f"Unit sale of {units} units at {price}",
-            reference_number=reference_number
-        )
+        # Prepare event data
+        event_data = {
+            'fund_id': fund.id,
+            'event_type': EventType.UNIT_SALE,
+            'event_date': date,
+            'units_sold': units,
+            'unit_price': price,
+            'brokerage_fee': brokerage_fee,
+            'amount': total_amount,
+            'description': description or f"Unit sale of {units} units at {price}",
+            'reference_number': reference_number
+        }
         
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
+        # Delegate to specialized repository
+        event = self.unit_event_repository.create_unit_sale(fund.id, event_data, session)
         
         print(f"Added unit sale event: {units} units at {price} on {date} for fund {fund.name}")
         return event
@@ -265,19 +283,18 @@ class FundEventService:
         if not date:
             raise ValueError("NAV update date is required")
         
-        # Create the NAV update event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.NAV_UPDATE,
-            event_date=date,
-            nav_per_share=nav_per_share,
-            description=description or f"NAV update to {nav_per_share}",
-            reference_number=reference_number
-        )
+        # Prepare event data
+        event_data = {
+            'fund_id': fund.id,
+            'event_type': EventType.NAV_UPDATE,
+            'event_date': date,
+            'nav_per_share': nav_per_share,
+            'description': description or f"NAV update to {nav_per_share}",
+            'reference_number': reference_number
+        }
         
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
+        # Delegate to specialized repository
+        event = self.unit_event_repository.create_nav_update(fund.id, event_data, session)
         
         print(f"Added NAV update event: {nav_per_share} on {date} for fund {fund.name}")
         return event
@@ -298,11 +315,12 @@ class FundEventService:
         Returns:
             dict: NAV change field values
         """
-        from src.fund.repositories import FundEventRepository
+        # Use query repository to get the previous NAV event
+        if not self.fund_event_query_repository:
+            from src.fund.repositories import FundEventQueryRepository
+            self.fund_event_query_repository = FundEventQueryRepository()
         
-        # Use repository to get the previous NAV event
-        event_repository = FundEventRepository()
-        prev_nav_events = event_repository.get_events_before_date(
+        prev_nav_events = self.fund_event_query_repository.get_events_before_date(
             fund.id, EventType.NAV_UPDATE, date, session
         )
         
@@ -333,11 +351,12 @@ class FundEventService:
             new_nav_event: The new NAV event
             session: Database session (optional)
         """
-        from src.fund.repositories import FundEventRepository
+        # Use query repository to get subsequent NAV events
+        if not self.fund_event_query_repository:
+            from src.fund.repositories import FundEventQueryRepository
+            self.fund_event_query_repository = FundEventQueryRepository()
         
-        # Use repository to get subsequent NAV events
-        event_repository = FundEventRepository()
-        subsequent_events = event_repository.get_events_after_date(
+        subsequent_events = self.fund_event_query_repository.get_events_after_date(
             fund.id, EventType.NAV_UPDATE, new_nav_event.event_date, session
         )
         
@@ -489,12 +508,37 @@ class FundEventService:
         created_events = []
         
         for event_data in events_data:
-            event = self._create_bulk_event_object(fund, event_data)
-            session.add(event)
+            # Add fund_id to event data
+            event_data['fund_id'] = fund.id
+            
+            # Determine which repository to use based on event type
+            event_type = event_data.get('event_type')
+            if isinstance(event_type, str):
+                event_type = EventType(event_type)
+            
+            if event_type == EventType.CAPITAL_CALL:
+                event = self.capital_event_repository.create_capital_call(fund.id, event_data, session)
+            elif event_type == EventType.RETURN_OF_CAPITAL:
+                event = self.capital_event_repository.create_return_of_capital(fund.id, event_data, session)
+            elif event_type == EventType.UNIT_PURCHASE:
+                event = self.unit_event_repository.create_unit_purchase(fund.id, event_data, session)
+            elif event_type == EventType.UNIT_SALE:
+                event = self.unit_event_repository.create_unit_sale(fund.id, event_data, session)
+            elif event_type == EventType.NAV_UPDATE:
+                event = self.unit_event_repository.create_nav_update(fund.id, event_data, session)
+            elif event_type == EventType.TAX_PAYMENT:
+                event = self.tax_event_repository.create_tax_payment(fund.id, event_data, session)
+            elif event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE:
+                event = self.tax_event_repository.create_daily_interest_charge(fund.id, event_data, session)
+            elif event_type == EventType.EOFY_DEBT_COST:
+                event = self.tax_event_repository.create_eofy_debt_cost(fund.id, event_data, session)
+            else:
+                # Fallback to generic creation (for other event types)
+                from src.fund.repositories import FundEventRepository
+                fund_event_repository = FundEventRepository()
+                event = fund_event_repository.create(event_data, session)
+            
             created_events.append(event)
-        
-        # Flush to get IDs
-        session.flush()
         
         print(f"Added {len(created_events)} events to fund {fund.name}")
         return created_events

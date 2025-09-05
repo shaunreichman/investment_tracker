@@ -406,6 +406,7 @@ class SortField(Enum):
     CURRENT_EQUITY_BALANCE = 'CURRENT_EQUITY_BALANCE'
     CREATED_AT = 'CREATED_AT'
     UPDATED_AT = 'UPDATED_AT'
+    EVENT_DATE = 'EVENT_DATE'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""

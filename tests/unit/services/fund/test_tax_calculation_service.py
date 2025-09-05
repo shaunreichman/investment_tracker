@@ -31,8 +31,10 @@ class TestTaxCalculationService:
     def service(self):
         """Create a TaxCalculationService instance for testing."""
         service = TaxCalculationService()
-        # Mock the repository dependency
+        # Mock the repository dependencies
         service.fund_event_repository = Mock()
+        service.fund_event_query_repository = Mock()
+        service.tax_event_repository = Mock()
         return service
     
     @pytest.fixture
@@ -166,24 +168,24 @@ class TestTaxCalculationService:
             DistributionType.CAPITAL_GAIN: [Mock()],
             'unknown': [Mock()]
         }
-        service.fund_event_repository.get_distributions_by_type.return_value = expected
+        service.fund_event_query_repository.get_distributions_by_type.return_value = expected
         
         result = service.get_distributions_by_type(mock_fund, mock_session)
         
         assert result == expected
-        service.fund_event_repository.get_distributions_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_distributions_by_type.assert_called_once_with(
             mock_fund.id, mock_session
         )
     
     def test_get_total_distributions(self, service, mock_fund):
         """Test calculation of total distribution amount - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 3000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 3000.0
         
         result = service.get_total_distributions(mock_fund, mock_session)
         
         assert result == 3000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.DISTRIBUTION, mock_session
         )
     
@@ -196,24 +198,24 @@ class TestTaxCalculationService:
     def test_get_taxable_distributions(self, service, mock_fund):
         """Test calculation of taxable distributions - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_taxable_distributions.return_value = 6000.0
+        service.fund_event_query_repository.get_taxable_distributions.return_value = 6000.0
         
         result = service.get_taxable_distributions(mock_fund, mock_session)
         
         assert result == 6000.0
-        service.fund_event_repository.get_taxable_distributions.assert_called_once_with(
+        service.fund_event_query_repository.get_taxable_distributions.assert_called_once_with(
             mock_fund.id, mock_session
         )
     
     def test_get_gross_distributions(self, service, mock_fund):
         """Test calculation of gross distributions - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_by_type.return_value = 3000.0
+        service.fund_event_query_repository.get_total_by_type.return_value = 3000.0
         
         result = service.get_gross_distributions(mock_fund, mock_session)
         
         assert result == 3000.0
-        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+        service.fund_event_query_repository.get_total_by_type.assert_called_once_with(
             mock_fund.id, EventType.DISTRIBUTION, mock_session
         )
     
@@ -232,12 +234,12 @@ class TestTaxCalculationService:
     def test_get_total_tax_withheld(self, service, mock_fund):
         """Test calculation of total tax withheld - delegates to repository."""
         mock_session = Mock()
-        service.fund_event_repository.get_total_tax_withheld.return_value = 300.0
+        service.fund_event_query_repository.get_total_tax_withheld.return_value = 300.0
         
         result = service.get_total_tax_withheld(mock_fund, mock_session)
         
         assert result == 300.0
-        service.fund_event_repository.get_total_tax_withheld.assert_called_once_with(
+        service.fund_event_query_repository.get_total_tax_withheld.assert_called_once_with(
             mock_fund.id, mock_session
         )
     
@@ -336,14 +338,14 @@ class TestTaxCalculationService:
     def test_calculate_eofy_debt_interest_deduction_sum(self, service, mock_fund, mock_session):
         """Test calculation of EOFY debt interest deduction sum - delegates to repository."""
         financial_year = 2023
-        service.fund_event_repository.get_daily_interest_charges_by_financial_year.return_value = 1500.0
+        service.tax_event_repository.get_daily_interest_charges_by_financial_year.return_value = 1500.0
         
         result = service.calculate_eofy_debt_interest_deduction_sum_of_daily_interest(
             mock_fund, financial_year, mock_session
         )
         
         assert result == 1500.0
-        service.fund_event_repository.get_daily_interest_charges_by_financial_year.assert_called_once_with(
+        service.tax_event_repository.get_daily_interest_charges_by_financial_year.assert_called_once_with(
             mock_fund.id, financial_year, mock_session
         )
     
@@ -356,14 +358,14 @@ class TestTaxCalculationService:
         mock_events[0].event_date = date(2023, 1, 1)
         mock_events[1].event_date = date(2023, 1, 2)
         
-        service.fund_event_repository.get_events_by_type_and_date_range.return_value = mock_events
+        service.tax_event_repository.get_tax_events_by_type_and_date_range.return_value = mock_events
         
         result = service._get_existing_daily_interest_dates(mock_fund, mock_session)
         
         assert len(result) == 2
         assert result[0] == date(2023, 1, 1)
         assert result[1] == date(2023, 1, 2)
-        service.fund_event_repository.get_events_by_type_and_date_range.assert_called_once()
+        service.tax_event_repository.get_tax_events_by_type_and_date_range.assert_called_once()
     
     def test_get_cash_flow_events(self, service, mock_fund, mock_session):
         """Test retrieval of cash flow events - delegates to repository."""
@@ -371,12 +373,12 @@ class TestTaxCalculationService:
         from src.fund.enums import EventType
         
         mock_events = [Mock(), Mock(), Mock()]
-        service.fund_event_repository.get_events_by_type_and_date_range.return_value = mock_events
+        service.fund_event_query_repository.get_events_by_type.return_value = mock_events
         
         result = service._get_cash_flow_events(mock_fund, mock_session)
         
         # Should call repository for each event type
-        assert service.fund_event_repository.get_events_by_type_and_date_range.call_count == 3
+        assert service.fund_event_query_repository.get_events_by_type.call_count == 3
         assert len(result) == 9  # 3 calls * 3 events each
     
     def test_delete_debt_cost_events(self, service, mock_fund, mock_session):
@@ -384,14 +386,10 @@ class TestTaxCalculationService:
         from datetime import date
         from src.fund.enums import EventType
         
-        mock_events = [Mock(), Mock()]
-        mock_events[0].id = 1
-        mock_events[1].id = 2
-        service.fund_event_repository.get_events_by_type_and_date_range.return_value = mock_events
+        # Mock the tax_event_repository delete method to return count of deleted events
+        service.tax_event_repository.delete_tax_events_by_type.return_value = 2
         
         service._delete_debt_cost_events(mock_fund, mock_session)
         
-        # Should call repository to get events for both event types (2 calls)
-        # and then delete all events from both lists (4 delete calls total)
-        assert service.fund_event_repository.get_events_by_type_and_date_range.call_count == 2
-        assert service.fund_event_repository.delete.call_count == 4  # 2 events * 2 event types
+        # Should call repository to delete events for both event types (2 calls)
+        assert service.tax_event_repository.delete_tax_events_by_type.call_count == 2
