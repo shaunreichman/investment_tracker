@@ -29,6 +29,13 @@ from sqlalchemy import func
 from src.shared.utils import with_session
 from src.fund.enums import FundStatus, EventType
 from src.fund.models import FundEvent
+from src.fund.repositories import FundEventRepository
+from src.fund.calculators.debt_cost_calculator import DebtCostCalculator
+from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.fund.models import Fund
 
 
 class FundCalculationService:
@@ -48,7 +55,7 @@ class FundCalculationService:
     
     def __init__(self):
         """Initialize the FundCalculationService."""
-        pass
+        self.fund_event_repository = FundEventRepository()
     
     # ============================================================================
     # IRR CALCULATIONS
@@ -117,12 +124,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.CAPITAL_CALL
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.CAPITAL_CALL, session)
     
     def get_total_capital_returns(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -143,12 +145,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.RETURN_OF_CAPITAL
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.RETURN_OF_CAPITAL, session)
     
     def get_total_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -169,12 +166,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.DISTRIBUTION
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
     
     def get_total_tax_withheld(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -193,15 +185,7 @@ class FundCalculationService:
         if not session:
             return 0.0
         
-        from src.fund.enums import EventType
-        
-        total = session.query(func.sum(FundEvent.tax_withholding)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.DISTRIBUTION,
-            FundEvent.tax_withholding.isnot(None)
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_total_tax_withheld(fund.id, session)
     
     def get_total_tax_payments(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -222,12 +206,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.TAX_PAYMENT
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.TAX_PAYMENT, session)
     
     def get_total_daily_interest_charges(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -248,12 +227,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, session)
     
     def get_total_unit_purchases(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -274,12 +248,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.UNIT_PURCHASE
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.UNIT_PURCHASE, session)
     
     def get_total_unit_sales(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -300,12 +269,7 @@ class FundCalculationService:
         
         from src.fund.enums import EventType
         
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.UNIT_SALE
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.UNIT_SALE, session)
     
     def get_distributions_by_type(self, fund: 'Fund', session: Optional[Session] = None) -> Dict[str, float]:
         """
@@ -324,24 +288,7 @@ class FundCalculationService:
         if not session:
             return {}
         
-        from src.fund.enums import EventType, DistributionType
-        
-        # Get all distribution events with their types
-        distributions = session.query(
-            FundEvent.distribution_type,
-            func.sum(FundEvent.amount).label('total_amount')
-        ).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.DISTRIBUTION,
-            FundEvent.distribution_type.isnot(None)
-        ).group_by(FundEvent.distribution_type).all()
-        
-        result = {}
-        for dist_type, total_amount in distributions:
-            type_name = dist_type.value if hasattr(dist_type, 'value') else str(dist_type)
-            result[type_name] = float(total_amount) if total_amount else 0.0
-        
-        return result
+        return self.fund_event_repository.get_distributions_by_type(fund.id, session)
     
     def get_taxable_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -360,18 +307,7 @@ class FundCalculationService:
         if not session:
             return 0.0
         
-        from src.fund.enums import EventType, DistributionType
-        
-        # Taxable distributions are typically dividends and interest
-        taxable_types = [DistributionType.DIVIDEND_FRANKED, DistributionType.DIVIDEND_UNFRANKED, DistributionType.INTEREST]
-        
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type == EventType.DISTRIBUTION,
-            FundEvent.distribution_type.in_(taxable_types)
-        ).scalar()
-        
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_taxable_distributions(fund.id, session)
     
     def get_gross_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -416,9 +352,10 @@ class FundCalculationService:
 
     def _calculate_debt_cost_utility(self, events, risk_free_rates, start_date, end_date, currency):
         """
-        [MIGRATED] Calculate debt cost (opportunity cost) using daily/period-by-period accuracy.
+        [REFACTORED] Calculate debt cost using pure calculator.
         
-        This method was migrated from the old fund/calculations.py module.
+        This method now delegates to DebtCostCalculator for pure mathematical
+        calculations, following the calculator layer rules.
         
         Args:
             events (list): List of FundEvent objects (capital movements).
@@ -440,167 +377,65 @@ class FundCalculationService:
         Business context:
             Used for real IRR calculations in Fund models, to account for the opportunity cost of capital.
         """
-        from datetime import timedelta
-        from src.fund.enums import EventType, FundType
+        # CALCULATED: Delegate to pure calculator for mathematical operations
+        result = DebtCostCalculator.calculate_debt_cost(
+            events, risk_free_rates, start_date, end_date, currency
+        )
         
-        # Filter events to the relevant period
-        events = [e for e in events if e.event_date >= start_date and e.event_date <= end_date]
-        events.sort(key=lambda e: e.event_date)
-        # Build periods for each risk-free rate
-        rate_periods = []
-        for i, rate in enumerate(risk_free_rates):
-            rate_start = rate.rate_date
-            if i + 1 < len(risk_free_rates):
-                rate_end = risk_free_rates[i + 1].rate_date
-            else:
-                rate_end = end_date + timedelta(days=1)
-            rate_periods.append((rate_start, rate_end, rate.rate))
-        # Build equity periods between events
-        equity_periods = []
-        current_equity = 0
-        last_date = start_date
-        for event in events:
-            if event.event_date > last_date:
-                equity_periods.append((last_date, event.event_date, current_equity))
-            if hasattr(event, 'fund'):
-                # Calculate equity change based on fund type and event type
-                fund_type = event.fund.tracking_type
-                if fund_type == FundType.NAV_BASED:
-                    if event.event_type == EventType.UNIT_PURCHASE:
-                        # Exclude brokerage: equity is units * unit_price
-                        equity_change = (event.units_purchased or 0.0) * (event.unit_price or 0.0)
-                    elif event.event_type == EventType.UNIT_SALE:
-                        # Exclude brokerage: equity is units * unit_price
-                        equity_change = -((event.units_sold or 0.0) * (event.unit_price or 0.0))
-                    else:
-                        equity_change = 0
-                elif fund_type == FundType.COST_BASED:
-                    if event.event_type == EventType.CAPITAL_CALL:
-                        equity_change = event.amount or 0.0
-                    elif event.event_type == EventType.RETURN_OF_CAPITAL:
-                        equity_change = -(event.amount or 0.0)
-                    else:
-                        equity_change = 0
-                else:
-                    equity_change = 0
-            else:
-                equity_change = 0
-            current_equity += equity_change
-            last_date = event.event_date
-        if last_date < end_date:
-            equity_periods.append((last_date, end_date, current_equity))
-        total_debt_cost = 0
-        total_weighted_rate = 0
-        total_days = 0
-        total_weighted_equity = 0
-        # Calculate debt cost for each equity period
-        for equity_start, equity_end, equity_amount in equity_periods:
-            period_days = (equity_end - equity_start).days
-            if period_days <= 0:
-                continue
-            # Find applicable risk-free rate for this period
-            applicable_rate = None
-            for rate_start, rate_end, rate_value in rate_periods:
-                if rate_start <= equity_start and equity_end <= rate_end:
-                    applicable_rate = rate_value
-                    break
-            if applicable_rate is None:
-                continue
-            # Calculate debt cost for this period
-            period_debt_cost = equity_amount * (applicable_rate / 100) * (period_days / 365.25)
-            total_debt_cost += period_debt_cost
-            total_weighted_rate += applicable_rate * period_days
-            total_days += period_days
-            total_weighted_equity += equity_amount * period_days
-        # Calculate summary statistics
-        # Handle single day periods - ensure at least 1 day
-        if start_date == end_date:
-            total_days = max(total_days, 1)
-        
-        average_risk_free_rate = total_weighted_rate / total_days if total_days > 0 else 0
-        average_equity = total_weighted_equity / total_days if total_days > 0 else 0
-        debt_cost_percentage = (total_debt_cost / average_equity * 100) if average_equity > 0 else 0
-        investment_duration_years = total_days / 365.25
+        # Convert DebtCostResult to dictionary for backward compatibility
         return {
-            'total_debt_cost': total_debt_cost,
-            'average_risk_free_rate': average_risk_free_rate,
-            'debt_cost_percentage': debt_cost_percentage,
-            'investment_duration_years': investment_duration_years,
-            'average_equity': average_equity,
-            'total_days': total_days
+            'total_debt_cost': result.total_debt_cost,
+            'average_risk_free_rate': result.average_risk_free_rate,
+            'debt_cost_percentage': result.debt_cost_percentage,
+            'investment_duration_years': result.investment_duration_years,
+            'average_equity': result.average_equity,
+            'total_days': result.total_days
         }
 
-    def _calculate_nav_based_capital_gains_utility(self, events):
+    def calculate_nav_based_capital_gains(self, events: List[FundEvent]) -> float:
         """
-        [MIGRATED] Calculate capital gains for NAV-based funds using FIFO method, including brokerage fees.
-        - Purchase: cost base per unit = (units * unit_price + brokerage_fee) / units
-        - Sale: proceeds per unit = unit_price - (brokerage_fee / units_sold)
+        [REFACTORED] Calculate capital gains for NAV-based funds using pure calculator.
         
-        This method was migrated from the old fund/calculations.py module.
+        This method now delegates to FifoCapitalGainsCalculator for pure mathematical
+        calculations, following the calculator layer rules.
         
         Args:
-            events (list): List of FundEvent objects (unit purchases/sales).
+            events: List of FundEvent objects (unit purchases/sales)
+            
         Returns:
-            float: Total capital gains.
+            float: Total capital gains
+            
         Business context:
             Used for tax calculations and performance reporting in NAV-based funds.
         """
-        from collections import deque
-        from src.fund.enums import EventType
-        
-        available_units = deque()  # Each entry: (units, cost_per_unit)
-        total_capital_gains = 0
-        for event in events:
-            if event.event_type == EventType.UNIT_PURCHASE:
-                units = event.units_purchased or 0
-                unit_price = event.unit_price or 0
-                brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
-                if units > 0 and unit_price > 0:
-                    # Apportion brokerage per unit and add to cost base
-                    cost_per_unit = unit_price + (brokerage_fee / units)
-                    available_units.append((units, cost_per_unit))
-            elif event.event_type == EventType.UNIT_SALE:
-                units_to_sell = event.units_sold or 0
-                sale_price_per_unit = event.unit_price or 0
-                sale_brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
-                if units_to_sell > 0 and sale_price_per_unit > 0:
-                    # Apportion sale brokerage per unit
-                    proceeds_per_unit = sale_price_per_unit - (sale_brokerage_fee / units_to_sell)
-                    remaining_units_to_sell = units_to_sell
-                    while remaining_units_to_sell > 0 and available_units:
-                        available_units_count, cost_per_unit = available_units[0]
-                        units_from_this_purchase = min(remaining_units_to_sell, available_units_count)
-                        # Calculate capital gain for these units
-                        capital_gain = units_from_this_purchase * (proceeds_per_unit - cost_per_unit)
-                        total_capital_gains += capital_gain
-                        remaining_units_to_sell -= units_from_this_purchase
-                        # Update or remove from available units
-                        if units_from_this_purchase == available_units_count:
-                            available_units.popleft()
-                        else:
-                            available_units[0] = (available_units_count - units_from_this_purchase, cost_per_unit)
-        return total_capital_gains
+        # CALCULATED: Delegate to pure calculator for mathematical operations
+        result = FifoCapitalGainsCalculator.calculate_capital_gains(events)
+        return result.total_capital_gains
 
-    def _calculate_cost_based_capital_gains_utility(self, events):
+    def calculate_cost_based_capital_gains(self, events: List[FundEvent]) -> float:
         """
-        [MIGRATED] Calculate capital gains for cost-based funds.
+        [REFACTORED] Calculate capital gains for cost-based funds.
         
-        This method was migrated from the old fund/calculations.py module.
+        For cost-based funds, capital gains are typically distributions of type CAPITAL_GAIN.
+        This method extracts the calculation logic for better separation of concerns.
         
         Args:
-            events (list): List of FundEvent objects (capital calls/returns).
-        
+            events: List of FundEvent objects (capital calls/returns/distributions)
+            
         Returns:
-            float: Total capital gains.
-        
+            float: Total capital gains
+            
         Business context:
             Used for tax calculations and performance reporting in cost-based funds.
         """
         from src.fund.enums import EventType, DistributionType
         
         # For cost-based funds, capital gains are typically distributions
-        total_capital_gains = 0
+        total_capital_gains = 0.0
         for event in events:
-            if event.event_type == EventType.DISTRIBUTION and event.distribution_type and event.distribution_type == DistributionType.CAPITAL_GAIN:
-                total_capital_gains += event.amount or 0
+            if (event.event_type == EventType.DISTRIBUTION and 
+                event.distribution_type and 
+                event.distribution_type == DistributionType.CAPITAL_GAIN):
+                total_capital_gains += event.amount or 0.0
+        
         return total_capital_gains

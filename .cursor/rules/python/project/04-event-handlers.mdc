@@ -1,0 +1,49 @@
+---
+description: Event Handlers: Event processing and side effect management
+globs: **/events/handlers/*.py
+alwaysApply: false
+---
+
+# Event Handlers Rules
+
+## Role
+Event handlers process specific event types, update related entities, and manage side effects.
+
+## Should Do
+- **Event validation**: Validate event data before processing
+- **Entity updates**: Update related entities based on events
+- **Side effects**: Handle cascading updates and notifications
+- **Domain events**: Publish domain events for loose coupling
+- **Idempotency**: Support duplicate event handling
+
+## Shouldn't Do
+- **Business rule validation**: Delegate to validation services
+- **Complex calculations**: Use calculator classes
+- **HTTP concerns**: Handle request/response formatting
+- **Direct database queries**: Use repositories for data access
+
+## Examples
+
+```python
+# ✅ Good: Event processing with side effects
+def handle(self, event_data: Dict[str, Any]) -> FundEvent:
+    self.validate_event(event_data)
+    
+    event = self._create_event(EventType.CAPITAL_CALL, **event_data)
+    self._update_fund_after_capital_event(event)
+    self._publish_dependent_events(event)
+    
+    return event
+
+# ❌ Bad: Business logic in handler
+def handle(self, event_data: Dict[str, Any]):
+    if event_data['amount'] > self.fund.commitment_amount:  # Business rule
+        raise ValueError("Amount exceeds commitment")
+    # ... event processing
+```
+
+## Key Principles
+- **Single event type**: One handler per event type
+- **Stateless**: No persistent state between events
+- **Focused responsibility**: Handle only event-specific logic
+- **Error handling**: Graceful failure with proper rollback

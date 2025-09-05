@@ -410,11 +410,10 @@ class FundService:
             fund_id: ID of the fund to recalculate
             session: Database session
         """
-        from src.fund.models.fund import Fund
         from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
         
-        # Get the fund
-        fund = session.query(Fund).filter(Fund.id == fund_id).first()
+        # Get the fund using repository
+        fund = self.fund_repository.get_by_id(fund_id, session)
         if not fund:
             return
         

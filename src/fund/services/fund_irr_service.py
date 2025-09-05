@@ -308,9 +308,9 @@ class FundIrRService:
         Returns:
             List[FundEvent]: List of fund events
         """
-        return self.session.query(FundEvent).filter(
-            FundEvent.fund_id == fund.id
-        ).order_by(FundEvent.event_date).all()
+        from src.fund.repositories import FundEventRepository
+        event_repository = FundEventRepository()
+        return event_repository.get_by_fund(fund.id, self.session)
     
     def _create_daily_risk_free_interest_charges(self, fund: Fund, risk_free_rate_currency: Optional[str] = None) -> None:
         """

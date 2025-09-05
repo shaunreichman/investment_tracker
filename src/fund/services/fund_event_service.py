@@ -298,12 +298,15 @@ class FundEventService:
         Returns:
             dict: NAV change field values
         """
-        # Get the previous NAV event
-        prev_nav_event = session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == EventType.NAV_UPDATE,
-            fund.fund_events.__class__.event_date < date
-        ).order_by(fund.fund_events.__class__.event_date.desc()).first()
+        from src.fund.repositories import FundEventRepository
+        
+        # Use repository to get the previous NAV event
+        event_repository = FundEventRepository()
+        prev_nav_events = event_repository.get_events_before_date(
+            fund.id, EventType.NAV_UPDATE, date, session
+        )
+        
+        prev_nav_event = prev_nav_events[0] if prev_nav_events else None
         
         if prev_nav_event and prev_nav_event.nav_per_share:
             prev_nav = prev_nav_event.nav_per_share
@@ -330,12 +333,13 @@ class FundEventService:
             new_nav_event: The new NAV event
             session: Database session (optional)
         """
-        # Get subsequent NAV events
-        subsequent_events = session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == EventType.NAV_UPDATE,
-            fund.fund_events.__class__.event_date > new_nav_event.event_date
-        ).order_by(fund.fund_events.__class__.event_date).all()
+        from src.fund.repositories import FundEventRepository
+        
+        # Use repository to get subsequent NAV events
+        event_repository = FundEventRepository()
+        subsequent_events = event_repository.get_events_after_date(
+            fund.id, EventType.NAV_UPDATE, new_nav_event.event_date, session
+        )
         
         # Update each subsequent event
         for event in subsequent_events:
@@ -456,21 +460,16 @@ class FundEventService:
         Returns:
             bool: True if event was deleted, False otherwise
         """
-        # Find the event
-        event = session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.id == event_id,
-            fund.fund_events.__class__.fund_id == fund.id
-        ).first()
+        from src.fund.repositories import FundEventRepository
         
-        if not event:
-            return False
+        # Use repository to delete the event
+        event_repository = FundEventRepository()
+        success = event_repository.delete(event_id, session)
         
-        # Delete the event
-        session.delete(event)
-        session.flush()
+        if success:
+            print(f"Deleted event {event_id} from fund {fund.name}")
         
-        print(f"Deleted event {event_id} from fund {fund.name}")
-        return True
+        return success
     
     def bulk_add_events(self, fund: 'Fund', events_data: List[Dict[str, Any]], 
                        session: Optional[Session] = None) -> List['FundEvent']:

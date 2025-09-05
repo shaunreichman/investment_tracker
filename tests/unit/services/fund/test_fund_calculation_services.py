@@ -31,7 +31,10 @@ class TestFundCalculationService:
     @pytest.fixture
     def service(self):
         """Create a FundCalculationService instance for testing."""
-        return FundCalculationService()
+        service = FundCalculationService()
+        # Mock the repository dependency
+        service.fund_event_repository = Mock()
+        return service
     
     @pytest.fixture
     def mock_fund(self):
@@ -168,21 +171,16 @@ class TestFundCalculationService:
     # ============================================================================
     
     def test_get_total_capital_calls(self, service, mock_fund):
-        """Test total capital calls aggregation."""
+        """Test total capital calls aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 50000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_total_by_type.return_value = 50000.0
         
         result = service.get_total_capital_calls(mock_fund, mock_session)
         
         assert result == 50000.0
-        mock_session.query.assert_called_once()
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.CAPITAL_CALL, mock_session
+        )
 
     def test_get_total_capital_calls_no_session(self, service, mock_fund):
         """Test total capital calls aggregation with no session."""
@@ -191,171 +189,120 @@ class TestFundCalculationService:
         assert result == 0.0
 
     def test_get_total_capital_returns(self, service, mock_fund):
-        """Test total capital returns aggregation."""
+        """Test total capital returns aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 20000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_total_by_type.return_value = 20000.0
         
         result = service.get_total_capital_returns(mock_fund, mock_session)
         
         assert result == 20000.0
-        mock_session.query.assert_called_once()
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.RETURN_OF_CAPITAL, mock_session
+        )
 
     def test_get_total_distributions(self, service, mock_fund):
-        """Test total distributions aggregation."""
+        """Test total distributions aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 15000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_total_by_type.return_value = 15000.0
         
         result = service.get_total_distributions(mock_fund, mock_session)
         
         assert result == 15000.0
-        mock_session.query.assert_called_once()
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.DISTRIBUTION, mock_session
+        )
 
     def test_get_total_tax_withheld(self, service, mock_fund):
-        """Test total tax withheld aggregation."""
+        """Test total tax withheld aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 5000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_total_tax_withheld.return_value = 5000.0
         
         result = service.get_total_tax_withheld(mock_fund, mock_session)
         
         assert result == 5000.0
-        mock_session.query.assert_called_once()
+        service.fund_event_repository.get_total_tax_withheld.assert_called_once_with(
+            mock_fund.id, mock_session
+        )
 
     def test_get_total_tax_payments(self, service, mock_fund):
-        """Test total tax payments aggregation."""
+        """Test total tax payments aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 3000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_total_by_type.return_value = 3000.0
         
         result = service.get_total_tax_payments(mock_fund, mock_session)
         
         assert result == 3000.0
-        mock_session.query.assert_called_once()
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.TAX_PAYMENT, mock_session
+        )
 
     def test_get_total_daily_interest_charges(self, service, mock_fund):
-        """Test total daily interest charges aggregation."""
+        """Test total daily interest charges aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 1000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_total_by_type.return_value = 1000.0
         
         result = service.get_total_daily_interest_charges(mock_fund, mock_session)
         
         assert result == 1000.0
-        mock_session.query.assert_called_once()
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, mock_session
+        )
 
     def test_get_total_unit_purchases(self, service, mock_fund):
-        """Test total unit purchases aggregation."""
+        """Test total unit purchases aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 25000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_total_by_type.return_value = 25000.0
         
         result = service.get_total_unit_purchases(mock_fund, mock_session)
         
         assert result == 25000.0
-        mock_session.query.assert_called_once()
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.UNIT_PURCHASE, mock_session
+        )
 
     def test_get_total_unit_sales(self, service, mock_fund):
-        """Test total unit sales aggregation."""
+        """Test total unit sales aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 12000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_total_by_type.return_value = 12000.0
         
         result = service.get_total_unit_sales(mock_fund, mock_session)
         
         assert result == 12000.0
-        mock_session.query.assert_called_once()
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.UNIT_SALE, mock_session
+        )
 
     # ============================================================================
     # DISTRIBUTION TYPE TESTS
     # ============================================================================
     
     def test_get_distributions_by_type(self, service, mock_fund):
-        """Test distributions by type aggregation."""
+        """Test distributions by type aggregation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        mock_group_by = Mock()
-        
-        # Create mock results that behave like the expected data structure
-        # The query returns tuples of (distribution_type, total_amount)
-        mock_results = [
-            ("DIVIDEND_FRANKED", 8000.0),
-            ("CAPITAL_GAIN", 7000.0)
-        ]
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
-        mock_filter.group_by.return_value = mock_group_by
-        mock_group_by.all.return_value = mock_results
-        
-        result = service.get_distributions_by_type(mock_fund, mock_session)
-        
         expected = {
             "DIVIDEND_FRANKED": 8000.0,
             "CAPITAL_GAIN": 7000.0
         }
+        service.fund_event_repository.get_distributions_by_type.return_value = expected
+        
+        result = service.get_distributions_by_type(mock_fund, mock_session)
+        
         assert result == expected
+        service.fund_event_repository.get_distributions_by_type.assert_called_once_with(
+            mock_fund.id, mock_session
+        )
 
     def test_get_taxable_distributions(self, service, mock_fund):
-        """Test taxable distributions calculation."""
+        """Test taxable distributions calculation - delegates to repository."""
         mock_session = Mock()
-        mock_query = Mock()
-        mock_filter = Mock()
-        
-        # Mock the scalar to return the actual value, not a mock object
-        mock_filter.scalar.return_value = 15000.0
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
+        service.fund_event_repository.get_taxable_distributions.return_value = 15000.0
         
         result = service.get_taxable_distributions(mock_fund, mock_session)
         
-        # Only DIVIDEND and INTEREST are taxable
         assert result == 15000.0
+        service.fund_event_repository.get_taxable_distributions.assert_called_once_with(
+            mock_fund.id, mock_session
+        )
 
     def test_get_gross_distributions(self, service, mock_fund):
         """Test gross distributions calculation."""
@@ -393,6 +340,47 @@ class TestFundCalculationService:
         # This test validates the service structure
         # IRR calculation methods have been moved to FundIrRCalculator
         assert hasattr(service, 'get_total_capital_calls')
+    
+    @patch('src.fund.services.fund_calculation_service.DebtCostCalculator')
+    def test_calculate_debt_cost_delegates_to_calculator(self, mock_calculator_class, service):
+        """Test that debt cost calculation delegates to DebtCostCalculator."""
+        # Arrange
+        from src.fund.calculators.debt_cost_calculator import DebtCostResult
+        from datetime import date
+        
+        events = []
+        risk_free_rates = []
+        start_date = date(2024, 1, 1)
+        end_date = date(2024, 12, 31)
+        currency = "AUD"
+        
+        # Mock calculator response
+        mock_calculator = Mock()
+        expected_result = DebtCostResult(
+            total_debt_cost=1000.0,
+            average_risk_free_rate=5.0,
+            debt_cost_percentage=2.5,
+            investment_duration_years=1.0,
+            average_equity=40000.0,
+            total_days=365
+        )
+        mock_calculator_class.calculate_debt_cost.return_value = expected_result
+        
+        # Act
+        result = service._calculate_debt_cost_utility(events, risk_free_rates, start_date, end_date, currency)
+        
+        # Assert - Service calls calculator correctly
+        mock_calculator_class.calculate_debt_cost.assert_called_once_with(
+            events, risk_free_rates, start_date, end_date, currency
+        )
+        
+        # Assert - Service returns correct dictionary format
+        assert result['total_debt_cost'] == 1000.0
+        assert result['average_risk_free_rate'] == 5.0
+        assert result['debt_cost_percentage'] == 2.5
+        assert result['investment_duration_years'] == 1.0
+        assert result['average_equity'] == 40000.0
+        assert result['total_days'] == 365
 
     # ============================================================================
     # INCREMENTAL CALCULATION TESTS

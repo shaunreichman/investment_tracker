@@ -18,6 +18,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 
 from src.fund.enums import EventType, DistributionType, FundStatus
+from src.fund.repositories import FundEventRepository
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.fund.models import Fund, FundEvent
 
 
 class TaxCalculationService:
@@ -33,7 +38,7 @@ class TaxCalculationService:
     
     def __init__(self):
         """Initialize the TaxCalculationService."""
-        pass
+        self.fund_event_repository = FundEventRepository()
     
     # ============================================================================
     # DEBT COST CALCULATIONS AND RISK-FREE INTEREST CHARGES
@@ -141,21 +146,12 @@ class TaxCalculationService:
         Returns:
             float: The sum of daily interest charges for the financial year
         """
-        # Get the start and end dates for the financial year
-        fy_start = date(financial_year, 7, 1)
-        fy_end = date(financial_year + 1, 6, 30)
+        if not session:
+            return 0.0
         
-        # Get daily interest charge events for this financial year
-        daily_charges = session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == fund.fund_events.__class__.__class__('daily_risk_free_interest_charge'),
-            fund.fund_events.__class__.event_date >= fy_start,
-            fund.fund_events.__class__.event_date <= fy_end
-        ).all()
-        
-        # Sum up the amounts
-        total = sum(event.amount for event in daily_charges if event.amount)
-        return float(total) if total else 0.0
+        return self.fund_event_repository.get_daily_interest_charges_by_financial_year(
+            fund.id, financial_year, session
+        )
     
     def create_eofy_debt_cost_events(self, fund: 'Fund', session: Optional[Session] = None) -> None:
         """
@@ -257,16 +253,10 @@ class TaxCalculationService:
         Returns:
             dict: Distributions grouped by type
         """
-        distributions = {}
-        
-        for event in fund.fund_events:
-            if event.event_type == EventType.DISTRIBUTION:
-                dist_type = event.distribution_type if event.distribution_type else 'unknown'
-                if dist_type not in distributions:
-                    distributions[dist_type] = []
-                distributions[dist_type].append(event)
-        
-        return distributions
+        if not session:
+            return {}
+            
+        return self.fund_event_repository.get_distributions_by_type(fund.id, session)
     
     def get_total_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -281,9 +271,10 @@ class TaxCalculationService:
         Returns:
             float: Total distribution amount
         """
-        total = sum(event.amount for event in fund.fund_events 
-                   if event.event_type == EventType.DISTRIBUTION and event.amount)
-        return float(total) if total else 0.0
+        if not session:
+            return 0.0
+        
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
     
     def get_taxable_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -298,12 +289,10 @@ class TaxCalculationService:
         Returns:
             float: Total taxable distribution amount
         """
-        total = sum(event.amount for event in fund.fund_events 
-                   if event.event_type == EventType.DISTRIBUTION and 
-                   event.amount and 
-                   event.distribution_type and 
-                   event.distribution_type in [DistributionType.INCOME, DistributionType.CAPITAL_GAIN])
-        return float(total) if total else 0.0
+        if not session:
+            return 0.0
+        
+        return self.fund_event_repository.get_taxable_distributions(fund.id, session)
     
     def get_gross_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -318,9 +307,10 @@ class TaxCalculationService:
         Returns:
             float: Total gross distribution amount
         """
-        total = sum(event.amount for event in fund.fund_events 
-                   if event.event_type == EventType.DISTRIBUTION and event.amount)
-        return float(total) if total else 0.0
+        if not session:
+            return 0.0
+        
+        return self.fund_event_repository.get_total_by_type(fund.id, EventType.DISTRIBUTION, session)
     
     def get_net_distributions(self, fund: 'Fund', session: Optional[Session] = None) -> float:
         """
@@ -335,6 +325,9 @@ class TaxCalculationService:
         Returns:
             float: Total net distribution amount
         """
+        if not session:
+            return 0.0
+        
         gross = self.get_gross_distributions(fund, session)
         tax_withheld = self.get_total_tax_withheld(fund, session)
         return gross - tax_withheld
@@ -352,9 +345,10 @@ class TaxCalculationService:
         Returns:
             float: Total tax withheld amount
         """
-        total = sum(event.tax_withheld for event in fund.fund_events 
-                   if event.event_type == EventType.DISTRIBUTION and event.tax_withheld)
-        return float(total) if total else 0.0
+        if not session:
+            return 0.0
+        
+        return self.fund_event_repository.get_total_tax_withheld(fund.id, session)
     
     def get_distributions_with_tax_details(self, fund: 'Fund', session: Optional[Session] = None) -> List[Dict[str, Any]]:
         """
@@ -444,12 +438,19 @@ class TaxCalculationService:
         Returns:
             list: List of dates with existing charges
         """
-        existing_events = session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == fund.fund_events.__class__.__class__('daily_risk_free_interest_charge')
-        ).all()
+        if not session:
+            return []
         
-        return [event.event_date for event in existing_events]
+        from src.fund.enums import EventType
+        from datetime import date
+        
+        # Get all daily interest charge events for the fund
+        events = self.fund_event_repository.get_events_by_type_and_date_range(
+            fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, 
+            date(1900, 1, 1), date(2100, 12, 31), session
+        )
+        
+        return [event.event_date for event in events if event.event_date]
     
     def _get_cash_flow_events(self, fund: 'Fund', session: Optional[Session] = None) -> List['FundEvent']:
         """
@@ -464,8 +465,20 @@ class TaxCalculationService:
         Returns:
             list: List of cash flow events
         """
-        return [event for event in fund.fund_events 
-                if event.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION]]
+        if not session:
+            return []
+        
+        from datetime import date
+        
+        # Get all cash flow events for the fund
+        events = []
+        for event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.DISTRIBUTION]:
+            type_events = self.fund_event_repository.get_events_by_type_and_date_range(
+                fund.id, event_type, date(1900, 1, 1), date(2100, 12, 31), session
+            )
+            events.extend(type_events)
+        
+        return events
     
     def _process_financial_year_for_debt_cost(self, fund: 'Fund', fy: int, session: Optional[Session] = None) -> None:
         """
@@ -503,16 +516,25 @@ class TaxCalculationService:
             fund: The fund object
             session: Database session (optional)
         """
-        # Delete daily interest charge events
-        session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == fund.fund_events.__class__.__class__('daily_risk_free_interest_charge')
-        ).delete()
+        if not session:
+            return
         
-        # Delete EOFY debt cost events
-        session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == fund.fund_events.__class__.__class__('eofy_debt_cost')
-        ).delete()
+        from src.fund.enums import EventType
+        from datetime import date
+        
+        # Get all debt cost events for the fund
+        daily_interest_events = self.fund_event_repository.get_events_by_type_and_date_range(
+            fund.id, EventType.DAILY_RISK_FREE_INTEREST_CHARGE, 
+            date(1900, 1, 1), date(2100, 12, 31), session
+        )
+        
+        eofy_debt_events = self.fund_event_repository.get_events_by_type_and_date_range(
+            fund.id, EventType.EOFY_DEBT_COST, 
+            date(1900, 1, 1), date(2100, 12, 31), session
+        )
+        
+        # Delete all debt cost events
+        for event in daily_interest_events + eofy_debt_events:
+            self.fund_event_repository.delete(event.id, session)
         
         print(f"Deleted debt cost events for fund {fund.name}")

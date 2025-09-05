@@ -1,0 +1,51 @@
+---
+description: Services Layer: Business logic orchestration and coordination between API and data layers
+globs: **/services/*.py
+alwaysApply: false
+---
+
+# Services Layer Rules
+
+## Role
+Services orchestrate business logic, coordinate between controllers and repositories, and enforce business rules.
+
+## Should Do
+- **Orchestrate workflows**: Coordinate multiple repositories and services
+- **Enforce business rules**: Validate complex business constraints
+- **Handle transactions**: Manage database transaction boundaries
+- **Delegate calculations**: Use calculator classes for mathematical operations
+- **Process events**: Coordinate event handling through orchestrators
+
+## Shouldn't Do
+- **Direct database queries**: Use repositories for data access
+- **HTTP concerns**: Handle request/response formatting (controllers)
+- **Pure calculations**: Delegate to calculator classes
+- **Data transformation**: Keep focused on business logic
+
+## Examples
+
+```python
+# ✅ Good: Orchestrates business logic
+def create_fund(self, fund_data: Dict[str, Any], session: Session) -> Dict[str, Any]:
+    # Validate business rules
+    self.validation_service.validate_fund_creation(fund_data)
+    
+    # Coordinate repositories
+    fund = self.fund_repository.create(fund_data, session)
+    
+    # Delegate calculations
+    equity_fields = FundEquityCalculator.recalculate_all_equity_fields(fund, session)
+    
+    return self._format_response(fund)
+
+# ❌ Bad: Direct database access
+def create_fund(self, fund_data: Dict[str, Any], session: Session):
+    fund = session.query(Fund).filter(Fund.name == fund_data['name']).first()
+    # ... direct database operations
+```
+
+## Key Principles
+- **Single responsibility**: One service per domain concept
+- **Stateless**: No instance variables beyond injected dependencies
+- **Testable**: Easy to unit test with mocked dependencies
+- **Composable**: Can be combined with other services

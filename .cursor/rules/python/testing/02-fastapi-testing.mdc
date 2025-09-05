@@ -1,0 +1,89 @@
+---
+description: Flask API Testing Practices: Guidelines for testing Flask applications with PostgreSQL and factory patterns
+globs: tests/api/**/*.py, tests/conftest.py
+alwaysApply: false
+---
+
+# Flask API Testing Practices
+
+## Role
+Test Flask API endpoints with PostgreSQL database, focusing on HTTP requests and database interactions.
+
+## Core Libraries
+- **Test Runner**: `pytest`
+- **HTTP Client**: `app.test_client()` (Flask's built-in test client)
+- **Database**: `SQLAlchemy` (sync) with `PostgreSQL`
+- **Test Data**: `factory_boy` for data generation
+
+## Key Fixtures
+- **`engine`**: PostgreSQL test database engine with unique database per session
+- **`db_session`**: SQLAlchemy session with automatic rollback
+- **`client`**: Flask test client with database session injected
+- **`clean_database`**: Automatically clears tables between tests
+- **`setup_factories`**: Configures factory_boy with test session
+
+## Should Do
+- **Use `client` fixture** for HTTP requests
+- **Use factory_boy** for complex test data with relationships
+- **Test HTTP status codes** and response formats
+- **Test authentication** and authorization
+- **Rely on `db_session`** for database verification
+- **Use `BaseTestCase`** for database session access
+
+## Shouldn't Do
+- **Test business logic** (use unit tests for that)
+- **Hardcode complex test data** (use factories)
+- **Use async patterns** (this is a sync Flask app)
+- **Test implementation details** (test API behavior)
+
+## Examples
+
+```python
+# ✅ Good: API test with factory (complex data)
+def test_create_fund(client, db_session):
+    """Test fund creation through API."""
+    # Use factory for complex related data
+    company = InvestmentCompanyFactory()
+    entity = EntityFactory()
+    
+    fund_data = {
+        'name': 'Test Fund',
+        'investment_company_id': company.id,
+        'entity_id': entity.id,
+        'tracking_type': 'COST_BASED'
+    }
+    
+    response = client.post('/api/funds', json=fund_data)
+    assert response.status_code == 201
+
+# ✅ Good: API error handling test
+def test_create_fund_validation_error(client):
+    """Test API validation error handling."""
+    invalid_data = {
+        'name': '',  # Invalid: empty name
+        'investment_company_id': 999,  # Invalid: non-existent ID
+    }
+    
+    response = client.post('/api/funds', json=invalid_data)
+    assert response.status_code == 400
+    assert 'error' in response.json
+
+# ✅ Good: API authentication test
+def test_protected_endpoint_requires_auth(client):
+    """Test that protected endpoints require authentication."""
+    response = client.get('/api/admin/funds')
+    assert response.status_code == 401
+
+# ❌ Bad: Testing business logic in API test
+def test_api_calculates_irr_correctly(client):
+    # Don't test business logic in API tests
+    # This should be in a unit test for the calculator
+    response = client.post('/api/funds/1/calculate-irr')
+    assert response.json['irr'] == 0.15  # Business logic test
+```
+
+## Key Principles
+- **API-focused**: Test HTTP endpoints, not business logic
+- **Factory-based data**: Use factories for complex test data
+- **Database verification**: Verify data changes in database
+- **HTTP testing**: Focus on status codes, headers, and response format

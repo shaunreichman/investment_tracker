@@ -273,8 +273,8 @@ class TestFundEquityCalculatorNAVBased:
         result = self.calculator.calculate_current_equity(fund, db_session)
         
         # Assert
-        # FIFO cost base: (100 * 10 + 50) + (50 * 12 + 25) = 1050 + 625 = 1675
-        assert result == 1675.0
+        # Equity balance (investment value only, no brokerage): (100 * 10) + (50 * 12) = 1000 + 600 = 1600
+        assert result == 1600.0
     
     def test_calculate_current_equity_nav_based_with_sales(self, db_session):
         """Test current equity calculation for NAV-based fund with purchases and sales"""
@@ -319,8 +319,8 @@ class TestFundEquityCalculatorNAVBased:
         
         # Assert
         # Remaining units: 20 from first purchase + 50 from second purchase
-        # Cost base: (20 * 10.50) + (50 * 12.50) = 210 + 625 = 835
-        assert result == 835.0
+        # Equity balance (investment value only, no brokerage): (20 * 10) + (50 * 12) = 200 + 600 = 800
+        assert result == 800.0
     
     def test_calculate_average_equity_nav_based_single_purchase(self, db_session):
         """Test average equity calculation for NAV-based fund with single purchase"""

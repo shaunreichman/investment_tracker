@@ -1,0 +1,50 @@
+---
+description: Controllers Layer: HTTP request/response handling and API orchestration
+globs: **/controllers/*.py
+alwaysApply: false
+---
+
+# Controllers Layer Rules
+
+## Role
+Controllers handle HTTP requests, validate input, coordinate services, and format responses.
+
+## Should Do
+- **Request validation**: Validate HTTP request data
+- **Response formatting**: Format data for API responses
+- **Error handling**: Handle and format error responses
+- **Session management**: Manage database sessions
+- **Service coordination**: Delegate to appropriate services
+
+## Shouldn't Do
+- **Business logic**: Delegate to services
+- **Data access**: Use repositories through services
+- **Complex calculations**: Delegate to calculator classes
+- **Data validation**: Use validation services
+
+## Examples
+
+```python
+# ✅ Good: HTTP handling and service coordination
+def create_fund(self) -> tuple:
+    fund_data = getattr(request, 'validated_data', {})
+    session = self._get_session()
+    
+    fund = self.fund_service.create_fund(fund_data, session)
+    session.commit()
+    
+    return jsonify(fund), 201
+
+# ❌ Bad: Business logic in controller
+def create_fund(self):
+    fund_data = request.get_json()
+    if fund_data['amount'] > 1000000:  # Business rule
+        return jsonify({'error': 'Amount too large'}), 400
+    # ... business logic
+```
+
+## Key Principles
+- **Thin controllers**: Minimal logic, delegate to services
+- **Consistent responses**: Use standard response formats
+- **Error handling**: Proper HTTP status codes and error messages
+- **Session management**: Proper database session lifecycle

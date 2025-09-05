@@ -19,6 +19,7 @@ from sqlalchemy import func
 from src.fund.models import Fund, FundEvent, EventType, FundType
 from src.fund.enums import FundStatus
 from src.fund.services.fund_calculation_service import FundCalculationService
+from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator, FifoUnit
 
 
 class FundIncrementalCalculationService:
@@ -93,10 +94,11 @@ class FundIncrementalCalculationService:
             return []
         
         # SYSTEM: Get all capital events for this fund, ordered by date
-        events = session.query(FundEvent).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type.in_(CAPITAL_EVENT_TYPES)
-        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        from src.fund.repositories import FundEventRepository
+        event_repository = FundEventRepository()
+        events = event_repository.get_events_by_fund_and_type(
+            fund.id, CAPITAL_EVENT_TYPES, session
+        )
         
         if not events:
             return []
@@ -150,11 +152,13 @@ class FundIncrementalCalculationService:
         """
         # SYSTEM: Get all capital events up to the first affected event
         first_affected = affected_events[0]
-        previous_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE]),
-            FundEvent.event_date < first_affected.event_date
-        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        from src.fund.repositories import FundEventRepository
+        event_repository = FundEventRepository()
+        previous_events = event_repository.get_events_by_fund_and_date_range(
+            fund.id, fund.start_date, first_affected.event_date, session
+        )
+        # Filter for unit events only
+        previous_events = [e for e in previous_events if e.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]]
         
         # SYSTEM: Build FIFO state up to the first affected event
         fifo, cumulative_units = self._build_fifo_state(previous_events)
@@ -184,11 +188,13 @@ class FundIncrementalCalculationService:
         """
         # SYSTEM: Get all capital events up to the first affected event
         first_affected = affected_events[0]
-        previous_events = session.query(FundEvent).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type.in_([EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]),
-            FundEvent.event_date < first_affected.event_date
-        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        from src.fund.repositories import FundEventRepository
+        event_repository = FundEventRepository()
+        previous_events = event_repository.get_events_by_fund_and_date_range(
+            fund.id, fund.start_date, first_affected.event_date, session
+        )
+        # Filter for capital events only
+        previous_events = [e for e in previous_events if e.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]]
         
         # SYSTEM: Build running balance up to the first affected event
         running_balance = self._build_running_balance(previous_events)
@@ -203,39 +209,28 @@ class FundIncrementalCalculationService:
     def _build_fifo_state(
         self, 
         events: List[FundEvent]
-    ) -> Tuple[List[Tuple], float]:
+    ) -> Tuple[List[FifoUnit], float]:
         """
-        [NEW] Build FIFO state from a list of events for incremental calculations.
+        [REFACTORED] Build FIFO state from a list of events for incremental calculations.
         
-        Returns the FIFO queue and cumulative units up to a specific point,
-        enabling incremental processing of subsequent events.
+        This method now uses FifoCapitalGainsCalculator for consistent FIFO logic.
+        
+        Returns:
+            Tuple of (fifo_units, cumulative_units) up to a specific point,
+            enabling incremental processing of subsequent events.
         """
-        fifo = []  # MANUAL: FIFO queue for NAV-based calculations
+        # CALCULATED: Use pure calculator for FIFO state building
+        fifo_units = FifoCapitalGainsCalculator.build_fifo_queue(events)
+        
+        # Calculate cumulative units from purchase events
         cumulative_units = 0.0
-        
         for event in events:
             if event.event_type == EventType.UNIT_PURCHASE:
-                units = event.units_purchased or 0
-                unit_price = event.unit_price or 0
-                brokerage_fee = event.brokerage_fee or 0
-                if units > 0:
-                    effective_price = unit_price + (brokerage_fee / units)
-                    fifo.append((units, unit_price, effective_price, event.event_date, brokerage_fee))
-                cumulative_units += units
+                cumulative_units += event.units_purchased or 0
             elif event.event_type == EventType.UNIT_SALE:
-                units = event.units_sold or 0
-                remaining = units
-                while remaining > 0 and fifo:
-                    oldest_units, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage = fifo[0]
-                    if oldest_units <= remaining:
-                        fifo.pop(0)
-                        remaining -= oldest_units
-                    else:
-                        fifo[0] = (oldest_units - remaining, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage)
-                        remaining = 0
-                cumulative_units -= units
+                cumulative_units -= event.units_sold or 0
         
-        return fifo, cumulative_units
+        return fifo_units, cumulative_units
     
     def _build_running_balance(self, events: List[FundEvent]) -> float:
         """
@@ -259,29 +254,36 @@ class FundIncrementalCalculationService:
     def _process_unit_purchase_incrementally(
         self, 
         event: FundEvent, 
-        fifo: List[Tuple], 
+        fifo: List[FifoUnit], 
         cumulative_units: float
-    ) -> Tuple[List[Tuple], float]:
+    ) -> Tuple[List[FifoUnit], float]:
         """
-        [NEW] Process a single unit purchase event incrementally.
+        [REFACTORED] Process a single unit purchase event incrementally.
         
-        Updates the event's fields and returns the updated FIFO state
-        for processing the next event.
+        This method now uses FifoCapitalGainsCalculator for consistent FIFO logic.
+        
+        Args:
+            event: The unit purchase event
+            fifo: Current FIFO queue of units
+            cumulative_units: Current cumulative units count
+            
+        Returns:
+            Tuple of (updated_fifo, updated_cumulative_units)
         """
+        # CALCULATED: Use pure calculator for FIFO unit creation
+        fifo_unit = FifoCapitalGainsCalculator.process_purchase_event(event)
+        fifo.append(fifo_unit)
+        
+        # SYSTEM: Update event fields
         units = event.units_purchased or 0
         unit_price = event.unit_price or 0
         brokerage_fee = event.brokerage_fee or 0
-        
-        # SYSTEM: Update event fields
         event.amount = (units * unit_price) + brokerage_fee
-        if units > 0:
-            effective_price = unit_price + (brokerage_fee / units)
-            fifo.append((units, unit_price, effective_price, event.event_date, brokerage_fee))
         cumulative_units += units
         event.units_owned = cumulative_units
         
         # SYSTEM: Calculate equity balance from FIFO state
-        total_equity = sum(u * p for u, p, _, _, _ in fifo)
+        total_equity = sum(unit.units * unit.unit_price for unit in fifo)
         event.current_equity_balance = total_equity
         
         return fifo, cumulative_units
@@ -289,36 +291,39 @@ class FundIncrementalCalculationService:
     def _process_unit_sale_incrementally(
         self, 
         event: FundEvent, 
-        fifo: List[Tuple], 
+        fifo: List[FifoUnit], 
         cumulative_units: float
-    ) -> Tuple[List[Tuple], float]:
+    ) -> Tuple[List[FifoUnit], float]:
         """
-        [NEW] Process a single unit sale event incrementally.
+        [REFACTORED] Process a single unit sale event incrementally.
         
-        Updates the event's fields and returns the updated FIFO state
-        for processing the next event.
+        This method now uses FifoCapitalGainsCalculator for consistent FIFO logic.
+        
+        Args:
+            event: The unit sale event
+            fifo: Current FIFO queue of units
+            cumulative_units: Current cumulative units count
+            
+        Returns:
+            Tuple of (updated_fifo, updated_cumulative_units)
         """
-        units = event.units_sold or 0
-        unit_price = event.unit_price or 0
-        brokerage_fee = event.brokerage_fee or 0
+        # CALCULATED: Use pure calculator for FIFO sale processing
+        from collections import deque
+        fifo_deque = deque(fifo)
+        capital_gain, sale_proceeds, brokerage_fee = FifoCapitalGainsCalculator.calculate_capital_gains_for_sale(
+            event, fifo_deque
+        )
+        fifo = list(fifo_deque)
         
         # SYSTEM: Update event fields
+        units = event.units_sold or 0
+        unit_price = event.unit_price or 0
         event.amount = (units * unit_price) - brokerage_fee
-        remaining = units
-        while remaining > 0 and fifo:
-            oldest_units, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage = fifo[0]
-            if oldest_units <= remaining:
-                fifo.pop(0)
-                remaining -= oldest_units
-            else:
-                fifo[0] = (oldest_units - remaining, oldest_unit_price, oldest_effective_price, oldest_date, oldest_brokerage)
-                remaining = 0
-        
         cumulative_units -= units
         event.units_owned = cumulative_units
         
         # SYSTEM: Calculate equity balance from FIFO state
-        total_equity = sum(u * p for u, p, _, _, _ in fifo)
+        total_equity = sum(unit.units * unit.unit_price for unit in fifo)
         event.current_equity_balance = total_equity
         
         return fifo, cumulative_units
@@ -383,10 +388,15 @@ class FundIncrementalCalculationService:
         [NEW] Incremental NAV fund summary updates: Only update affected fields.
         """
         # SYSTEM: Find the latest unit event to get the most current values
-        latest_unit_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type.in_([EventType.UNIT_PURCHASE, EventType.UNIT_SALE])
-        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+        from src.fund.repositories import FundEventRepository
+        event_repository = FundEventRepository()
+        latest_unit_event = event_repository.get_latest_event_by_type(
+            fund.id, EventType.UNIT_PURCHASE, session
+        )
+        if not latest_unit_event:
+            latest_unit_event = event_repository.get_latest_event_by_type(
+                fund.id, EventType.UNIT_SALE, session
+            )
         
         if latest_unit_event:
             # Update units and equity balance from the latest event
@@ -408,10 +418,15 @@ class FundIncrementalCalculationService:
         [NEW] Incremental cost-based fund summary updates: Only update affected fields.
         """
         # SYSTEM: Find the latest capital event to get the most current values
-        latest_capital_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == fund.id,
-            FundEvent.event_type.in_([EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL])
-        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+        from src.fund.repositories import FundEventRepository
+        event_repository = FundEventRepository()
+        latest_capital_event = event_repository.get_latest_event_by_type(
+            fund.id, EventType.CAPITAL_CALL, session
+        )
+        if not latest_capital_event:
+            latest_capital_event = event_repository.get_latest_event_by_type(
+                fund.id, EventType.RETURN_OF_CAPITAL, session
+            )
         
         if latest_capital_event:
             # Update equity balance from the latest event

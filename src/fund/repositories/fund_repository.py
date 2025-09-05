@@ -332,6 +332,101 @@ class FundRepository:
             cache_key = f"funds:entity:{entity_id}"
             self._cache.pop(cache_key, None)
     
+    def get_fund_with_events(self, fund_id: int, session: Session) -> Optional[Fund]:
+        """
+        Get a fund with its events loaded.
+        
+        Args:
+            fund_id: ID of the fund to retrieve
+            session: Database session
+            
+        Returns:
+            Fund object with events loaded if found, None otherwise
+        """
+        cache_key = f"fund_with_events:{fund_id}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database with events loaded
+        fund = session.query(Fund).filter(Fund.id == fund_id).first()
+        
+        if fund:
+            # Load events to ensure they're available
+            _ = fund.fund_events
+        
+        # Cache the result
+        if fund:
+            self._cache[cache_key] = fund
+        
+        return fund
+    
+    def get_funds_by_equity_balance(self, min_balance: float, max_balance: float, 
+                                   session: Session) -> List[Fund]:
+        """
+        Get funds filtered by equity balance range.
+        
+        Args:
+            min_balance: Minimum equity balance
+            max_balance: Maximum equity balance
+            session: Database session
+            
+        Returns:
+            List of funds within the equity balance range
+        """
+        cache_key = f"funds:equity:{min_balance}:{max_balance}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        funds = session.query(Fund).filter(
+            and_(
+                Fund.current_equity_balance >= min_balance,
+                Fund.current_equity_balance <= max_balance
+            )
+        ).all()
+        
+        # Cache the result
+        self._cache[cache_key] = funds
+        
+        return funds
+    
+    def get_funds_by_status_and_equity(self, status: FundStatus, 
+                                      equity_threshold: float, 
+                                      session: Session) -> List[Fund]:
+        """
+        Get funds by status with equity balance above threshold.
+        
+        Args:
+            status: Fund status to filter by
+            equity_threshold: Minimum equity balance threshold
+            session: Database session
+            
+        Returns:
+            List of funds matching the criteria
+        """
+        cache_key = f"funds:status:{status.value}:equity:{equity_threshold}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        funds = session.query(Fund).filter(
+            and_(
+                Fund.status == status,
+                Fund.current_equity_balance >= equity_threshold
+            )
+        ).all()
+        
+        # Cache the result
+        self._cache[cache_key] = funds
+        
+        return funds
+
     def clear_all_cache(self) -> None:
         """Clear all cached data."""
         self._cache.clear()

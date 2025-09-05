@@ -18,7 +18,6 @@ from sqlalchemy.orm import Session
 
 from src.fund.models import Fund, FundEvent
 from src.fund.enums import EventType, FundType
-from src.fund.services.fund_calculation_service import FundCalculationService
 
 
 class FundEquityCalculator:
@@ -134,7 +133,10 @@ class FundEquityCalculator:
         Calculate total cost basis from pre-computed balances - DERIVED.
         
         For cost-based funds: sum of all capital calls (regardless of returns)
-        For NAV-based funds: same as current equity balance (FIFO cost base)
+        For NAV-based funds: current equity balance (investment value without brokerage)
+        
+        Note: For NAV-based funds, this represents the investment value of remaining units,
+        not the tax cost base (which would include brokerage for capital gains calculations).
         
         Args:
             event_balances: List of (balance, has_changed) tuples from calculate_event_equity_balances
@@ -142,7 +144,7 @@ class FundEquityCalculator:
             events: List of fund events (for cost-based calculation)
             
         Returns:
-            Total cost basis
+            Total cost basis (investment value for NAV-based funds)
         """
         if fund.tracking_type == FundType.COST_BASED:
             # For cost-based funds, sum all capital calls regardless of returns
@@ -153,7 +155,8 @@ class FundEquityCalculator:
             )
             return total_calls
         elif fund.tracking_type == FundType.NAV_BASED:
-            # For NAV-based funds, total cost basis is the same as current equity balance
+            # For NAV-based funds, this is the investment value of remaining units
+            # (without brokerage, as brokerage is a transaction cost, not investment value)
             return FundEquityCalculator.calculate_current_equity_from_balances(event_balances)
         else:
             raise ValueError(f"Unsupported fund type: {fund.tracking_type}")
@@ -198,6 +201,9 @@ class FundEquityCalculator:
         """
         Process NAV-based fund events (unit purchases and sales) using FIFO.
         
+        For equity balance calculations, we track investment value (units × unit_price)
+        WITHOUT brokerage fees, as brokerage is a transaction cost, not investment value.
+        
         Args:
             events: List of fund events to process
             
@@ -207,23 +213,21 @@ class FundEquityCalculator:
         from collections import deque
         
         result = []
-        fifo = deque()  # Each entry: (units, cost_per_unit)
-        current_cost_base = 0.0  # MANUAL: Running FIFO cost base
+        fifo = deque()  # Each entry: (units, unit_price) - NO brokerage for equity balance
+        current_equity_balance = 0.0  # MANUAL: Running equity balance (investment value only)
         
         for event in events:
             if event.event_type == EventType.UNIT_PURCHASE:
                 units = event.units_purchased or 0.0
                 unit_price = event.unit_price or 0.0
-                brokerage_fee = getattr(event, 'brokerage_fee', 0.0) or 0.0
                 
                 if units > 0 and unit_price > 0:
-                    # CALCULATED: Calculate cost per unit including brokerage
-                    cost_per_unit = unit_price + (brokerage_fee / units)
-                    fifo.append((units, cost_per_unit))
-                    current_cost_base += units * cost_per_unit
-                    result.append((current_cost_base, True))  # CALCULATED: Balance changed
+                    # CALCULATED: Track investment value only (no brokerage for equity balance)
+                    fifo.append((units, unit_price))
+                    current_equity_balance += units * unit_price
+                    result.append((current_equity_balance, True))  # CALCULATED: Balance changed
                 else:
-                    result.append((current_cost_base, False))  # CALCULATED: Balance unchanged
+                    result.append((current_equity_balance, False))  # CALCULATED: Balance unchanged
                     
             elif event.event_type == EventType.UNIT_SALE:
                 units_sold = event.units_sold or 0.0
@@ -233,23 +237,23 @@ class FundEquityCalculator:
                     
                     # Process sale using FIFO
                     while remaining_units_to_sell > 0 and fifo:
-                        available_units_count, cost_per_unit = fifo[0]
+                        available_units_count, unit_price = fifo[0]
                         units_from_this_purchase = min(remaining_units_to_sell, available_units_count)
                         remaining_units_to_sell -= units_from_this_purchase
-                        current_cost_base -= units_from_this_purchase * cost_per_unit
+                        current_equity_balance -= units_from_this_purchase * unit_price
                         
                         # Update or remove from available units
                         if units_from_this_purchase == available_units_count:
                             fifo.popleft()
                         else:
-                            fifo[0] = (available_units_count - units_from_this_purchase, cost_per_unit)
+                            fifo[0] = (available_units_count - units_from_this_purchase, unit_price)
                     
-                    result.append((current_cost_base, True))  # CALCULATED: Balance changed
+                    result.append((current_equity_balance, True))  # CALCULATED: Balance changed
                 else:
-                    result.append((current_cost_base, False))  # CALCULATED: Balance unchanged
+                    result.append((current_equity_balance, False))  # CALCULATED: Balance unchanged
             else:
                 # Not a unit event we care about for NAV-based
-                result.append((current_cost_base, False))  # CALCULATED: Balance unchanged
+                result.append((current_equity_balance, False))  # CALCULATED: Balance unchanged
         
         return result
     

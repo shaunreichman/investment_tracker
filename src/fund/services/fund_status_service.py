@@ -33,9 +33,15 @@ class FundStatusService:
     - End date calculation logic
     """
     
-    def __init__(self):
-        """Initialize the FundStatusService."""
-        pass
+    def __init__(self, event_repository: 'FundEventRepository' = None):
+        """
+        Initialize the FundStatusService.
+        
+        Args:
+            event_repository: Repository for fund event data access (injected for testing)
+        """
+        from src.fund.repositories import FundEventRepository
+        self.event_repository = event_repository or FundEventRepository()
     
     # ============================================================================
     # STATUS TRANSITION LOGIC AND BUSINESS RULES
@@ -220,8 +226,8 @@ class FundStatusService:
         if not fund.start_date:
             return None
         
-        # Get all fund events
-        events = fund.get_all_fund_events(session=session)
+        # Get all fund events using repository
+        events = self.event_repository.get_by_fund(fund.id, session)
         if not events:
             return None
         

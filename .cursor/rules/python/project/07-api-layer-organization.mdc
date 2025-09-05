@@ -1,0 +1,59 @@
+---
+description: API Layer Organization: HTTP layer structure and middleware
+globs: **/api/**/*.py
+alwaysApply: false
+---
+
+# API Layer Organization Rules
+
+## Role
+API layer handles HTTP routing, middleware, and request/response processing.
+
+## Should Do
+- **Route definitions**: Define RESTful endpoints
+- **Middleware application**: Apply validation, logging, error handling
+- **Request processing**: Parse and validate HTTP requests
+- **Response formatting**: Format data for HTTP responses
+- **Error handling**: Handle HTTP-specific errors
+
+## Shouldn't Do
+- **Business logic**: Delegate to services
+- **Data access**: Use repositories through services
+- **Complex calculations**: Delegate to calculator classes
+- **Database operations**: Use repositories
+
+## Examples
+
+```python
+# ✅ Good: Route definition with middleware
+@fund_bp.route('/funds', methods=['POST'])
+@validate_fund_creation
+def create_fund():
+    return fund_controller.create_fund()
+
+# ✅ Good: Middleware for validation
+def validate_fund_creation(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        data = request.get_json()
+        errors = FundValidationService.validate_creation_data(data)
+        if errors:
+            return jsonify({'errors': errors}), 400
+        request.validated_data = data
+        return f(*args, **kwargs)
+    return decorated_function
+
+# ❌ Bad: Business logic in routes
+@fund_bp.route('/funds', methods=['POST'])
+def create_fund():
+    data = request.get_json()
+    if data['amount'] > 1000000:  # Business rule
+        return jsonify({'error': 'Amount too large'}), 400
+    # ... business logic
+```
+
+## Key Principles
+- **Separation of concerns**: Routes, middleware, and controllers
+- **Consistent patterns**: Use standard routing and middleware patterns
+- **Error handling**: Proper HTTP status codes and error responses
+- **Validation**: Input validation at the API boundary

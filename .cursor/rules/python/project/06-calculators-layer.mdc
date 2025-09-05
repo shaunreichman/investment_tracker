@@ -1,0 +1,69 @@
+---
+description: Calculators Layer: Pure calculation logic and mathematical operations
+globs: **/calculators/*.py
+alwaysApply: false
+---
+
+# Calculators Layer Rules
+
+## Role
+Calculators provide pure, stateless mathematical operations and data transformations.
+
+## Should Do
+- **Pure functions**: No side effects, same input = same output
+- **Mathematical operations**: Complex calculations and formulas
+- **Data transformations**: Convert data between formats
+- **Performance optimization**: Efficient calculation algorithms
+- **Reusability**: Use across multiple services and handlers
+
+## Shouldn't Do
+- **Database operations**: No direct data access
+- **Business logic**: Delegate to services
+- **State management**: No instance variables
+- **HTTP concerns**: Handle request/response formatting
+
+## Examples
+
+```python
+# ✅ Good: Pure mathematical calculations
+@staticmethod
+def calculate_irr(cash_flows: List[float], periods: List[int]) -> float:
+    """Calculate Internal Rate of Return using Newton-Raphson method."""
+    if not cash_flows or len(cash_flows) < 2:
+        return 0.0
+    
+    # Newton-Raphson iteration for IRR
+    rate = 0.1  # Initial guess
+    for _ in range(100):  # Max iterations
+        npv = sum(cf / (1 + rate) ** period for cf, period in zip(cash_flows, periods))
+        npv_derivative = sum(-period * cf / (1 + rate) ** (period + 1) 
+                           for cf, period in zip(cash_flows, periods))
+        
+        if abs(npv_derivative) < 1e-10:
+            break
+        rate = rate - npv / npv_derivative
+    
+    return rate
+
+@staticmethod
+def calculate_time_weighted_average(balances: List[float], days: List[int]) -> float:
+    """Calculate time-weighted average balance."""
+    if not balances or not days or len(balances) != len(days):
+        return 0.0
+    
+    total_weighted_balance = sum(balance * day for balance, day in zip(balances, days))
+    total_days = sum(days)
+    
+    return total_weighted_balance / total_days if total_days > 0 else 0.0
+
+# ❌ Bad: Database operations in calculator
+def calculate_equity(self, fund_id: int):
+    fund = session.query(Fund).filter(Fund.id == fund_id).first()  # Database access
+    # ... calculation
+```
+
+## Key Principles
+- **Stateless**: No instance variables or side effects
+- **Testable**: Easy to unit test with mock data
+- **Reusable**: Can be used across different contexts
+- **Performance**: Optimized for calculation efficiency

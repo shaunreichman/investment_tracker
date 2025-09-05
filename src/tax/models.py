@@ -316,9 +316,9 @@ class TaxStatement(Base):
         ).order_by(FundEvent.event_date).all()
         # Merge and sort all events for FIFO processing
         events = sorted(purchases + sales, key=lambda e: e.event_date)
-        # Calculate capital gains using the migrated utility function
+        # Calculate capital gains using the refactored calculator
         calculation_service = FundCalculationService()
-        capital_gains = calculation_service._calculate_nav_based_capital_gains_utility(events)
+        capital_gains = calculation_service.calculate_nav_based_capital_gains(events)
         # Update fields if not manually set
         if self.capital_gain_income_amount is None or self.capital_gain_income_amount == 0.0:
             self.capital_gain_income_amount = capital_gains

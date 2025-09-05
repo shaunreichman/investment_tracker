@@ -473,6 +473,442 @@ class FundEventRepository:
                 if f"events:type:{event_type}" in key:
                     self._cache.pop(key, None)
     
+    def get_total_by_type(self, fund_id: int, event_type: EventType, session: Session) -> float:
+        """
+        Get total amount for a specific event type for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            event_type: Type of event to sum
+            session: Database session
+            
+        Returns:
+            Total amount for the event type
+        """
+        cache_key = f"total:fund:{fund_id}:type:{event_type.value}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == event_type.value
+            )
+        ).scalar()
+        
+        result = float(total) if total else 0.0
+        
+        # Cache the result
+        self._cache[cache_key] = result
+        
+        return result
+    
+    def get_total_tax_withheld(self, fund_id: int, session: Session) -> float:
+        """
+        Get total tax withheld for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            session: Database session
+            
+        Returns:
+            Total tax withheld amount
+        """
+        cache_key = f"total_tax_withheld:fund:{fund_id}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        total = session.query(func.sum(FundEvent.tax_withholding)).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == EventType.DISTRIBUTION.value,
+                FundEvent.tax_withholding.isnot(None)
+            )
+        ).scalar()
+        
+        result = float(total) if total else 0.0
+        
+        # Cache the result
+        self._cache[cache_key] = result
+        
+        return result
+    
+    def get_distributions_by_type(self, fund_id: int, session: Session) -> Dict[str, float]:
+        """
+        Get distributions broken down by type for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            session: Database session
+            
+        Returns:
+            Dictionary with distribution amounts by type
+        """
+        cache_key = f"distributions_by_type:fund:{fund_id}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        distributions = session.query(
+            FundEvent.distribution_type,
+            func.sum(FundEvent.amount).label('total_amount')
+        ).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == EventType.DISTRIBUTION.value,
+                FundEvent.distribution_type.isnot(None)
+            )
+        ).group_by(FundEvent.distribution_type).all()
+        
+        result = {}
+        for dist_type, total_amount in distributions:
+            type_name = dist_type.value if hasattr(dist_type, 'value') else str(dist_type)
+            result[type_name] = float(total_amount) if total_amount else 0.0
+        
+        # Cache the result
+        self._cache[cache_key] = result
+        
+        return result
+    
+    def get_taxable_distributions(self, fund_id: int, session: Session) -> float:
+        """
+        Get total taxable distributions for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            session: Database session
+            
+        Returns:
+            Total taxable distributions amount
+        """
+        from src.fund.enums import DistributionType
+        
+        cache_key = f"taxable_distributions:fund:{fund_id}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Taxable distributions are typically dividends and interest
+        taxable_types = [
+            DistributionType.DIVIDEND_FRANKED.value,
+            DistributionType.DIVIDEND_UNFRANKED.value,
+            DistributionType.INTEREST.value
+        ]
+        
+        # Query database
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == EventType.DISTRIBUTION.value,
+                FundEvent.distribution_type.in_(taxable_types)
+            )
+        ).scalar()
+        
+        result = float(total) if total else 0.0
+        
+        # Cache the result
+        self._cache[cache_key] = result
+        
+        return result
+    
+    def get_daily_interest_charges_by_financial_year(self, fund_id: int, financial_year: int, 
+                                                   session: Session) -> float:
+        """
+        Get sum of daily interest charges for a specific financial year.
+        
+        Args:
+            fund_id: ID of the fund
+            financial_year: The financial year to calculate for
+            session: Database session
+            
+        Returns:
+            Sum of daily interest charges for the financial year
+        """
+        cache_key = f"daily_interest:fund:{fund_id}:fy:{financial_year}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Get the start and end dates for the financial year
+        from datetime import date
+        fy_start = date(financial_year, 7, 1)
+        fy_end = date(financial_year + 1, 6, 30)
+        
+        # Query database
+        total = session.query(func.sum(FundEvent.amount)).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == EventType.DAILY_RISK_FREE_INTEREST_CHARGE.value,
+                FundEvent.event_date >= fy_start,
+                FundEvent.event_date <= fy_end
+            )
+        ).scalar()
+        
+        result = float(total) if total else 0.0
+        
+        # Cache the result
+        self._cache[cache_key] = result
+        
+        return result
+    
+    def get_events_by_type_and_date_range(self, fund_id: int, event_type: EventType, 
+                                        start_date: date, end_date: date, 
+                                        session: Session) -> List[FundEvent]:
+        """
+        Get events of a specific type within a date range for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            event_type: Type of event to retrieve
+            start_date: Start date for the range
+            end_date: End date for the range
+            session: Database session
+            
+        Returns:
+            List of events matching the criteria
+        """
+        cache_key = f"events:fund:{fund_id}:type:{event_type.value}:range:{start_date}:{end_date}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        events = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == event_type.value,
+                FundEvent.event_date >= start_date,
+                FundEvent.event_date <= end_date
+            )
+        ).order_by(FundEvent.event_date.asc()).all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+    
+    def get_events_by_fund_and_type(self, fund_id: int, event_types: List[EventType], 
+                                   session: Session) -> List[FundEvent]:
+        """
+        Get events for a fund filtered by event types.
+        
+        Args:
+            fund_id: ID of the fund
+            event_types: List of event types to filter by
+            session: Database session
+            
+        Returns:
+            List of fund events matching the criteria
+        """
+        cache_key = f"events:fund:{fund_id}:types:{[et.value for et in event_types]}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        events = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type.in_([et.value for et in event_types])
+            )
+        ).order_by(FundEvent.event_date.asc(), FundEvent.id.asc()).all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+    
+    def get_events_by_fund_and_date_range(self, fund_id: int, start_date: date, 
+                                         end_date: date, session: Session) -> List[FundEvent]:
+        """
+        Get events for a fund within a date range.
+        
+        Args:
+            fund_id: ID of the fund
+            start_date: Start date for the range
+            end_date: End date for the range
+            session: Database session
+            
+        Returns:
+            List of fund events within the date range
+        """
+        cache_key = f"events:fund:{fund_id}:range:{start_date}:{end_date}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        events = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_date >= start_date,
+                FundEvent.event_date <= end_date
+            )
+        ).order_by(FundEvent.event_date.asc(), FundEvent.id.asc()).all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+    
+    def get_latest_event_by_type(self, fund_id: int, event_type: EventType, 
+                                session: Session) -> Optional[FundEvent]:
+        """
+        Get the latest event of a specific type for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            event_type: Type of event to retrieve
+            session: Database session
+            
+        Returns:
+            Latest FundEvent of the specified type, or None if not found
+        """
+        cache_key = f"latest_event:fund:{fund_id}:type:{event_type.value}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        event = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == event_type.value
+            )
+        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+        
+        # Cache the result
+        self._cache[cache_key] = event
+        
+        return event
+    
+    def get_events_after_date(self, fund_id: int, event_type: EventType, 
+                             after_date: date, session: Session) -> List[FundEvent]:
+        """
+        Get events of a specific type after a given date for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            event_type: Type of event to retrieve
+            after_date: Date to filter events after
+            session: Database session
+            
+        Returns:
+            List of fund events after the specified date
+        """
+        cache_key = f"events:fund:{fund_id}:type:{event_type.value}:after:{after_date}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        events = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == event_type.value,
+                FundEvent.event_date > after_date
+            )
+        ).order_by(FundEvent.event_date.asc(), FundEvent.id.asc()).all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+    
+    def get_events_before_date(self, fund_id: int, event_type: EventType, 
+                              before_date: date, session: Session) -> List[FundEvent]:
+        """
+        Get events of a specific type before a given date for a fund.
+        
+        Args:
+            fund_id: ID of the fund
+            event_type: Type of event to retrieve
+            before_date: Date to filter events before
+            session: Database session
+            
+        Returns:
+            List of fund events before the specified date
+        """
+        cache_key = f"events:fund:{fund_id}:type:{event_type.value}:before:{before_date}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        events = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type == event_type.value,
+                FundEvent.event_date < before_date
+            )
+        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+    
+    def get_events_by_fund_and_types_ordered(self, fund_id: int, event_types: List[EventType], 
+                                           session: Session, 
+                                           order_by_date: bool = True,
+                                           ascending: bool = True) -> List[FundEvent]:
+        """
+        Get events for a fund filtered by event types with custom ordering.
+        
+        Args:
+            fund_id: ID of the fund
+            event_types: List of event types to filter by
+            session: Database session
+            order_by_date: Whether to order by date (default: True)
+            ascending: Whether to order ascending (default: True)
+            
+        Returns:
+            List of fund events matching the criteria
+        """
+        cache_key = f"events:fund:{fund_id}:types:{[et.value for et in event_types]}:ordered"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Build query
+        query = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type.in_([et.value for et in event_types])
+            )
+        )
+        
+        # Apply ordering
+        if order_by_date:
+            if ascending:
+                query = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
+            else:
+                query = query.order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
+        
+        events = query.all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+
     def clear_all_cache(self) -> None:
         """Clear all cached data."""
         self._cache.clear()

@@ -30,7 +30,10 @@ class TestTaxCalculationService:
     @pytest.fixture
     def service(self):
         """Create a TaxCalculationService instance for testing."""
-        return TaxCalculationService()
+        service = TaxCalculationService()
+        # Mock the repository dependency
+        service.fund_event_repository = Mock()
+        return service
     
     @pytest.fixture
     def mock_fund(self):
@@ -156,154 +159,87 @@ class TestTaxCalculationService:
     # ============================================================================
     
     def test_get_distributions_by_type(self, service, mock_fund):
-        """Test grouping of distributions by type."""
-        # Mock fund events
-        mock_dist1 = Mock()
-        mock_dist1.event_type = EventType.DISTRIBUTION
-        mock_dist1.distribution_type = DistributionType.INCOME
+        """Test grouping of distributions by type - delegates to repository."""
+        mock_session = Mock()
+        expected = {
+            DistributionType.INCOME: [Mock()],
+            DistributionType.CAPITAL_GAIN: [Mock()],
+            'unknown': [Mock()]
+        }
+        service.fund_event_repository.get_distributions_by_type.return_value = expected
         
-        mock_dist2 = Mock()
-        mock_dist2.event_type = EventType.DISTRIBUTION
-        mock_dist2.distribution_type = DistributionType.CAPITAL_GAIN
+        result = service.get_distributions_by_type(mock_fund, mock_session)
         
-        mock_dist3 = Mock()
-        mock_dist3.event_type = EventType.DISTRIBUTION
-        mock_dist3.distribution_type = None  # Unknown type
-        
-        mock_capital_call = Mock()
-        mock_capital_call.event_type = EventType.CAPITAL_CALL  # Not a distribution
-        
-        mock_fund.fund_events = [mock_dist1, mock_dist2, mock_dist3, mock_capital_call]
-        
-        result = service.get_distributions_by_type(mock_fund)
-        
-        assert DistributionType.INCOME in result
-        assert DistributionType.CAPITAL_GAIN in result
-        assert 'unknown' in result
-        assert len(result[DistributionType.INCOME]) == 1
-        assert len(result[DistributionType.CAPITAL_GAIN]) == 1
-        assert len(result['unknown']) == 1
+        assert result == expected
+        service.fund_event_repository.get_distributions_by_type.assert_called_once_with(
+            mock_fund.id, mock_session
+        )
     
     def test_get_total_distributions(self, service, mock_fund):
-        """Test calculation of total distribution amount."""
-        # Mock fund events
-        mock_dist1 = Mock()
-        mock_dist1.event_type = EventType.DISTRIBUTION
-        mock_dist1.amount = 1000.0
+        """Test calculation of total distribution amount - delegates to repository."""
+        mock_session = Mock()
+        service.fund_event_repository.get_total_by_type.return_value = 3000.0
         
-        mock_dist2 = Mock()
-        mock_dist2.event_type = EventType.DISTRIBUTION
-        mock_dist2.amount = 2000.0
-        
-        mock_capital_call = Mock()
-        mock_capital_call.event_type = EventType.CAPITAL_CALL
-        mock_capital_call.amount = 5000.0  # Should be ignored
-        
-        mock_fund.fund_events = [mock_dist1, mock_dist2, mock_capital_call]
-        
-        result = service.get_total_distributions(mock_fund)
+        result = service.get_total_distributions(mock_fund, mock_session)
         
         assert result == 3000.0
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.DISTRIBUTION, mock_session
+        )
     
-    def test_get_total_distributions_no_amounts(self, service, mock_fund):
-        """Test total distributions calculation when amounts are None."""
-        # Mock fund events with None amounts
-        mock_dist1 = Mock()
-        mock_dist1.event_type = EventType.DISTRIBUTION
-        mock_dist1.amount = None
+    def test_get_total_distributions_no_session(self, service, mock_fund):
+        """Test total distributions calculation with no session."""
+        result = service.get_total_distributions(mock_fund, None)
         
-        mock_dist2 = Mock()
-        mock_dist2.event_type = EventType.DISTRIBUTION
-        mock_dist2.amount = 1000.0
-        
-        mock_fund.fund_events = [mock_dist1, mock_dist2]
-        
-        result = service.get_total_distributions(mock_fund)
-        
-        assert result == 1000.0
+        assert result == 0.0
     
     def test_get_taxable_distributions(self, service, mock_fund):
-        """Test calculation of taxable distributions."""
-        # Mock fund events
-        mock_dist1 = Mock()
-        mock_dist1.event_type = EventType.DISTRIBUTION
-        mock_dist1.amount = 1000.0
-        mock_dist1.distribution_type = DistributionType.INCOME
+        """Test calculation of taxable distributions - delegates to repository."""
+        mock_session = Mock()
+        service.fund_event_repository.get_taxable_distributions.return_value = 6000.0
         
-        mock_dist2 = Mock()
-        mock_dist2.event_type = EventType.DISTRIBUTION
-        mock_dist2.amount = 2000.0
-        mock_dist2.distribution_type = DistributionType.CAPITAL_GAIN
+        result = service.get_taxable_distributions(mock_fund, mock_session)
         
-        mock_dist3 = Mock()
-        mock_dist3.event_type = EventType.DISTRIBUTION
-        mock_dist3.amount = 3000.0
-        mock_dist3.distribution_type = DistributionType.INCOME  # Use existing enum value
-        
-        mock_dist4 = Mock()
-        mock_dist4.event_type = EventType.DISTRIBUTION
-        mock_dist4.amount = 4000.0
-        mock_dist4.distribution_type = None  # Unknown type
-        
-        mock_fund.fund_events = [mock_dist1, mock_dist2, mock_dist3, mock_dist4]
-        
-        result = service.get_taxable_distributions(mock_fund)
-        
-        # Only INCOME and CAPITAL_GAINS should be included
         assert result == 6000.0
+        service.fund_event_repository.get_taxable_distributions.assert_called_once_with(
+            mock_fund.id, mock_session
+        )
     
     def test_get_gross_distributions(self, service, mock_fund):
-        """Test calculation of gross distributions."""
-        # Mock fund events
-        mock_dist1 = Mock()
-        mock_dist1.event_type = EventType.DISTRIBUTION
-        mock_dist1.amount = 1000.0
+        """Test calculation of gross distributions - delegates to repository."""
+        mock_session = Mock()
+        service.fund_event_repository.get_total_by_type.return_value = 3000.0
         
-        mock_dist2 = Mock()
-        mock_dist2.event_type = EventType.DISTRIBUTION
-        mock_dist2.amount = 2000.0
-        
-        mock_fund.fund_events = [mock_dist1, mock_dist2]
-        
-        result = service.get_gross_distributions(mock_fund)
+        result = service.get_gross_distributions(mock_fund, mock_session)
         
         assert result == 3000.0
+        service.fund_event_repository.get_total_by_type.assert_called_once_with(
+            mock_fund.id, EventType.DISTRIBUTION, mock_session
+        )
     
     def test_get_net_distributions(self, service, mock_fund):
-        """Test calculation of net distributions."""
+        """Test calculation of net distributions - delegates to repository."""
+        mock_session = Mock()
         with patch.object(service, 'get_gross_distributions') as mock_gross:
             with patch.object(service, 'get_total_tax_withheld') as mock_tax:
                 mock_gross.return_value = 1000.0
                 mock_tax.return_value = 200.0
                 
-                result = service.get_net_distributions(mock_fund)
+                result = service.get_net_distributions(mock_fund, mock_session)
                 
                 assert result == 800.0
     
     def test_get_total_tax_withheld(self, service, mock_fund):
-        """Test calculation of total tax withheld."""
-        # Mock fund events
-        mock_dist1 = Mock()
-        mock_dist1.event_type = EventType.DISTRIBUTION
-        mock_dist1.tax_withheld = 100.0
+        """Test calculation of total tax withheld - delegates to repository."""
+        mock_session = Mock()
+        service.fund_event_repository.get_total_tax_withheld.return_value = 300.0
         
-        mock_dist2 = Mock()
-        mock_dist2.event_type = EventType.DISTRIBUTION
-        mock_dist2.tax_withheld = 200.0
-        
-        mock_dist3 = Mock()
-        mock_dist3.event_type = EventType.DISTRIBUTION
-        mock_dist3.tax_withheld = None  # Should be ignored
-        
-        mock_capital_call = Mock()
-        mock_capital_call.event_type = EventType.CAPITAL_CALL
-        mock_capital_call.tax_withheld = 500.0  # Should be ignored
-        
-        mock_fund.fund_events = [mock_dist1, mock_dist2, mock_dist3, mock_capital_call]
-        
-        result = service.get_total_tax_withheld(mock_fund)
+        result = service.get_total_tax_withheld(mock_fund, mock_session)
         
         assert result == 300.0
+        service.fund_event_repository.get_total_tax_withheld.assert_called_once_with(
+            mock_fund.id, mock_session
+        )
     
     def test_get_distributions_with_tax_details(self, service, mock_fund):
         """Test retrieval of distributions with detailed tax information."""
@@ -397,44 +333,65 @@ class TestTaxCalculationService:
     # SKIPPED TESTS - Methods that reference unavailable Fund model functionality
     # ============================================================================
     
-    def test_create_daily_risk_free_interest_charges(self, service, mock_fund, mock_session):
-        """Test creation of daily risk-free interest charge events."""
-        # This test is skipped because the service method references Fund model methods
-        # that are not available in the extracted service
-        pytest.skip("Service method references Fund model methods not available in extracted service")
-    
     def test_calculate_eofy_debt_interest_deduction_sum(self, service, mock_fund, mock_session):
-        """Test calculation of EOFY debt interest deduction sum."""
-        # This test is skipped because the service method references Fund model methods
-        # that are not available in the extracted service
-        pytest.skip("Service method references Fund model methods not available in extracted service")
-    
-    def test_create_tax_payment_events(self, service, mock_fund, mock_session):
-        """Test creation of tax payment events from distributions."""
-        # This test is skipped because the service method references Fund model methods
-        # that are not available in the extracted service
-        pytest.skip("Service method references Fund model methods not available in extracted service")
-    
-    def test_create_tax_payment_events_no_tax_withheld(self, service, mock_fund, mock_session):
-        """Test tax payment event creation when no tax is withheld."""
-        # This test is skipped because the service method references Fund model methods
-        # that are not available in the extracted service
-        pytest.skip("Service method references Fund model methods not available in extracted service")
+        """Test calculation of EOFY debt interest deduction sum - delegates to repository."""
+        financial_year = 2023
+        service.fund_event_repository.get_daily_interest_charges_by_financial_year.return_value = 1500.0
+        
+        result = service.calculate_eofy_debt_interest_deduction_sum_of_daily_interest(
+            mock_fund, financial_year, mock_session
+        )
+        
+        assert result == 1500.0
+        service.fund_event_repository.get_daily_interest_charges_by_financial_year.assert_called_once_with(
+            mock_fund.id, financial_year, mock_session
+        )
     
     def test_get_existing_daily_interest_dates(self, service, mock_fund, mock_session):
-        """Test retrieval of existing daily interest charge dates."""
-        # This test is skipped because the service method references Fund model methods
-        # that are not available in the extracted service
-        pytest.skip("Service method references Fund model methods not available in extracted service")
+        """Test retrieval of existing daily interest charge dates - delegates to repository."""
+        from datetime import date
+        from src.fund.enums import EventType
+        
+        mock_events = [Mock(), Mock()]
+        mock_events[0].event_date = date(2023, 1, 1)
+        mock_events[1].event_date = date(2023, 1, 2)
+        
+        service.fund_event_repository.get_events_by_type_and_date_range.return_value = mock_events
+        
+        result = service._get_existing_daily_interest_dates(mock_fund, mock_session)
+        
+        assert len(result) == 2
+        assert result[0] == date(2023, 1, 1)
+        assert result[1] == date(2023, 1, 2)
+        service.fund_event_repository.get_events_by_type_and_date_range.assert_called_once()
     
-    def test_process_financial_year_for_debt_cost(self, service, mock_fund, mock_session):
-        """Test processing of debt cost for a specific financial year."""
-        # This test is skipped because the service method references Fund model methods
-        # that are not available in the extracted service
-        pytest.skip("Service method references Fund model methods not available in extracted service")
+    def test_get_cash_flow_events(self, service, mock_fund, mock_session):
+        """Test retrieval of cash flow events - delegates to repository."""
+        from datetime import date
+        from src.fund.enums import EventType
+        
+        mock_events = [Mock(), Mock(), Mock()]
+        service.fund_event_repository.get_events_by_type_and_date_range.return_value = mock_events
+        
+        result = service._get_cash_flow_events(mock_fund, mock_session)
+        
+        # Should call repository for each event type
+        assert service.fund_event_repository.get_events_by_type_and_date_range.call_count == 3
+        assert len(result) == 9  # 3 calls * 3 events each
     
     def test_delete_debt_cost_events(self, service, mock_fund, mock_session):
-        """Test deletion of all debt cost events."""
-        # This test is skipped because the service method references Fund model methods
-        # that are not available in the extracted service
-        pytest.skip("Service method references Fund model methods not available in extracted service")
+        """Test deletion of all debt cost events - delegates to repository."""
+        from datetime import date
+        from src.fund.enums import EventType
+        
+        mock_events = [Mock(), Mock()]
+        mock_events[0].id = 1
+        mock_events[1].id = 2
+        service.fund_event_repository.get_events_by_type_and_date_range.return_value = mock_events
+        
+        service._delete_debt_cost_events(mock_fund, mock_session)
+        
+        # Should call repository to get events for both event types (2 calls)
+        # and then delete all events from both lists (4 delete calls total)
+        assert service.fund_event_repository.get_events_by_type_and_date_range.call_count == 2
+        assert service.fund_event_repository.delete.call_count == 4  # 2 events * 2 event types

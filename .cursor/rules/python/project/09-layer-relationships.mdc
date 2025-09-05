@@ -1,0 +1,83 @@
+---
+description: Layer Relationships: Proper interaction patterns between architectural layers
+globs: **/*.py
+alwaysApply: true
+---
+
+# Layer Relationships Rules
+
+## Flow Direction
+**API → Controllers → Services → Repositories/Calculators/Event Handlers**
+
+## Allowed Interactions
+
+### Controllers
+- ✅ **Call Services** (never Repositories directly)
+- ✅ **Handle HTTP** concerns only
+- ❌ **Never** contain business logic
+
+### Services  
+- ✅ **Call Repositories** for data access
+- ✅ **Call Calculators** for mathematical operations
+- ✅ **Call Event Handlers** through orchestrators
+- ✅ **Call other Services** for complex workflows
+- ❌ **Never** handle HTTP concerns
+
+### Repositories
+- ✅ **Interact with Models** and database only
+- ✅ **Call other Repositories** for related data
+- ❌ **Never** call Services or contain business logic
+
+### Event Handlers
+- ✅ **Called by Services/Orchestrators**
+- ✅ **Call Repositories** for data access
+- ✅ **Call Calculators** for calculations
+- ✅ **Publish Domain Events**
+- ❌ **Never** handle HTTP concerns
+
+### Calculators
+- ✅ **Pure functions** with no dependencies
+- ✅ **Called by Services, Handlers, other Calculators**
+- ❌ **Never** call other layers
+
+### Models
+- ✅ **Used by all layers**
+- ✅ **Basic domain methods** only
+- ❌ **Never** call other layers
+
+### Domain Events
+- ✅ **Published by Services/Handlers**
+- ✅ **Consumed by Event Handlers**
+- ❌ **Never** contain business logic
+
+## Examples
+
+```python
+# ✅ Good: Proper layer interaction
+class FundController:
+    def create_fund(self):
+        # Controller calls Service
+        fund = self.fund_service.create_fund(data, session)
+        return jsonify(fund)
+
+class FundService:
+    def create_fund(self, data, session):
+        # Service calls Repository
+        fund = self.fund_repository.create(data, session)
+        # Service calls Calculator
+        equity = FundEquityCalculator.calculate_current_equity(fund, session)
+        return fund
+
+# ❌ Bad: Controller calling Repository directly
+class FundController:
+    def create_fund(self):
+        # Violation: Controller calling Repository
+        fund = self.fund_repository.create(data, session)
+        return jsonify(fund)
+```
+
+## Key Principles
+- **Unidirectional flow**: Dependencies flow down, never up
+- **Single responsibility**: Each layer has one clear purpose
+- **Loose coupling**: Use events for cross-cutting concerns
+- **Testability**: Each layer can be tested in isolation

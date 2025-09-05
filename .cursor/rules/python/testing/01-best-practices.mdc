@@ -1,0 +1,68 @@
+---
+description: Standards for Python testing practices and patterns
+globs: tests/**/*.py
+alwaysApply: false
+---
+
+# Python Testing Best Practices
+
+## Role
+Define general testing principles and patterns applicable to all types of tests (unit, integration, API).
+
+## Should Do
+- **Use pytest** as the primary testing framework
+- **Follow AAA pattern** (Arrange-Act-Assert)
+- **Write descriptive test names** that explain the scenario
+- **Use fixtures** for test setup and teardown
+- **Mock external dependencies** to isolate tests
+- **Test both success and failure paths**
+- **Aim for 80%+ code coverage**
+
+## Shouldn't Do
+- **Write unclear test names** that don't explain the scenario
+- **Mix multiple concepts** in one test function
+- **Hardcode test data** without using fixtures
+- **Skip cleanup** of test resources
+- **Test implementation details** instead of behavior
+
+## Examples
+
+```python
+# ✅ Good: Clear structure and naming
+@pytest.mark.integration
+def test_user_registration_success(db_connection):
+    """Test successful user registration flow."""
+    # Arrange
+    user_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "secure_password"
+    }
+    
+    # Act
+    result = register_user(user_data)
+    
+    # Assert
+    assert result.status_code == 201
+    assert result.user.username == user_data["username"]
+    
+    # Cleanup
+    db_connection.delete_user(result.user.id)
+
+# ❌ Bad: Unclear and poorly structured
+def test_something():
+    result = process_data()
+    assert result == True
+```
+
+## Test Types
+- **Unit tests**: Test individual components in isolation
+- **Integration tests**: Test component interactions
+- **Functional tests**: Test complete features end-to-end
+- **Performance tests**: Test system performance under load
+
+## Key Principles
+- **Fast and efficient**: Keep tests quick to run
+- **Independent**: Tests should not depend on each other
+- **Repeatable**: Tests should produce same results every time
+- **Clear and maintainable**: Easy to understand and modify
