@@ -30,5 +30,6 @@ Manage development servers for backend (Flask) and frontend (React) with proper 
 ## Key Principles
 - **Always activate venv** before starting backend
 - **Frontend must run in one command** (cd frontend && npm start)
+- **Servers can take up to 20 seconds to start** so avoid checking they're up and running too quickly
 - **Use proper shutdown** commands to avoid zombie processes
 - **Check ports** before starting to avoid conflicts
