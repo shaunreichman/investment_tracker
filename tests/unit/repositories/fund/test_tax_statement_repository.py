@@ -470,3 +470,43 @@ class TestTaxStatementRepository:
         
         # Verify all keys are unique
         assert len(cache_keys) == 8
+    
+    def test_get_by_fund_after_date(self, tax_statement_repository, mock_session):
+        """Test get_by_fund_after_date method."""
+        from datetime import date
+        
+        # Arrange
+        fund_id = 100
+        after_date = date(2024, 1, 15)
+        
+        mock_statements = [Mock(), Mock()]
+        mock_session.query.return_value.filter.return_value.order_by.return_value.all.return_value = mock_statements
+        
+        # Act
+        result = tax_statement_repository.get_by_fund_after_date(fund_id, after_date, mock_session)
+        
+        # Assert
+        assert result == mock_statements
+        
+        # Verify caching
+        cache_key = f"tax_statements:fund:{fund_id}:after:{after_date}"
+        assert cache_key in tax_statement_repository._cache
+        assert tax_statement_repository._cache[cache_key] == mock_statements
+    
+    def test_get_by_fund_after_date_cache_hit(self, tax_statement_repository, mock_session):
+        """Test get_by_fund_after_date returns cached result when available."""
+        from datetime import date
+        
+        # Arrange
+        fund_id = 100
+        after_date = date(2024, 1, 15)
+        cache_key = f"tax_statements:fund:{fund_id}:after:{after_date}"
+        cached_statements = [Mock(), Mock()]
+        tax_statement_repository._cache[cache_key] = cached_statements
+        
+        # Act
+        result = tax_statement_repository.get_by_fund_after_date(fund_id, after_date, mock_session)
+        
+        # Assert
+        assert result == cached_statements
+        mock_session.query.assert_not_called()

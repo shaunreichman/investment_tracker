@@ -11,6 +11,7 @@ Key responsibilities:
 - Tax statement status checks
 """
 
+import logging
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
@@ -19,6 +20,14 @@ from sqlalchemy import func, and_, or_
 from src.fund.enums import FundStatus
 from src.fund.enums import EventType
 from src.fund.services.fund_irr_service import FundIrRService
+from src.fund.repositories import FundEventRepository
+from typing import TYPE_CHECKING
+
+# Configure logger for this module
+logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from src.fund.models import Fund, FundEvent
 
 
 class FundStatusService:
@@ -60,13 +69,13 @@ class FundStatusService:
         # Trust the fund's current state - event handlers should maintain current_equity_balance
         if fund.current_equity_balance > 0 and fund.status != FundStatus.ACTIVE:
             fund.status = FundStatus.ACTIVE
-            print(f"Fund {fund.name} status updated to ACTIVE")
+            logger.info(f"Fund {fund.name} status updated to ACTIVE")
             
             # Reset IRRs for active status
             self._calculate_and_store_irrs_for_status(fund, FundStatus.ACTIVE, session)
         elif fund.current_equity_balance <= 0 and fund.status == FundStatus.ACTIVE:
             fund.status = FundStatus.REALIZED
-            print(f"Fund {fund.name} status updated to REALIZED")
+            logger.info(f"Fund {fund.name} status updated to REALIZED")
             
             # Calculate and store IRRs for realized status
             self._calculate_and_store_irrs_for_status(fund, FundStatus.REALIZED, session)
@@ -99,7 +108,7 @@ class FundStatusService:
             if self._is_final_tax_statement_received(fund, session):
                 if fund.status != FundStatus.COMPLETED:
                     fund.status = FundStatus.COMPLETED
-                    print(f"Fund {fund.name} status updated to COMPLETED")
+                    logger.info(f"Fund {fund.name} status updated to COMPLETED")
                     
                     # Calculate and store IRRs for completed status
                     self._calculate_and_store_irrs_for_status(fund, FundStatus.COMPLETED, session)
@@ -107,7 +116,7 @@ class FundStatusService:
                 # Tax statement removed, revert to realized if was completed
                 if fund.status == FundStatus.COMPLETED:
                     fund.status = FundStatus.REALIZED
-                    print(f"Fund {fund.name} status reverted to REALIZED")
+                    logger.info(f"Fund {fund.name} status reverted to REALIZED")
                     
                     # Calculate and store IRRs for realized status
                     self._calculate_and_store_irrs_for_status(fund, FundStatus.REALIZED, session)
@@ -142,15 +151,16 @@ class FundStatusService:
         if not end_date:
             return False
         
+        # Use repository for data access instead of direct model access
+        from src.fund.repositories import TaxStatementRepository
+        tax_statement_repository = TaxStatementRepository()
+        
         # Check if there's a tax statement with a tax payment date after the end date
         # This indicates that tax obligations for periods after the fund ended are now due
-        tax_statements = fund.tax_statements
-        for tax_statement in tax_statements:
-            # Only use tax_payment_date - no fallback logic needed
-            if tax_statement.tax_payment_date and tax_statement.tax_payment_date > end_date:
-                return True
+        tax_statements = tax_statement_repository.get_by_fund_after_date(fund.id, end_date, session)
         
-        return False
+        # Return True if any tax statement has a payment date after the end date
+        return len(tax_statements) > 0
     
     def _calculate_and_store_irrs_for_status(self, fund: 'Fund', status: FundStatus, session: Optional[Session] = None) -> None:
         """
@@ -169,7 +179,7 @@ class FundStatusService:
             fund.completed_irr_after_tax = None
             fund.completed_irr_real = None
             
-            print(f"IRRs reset to None for active fund {fund.name}")
+            logger.info(f"IRRs reset to None for active fund {fund.name}")
             
         elif status == FundStatus.REALIZED:
             # REALIZED: Only gross IRR is meaningful (all capital returned)
@@ -189,7 +199,7 @@ class FundStatusService:
             # Update current_duration for realized status (uses end_date)
             fund.calculate_and_update_current_duration()
             
-            print(f"Gross IRR calculated and stored for realized fund {fund.name}")
+            logger.info(f"Gross IRR calculated and stored for realized fund {fund.name}")
             
         elif status == FundStatus.COMPLETED:
             # COMPLETED: All IRRs are meaningful (tax obligations complete)
@@ -204,7 +214,7 @@ class FundStatusService:
             # Update current_duration for completed status (uses end_date)
             fund.calculate_and_update_current_duration()
             
-            print(f"All IRRs calculated and stored for completed fund {fund.name}")
+            logger.info(f"All IRRs calculated and stored for completed fund {fund.name}")
     
     # ============================================================================
     # END DATE CALCULATION LOGIC

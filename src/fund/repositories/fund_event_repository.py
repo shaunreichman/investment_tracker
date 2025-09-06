@@ -474,6 +474,79 @@ class FundEventRepository:
                     self._cache.pop(key, None)
     
 
+    def get_by_fund_and_types(self, fund_id: int, event_types: List[EventType], 
+                             session: Session, skip: int = 0, limit: int = 100) -> List[FundEvent]:
+        """
+        Get fund events filtered by event types.
+        
+        Args:
+            fund_id: ID of the fund
+            event_types: List of event types to filter by
+            session: Database session
+            skip: Number of records to skip
+            limit: Maximum number of records to return
+            
+        Returns:
+            List of filtered fund events
+        """
+        cache_key = f"events:fund:{fund_id}:types:{sorted([t.value for t in event_types])}:skip:{skip}:limit:{limit}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        events = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_type.in_(event_types)
+            )
+        ).order_by(FundEvent.event_date.asc(), FundEvent.id.asc()).offset(skip).limit(limit).all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+    
+    def get_by_fund_after_date(self, fund_id: int, after_date: date, 
+                              session: Session, event_types: Optional[List[EventType]] = None) -> List[FundEvent]:
+        """
+        Get fund events after a specific date.
+        
+        Args:
+            fund_id: ID of the fund
+            after_date: Date to filter after
+            session: Database session
+            event_types: Optional list of event types to filter by
+            
+        Returns:
+            List of fund events after the specified date
+        """
+        cache_key = f"events:fund:{fund_id}:after:{after_date}:types:{sorted([t.value for t in event_types]) if event_types else 'all'}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Build query
+        query = session.query(FundEvent).filter(
+            and_(
+                FundEvent.fund_id == fund_id,
+                FundEvent.event_date > after_date
+            )
+        )
+        
+        # Add event type filter if specified
+        if event_types:
+            query = query.filter(FundEvent.event_type.in_(event_types))
+        
+        events = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc()).all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+
     def clear_all_cache(self) -> None:
         """Clear all cached data."""
         self._cache.clear()

@@ -9,14 +9,17 @@ from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
+from src.fund.repositories import FundEventRepository, TaxStatementRepository, DomainEventRepository
 
 
 class FundValidationService:
     """Enterprise-grade validation service for fund operations."""
     
     def __init__(self):
-        """Initialize the validation service."""
-        pass
+        """Initialize the validation service with required repositories."""
+        self.fund_event_repository = FundEventRepository()
+        self.tax_statement_repository = TaxStatementRepository()
+        # DomainEventRepository requires session, so we'll create it when needed
     
     def validate_fund_deletion(self, fund: Fund, session: Session) -> Dict[str, List[str]]:
         """
@@ -32,7 +35,7 @@ class FundValidationService:
         errors = {}
         
         # BUSINESS RULE: Only allow deletion if fund has 0 fund events
-        fund_events_count = len(fund.fund_events)
+        fund_events_count = self.fund_event_repository.get_event_count_by_fund(fund.id, session)
         if fund_events_count > 0:
             errors['fund_events'] = [
                 f'Cannot delete fund with {fund_events_count} fund events. '
@@ -40,7 +43,7 @@ class FundValidationService:
             ]
         
         # BUSINESS RULE: Prevent deletion of funds with tax statements
-        tax_statements_count = len(fund.tax_statements)
+        tax_statements_count = self.tax_statement_repository.get_statement_count_by_fund(fund.id, session)
         if tax_statements_count > 0:
             errors['tax_statements'] = [
                 f'Cannot delete fund with {tax_statements_count} tax statements. '
@@ -48,7 +51,8 @@ class FundValidationService:
             ]
         
         # BUSINESS RULE: Prevent deletion of funds with domain events
-        domain_events_count = len(fund.domain_events)
+        domain_event_repository = DomainEventRepository(session)
+        domain_events_count = domain_event_repository.get_event_count_by_fund(fund.id, session)
         if domain_events_count > 0:
             errors['domain_events'] = [
                 f'Cannot delete fund with {domain_events_count} domain events. '

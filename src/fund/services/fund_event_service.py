@@ -11,6 +11,7 @@ Key responsibilities:
 - Event-based fund updates
 """
 
+import logging
 from typing import List, Optional, Dict, Any, Union
 from datetime import date, datetime
 from decimal import Decimal
@@ -19,6 +20,9 @@ from sqlalchemy import func, and_, or_
 
 from src.fund.enums import EventType
 from typing import TYPE_CHECKING
+
+# Configure logger for this module
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from src.fund.models import Fund, FundEvent
@@ -100,7 +104,7 @@ class FundEventService:
         # Delegate to specialized repository
         event = self.capital_event_repository.create_capital_call(fund.id, event_data, session)
         
-        print(f"Added capital call event: {amount} on {date} for fund {fund.name}")
+        logger.info(f"Added capital call event: {amount} on {date} for fund {fund.name}")
         return event
     
     def add_return_of_capital(self, fund: 'Fund', amount: float, date: date,
@@ -141,7 +145,7 @@ class FundEventService:
         # Delegate to specialized repository
         event = self.capital_event_repository.create_return_of_capital(fund.id, event_data, session)
         
-        print(f"Added return of capital event: {amount} on {date} for fund {fund.name}")
+        logger.info(f"Added return of capital event: {amount} on {date} for fund {fund.name}")
         return event
     
     # ============================================================================
@@ -198,7 +202,7 @@ class FundEventService:
         # Delegate to specialized repository
         event = self.unit_event_repository.create_unit_purchase(fund.id, event_data, session)
         
-        print(f"Added unit purchase event: {units} units at {price} on {date} for fund {fund.name}")
+        logger.info(f"Added unit purchase event: {units} units at {price} on {date} for fund {fund.name}")
         return event
     
     def add_unit_sale(self, fund: 'Fund', units: float, price: float, date: date,
@@ -251,7 +255,7 @@ class FundEventService:
         # Delegate to specialized repository
         event = self.unit_event_repository.create_unit_sale(fund.id, event_data, session)
         
-        print(f"Added unit sale event: {units} units at {price} on {date} for fund {fund.name}")
+        logger.info(f"Added unit sale event: {units} units at {price} on {date} for fund {fund.name}")
         return event
     
     # ============================================================================
@@ -296,7 +300,7 @@ class FundEventService:
         # Delegate to specialized repository
         event = self.unit_event_repository.create_nav_update(fund.id, event_data, session)
         
-        print(f"Added NAV update event: {nav_per_share} on {date} for fund {fund.name}")
+        logger.info(f"Added NAV update event: {nav_per_share} on {date} for fund {fund.name}")
         return event
     
     def _calculate_nav_change_fields(self, fund: 'Fund', nav_per_share: float, date: date, 
@@ -389,17 +393,21 @@ class FundEventService:
         Returns:
             list: Filtered list of fund events
         """
-        events = fund.fund_events
-        
-        # Filter by event types
+        # Use repository for data access instead of direct model access
         if event_types:
-            events = [e for e in events if e.event_type in event_types]
+            # Convert string event types to EventType enums
+            from src.fund.enums import EventType
+            event_type_enums = [EventType(et) if isinstance(et, str) else et for et in event_types]
+            events = self.fund_event_query_repository.get_events_by_fund_and_types(
+                fund.id, event_type_enums, session
+            )
+        else:
+            events = self.fund_event_query_repository.get_events_by_fund(fund.id, session)
         
-        # Filter by start date
+        # Apply date filters if specified
         if start_date:
             events = [e for e in events if e.event_date >= start_date]
         
-        # Filter by end date
         if end_date:
             events = [e for e in events if e.event_date <= end_date]
         
@@ -424,7 +432,8 @@ class FundEventService:
         Returns:
             list: List of recent fund events
         """
-        events = fund.fund_events
+        # Use repository for data access instead of direct model access
+        events = self.fund_event_query_repository.get_events_by_fund(fund.id, session)
         
         # Exclude system events if requested
         if exclude_system_events:
@@ -450,7 +459,8 @@ class FundEventService:
         Returns:
             list: List of all fund events
         """
-        events = fund.fund_events
+        # Use repository for data access instead of direct model access
+        events = self.fund_event_query_repository.get_events_by_fund(fund.id, session)
         
         # Exclude system events if requested
         if exclude_system_events:
@@ -486,7 +496,7 @@ class FundEventService:
         success = event_repository.delete(event_id, session)
         
         if success:
-            print(f"Deleted event {event_id} from fund {fund.name}")
+            logger.info(f"Deleted event {event_id} from fund {fund.name}")
         
         return success
     
@@ -540,7 +550,7 @@ class FundEventService:
             
             created_events.append(event)
         
-        print(f"Added {len(created_events)} events to fund {fund.name}")
+        logger.info(f"Added {len(created_events)} events to fund {fund.name}")
         return created_events
     
     def _create_bulk_event_object(self, fund: 'Fund', event_data: Dict[str, Any]) -> 'FundEvent':

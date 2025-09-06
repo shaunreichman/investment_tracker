@@ -130,7 +130,8 @@ class TestFundStatusServiceOrchestration:
         
         # Mock the dependencies
         with patch('src.fund.services.fund_status_service.FundIrRService') as mock_irr_service_class, \
-             patch.object(service, 'calculate_end_date') as mock_calculate_end_date:
+             patch.object(service, 'calculate_end_date') as mock_calculate_end_date, \
+             patch('src.fund.repositories.TaxStatementRepository') as mock_tax_repo_class:
             
             # Setup mocked IRR service for COMPLETED status
             mock_irr_service = Mock()
@@ -141,6 +142,11 @@ class TestFundStatusServiceOrchestration:
             
             # Setup mocked end date calculation
             mock_calculate_end_date.return_value = date(2020, 12, 31)
+            
+            # Setup mocked tax statement repository
+            mock_tax_repo = Mock()
+            mock_tax_repo_class.return_value = mock_tax_repo
+            mock_tax_repo.get_by_fund_after_date.return_value = [mock_tax_statement]  # Return list, not Mock
             
             # Act - Orchestrate the tax statement completion workflow
             service.update_status_after_tax_statement(realized_fund, mock_session)
@@ -383,7 +389,13 @@ class TestFundStatusServiceOrchestration:
         mock_tax_statement_before.tax_payment_date = date(2020, 5, 15)  # Before end date
         realized_fund.tax_statements = [mock_tax_statement_before]
         
-        with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)):
+        with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)), \
+             patch('src.fund.repositories.TaxStatementRepository') as mock_tax_repo_class:
+            # Setup mocked tax statement repository
+            mock_tax_repo = Mock()
+            mock_tax_repo_class.return_value = mock_tax_repo
+            mock_tax_repo.get_by_fund_after_date.return_value = []  # No tax statements after end date
+            
             result = service._is_final_tax_statement_received(realized_fund, mock_session)
             assert result is False
         
@@ -392,12 +404,24 @@ class TestFundStatusServiceOrchestration:
         mock_tax_statement_after.tax_payment_date = date(2021, 5, 15)  # After end date
         realized_fund.tax_statements = [mock_tax_statement_after]
         
-        with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)):
+        with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)), \
+             patch('src.fund.repositories.TaxStatementRepository') as mock_tax_repo_class:
+            # Setup mocked tax statement repository
+            mock_tax_repo = Mock()
+            mock_tax_repo_class.return_value = mock_tax_repo
+            mock_tax_repo.get_by_fund_after_date.return_value = [mock_tax_statement_after]  # Tax statement after end date
+            
             result = service._is_final_tax_statement_received(realized_fund, mock_session)
             assert result is True
         
         # Test no tax statements
         realized_fund.tax_statements = []
-        with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)):
+        with patch.object(service, 'calculate_end_date', return_value=date(2020, 12, 31)), \
+             patch('src.fund.repositories.TaxStatementRepository') as mock_tax_repo_class:
+            # Setup mocked tax statement repository
+            mock_tax_repo = Mock()
+            mock_tax_repo_class.return_value = mock_tax_repo
+            mock_tax_repo.get_by_fund_after_date.return_value = []  # No tax statements
+            
             result = service._is_final_tax_statement_received(realized_fund, mock_session)
             assert result is False

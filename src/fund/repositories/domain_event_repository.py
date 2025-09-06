@@ -191,17 +191,19 @@ class DomainEventRepository:
         
         return result
     
-    def get_event_count_by_fund(self, fund_id: int) -> int:
+    def get_event_count_by_fund(self, fund_id: int, session: Optional[Session] = None) -> int:
         """
         Get the count of domain events for a specific fund.
         
         Args:
             fund_id: Fund ID to count events for
+            session: Database session (optional, uses instance session if not provided)
             
         Returns:
             int: Number of domain events
         """
-        return self.session.query(DomainEvent).filter(
+        db_session = session or self.session
+        return db_session.query(DomainEvent).filter(
             DomainEvent.fund_id == fund_id
         ).count()
     

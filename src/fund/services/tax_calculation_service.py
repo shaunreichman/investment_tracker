@@ -11,6 +11,7 @@ Key responsibilities:
 - Tax-based IRR calculations
 """
 
+import logging
 from typing import List, Optional, Dict, Any, Union
 from datetime import date, datetime
 from decimal import Decimal
@@ -20,6 +21,9 @@ from sqlalchemy import func, and_, or_
 from src.fund.enums import EventType, DistributionType, FundStatus
 from src.fund.repositories import FundEventRepository
 from typing import TYPE_CHECKING
+
+# Configure logger for this module
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from src.fund.models import Fund, FundEvent, RiskFreeRate
@@ -142,7 +146,7 @@ class TaxCalculationService:
                 # Delegate to specialized repository
                 self.tax_event_repository.create_daily_interest_charge(fund.id, event_data, session)
         
-        print(f"Created {len(daily_charges)} daily risk-free interest charge events for fund {fund.name}")
+        logger.info(f"Created {len(daily_charges)} daily risk-free interest charge events for fund {fund.name}")
     
     def calculate_eofy_debt_interest_deduction_sum_of_daily_interest(self, fund: 'Fund', 
                                                                     financial_year: int, 
@@ -215,7 +219,7 @@ class TaxCalculationService:
         # Recreate EOFY debt cost events
         self.create_eofy_debt_cost_events(fund, session)
         
-        print(f"Recalculated debt costs for fund {fund.name}")
+        logger.info(f"Recalculated debt costs for fund {fund.name}")
     
     # ============================================================================
     # TAX PAYMENT EVENT CREATION AND MANAGEMENT
@@ -250,7 +254,7 @@ class TaxCalculationService:
                     # Delegate to specialized repository
                     self.tax_event_repository.create_tax_payment(fund.id, event_data, session)
         
-        print(f"Created tax payment events for fund {fund.name}")
+        logger.info(f"Created tax payment events for fund {fund.name}")
     
     # ============================================================================
     # DISTRIBUTION TAX CALCULATIONS AND WITHHOLDING LOGIC
@@ -379,21 +383,24 @@ class TaxCalculationService:
         Returns:
             list: List of distributions with tax details
         """
+        # Use repository for data access instead of direct model access
         distributions = []
         
-        for event in fund.fund_events:
-            if event.event_type == EventType.DISTRIBUTION:
-                dist_info = {
-                    'id': event.id,
-                    'date': event.event_date,
-                    'amount': event.amount,
-                    'distribution_type': event.distribution_type if event.distribution_type else None,
-                    'tax_withheld': event.tax_withheld,
-                    'net_amount': event.amount - (event.tax_withheld or 0) if event.amount else 0,
-                    'description': event.description,
-                    'reference_number': event.reference_number
-                }
-                distributions.append(dist_info)
+        # Get distribution events using repository
+        distribution_events = self.fund_event_query_repository.get_events_by_type(fund.id, EventType.DISTRIBUTION, session)
+        
+        for event in distribution_events:
+            dist_info = {
+                'id': event.id,
+                'date': event.event_date,
+                'amount': event.amount,
+                'distribution_type': event.distribution_type if event.distribution_type else None,
+                'tax_withheld': event.tax_withheld,
+                'net_amount': event.amount - (event.tax_withheld or 0) if event.amount else 0,
+                'description': event.description,
+                'reference_number': event.reference_number
+            }
+            distributions.append(dist_info)
         
         return distributions
     
@@ -547,4 +554,4 @@ class TaxCalculationService:
             fund.id, EventType.EOFY_DEBT_COST, session
         )
         
-        print(f"Deleted debt cost events for fund {fund.name}")
+        logger.info(f"Deleted debt cost events for fund {fund.name}")

@@ -11,7 +11,7 @@ Key responsibilities:
 - Business rule enforcement
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 from sqlalchemy.orm import Session
 from datetime import date
 
@@ -20,6 +20,9 @@ from src.fund.events.orchestrator import FundUpdateOrchestrator
 from src.fund.events.registry import FundEventHandlerRegistry
 from src.fund.enums import FundStatus, FundType, EventType, DistributionType, TaxPaymentType, GroupType
 from src.fund.services.fund_validation_service import FundValidationService
+
+if TYPE_CHECKING:
+    from src.fund.models import Fund, FundEvent
 
 
 class FundService:
@@ -47,7 +50,7 @@ class FundService:
         self.registry = FundEventHandlerRegistry()
         self.validation_service = FundValidationService()
     
-    def create_fund(self, fund_data: Dict[str, Any], session: Session) -> Dict[str, Any]:
+    def create_fund(self, fund_data: Dict[str, Any], session: Session) -> 'Fund':
         """
         Create a new fund.
         
@@ -56,7 +59,7 @@ class FundService:
             session: Database session
             
         Returns:
-            Dictionary containing the created fund information
+            Fund: The created fund object
             
         Raises:
             ValueError: If required fields are missing or invalid
@@ -83,20 +86,11 @@ class FundService:
         # Create the fund
         fund = self.fund_repository.create(processed_data, session)
         
-        # Return fund information
-        return {
-            'id': fund.id,
-            'name': fund.name,
-            'status': fund.status.value if fund.status else None,
-            'fund_type': fund.fund_type.value if hasattr(fund.fund_type, 'value') else fund.fund_type,
-            'tracking_type': fund.tracking_type.value if hasattr(fund.tracking_type, 'value') else fund.tracking_type,
-            'entity_id': fund.entity_id,
-            'investment_company_id': fund.investment_company_id,
-            'created_at': fund.created_at.isoformat() if fund.created_at else None
-        }
+        # Return domain object
+        return fund
     
     def update_fund(self, fund_id: int, fund_data: Dict[str, Any], 
-                   session: Session) -> Optional[Dict[str, Any]]:
+                   session: Session) -> Optional['Fund']:
         """
         Update an existing fund.
         
@@ -106,24 +100,15 @@ class FundService:
             session: Database session
             
         Returns:
-            Dictionary containing the updated fund information, or None if not found
+            Fund: The updated fund object, or None if not found
         """
         # Update the fund
         fund = self.fund_repository.update(fund_id, fund_data, session)
         if not fund:
             return None
         
-        # Return updated fund information
-        return {
-            'id': fund.id,
-            'name': fund.name,
-            'status': fund.status.value if fund.status else None,
-            'fund_type': fund.fund_type.value if hasattr(fund.fund_type, 'value') else fund.fund_type,
-            'tracking_type': fund.tracking_type.value if hasattr(fund.tracking_type, 'value') else fund.tracking_type,
-            'entity_id': fund.entity_id,
-            'investment_company_id': fund.investment_company_id,
-            'updated_at': fund.updated_at.isoformat() if fund.updated_at else None
-        }
+        # Return domain object
+        return fund
     
     def delete_fund(self, fund_id: int, session: Session) -> bool:
         """
@@ -152,7 +137,7 @@ class FundService:
         # Delete the fund
         return self.fund_repository.delete(fund_id, session)
     
-    def get_fund(self, fund_id: int, session: Session) -> Optional[Dict[str, Any]]:
+    def get_fund(self, fund_id: int, session: Session) -> Optional['Fund']:
         """
         Get a fund by its ID including all events.
         
@@ -161,7 +146,7 @@ class FundService:
             session: Database session
             
         Returns:
-            Dictionary containing fund information and events, or None if not found
+            Fund: The fund object with events, or None if not found
         """
         fund = self.fund_repository.get_by_id(fund_id, session)
         if not fund:
@@ -170,45 +155,19 @@ class FundService:
         # Get fund events using the repository
         events = self.fund_event_repository.get_by_fund(fund_id, session)
         
-        # Convert events to dictionaries
-        event_list = []
-        for event in events:
-            event_dict = {
-                'id': event.id,
-                'event_type': event.event_type.value if event.event_type else None,
-                'event_date': event.event_date.isoformat() if event.event_date else None,
-                'amount': event.amount,
-                'description': event.description,
-                'reference_number': event.reference_number,
-                'is_grouped': event.is_grouped,
-                'group_id': event.group_id,
-                'group_type': event.group_type.value if event.group_type else None,
-                'group_position': event.group_position,
-                'distribution_type': event.distribution_type.value if event.distribution_type else None,
-                'has_withholding_tax': event.has_withholding_tax,
-                'created_at': event.created_at.isoformat() if event.created_at else None
-            }
-            event_list.append(event_dict)
+        # Attach events to fund object (or use proper relationship)
+        # Note: This assumes the Fund model has a way to attach events
+        # If not, the controller can fetch events separately
+        fund.events = events
         
-        return {
-            'id': fund.id,
-            'name': fund.name,
-            'status': fund.status.value if fund.status else None,
-            'fund_type': fund.fund_type.value if fund.fund_type else None,
-            'entity_id': fund.entity_id,
-            'investment_company_id': fund.investment_company_id,
-            'description': fund.description,
-            'created_at': fund.created_at.isoformat() if fund.created_at else None,
-            'updated_at': fund.updated_at.isoformat() if fund.updated_at else None,
-            'events': event_list
-        }
+        return fund
     
     def get_funds(self, session: Session, 
                   skip: int = 0, 
                   limit: int = 100,
                   status: Optional[FundStatus] = None,
                   fund_type: Optional[FundType] = None,
-                  search: Optional[str] = None) -> Dict[str, Any]:
+                  search: Optional[str] = None) -> List['Fund']:
         """
         Get funds with filtering, pagination, and search.
         
@@ -221,45 +180,23 @@ class FundService:
             search: Optional search term
             
         Returns:
-            Dictionary containing funds and pagination information
+            List of Fund objects
         """
-        funds = []
-        
         if search:
             # Use search functionality
-            funds = self.fund_repository.search_funds(search, session)
+            return self.fund_repository.search_funds(search, session)
         elif status:
             # Filter by status
-            funds = self.fund_repository.get_funds_by_status(status, session)
+            return self.fund_repository.get_funds_by_status(status, session)
         elif fund_type:
             # Filter by fund type
-            funds = self.fund_repository.get_funds_by_type(fund_type, session)
+            return self.fund_repository.get_funds_by_type(fund_type, session)
         else:
             # Get all funds with pagination
-            funds = self.fund_repository.get_all(session, skip, limit)
-        
-        # Convert to dictionaries
-        fund_list = []
-        for fund in funds:
-            fund_list.append({
-                'id': fund.id,
-                'name': fund.name,
-                'status': fund.status.value if fund.status else None,
-                'fund_type': fund.fund_type.value if fund.fund_type else None,
-                'entity_id': fund.entity_id,
-                'investment_company_id': fund.investment_company_id,
-                'created_at': fund.created_at.isoformat() if fund.created_at else None
-            })
-        
-        return {
-            'funds': fund_list,
-            'total': len(fund_list),
-            'skip': skip,
-            'limit': limit
-        }
+            return self.fund_repository.get_all(session, skip, limit)
     
     def add_fund_event(self, fund_id: int, event_data: Dict[str, Any], 
-                      session: Session) -> Dict[str, Any]:
+                      session: Session) -> 'FundEvent':
         """
         Add a fund event using the event handler system.
         
@@ -269,7 +206,7 @@ class FundService:
             session: Database session
             
         Returns:
-            Dictionary containing the created event information
+            FundEvent: The created event object
             
         Raises:
             ValueError: If required fields are missing
@@ -316,41 +253,14 @@ class FundService:
         try:
             result = self.orchestrator.process_fund_event(event_data, session, fund)
             
-            # Return event information
-            response_data = {
-                'id': result.id,
-                'fund_id': fund_id,
-                'event_type': event_data['event_type'],
-                'event_date': event_data['event_date'].isoformat() if hasattr(event_data['event_date'], 'isoformat') else str(event_data['event_date']),
-                'description': event_data.get('description'),
-                'status': 'processed'
-            }
-            
-            # Handle amount field based on event type
-            if (event_data.get('event_type') == 'DISTRIBUTION' and 
-                event_data.get('distribution_type') == 'INTEREST' and
-                any([
-                    event_data.get('interest_gross_amount') is not None,
-                    event_data.get('interest_net_amount') is not None,
-                    event_data.get('interest_withholding_tax_amount') is not None,
-                    event_data.get('interest_withholding_tax_rate') is not None
-                ])):
-                # For withholding tax distributions, don't include amount
-                pass
-            elif event_data.get('event_type') in ['UNIT_PURCHASE', 'UNIT_SALE', 'NAV_UPDATE']:
-                # For NAV-based events, don't include amount
-                pass
-            else:
-                # For other events, include amount
-                response_data['amount'] = float(event_data['amount'])
-            
-            return response_data
+            # Return domain object
+            return result
             
         except Exception as e:
             raise RuntimeError(f"Failed to process fund event: {str(e)}")
     
     def update_fund_event(self, fund_id: int, event_id: int, 
-                         event_data: Dict[str, Any], session: Session) -> Optional[Dict[str, Any]]:
+                         event_data: Dict[str, Any], session: Session) -> Optional['FundEvent']:
         """
         Update a fund event.
         
@@ -361,22 +271,15 @@ class FundService:
             session: Database session
             
         Returns:
-            Dictionary containing the updated event information, or None if not found
+            FundEvent: The updated event object, or None if not found
         """
         # Update the event
         event = self.fund_event_repository.update(event_id, event_data, session)
         if not event:
             return None
         
-        # Return updated event information
-        return {
-            'id': event.id,
-            'fund_id': event.fund_id,
-            'event_type': event.event_type,
-            'event_date': event.event_date.isoformat() if event.event_date else None,
-            'amount': str(event.amount) if event.amount else None,
-            'updated_at': event.updated_at.isoformat() if event.updated_at else None
-        }
+        # Return domain object
+        return event
     
     def delete_fund_event(self, fund_id: int, event_id: int, session: Session) -> bool:
         """
@@ -428,7 +331,7 @@ class FundService:
     def get_fund_events(self, fund_id: int, session: Session,
                        skip: int = 0, 
                        limit: int = 100,
-                       event_types: Optional[List[EventType]] = None) -> Dict[str, Any]:
+                       event_types: Optional[List[EventType]] = None) -> List['FundEvent']:
         """
         Get events for a specific fund.
         
@@ -440,55 +343,16 @@ class FundService:
             event_types: Optional list of event types to filter by
             
         Returns:
-            Dictionary containing events and pagination information
+            List of FundEvent objects
         """
         events = self.fund_event_repository.get_by_fund(
             fund_id, session, event_types, skip, limit
         )
         
-        # Convert to dictionaries
-        event_list = []
-        for event in events:
-            event_list.append({
-                'id': event.id,
-                'fund_id': event.fund_id,
-                'event_type': event.event_type.value if event.event_type else None,
-                'event_date': event.event_date.isoformat() if event.event_date else None,
-                'amount': float(event.amount) if event.amount is not None else None,
-                'description': event.description,
-                'reference_number': event.reference_number,
-                'nav_per_share': float(event.nav_per_share) if event.nav_per_share is not None else None,
-                'previous_nav_per_share': float(event.previous_nav_per_share) if event.previous_nav_per_share is not None else None,
-                'nav_change_absolute': float(event.nav_change_absolute) if event.nav_change_absolute is not None else None,
-                'nav_change_percentage': float(event.nav_change_percentage) if event.nav_change_percentage is not None else None,
-                'units_owned': float(event.units_owned) if event.units_owned is not None else None,
-                'distribution_type': event.distribution_type.value if event.distribution_type else None,
-                'tax_withholding': float(event.tax_withholding) if event.tax_withholding is not None else None,
-                'has_withholding_tax': event.has_withholding_tax,
-                'tax_payment_type': event.tax_payment_type.value if event.tax_payment_type else None,
-                'tax_statement_id': event.tax_statement_id,
-                'units_purchased': float(event.units_purchased) if event.units_purchased is not None else None,
-                'units_sold': float(event.units_sold) if event.units_sold is not None else None,
-                'unit_price': float(event.unit_price) if event.unit_price is not None else None,
-                'brokerage_fee': float(event.brokerage_fee) if event.brokerage_fee is not None else None,
-                'current_equity_balance': float(event.current_equity_balance) if event.current_equity_balance is not None else None,
-                'is_cash_flow_complete': event.is_cash_flow_complete,
-                'is_grouped': event.is_grouped,
-                'group_id': event.group_id,
-                'group_type': event.group_type.value if event.group_type else None,
-                'group_position': event.group_position,
-                'created_at': event.created_at.isoformat() if event.created_at else None,
-                'updated_at': event.updated_at.isoformat() if event.updated_at else None
-            })
-        
-        return {
-            'events': event_list,
-            'total': len(event_list),
-            'skip': skip,
-            'limit': limit
-        }
+        # Return domain objects
+        return events
     
-    def get_fund_event(self, fund_id: int, event_id: int, session: Session) -> Optional[Any]:
+    def get_fund_event(self, fund_id: int, event_id: int, session: Session) -> Optional['FundEvent']:
         """
         Get a specific fund event by ID.
         
@@ -512,7 +376,7 @@ class FundService:
         
         return event
     
-    def get_fund_summary(self, fund_id: int, session: Session) -> Optional[Dict[str, Any]]:
+    def get_fund_summary(self, fund_id: int, session: Session) -> Optional['Fund']:
         """
         Get a comprehensive summary of a fund.
         
@@ -521,32 +385,20 @@ class FundService:
             session: Database session
             
         Returns:
-            Dictionary containing fund summary information, or None if not found
+            Fund object with summary information, or None if not found
         """
         fund = self.fund_repository.get_by_id(fund_id, session)
         if not fund:
             return None
         
-        # Get event count
-        event_count = self.fund_event_repository.get_event_count_by_fund(fund_id, session)
+        # Attach summary counts to fund object
+        # Note: These could be added as properties or methods to the Fund model
+        fund.event_count = self.fund_event_repository.get_event_count_by_fund(fund_id, session)
+        fund.tax_statement_count = self.tax_statement_repository.get_statement_count_by_fund(fund_id, session)
         
-        # Get tax statement count
-        tax_statement_count = self.tax_statement_repository.get_statement_count_by_fund(fund_id, session)
-        
-        return {
-            'id': fund.id,
-            'name': fund.name,
-            'status': fund.status.value if fund.status else None,
-            'fund_type': fund.fund_type.value if fund.fund_type else None,
-            'entity_id': fund.entity_id,
-            'investment_company_id': fund.investment_company_id,
-            'event_count': event_count,
-            'tax_statement_count': tax_statement_count,
-            'created_at': fund.created_at.isoformat() if fund.created_at else None,
-            'updated_at': fund.updated_at.isoformat() if fund.updated_at else None
-        }
+        return fund
     
-    def get_fund_metrics(self, fund_id: int, session: Session) -> Optional[Dict[str, Any]]:
+    def get_fund_metrics(self, fund_id: int, session: Session) -> Optional['Fund']:
         """
         Get performance metrics for a fund.
         
@@ -555,7 +407,7 @@ class FundService:
             session: Database session
             
         Returns:
-            Dictionary containing fund metrics, or None if not found
+            Fund object with metrics information, or None if not found
         """
         fund = self.fund_repository.get_by_id(fund_id, session)
         if not fund:
@@ -566,19 +418,16 @@ class FundService:
             fund_id, session, limit=50
         )
         
-        # Calculate basic metrics (this would be enhanced with actual business logic)
-        total_events = len(recent_events)
+        # Calculate basic metrics and attach to fund object
+        # Note: These could be added as properties or methods to the Fund model
+        fund.total_events = len(recent_events)
         capital_events = [e for e in recent_events if e.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]]
         distribution_events = [e for e in recent_events if e.event_type == EventType.DISTRIBUTION]
+        fund.capital_events_count = len(capital_events)
+        fund.distribution_events_count = len(distribution_events)
+        fund.last_event_date = recent_events[-1].event_date if recent_events else None
         
-        return {
-            'fund_id': fund_id,
-            'total_events': total_events,
-            'capital_events': len(capital_events),
-            'distribution_events': len(distribution_events),
-            'last_event_date': recent_events[-1].event_date.isoformat() if recent_events else None,
-            'status': fund.status.value if fund.status else None
-        }
+        return fund
 
     # ============================================================================
     # FUND EVENT METHODS - Added for Phase 1 circular import fix

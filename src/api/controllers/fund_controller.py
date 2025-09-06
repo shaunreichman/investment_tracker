@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from src.fund.enums import FundStatus, FundType, EventType
 from src.fund.services.fund_service import FundService
+from src.fund.formatters import format_fund_with_events, format_fund, format_funds_list, format_events_list, format_event_response
 
 
 class FundController:
@@ -49,13 +50,15 @@ class FundController:
             # Get database session (this would be injected in a real Flask app)
             session = self._get_session()
             
-            # Get the fund
+            # Get the fund (now returns domain object)
             fund = self.fund_service.get_fund(fund_id, session)
             
             if not fund:
                 return jsonify({'error': 'Fund not found'}), 404
             
-            return jsonify(fund), 200
+            # Format the response using formatter
+            formatted_fund = format_fund_with_events(fund)
+            return jsonify(formatted_fund), 200
             
         except Exception as e:
             current_app.logger.error(f"Error getting fund {fund_id}: {str(e)}")
@@ -82,13 +85,15 @@ class FundController:
             # Get database session
             session = self._get_session()
             
-            # Create the fund with validated data
+            # Create the fund with validated data (now returns domain object)
             fund = self.fund_service.create_fund(fund_data, session)
             
             # Commit the transaction
             session.commit()
             
-            return jsonify(fund), 201
+            # Format the response using formatter
+            formatted_fund = format_fund(fund)
+            return jsonify(formatted_fund), 201
             
         except ValueError as e:
             return jsonify({'error': str(e)}), 400

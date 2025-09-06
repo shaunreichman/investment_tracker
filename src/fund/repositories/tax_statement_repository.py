@@ -12,6 +12,7 @@ Key responsibilities:
 """
 
 from typing import List, Optional, Dict, Any
+from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, asc, desc
 
@@ -378,6 +379,37 @@ class TaxStatementRepository:
         self._cache[cache_key] = count
         
         return count
+    
+    def get_by_fund_after_date(self, fund_id: int, after_date: date, session: Session) -> List[TaxStatement]:
+        """
+        Get tax statements for a fund after a specific date.
+        
+        Args:
+            fund_id: ID of the fund
+            after_date: Date to filter after
+            session: Database session
+            
+        Returns:
+            List of tax statements after the specified date
+        """
+        cache_key = f"tax_statements:fund:{fund_id}:after:{after_date}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        statements = session.query(TaxStatement).filter(
+            and_(
+                TaxStatement.fund_id == fund_id,
+                TaxStatement.tax_payment_date > after_date
+            )
+        ).order_by(TaxStatement.tax_payment_date.asc()).all()
+        
+        # Cache the result
+        self._cache[cache_key] = statements
+        
+        return statements
     
     def _clear_statement_cache(self, statement_id: int) -> None:
         """Clear cache for a specific tax statement."""

@@ -533,7 +533,8 @@ class TestFundEventRepository:
         expected_methods = {
             'get_by_id', 'get_by_fund', 'get_by_date_range', 'get_by_type',
             'create', 'update', 'delete', 'bulk_create', 'get_events_for_recalculation',
-            'get_event_count_by_fund', 'clear_all_cache'
+            'get_event_count_by_fund', 'clear_all_cache', 'get_by_fund_and_types',
+            'get_by_fund_after_date'
         }
         
         assert set(public_methods) == expected_methods, f"Expected methods: {expected_methods}, got: {set(public_methods)}"
@@ -622,11 +623,76 @@ class TestFundEventRepository:
         # Verify they contain different data (same in this case due to mock)
         assert len(self.repository._cache) == 3
 
-    # ============================================================================
-    # NOTE: Aggregation and specialized query methods have been moved to:
-    # - FundEventQueryRepository: get_total_by_type, get_total_tax_withheld, 
-    #   get_distributions_by_type, get_taxable_distributions, 
-    #   get_events_by_type_and_date_range, etc.
-    # - TaxEventRepository: get_daily_interest_charges_by_financial_year
-    # Tests for these methods should be in their respective repository test files.
-    # ============================================================================
+    def test_get_by_fund_and_types(self):
+        """Test get_by_fund_and_types method."""
+        # Arrange
+        fund_id = 100
+        event_types = [EventType.CAPITAL_CALL, EventType.DISTRIBUTION]
+        skip = 0
+        limit = 10
+        
+        mock_events = [Mock(spec=FundEvent), Mock(spec=FundEvent)]
+        self.mock_session.query.return_value.filter.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = mock_events
+        
+        # Act
+        result = self.repository.get_by_fund_and_types(fund_id, event_types, self.mock_session, skip, limit)
+        
+        # Assert
+        assert result == mock_events
+        
+        # Verify caching
+        cache_key = f"events:fund:{fund_id}:types:{sorted([t.value for t in event_types])}:skip:{skip}:limit:{limit}"
+        assert cache_key in self.repository._cache
+        assert self.repository._cache[cache_key] == mock_events
+    
+    def test_get_by_fund_after_date(self):
+        """Test get_by_fund_after_date method."""
+        # Arrange
+        fund_id = 100
+        after_date = date(2024, 1, 15)
+        event_types = [EventType.CAPITAL_CALL]
+        
+        mock_events = [Mock(spec=FundEvent), Mock(spec=FundEvent)]
+        
+        # Set up the mock chain properly
+        mock_query = self.mock_session.query.return_value
+        mock_filtered = mock_query.filter.return_value
+        mock_filtered2 = mock_filtered.filter.return_value
+        mock_ordered = mock_filtered2.order_by.return_value
+        mock_ordered.all.return_value = mock_events
+        
+        # Act
+        result = self.repository.get_by_fund_after_date(fund_id, after_date, self.mock_session, event_types)
+        
+        # Assert
+        assert result == mock_events
+        
+        # Verify caching
+        cache_key = f"events:fund:{fund_id}:after:{after_date}:types:{sorted([t.value for t in event_types])}"
+        assert cache_key in self.repository._cache
+        assert self.repository._cache[cache_key] == mock_events
+    
+    def test_get_by_fund_after_date_no_event_types(self):
+        """Test get_by_fund_after_date method without event type filter."""
+        # Arrange
+        fund_id = 100
+        after_date = date(2024, 1, 15)
+        
+        mock_events = [Mock(spec=FundEvent), Mock(spec=FundEvent)]
+        
+        # Set up the mock chain properly
+        mock_query = self.mock_session.query.return_value
+        mock_filtered = mock_query.filter.return_value
+        mock_ordered = mock_filtered.order_by.return_value
+        mock_ordered.all.return_value = mock_events
+        
+        # Act
+        result = self.repository.get_by_fund_after_date(fund_id, after_date, self.mock_session)
+        
+        # Assert
+        assert result == mock_events
+        
+        # Verify caching
+        cache_key = f"events:fund:{fund_id}:after:{after_date}:types:all"
+        assert cache_key in self.repository._cache
+        assert self.repository._cache[cache_key] == mock_events

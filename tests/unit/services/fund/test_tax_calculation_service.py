@@ -268,6 +268,9 @@ class TestTaxCalculationService:
         
         mock_fund.fund_events = [mock_dist1, mock_dist2]
         
+        # Mock the repository to return the distribution events
+        service.fund_event_query_repository.get_events_by_type.return_value = [mock_dist1, mock_dist2]
+        
         result = service.get_distributions_with_tax_details(mock_fund)
         
         assert len(result) == 2
