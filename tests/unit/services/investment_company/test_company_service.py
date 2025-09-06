@@ -197,73 +197,71 @@ class TestCompanyServiceCreation(TestCompanyService):
         mock_company = CompanyTestDataBuilder.create_company()
         
         self.service.validation_service.validate_company_creation.return_value = {}
+        self.service.company_repository.create.return_value = mock_company
         
-        with patch('src.investment_company.services.company_service.InvestmentCompany') as mock_company_class:
-            mock_company_class.return_value = mock_company
-            
-            # Act
-            result = self.service.create_company(
-                name=company_data['name'],
-                description=company_data['description'],
-                website=company_data['website'],
-                company_type=company_data['company_type'],
-                business_address=company_data['business_address'],
-                session=self.mock_session
-            )
-            
-            # Assert
-            assert result == mock_company
-            self.service.validation_service.validate_company_creation.assert_called_once_with(
-                name=company_data['name'],
-                description=company_data['description'],
-                website=company_data['website'],
-                company_type=company_data['company_type'],
-                business_address=company_data['business_address']
-            )
-            self.mock_session.add.assert_called_once_with(mock_company)
-            self.mock_session.flush.assert_called_once()
+        # Act
+        result = self.service.create_company(
+            name=company_data['name'],
+            description=company_data['description'],
+            website=company_data['website'],
+            company_type=company_data['company_type'],
+            business_address=company_data['business_address'],
+            session=self.mock_session
+        )
+        
+        # Assert
+        assert result == mock_company
+        self.service.validation_service.validate_company_creation.assert_called_once_with(
+            name=company_data['name'],
+            description=company_data['description'],
+            website=company_data['website'],
+            company_type=company_data['company_type'],
+            business_address=company_data['business_address']
+        )
+        self.service.company_repository.create.assert_called_once()
     
     def test_create_company_with_default_status(self):
         """Test company creation sets default status when not provided."""
         # Arrange
-        self.service.validation_service.validate_company_creation.return_value = {}
+        mock_company = CompanyTestDataBuilder.create_company()
         
-        with patch('src.investment_company.services.company_service.InvestmentCompany') as mock_company_class:
-            mock_company = CompanyTestDataBuilder.create_company()
-            mock_company_class.return_value = mock_company
-            
-            # Act
-            result = self.service.create_company(
-                name='Test Company',
-                session=self.mock_session
-            )
-            
-            # Assert
-            assert result == mock_company
-            mock_company_class.assert_called_once()
-            call_args = mock_company_class.call_args
-            assert call_args[1]['status'] == CompanyStatus.ACTIVE.value
+        self.service.validation_service.validate_company_creation.return_value = {}
+        self.service.company_repository.create.return_value = mock_company
+        
+        # Act
+        result = self.service.create_company(
+            name='Test Company',
+            session=self.mock_session
+        )
+        
+        # Assert
+        assert result == mock_company
+        self.service.company_repository.create.assert_called_once()
+        # Verify the repository was called with the correct data including default status
+        call_args = self.service.company_repository.create.call_args
+        assert call_args[0][0]['status'] == CompanyStatus.ACTIVE.value
     
     def test_create_company_with_custom_status(self):
         """Test company creation with custom status."""
         # Arrange
-        self.service.validation_service.validate_company_creation.return_value = {}
+        mock_company = CompanyTestDataBuilder.create_company()
         
-        with patch('src.investment_company.services.company_service.InvestmentCompany') as mock_company_class:
-            mock_company = CompanyTestDataBuilder.create_company()
-            mock_company_class.return_value = mock_company
-            
-            # Act
-            result = self.service.create_company(
-                name='Test Company',
-                status='INACTIVE',
-                session=self.mock_session
-            )
-            
-            # Assert
-            assert result == mock_company
-            call_args = mock_company_class.call_args
-            assert call_args[1]['status'] == 'INACTIVE'
+        self.service.validation_service.validate_company_creation.return_value = {}
+        self.service.company_repository.create.return_value = mock_company
+        
+        # Act
+        result = self.service.create_company(
+            name='Test Company',
+            status='INACTIVE',
+            session=self.mock_session
+        )
+        
+        # Assert
+        assert result == mock_company
+        self.service.company_repository.create.assert_called_once()
+        # Verify the repository was called with the correct data including custom status
+        call_args = self.service.company_repository.create.call_args
+        assert call_args[0][0]['status'] == 'INACTIVE'
     
     def test_create_company_validation_failure(self):
         """Test company creation fails when validation fails."""
@@ -294,6 +292,7 @@ class TestCompanyServiceUpdate(TestCompanyService):
         mock_company = CompanyTestDataBuilder.create_company()
         
         self.service.company_repository.get_by_id.return_value = mock_company
+        self.service.company_repository.update.return_value = mock_company
         self.service.validation_service.validate_company_update.return_value = {}
         
         # Act
@@ -304,10 +303,9 @@ class TestCompanyServiceUpdate(TestCompanyService):
         )
         
         # Assert
-        assert result is not None
-        assert result['name'] == 'Updated Company'
-        assert result['description'] == 'Updated Description'
+        assert result == mock_company
         self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
+        self.service.company_repository.update.assert_called_once_with(1, company_data, self.mock_session)
         self.service.validation_service.validate_company_update.assert_called_once()
     
     def test_update_company_not_found(self):
@@ -343,24 +341,26 @@ class TestCompanyServiceUpdate(TestCompanyService):
                 session=self.mock_session
             )
     
-    def test_update_company_updates_timestamp(self):
-        """Test that company update sets the updated_at timestamp."""
+    def test_update_company_delegates_to_repository(self):
+        """Test that company update delegates to repository."""
         # Arrange
         company_data = {'name': 'Updated Company'}
         mock_company = CompanyTestDataBuilder.create_company()
         
         self.service.company_repository.get_by_id.return_value = mock_company
+        self.service.company_repository.update.return_value = mock_company
         self.service.validation_service.validate_company_update.return_value = {}
         
         # Act
-        self.service.update_company(
+        result = self.service.update_company(
             company_id=1,
             company_data=company_data,
             session=self.mock_session
         )
         
         # Assert
-        assert mock_company.updated_at is not None
+        assert result == mock_company
+        self.service.company_repository.update.assert_called_once_with(1, company_data, self.mock_session)
 
 
 class TestCompanyServiceDeletion(TestCompanyService):
@@ -377,6 +377,7 @@ class TestCompanyServiceDeletion(TestCompanyService):
         mock_company = CompanyTestDataBuilder.create_company()
         
         self.service.company_repository.get_by_id.return_value = mock_company
+        self.service.company_repository.delete.return_value = True
         self.service.validation_service.validate_company_deletion.return_value = {}
         
         # Act
@@ -388,9 +389,8 @@ class TestCompanyServiceDeletion(TestCompanyService):
         # Assert
         assert result is True
         self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
+        self.service.company_repository.delete.assert_called_once_with(1, self.mock_session)
         self.service.validation_service.validate_company_deletion.assert_called_once_with(mock_company, self.mock_session)
-        self.mock_session.delete.assert_called_once_with(mock_company)
-        self.mock_session.flush.assert_called_once()
     
     def test_delete_company_not_found(self):
         """Test company deletion when company doesn't exist."""
@@ -573,9 +573,7 @@ class TestCompanyServiceContactManagement(TestCompanyService):
         )
         
         # Assert
-        assert result is not None
-        assert result['name'] == 'John Doe'
-        assert result['title'] == 'Manager'
+        assert result == mock_contact
         self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
         self.service.contact_service.add_contact.assert_called_once_with(
             company=mock_company,
@@ -630,9 +628,7 @@ class TestCompanyServiceFundManagement(TestCompanyService):
         )
         
         # Assert
-        assert result is not None
-        assert result['name'] == 'Test Fund'
-        assert result['fund_type'] == 'Private Equity'
+        assert result == mock_fund
         self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
         self.service.portfolio_service.create_fund.assert_called_once_with(
             company=mock_company,

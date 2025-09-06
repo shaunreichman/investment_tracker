@@ -149,6 +149,9 @@ class BankingController:
                 session=session
             )
             
+            # Commit transaction
+            session.commit()
+            
             # Create response DTO
             bank_response = BankResponse(
                 id=new_bank.id,
@@ -180,6 +183,9 @@ class BankingController:
             # Update bank using service
             bank = self.bank_service.update_bank(bank_id, data, session)
             
+            # Commit transaction
+            session.commit()
+            
             # Create response DTO
             bank_response = BankResponse(
                 id=bank.id,
@@ -210,6 +216,9 @@ class BankingController:
         try:
             # Delete bank using service
             self.bank_service.delete_bank(bank_id, session)
+            
+            # Commit transaction
+            session.commit()
             
             response = create_success_response(
                 message="Bank deleted successfully"
@@ -304,6 +313,9 @@ class BankingController:
                 session=session
             )
             
+            # Commit transaction
+            session.commit()
+            
             # Get bank information for response
             bank = self.bank_service.get_bank_by_id(data['bank_id'], session)
             
@@ -350,6 +362,9 @@ class BankingController:
             # Update account using service
             account = self.bank_account_service.update_bank_account(account_id, data, session)
             
+            # Commit transaction
+            session.commit()
+            
             # Create response DTOs
             bank_response = BankResponse(
                 id=account.bank.id,
@@ -392,6 +407,9 @@ class BankingController:
         try:
             # Delete account using service
             self.bank_account_service.delete_bank_account(account_id, session)
+            
+            # Commit transaction
+            session.commit()
             
             response = create_success_response(
                 message="Bank account deleted successfully"

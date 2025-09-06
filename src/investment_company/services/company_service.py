@@ -20,7 +20,9 @@ from src.investment_company.services.company_portfolio_service import CompanyPor
 from src.investment_company.services.company_summary_service import CompanySummaryService
 from src.investment_company.services.contact_management_service import ContactManagementService
 from src.investment_company.services.company_validation_service import CompanyValidationService
+from src.investment_company.services.company_calculation_service import CompanyCalculationService
 from src.investment_company.enums import CompanyType, CompanyStatus
+from src.fund.models import Fund
 
 
 class CompanyService:
@@ -34,6 +36,7 @@ class CompanyService:
     Attributes:
         company_repository (CompanyRepository): Repository for company data access
         contact_repository (ContactRepository): Repository for contact data access
+        calculation_service (CompanyCalculationService): Service for calculations
         portfolio_service (CompanyPortfolioService): Service for portfolio operations
         summary_service (CompanySummaryService): Service for summary calculations
         contact_service (ContactManagementService): Service for contact management
@@ -44,7 +47,8 @@ class CompanyService:
         """Initialize the company service with all required components."""
         self.company_repository = CompanyRepository()
         self.contact_repository = ContactRepository()
-        self.portfolio_service = CompanyPortfolioService()
+        self.calculation_service = CompanyCalculationService()
+        self.portfolio_service = CompanyPortfolioService(calculation_service=self.calculation_service)
         self.summary_service = CompanySummaryService()
         self.contact_service = ContactManagementService()
         self.validation_service = CompanyValidationService()
@@ -87,24 +91,23 @@ class CompanyService:
         if status is None:
             status = CompanyStatus.ACTIVE.value
         
-        # Create the company directly
-        company = InvestmentCompany(
-            name=name.strip(),
-            description=description,
-            website=website,
-            company_type=company_type,
-            status=status,
-            business_address=business_address
-        )
+        # Prepare company data for creation
+        company_data = {
+            'name': name.strip(),
+            'description': description,
+            'website': website,
+            'company_type': company_type,
+            'status': status,
+            'business_address': business_address
+        }
         
-        # Add company to session
-        session.add(company)
-        session.flush()  # Get the ID without committing
+        # Delegate creation to repository (follows services layer rules)
+        company = self.company_repository.create(company_data, session)
         
         return company
     
     def update_company(self, company_id: int, company_data: Dict[str, Any], 
-                      session: Session) -> Optional[Dict[str, Any]]:
+                      session: Session) -> Optional[InvestmentCompany]:
         """
         Update an existing investment company.
         
@@ -114,12 +117,12 @@ class CompanyService:
             session: Database session
             
         Returns:
-            Dictionary containing the updated company information, None if not found
+            Updated InvestmentCompany object if found, None otherwise
             
         Raises:
             ValueError: If validation fails
         """
-        # Get existing company
+        # Get existing company for validation
         company = self.company_repository.get_by_id(company_id, session)
         if not company:
             return None
@@ -138,35 +141,10 @@ class CompanyService:
         if validation_errors:
             raise ValueError(f"Validation failed: {validation_errors}")
         
-        # Update company fields
-        if 'name' in company_data:
-            company.name = company_data['name']
-        if 'description' in company_data:
-            company.description = company_data['description']
-        if 'website' in company_data:
-            company.website = company_data['website']
-        if 'company_type' in company_data:
-            company.company_type = company_data['company_type']
-        if 'status' in company_data:
-            company.status = company_data['status']
-        if 'business_address' in company_data:
-            company.business_address = company_data['business_address']
+        # Delegate update to repository (follows services layer rules)
+        updated_company = self.company_repository.update(company_id, company_data, session)
         
-        # Update timestamp
-        from datetime import datetime, timezone
-        company.updated_at = datetime.now(timezone.utc)
-        
-        # Return updated company information
-        return {
-            'id': company.id,
-            'name': company.name,
-            'description': company.description,
-            'website': company.website,
-            'company_type': company.company_type.value if company.company_type else None,
-            'status': company.status.value if company.status else None,
-            'business_address': company.business_address,
-            'updated_at': company.updated_at.isoformat() if company.updated_at else None
-        }
+        return updated_company
     
     def delete_company(self, company_id: int, session: Session) -> bool:
         """
@@ -182,9 +160,7 @@ class CompanyService:
         Raises:
             ValueError: If company cannot be deleted
         """
-
-        
-        # Get existing company
+        # Get existing company for validation
         company = self.company_repository.get_by_id(company_id, session)
         if not company:
             return False
@@ -194,11 +170,8 @@ class CompanyService:
         if validation_errors:
             raise ValueError(f"Deletion validation failed: {validation_errors}")
         
-        # Delete the company
-        session.delete(company)
-        session.flush()
-        
-        return True
+        # Delegate deletion to repository (follows services layer rules)
+        return self.company_repository.delete(company_id, session)
     
     def get_company_summary(self, company_id: int, session: Session) -> Optional[Dict[str, Any]]:
         """
@@ -262,7 +235,7 @@ class CompanyService:
         return self.company_repository.get_by_id(company_id, session)
     
     def add_contact_to_company(self, company_id: int, contact_data: Dict[str, Any], 
-                              session: Session) -> Optional[Dict[str, Any]]:
+                              session: Session) -> Optional[Contact]:
         """
         Add a contact to an investment company.
         
@@ -272,7 +245,7 @@ class CompanyService:
             session: Database session
             
         Returns:
-            Created contact information if successful, None if company not found
+            Created Contact object if successful, None if company not found
             
         Raises:
             ValueError: If contact data is invalid
@@ -293,19 +266,10 @@ class CompanyService:
             session=session
         )
         
-        # Return contact information
-        return {
-            'id': contact.id,
-            'name': contact.name,
-            'title': contact.title,
-            'direct_number': contact.direct_number,
-            'direct_email': contact.direct_email,
-            'notes': contact.notes,
-            'created_at': contact.created_at.isoformat() if contact.created_at else None
-        }
+        return contact
     
     def create_fund_for_company(self, company_id: int, fund_data: Dict[str, Any], 
-                               session: Session) -> Optional[Dict[str, Any]]:
+                               session: Session) -> Optional[Fund]:
         """
         Create a fund for an investment company.
         
@@ -315,7 +279,7 @@ class CompanyService:
             session: Database session
             
         Returns:
-            Created fund information if successful, None if company not found
+            Created Fund object if successful, None if company not found
             
         Raises:
             ValueError: If fund data is invalid
@@ -340,13 +304,4 @@ class CompanyService:
             session=session
         )
         
-        # Return fund information
-        return {
-            'id': fund.id,
-            'name': fund.name,
-            'fund_type': fund.fund_type,
-            'tracking_type': fund.tracking_type.value if hasattr(fund.tracking_type, 'value') else fund.tracking_type,
-            'entity_id': fund.entity_id,
-            'investment_company_id': fund.investment_company_id,
-            'created_at': fund.created_at.isoformat() if fund.created_at else None
-        }
+        return fund

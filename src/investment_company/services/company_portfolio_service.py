@@ -19,6 +19,10 @@ from src.investment_company.repositories import CompanyRepository, ContactReposi
 from src.investment_company.models import InvestmentCompany, Contact
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.investment_company.services.company_calculation_service import CompanyCalculationService
 
 
 class CompanyPortfolioService:
@@ -32,12 +36,14 @@ class CompanyPortfolioService:
     Attributes:
         company_repository (CompanyRepository): Repository for company data access
         contact_repository (ContactRepository): Repository for contact data access
+        calculation_service (CompanyCalculationService): Service for calculations
     """
     
-    def __init__(self):
+    def __init__(self, calculation_service: 'CompanyCalculationService' = None):
         """Initialize the company portfolio service."""
         self.company_repository = CompanyRepository()
         self.contact_repository = ContactRepository()
+        self.calculation_service = calculation_service or CompanyCalculationService()
     
     def get_funds_with_summary(self, company: InvestmentCompany, session: Session) -> List[Dict[str, Any]]:
         """
@@ -66,9 +72,7 @@ class CompanyPortfolioService:
         Returns:
             int: Total number of funds
         """
-        from src.investment_company.services.company_calculation_service import CompanyCalculationService
-        calculation_service = CompanyCalculationService()
-        return calculation_service.calculate_total_funds_under_management(company, session)
+        return self.calculation_service.calculate_total_funds_under_management(company, session)
     
     def get_total_commitments(self, company: InvestmentCompany, session: Session) -> float:
         """
@@ -81,9 +85,7 @@ class CompanyPortfolioService:
         Returns:
             float: Total commitments across all funds
         """
-        from src.investment_company.services.company_calculation_service import CompanyCalculationService
-        calculation_service = CompanyCalculationService()
-        return calculation_service.calculate_total_commitments(company, session)
+        return self.calculation_service.calculate_total_commitments(company, session)
     
     def create_fund(self, company: InvestmentCompany, entity, name: str, fund_type: str, 
                    tracking_type, currency: str = "AUD", description: str = None, 

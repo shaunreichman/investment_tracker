@@ -54,7 +54,9 @@ class BaseCompanyEventHandler(ABC):
         self.logger = logging.getLogger(__name__)
         
         # Initialize services for business logic
-        self.portfolio_service = CompanyPortfolioService()
+        from src.investment_company.services.company_calculation_service import CompanyCalculationService
+        calculation_service = CompanyCalculationService()
+        self.portfolio_service = CompanyPortfolioService(calculation_service=calculation_service)
         self.summary_service = CompanySummaryService()
         self.contact_service = ContactManagementService()
         self.validation_service = CompanyValidationService()

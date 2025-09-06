@@ -26,13 +26,11 @@ Controllers handle HTTP requests, validate input, coordinate services, and forma
 
 ```python
 # ✅ Good: HTTP handling and service coordination
-def create_fund(self) -> tuple:
-    fund_data = getattr(request, 'validated_data', {})
-    session = self._get_session()
-    
+def create_fund(self, session: Session, fund_data: Dict[str, Any]) -> tuple:
+    # Coordinate services
     fund = self.fund_service.create_fund(fund_data, session)
+    # Manage transaction
     session.commit()
-    
     return jsonify(fund), 201
 
 # ❌ Bad: Business logic in controller
@@ -41,6 +39,12 @@ def create_fund(self):
     if fund_data['amount'] > 1000000:  # Business rule
         return jsonify({'error': 'Amount too large'}), 400
     # ... business logic
+
+# ❌ Bad: Service managing transactions
+def create_fund(self, session: Session, fund_data: Dict):
+    fund = self.fund_service.create_fund(fund_data, session)
+    # Services should not commit - let controller handle it
+    return jsonify(fund), 201
 ```
 
 ## Key Principles

@@ -113,7 +113,9 @@ class TestFundCoordinationService:
     
     def setup_method(self):
         """Set up test fixtures before each test method."""
-        self.coordination_service = FundCoordinationService()
+        # Mock the fund service
+        self.mock_fund_service = Mock()
+        self.coordination_service = FundCoordinationService(fund_service=self.mock_fund_service)
         self.mock_session = CoordinationTestDataBuilder.create_session()
     
     def teardown_method(self):
@@ -124,23 +126,20 @@ class TestFundCoordinationService:
     # FUND CREATION COORDINATION TESTS
     # ============================================================================
     
-    @patch('src.fund.services.fund_service.FundService')
     @patch('src.fund.repositories.fund_repository.FundRepository')
     @patch('src.investment_company.services.company_portfolio_service.CompanyPortfolioService')
     @patch('src.investment_company.events.domain.portfolio_updated_event.PortfolioUpdatedEvent')
     @patch('src.investment_company.events.registry.CompanyEventHandlerRegistry')
     def test_coordinate_fund_creation_success(self, mock_registry, mock_event, 
-                                            mock_portfolio_service, mock_fund_repo, mock_fund_service):
+                                            mock_portfolio_service, mock_fund_repo):
         """Test successful fund creation coordination."""
         # Arrange
         company = CoordinationTestDataBuilder.create_company()
         entity = CoordinationTestDataBuilder.create_entity()
         fund_data = CoordinationTestDataBuilder.create_fund_data()
         
-        # Mock fund service response
-        mock_fund_service_instance = Mock()
-        mock_fund_service_instance.create_fund.return_value = {'id': 1}
-        mock_fund_service.return_value = mock_fund_service_instance
+        # Mock fund service response using injected mock
+        self.mock_fund_service.create_fund.return_value = {'id': 1}
         
         # Mock fund repository
         mock_fund_repo_instance = Mock()
@@ -165,7 +164,7 @@ class TestFundCoordinationService:
         
         # Assert
         assert result == mock_fund
-        mock_fund_service_instance.create_fund.assert_called_once_with(fund_data, self.mock_session)
+        self.mock_fund_service.create_fund.assert_called_once_with(fund_data, self.mock_session)
         mock_fund_repo_instance.get_by_id.assert_called_once_with(1, self.mock_session)
         mock_portfolio_service_instance._trigger_portfolio_summary_recalculation.assert_called_once_with(
             company, self.mock_session

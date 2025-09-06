@@ -1,0 +1,59 @@
+---
+description: Event Orchestration: Services must delegate event processing to orchestrators
+globs: **/services/*.py, **/events/handlers/*.py, **/orchestrator.py
+alwaysApply: false
+---
+
+# Event Orchestration Rules
+
+## Role
+Services delegate event processing to orchestrators. Orchestrators route events to handlers.
+
+## Services Should Do
+- **Delegate events**: Use `event_orchestrator.process_[domain]_event()`
+- **Inject orchestrator**: Accept orchestrator in constructor
+- **Focus on business logic**: Keep event handling separate
+
+## Services Shouldn't Do
+- **Call handlers directly**: Never `handler.handle()` from services
+- **Create event data**: Keep event data simple and focused
+- **Handle event errors**: Let orchestrator manage event failures
+
+## Examples
+
+```python
+# ✅ Good: Service delegates to orchestrator
+class CompanyService:
+    def __init__(self, event_orchestrator: CompanyUpdateOrchestrator = None):
+        self.event_orchestrator = event_orchestrator or CompanyUpdateOrchestrator()
+    
+    def create_company(self, data, session):
+        # Business logic
+        company = self.company_repository.create(data, session)
+        
+        # Delegate event processing
+        event_data = {'event_type': 'company_created', 'company_id': company.id}
+        self.event_orchestrator.process_company_event(event_data, session, company)
+        
+        return company
+
+# ❌ Bad: Service calls handler directly
+class CompanyService:
+    def create_company(self, data, session):
+        company = self.company_repository.create(data, session)
+        handler = CompanyCreatedHandler()  # BAD: Direct handler call
+        handler.handle(event_data, session)
+        return company
+```
+
+## Orchestrator Pattern
+- **One orchestrator per domain**: `[Domain]UpdateOrchestrator`
+- **Consistent naming**: `process_[domain]_event()`
+- **Error handling**: Orchestrator manages event failures
+- **Handler routing**: Route events to appropriate handlers
+
+## Key Principles
+- **Services focus on business logic**
+- **Orchestrators handle event routing**
+- **Handlers process side effects**
+- **Consistent across all domains**

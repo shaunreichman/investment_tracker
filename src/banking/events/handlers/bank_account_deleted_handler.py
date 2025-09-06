@@ -83,7 +83,7 @@ class BankAccountDeletedHandler(BaseBankingEventHandler):
                         'account_name': self.account.account_name,
                         'account_number': self.account.account_number,
                         'currency': self.account.currency,
-                        'is_active': self.account.is_active
+                        'status': self.account.status
                     }
                 }
             )
@@ -100,7 +100,7 @@ class BankAccountDeletedHandler(BaseBankingEventHandler):
                     'account_name': self.account.account_name,
                     'account_number': self.account.account_number,
                     'currency': self.account.currency,
-                    'is_active': self.account.is_active
+                    'status': self.account.status
                 },
                 'status': 'deleted',
                 'domain_event_published': True

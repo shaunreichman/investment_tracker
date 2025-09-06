@@ -26,9 +26,9 @@ class TestFundIrRService:
         return session
     
     @pytest.fixture
-    def service(self, mock_session):
+    def service(self):
         """Create a FundIrRService instance."""
-        return FundIrRService(mock_session)
+        return FundIrRService()
     
     @pytest.fixture
     def mock_fund(self):
@@ -121,12 +121,12 @@ class TestFundIrRService:
     # CORE IRR CALCULATION TESTS
     # ============================================================================
     
-    def test_calculate_completed_irr_realized_fund(self, service, mock_realized_fund, mock_events):
+    def test_calculate_completed_irr_realized_fund(self, service, mock_realized_fund, mock_events, mock_session):
         """Test completed IRR calculation for realized funds."""
         with patch.object(service, '_get_fund_events', return_value=mock_events), \
              patch.object(service, '_calculate_irr_base', return_value=0.15) as mock_calc:
             
-            result = service.calculate_completed_irr(mock_realized_fund)
+            result = service.calculate_completed_irr(mock_realized_fund, mock_session)
             
             assert result == 0.15
             mock_calc.assert_called_once_with(
@@ -137,12 +137,12 @@ class TestFundIrRService:
                 include_eofy_debt_cost=False
             )
     
-    def test_calculate_completed_irr_completed_fund(self, service, mock_completed_fund, mock_events):
+    def test_calculate_completed_irr_completed_fund(self, service, mock_completed_fund, mock_events, mock_session):
         """Test completed IRR calculation for completed funds."""
         with patch.object(service, '_get_fund_events', return_value=mock_events), \
              patch.object(service, '_calculate_irr_base', return_value=0.20) as mock_calc:
             
-            result = service.calculate_completed_irr(mock_completed_fund)
+            result = service.calculate_completed_irr(mock_completed_fund, mock_session)
             
             assert result == 0.20
             mock_calc.assert_called_once_with(
@@ -153,18 +153,18 @@ class TestFundIrRService:
                 include_eofy_debt_cost=False
             )
     
-    def test_calculate_completed_irr_active_fund(self, service, mock_fund):
+    def test_calculate_completed_irr_active_fund(self, service, mock_fund, mock_session):
         """Test completed IRR calculation returns None for active funds."""
-        result = service.calculate_completed_irr(mock_fund)
+        result = service.calculate_completed_irr(mock_fund, mock_session)
         
         assert result is None
     
-    def test_calculate_completed_after_tax_irr_completed_fund(self, service, mock_completed_fund, mock_events_with_tax):
+    def test_calculate_completed_after_tax_irr_completed_fund(self, service, mock_completed_fund, mock_events_with_tax, mock_session):
         """Test completed after-tax IRR calculation for completed funds."""
         with patch.object(service, '_get_fund_events', return_value=mock_events_with_tax), \
              patch.object(service, '_calculate_irr_base', return_value=0.18) as mock_calc:
             
-            result = service.calculate_completed_after_tax_irr(mock_completed_fund)
+            result = service.calculate_completed_after_tax_irr(mock_completed_fund, mock_session)
             
             assert result == 0.18
             mock_calc.assert_called_once_with(
@@ -175,22 +175,22 @@ class TestFundIrRService:
                 include_eofy_debt_cost=False
             )
     
-    def test_calculate_completed_after_tax_irr_realized_fund(self, service, mock_realized_fund, mock_events):
+    def test_calculate_completed_after_tax_irr_realized_fund(self, service, mock_realized_fund, mock_events, mock_session):
         """Test completed after-tax IRR calculation returns None for realized funds."""
-        result = service.calculate_completed_after_tax_irr(mock_realized_fund)
+        result = service.calculate_completed_after_tax_irr(mock_realized_fund, mock_session)
         
         assert result is None
     
-    def test_calculate_completed_real_irr_completed_fund(self, service, mock_completed_fund, mock_events_with_tax):
+    def test_calculate_completed_real_irr_completed_fund(self, service, mock_completed_fund, mock_events_with_tax, mock_session):
         """Test completed real IRR calculation for completed funds."""
         with patch.object(service, '_get_fund_events', return_value=mock_events_with_tax), \
              patch.object(service, '_create_daily_risk_free_interest_charges') as mock_charges, \
              patch.object(service, '_calculate_irr_base', return_value=0.16) as mock_calc:
             
-            result = service.calculate_completed_real_irr(mock_completed_fund)
+            result = service.calculate_completed_real_irr(mock_completed_fund, mock_session)
             
             assert result == 0.16
-            mock_charges.assert_called_once_with(mock_completed_fund, None)
+            mock_charges.assert_called_once_with(mock_completed_fund, mock_session, None)
             mock_calc.assert_called_once_with(
                 mock_events_with_tax,
                 mock_completed_fund.start_date,
@@ -199,9 +199,9 @@ class TestFundIrRService:
                 include_eofy_debt_cost=True
             )
     
-    def test_calculate_completed_real_irr_realized_fund(self, service, mock_realized_fund, mock_events):
+    def test_calculate_completed_real_irr_realized_fund(self, service, mock_realized_fund, mock_events, mock_session):
         """Test completed real IRR calculation returns None for realized funds."""
-        result = service.calculate_completed_real_irr(mock_realized_fund)
+        result = service.calculate_completed_real_irr(mock_realized_fund, mock_session)
         
         assert result is None
     
@@ -210,17 +210,17 @@ class TestFundIrRService:
     # ============================================================================
     
     
-    def test_should_calculate_irr_realized_fund(self, service, mock_realized_fund):
+    def test_should_calculate_irr_realized_fund(self, service, mock_realized_fund, mock_session):
         """Test should_calculate_irr returns True for realized funds."""
         result = service.should_calculate_irr(mock_realized_fund)
         assert result is True
     
-    def test_should_calculate_irr_completed_fund(self, service, mock_completed_fund):
+    def test_should_calculate_irr_completed_fund(self, service, mock_completed_fund, mock_session):
         """Test should_calculate_irr returns True for completed funds."""
         result = service.should_calculate_irr(mock_completed_fund)
         assert result is True
     
-    def test_should_calculate_irr_active_fund(self, service, mock_fund):
+    def test_should_calculate_irr_active_fund(self, service, mock_fund, mock_session):
         """Test should_calculate_irr returns False for active funds."""
         result = service.should_calculate_irr(mock_fund)
         assert result is False
@@ -229,63 +229,55 @@ class TestFundIrRService:
     # DATABASE OPERATION TESTS
     # ============================================================================
     
-    def test_calculate_and_store_irrs(self, service, mock_completed_fund):
-        """Test calculate_and_store_irrs method."""
+    def test_calculate_all_irrs(self, service, mock_completed_fund, mock_session):
+        """Test calculate_all_irrs method."""
         with patch.object(service, 'calculate_completed_irr', return_value=0.15) as mock_irr, \
              patch.object(service, 'calculate_completed_after_tax_irr', return_value=0.12) as mock_after_tax, \
              patch.object(service, 'calculate_completed_real_irr', return_value=0.10) as mock_real:
             
-            result = service.calculate_and_store_irrs(mock_completed_fund)
+            result = service.calculate_all_irrs(mock_completed_fund, mock_session)
             
             assert result['completed_irr'] == 0.15
             assert result['completed_after_tax_irr'] == 0.12
             assert result['completed_real_irr'] == 0.10
             
-            # Verify fund object was updated
-            assert mock_completed_fund.completed_irr_gross == 0.15
-            assert mock_completed_fund.completed_irr_after_tax == 0.12
-            assert mock_completed_fund.completed_irr_real == 0.10
-            
-            # Verify session was committed
-            service.session.commit.assert_called_once()
-            
-            # Verify individual methods were called
-            mock_irr.assert_called_once_with(mock_completed_fund)
-            mock_after_tax.assert_called_once_with(mock_completed_fund)
-            mock_real.assert_called_once_with(mock_completed_fund, None)
+            # Verify service methods were called
+            mock_irr.assert_called_once_with(mock_completed_fund, mock_session)
+            mock_after_tax.assert_called_once_with(mock_completed_fund, mock_session)
+            mock_real.assert_called_once_with(mock_completed_fund, mock_session, None)
     
     
     # ============================================================================
     # EDGE CASE TESTS
     # ============================================================================
     
-    def test_calculate_completed_irr_no_events(self, service, mock_completed_fund):
+    def test_calculate_completed_irr_no_events(self, service, mock_completed_fund, mock_session):
         """Test completed IRR calculation with no events."""
         with patch.object(service, '_get_fund_events', return_value=[]), \
              patch.object(service, '_calculate_irr_base', return_value=None) as mock_calc:
             
-            result = service.calculate_completed_irr(mock_completed_fund)
+            result = service.calculate_completed_irr(mock_completed_fund, mock_session)
             
             assert result is None
             mock_calc.assert_called_once()
     
-    def test_calculate_completed_irr_insufficient_events(self, service, mock_completed_fund):
+    def test_calculate_completed_irr_insufficient_events(self, service, mock_completed_fund, mock_session):
         """Test completed IRR calculation with insufficient events."""
         with patch.object(service, '_get_fund_events', return_value=[Mock(spec=FundEvent)]), \
              patch.object(service, '_calculate_irr_base', return_value=None) as mock_calc:
             
-            result = service.calculate_completed_irr(mock_completed_fund)
+            result = service.calculate_completed_irr(mock_completed_fund, mock_session)
             
             assert result is None
             mock_calc.assert_called_once()
     
-    def test_calculate_completed_irr_invalid_fund_type(self, service):
+    def test_calculate_completed_irr_invalid_fund_type(self, service, mock_session):
         """Test completed IRR calculation with invalid fund type."""
         invalid_fund = Mock(spec=Fund)
         invalid_fund.status = "INVALID_STATUS"
         invalid_fund.start_date = date(2020, 1, 1)
         
-        result = service.calculate_completed_irr(invalid_fund)
+        result = service.calculate_completed_irr(invalid_fund, mock_session)
         
         assert result is None
     
@@ -293,7 +285,7 @@ class TestFundIrRService:
     # INTEGRATION TESTS WITH REAL IRR CALCULATIONS
     # ============================================================================
     
-    def test_calculate_completed_irr_integration(self, service, mock_completed_fund, mock_events):
+    def test_calculate_completed_irr_integration(self, service, mock_completed_fund, mock_events, mock_session):
         """Test completed IRR calculation with real calculation logic."""
         # This test uses the actual calculation logic without mocking
         # It tests the integration between the status check and the calculation
@@ -301,7 +293,7 @@ class TestFundIrRService:
         with patch.object(service, '_get_fund_events', return_value=mock_events), \
              patch.object(service, '_calculate_irr_base', return_value=0.15) as mock_calc:
             
-            result = service.calculate_completed_irr(mock_completed_fund)
+            result = service.calculate_completed_irr(mock_completed_fund, mock_session)
             
             assert result == 0.15
             # Verify the correct parameters were passed to the base calculation
@@ -313,12 +305,12 @@ class TestFundIrRService:
                 include_eofy_debt_cost=False
             )
     
-    def test_calculate_completed_after_tax_irr_integration(self, service, mock_completed_fund, mock_events_with_tax):
+    def test_calculate_completed_after_tax_irr_integration(self, service, mock_completed_fund, mock_events_with_tax, mock_session):
         """Test completed after-tax IRR calculation with real calculation logic."""
         with patch.object(service, '_get_fund_events', return_value=mock_events_with_tax), \
              patch.object(service, '_calculate_irr_base', return_value=0.12) as mock_calc:
             
-            result = service.calculate_completed_after_tax_irr(mock_completed_fund)
+            result = service.calculate_completed_after_tax_irr(mock_completed_fund, mock_session)
             
             assert result == 0.12
             # Verify the correct parameters were passed to the base calculation
@@ -330,13 +322,13 @@ class TestFundIrRService:
                 include_eofy_debt_cost=False
             )
     
-    def test_calculate_completed_real_irr_integration(self, service, mock_completed_fund, mock_events_with_tax):
+    def test_calculate_completed_real_irr_integration(self, service, mock_completed_fund, mock_events_with_tax, mock_session):
         """Test completed real IRR calculation with real calculation logic."""
         with patch.object(service, '_get_fund_events', return_value=mock_events_with_tax), \
              patch.object(service, '_create_daily_risk_free_interest_charges') as mock_charges, \
              patch.object(service, '_calculate_irr_base', return_value=0.10) as mock_calc:
             
-            result = service.calculate_completed_real_irr(mock_completed_fund)
+            result = service.calculate_completed_real_irr(mock_completed_fund, mock_session)
             
             assert result == 0.10
             # Verify the correct parameters were passed to the base calculation

@@ -11,13 +11,16 @@ Key responsibilities:
 - Portfolio update coordination
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 from datetime import date
 from sqlalchemy.orm import Session
 
 from src.investment_company.models import InvestmentCompany
 from src.fund.models import Fund
 from src.entity.models import Entity
+
+if TYPE_CHECKING:
+    from src.fund.services.fund_service import FundService
 
 
 class FundCoordinationService:
@@ -29,12 +32,12 @@ class FundCoordinationService:
     communication and event publishing.
     
     Attributes:
-        None - Stateless service for coordination
+        fund_service (FundService): Service for fund operations
     """
     
-    def __init__(self):
+    def __init__(self, fund_service: 'FundService' = None):
         """Initialize the fund coordination service."""
-        pass
+        self.fund_service = fund_service
     
     # ============================================================================
     # FUND CREATION COORDINATION
@@ -118,9 +121,11 @@ class FundCoordinationService:
         Returns:
             Fund: The created fund
         """
-        from src.fund.services.fund_service import FundService
-        fund_service = FundService()
-        fund_result = fund_service.create_fund(fund_data, session)
+        if not self.fund_service:
+            from src.fund.services.fund_service import FundService
+            self.fund_service = FundService()
+        
+        fund_result = self.fund_service.create_fund(fund_data, session)
         
         # Get the created fund from the result
         return self._get_fund_by_id(fund_result['id'], session)
@@ -153,7 +158,9 @@ class FundCoordinationService:
         # This method coordinates with CompanyPortfolioService for portfolio updates
         # without duplicating portfolio logic
         from src.investment_company.services.company_portfolio_service import CompanyPortfolioService
-        portfolio_service = CompanyPortfolioService()
+        from src.investment_company.services.company_calculation_service import CompanyCalculationService
+        calculation_service = CompanyCalculationService()
+        portfolio_service = CompanyPortfolioService(calculation_service=calculation_service)
         
         # Trigger portfolio summary recalculation
         portfolio_service._trigger_portfolio_summary_recalculation(company, session)

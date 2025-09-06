@@ -12,15 +12,16 @@ Services orchestrate business logic, coordinate between controllers and reposito
 ## Should Do
 - **Orchestrate workflows**: Coordinate multiple repositories and services
 - **Enforce business rules**: Validate complex business constraints
-- **Handle transactions**: Manage database transaction boundaries
+- **Coordinate transaction logic**: Ensure related operations are grouped together
 - **Delegate calculations**: Use calculator classes for mathematical operations
-- **Process events**: Coordinate event handling through orchestrators
+- **Delegate events**: Use event orchestrators for event processing
 
 ## Shouldn't Do
 - **Direct database queries**: Use repositories for data access
 - **HTTP concerns**: Handle request/response formatting (controllers)
 - **Pure calculations**: Delegate to calculator classes
 - **Data transformation**: Keep focused on business logic
+- **Session management**: Let controllers manage database sessions
 
 ## Examples
 
@@ -35,6 +36,10 @@ def create_fund(self, fund_data: Dict[str, Any], session: Session) -> Dict[str, 
     
     # Delegate calculations
     equity_fields = FundEquityCalculator.recalculate_all_equity_fields(fund, session)
+    
+    # Delegate events
+    event_data = {'event_type': 'fund_created', 'fund_id': fund.id}
+    self.event_orchestrator.process_fund_event(event_data, session, fund)
     
     return self._format_response(fund)
 

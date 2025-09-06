@@ -190,17 +190,17 @@ class TestCompanySummaryService:
         fund1 = SummaryTestDataBuilder.create_fund(
             id=1, 
             status=FundStatus.COMPLETED, 
-            irr_gross=20.0
+            completed_irr_gross=20.0
         )
         fund2 = SummaryTestDataBuilder.create_fund(
             id=2, 
             status=FundStatus.COMPLETED, 
-            irr_gross=10.0
+            completed_irr_gross=10.0
         )
         fund3 = SummaryTestDataBuilder.create_fund(
             id=3, 
             status=FundStatus.COMPLETED, 
-            irr_gross=-5.0
+            completed_irr_gross=-5.0
         )
         company.funds = [fund1, fund2, fund3]
         
@@ -254,12 +254,12 @@ class TestCompanySummaryService:
         fund1 = SummaryTestDataBuilder.create_fund(
             id=1, 
             status=FundStatus.COMPLETED, 
-            irr_gross=15.0
+            completed_irr_gross=15.0
         )
         fund2 = SummaryTestDataBuilder.create_fund(
             id=2, 
             status=FundStatus.COMPLETED, 
-            irr_gross=None
+            completed_irr_gross=None
         )
         company.funds = [fund1, fund2]
         
@@ -375,12 +375,12 @@ class TestCompanySummaryService:
         fund1 = SummaryTestDataBuilder.create_fund(
             id=1, 
             status=FundStatus.COMPLETED, 
-            irr_gross=25.0
+            completed_irr_gross=25.0
         )
         fund2 = SummaryTestDataBuilder.create_fund(
             id=2, 
             status=FundStatus.COMPLETED, 
-            irr_gross=-10.0
+            completed_irr_gross=-10.0
         )
         company.funds = [fund1, fund2]
         
@@ -559,12 +559,12 @@ class TestCompanySummaryService:
         fund1 = SummaryTestDataBuilder.create_fund(
             id=1, 
             status=FundStatus.COMPLETED, 
-            irr_gross=0.0
+            completed_irr_gross=0.0
         )
         fund2 = SummaryTestDataBuilder.create_fund(
             id=2, 
             status=FundStatus.COMPLETED, 
-            irr_gross=0.0
+            completed_irr_gross=0.0
         )
         company.funds = [fund1, fund2]
         

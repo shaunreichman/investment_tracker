@@ -75,92 +75,72 @@ class ContactManagementService:
         if trimmed_direct_number and not self._is_valid_phone_number(trimmed_direct_number):
             raise ValueError("Invalid phone number format")
         
-        # Create the contact
-        contact = Contact(
-            investment_company_id=company.id,
-            name=trimmed_name,
-            title=trimmed_title,
-            direct_number=trimmed_direct_number,
-            direct_email=trimmed_direct_email,
-            notes=trimmed_notes
-        )
+        # Prepare contact data for creation
+        contact_data = {
+            'investment_company_id': company.id,
+            'name': trimmed_name,
+            'title': trimmed_title,
+            'direct_number': trimmed_direct_number,
+            'direct_email': trimmed_direct_email,
+            'notes': trimmed_notes
+        }
         
-        # Add to session
-        session.add(contact)
-        session.flush()  # Get the ID without committing
+        # Delegate creation to repository (follows services layer rules)
+        contact = self.contact_repository.create(contact_data, session)
         
         return contact
     
-    def update_contact(self, contact: Contact, name: str = None, title: str = None,
-                      direct_number: str = None, direct_email: str = None,
-                      notes: str = None, session: Session = None) -> Contact:
+    def update_contact(self, contact_id: int, contact_data: Dict[str, Any], 
+                      session: Session) -> Optional[Contact]:
         """
         Update an existing contact.
         
         Args:
-            contact: Contact object to update
-            name: New contact name
-            title: New job title
-            direct_number: New direct phone number
-            direct_email: New direct email address
-            notes: New notes
+            contact_id: ID of the contact to update
+            contact_data: Dictionary containing updated contact data
             session: Database session
         
         Returns:
-            Contact: The updated contact
+            Updated Contact object if found, None otherwise
             
         Raises:
             ValueError: If validation fails
         """
-        # Trim whitespace from all fields first
-        trimmed_name = name.strip() if name is not None else None
-        trimmed_title = title.strip() if title is not None else None
-        trimmed_direct_number = direct_number.strip() if direct_number is not None else None
-        trimmed_direct_email = direct_email.strip() if direct_email is not None else None
-        trimmed_notes = notes.strip() if notes is not None else None
+        # Get existing contact for validation
+        contact = self.contact_repository.get_by_id(contact_id, session)
+        if not contact:
+            return None
         
-        # Validate email format if provided (after trimming)
-        if trimmed_direct_email and not self._is_valid_email(trimmed_direct_email):
-            raise ValueError("Invalid email format")
+        # Validate contact data
+        validation_errors = self.validate_contact_data(
+            name=contact_data.get('name'),
+            title=contact_data.get('title'),
+            direct_number=contact_data.get('direct_number'),
+            direct_email=contact_data.get('direct_email'),
+            notes=contact_data.get('notes')
+        )
         
-        # Validate phone number format if provided (after trimming)
-        if trimmed_direct_number and not self._is_valid_phone_number(trimmed_direct_number):
-            raise ValueError("Invalid phone number format")
+        if validation_errors:
+            raise ValueError(f"Validation failed: {validation_errors}")
         
-        # Update fields if provided
-        if name is not None:
-            if not trimmed_name:
-                raise ValueError("Contact name cannot be empty")
-            contact.name = trimmed_name
+        # Delegate update to repository (follows services layer rules)
+        updated_contact = self.contact_repository.update(contact_id, contact_data, session)
         
-        if title is not None:
-            contact.title = trimmed_title
-        
-        if direct_number is not None:
-            contact.direct_number = trimmed_direct_number
-        
-        if direct_email is not None:
-            contact.direct_email = trimmed_direct_email
-        
-        if notes is not None:
-            contact.notes = trimmed_notes
-        
-        # Update timestamp
-        from datetime import datetime, timezone
-        contact.updated_at = datetime.now(timezone.utc)
-        
-        return contact
+        return updated_contact
     
-    def delete_contact(self, contact: Contact, session: Session) -> None:
+    def delete_contact(self, contact_id: int, session: Session) -> bool:
         """
         Delete a contact from an investment company.
         
         Args:
-            contact: Contact object to delete
+            contact_id: ID of the contact to delete
             session: Database session
+            
+        Returns:
+            True if deleted successfully, False if not found
         """
-        session.delete(contact)
-        session.flush()
+        # Delegate deletion to repository (follows services layer rules)
+        return self.contact_repository.delete(contact_id, session)
     
     def get_contacts_by_company(self, company: InvestmentCompany, session: Session) -> List[Contact]:
         """

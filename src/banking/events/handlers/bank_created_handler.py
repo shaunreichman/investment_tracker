@@ -48,6 +48,9 @@ class BankCreatedHandler(BaseBankingEventHandler):
         
         # Validate country code format (ISO 3166-1 alpha-2)
         country = event_data.get('country', '')
+        # Handle both string and enum values
+        if hasattr(country, 'value'):
+            country = country.value
         if len(country) != 2 or not country.isalpha():
             raise ValueError("Country must be a 2-letter ISO 3166-1 alpha-2 code")
         

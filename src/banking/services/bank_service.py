@@ -17,6 +17,8 @@ from sqlalchemy.orm import Session
 from src.banking.models import Bank
 from src.banking.services.banking_validation_service import BankingValidationService
 from src.banking.repositories.bank_repository import BankRepository
+from src.banking.events.orchestrator import BankingUpdateOrchestrator
+from src.banking.events.registry import BankingEventHandlerRegistry
 from src.banking.enums import Country
 
 
@@ -31,16 +33,20 @@ class BankService:
     - Bank business rule enforcement
     """
     
-    def __init__(self, validation_service: Optional[BankingValidationService] = None, bank_repository: Optional[BankRepository] = None):
+    def __init__(self, validation_service: Optional[BankingValidationService] = None, bank_repository: Optional[BankRepository] = None, event_orchestrator: Optional[BankingUpdateOrchestrator] = None, event_registry: Optional[BankingEventHandlerRegistry] = None):
         """
         Initialize the BankService.
         
         Args:
             validation_service: Validation service to use. If None, creates a new one.
             bank_repository: Bank repository to use. If None, creates a new one.
+            event_orchestrator: Event orchestrator to use. If None, creates a new one.
+            event_registry: Event handler registry to use. If None, creates a new one.
         """
         self.validation_service = validation_service or BankingValidationService()
         self.bank_repository = bank_repository or BankRepository()
+        self.event_orchestrator = event_orchestrator or BankingUpdateOrchestrator()
+        self.event_registry = event_registry or BankingEventHandlerRegistry()
     
     # ============================================================================
     # BANK CREATION
@@ -90,7 +96,20 @@ class BankService:
         )
         
         # Use repository to create bank
-        return self.bank_repository.create(bank, session)
+        created_bank = self.bank_repository.create(bank, session)
+        
+        # Process through event orchestrator to publish domain events
+        event_data = {
+            'event_type': 'bank_created',
+            'bank_id': created_bank.id,
+            'name': created_bank.name,
+            'country': created_bank.country,
+            'swift_bic': created_bank.swift_bic
+        }
+        
+        self.event_orchestrator.process_banking_event(event_data, session, created_bank)
+        
+        return created_bank
     
     # ============================================================================
     # BANK UPDATES
@@ -138,8 +157,17 @@ class BankService:
         if 'swift_bic' in data:
             bank.swift_bic = data['swift_bic']
         
-        # Commit changes
-        session.commit()
+        # Process through event orchestrator to publish domain events
+        event_data = {
+            'event_type': 'bank_updated',
+            'bank_id': bank_id,
+            'name': bank.name,
+            'country': bank.country,
+            'swift_bic': bank.swift_bic,
+            'changes': data
+        }
+        
+        self.event_orchestrator.process_banking_event(event_data, session, bank)
         
         return bank
     
@@ -177,9 +205,19 @@ class BankService:
         if self._has_dependent_accounts(bank_id, session):
             raise RuntimeError("Cannot delete bank with dependent accounts")
         
-        # Delete bank
-        session.delete(bank)
-        session.commit()
+        # Process through event orchestrator to publish domain events BEFORE deletion
+        event_data = {
+            'event_type': 'bank_deleted',
+            'bank_id': bank_id,
+            'name': bank.name,
+            'country': bank.country,
+            'swift_bic': bank.swift_bic
+        }
+        
+        self.event_orchestrator.process_banking_event(event_data, session, bank)
+        
+        # Delete bank through repository
+        self.bank_repository.delete(bank, session)
         
         return True
     
@@ -198,7 +236,7 @@ class BankService:
         Returns:
             Bank: Bank instance if found, None otherwise
         """
-        return session.query(Bank).filter(Bank.id == bank_id).first()
+        return self.bank_repository.get_by_id(bank_id, session)
     
     def get_bank_by_name_and_country(self, name: str, country: str, session: Session) -> Optional[Bank]:
         """
@@ -212,10 +250,7 @@ class BankService:
         Returns:
             Bank: Bank instance if found, None otherwise
         """
-        return session.query(Bank).filter(
-            Bank.name == name.strip(),
-            Bank.country == country
-        ).first()
+        return self.bank_repository.get_by_name_and_country(name.strip(), country, session)
     
     def get_all_banks(self, session: Session) -> List[Bank]:
         """
@@ -333,3 +368,41 @@ class BankService:
             return False, str(e)
         except Exception as e:
             return False, f"Validation error: {str(e)}"
+    
+    # ============================================================================
+    # BANK EVENT PROCESSING
+    # ============================================================================
+    
+    def add_bank_event(self, bank_id: int, event_data: Dict[str, Any], session: Session) -> Dict[str, Any]:
+        """
+        Add a bank event using the event handler system.
+        
+        This method follows the same pattern as fund services for consistency.
+        
+        Args:
+            bank_id: ID of the bank
+            event_data: Dictionary containing event data
+            session: Database session
+            
+        Returns:
+            Dict[str, Any]: Result data from event processing
+            
+        Raises:
+            ValueError: If required fields are missing
+            RuntimeError: If event processing fails
+        """
+        # Get the bank first
+        bank = self.get_bank_by_id(bank_id, session)
+        if not bank:
+            raise RuntimeError(f"Bank with ID {bank_id} not found")
+        
+        # Add bank_id to event data
+        event_data['bank_id'] = bank_id
+        
+        # Process the event through the orchestrator
+        try:
+            result = self.event_orchestrator.process_banking_event(event_data, session, bank)
+            return result
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to process bank event: {str(e)}")

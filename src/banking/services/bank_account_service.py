@@ -17,6 +17,9 @@ from sqlalchemy.orm import Session
 from src.banking.models import BankAccount
 from src.banking.services.banking_validation_service import BankingValidationService
 from src.banking.repositories.bank_account_repository import BankAccountRepository
+from src.fund.repositories.fund_event_cash_flow_repository import FundEventCashFlowRepository
+from src.banking.events.orchestrator import BankingUpdateOrchestrator
+from src.banking.events.registry import BankingEventHandlerRegistry
 from src.banking.enums import Currency, AccountStatus
 
 
@@ -31,16 +34,22 @@ class BankAccountService:
     - Bank account business rule enforcement
     """
     
-    def __init__(self, validation_service: Optional[BankingValidationService] = None, bank_account_repository: Optional[BankAccountRepository] = None):
+    def __init__(self, validation_service: Optional[BankingValidationService] = None, bank_account_repository: Optional[BankAccountRepository] = None, cash_flow_repository: Optional[FundEventCashFlowRepository] = None, event_orchestrator: Optional[BankingUpdateOrchestrator] = None, event_registry: Optional[BankingEventHandlerRegistry] = None):
         """
         Initialize the BankAccountService.
         
         Args:
             validation_service: Validation service to use. If None, creates a new one.
             bank_account_repository: Bank account repository to use. If None, creates a new one.
+            cash_flow_repository: Fund event cash flow repository to use. If None, creates a new one.
+            event_orchestrator: Event orchestrator to use. If None, creates a new one.
+            event_registry: Event handler registry to use. If None, creates a new one.
         """
         self.validation_service = validation_service or BankingValidationService()
         self.bank_account_repository = bank_account_repository or BankAccountRepository()
+        self.cash_flow_repository = cash_flow_repository or FundEventCashFlowRepository()
+        self.event_orchestrator = event_orchestrator or BankingUpdateOrchestrator()
+        self.event_registry = event_registry or BankingEventHandlerRegistry()
     
     # ============================================================================
     # BANK ACCOUNT CREATION
@@ -106,7 +115,22 @@ class BankAccountService:
         )
         
         # Use repository to create account
-        return self.bank_account_repository.create(account, session)
+        created_account = self.bank_account_repository.create(account, session)
+        
+        # Process through event orchestrator to publish domain events
+        event_data = {
+            'event_type': 'bank_account_created',
+            'entity_id': created_account.entity_id,
+            'bank_id': created_account.bank_id,
+            'account_name': created_account.account_name,
+            'account_number': created_account.account_number,
+            'currency': created_account.currency,
+            'status': created_account.status
+        }
+        
+        self.event_orchestrator.process_banking_event(event_data, session, created_account)
+        
+        return created_account
     
     # ============================================================================
     # BANK ACCOUNT UPDATES
@@ -163,8 +187,20 @@ class BankAccountService:
             normalized_status = self.validation_service.normalize_account_status(data['status'])
             account.status = normalized_status
         
-        # Commit changes
-        session.commit()
+        # Process through event orchestrator to publish domain events
+        event_data = {
+            'event_type': 'bank_account_updated',
+            'account_id': account_id,
+            'entity_id': account.entity_id,
+            'bank_id': account.bank_id,
+            'changes': data,
+            'account_name': account.account_name,
+            'account_number': account.account_number,
+            'currency': account.currency,
+            'status': account.status
+        }
+        
+        self.event_orchestrator.process_banking_event(event_data, session, account)
         
         return account
     
@@ -202,9 +238,22 @@ class BankAccountService:
         if self._has_dependent_fund_events(account_id, session):
             raise RuntimeError("Cannot delete bank account with dependent fund events")
         
-        # Delete account
-        session.delete(account)
-        session.commit()
+        # Process through event orchestrator to publish domain events BEFORE deletion
+        event_data = {
+            'event_type': 'bank_account_deleted',
+            'account_id': account_id,
+            'entity_id': account.entity_id,
+            'bank_id': account.bank_id,
+            'account_name': account.account_name,
+            'account_number': account.account_number,
+            'currency': account.currency,
+            'status': account.status
+        }
+        
+        self.event_orchestrator.process_banking_event(event_data, session, account)
+        
+        # Delete account through repository
+        self.bank_account_repository.delete(account, session)
         
         return True
     
@@ -223,7 +272,7 @@ class BankAccountService:
         Returns:
             BankAccount: Account instance if found, None otherwise
         """
-        return session.query(BankAccount).filter(BankAccount.id == account_id).first()
+        return self.bank_account_repository.get_by_id(account_id, session)
     
     def get_bank_account_by_unique(
         self,
@@ -325,13 +374,8 @@ class BankAccountService:
         Returns:
             bool: True if account has dependent fund events
         """
-        # Import here to avoid circular imports
-        from src.fund.models import FundEventCashFlow
-        
-        count = session.query(FundEventCashFlow).filter(
-            FundEventCashFlow.bank_account_id == account_id
-        ).count()
-        return count > 0
+        # Use repository to check for dependent fund events
+        return self.cash_flow_repository.has_cash_flows_for_bank_account(account_id, session)
     
     def get_dependent_fund_events_count(self, account_id: int, session: Session) -> int:
         """
@@ -344,12 +388,8 @@ class BankAccountService:
         Returns:
             int: Number of dependent fund events
         """
-        # Import here to avoid circular imports
-        from src.fund.models import FundEventCashFlow
-        
-        return session.query(FundEventCashFlow).filter(
-            FundEventCashFlow.bank_account_id == account_id
-        ).count()
+        # Use repository to get count of dependent fund events
+        return self.cash_flow_repository.count_by_bank_account(account_id, session)
     
     # ============================================================================
     # BUSINESS RULE ENFORCEMENT
@@ -429,7 +469,6 @@ class BankAccountService:
             raise RuntimeError("Bank account not found")
         
         account.status = AccountStatus.ACTIVE
-        session.commit()
         
         return account
     
@@ -452,7 +491,6 @@ class BankAccountService:
             raise RuntimeError("Bank account not found")
         
         account.status = AccountStatus.SUSPENDED
-        session.commit()
         
         return account
     
@@ -475,6 +513,85 @@ class BankAccountService:
             raise RuntimeError("Bank account not found")
         
         account.status = AccountStatus.SUSPENDED if account.status == AccountStatus.ACTIVE else AccountStatus.ACTIVE
-        session.commit()
         
         return account
+    
+    # ============================================================================
+    # BANK ACCOUNT EVENT PROCESSING
+    # ============================================================================
+    
+    def add_bank_account_event(self, account_id: int, event_data: Dict[str, Any], session: Session) -> Dict[str, Any]:
+        """
+        Add a bank account event using the event handler system.
+        
+        This method follows the same pattern as fund services for consistency.
+        
+        Args:
+            account_id: ID of the bank account
+            event_data: Dictionary containing event data
+            session: Database session
+            
+        Returns:
+            Dict[str, Any]: Result data from event processing
+            
+        Raises:
+            ValueError: If required fields are missing
+            RuntimeError: If event processing fails
+        """
+        # Get the account first
+        account = self.get_bank_account_by_id(account_id, session)
+        if not account:
+            raise RuntimeError(f"Bank account with ID {account_id} not found")
+        
+        # Add account_id to event data
+        event_data['account_id'] = account_id
+        
+        # Process the event through the orchestrator
+        try:
+            result = self.event_orchestrator.process_banking_event(event_data, session, account)
+            return result
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to process bank account event: {str(e)}")
+    
+    def add_account_status_change_event(self, account_id: int, old_status: AccountStatus, new_status: AccountStatus, session: Session) -> Dict[str, Any]:
+        """
+        Add an account status change event.
+        
+        Args:
+            account_id: ID of the bank account
+            old_status: Previous account status
+            new_status: New account status
+            session: Database session
+            
+        Returns:
+            Dict[str, Any]: Result data from event processing
+        """
+        event_data = {
+            'event_type': 'account_status_changed',
+            'old_status': old_status,
+            'new_status': new_status
+        }
+        
+        return self.add_bank_account_event(account_id, event_data, session)
+    
+    def add_currency_change_event(self, account_id: int, old_currency: Currency, new_currency: Currency, session: Session) -> Dict[str, Any]:
+        """
+        Add a currency change event.
+        
+        Args:
+            account_id: ID of the bank account
+            old_currency: Previous currency
+            new_currency: New currency
+            session: Database session
+            
+        Returns:
+            Dict[str, Any]: Result data from event processing
+        """
+        event_data = {
+            'event_type': 'currency_changed',
+            'old_currency': old_currency,
+            'new_currency': new_currency
+        }
+        
+        return self.add_bank_account_event(account_id, event_data, session)

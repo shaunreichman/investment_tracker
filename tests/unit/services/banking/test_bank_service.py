@@ -18,6 +18,8 @@ from sqlalchemy.orm import Session
 from src.banking.services.bank_service import BankService
 from src.banking.services.banking_validation_service import BankingValidationService
 from src.banking.repositories.bank_repository import BankRepository
+from src.banking.events.orchestrator import BankingUpdateOrchestrator
+from src.banking.events.registry import BankingEventHandlerRegistry
 from src.banking.models.bank import Bank
 from src.banking.enums import Country
 
@@ -34,6 +36,16 @@ class TestBankService:
     def mock_bank_repository(self):
         """Mock bank repository for testing."""
         return Mock(spec=BankRepository)
+    
+    @pytest.fixture
+    def mock_event_orchestrator(self):
+        """Mock event orchestrator for testing."""
+        return Mock(spec=BankingUpdateOrchestrator)
+    
+    @pytest.fixture
+    def mock_event_registry(self):
+        """Mock event handler registry for testing."""
+        return Mock(spec=BankingEventHandlerRegistry)
     
     @pytest.fixture
     def mock_session(self):
@@ -126,6 +138,44 @@ class TestBankService:
         assert created_bank.name == sample_bank_data['name'].strip()
         assert created_bank.country == Country.AU
         assert created_bank.swift_bic == sample_bank_data['swift_bic']
+    
+    def test_create_bank_publishes_event(self, mock_validation_service, mock_bank_repository, mock_event_orchestrator, mock_session, sample_bank_data, sample_bank):
+        """Test that bank creation publishes events through orchestrator."""
+        # Setup mocks
+        mock_validation_service.validate_bank_name_or_raise.return_value = None
+        mock_validation_service.validate_country_code_or_raise.return_value = None
+        mock_validation_service.validate_swift_bic_or_raise.return_value = None
+        mock_validation_service.normalize_country.return_value = Country.AU
+        mock_validation_service.validate_bank_uniqueness_or_raise.return_value = None
+        mock_bank_repository.create.return_value = sample_bank
+        mock_event_orchestrator.process_banking_event.return_value = {'status': 'success'}
+        
+        # Create service
+        service = BankService(mock_validation_service, mock_bank_repository, event_orchestrator=mock_event_orchestrator)
+        
+        # Execute
+        result = service.create_bank(
+            name=sample_bank_data['name'],
+            country=sample_bank_data['country'],
+            swift_bic=sample_bank_data['swift_bic'],
+            session=mock_session
+        )
+        
+        # Verify event orchestrator was called
+        mock_event_orchestrator.process_banking_event.assert_called_once()
+        call_args = mock_event_orchestrator.process_banking_event.call_args
+        
+        # Verify event data structure
+        event_data = call_args[0][0]  # First positional argument
+        assert event_data['event_type'] == 'bank_created'
+        assert event_data['bank_id'] == sample_bank.id
+        assert event_data['name'] == sample_bank.name
+        assert event_data['country'] == sample_bank.country
+        assert event_data['swift_bic'] == sample_bank.swift_bic
+        
+        # Verify session and bank were passed
+        assert call_args[0][1] == mock_session  # Second positional argument (session)
+        assert call_args[0][2] == sample_bank  # Third positional argument (bank)
     
     def test_create_bank_with_enum_country(self, mock_validation_service, mock_bank_repository, mock_session, sample_bank_data, sample_bank):
         """Test bank creation with Country enum."""
@@ -249,10 +299,7 @@ class TestBankService:
         mock_validation_service.validate_bank_data.assert_called_once_with(
             update_data, mock_session, exclude_id=1
         )
-        
-        # Verify session commit
-        mock_session.commit.assert_called_once()
-    
+            
     def test_update_bank_partial_update(self, mock_validation_service, mock_bank_repository, mock_session, sample_bank):
         """Test bank update with partial data."""
         # Setup mocks
@@ -344,10 +391,9 @@ class TestBankService:
         # Verify
         assert result is True
         
-        # Verify bank was deleted from session
-        mock_session.delete.assert_called_once_with(sample_bank)
-        # Verify session commit
-        mock_session.commit.assert_called_once()
+        # Verify bank was deleted through repository
+        mock_bank_repository.delete.assert_called_once_with(sample_bank, mock_session)
+        # Note: Services no longer manage transactions - controllers handle commits
     
     def test_delete_bank_not_found(self, mock_validation_service, mock_bank_repository, mock_session):
         """Test bank deletion with non-existent bank."""
@@ -398,46 +444,30 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock session query
-        mock_query = Mock()
-        mock_filter = Mock()
-        mock_first = Mock(return_value=sample_bank)
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
-        mock_filter.first.return_value = sample_bank
+        # Mock repository method
+        mock_bank_repository.get_by_id.return_value = sample_bank
         
         # Execute
         result = service.get_bank_by_id(1, mock_session)
         
         # Verify
         assert result is sample_bank
-        mock_session.query.assert_called_once_with(Bank)
-        mock_query.filter.assert_called_once()
-        mock_filter.first.assert_called_once()
+        mock_bank_repository.get_by_id.assert_called_once_with(1, mock_session)
     
     def test_get_bank_by_name_and_country(self, mock_validation_service, mock_bank_repository, mock_session, sample_bank):
         """Test getting bank by name and country."""
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock session query
-        mock_query = Mock()
-        mock_filter = Mock()
-        mock_first = Mock(return_value=sample_bank)
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
-        mock_filter.first.return_value = sample_bank
+        # Mock repository method
+        mock_bank_repository.get_by_name_and_country.return_value = sample_bank
         
         # Execute
         result = service.get_bank_by_name_and_country('Test Bank', 'AU', mock_session)
         
         # Verify
         assert result is sample_bank
-        mock_session.query.assert_called_once_with(Bank)
-        mock_query.filter.assert_called_once()
-        mock_filter.first.assert_called_once()
+        mock_bank_repository.get_by_name_and_country.assert_called_once_with('Test Bank', 'AU', mock_session)
     
     def test_get_all_banks(self, mock_validation_service, mock_bank_repository, mock_session):
         """Test getting all banks."""

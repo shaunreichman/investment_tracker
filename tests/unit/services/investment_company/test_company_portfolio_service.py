@@ -93,7 +93,9 @@ class TestCompanyPortfolioService:
     
     def setup_method(self):
         """Set up test fixtures before each test method."""
-        self.portfolio_service = CompanyPortfolioService()
+        # Mock the calculation service
+        self.mock_calculation_service = Mock()
+        self.portfolio_service = CompanyPortfolioService(calculation_service=self.mock_calculation_service)
         self.mock_session = PortfolioTestDataBuilder.create_session()
     
     def teardown_method(self):
@@ -145,18 +147,15 @@ class TestCompanyPortfolioService:
         fund2 = PortfolioTestDataBuilder.create_fund(id=2)
         company.funds = [fund1, fund2]
         
-        # Mock the CompanyCalculationService - it's imported inside the method
-        with patch('src.investment_company.services.company_calculation_service.CompanyCalculationService') as mock_calc_service_class:
-            mock_calc_service = Mock()
-            mock_calc_service.calculate_total_funds_under_management.return_value = 2
-            mock_calc_service_class.return_value = mock_calc_service
-            
-            # Act
-            result = self.portfolio_service.get_total_funds_under_management(company, self.mock_session)
-            
-            # Assert
-            assert result == 2
-            mock_calc_service.calculate_total_funds_under_management.assert_called_once_with(company, self.mock_session)
+        # Mock the calculation service method
+        self.mock_calculation_service.calculate_total_funds_under_management.return_value = 2
+        
+        # Act
+        result = self.portfolio_service.get_total_funds_under_management(company, self.mock_session)
+        
+        # Assert
+        assert result == 2
+        self.mock_calculation_service.calculate_total_funds_under_management.assert_called_once_with(company, self.mock_session)
     
     def test_get_total_commitments_success(self):
         """Test successful calculation of total commitments."""
@@ -166,18 +165,15 @@ class TestCompanyPortfolioService:
         fund2 = PortfolioTestDataBuilder.create_fund(id=2, commitment_amount=2000000.0)
         company.funds = [fund1, fund2]
         
-        # Mock the CompanyCalculationService - it's imported inside the method
-        with patch('src.investment_company.services.company_calculation_service.CompanyCalculationService') as mock_calc_service_class:
-            mock_calc_service = Mock()
-            mock_calc_service.calculate_total_commitments.return_value = 3000000.0
-            mock_calc_service_class.return_value = mock_calc_service
-            
-            # Act
-            result = self.portfolio_service.get_total_commitments(company, self.mock_session)
-            
-            # Assert
-            assert result == 3000000.0
-            mock_calc_service.calculate_total_commitments.assert_called_once_with(company, self.mock_session)
+        # Mock the calculation service method
+        self.mock_calculation_service.calculate_total_commitments.return_value = 3000000.0
+        
+        # Act
+        result = self.portfolio_service.get_total_commitments(company, self.mock_session)
+        
+        # Assert
+        assert result == 3000000.0
+        self.mock_calculation_service.calculate_total_commitments.assert_called_once_with(company, self.mock_session)
 
     # ============================================================================
     # FUND CREATION TESTS

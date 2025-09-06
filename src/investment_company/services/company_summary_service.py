@@ -14,7 +14,6 @@ Key responsibilities:
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
-from src.investment_company.repositories import CompanyRepository, ContactRepository
 from src.investment_company.models import InvestmentCompany, Contact
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
@@ -28,14 +27,12 @@ class CompanySummaryService:
     summaries, performance metrics, and company overview data preparation.
     
     Attributes:
-        company_repository (CompanyRepository): Repository for company data access
-        contact_repository (ContactRepository): Repository for contact data access
+        None - This service is stateless and focuses on calculations
     """
     
     def __init__(self):
         """Initialize the company summary service."""
-        self.company_repository = CompanyRepository()
-        self.contact_repository = ContactRepository()
+        pass
     
     def get_company_summary_data(self, company: InvestmentCompany, session: Session) -> Dict[str, Any]:
         """

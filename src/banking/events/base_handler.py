@@ -12,15 +12,17 @@ Key responsibilities:
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from datetime import date, datetime
 from sqlalchemy.orm import Session
 from abc import ABC, abstractmethod
 
 from src.banking.models import Bank, BankAccount
-from src.banking.services.bank_service import BankService
-from src.banking.services.bank_account_service import BankAccountService
 from src.banking.services.banking_validation_service import BankingValidationService
+
+if TYPE_CHECKING:
+    from src.banking.services.bank_service import BankService
+    from src.banking.services.bank_account_service import BankAccountService
 
 
 class BaseBankingEventHandler(ABC):
@@ -37,7 +39,7 @@ class BaseBankingEventHandler(ABC):
     that all handlers must implement.
     """
     
-    def __init__(self, session: Session, banking_entity: Bank | BankAccount):
+    def __init__(self, session: Session, banking_entity: 'Bank | BankAccount'):
         """
         Initialize the handler with session and banking entity.
         
@@ -52,6 +54,9 @@ class BaseBankingEventHandler(ABC):
         self.logger = logging.getLogger(__name__)
         
         # Initialize services for business logic
+        from src.banking.services.bank_service import BankService
+        from src.banking.services.bank_account_service import BankAccountService
+        
         self.bank_service = BankService()
         self.bank_account_service = BankAccountService()
         self.validation_service = BankingValidationService()

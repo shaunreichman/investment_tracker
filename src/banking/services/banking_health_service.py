@@ -3,6 +3,22 @@ Banking Health Service for Phase 6.
 
 This service provides comprehensive health monitoring for the banking system,
 including health checks, performance metrics, and system status monitoring.
+
+ARCHITECTURAL EXCEPTION:
+This service intentionally uses direct database operations (session.execute, etc.)
+which normally violate our services layer rules. This is an approved exception
+because:
+
+1. HEALTH MONITORING PURPOSE: This service tests database connectivity and
+   performance directly, which requires bypassing normal data access patterns
+2. SYSTEM DIAGNOSTICS: Must perform raw SQL queries to test database health
+   independently of business logic
+3. PRODUCTION MONITORING: Used by load balancers and monitoring systems that
+   need direct system health information
+4. NOT BUSINESS LOGIC: This is infrastructure monitoring, not business operations
+
+Normal business services should use repositories for data access, but health
+monitoring services are an exception to this rule.
 """
 
 import time
@@ -30,6 +46,10 @@ class BankingHealthService:
     - Database connectivity monitoring
     - Cache health monitoring
     - Business logic validation
+    
+    NOTE: This service uses direct database operations (session.execute, etc.)
+    which is an approved architectural exception for health monitoring purposes.
+    See module docstring for detailed explanation.
     """
     
     def __init__(self):

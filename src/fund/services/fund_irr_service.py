@@ -1,15 +1,15 @@
 """
 Fund IRR Service.
 
-This service handles IRR calculations and database operations for funds,
-providing a clean interface between the pure calculation logic and the database.
+This service handles IRR calculations for funds, providing a clean interface
+between the pure calculation logic and business operations.
 
 Key principles:
-- Handles database operations and session management
+- Stateless service with no session management
 - Uses shared IRRCalculator for pure calculation math
 - Provides orchestration for complex IRR workflows
 - Manages risk-free rate charges and tax calculations
-- Single source of truth for IRR database operations
+- Delegates database operations to repositories
 """
 
 import logging
@@ -26,26 +26,26 @@ logger = logging.getLogger(__name__)
 
 class FundIrRService:
     """
-    Service for handling IRR calculations and database operations.
+    Service for handling IRR calculations.
     
-    This service provides a clean interface between the pure calculation
-    logic and the database operations required for IRR calculations.
+    This service provides a clean interface for IRR calculations,
+    delegating database operations to repositories and maintaining
+    stateless operation for better testability and composability.
     """
     
-    def __init__(self, session: Session):
+    def __init__(self):
         """
         Initialize the FundIrRService.
         
-        Args:
-            session: Database session for operations
+        This service is stateless and does not store database sessions.
         """
-        self.session = session
+        pass
     
     # ============================================================================
     # CORE IRR CALCULATION METHODS
     # ============================================================================
     
-    def calculate_completed_irr(self, fund: Fund) -> Optional[float]:
+    def calculate_completed_irr(self, fund: Fund, session: Session) -> Optional[float]:
         """
         Calculate the completed pre-tax IRR for the fund using all relevant cash flows.
         
@@ -53,6 +53,7 @@ class FundIrRService:
         
         Args:
             fund: The fund object
+            session: Database session for data access
             
         Returns:
             float or None: The completed pre-tax IRR as a decimal, or None if not computable
@@ -60,7 +61,7 @@ class FundIrRService:
         if fund.status not in [FundStatus.REALIZED, FundStatus.COMPLETED]:
             return None
         
-        events = self._get_fund_events(fund)
+        events = self._get_fund_events(fund, session)
         return self._calculate_irr_base(
             events,
             fund.start_date,
@@ -69,7 +70,7 @@ class FundIrRService:
             include_eofy_debt_cost=False
         )
     
-    def calculate_completed_after_tax_irr(self, fund: Fund) -> Optional[float]:
+    def calculate_completed_after_tax_irr(self, fund: Fund, session: Session) -> Optional[float]:
         """
         Calculate the completed after-tax IRR for the fund.
         
@@ -77,6 +78,7 @@ class FundIrRService:
         
         Args:
             fund: The fund object
+            session: Database session for data access
             
         Returns:
             float or None: The completed after-tax IRR as a decimal, or None if not computable
@@ -84,7 +86,7 @@ class FundIrRService:
         if fund.status not in [FundStatus.COMPLETED]:
             return None
         
-        events = self._get_fund_events(fund)
+        events = self._get_fund_events(fund, session)
         return self._calculate_irr_base(
             events,
             fund.start_date,
@@ -93,7 +95,7 @@ class FundIrRService:
             include_eofy_debt_cost=False
         )
     
-    def calculate_completed_real_irr(self, fund: Fund, risk_free_rate_currency: Optional[str] = None) -> Optional[float]:
+    def calculate_completed_real_irr(self, fund: Fund, session: Session, risk_free_rate_currency: Optional[str] = None) -> Optional[float]:
         """
         Calculate the completed real IRR for the fund.
         
@@ -101,6 +103,7 @@ class FundIrRService:
         
         Args:
             fund: The fund object
+            session: Database session for data access
             risk_free_rate_currency: Currency for risk-free rate calculations
             
         Returns:
@@ -110,9 +113,9 @@ class FundIrRService:
             return None
         
         # Create daily risk-free interest charges if needed
-        self._create_daily_risk_free_interest_charges(fund, risk_free_rate_currency)
+        self._create_daily_risk_free_interest_charges(fund, session, risk_free_rate_currency)
         
-        events = self._get_fund_events(fund)
+        events = self._get_fund_events(fund, session)
         return self._calculate_irr_base(
             events,
             fund.start_date,
@@ -260,12 +263,16 @@ class FundIrRService:
     # DATABASE OPERATIONS
     # ============================================================================
     
-    def calculate_and_store_irrs(self, fund: Fund, risk_free_rate_currency: Optional[str] = None) -> Dict[str, Optional[float]]:
+    def calculate_all_irrs(self, fund: Fund, session: Session, risk_free_rate_currency: Optional[str] = None) -> Dict[str, Optional[float]]:
         """
-        Calculate and store all IRR types for a fund.
+        Calculate all IRR types for a fund.
+        
+        This method calculates IRRs but does not store them. The calling service
+        should handle persistence through repositories.
         
         Args:
             fund: The fund to calculate IRRs for
+            session: Database session for data access
             risk_free_rate_currency: Currency for risk-free rate calculations
             
         Returns:
@@ -273,19 +280,11 @@ class FundIrRService:
         """
         try:
             # Calculate all IRRs
-            completed_irr = self.calculate_completed_irr(fund)
-            completed_after_tax_irr = self.calculate_completed_after_tax_irr(fund)
-            completed_real_irr = self.calculate_completed_real_irr(fund, risk_free_rate_currency)
+            completed_irr = self.calculate_completed_irr(fund, session)
+            completed_after_tax_irr = self.calculate_completed_after_tax_irr(fund, session)
+            completed_real_irr = self.calculate_completed_real_irr(fund, session, risk_free_rate_currency)
             
-            # Store results in fund object
-            fund.completed_irr_gross = completed_irr
-            fund.completed_irr_after_tax = completed_after_tax_irr
-            fund.completed_irr_real = completed_real_irr
-            
-            # Commit changes
-            self.session.commit()
-            
-            logger.info(f"Calculated and stored IRRs for fund {fund.id}")
+            logger.info(f"Calculated IRRs for fund {fund.id}")
             return {
                 'completed_irr': completed_irr,
                 'completed_after_tax_irr': completed_after_tax_irr,
@@ -293,31 +292,32 @@ class FundIrRService:
             }
             
         except Exception as e:
-            logger.error(f"Error calculating and storing IRRs for fund {fund.id}: {e}")
-            self.session.rollback()
+            logger.error(f"Error calculating IRRs for fund {fund.id}: {e}")
             raise
     
     
-    def _get_fund_events(self, fund: Fund) -> List[FundEvent]:
+    def _get_fund_events(self, fund: Fund, session: Session) -> List[FundEvent]:
         """
         Get all events for a fund from the database.
         
         Args:
             fund: The fund to get events for
+            session: Database session for data access
             
         Returns:
             List[FundEvent]: List of fund events
         """
         from src.fund.repositories import FundEventRepository
         event_repository = FundEventRepository()
-        return event_repository.get_by_fund(fund.id, self.session)
+        return event_repository.get_by_fund(fund.id, session)
     
-    def _create_daily_risk_free_interest_charges(self, fund: Fund, risk_free_rate_currency: Optional[str] = None) -> None:
+    def _create_daily_risk_free_interest_charges(self, fund: Fund, session: Session, risk_free_rate_currency: Optional[str] = None) -> None:
         """
         Create daily risk-free interest charges for a fund.
         
         Args:
             fund: The fund to create charges for
+            session: Database session for data access
             risk_free_rate_currency: Currency for risk-free rate calculations
         """
         # This method would implement the logic to create daily risk-free interest charges

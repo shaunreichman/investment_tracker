@@ -1,13 +1,13 @@
 ---
 description: Layer Relationships: Proper interaction patterns between architectural layers
-globs: **/*.py
+globs:
 alwaysApply: true
 ---
 
 # Layer Relationships Rules
 
 ## Flow Direction
-**API → Controllers → Services → Repositories/Calculators/Event Handlers**
+**API → Controllers → Services → Repositories/Calculators/Event Orchestrators → Event Handlers**
 
 ## Allowed Interactions
 
@@ -19,8 +19,9 @@ alwaysApply: true
 ### Services  
 - ✅ **Call Repositories** for data access
 - ✅ **Call Calculators** for mathematical operations
-- ✅ **Call Event Handlers** through orchestrators
+- ✅ **Call Event Orchestrators** for event processing
 - ✅ **Call other Services** for complex workflows
+- ❌ **Never** call Event Handlers directly
 - ❌ **Never** handle HTTP concerns
 
 ### Repositories
@@ -28,8 +29,15 @@ alwaysApply: true
 - ✅ **Call other Repositories** for related data
 - ❌ **Never** call Services or contain business logic
 
+### Event Orchestrators
+- ✅ **Called by Services** for event processing
+- ✅ **Route events** to appropriate handlers
+- ✅ **Manage event failures** and rollback
+- ❌ **Never** contain business logic
+- ❌ **Never** handle HTTP concerns
+
 ### Event Handlers
-- ✅ **Called by Services/Orchestrators**
+- ✅ **Called by Event Orchestrators**
 - ✅ **Call Repositories** for data access
 - ✅ **Call Calculators** for calculations
 - ✅ **Publish Domain Events**
@@ -66,6 +74,9 @@ class FundService:
         fund = self.fund_repository.create(data, session)
         # Service calls Calculator
         equity = FundEquityCalculator.calculate_current_equity(fund, session)
+        # Service calls Event Orchestrator
+        event_data = {'event_type': 'fund_created', 'fund_id': fund.id}
+        self.event_orchestrator.process_fund_event(event_data, session, fund)
         return fund
 
 # ❌ Bad: Controller calling Repository directly

@@ -18,6 +18,8 @@ from sqlalchemy.orm import Session
 from src.banking.services.bank_account_service import BankAccountService
 from src.banking.services.banking_validation_service import BankingValidationService
 from src.banking.repositories.bank_account_repository import BankAccountRepository
+from src.banking.events.orchestrator import BankingUpdateOrchestrator
+from src.banking.events.registry import BankingEventHandlerRegistry
 from src.banking.models.bank_account import BankAccount
 from src.banking.enums import Currency, AccountStatus
 
@@ -34,6 +36,16 @@ class TestBankAccountService:
     def mock_bank_account_repository(self):
         """Mock bank account repository for testing."""
         return Mock(spec=BankAccountRepository)
+    
+    @pytest.fixture
+    def mock_event_orchestrator(self):
+        """Mock event orchestrator for testing."""
+        return Mock(spec=BankingUpdateOrchestrator)
+    
+    @pytest.fixture
+    def mock_event_registry(self):
+        """Mock event handler registry for testing."""
+        return Mock(spec=BankingEventHandlerRegistry)
     
     @pytest.fixture
     def mock_session(self):
@@ -78,21 +90,25 @@ class TestBankAccountService:
         assert service.bank_account_repository is not None
         assert isinstance(service.bank_account_repository, BankAccountRepository)
     
-    def test_bank_account_service_initialization_with_dependencies(self, mock_validation_service, mock_bank_account_repository):
+    def test_bank_account_service_initialization_with_dependencies(self, mock_validation_service, mock_bank_account_repository, mock_event_orchestrator, mock_event_registry):
         """Test BankAccountService initialization with provided dependencies."""
         service = BankAccountService(
             validation_service=mock_validation_service,
-            bank_account_repository=mock_bank_account_repository
+            bank_account_repository=mock_bank_account_repository,
+            event_orchestrator=mock_event_orchestrator,
+            event_registry=mock_event_registry
         )
         
         assert service.validation_service is mock_validation_service
         assert service.bank_account_repository is mock_bank_account_repository
+        assert service.event_orchestrator is mock_event_orchestrator
+        assert service.event_registry is mock_event_registry
     
     # ============================================================================
     # BANK ACCOUNT CREATION TESTS
     # ============================================================================
     
-    def test_create_bank_account_success(self, mock_validation_service, mock_bank_account_repository, mock_session, sample_bank_account_data, sample_bank_account):
+    def test_create_bank_account_success(self, mock_validation_service, mock_bank_account_repository, mock_event_orchestrator, mock_session, sample_bank_account_data, sample_bank_account):
         """Test successful bank account creation."""
         # Setup mocks
         mock_validation_service.validate_entity_exists_or_raise.return_value = None
@@ -157,6 +173,53 @@ class TestBankAccountService:
         
         # Verify repository call
         mock_bank_account_repository.create.assert_called_once()
+    
+    def test_create_bank_account_publishes_event(self, mock_validation_service, mock_bank_account_repository, mock_event_orchestrator, mock_session, sample_bank_account_data, sample_bank_account):
+        """Test that bank account creation publishes events through orchestrator."""
+        # Setup mocks
+        mock_validation_service.validate_entity_exists_or_raise.return_value = None
+        mock_validation_service.validate_bank_exists_or_raise.return_value = None
+        mock_validation_service.validate_account_name_or_raise.return_value = None
+        mock_validation_service.validate_account_number_or_raise.return_value = None
+        mock_validation_service.validate_currency_code_or_raise.return_value = None
+        mock_validation_service.validate_account_status_or_raise.return_value = None
+        mock_validation_service.normalize_currency.return_value = Currency.AUD
+        mock_validation_service.normalize_account_status.return_value = AccountStatus.ACTIVE
+        mock_validation_service.validate_bank_account_uniqueness_or_raise.return_value = None
+        mock_bank_account_repository.create.return_value = sample_bank_account
+        mock_event_orchestrator.process_banking_event.return_value = {'status': 'success'}
+        
+        # Create service
+        service = BankAccountService(mock_validation_service, mock_bank_account_repository, event_orchestrator=mock_event_orchestrator)
+        
+        # Execute
+        result = service.create_bank_account(
+            entity_id=sample_bank_account_data['entity_id'],
+            bank_id=sample_bank_account_data['bank_id'],
+            account_name=sample_bank_account_data['account_name'],
+            account_number=sample_bank_account_data['account_number'],
+            currency=sample_bank_account_data['currency'],
+            status=sample_bank_account_data['status'],
+            session=mock_session
+        )
+        
+        # Verify event orchestrator was called
+        mock_event_orchestrator.process_banking_event.assert_called_once()
+        call_args = mock_event_orchestrator.process_banking_event.call_args
+        
+        # Verify event data structure
+        event_data = call_args[0][0]  # First positional argument
+        assert event_data['event_type'] == 'bank_account_created'
+        assert event_data['entity_id'] == sample_bank_account_data['entity_id']
+        assert event_data['bank_id'] == sample_bank_account_data['bank_id']
+        assert event_data['account_name'] == sample_bank_account_data['account_name']
+        assert event_data['account_number'] == sample_bank_account_data['account_number']
+        assert event_data['currency'] == Currency.AUD
+        assert event_data['status'] == AccountStatus.ACTIVE
+        
+        # Verify session and account were passed
+        assert call_args[0][1] == mock_session  # Second positional argument (session)
+        assert call_args[0][2] == sample_bank_account  # Third positional argument (account)
         call_args = mock_bank_account_repository.create.call_args[0]
         created_account = call_args[0]
         assert created_account.entity_id == sample_bank_account_data['entity_id']
@@ -319,10 +382,7 @@ class TestBankAccountService:
         mock_validation_service.validate_bank_account_data.assert_called_once_with(
             update_data, mock_session, exclude_id=1
         )
-        
-        # Verify session commit
-        mock_session.commit.assert_called_once()
-    
+            
     def test_update_bank_account_partial_update(self, mock_validation_service, mock_bank_account_repository, mock_session, sample_bank_account):
         """Test bank account update with partial data."""
         # Setup mocks
@@ -414,10 +474,9 @@ class TestBankAccountService:
         # Verify
         assert result is True
         
-        # Verify account was deleted from session
-        mock_session.delete.assert_called_once_with(sample_bank_account)
-        # Verify session commit
-        mock_session.commit.assert_called_once()
+        # Verify account was deleted through repository
+        mock_bank_account_repository.delete.assert_called_once_with(sample_bank_account, mock_session)
+        # Note: Services no longer manage transactions - controllers handle commits
     
     def test_delete_bank_account_not_found(self, mock_validation_service, mock_bank_account_repository, mock_session):
         """Test bank account deletion with non-existent account."""
@@ -468,23 +527,15 @@ class TestBankAccountService:
         # Create service
         service = BankAccountService(mock_validation_service, mock_bank_account_repository)
         
-        # Mock session query
-        mock_query = Mock()
-        mock_filter = Mock()
-        mock_first = Mock(return_value=sample_bank_account)
-        
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_filter
-        mock_filter.first.return_value = sample_bank_account
+        # Mock repository method
+        mock_bank_account_repository.get_by_id.return_value = sample_bank_account
         
         # Execute
         result = service.get_bank_account_by_id(1, mock_session)
         
         # Verify
         assert result is sample_bank_account
-        mock_session.query.assert_called_once_with(BankAccount)
-        mock_query.filter.assert_called_once()
-        mock_filter.first.assert_called_once()
+        mock_bank_account_repository.get_by_id.assert_called_once_with(1, mock_session)
     
     def test_get_bank_account_by_unique(self, mock_validation_service, mock_bank_account_repository, mock_session, sample_bank_account):
         """Test getting bank account by unique combination."""

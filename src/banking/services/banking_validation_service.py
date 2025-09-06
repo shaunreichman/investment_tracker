@@ -19,6 +19,7 @@ from sqlalchemy import and_
 from src.banking.models import Bank, BankAccount
 from src.banking.repositories.bank_repository import BankRepository
 from src.banking.repositories.bank_account_repository import BankAccountRepository
+from src.entity.repositories.entity_repository import EntityRepository
 from src.banking.enums import Country, Currency, AccountStatus
 
 
@@ -33,16 +34,18 @@ class BankingValidationService:
     - Business rule enforcement
     """
     
-    def __init__(self, bank_repository: Optional[BankRepository] = None, bank_account_repository: Optional[BankAccountRepository] = None):
+    def __init__(self, bank_repository: Optional[BankRepository] = None, bank_account_repository: Optional[BankAccountRepository] = None, entity_repository: Optional[EntityRepository] = None):
         """
         Initialize the BankingValidationService.
         
         Args:
             bank_repository: Bank repository to use. If None, creates a new one.
             bank_account_repository: Bank account repository to use. If None, creates a new one.
+            entity_repository: Entity repository to use. If None, creates a new one.
         """
         self.bank_repository = bank_repository or BankRepository()
         self.bank_account_repository = bank_account_repository or BankAccountRepository()
+        self.entity_repository = entity_repository or EntityRepository()
     
     # ============================================================================
     # COUNTRY CODE VALIDATION
@@ -503,13 +506,8 @@ class BankingValidationService:
         Returns:
             True if unique, False if duplicate exists
         """
-        # Query session directly to see accounts that might be in the session but not committed
-        existing_account = session.query(BankAccount).filter(
-            and_(
-                BankAccount.bank_id == bank_id,
-                BankAccount.account_number == account_number.strip()
-            )
-        ).first()
+        # Use repository to check for existing account
+        existing_account = self.bank_account_repository.get_by_bank_and_number(bank_id, account_number.strip(), session)
         
         if existing_account is None:
             return True
@@ -554,9 +552,8 @@ class BankingValidationService:
         if not entity_id:
             return False
         
-        # Import here to avoid circular imports
-        from src.entity.models import Entity
-        entity = session.query(Entity).filter(Entity.id == entity_id).first()
+        # Use repository to check entity existence
+        entity = self.entity_repository.get_by_id(entity_id, session)
         return entity is not None
     
     def validate_entity_exists_or_raise(self, entity_id: int, session: Session) -> None:

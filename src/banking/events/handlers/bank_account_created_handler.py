@@ -48,6 +48,9 @@ class BankAccountCreatedHandler(BaseBankingEventHandler):
         
         # Validate currency code format (ISO 4217)
         currency = event_data.get('currency', '')
+        # Handle both string and enum values
+        if hasattr(currency, 'value'):
+            currency = currency.value
         if len(currency) != 3 or not currency.isalpha():
             raise ValueError("Currency must be a 3-letter ISO 4217 code")
         

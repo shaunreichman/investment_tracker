@@ -97,11 +97,11 @@ class TestContactManagementService:
             'direct_email': 'jane@test.com',
             'notes': 'Senior contact'
         }
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Mock the Contact model constructor
-        with patch('src.investment_company.services.contact_management_service.Contact') as mock_contact_class:
-            mock_contact = Mock()
-            mock_contact_class.return_value = mock_contact
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+            mock_create.return_value = mock_contact
             
             # Act
             result = self.contact_service.add_contact(
@@ -116,26 +116,25 @@ class TestContactManagementService:
             
             # Assert
             assert result == mock_contact
-            mock_contact_class.assert_called_once_with(
-                investment_company_id=company.id,
-                name=contact_data['name'],
-                title=contact_data['title'],
-                direct_number=contact_data['direct_number'],
-                direct_email=contact_data['direct_email'],
-                notes=contact_data['notes']
-            )
-            self.mock_session.add.assert_called_once_with(mock_contact)
-            self.mock_session.flush.assert_called_once()
+            mock_create.assert_called_once()
+            # Verify the repository was called with the correct data
+            call_args = mock_create.call_args
+            assert call_args[0][0]['investment_company_id'] == company.id
+            assert call_args[0][0]['name'] == contact_data['name']
+            assert call_args[0][0]['title'] == contact_data['title']
+            assert call_args[0][0]['direct_number'] == contact_data['direct_number']
+            assert call_args[0][0]['direct_email'] == contact_data['direct_email']
+            assert call_args[0][0]['notes'] == contact_data['notes']
     
     def test_add_contact_minimal_fields(self):
         """Test successful contact addition with only required fields."""
         # Arrange
         company = ContactTestDataBuilder.create_company()
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Mock the Contact model constructor
-        with patch('src.investment_company.services.contact_management_service.Contact') as mock_contact_class:
-            mock_contact = Mock()
-            mock_contact_class.return_value = mock_contact
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+            mock_create.return_value = mock_contact
             
             # Act
             result = self.contact_service.add_contact(
@@ -146,14 +145,15 @@ class TestContactManagementService:
             
             # Assert
             assert result == mock_contact
-            mock_contact_class.assert_called_once_with(
-                investment_company_id=company.id,
-                name='John Doe',
-                title=None,
-                direct_number=None,
-                direct_email=None,
-                notes=None
-            )
+            mock_create.assert_called_once()
+            # Verify the repository was called with the correct data
+            call_args = mock_create.call_args
+            assert call_args[0][0]['investment_company_id'] == company.id
+            assert call_args[0][0]['name'] == 'John Doe'
+            assert call_args[0][0]['title'] is None
+            assert call_args[0][0]['direct_number'] is None
+            assert call_args[0][0]['direct_email'] is None
+            assert call_args[0][0]['notes'] is None
     
     def test_add_contact_missing_name(self):
         """Test contact addition fails when name is missing."""
@@ -198,11 +198,11 @@ class TestContactManagementService:
         """Test that contact addition trims whitespace from all fields."""
         # Arrange
         company = ContactTestDataBuilder.create_company()
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Mock the Contact model constructor
-        with patch('src.investment_company.services.contact_management_service.Contact') as mock_contact_class:
-            mock_contact = Mock()
-            mock_contact_class.return_value = mock_contact
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+            mock_create.return_value = mock_contact
             
             # Act - Note: the service trims whitespace before validation
             self.contact_service.add_contact(
@@ -216,14 +216,15 @@ class TestContactManagementService:
             )
             
             # Assert
-            mock_contact_class.assert_called_once_with(
-                investment_company_id=company.id,
-                name='John Doe',
-                title='Manager',
-                direct_number='+1234567890',
-                direct_email='john@test.com',
-                notes='Test contact'
-            )
+            mock_create.assert_called_once()
+            # Verify the repository was called with trimmed data
+            call_args = mock_create.call_args
+            assert call_args[0][0]['investment_company_id'] == company.id
+            assert call_args[0][0]['name'] == 'John Doe'
+            assert call_args[0][0]['title'] == 'Manager'
+            assert call_args[0][0]['direct_number'] == '+1234567890'
+            assert call_args[0][0]['direct_email'] == 'john@test.com'
+            assert call_args[0][0]['notes'] == 'Test contact'
 
     # ============================================================================
     # EMAIL VALIDATION TESTS
@@ -253,11 +254,11 @@ class TestContactManagementService:
             'user+tag@example.org',
             '123@numbers.com'
         ]
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Mock the Contact model constructor
-        with patch('src.investment_company.services.contact_management_service.Contact') as mock_contact_class:
-            mock_contact = Mock()
-            mock_contact_class.return_value = mock_contact
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+            mock_create.return_value = mock_contact
             
             for email in valid_emails:
                 # Act
@@ -270,24 +271,21 @@ class TestContactManagementService:
                 
                 # Assert
                 assert result == mock_contact
-                mock_contact_class.assert_called_with(
-                    investment_company_id=company.id,
-                    name='John Doe',
-                    title=None,
-                    direct_number=None,
-                    direct_email=email,
-                    notes=None
-                )
+                # Verify the repository was called with the correct email
+                call_args = mock_create.call_args
+                assert call_args[0][0]['investment_company_id'] == company.id
+                assert call_args[0][0]['name'] == 'John Doe'
+                assert call_args[0][0]['direct_email'] == email
     
     def test_add_contact_email_none_allowed(self):
         """Test contact addition succeeds when email is None."""
         # Arrange
         company = ContactTestDataBuilder.create_company()
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Mock the Contact model constructor
-        with patch('src.investment_company.services.contact_management_service.Contact') as mock_contact_class:
-            mock_contact = Mock()
-            mock_contact_class.return_value = mock_contact
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+            mock_create.return_value = mock_contact
             
             # Act
             result = self.contact_service.add_contact(
@@ -299,14 +297,12 @@ class TestContactManagementService:
             
             # Assert
             assert result == mock_contact
-            mock_contact_class.assert_called_once_with(
-                investment_company_id=company.id,
-                name='John Doe',
-                title=None,
-                direct_number=None,
-                direct_email=None,
-                notes=None
-            )
+            mock_create.assert_called_once()
+            # Verify the repository was called with None email
+            call_args = mock_create.call_args
+            assert call_args[0][0]['investment_company_id'] == company.id
+            assert call_args[0][0]['name'] == 'John Doe'
+            assert call_args[0][0]['direct_email'] is None
 
     # ============================================================================
     # PHONE NUMBER VALIDATION TESTS
@@ -336,11 +332,11 @@ class TestContactManagementService:
             '+1 (555) 123-4567',
             '123-456-7890'
         ]
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Mock the Contact model constructor
-        with patch('src.investment_company.services.contact_management_service.Contact') as mock_contact_class:
-            mock_contact = Mock()
-            mock_contact_class.return_value = mock_contact
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+            mock_create.return_value = mock_contact
             
             for phone in valid_phones:
                 # Act
@@ -353,24 +349,21 @@ class TestContactManagementService:
                 
                 # Assert
                 assert result == mock_contact
-                mock_contact_class.assert_called_with(
-                    investment_company_id=company.id,
-                    name='John Doe',
-                    title=None,
-                    direct_number=phone,
-                    direct_email=None,
-                    notes=None
-                )
+                # Verify the repository was called with the correct phone
+                call_args = mock_create.call_args
+                assert call_args[0][0]['investment_company_id'] == company.id
+                assert call_args[0][0]['name'] == 'John Doe'
+                assert call_args[0][0]['direct_number'] == phone
     
     def test_add_contact_phone_none_allowed(self):
         """Test contact addition succeeds when phone number is None."""
         # Arrange
         company = ContactTestDataBuilder.create_company()
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Mock the Contact model constructor
-        with patch('src.investment_company.services.contact_management_service.Contact') as mock_contact_class:
-            mock_contact = Mock()
-            mock_contact_class.return_value = mock_contact
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+            mock_create.return_value = mock_contact
             
             # Act
             result = self.contact_service.add_contact(
@@ -382,14 +375,12 @@ class TestContactManagementService:
             
             # Assert
             assert result == mock_contact
-            mock_contact_class.assert_called_once_with(
-                investment_company_id=company.id,
-                name='John Doe',
-                title=None,
-                direct_number=None,
-                direct_email=None,
-                notes=None
-            )
+            mock_create.assert_called_once()
+            # Verify the repository was called with None phone
+            call_args = mock_create.call_args
+            assert call_args[0][0]['investment_company_id'] == company.id
+            assert call_args[0][0]['name'] == 'John Doe'
+            assert call_args[0][0]['direct_number'] is None
 
     # ============================================================================
     # CONTACT UPDATE TESTS
@@ -398,7 +389,7 @@ class TestContactManagementService:
     def test_update_contact_success(self):
         """Test successful contact update with all fields."""
         # Arrange
-        contact = ContactTestDataBuilder.create_contact()
+        contact_id = 1
         update_data = {
             'name': 'Jane Smith',
             'title': 'Director',
@@ -406,94 +397,93 @@ class TestContactManagementService:
             'direct_email': 'jane@test.com',
             'notes': 'Updated contact'
         }
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Act
-        result = self.contact_service.update_contact(
-            contact=contact,
-            name=update_data['name'],
-            title=update_data['title'],
-            direct_number=update_data['direct_number'],
-            direct_email=update_data['direct_email'],
-            notes=update_data['notes'],
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result == contact
-        assert contact.name == update_data['name']
-        assert contact.title == update_data['title']
-        assert contact.direct_number == update_data['direct_number']
-        assert contact.direct_email == update_data['direct_email']
-        assert contact.notes == update_data['notes']
+        # Mock repository methods
+        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get, \
+             patch.object(self.contact_service.contact_repository, 'update') as mock_update:
+            mock_get.return_value = mock_contact
+            mock_update.return_value = mock_contact
+            
+            # Act
+            result = self.contact_service.update_contact(
+                contact_id=contact_id,
+                contact_data=update_data,
+                session=self.mock_session
+            )
+            
+            # Assert
+            assert result == mock_contact
+            mock_get.assert_called_once_with(contact_id, self.mock_session)
+            mock_update.assert_called_once_with(contact_id, update_data, self.mock_session)
     
     def test_update_contact_partial_update(self):
         """Test successful contact update with only some fields."""
         # Arrange
-        contact = ContactTestDataBuilder.create_contact()
-        original_name = contact.name
-        original_title = contact.title
+        contact_id = 1
+        update_data = {
+            'direct_number': '+1987654321',
+            'direct_email': 'updated@test.com'
+        }
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Act
-        result = self.contact_service.update_contact(
-            contact=contact,
-            direct_number='+1987654321',
-            direct_email='updated@test.com',
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result == contact
-        assert contact.name == original_name  # Unchanged
-        assert contact.title == original_title  # Unchanged
-        assert contact.direct_number == '+1987654321'
-        assert contact.direct_email == 'updated@test.com'
+        # Mock repository methods
+        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get, \
+             patch.object(self.contact_service.contact_repository, 'update') as mock_update:
+            mock_get.return_value = mock_contact
+            mock_update.return_value = mock_contact
+            
+            # Act
+            result = self.contact_service.update_contact(
+                contact_id=contact_id,
+                contact_data=update_data,
+                session=self.mock_session
+            )
+            
+            # Assert
+            assert result == mock_contact
+            mock_get.assert_called_once_with(contact_id, self.mock_session)
+            mock_update.assert_called_once_with(contact_id, update_data, self.mock_session)
     
-    def test_update_contact_trims_whitespace(self):
-        """Test that contact update trims whitespace from all fields."""
+    def test_update_contact_not_found(self):
+        """Test contact update when contact doesn't exist."""
         # Arrange
-        contact = ContactTestDataBuilder.create_contact()
+        contact_id = 999
+        update_data = {'name': 'Updated Name'}
         
-        # Act - Note: the service trims whitespace before validation
-        self.contact_service.update_contact(
-            contact=contact,
-            name='  Updated Name  ',
-            title='  New Title  ',
-            direct_number='  +1987654321  ',
-            direct_email='  updated@test.com  ',
-            notes='  Updated notes  ',
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert contact.name == 'Updated Name'
-        assert contact.title == 'New Title'
-        assert contact.direct_number == '+1987654321'
-        assert contact.direct_email == 'updated@test.com'
-        assert contact.notes == 'Updated notes'
+        # Mock repository methods
+        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get:
+            mock_get.return_value = None
+            
+            # Act
+            result = self.contact_service.update_contact(
+                contact_id=contact_id,
+                contact_data=update_data,
+                session=self.mock_session
+            )
+            
+            # Assert
+            assert result is None
+            mock_get.assert_called_once_with(contact_id, self.mock_session)
     
-    def test_update_contact_handles_none_values(self):
-        """Test that contact update handles None values correctly."""
+    def test_update_contact_validation_failure(self):
+        """Test contact update fails when validation fails."""
         # Arrange
-        contact = ContactTestDataBuilder.create_contact()
+        contact_id = 1
+        update_data = {'direct_email': 'invalid-email'}
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Act
-        self.contact_service.update_contact(
-            contact=contact,
-            name=None,
-            title=None,
-            direct_number=None,
-            direct_email=None,
-            notes=None,
-            session=self.mock_session
-        )
-        
-        # Assert
-        # The actual service doesn't update fields when None is passed
-        assert contact.name == 'John Doe'  # Original value preserved
-        assert contact.title == 'Manager'  # Original value preserved
-        assert contact.direct_number == '+1234567890'  # Original value preserved
-        assert contact.direct_email == 'john@test.com'  # Original value preserved
-        assert contact.notes == 'Test contact'  # Original value preserved
+        # Mock repository methods
+        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get:
+            mock_get.return_value = mock_contact
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Validation failed"):
+                self.contact_service.update_contact(
+                    contact_id=contact_id,
+                    contact_data=update_data,
+                    session=self.mock_session
+                )
 
     # ============================================================================
     # CONTACT VALIDATION TESTS
@@ -502,28 +492,40 @@ class TestContactManagementService:
     def test_update_contact_invalid_email_format(self):
         """Test contact update fails with invalid email format."""
         # Arrange
-        contact = ContactTestDataBuilder.create_contact()
+        contact_id = 1
+        update_data = {'direct_email': 'invalid-email'}
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="Invalid email format"):
-            self.contact_service.update_contact(
-                contact=contact,
-                direct_email='invalid-email',
-                session=self.mock_session
-            )
+        # Mock repository methods
+        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get:
+            mock_get.return_value = mock_contact
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Validation failed"):
+                self.contact_service.update_contact(
+                    contact_id=contact_id,
+                    contact_data=update_data,
+                    session=self.mock_session
+                )
     
     def test_update_contact_invalid_phone_format(self):
         """Test contact update fails with invalid phone number format."""
         # Arrange
-        contact = ContactTestDataBuilder.create_contact()
+        contact_id = 1
+        update_data = {'direct_number': 'not-a-phone'}
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="Invalid phone number format"):
-            self.contact_service.update_contact(
-                contact=contact,
-                direct_number='not-a-phone',
-                session=self.mock_session
-            )
+        # Mock repository methods
+        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get:
+            mock_get.return_value = mock_contact
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Validation failed"):
+                self.contact_service.update_contact(
+                    contact_id=contact_id,
+                    contact_data=update_data,
+                    session=self.mock_session
+                )
 
     # ============================================================================
     # CONTACT REMOVAL TESTS
@@ -532,29 +534,34 @@ class TestContactManagementService:
     def test_delete_contact_success(self):
         """Test successful contact deletion."""
         # Arrange
-        company = ContactTestDataBuilder.create_company()
-        contact = ContactTestDataBuilder.create_contact()
-        company.contacts = [contact]
+        contact_id = 1
         
-        # Act
-        self.contact_service.delete_contact(contact, self.mock_session)
-        
-        # Assert
-        self.mock_session.delete.assert_called_once_with(contact)
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'delete') as mock_delete:
+            mock_delete.return_value = True
+            
+            # Act
+            result = self.contact_service.delete_contact(contact_id, self.mock_session)
+            
+            # Assert
+            assert result is True
+            mock_delete.assert_called_once_with(contact_id, self.mock_session)
     
-    def test_delete_contact_not_in_company(self):
-        """Test contact deletion when contact is not in company."""
+    def test_delete_contact_not_found(self):
+        """Test contact deletion when contact doesn't exist."""
         # Arrange
-        company = ContactTestDataBuilder.create_company()
-        contact = ContactTestDataBuilder.create_contact()
-        company.contacts = []  # Empty contacts list
+        contact_id = 999
         
-        # Act
-        self.contact_service.delete_contact(contact, self.mock_session)
-        
-        # Assert
-        # Should not raise an error, just delete the contact
-        self.mock_session.delete.assert_called_once_with(contact)
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'delete') as mock_delete:
+            mock_delete.return_value = False
+            
+            # Act
+            result = self.contact_service.delete_contact(contact_id, self.mock_session)
+            
+            # Assert
+            assert result is False
+            mock_delete.assert_called_once_with(contact_id, self.mock_session)
 
     # ============================================================================
     # CONTACT SEARCH TESTS
@@ -666,11 +673,11 @@ class TestContactManagementService:
         """Test contact addition with special characters in fields."""
         # Arrange
         company = ContactTestDataBuilder.create_company()
+        mock_contact = ContactTestDataBuilder.create_contact()
         
-        # Mock the Contact model constructor
-        with patch('src.investment_company.services.contact_management_service.Contact') as mock_contact_class:
-            mock_contact = Mock()
-            mock_contact_class.return_value = mock_contact
+        # Mock repository method
+        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+            mock_create.return_value = mock_contact
             
             # Act
             self.contact_service.add_contact(
@@ -684,19 +691,22 @@ class TestContactManagementService:
             )
             
             # Assert
-            mock_contact_class.assert_called_once_with(
-                investment_company_id=company.id,
-                name='José María O\'Connor-Smith',
-                title='Senior Vice-President & CFO',
-                direct_number='+1 (555) 123-4567',
-                direct_email='jose.maria.oconnor-smith@example-company.com',
-                notes='Special characters: é, ñ, ü, &, -, \''
-            )
+            mock_create.assert_called_once()
+            # Verify the repository was called with special characters preserved
+            call_args = mock_create.call_args
+            assert call_args[0][0]['investment_company_id'] == company.id
+            assert call_args[0][0]['name'] == 'José María O\'Connor-Smith'
+            assert call_args[0][0]['title'] == 'Senior Vice-President & CFO'
+            assert call_args[0][0]['direct_number'] == '+1 (555) 123-4567'
+            assert call_args[0][0]['direct_email'] == 'jose.maria.oconnor-smith@example-company.com'
+            assert call_args[0][0]['notes'] == 'Special characters: é, ñ, ü, &, -, \''
     
     def test_update_contact_preserves_unchanged_fields(self):
         """Test that contact update preserves fields that are not being updated."""
         # Arrange
-        contact = ContactTestDataBuilder.create_contact(
+        contact_id = 1
+        update_data = {'name': 'Updated Name'}
+        mock_contact = ContactTestDataBuilder.create_contact(
             name='Original Name',
             title='Original Title',
             direct_number='+1234567890',
@@ -704,19 +714,23 @@ class TestContactManagementService:
             notes='Original notes'
         )
         
-        # Act - Only update name
-        self.contact_service.update_contact(
-            contact=contact,
-            name='Updated Name',
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert contact.name == 'Updated Name'
-        assert contact.title == 'Original Title'  # Unchanged
-        assert contact.direct_number == '+1234567890'  # Unchanged
-        assert contact.direct_email == 'original@test.com'  # Unchanged
-        assert contact.notes == 'Original notes'  # Unchanged
+        # Mock repository methods
+        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get, \
+             patch.object(self.contact_service.contact_repository, 'update') as mock_update:
+            mock_get.return_value = mock_contact
+            mock_update.return_value = mock_contact
+            
+            # Act - Only update name
+            result = self.contact_service.update_contact(
+                contact_id=contact_id,
+                contact_data=update_data,
+                session=self.mock_session
+            )
+            
+            # Assert
+            assert result == mock_contact
+            mock_get.assert_called_once_with(contact_id, self.mock_session)
+            mock_update.assert_called_once_with(contact_id, update_data, self.mock_session)
     
     def test_contact_operations_with_empty_company(self):
         """Test contact operations with company that has no contacts."""
