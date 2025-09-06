@@ -1,6 +1,6 @@
 ---
 description: Event Orchestration: Services must delegate event processing to orchestrators
-globs: **/services/*.py, **/events/handlers/*.py, **/orchestrator.py
+globs: **/services/*.py,**/events/handlers/*.py,**/orchestrator.py
 alwaysApply: false
 ---
 
