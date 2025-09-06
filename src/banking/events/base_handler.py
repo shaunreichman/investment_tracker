@@ -18,11 +18,11 @@ from sqlalchemy.orm import Session
 from abc import ABC, abstractmethod
 
 from src.banking.models import Bank, BankAccount
-from src.banking.services.banking_validation_service import BankingValidationService
 
 if TYPE_CHECKING:
     from src.banking.services.bank_service import BankService
     from src.banking.services.bank_account_service import BankAccountService
+    from src.banking.services.banking_validation_service import BankingValidationService
 
 
 class BaseBankingEventHandler(ABC):
@@ -56,6 +56,7 @@ class BaseBankingEventHandler(ABC):
         # Initialize services for business logic
         from src.banking.services.bank_service import BankService
         from src.banking.services.bank_account_service import BankAccountService
+        from src.banking.services.banking_validation_service import BankingValidationService
         
         self.bank_service = BankService()
         self.bank_account_service = BankAccountService()

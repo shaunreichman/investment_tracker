@@ -86,13 +86,13 @@ class CompanyRecordEventHandler(EventConsumer):
             # Create company record update event
             # This would typically involve updating aggregated equity values
             # For now, just log the update
-            logger.info(f"Updated company {company.name} (ID: {company_id}) equity values for fund {fund_id}")
+            logger.info(f"Updated company equity values for fund {event.fund_id}")
             
             # Mark company as updated
-            company.updated_at = event_date
+            fund.updated_at = event.event_date
             
         except Exception as e:
-            logger.error(f"Error updating company equity for fund {fund_id}: {e}")
+            logger.error(f"Error updating company equity for fund {event.fund_id}: {e}")
             raise
     
     def _handle_distribution_recorded(self, event: DistributionRecordedEvent) -> None:
@@ -120,7 +120,7 @@ class CompanyRecordEventHandler(EventConsumer):
             )
             
         except Exception as e:
-            logger.error(f"Error updating company distribution for fund {fund_id}: {e}")
+            logger.error(f"Error updating company distribution for fund {event.fund_id}: {e}")
             raise
     
     def _handle_nav_updated(self, event: NAVUpdatedEvent) -> None:

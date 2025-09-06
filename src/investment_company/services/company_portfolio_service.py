@@ -19,10 +19,7 @@ from src.investment_company.repositories import CompanyRepository, ContactReposi
 from src.investment_company.models import InvestmentCompany, Contact
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.investment_company.services.company_calculation_service import CompanyCalculationService
+from src.investment_company.services.company_calculation_service import CompanyCalculationService
 
 
 class CompanyPortfolioService:
@@ -39,7 +36,7 @@ class CompanyPortfolioService:
         calculation_service (CompanyCalculationService): Service for calculations
     """
     
-    def __init__(self, calculation_service: 'CompanyCalculationService' = None):
+    def __init__(self, calculation_service: CompanyCalculationService = None):
         """Initialize the company portfolio service."""
         self.company_repository = CompanyRepository()
         self.contact_repository = ContactRepository()

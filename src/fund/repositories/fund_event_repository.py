@@ -547,6 +547,41 @@ class FundEventRepository:
         
         return events
 
+    def generate_group_id(self, session: Session) -> int:
+        """
+        Generate a unique group ID using database sequence for enterprise-grade uniqueness.
+        
+        This method uses a PostgreSQL sequence to ensure thread-safe, unique group IDs
+        for event grouping functionality. The sequence is created via database migration.
+        
+        Args:
+            session: Database session for sequence access
+            
+        Returns:
+            int: Unique group ID from the sequence
+            
+        Raises:
+            RuntimeError: If sequence access fails
+        """
+        from sqlalchemy import text
+        
+        try:
+            # Get next value from sequence
+            result = session.execute(text("SELECT nextval('group_id_seq')"))
+            group_id = result.scalar()
+            
+            # Ensure we stay within PostgreSQL Integer limits
+            if group_id > 2147483647:
+                # Reset sequence if we're getting close to the limit
+                session.execute(text("ALTER SEQUENCE group_id_seq RESTART WITH 1"))
+                result = session.execute(text("SELECT nextval('group_id_seq')"))
+                group_id = result.scalar()
+            
+            return group_id
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate group ID: {e}") from e
+
     def clear_all_cache(self) -> None:
         """Clear all cached data."""
         self._cache.clear()

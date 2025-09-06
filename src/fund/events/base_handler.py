@@ -12,7 +12,7 @@ Key responsibilities:
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from datetime import date, datetime
 from sqlalchemy.orm import Session
 from abc import ABC, abstractmethod
@@ -20,6 +20,9 @@ from abc import ABC, abstractmethod
 from src.fund.models import Fund, FundEvent
 from src.fund.enums import EventType, FundType, FundStatus
 # Services will be injected or lazy-loaded to avoid circular imports
+
+if TYPE_CHECKING:
+    from src.fund.events.domain.base import FundDomainEvent
 
 
 class BaseFundEventHandler(ABC):

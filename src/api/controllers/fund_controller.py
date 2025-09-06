@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from src.fund.enums import FundStatus, FundType, EventType
 from src.fund.services.fund_service import FundService
-from src.fund.formatters import format_fund_with_events, format_fund, format_funds_list, format_events_list, format_event_response
+from src.fund.formatters import format_fund_with_events, format_fund, format_funds_list, format_events_list, format_event_response, format_event
 
 
 class FundController:
@@ -265,7 +265,10 @@ class FundController:
             # Commit the transaction
             session.commit()
             
-            return jsonify(event), 201
+            # Format the event for JSON response
+            from src.fund.formatters import format_event
+            formatted_event = format_event(event)
+            return jsonify(formatted_event), 201
             
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
@@ -309,7 +312,10 @@ class FundController:
             # Commit the transaction
             session.commit()
             
-            return jsonify(event), 201
+            # Format the event for JSON response
+            from src.fund.formatters import format_event
+            formatted_event = format_event(event)
+            return jsonify(formatted_event), 201
             
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
@@ -325,47 +331,6 @@ class FundController:
             return jsonify({'error': 'Internal server error'}), 500
         finally:
             if 'session' in locals() and should_close_session:
-                session.close()
-    
-    def get_fund_events(self, fund_id: int) -> tuple:
-        """
-        Get events for a specific fund.
-        
-        Args:
-            fund_id: ID of the fund
-            
-        Returns:
-            Tuple of (response_data, status_code)
-        """
-        try:
-            # Get query parameters
-            skip = request.args.get('skip', 0, type=int)
-            limit = request.args.get('limit', 100, type=int)
-            event_types = request.args.getlist('event_types')
-            
-            # Parse event types if provided
-            parsed_event_types = None
-            if event_types:
-                try:
-                    parsed_event_types = [EventType(et) for et in event_types]
-                except ValueError:
-                    return jsonify({'error': 'Invalid event types provided'}), 400
-            
-            # Get database session
-            session = self._get_session()
-            
-            # Get events
-            events = self.fund_service.get_fund_events(
-                fund_id, session, skip, limit, parsed_event_types
-            )
-            
-            return jsonify(events), 200
-            
-        except Exception as e:
-            current_app.logger.error(f"Error getting fund events: {str(e)}")
-            return jsonify({'error': 'Internal server error'}), 500
-        finally:
-            if 'session' in locals():
                 session.close()
     
     def update_fund_event(self, fund_id: int, event_id: int) -> tuple:
@@ -422,14 +387,16 @@ class FundController:
             # Get database session
             session = self._get_session()
             
-            # Get fund events
-            result = self.fund_service.get_fund_events(fund_id, session)
+            # Get fund events - service returns a list directly
+            events = self.fund_service.get_fund_events(fund_id, session)
             
-            if result is None:
+            if events is None:
                 return jsonify({'error': 'Fund not found'}), 404
             
-            # Return the events list directly (the service already formats them)
-            return jsonify(result['events']), 200
+            # Format events using the formatter (grouping fields are already in the database)
+            formatted_events = [format_event(event) for event in events]
+            
+            return jsonify(formatted_events), 200
             
         except Exception as e:
             print(f"❌ FundController.get_fund_events error: {e}")

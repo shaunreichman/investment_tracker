@@ -150,7 +150,7 @@ class CompanyController:
                 
                 companies_data.append(company_data)
             
-            return jsonify({"companies": companies_data}), 200
+            return {"companies": companies_data}, 200
             
         except Exception as e:
             # Use proper Flask logging when available, fallback to print for debugging
@@ -161,7 +161,8 @@ class CompanyController:
                     print(f"Error getting investment companies: {str(e)}")
             except:
                 print(f"Error getting investment companies: {str(e)}")
-            return jsonify({"error": "Internal server error"}), 500
+            
+            return {"error": "Internal server error"}, 500
     
     def create_investment_company(self, session: Session) -> tuple:
         """

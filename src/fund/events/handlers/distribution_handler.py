@@ -329,7 +329,9 @@ class DistributionHandler(BaseFundEventHandler):
         )
         
         # Group the events together for reporting
-        group_id = self._generate_group_id()
+        from src.fund.repositories.fund_event_repository import FundEventRepository
+        fund_event_repo = FundEventRepository()
+        group_id = fund_event_repo.generate_group_id(self.session)
         event.group_id = group_id
         event.group_type = GroupType.INTEREST_WITHHOLDING
         event.group_position = 0
@@ -434,43 +436,6 @@ class DistributionHandler(BaseFundEventHandler):
             'tax_amount': round(tax, 2),
             'tax_rate': round(rate, 2)
         }
-    
-    def _generate_group_id(self) -> int:
-        """
-        Generate a unique group ID using database sequence for enterprise-grade uniqueness.
-        
-        Returns:
-            Unique integer group ID
-        """
-        from src.api.database import get_db_session
-        from sqlalchemy import text
-        
-        session = get_db_session()
-        try:
-            # Create sequence if it doesn't exist (idempotent)
-            session.execute(text("""
-                CREATE SEQUENCE IF NOT EXISTS group_id_seq 
-                START WITH 1 
-                INCREMENT BY 1 
-                MINVALUE 1 
-                MAXVALUE 2147483647
-            """))
-            
-            # Get next value from sequence
-            result = session.execute(text("SELECT nextval('group_id_seq')"))
-            group_id = result.scalar()
-            
-            # Ensure we stay within PostgreSQL Integer limits
-            if group_id > 2147483647:
-                # Reset sequence if we're getting close to the limit
-                session.execute(text("ALTER SEQUENCE group_id_seq RESTART WITH 1"))
-                result = session.execute(text("SELECT nextval('group_id_seq')"))
-                group_id = result.scalar()
-            
-            return group_id
-            
-        finally:
-            session.close()
     
     def _update_fund_after_distribution(self, event: FundEvent) -> None:
         """

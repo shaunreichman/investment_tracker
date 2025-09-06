@@ -31,8 +31,8 @@ def investment_companies():
         session.close()
         session = None
         
-        # Return the response
-        return response_data, status_code
+        # Return the response as JSON
+        return jsonify(response_data), status_code
         
     except Exception as e:
         if session:
