@@ -1,7 +1,7 @@
 ---
 description: Server Management: Development server startup, shutdown, and troubleshooting
-globs: **/api.py, **/run.py, **/package.json
-alwaysApply: false
+globs:
+alwaysApply: true
 ---
 
 # Server Management Rules
