@@ -33,6 +33,7 @@ from src.fund.models import (
     Fund, FundType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
+from src.fund.services.fund_service import FundService
 from src.fund.enums import DistributionType
 from src.fund.events.orchestrator import FundUpdateOrchestrator
 
@@ -54,7 +55,8 @@ class TestReturnOfCapitalWorkflow:
         db_session.commit()
         
         # Add initial capital call to establish equity balance
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Initial state validation
@@ -106,7 +108,8 @@ class TestReturnOfCapitalWorkflow:
         db_session.commit()
         
         # Add initial capital call
-        fund.add_capital_call(100000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 100000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Initial state
@@ -160,7 +163,8 @@ class TestReturnOfCapitalWorkflow:
         db_session.commit()
         
         # Add initial capital call
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Create return of capital event
@@ -228,7 +232,8 @@ class TestReturnOfCapitalWorkflow:
         db_session.commit()
         
         # Add capital call
-        cost_fund.add_capital_call(30000.0, date(2023, 1, 1), "Initial call", session=db_session)
+        cost_fund_service = FundService()
+        cost_fund_service.add_capital_call(cost_fund.id, 30000.0, date(2023, 1, 1), "Initial call", session=db_session)
         db_session.commit()
         
         # Try to return more than invested (should work but result in negative balance)
@@ -262,7 +267,8 @@ class TestReturnOfCapitalWorkflow:
         )
         db_session.commit()
         
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
         db_session.commit()
         
         # Initial state
@@ -312,7 +318,8 @@ class TestReturnOfCapitalWorkflow:
         db_session.commit()
         
         # Add capital call
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
         db_session.commit()
         
         # Initial status should be ACTIVE
@@ -351,7 +358,8 @@ class TestReturnOfCapitalWorkflow:
         db_session.commit()
         
         # Add capital call
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
         db_session.commit()
         
         # Record initial state for consistency validation
@@ -412,7 +420,8 @@ class TestReturnOfCapitalWorkflow:
         same_date = date(2023, 6, 30)
         
         # Add capital call and return on same date
-        fund.add_capital_call(50000.0, same_date, "Same day call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 50000.0, same_date, "Same day call", session=db_session)
         fund.add_return_of_capital(20000.0, same_date, "Same day return", session=db_session)
         db_session.commit()
         
@@ -468,7 +477,8 @@ class TestReturnOfCapitalWorkflow:
         call_dates = [date(2023, 1, 1), date(2023, 3, 1), date(2023, 6, 1), date(2023, 9, 1)]
         
         for amount, call_date in zip(call_amounts, call_dates):
-            fund.add_capital_call(amount, call_date, f"Call {amount}", session=db_session)
+            fund_service = FundService()
+            fund_service.add_capital_call(fund.id, amount, call_date, f"Call {amount}", session=db_session)
             db_session.commit()
         
         # Verify initial state

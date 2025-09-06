@@ -28,6 +28,9 @@ class CompanyService:
         self.event_orchestrator = event_orchestrator or CompanyUpdateOrchestrator()
     
     def create_company(self, data, session):
+        # Validation logic
+        self.validation_service.validate_company_data(data, session)
+        
         # Business logic
         company = self.company_repository.create(data, session)
         

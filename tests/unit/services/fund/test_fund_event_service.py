@@ -79,102 +79,6 @@ class TestFundEventService:
         """Test FundEventService initialization."""
         assert isinstance(service, FundEventService)
     
-    def test_add_capital_call_valid_inputs(self, service, mock_fund, mock_session):
-        """Test capital call creation with valid inputs."""
-        # Setup
-        amount = 5000.0
-        call_date = date(2024, 1, 15)
-        description = "Q1 Capital Call"
-        reference_number = "CC_001"
-        
-        # Mock the created event
-        mock_event = Mock(spec=FundEvent)
-        mock_event.fund_id = 1
-        mock_event.event_type = EventType.CAPITAL_CALL
-        mock_event.event_date = call_date
-        mock_event.amount = amount
-        mock_event.description = description
-        mock_event.reference_number = reference_number
-        service.capital_event_repository.create_capital_call.return_value = mock_event
-        
-        # Execute
-        result = service.add_capital_call(
-            fund=mock_fund,
-            amount=amount,
-            date=call_date,
-            description=description,
-            reference_number=reference_number,
-            session=mock_session
-        )
-        
-        # Verify
-        assert result == mock_event
-        service.capital_event_repository.create_capital_call.assert_called_once_with(
-            1,
-            {
-                'fund_id': 1,
-                'event_type': EventType.CAPITAL_CALL,
-                'event_date': call_date,
-                'amount': amount,
-                'description': description,
-                'reference_number': reference_number
-            },
-            mock_session
-        )
-    
-    def test_add_capital_call_default_description(self, service, mock_fund, mock_session):
-        """Test capital call creation with default description."""
-        # Setup
-        amount = 5000.0
-        call_date = date(2024, 1, 15)
-        
-        # Mock the created event
-        mock_event = Mock(spec=FundEvent)
-        expected_description = f"Capital call of {amount}"
-        service.capital_event_repository.create_capital_call.return_value = mock_event
-        
-        # Execute
-        service.add_capital_call(
-            fund=mock_fund,
-            amount=amount,
-            date=call_date,
-            session=mock_session
-        )
-        
-        # Verify default description was used
-        service.capital_event_repository.create_capital_call.assert_called_once()
-        call_args = service.capital_event_repository.create_capital_call.call_args
-        assert call_args[0][1]['description'] == expected_description
-    
-    def test_add_capital_call_invalid_amount(self, service, mock_fund, mock_session):
-        """Test capital call creation with invalid amount."""
-        # Test zero amount
-        with pytest.raises(ValueError, match="Capital call amount must be positive"):
-            service.add_capital_call(
-                fund=mock_fund,
-                amount=0,
-                date=date(2024, 1, 15),
-                session=mock_session
-            )
-        
-        # Test negative amount
-        with pytest.raises(ValueError, match="Capital call amount must be positive"):
-            service.add_capital_call(
-                fund=mock_fund,
-                amount=-1000,
-                date=date(2024, 1, 15),
-                session=mock_session
-            )
-    
-    def test_add_capital_call_missing_date(self, service, mock_fund, mock_session):
-        """Test capital call creation with missing date."""
-        with pytest.raises(ValueError, match="Capital call date is required"):
-            service.add_capital_call(
-                fund=mock_fund,
-                amount=5000.0,
-                date=None,
-                session=mock_session
-            )
     
     def test_add_return_of_capital_valid_inputs(self, service, mock_fund, mock_session):
         """Test return of capital creation with valid inputs."""
@@ -472,55 +376,12 @@ class TestFundEventService:
             )
     
     
-    def test_event_creation_without_session(self, service, mock_fund, mock_fund_event_class):
-        """Test event creation without providing a session."""
-        # Setup
-        amount = 5000.0
-        call_date = date(2024, 1, 15)
-        
-        # Mock the fund events class
-        self._mock_fund_events_class(mock_fund, mock_fund_event_class)
-        
-        # Mock the created event
-        mock_event = Mock(spec=FundEvent)
-        mock_fund_event_class.return_value = mock_event
-        
-        # Note: The current service implementation works with mocked repositories
-        # This test documents the current behavior - no error is raised with mocked repos
-        result = service.add_capital_call(
-            fund=mock_fund,
-            amount=amount,
-            date=call_date
-        )
-        # Should return a mock event when repositories are mocked
-        assert result is not None
     
     def test_event_creation_edge_cases(self, service, mock_fund, mock_session):
         """Test event creation with edge case values."""
         # Setup
         mock_event = Mock(spec=FundEvent)
-        service.capital_event_repository.create_capital_call.return_value = mock_event
         service.unit_event_repository.create_nav_update.return_value = mock_event
-        
-        # Test very small amounts
-        small_amount = 0.01
-        result = service.add_capital_call(
-            fund=mock_fund,
-            amount=small_amount,
-            date=date(2024, 1, 15),
-            session=mock_session
-        )
-        assert result == mock_event
-        
-        # Test very large amounts
-        large_amount = 999999999.99
-        result = service.add_capital_call(
-            fund=mock_fund,
-            amount=large_amount,
-            date=date(2024, 1, 15),
-            session=mock_session
-        )
-        assert result == mock_event
         
         # Test very small unit prices
         small_unit_price = 0.001
@@ -532,36 +393,3 @@ class TestFundEventService:
         )
         assert result == mock_event
     
-    def test_event_creation_with_long_descriptions(self, service, mock_fund, mock_session):
-        """Test event creation with long descriptions."""
-        # Setup
-        mock_event = Mock(spec=FundEvent)
-        service.capital_event_repository.create_capital_call.return_value = mock_event
-        
-        # Test long description
-        long_description = "A" * 1000
-        result = service.add_capital_call(
-            fund=mock_fund,
-            amount=5000.0,
-            date=date(2024, 1, 15),
-            description=long_description,
-            session=mock_session
-        )
-        assert result == mock_event
-    
-    def test_event_creation_with_special_characters(self, service, mock_fund, mock_session):
-        """Test event creation with special characters in descriptions."""
-        # Setup
-        mock_event = Mock(spec=FundEvent)
-        service.capital_event_repository.create_capital_call.return_value = mock_event
-        
-        # Test special characters
-        special_description = "Capital Call (Q1) - Special: $5,000.00"
-        result = service.add_capital_call(
-            fund=mock_fund,
-            amount=5000.0,
-            date=date(2024, 1, 15),
-            description=special_description,
-            session=mock_session
-        )
-        assert result == mock_event

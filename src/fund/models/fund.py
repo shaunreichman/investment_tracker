@@ -447,55 +447,6 @@ class Fund(Base):
     # CORE BUSINESS LOGIC METHODS - Capital Movement Operations
     # ============================================================================
     
-    def add_capital_call(self, amount: float, call_date: date, description: str, 
-                        reference_number: str = None, session=None) -> 'FundEvent':
-        """
-        Add a capital call event using the service layer.
-        
-        Note: This method delegates to the fund service for proper orchestration.
-        For direct control, use FundService.add_capital_call() instead.
-        
-        Args:
-            amount: Capital call amount (must be positive)
-            call_date: Date of the capital call
-            description: Description of the capital call
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent: The created capital call event
-            
-        Raises:
-            ValueError: If fund is not cost-based or amount is invalid
-        """
-        if self.tracking_type != FundType.COST_BASED:
-            raise ValueError("Capital calls are only applicable for cost-based funds")
-        
-        if not amount or amount <= 0:
-            raise ValueError("Capital call amount must be a positive number")
-        if not call_date:
-            raise ValueError("Date is required")
-        
-        # Check if amount exceeds remaining commitment
-        if self.commitment_amount and amount > self.get_remaining_commitment():
-            raise ValueError("Cannot call more capital than remaining commitment")
-        
-        # Check for existing duplicate event (idempotent behavior)
-        existing_event = session.query(FundEvent).filter(
-            FundEvent.fund_id == self.id,
-            FundEvent.event_type == EventType.CAPITAL_CALL,
-            FundEvent.event_date == call_date,
-            FundEvent.amount == amount,
-            FundEvent.reference_number == reference_number
-        ).first()
-        
-        if existing_event:
-            return existing_event
-        
-        # Delegate to service layer for proper orchestration
-        from src.fund.services.fund_service import FundService
-        fund_service = FundService()
-        return fund_service.add_capital_call(self.id, amount, call_date, description, reference_number, session)
     
     def add_return_of_capital(self, amount: float, return_date: date, description: str,
                              reference_number: str = None, session=None) -> 'FundEvent':

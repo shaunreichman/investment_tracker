@@ -34,6 +34,7 @@ from src.fund.models import (
     Fund, FundType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
+from src.fund.services.fund_service import FundService
 from src.fund.enums import FundStatus, DistributionType
 from src.fund.events.orchestrator import FundUpdateOrchestrator
 
@@ -60,7 +61,8 @@ class TestFundRealizationWorkflow:
         assert fund.current_equity_balance == 0.0
         
         # Add initial capital call to establish equity balance
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Verify fund is still active with equity
@@ -111,7 +113,8 @@ class TestFundRealizationWorkflow:
         db_session.commit()
         
         # Add capital call and return to realize fund
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         fund.add_return_of_capital(50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         db_session.commit()
         
@@ -165,7 +168,8 @@ class TestFundRealizationWorkflow:
         db_session.commit()
         
         # Realize and complete fund
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         fund.add_return_of_capital(50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         
         tax_statement = TaxStatementFactory.create(
@@ -285,7 +289,8 @@ class TestFundRealizationWorkflow:
         db_session.commit()
         
         # Add capital call and return to realize fund
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         fund.add_return_of_capital(50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         db_session.commit()
         
@@ -331,7 +336,8 @@ class TestFundRealizationWorkflow:
         db_session.commit()
         
         # Realize fund
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         fund.add_return_of_capital(50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         db_session.commit()
         
@@ -381,7 +387,8 @@ class TestFundRealizationWorkflow:
         db_session.commit()
         
         # Realize and complete fund
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         fund.add_return_of_capital(50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         
         tax_statement = TaxStatementFactory.create(
@@ -434,7 +441,8 @@ class TestFundRealizationWorkflow:
         db_session.commit()
         
         # Add capital call with cash flow
-        event = fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        event = fund_service.add_capital_call(fund.id,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         cash_flow = FundEventCashFlowFactory.create(
             fund_event=event,
             bank_account=account,
@@ -496,7 +504,8 @@ class TestFundRealizationWorkflow:
         assert fund.current_equity_balance == 0.0
         
         # Add and return capital to test realization
-        fund.add_capital_call(10000.0, date(2023, 1, 1), "Capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id,  10000.0, date(2023, 1, 1), "Capital call", session=db_session)
         fund.add_return_of_capital(10000.0, date(2023, 6, 30), "Capital return", session=db_session)
         db_session.commit()
         
@@ -514,7 +523,7 @@ class TestFundRealizationWorkflow:
         db_session.commit()
         
         # Add and return very small amounts
-        fund2.add_capital_call(0.01, date(2023, 1, 1), "Small capital call", session=db_session)
+        fund_service.add_capital_call(fund2.id, 0.01, date(2023, 1, 1), "Small capital call", session=db_session)
         fund2.add_return_of_capital(0.01, date(2023, 6, 30), "Small capital return", session=db_session)
         db_session.commit()
         

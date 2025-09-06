@@ -435,9 +435,14 @@ class FundService:
     
     def add_capital_call(self, fund_id: int, amount: float, call_date: date, 
                          description: str = None, reference_number: str = None, 
-                         session: Session = None) -> Any:
+                         session: Session = None) -> 'FundEvent':
         """
-        Add capital call event through proper orchestration.
+        Add capital call event - THE ONLY method for this operation.
+        
+        This method follows enterprise best practices:
+        1. Business validation
+        2. Create the event directly
+        3. Delegate secondary impacts to orchestrator
         
         Args:
             fund_id: ID of the fund
@@ -449,21 +454,59 @@ class FundService:
             
         Returns:
             FundEvent: The created capital call event
+            
+        Raises:
+            ValueError: If validation fails
+            RuntimeError: If fund not found
         """
+        # 1. Business validation
+        if not amount or amount <= 0:
+            raise ValueError("Capital call amount must be a positive number")
+        if not call_date:
+            raise ValueError("Capital call date is required")
+        
+        # 2. Get fund and validate it exists
         fund = self.fund_repository.get_by_id(fund_id, session)
         if not fund:
             raise ValueError(f"Fund with ID {fund_id} not found")
         
-        # Use orchestrator for event processing
-        event_data = {
+        # 3. Validate fund type (capital calls only for cost-based funds)
+        if fund.tracking_type != FundType.COST_BASED:
+            raise ValueError("Capital calls are only applicable for cost-based funds")
+        
+        # 4. Check for duplicate events (idempotent behavior)
+        existing_event = self.fund_event_repository.get_by_criteria(
+            fund_id=fund_id,
+            event_type=EventType.CAPITAL_CALL,
+            event_date=call_date,
+            amount=amount,
+            reference_number=reference_number,
+            session=session
+        )
+        if existing_event:
+            return existing_event
+        
+        # 5. Create the capital call event directly
+        event = self.fund_event_repository.create({
+            'fund_id': fund_id,
             'event_type': EventType.CAPITAL_CALL,
             'amount': amount,
             'event_date': call_date,
             'description': description or f"Capital call: ${amount:,.2f}",
             'reference_number': reference_number
-        }
+        }, session)
         
-        return self.orchestrator.process_fund_event(event_data, session, fund)
+        # 6. Delegate secondary impacts to orchestrator
+        event_data = {
+            'event_type': 'capital_call_created',
+            'event_id': event.id,
+            'fund_id': fund_id,
+            'amount': amount,
+            'event_date': call_date
+        }
+        self.orchestrator.process_fund_event(event_data, session, fund)
+        
+        return event
     
     def add_return_of_capital(self, fund_id: int, amount: float, return_date: date,
                               description: str = None, reference_number: str = None,

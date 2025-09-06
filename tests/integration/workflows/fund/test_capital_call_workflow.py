@@ -24,6 +24,7 @@ from src.fund.models import (
     Fund, FundType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
+from src.fund.services.fund_service import FundService
 
 
 class TestCapitalCallWorkflow:
@@ -48,7 +49,8 @@ class TestCapitalCallWorkflow:
         assert fund.remaining_commitment == 100000.0
         
         # Execute capital call
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Verify fund state updates
@@ -85,7 +87,8 @@ class TestCapitalCallWorkflow:
         db_session.commit()
         
         # Create capital call event
-        event = fund.add_capital_call(50000.0, date(2023, 1, 15), "Capital call with cash flow", session=db_session)
+        fund_service = FundService()
+        event = fund_service.add_capital_call(fund.id, 50000.0, date(2023, 1, 15), "Capital call with cash flow", session=db_session)
         db_session.commit()
         
         # Add cash flow for the capital call
@@ -124,7 +127,8 @@ class TestCapitalCallWorkflow:
         assert fund.remaining_commitment == 200000.0
         
         # First capital call
-        fund.add_capital_call(75000.0, date(2023, 1, 1), "First capital call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 75000.0, date(2023, 1, 1), "First capital call", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -133,7 +137,7 @@ class TestCapitalCallWorkflow:
         assert fund.remaining_commitment == 125000.0
         
         # Second capital call
-        fund.add_capital_call(50000.0, date(2023, 3, 1), "Second capital call", session=db_session)
+        fund_service.add_capital_call(fund.id, 50000.0, date(2023, 3, 1), "Second capital call", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -168,18 +172,19 @@ class TestCapitalCallWorkflow:
         
         # Test: Cannot call more than remaining commitment
         with pytest.raises(ValueError, match="Cannot call more capital than remaining commitment"):
-            fund.add_capital_call(150000.0, date(2023, 1, 1), "Excessive capital call", session=db_session)
+            fund_service = FundService()
+            fund_service.add_capital_call(fund.id, 150000.0, date(2023, 1, 1), "Excessive capital call", session=db_session)
         
         # Test: Cannot call negative amount
         with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
-            fund.add_capital_call(-10000.0, date(2023, 1, 1), "Negative capital call", session=db_session)
+            fund_service.add_capital_call(fund.id, -10000.0, date(2023, 1, 1), "Negative capital call", session=db_session)
         
         # Test: Cannot call zero amount
         with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
-            fund.add_capital_call(0.0, date(2023, 1, 1), "Zero capital call", session=db_session)
+            fund_service.add_capital_call(fund.id, 0.0, date(2023, 1, 1), "Zero capital call", session=db_session)
         
         # Test: Valid capital call should work
-        fund.add_capital_call(50000.0, date(2023, 1, 1), "Valid capital call", session=db_session)
+        fund_service.add_capital_call(fund.id, 50000.0, date(2023, 1, 1), "Valid capital call", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -199,8 +204,9 @@ class TestCapitalCallWorkflow:
         db_session.commit()
         
         # NAV-based funds should not allow capital calls
+        fund_service = FundService()
         with pytest.raises(ValueError, match="Capital calls are only applicable for cost-based funds"):
-            fund.add_capital_call(40000.0, date(2023, 1, 1), "NAV-based capital call", session=db_session)
+            fund_service.add_capital_call(fund.id, 40000.0, date(2023, 1, 1), "NAV-based capital call", session=db_session)
         
         # Verify no events were created
         events = fund.get_all_fund_events(session=db_session)
@@ -223,7 +229,8 @@ class TestCapitalCallWorkflow:
         description = "Test capital call with metadata"
         amount = 30000.0
         
-        event = fund.add_capital_call(amount, call_date, description, session=db_session)
+        fund_service = FundService()
+        event = fund_service.add_capital_call(fund.id, amount, call_date, description, session=db_session)
         db_session.commit()
         
         # Verify event metadata
@@ -255,7 +262,8 @@ class TestCapitalCallWorkflow:
         initial_remaining = fund.remaining_commitment
         
         # Execute capital call
-        fund.add_capital_call(25000.0, date(2023, 1, 1), "Transaction test call", session=db_session)
+        fund_service = FundService()
+        fund_service.add_capital_call(fund.id, 25000.0, date(2023, 1, 1), "Transaction test call", session=db_session)
         db_session.commit()
         
         # Verify all related state changes are consistent

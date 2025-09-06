@@ -66,46 +66,6 @@ class FundEventService:
     # CAPITAL CALL AND RETURN OF CAPITAL EVENTS
     # ============================================================================
     
-    def add_capital_call(self, fund: 'Fund', amount: float, date: date, 
-                        description: Optional[str] = None, reference_number: Optional[str] = None, 
-                        session: Optional[Session] = None) -> 'FundEvent':
-        """
-        [EXTRACTED] Add a capital call event to the fund.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            amount: Amount of capital to call
-            date: Date of the capital call
-            description: Optional description
-            reference_number: Optional reference number
-            session: Database session (optional)
-            
-        Returns:
-            FundEvent: The created capital call event
-        """
-        # Validate inputs
-        if amount <= 0:
-            raise ValueError("Capital call amount must be positive")
-        if not date:
-            raise ValueError("Capital call date is required")
-        
-        # Prepare event data
-        event_data = {
-            'fund_id': fund.id,
-            'event_type': EventType.CAPITAL_CALL,
-            'event_date': date,
-            'amount': amount,
-            'description': description or f"Capital call of {amount}",
-            'reference_number': reference_number
-        }
-        
-        # Delegate to specialized repository
-        event = self.capital_event_repository.create_capital_call(fund.id, event_data, session)
-        
-        logger.info(f"Added capital call event: {amount} on {date} for fund {fund.name}")
-        return event
     
     def add_return_of_capital(self, fund: 'Fund', amount: float, date: date,
                              description: Optional[str] = None, reference_number: Optional[str] = None,

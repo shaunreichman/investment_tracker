@@ -26,6 +26,7 @@ from src.fund.models import (
     Fund, FundType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
+from src.fund.services.fund_service import FundService
 from src.fund.enums import DistributionType, TaxPaymentType
 from src.fund.events.orchestrator import FundUpdateOrchestrator
 
@@ -47,7 +48,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        initial_event = fund.add_capital_call(
+        fund_service = FundService()
+        initial_event = fund_service.add_capital_call(fund.id,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -106,7 +108,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        initial_event = fund.add_capital_call(
+        fund_service = FundService()
+        initial_event = fund_service.add_capital_call(fund.id,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -167,7 +170,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        initial_event = fund.add_capital_call(
+        fund_service = FundService()
+        initial_event = fund_service.add_capital_call(fund.id,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -217,7 +221,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        initial_event = fund.add_capital_call(
+        fund_service = FundService()
+        initial_event = fund_service.add_capital_call(fund.id,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -267,7 +272,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        initial_event = fund.add_capital_call(
+        fund_service = FundService()
+        initial_event = fund_service.add_capital_call(fund.id,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -315,7 +321,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        initial_event = fund.add_capital_call(
+        fund_service = FundService()
+        initial_event = fund_service.add_capital_call(fund.id,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -367,7 +374,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        initial_event = fund.add_capital_call(
+        fund_service = FundService()
+        initial_event = fund_service.add_capital_call(fund.id,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -418,7 +426,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        initial_event = fund.add_capital_call(
+        fund_service = FundService()
+        initial_event = fund_service.add_capital_call(fund.id,  
             amount=500000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -470,7 +479,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial events for both fund types (required by business rules)
-        cost_initial = cost_fund.add_capital_call(
+        fund_service = FundService()
+        cost_initial = fund_service.add_capital_call(fund.id,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
