@@ -47,7 +47,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -62,7 +65,9 @@ class TestNAVUpdateWorkflow:
         assert fund.tracking_type == FundType.NAV_BASED
         
         # Execute NAV update
-        event = fund.add_nav_update(25.50, date(2023, 6, 1), "Initial NAV update", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_nav_update(fund, 25.50, date(2023, 6, 1), "Initial NAV update", session=db_session)
         db_session.commit()
         
         # Verify fund state updates
@@ -96,7 +101,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -106,11 +114,13 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # First NAV update
-        first_event = fund.add_nav_update(25.50, date(2023, 6, 1), "Initial NAV", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        first_event = fund_event_service.add_nav_update(fund, 25.50, date(2023, 6, 1), "Initial NAV", session=db_session)
         db_session.commit()
         
         # Second NAV update with changes
-        second_event = fund.add_nav_update(26.75, date(2023, 7, 1), "July NAV update", session=db_session)
+        second_event = fund_event_service.add_nav_update(fund, 26.75, date(2023, 7, 1), "July NAV update", session=db_session)
         db_session.commit()
         
         # Verify second event has change calculations
@@ -137,7 +147,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -147,19 +160,22 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Test: Cannot update with negative NAV
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        
         with pytest.raises(ValueError, match="NAV per share must be a positive number"):
-            fund.add_nav_update(-10.0, date(2023, 6, 1), "Negative NAV", session=db_session)
+            fund_event_service.add_nav_update(fund, -10.0, date(2023, 6, 1), "Negative NAV", session=db_session)
         
         # Test: Cannot update with zero NAV
         with pytest.raises(ValueError, match="NAV per share must be a positive number"):
-            fund.add_nav_update(0.0, date(2023, 6, 1), "Zero NAV", session=db_session)
+            fund_event_service.add_nav_update(fund, 0.0, date(2023, 6, 1), "Zero NAV", session=db_session)
         
         # Test: Cannot update with None date
-        with pytest.raises(ValueError, match="Date is required"):
-            fund.add_nav_update(25.50, None, "No date", session=db_session)
+        with pytest.raises(ValueError, match="Update date is required"):
+            fund_event_service.add_nav_update(fund, 25.50, None, "No date", session=db_session)
         
         # Test: Valid NAV update should work
-        fund.add_nav_update(25.50, date(2023, 6, 1), "Valid NAV", session=db_session)
+        fund_event_service.add_nav_update(fund, 25.50, date(2023, 6, 1), "Valid NAV", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -179,8 +195,11 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Cost-based funds should not allow NAV updates
-        with pytest.raises(ValueError, match="Event requires NAV_BASED fund, but fund is COST_BASED"):
-            fund.add_nav_update(25.50, date(2023, 6, 1), "Cost-based NAV update", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        
+        with pytest.raises(ValueError, match="NAV updates are only applicable for NAV-based funds"):
+            fund_event_service.add_nav_update(fund, 25.50, date(2023, 6, 1), "Cost-based NAV update", session=db_session)
         
         # Verify no events were created
         events = fund.get_all_fund_events(session=db_session)
@@ -201,7 +220,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -211,13 +233,15 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create NAV updates in chronological order
-        first_event = fund.add_nav_update(25.00, date(2023, 6, 1), "June NAV", session=db_session)
-        second_event = fund.add_nav_update(26.00, date(2023, 7, 1), "July NAV", session=db_session)
-        third_event = fund.add_nav_update(27.00, date(2023, 8, 1), "August NAV", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        first_event = fund_event_service.add_nav_update(fund, 25.00, date(2023, 6, 1), "June NAV", session=db_session)
+        second_event = fund_event_service.add_nav_update(fund, 26.00, date(2023, 7, 1), "July NAV", session=db_session)
+        third_event = fund_event_service.add_nav_update(fund, 27.00, date(2023, 8, 1), "August NAV", session=db_session)
         db_session.commit()
         
         # Now insert a NAV update between June and July
-        middle_event = fund.add_nav_update(25.50, date(2023, 6, 15), "Mid-June NAV", session=db_session)
+        middle_event = fund_event_service.add_nav_update(fund, 25.50, date(2023, 6, 15), "Mid-June NAV", session=db_session)
         db_session.commit()
         
         # Verify the middle event has correct change calculations
@@ -253,7 +277,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 6, 1),
@@ -263,15 +290,17 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Initial NAV update
-        fund.add_nav_update(25.00, date(2023, 6, 1), "Initial NAV", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_nav_update(fund, 25.00, date(2023, 6, 1), "Initial NAV", session=db_session)
         db_session.commit()
         
         # Purchase units
-        fund.add_unit_purchase(1000.0, 25.00, date(2023, 6, 15), "Initial unit purchase", session=db_session)
+        fund_event_service.add_unit_purchase(fund, 1000.0, 25.00, date(2023, 6, 15), description="Initial unit purchase", session=db_session)
         db_session.commit()
         
         # NAV update after unit purchase
-        fund.add_nav_update(26.00, date(2023, 7, 1), "July NAV update", session=db_session)
+        fund_event_service.add_nav_update(fund, 26.00, date(2023, 7, 1), "July NAV update", session=db_session)
         db_session.commit()
         
         # Verify fund state
@@ -281,11 +310,11 @@ class TestNAVUpdateWorkflow:
         assert fund.current_nav_total == 52000.0  # 2000 units * $26.00
         
         # Purchase more units
-        fund.add_unit_purchase(500.0, 26.00, date(2023, 7, 15), "Additional units", session=db_session)
+        fund_event_service.add_unit_purchase(fund, 500.0, 26.00, date(2023, 7, 15), description="Additional units", session=db_session)
         db_session.commit()
         
         # NAV update after additional units
-        fund.add_nav_update(27.00, date(2023, 8, 1), "August NAV update", session=db_session)
+        fund_event_service.add_nav_update(fund, 27.00, date(2023, 8, 1), "August NAV update", session=db_session)
         db_session.commit()
         
         # Verify updated fund state
@@ -294,8 +323,8 @@ class TestNAVUpdateWorkflow:
         assert fund.current_unit_price == 27.00
         assert fund.current_nav_total == 67500.0  # 2500 units * $27.00
 
-    def test_nav_update_idempotent_behavior(self, db_session):
-        """Test that NAV updates are idempotent and don't create duplicates"""
+    def test_nav_update_duplicate_validation(self, db_session):
+        """Test that NAV updates throw error on duplicate dates"""
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -308,7 +337,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -318,15 +350,14 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # First NAV update
-        first_event = fund.add_nav_update(25.50, date(2023, 6, 1), "June NAV", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        first_event = fund_event_service.add_nav_update(fund, 25.50, date(2023, 6, 1), "June NAV", session=db_session)
         db_session.commit()
         
-        # Try to create the same NAV update again
-        second_event = fund.add_nav_update(25.50, date(2023, 6, 1), "June NAV", session=db_session)
-        db_session.commit()
-        
-        # Should return the same event (idempotent behavior)
-        assert second_event.id == first_event.id
+        # Try to create the same NAV update again - should throw error
+        with pytest.raises(ValueError, match="NAV update already exists for 2023-06-01"):
+            fund_event_service.add_nav_update(fund, 25.50, date(2023, 6, 1), "June NAV", session=db_session)
         
         # Verify only one event exists
         events = fund.get_all_fund_events(session=db_session)
@@ -351,7 +382,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -366,7 +400,10 @@ class TestNAVUpdateWorkflow:
         nav_value = 30.00
         reference = "NAV001"
         
-        event = fund.add_nav_update(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_nav_update(
+            fund,
             nav_value, 
             update_date, 
             description, 
@@ -402,7 +439,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -416,7 +456,9 @@ class TestNAVUpdateWorkflow:
         initial_nav_total = fund.current_nav_total
         
         # Execute NAV update
-        fund.add_nav_update(30.00, date(2023, 6, 1), "Transaction test NAV", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_nav_update(fund, 30.00, date(2023, 6, 1), "Transaction test NAV", session=db_session)
         db_session.commit()
         
         # Verify all related state changes are consistent
@@ -453,7 +495,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -463,7 +508,9 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create NAV update event
-        event = fund.add_nav_update(25.50, date(2023, 6, 1), "NAV update with cash flow", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_nav_update(fund, 25.50, date(2023, 6, 1), "NAV update with cash flow", session=db_session)
         db_session.commit()
         
         # Add cash flow for the NAV update (e.g., management fee)
@@ -499,7 +546,10 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create initial UNIT_PURCHASE event (required for NAV-based funds)
-        initial_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=20.00,
             date=date(2022, 12, 1),
@@ -509,10 +559,12 @@ class TestNAVUpdateWorkflow:
         db_session.commit()
         
         # Create NAV updates over time
-        fund.add_nav_update(20.00, date(2023, 1, 1), "January NAV", session=db_session)
-        fund.add_nav_update(22.00, date(2023, 2, 1), "February NAV", session=db_session)
-        fund.add_nav_update(21.00, date(2023, 3, 1), "March NAV", session=db_session)
-        fund.add_nav_update(24.00, date(2023, 4, 1), "April NAV", session=db_session)
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_nav_update(fund, 20.00, date(2023, 1, 1), "January NAV", session=db_session)
+        fund_event_service.add_nav_update(fund, 22.00, date(2023, 2, 1), "February NAV", session=db_session)
+        fund_event_service.add_nav_update(fund, 21.00, date(2023, 3, 1), "March NAV", session=db_session)
+        fund_event_service.add_nav_update(fund, 24.00, date(2023, 4, 1), "April NAV", session=db_session)
         db_session.commit()
         
         # Get all NAV events

@@ -219,3 +219,69 @@ class FundValidationService:
             errors['units'] = [f"Insufficient units: trying to sell {units} but only {fund.current_units} available"]
         
         return errors
+    
+    def validate_nav_update(self, fund: 'Fund', nav_per_share: float, update_date: date, 
+                           reference_number: str = None, session: Session = None) -> Dict[str, List[str]]:
+        """
+        Validate NAV update business rules.
+        
+        Args:
+            fund: The fund to validate against
+            nav_per_share: NAV per share value
+            update_date: Date of the NAV update
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            Dict[str, List[str]]: Validation errors by field
+        """
+        errors = {}
+        
+        # BUSINESS RULE: NAV per share must be positive
+        if not nav_per_share or nav_per_share <= 0:
+            errors['nav_per_share'] = ["NAV per share must be a positive number"]
+        
+        # BUSINESS RULE: Update date is required
+        if not update_date:
+            errors['update_date'] = ["Update date is required"]
+        
+        # BUSINESS RULE: NAV updates only for NAV-based funds
+        if fund.tracking_type != FundType.NAV_BASED:
+            errors['fund_type'] = ["NAV updates are only applicable for NAV-based funds"]
+        
+        # BUSINESS RULE: No duplicate NAV events on same date
+        if session:
+            duplicate_event = self._check_duplicate_nav_event(fund, nav_per_share, update_date, reference_number, session)
+            if duplicate_event:
+                errors['duplicate'] = [f"NAV update already exists for {update_date}"]
+        
+        return errors
+    
+    def _check_duplicate_nav_event(self, fund: 'Fund', nav_per_share: float, date: date, 
+                                  reference_number: str, session: Session) -> Optional['FundEvent']:
+        """
+        Check for existing NAV update event on the same date.
+        
+        Args:
+            fund: The fund object
+            nav_per_share: NAV per share value (not used in check)
+            date: Date of the NAV update
+            reference_number: External reference number (not used in check)
+            session: Database session
+            
+        Returns:
+            FundEvent: Existing event if found on same date, None otherwise
+        """
+        from src.fund.enums import EventType
+        from src.fund.repositories import FundEventRepository
+        
+        # Use business repository (not query repository) for validation
+        event_repo = FundEventRepository()
+        existing_events = event_repo.get_by_fund_and_types(fund.id, [EventType.NAV_UPDATE], session)
+        
+        # Check if any NAV event exists on the same date
+        for event in existing_events:
+            if event.event_date == date:
+                return event
+        
+        return None

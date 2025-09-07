@@ -479,40 +479,6 @@ class FundService:
         
         return self.orchestrator.process_fund_event(event_data, session, fund)
     
-    def add_nav_update(self, fund_id: int, nav_per_share: float, update_date: date,
-                       description: str = None, reference_number: str = None,
-                       session: Session = None) -> Any:
-        """
-        Add NAV update event through proper orchestration.
-        
-        Args:
-            fund_id: ID of the fund
-            nav_per_share: NAV per share value
-            update_date: Date of the NAV update
-            description: Description of the update
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent: The created NAV update event
-        """
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            raise ValueError(f"Fund with ID {fund_id} not found")
-        
-        # Use orchestrator for event processing
-        event_data = {
-            'event_type': EventType.NAV_UPDATE,
-            'nav_per_share': nav_per_share,
-            'event_date': update_date,
-            'description': description or f"NAV update: ${nav_per_share:.4f}",
-            'reference_number': reference_number
-        }
-        
-        return self.orchestrator.process_fund_event(event_data, session, fund)
-    
-    
-    
     def get_fund_end_date(self, fund_id: int, session: Session) -> Optional[date]:
         """
         Get fund end date using status service.

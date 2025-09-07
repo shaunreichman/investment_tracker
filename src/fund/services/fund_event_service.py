@@ -354,9 +354,12 @@ class FundEventService:
                       description: Optional[str] = None, reference_number: Optional[str] = None,
                       session: Optional[Session] = None) -> 'FundEvent':
         """
-        [EXTRACTED] Add a NAV update event to the fund.
+        Add NAV update event - THE ONLY method for this operation.
         
-        This method was extracted from the Fund model to improve separation of concerns.
+        This method follows enterprise best practices:
+        1. Business validation
+        2. Create the event directly
+        3. Delegate secondary impacts to orchestrator
         
         Args:
             fund: The fund object
@@ -364,35 +367,64 @@ class FundEventService:
             date: Date of the NAV update
             description: Optional description
             reference_number: Optional reference number
-            session: Database session (optional)
+            session: Database session
             
         Returns:
             FundEvent: The created NAV update event
+            
+        Raises:
+            ValueError: If validation fails
+            RuntimeError: If fund not found
         """
-        # Validate inputs
-        if nav_per_share < 0:
-            raise ValueError("NAV per share cannot be negative")
-        if not date:
-            raise ValueError("NAV update date is required")
+        from src.fund.enums import EventType
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
         
-        # Prepare event data
-        event_data = {
+        # 1. Business validation using validation service (includes duplicate checking)
+        validation_errors = self.validation_service.validate_nav_update(
+            fund, nav_per_share, date, reference_number, session
+        )
+        if validation_errors:
+            # Convert validation errors to ValueError with first error message
+            first_error_field = next(iter(validation_errors))
+            first_error_message = validation_errors[first_error_field][0]
+            raise ValueError(first_error_message)
+        
+        # 2. Calculate NAV change fields (business logic)
+        previous_nav, nav_change_absolute, nav_change_percentage = self._calculate_nav_change_fields(
+            fund, nav_per_share, date, session
+        )
+        
+        # 3. Create the NAV update event directly (business logic)
+        event = self.unit_event_repository.create_nav_update(fund.id, {
             'fund_id': fund.id,
             'event_type': EventType.NAV_UPDATE,
             'event_date': date,
             'nav_per_share': nav_per_share,
+            'previous_nav_per_share': previous_nav,
+            'nav_change_absolute': nav_change_absolute,
+            'nav_change_percentage': nav_change_percentage,
             'description': description or f"NAV update to {nav_per_share}",
             'reference_number': reference_number
-        }
+        }, session)
         
-        # Delegate to specialized repository
-        event = self.unit_event_repository.create_nav_update(fund.id, event_data, session)
+        # 4. Delegate secondary impacts to orchestrator (side effects)
+        orchestrator = FundUpdateOrchestrator()
+        event_data = {
+            'event_type': EventType.NAV_UPDATE,
+            'event_id': event.id,
+            'fund_id': fund.id,
+            'nav_per_share': nav_per_share,
+            'event_date': date
+        }
+        logger.info(f"About to call orchestrator with event_data: {event_data}")
+        orchestrator.process_fund_event(event_data, session, fund)
+        logger.info("Orchestrator call completed")
         
         logger.info(f"Added NAV update event: {nav_per_share} on {date} for fund {fund.name}")
         return event
     
     def _calculate_nav_change_fields(self, fund: 'Fund', nav_per_share: float, date: date, 
-                                   session: Optional[Session] = None) -> Dict[str, Any]:
+                                   session: Optional[Session] = None) -> tuple[Optional[float], Optional[float], Optional[float]]:
         """
         [EXTRACTED] Calculate NAV change fields for a NAV update event.
         
@@ -420,16 +452,52 @@ class FundEventService:
         
         if prev_nav_event and prev_nav_event.nav_per_share:
             prev_nav = prev_nav_event.nav_per_share
-            nav_change = nav_per_share - prev_nav
-            nav_change_percentage = (nav_change / prev_nav) * 100 if prev_nav > 0 else 0
+            nav_change_absolute = nav_per_share - prev_nav
+            nav_change_percentage = (nav_change_absolute / prev_nav) * 100 if prev_nav > 0 else 0
         else:
-            nav_change = 0
-            nav_change_percentage = 0
+            prev_nav = None
+            nav_change_absolute = None
+            nav_change_percentage = None
         
-        return {
-            'nav_change': nav_change,
-            'nav_change_percentage': nav_change_percentage
-        }
+        return prev_nav, nav_change_absolute, nav_change_percentage
+    
+    def _check_duplicate_nav_event(self, fund: 'Fund', nav_per_share: float, date: date, 
+                                  reference_number: Optional[str], session: Optional[Session] = None) -> Optional['FundEvent']:
+        """
+        Check for existing duplicate NAV update event.
+        
+        Args:
+            fund: The fund object
+            nav_per_share: NAV per share value
+            date: Date of the NAV update
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: Existing event if found, None otherwise
+        """
+        from src.fund.enums import EventType
+        from src.fund.repositories import FundEventRepository
+        
+        # Use business repository for duplicate checking
+        event_repo = FundEventRepository()
+        existing_events = event_repo.get_by_fund_and_types(fund.id, [EventType.NAV_UPDATE], session)
+        
+        # Filter by date
+        existing_events = [e for e in existing_events if e.event_date == date]
+        
+        # Check for exact match on reference number if provided
+        if reference_number:
+            for event in existing_events:
+                if event.reference_number == reference_number:
+                    return event
+        
+        # If no reference number, check for same NAV value on same date
+        for event in existing_events:
+            if event.nav_per_share == nav_per_share:
+                return event
+        
+        return None
     
     def _update_subsequent_nav_change_fields(self, fund: 'Fund', new_nav_event: 'FundEvent', 
                                            session: Optional[Session] = None) -> None:

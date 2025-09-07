@@ -493,39 +493,6 @@ class Fund(Base):
             session=session
         )
     
-    def add_nav_update(self, nav_per_share: float, update_date: date, description: str = None,
-                       reference_number: str = None, session=None) -> 'FundEvent':
-        """
-        Add an NAV update event using the service layer.
-        
-        Note: This method delegates to the fund service for proper orchestration.
-        For direct control, use FundService.add_nav_update() instead.
-        
-        Args:
-            nav_per_share: NAV per share value
-            update_date: Date of the NAV update
-            description: Description of the update
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent: The created NAV update event
-            
-        Raises:
-            ValueError: If NAV per share is invalid
-        """
-        if not nav_per_share or nav_per_share <= 0:
-            raise ValueError("NAV per share must be a positive number")
-        if not update_date:
-            raise ValueError("Date is required")
-        
-        # Delegate to service layer for proper orchestration
-        from src.fund.services.fund_service import FundService
-        fund_service = FundService()
-        return fund_service.add_nav_update(self.id, nav_per_share, update_date, description, reference_number, session)
-    
-    
-    
     # ============================================================================
     # CORE BUSINESS PROPERTIES - Intrinsic Fund Properties
     # ============================================================================

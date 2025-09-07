@@ -57,28 +57,22 @@ class NAVUpdateHandler(BaseFundEventHandler):
         Handle a NAV update event.
         
         This method:
-        1. Validates the event data
-        2. Checks for duplicate events (idempotent behavior)
-        3. Creates the NAV update event
-        4. Updates fund state
-        5. Updates subsequent NAV events if needed
-        6. Publishes domain events
+        1. Gets the existing event (created by service)
+        2. Updates fund state
+        3. Updates subsequent NAV events if needed
+        4. Publishes domain events
         
         Args:
             event_data: Dictionary containing event parameters
             
         Returns:
-            FundEvent: The created NAV update event
+            FundEvent: The NAV update event
             
         Raises:
             ValueError: If event data is invalid
             RuntimeError: If event processing fails
         """
-        # Validate event data
-        self.validate_event(event_data)
-        
-        # Validate first event business rules
-        self._validate_first_event(EventType.NAV_UPDATE)
+        # Event validation is handled by the service layer
         
         # Extract parameters
         nav_per_share = float(event_data['nav_per_share'])
@@ -86,35 +80,17 @@ class NAVUpdateHandler(BaseFundEventHandler):
         description = event_data.get('description')
         reference_number = event_data.get('reference_number')
         
-        # Check for existing duplicate event (idempotent behavior)
-        existing_event = self._check_duplicate_event(
-            EventType.NAV_UPDATE,
-            event_date=event_date,
-            reference_number=reference_number
-        )
+        # Get the existing event (created by service)
+        event_id = event_data.get('event_id')
+        if not event_id:
+            raise ValueError("event_id is required - event should be created by service first")
         
-        if existing_event:
-            # Return existing event without creating duplicate
-            return existing_event
+        # Event already created by service, get it from database
+        event = self.session.get(FundEvent, event_id)
+        if not event:
+            raise ValueError(f"Event with id {event_id} not found - event should be created by service first")
         
-        # Calculate NAV change fields
-        previous_nav, nav_change_absolute, nav_change_percentage = self._calculate_nav_change_fields(
-            nav_per_share, event_date
-        )
-        
-        # Create NAV update event
-        event = self._create_event(
-            EventType.NAV_UPDATE,
-            event_date=event_date,
-            nav_per_share=nav_per_share,
-            previous_nav_per_share=previous_nav,
-            nav_change_absolute=nav_change_absolute,
-            nav_change_percentage=nav_change_percentage,
-            description=description or f"NAV update: ${nav_per_share:.4f}",
-            reference_number=reference_number
-        )
-        
-        # Update fund state
+        # Update fund state (side effects only - no session management)
         self._update_fund_after_nav_event(event)
         
         # Update subsequent NAV events if needed
