@@ -70,27 +70,21 @@ class UnitPurchaseHandler(BaseFundEventHandler):
         Handle a unit purchase event.
         
         This method:
-        1. Validates the event data
-        2. Checks for duplicate events (idempotent behavior)
-        3. Creates the unit purchase event
-        4. Updates fund state
-        5. Publishes domain events
+        1. Gets the existing event (created by service)
+        2. Updates fund state
+        3. Publishes domain events
         
         Args:
             event_data: Dictionary containing event parameters
             
         Returns:
-            FundEvent: The created unit purchase event
+            FundEvent: The unit purchase event
             
         Raises:
             ValueError: If event data is invalid
             RuntimeError: If event processing fails
         """
-        # Validate event data
-        self.validate_event(event_data)
-        
-        # Validate first event business rules
-        self._validate_first_event(EventType.UNIT_PURCHASE)
+        # Event validation is handled by the service layer
         
         # Extract parameters
         units = float(event_data['units_purchased'])
@@ -100,33 +94,15 @@ class UnitPurchaseHandler(BaseFundEventHandler):
         description = event_data.get('description')
         reference_number = event_data.get('reference_number')
         
-        # Calculate total amount
-        amount = (units * price) + brokerage_fee
+        # Get the existing event (created by service)
+        event_id = event_data.get('event_id')
+        if not event_id:
+            raise ValueError("event_id is required - event should be created by service first")
         
-        # Check for existing duplicate event (idempotent behavior)
-        existing_event = self._check_duplicate_event(
-            EventType.UNIT_PURCHASE,
-            event_date=event_date,
-            units_purchased=units,
-            unit_price=price,
-            reference_number=reference_number
-        )
-        
-        if existing_event:
-            # Return existing event without creating duplicate
-            return existing_event
-        
-        # Create unit purchase event
-        event = self._create_event(
-            EventType.UNIT_PURCHASE,
-            event_date=event_date,
-            units_purchased=units,
-            unit_price=price,
-            brokerage_fee=brokerage_fee,
-            amount=amount,
-            description=description or f"Unit purchase: {units} units @ ${price:,.2f}",
-            reference_number=reference_number
-        )
+        # Event already created by service, get it from database
+        event = self.session.get(FundEvent, event_id)
+        if not event:
+            raise ValueError(f"Event with id {event_id} not found - event should be created by service first")
         
         # Update fund state
         self._update_fund_after_unit_event(event)

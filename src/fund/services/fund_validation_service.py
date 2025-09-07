@@ -141,3 +141,40 @@ class FundValidationService:
             errors['fund_type'] = ["Returns of capital are only applicable for cost-based funds"]
         
         return errors
+    
+    def validate_unit_purchase(self, fund: 'Fund', units: float, price: float, 
+                              purchase_date: date, reference_number: str = None, 
+                              session: Session = None) -> Dict[str, List[str]]:
+        """
+        Validate unit purchase business rules.
+        
+        Args:
+            fund: The fund to validate against
+            units: Number of units to purchase
+            price: Price per unit
+            purchase_date: Date of the purchase
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            Dict[str, List[str]]: Validation errors by field
+        """
+        errors = {}
+        
+        # BUSINESS RULE: Units must be positive
+        if not units or units <= 0:
+            errors['units'] = ["Units must be a positive number"]
+        
+        # BUSINESS RULE: Price must be positive
+        if not price or price <= 0:
+            errors['price'] = ["Unit price must be a positive number"]
+        
+        # BUSINESS RULE: Purchase date is required
+        if not purchase_date:
+            errors['purchase_date'] = ["Purchase date is required"]
+        
+        # BUSINESS RULE: Unit purchases only for NAV-based funds
+        if fund.tracking_type != FundType.NAV_BASED:
+            errors['fund_type'] = ["Unit purchases are only applicable for NAV-based funds"]
+        
+        return errors

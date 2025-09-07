@@ -20,6 +20,7 @@ from src.fund.events.orchestrator import FundUpdateOrchestrator
 from src.fund.events.registry import FundEventHandlerRegistry
 from src.fund.enums import FundStatus, FundType, EventType, DistributionType, TaxPaymentType, GroupType
 from src.fund.services.fund_validation_service import FundValidationService
+from src.fund.services.fund_event_service import FundEventService
 
 if TYPE_CHECKING:
     from src.fund.models import Fund, FundEvent
@@ -48,6 +49,7 @@ class FundService:
         self.tax_statement_repository = TaxStatementRepository()
         self.orchestrator = FundUpdateOrchestrator()
         self.registry = FundEventHandlerRegistry()
+        self.fund_event_service = FundEventService()
         self.validation_service = FundValidationService()
     
     def create_fund(self, fund_data: Dict[str, Any], session: Session) -> 'Fund':
@@ -509,39 +511,6 @@ class FundService:
         
         return self.orchestrator.process_fund_event(event_data, session, fund)
     
-    def add_unit_purchase(self, fund_id: int, units: float, price: float, date: date,
-                          description: str = None, reference_number: str = None,
-                          session: Session = None) -> Any:
-        """
-        Add unit purchase event through proper orchestration.
-        
-        Args:
-            fund_id: ID of the fund
-            units: Number of units purchased
-            price: Price per unit
-            date: Date of the purchase
-            description: Description of the purchase
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent: The created unit purchase event
-        """
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            raise ValueError(f"Fund with ID {fund_id} not found")
-        
-        # Use orchestrator for event processing
-        event_data = {
-            'event_type': EventType.UNIT_PURCHASE,
-            'units_purchased': units,
-            'unit_price': price,
-            'event_date': date,
-            'description': description or f"Unit purchase: {units:.4f} units @ ${price:.4f}",
-            'reference_number': reference_number
-        }
-        
-        return self.orchestrator.process_fund_event(event_data, session, fund)
     
     def add_unit_sale(self, fund_id: int, units: float, price: float, date: date,
                       description: str = None, reference_number: str = None,

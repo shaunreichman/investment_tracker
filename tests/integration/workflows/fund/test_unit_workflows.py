@@ -61,7 +61,10 @@ class TestUnitPurchaseWorkflow:
         assert fund.current_nav_total == 0.0
         
         # Execute unit purchase
-        event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.50,
             date=date(2023, 1, 15),
@@ -104,7 +107,10 @@ class TestUnitPurchaseWorkflow:
         db_session.commit()
         
         # Create unit purchase event
-        event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=500.0,
             price=30.00,
             date=date(2023, 2, 1),
@@ -149,7 +155,10 @@ class TestUnitPurchaseWorkflow:
         db_session.commit()
         
         # First unit purchase
-        fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=20.00,
             date=date(2023, 1, 1),
@@ -159,7 +168,8 @@ class TestUnitPurchaseWorkflow:
         db_session.commit()
         
         # Second unit purchase
-        fund.add_unit_purchase(
+        fund_event_service.add_unit_purchase(
+            fund=fund,
             units=500.0,
             price=25.00,
             date=date(2023, 2, 1),
@@ -201,7 +211,10 @@ class TestUnitSaleWorkflow:
         db_session.commit()
         
         # Add initial unit purchase
-        fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 1, 1),
@@ -259,7 +272,10 @@ class TestUnitSaleWorkflow:
         db_session.commit()
         
         # Add initial unit purchase
-        fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=20.00,
             date=date(2023, 1, 1),
@@ -314,7 +330,10 @@ class TestUnitSaleWorkflow:
         db_session.commit()
         
         # Add unit purchase
-        fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_unit_purchase(
+            fund=fund,
             units=500.0,
             price=20.00,
             date=date(2023, 1, 1),
@@ -360,7 +379,10 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Phase 1: Initial unit purchase
-        fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=20.00,
             date=date(2023, 1, 1),
@@ -370,7 +392,8 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Phase 2: Additional unit purchase
-        fund.add_unit_purchase(
+        fund_event_service.add_unit_purchase(
+            fund=fund,
             units=500.0,
             price=25.00,
             date=date(2023, 2, 1),
@@ -390,7 +413,8 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Phase 4: Repurchase after sale
-        fund.add_unit_purchase(
+        fund_event_service.add_unit_purchase(
+            fund=fund,
             units=200.0,
             price=22.00,
             date=date(2023, 4, 1),
@@ -438,7 +462,10 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Execute unit purchase
-        purchase_event = fund.add_unit_purchase(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        purchase_event = fund_event_service.add_unit_purchase(
+            fund=fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 1, 1),
