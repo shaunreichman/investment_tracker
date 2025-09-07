@@ -178,3 +178,44 @@ class FundValidationService:
             errors['fund_type'] = ["Unit purchases are only applicable for NAV-based funds"]
         
         return errors
+    
+    def validate_unit_sale(self, fund: 'Fund', units: float, price: float, 
+                          sale_date: date, reference_number: str = None, 
+                          session: Session = None) -> Dict[str, List[str]]:
+        """
+        Validate unit sale business rules.
+        
+        Args:
+            fund: The fund to validate against
+            units: Number of units to sell
+            price: Price per unit
+            sale_date: Date of the sale
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            Dict[str, List[str]]: Validation errors by field
+        """
+        errors = {}
+        
+        # BUSINESS RULE: Units must be positive
+        if not units or units <= 0:
+            errors['units'] = ["Units must be a positive number"]
+        
+        # BUSINESS RULE: Price must be positive
+        if not price or price <= 0:
+            errors['price'] = ["Unit price must be a positive number"]
+        
+        # BUSINESS RULE: Sale date is required
+        if not sale_date:
+            errors['sale_date'] = ["Sale date is required"]
+        
+        # BUSINESS RULE: Unit sales only for NAV-based funds
+        if fund.tracking_type != FundType.NAV_BASED:
+            errors['fund_type'] = ["Unit sales are only applicable for NAV-based funds"]
+        
+        # BUSINESS RULE: Cannot sell more units than available
+        if units > fund.current_units:
+            errors['units'] = [f"Insufficient units: trying to sell {units} but only {fund.current_units} available"]
+        
+        return errors

@@ -525,40 +525,6 @@ class Fund(Base):
         return fund_service.add_nav_update(self.id, nav_per_share, update_date, description, reference_number, session)
     
     
-    def add_unit_sale(self, units: float, price: float, date: date,
-                      description: str = None, reference_number: str = None,
-                      session=None) -> 'FundEvent':
-        """
-        Add a unit sale event using the service layer.
-        
-        Note: This method delegates to the service layer for proper orchestration.
-        For direct control, use FundService.add_unit_sale() instead.
-        
-        Args:
-            units: Number of units sold
-            unit_price: Price per unit
-            sale_date: Date of the sale
-            description: Description of the sale
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent: The created unit sale event
-            
-        Raises:
-            ValueError: If units or price are invalid
-        """
-        if not units or units <= 0:
-            raise ValueError("Units must be a positive number")
-        if not price or price <= 0:
-            raise ValueError("Unit price must be a positive number")
-        if not date:
-            raise ValueError("Date is required")
-        
-        # Delegate to service layer for proper orchestration
-        from src.fund.services.fund_service import FundService
-        fund_service = FundService()
-        return fund_service.add_unit_sale(self.id, units, price, date, description, reference_number, session)
     
     # ============================================================================
     # CORE BUSINESS PROPERTIES - Intrinsic Fund Properties

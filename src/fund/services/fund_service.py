@@ -512,39 +512,6 @@ class FundService:
         return self.orchestrator.process_fund_event(event_data, session, fund)
     
     
-    def add_unit_sale(self, fund_id: int, units: float, price: float, date: date,
-                      description: str = None, reference_number: str = None,
-                      session: Session = None) -> Any:
-        """
-        Add unit sale event through proper orchestration.
-        
-        Args:
-            fund_id: ID of the fund
-            units: Number of units sold
-            price: Price per unit
-            date: Date of the sale
-            description: Description of the sale
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent: The created unit sale event
-        """
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            raise ValueError(f"Fund with ID {fund_id} not found")
-        
-        # Use orchestrator for event processing
-        event_data = {
-            'event_type': EventType.UNIT_SALE,
-            'units_sold': units,
-            'unit_price': price,
-            'event_date': date,
-            'description': description or f"Unit sale: {units:.4f} units @ ${price:.4f}",
-            'reference_number': reference_number
-        }
-        
-        return self.orchestrator.process_fund_event(event_data, session, fund)
     
     def get_fund_end_date(self, fund_id: int, session: Session) -> Optional[date]:
         """

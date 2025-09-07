@@ -260,7 +260,7 @@ class FundEventService:
         # 3. Delegate secondary impacts to orchestrator (side effects)
         orchestrator = FundUpdateOrchestrator()
         event_data = {
-            'event_type': 'UNIT_PURCHASE',
+            'event_type': EventType.UNIT_PURCHASE,
             'event_id': event.id,
             'fund_id': fund.id,
             'units_purchased': units,
@@ -278,9 +278,12 @@ class FundEventService:
                       brokerage_fee: float = 0.0, description: Optional[str] = None,
                       reference_number: Optional[str] = None, session: Optional[Session] = None) -> 'FundEvent':
         """
-        [EXTRACTED] Add a unit sale event to the fund.
+        Add unit sale event - THE ONLY method for this operation.
         
-        This method was extracted from the Fund model to improve separation of concerns.
+        This method follows enterprise best practices:
+        1. Business validation
+        2. Create the event directly
+        3. Delegate secondary impacts to orchestrator
         
         Args:
             fund: The fund object
@@ -290,26 +293,31 @@ class FundEventService:
             brokerage_fee: Optional brokerage fee
             description: Optional description
             reference_number: Optional reference number
-            session: Database session (optional)
+            session: Database session
             
         Returns:
             FundEvent: The created unit sale event
+            
+        Raises:
+            ValueError: If validation fails
+            RuntimeError: If fund not found
         """
-        # Validate inputs
-        if units <= 0:
-            raise ValueError("Units must be positive")
-        if price <= 0:
-            raise ValueError("Price must be positive")
-        if not date:
-            raise ValueError("Sale date is required")
-        if brokerage_fee < 0:
-            raise ValueError("Brokerage fee cannot be negative")
+        from src.fund.enums import EventType
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
         
-        # Calculate total amount
+        # 1. Business validation using validation service
+        validation_errors = self.validation_service.validate_unit_sale(
+            fund, units, price, date, reference_number, session
+        )
+        if validation_errors:
+            # Convert validation errors to ValueError with first error message
+            first_error_field = next(iter(validation_errors))
+            first_error_message = validation_errors[first_error_field][0]
+            raise ValueError(first_error_message)
+        
+        # 2. Create the unit sale event directly (business logic)
         total_amount = (units * price) - brokerage_fee
-        
-        # Prepare event data
-        event_data = {
+        event = self.unit_event_repository.create_unit_sale(fund.id, {
             'fund_id': fund.id,
             'event_type': EventType.UNIT_SALE,
             'event_date': date,
@@ -319,10 +327,21 @@ class FundEventService:
             'amount': total_amount,
             'description': description or f"Unit sale of {units} units at {price}",
             'reference_number': reference_number
-        }
+        }, session)
         
-        # Delegate to specialized repository
-        event = self.unit_event_repository.create_unit_sale(fund.id, event_data, session)
+        # 3. Delegate secondary impacts to orchestrator (side effects)
+        orchestrator = FundUpdateOrchestrator()
+        event_data = {
+            'event_type': EventType.UNIT_SALE,
+            'event_id': event.id,
+            'fund_id': fund.id,
+            'units_sold': units,
+            'unit_price': price,
+            'event_date': date
+        }
+        logger.info(f"About to call orchestrator with event_data: {event_data}")
+        orchestrator.process_fund_event(event_data, session, fund)
+        logger.info("Orchestrator call completed")
         
         logger.info(f"Added unit sale event: {units} units at {price} on {date} for fund {fund.name}")
         return event

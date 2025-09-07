@@ -229,7 +229,10 @@ class TestUnitSaleWorkflow:
         assert fund.current_unit_price == 25.00
         
         # Execute unit sale
-        event = fund.add_unit_sale(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_unit_sale(
+            fund=fund,
             units=400.0,
             price=30.00,
             date=date(2023, 6, 1),
@@ -285,7 +288,10 @@ class TestUnitSaleWorkflow:
         db_session.commit()
         
         # Create unit sale event
-        event = fund.add_unit_sale(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_unit_sale(
+            fund=fund,
             units=300.0,
             price=25.00,
             date=date(2023, 3, 1),
@@ -347,8 +353,11 @@ class TestUnitSaleWorkflow:
         assert fund.current_units == 500.0
         
         # Attempt to sell more units than available
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
         with pytest.raises(ValueError, match="Insufficient units"):
-            fund.add_unit_sale(
+            fund_event_service.add_unit_sale(
+                fund=fund,
                 units=600.0,  # More than available
                 price=25.00,
                 date=date(2023, 6, 1),
@@ -403,7 +412,8 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Phase 3: Partial unit sale
-        fund.add_unit_sale(
+        fund_event_service.add_unit_sale(
+            fund=fund,
             units=300.0,
             price=30.00,
             date=date(2023, 3, 1),
@@ -475,7 +485,8 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Execute unit sale
-        sale_event = fund.add_unit_sale(
+        sale_event = fund_event_service.add_unit_sale(
+            fund=fund,
             units=400.0,
             price=30.00,
             date=date(2023, 6, 30),  # End of financial year
