@@ -242,52 +242,6 @@ class FundEventRepository:
         
         return event
     
-    def update(self, event_id: int, event_data: Dict[str, Any], session: Session) -> Optional[FundEvent]:
-        """
-        Update an existing fund event.
-        
-        Args:
-            event_id: ID of the event to update
-            event_data: Dictionary containing updated event data
-            session: Database session
-            
-        Returns:
-            Updated FundEvent object if found, None otherwise
-            
-        Raises:
-            TypeError: If event_data is not a dictionary
-        """
-        # Type validation - ensure event_data is a dictionary
-        if not isinstance(event_data, dict):
-            raise TypeError(f"event_data must be a dictionary, got {type(event_data).__name__}")
-        
-        event = self.get_by_id(event_id, session)
-        if not event:
-            return None
-        
-        # Store old values for cache clearing
-        old_fund_id = event.fund_id
-        old_event_date = event.event_date
-        old_event_type = event.event_type
-        
-        # Update fields
-        for key, value in event_data.items():
-            if hasattr(event, key):
-                setattr(event, key, value)
-        
-        # Clear relevant caches
-        self._clear_fund_cache(old_fund_id)
-        self._clear_date_cache(old_event_date)
-        self._clear_type_cache(old_event_type)
-        
-        # Clear caches for new values
-        self._clear_fund_cache(event.fund_id)
-        self._clear_date_cache(event.event_date)
-        self._clear_type_cache(event.event_type)
-        
-        session.flush()
-        return event
-    
     def delete(self, event_id: int, session: Session) -> bool:
         """
         Delete a fund event.

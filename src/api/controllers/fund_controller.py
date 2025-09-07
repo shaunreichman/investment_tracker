@@ -240,9 +240,61 @@ class FundController:
             if 'session' in locals():
                 session.close()
     
-    def add_fund_event(self, fund_id: int) -> tuple:
+    def add_capital_call(self, fund_id: int) -> tuple:
         """
-        Add a fund event.
+        Add a capital call event.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get pre-validated data from middleware
+            event_data = request.validated_data
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Get the fund
+            fund = self.fund_service.get_fund(fund_id, session)
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Add the capital call event using FundEventService
+            # (Business validation happens in the service layer)
+            event = self.fund_service.fund_event_service.add_capital_call(
+                fund=fund,
+                amount=float(event_data['amount']),
+                call_date=event_data['event_date'],  # Already parsed by middleware
+                description=event_data.get('description'),
+                reference_number=event_data.get('reference_number'),
+                session=session
+            )
+            
+            # Commit the transaction
+            session.commit()
+            
+            # Format the event for JSON response
+            from src.fund.formatters import format_event
+            formatted_event = format_event(event)
+            return jsonify(formatted_event), 201
+            
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error adding capital call: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def add_return_of_capital(self, fund_id: int) -> tuple:
+        """
+        Add a return of capital event.
         
         Args:
             fund_id: ID of the fund
@@ -256,11 +308,35 @@ class FundController:
             if not event_data:
                 return jsonify({'error': 'No data provided'}), 400
             
+            # Validate required fields
+            required_fields = ['amount', 'event_date']
+            for field in required_fields:
+                if field not in event_data:
+                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+            
             # Get database session
             session = self._get_session()
             
-            # Add the event
-            event = self.fund_service.add_fund_event(fund_id, event_data, session)
+            # Get the fund
+            fund = self.fund_service.get_fund(fund_id, session)
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Parse event date
+            event_date = event_data['event_date']
+            if isinstance(event_date, str):
+                from datetime import datetime
+                event_date = datetime.fromisoformat(event_date).date()
+            
+            # Add the return of capital event using FundEventService
+            event = self.fund_service.fund_event_service.add_return_of_capital(
+                fund=fund,
+                amount=float(event_data['amount']),
+                return_date=event_date,
+                description=event_data.get('description'),
+                reference_number=event_data.get('reference_number'),
+                session=session
+            )
             
             # Commit the transaction
             session.commit()
@@ -272,13 +348,8 @@ class FundController:
             
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
-        except RuntimeError as e:
-            # Check if this is a "not found" error
-            if "not found" in str(e).lower():
-                return jsonify({'error': str(e)}), 404
-            return jsonify({'error': str(e)}), 400
         except Exception as e:
-            current_app.logger.error(f"Error adding fund event: {str(e)}")
+            current_app.logger.error(f"Error adding return of capital: {str(e)}")
             if 'session' in locals():
                 session.rollback()
             return jsonify({'error': 'Internal server error'}), 500
@@ -286,28 +357,282 @@ class FundController:
             if 'session' in locals():
                 session.close()
     
-    def add_fund_event_with_data(self, fund_id: int, event_data: dict, session: Session = None) -> tuple:
+    def add_unit_purchase(self, fund_id: int) -> tuple:
         """
-        Add a fund event with pre-validated data.
+        Add a unit purchase event.
         
         Args:
             fund_id: ID of the fund
-            event_data: Pre-validated event data
-            session: Optional database session. If None, creates a new one.
             
         Returns:
             Tuple of (response_data, status_code)
         """
         try:
+            # Get request data
+            event_data = request.get_json()
+            if not event_data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            # Validate required fields
+            required_fields = ['units_purchased', 'unit_price', 'event_date']
+            for field in required_fields:
+                if field not in event_data:
+                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+            
             # Get database session
-            if session is None:
-                session = self._get_session()
-                should_close_session = True
+            session = self._get_session()
+            
+            # Get the fund
+            fund = self.fund_service.get_fund(fund_id, session)
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Parse event date
+            event_date = event_data['event_date']
+            if isinstance(event_date, str):
+                from datetime import datetime
+                event_date = datetime.fromisoformat(event_date).date()
+            
+            # Add the unit purchase event using FundEventService
+            event = self.fund_service.fund_event_service.add_unit_purchase(
+                fund=fund,
+                units=float(event_data['units_purchased']),
+                price=float(event_data['unit_price']),
+                date=event_date,
+                brokerage_fee=float(event_data.get('brokerage_fee', 0.0)),
+                description=event_data.get('description'),
+                reference_number=event_data.get('reference_number'),
+                session=session
+            )
+            
+            # Commit the transaction
+            session.commit()
+            
+            # Format the event for JSON response
+            from src.fund.formatters import format_event
+            formatted_event = format_event(event)
+            return jsonify(formatted_event), 201
+            
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error adding unit purchase: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def add_unit_sale(self, fund_id: int) -> tuple:
+        """
+        Add a unit sale event.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get request data
+            event_data = request.get_json()
+            if not event_data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            # Validate required fields
+            required_fields = ['units_sold', 'unit_price', 'event_date']
+            for field in required_fields:
+                if field not in event_data:
+                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Get the fund
+            fund = self.fund_service.get_fund(fund_id, session)
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Parse event date
+            event_date = event_data['event_date']
+            if isinstance(event_date, str):
+                from datetime import datetime
+                event_date = datetime.fromisoformat(event_date).date()
+            
+            # Add the unit sale event using FundEventService
+            event = self.fund_service.fund_event_service.add_unit_sale(
+                fund=fund,
+                units=float(event_data['units_sold']),
+                price=float(event_data['unit_price']),
+                date=event_date,
+                brokerage_fee=float(event_data.get('brokerage_fee', 0.0)),
+                description=event_data.get('description'),
+                reference_number=event_data.get('reference_number'),
+                session=session
+            )
+            
+            # Commit the transaction
+            session.commit()
+            
+            # Format the event for JSON response
+            from src.fund.formatters import format_event
+            formatted_event = format_event(event)
+            return jsonify(formatted_event), 201
+            
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error adding unit sale: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def add_nav_update(self, fund_id: int) -> tuple:
+        """
+        Add a NAV update event.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get request data
+            event_data = request.get_json()
+            if not event_data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            # Validate required fields
+            required_fields = ['nav_per_share', 'event_date']
+            for field in required_fields:
+                if field not in event_data:
+                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Get the fund
+            fund = self.fund_service.get_fund(fund_id, session)
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Parse event date
+            event_date = event_data['event_date']
+            if isinstance(event_date, str):
+                from datetime import datetime
+                event_date = datetime.fromisoformat(event_date).date()
+            
+            # Add the NAV update event using FundEventService
+            event = self.fund_service.fund_event_service.add_nav_update(
+                fund=fund,
+                nav_per_share=float(event_data['nav_per_share']),
+                date=event_date,
+                description=event_data.get('description'),
+                reference_number=event_data.get('reference_number'),
+                session=session
+            )
+            
+            # Commit the transaction
+            session.commit()
+            
+            # Format the event for JSON response
+            from src.fund.formatters import format_event
+            formatted_event = format_event(event)
+            return jsonify(formatted_event), 201
+            
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error adding NAV update: {str(e)}")
+            if 'session' in locals():
+                session.rollback()
+            return jsonify({'error': 'Internal server error'}), 500
+        finally:
+            if 'session' in locals():
+                session.close()
+    
+    def add_distribution(self, fund_id: int) -> tuple:
+        """
+        Add a distribution event.
+        
+        Args:
+            fund_id: ID of the fund
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
+        try:
+            # Get request data
+            event_data = request.get_json()
+            if not event_data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            # Validate required fields
+            required_fields = ['event_date', 'distribution_type']
+            for field in required_fields:
+                if field not in event_data:
+                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+            
+            # Get database session
+            session = self._get_session()
+            
+            # Get the fund
+            fund = self.fund_service.get_fund(fund_id, session)
+            if not fund:
+                return jsonify({'error': 'Fund not found'}), 404
+            
+            # Parse event date
+            event_date = event_data['event_date']
+            if isinstance(event_date, str):
+                from datetime import datetime
+                event_date = datetime.fromisoformat(event_date).date()
+            
+            # Parse distribution type
+            from src.fund.enums import DistributionType
+            distribution_type = DistributionType(event_data['distribution_type'])
+            
+            # Handle withholding tax distributions
+            if (event_data.get('distribution_type') == 'INTEREST' and
+                any([
+                    event_data.get('interest_gross_amount') is not None,
+                    event_data.get('interest_net_amount') is not None,
+                    event_data.get('interest_withholding_tax_amount') is not None,
+                    event_data.get('interest_withholding_tax_rate') is not None
+                ])):
+                # Withholding tax distribution
+                event = self.fund_service.fund_event_service.add_distribution(
+                    fund=fund,
+                    event_date=event_date,
+                    distribution_type=distribution_type,
+                    has_withholding_tax=True,
+                    gross_interest_amount=float(event_data.get('interest_gross_amount', 0)) if event_data.get('interest_gross_amount') else None,
+                    net_interest_amount=float(event_data.get('interest_net_amount', 0)) if event_data.get('interest_net_amount') else None,
+                    withholding_tax_amount=float(event_data.get('interest_withholding_tax_amount', 0)) if event_data.get('interest_withholding_tax_amount') else None,
+                    withholding_tax_rate=float(event_data.get('interest_withholding_tax_rate', 0)) if event_data.get('interest_withholding_tax_rate') else None,
+                    description=event_data.get('description'),
+                    reference_number=event_data.get('reference_number'),
+                    session=session
+                )
             else:
-                should_close_session = False
-            
-            # Add the event using pre-validated data
-            event = self.fund_service.add_fund_event(fund_id, event_data, session)
+                # Simple distribution
+                if 'amount' not in event_data:
+                    return jsonify({'error': 'Required field "amount" is missing for simple distribution'}), 400
+                
+                event = self.fund_service.fund_event_service.add_distribution(
+                    fund=fund,
+                    event_date=event_date,
+                    distribution_type=distribution_type,
+                    distribution_amount=float(event_data['amount']),
+                    has_withholding_tax=False,
+                    description=event_data.get('description'),
+                    reference_number=event_data.get('reference_number'),
+                    session=session
+                )
             
             # Commit the transaction
             session.commit()
@@ -319,53 +644,8 @@ class FundController:
             
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
-        except RuntimeError as e:
-            # Check if this is a "not found" error
-            if "not found" in str(e).lower():
-                return jsonify({'error': str(e)}), 404
-            return jsonify({'error': str(e)}), 400
         except Exception as e:
-            current_app.logger.error(f"Error adding fund event: {str(e)}")
-            if 'session' in locals() and should_close_session:
-                session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
-        finally:
-            if 'session' in locals() and should_close_session:
-                session.close()
-    
-    def update_fund_event(self, fund_id: int, event_id: int) -> tuple:
-        """
-        Update a fund event.
-        
-        Args:
-            fund_id: ID of the fund
-            event_id: ID of the event to update
-            
-        Returns:
-            Tuple of (response_data, status_code)
-        """
-        try:
-            # Get request data
-            event_data = request.get_json()
-            if not event_data:
-                return jsonify({'error': 'No data provided'}), 400
-            
-            # Get database session
-            session = self._get_session()
-            
-            # Update the event
-            event = self.fund_service.update_fund_event(fund_id, event_id, event_data, session)
-            
-            if not event:
-                return jsonify({'error': 'Event not found'}), 404
-            
-            # Commit the transaction
-            session.commit()
-            
-            return jsonify(event), 200
-            
-        except Exception as e:
-            current_app.logger.error(f"Error updating fund event: {str(e)}")
+            current_app.logger.error(f"Error adding distribution: {str(e)}")
             if 'session' in locals():
                 session.rollback()
             return jsonify({'error': 'Internal server error'}), 500

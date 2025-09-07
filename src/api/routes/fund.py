@@ -189,7 +189,26 @@ def create_fund_event(fund_id):
             controller = FundController()
             # Use validated data from middleware
             validated_data = request.validated_data
-            return controller.add_fund_event_with_data(fund_id, validated_data, session)
+            
+            # Route to specific method based on event type
+            event_type = validated_data.get('event_type')
+            if not event_type:
+                return jsonify({'error': 'event_type is required'}), 400
+            
+            if event_type == 'CAPITAL_CALL':
+                return controller.add_capital_call(fund_id)
+            elif event_type == 'RETURN_OF_CAPITAL':
+                return controller.add_return_of_capital(fund_id)
+            elif event_type == 'UNIT_PURCHASE':
+                return controller.add_unit_purchase(fund_id)
+            elif event_type == 'UNIT_SALE':
+                return controller.add_unit_sale(fund_id)
+            elif event_type == 'NAV_UPDATE':
+                return controller.add_nav_update(fund_id)
+            elif event_type == 'DISTRIBUTION':
+                return controller.add_distribution(fund_id)
+            else:
+                return jsonify({'error': f'Unsupported event type: {event_type}'}), 400
         finally:
             session.close()
             

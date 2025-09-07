@@ -197,92 +197,6 @@ class FundService:
             # Get all funds with pagination
             return self.fund_repository.get_all(session, skip, limit)
     
-    def add_fund_event(self, fund_id: int, event_data: Dict[str, Any], 
-                      session: Session) -> 'FundEvent':
-        """
-        Add a fund event using the event handler system.
-        
-        Args:
-            fund_id: ID of the fund
-            event_data: Dictionary containing event data
-            session: Database session
-            
-        Returns:
-            FundEvent: The created event object
-            
-        Raises:
-            ValueError: If required fields are missing
-            RuntimeError: If event processing fails
-        """
-        # Get the fund first
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            raise RuntimeError(f"Fund with ID {fund_id} not found")
-        
-        # Validate required fields
-        required_fields = ['event_type', 'event_date']
-        
-        # Special handling for withholding tax distributions
-        if (event_data.get('event_type') == 'DISTRIBUTION' and 
-            event_data.get('distribution_type') == 'INTEREST' and
-            any([
-                event_data.get('interest_gross_amount') is not None,
-                event_data.get('interest_net_amount') is not None,
-                event_data.get('interest_withholding_tax_amount') is not None,
-                event_data.get('interest_withholding_tax_rate') is not None
-            ])):
-            # For withholding tax distributions, amount is not required
-            pass
-        elif event_data.get('event_type') in ['UNIT_PURCHASE', 'UNIT_SALE', 'NAV_UPDATE']:
-            # For NAV-based events, amount is not required
-            pass
-        else:
-            # For all other events, amount is required
-            required_fields.append('amount')
-        
-        for field in required_fields:
-            if field not in event_data:
-                raise ValueError(f"Required field '{field}' is missing")
-        
-        # Add fund_id to event data
-        event_data['fund_id'] = fund_id
-        
-        # Ensure event_date is present
-        if 'event_date' not in event_data:
-            raise ValueError("Required field 'event_date' is missing")
-        
-        # Process the event through the orchestrator
-        try:
-            result = self.orchestrator.process_fund_event(event_data, session, fund)
-            
-            # Return domain object
-            return result
-            
-        except Exception as e:
-            raise RuntimeError(f"Failed to process fund event: {str(e)}")
-    
-    def update_fund_event(self, fund_id: int, event_id: int, 
-                         event_data: Dict[str, Any], session: Session) -> Optional['FundEvent']:
-        """
-        Update a fund event.
-        
-        Args:
-            fund_id: ID of the fund
-            event_id: ID of the event to update
-            event_data: Dictionary containing updated event data
-            session: Database session
-            
-        Returns:
-            FundEvent: The updated event object, or None if not found
-        """
-        # Update the event
-        event = self.fund_event_repository.update(event_id, event_data, session)
-        if not event:
-            return None
-        
-        # Return domain object
-        return event
-    
     def delete_fund_event(self, fund_id: int, event_id: int, session: Session) -> bool:
         """
         Delete a fund event and recalculate fund summary fields.
@@ -430,8 +344,6 @@ class FundService:
         fund.last_event_date = recent_events[-1].event_date if recent_events else None
         
         return fund
-
-    
     
     def get_fund_end_date(self, fund_id: int, session: Session) -> Optional[date]:
         """
