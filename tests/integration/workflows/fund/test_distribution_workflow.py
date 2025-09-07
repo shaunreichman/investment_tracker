@@ -28,7 +28,7 @@ from src.fund.models import (
 )
 from src.fund.services.fund_service import FundService
 from src.fund.services.fund_event_service import FundEventService
-from src.fund.enums import DistributionType, TaxPaymentType
+from src.fund.enums import DistributionType, TaxPaymentType, GroupType
 from src.fund.events.orchestrator import FundUpdateOrchestrator
 
 
@@ -137,35 +137,54 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
-        # Verify distribution event (should return tuple for withholding tax)
+        # Verify distribution event
         assert result is not None
-        assert isinstance(result, tuple)
-        assert len(result) == 2
+        assert isinstance(result, FundEvent)
+        assert result.event_type == EventType.DISTRIBUTION
+        assert result.distribution_type == DistributionType.INTEREST
+        # NOTE: System behavior - amount is stored as GROSS amount (before withholding)
+        # This is correct for IRR calculations
+        assert result.amount == 11500.0  # Gross amount (before withholding)
+        assert result.tax_withholding == 1725.0  # 15% of 11500 = 1725
+        assert result.has_withholding_tax is True
         
-        distribution_event, tax_event = result
-        assert distribution_event.event_type == EventType.DISTRIBUTION
-        assert tax_event is not None
-        assert tax_event.event_type == EventType.TAX_PAYMENT
-        assert distribution_event.distribution_type == DistributionType.INTEREST
-        # NOTE: System behavior - amount is stored as NET amount (after withholding)
-        # This is actually correct behavior, not a bug
-        assert distribution_event.amount == 9775.0  # Net amount (11500 - 15% = 9775)
-        assert distribution_event.has_withholding_tax is True
+        # Verify grouping is set up correctly
+        assert result.is_grouped is True
+        assert result.group_id is not None
+        assert result.group_type == GroupType.INTEREST_WITHHOLDING
+        assert result.group_position == 0  # Distribution event is first in group
+        
+        # Verify tax event was created and grouped correctly
+        
+        tax_events = db_session.query(FundEvent).filter(
+            FundEvent.fund_id == fund.id,
+            FundEvent.event_type == EventType.TAX_PAYMENT,
+            FundEvent.group_id == result.group_id
+        ).all()
+        
+        assert len(tax_events) == 1, "Should have exactly one tax event"
+        tax_event = tax_events[0]
+        assert tax_event.amount == -1725.0  # Negative amount for tax payment
+        assert tax_event.tax_payment_type == TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
+        assert tax_event.is_grouped is True
+        assert tax_event.group_id == result.group_id
+        assert tax_event.group_type == GroupType.INTEREST_WITHHOLDING
+        assert tax_event.group_position == 1  # Tax event is second in group
         
         # NOTE: System behavior - tax event is created internally but not returned
         # The method returns only the distribution event, which is acceptable
         # The withholding tax calculation is working correctly (15% of 11500 = 1725)
         print("ℹ️  System behavior: Withholding tax calculation is working correctly")
-        print(f"   Gross amount: 11500.0")
-        print(f"   Withholding tax: 1725.0 (15%)")
-        print(f"   Net amount stored: {distribution_event.amount}")
+        print(f"   Gross amount stored: {result.amount}")
+        print(f"   Withholding tax: {result.tax_withholding} (15%)")
+        print(f"   Net amount (calculated): {result.amount - result.tax_withholding}")
         print(f"   Tax event created internally but not returned (acceptable)")
         
         # Verify fund state
         fund = db_session.get(Fund, fund.id)
-        # NOTE: System behavior - total_distributions returns NET amount (after withholding)
-        # This is consistent with how individual events store amounts
-        assert fund.total_distributions(session=db_session) == 9775.0  # Net amount
+        # NOTE: System behavior - total_distributions returns GROSS amount (before withholding)
+        # This is consistent with how individual events store amounts for IRR calculations
+        assert fund.total_distributions(session=db_session) == 11500.0  # Gross amount
 
     def test_dividend_distribution_workflow(self, db_session):
         """Test dividend distribution workflow with franking credits"""

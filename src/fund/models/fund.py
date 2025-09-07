@@ -444,13 +444,6 @@ class Fund(Base):
             return date(year, month, min(self.start_date.day, last_day))
     
     # ============================================================================
-    # CORE BUSINESS LOGIC METHODS - Capital Movement Operations
-    # ============================================================================
-    
-    
-    
-    
-    # ============================================================================
     # CORE BUSINESS PROPERTIES - Intrinsic Fund Properties
     # ============================================================================
     

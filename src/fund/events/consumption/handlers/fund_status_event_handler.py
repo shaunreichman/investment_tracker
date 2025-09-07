@@ -11,7 +11,7 @@ from datetime import date, datetime
 from sqlalchemy.orm import Session
 
 from src.fund.events.consumption.base_consumer import EventConsumer
-from src.fund.events.domain import FundStatusUpdateEvent, FundSummaryUpdatedEvent
+from src.fund.events.domain import FundStatusUpdateEvent, FundSummaryUpdatedEvent, EquityBalanceChangedEvent
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models import Fund
 from src.fund.enums import FundStatus
@@ -31,7 +31,7 @@ class FundStatusEventHandler(EventConsumer):
         """Initialize the fund status event handler."""
         super().__init__(
             name="FundStatusEventHandler",
-            event_types=[FundStatusUpdateEvent, FundSummaryUpdatedEvent]
+            event_types=[FundStatusUpdateEvent, FundSummaryUpdatedEvent, EquityBalanceChangedEvent]
         )
         
         logger.info("Initialized FundStatusEventHandler")
@@ -41,12 +41,14 @@ class FundStatusEventHandler(EventConsumer):
         Handle fund status related events.
         
         Args:
-            event: The event to handle (FundStatusUpdateEvent or FundSummaryUpdatedEvent)
+            event: The event to handle (FundStatusUpdateEvent, FundSummaryUpdatedEvent, or EquityBalanceChangedEvent)
         """
         if isinstance(event, FundStatusUpdateEvent):
             self._handle_status_update_event(event)
         elif isinstance(event, FundSummaryUpdatedEvent):
             self._handle_summary_updated_event(event)
+        elif isinstance(event, EquityBalanceChangedEvent):
+            self._handle_equity_balance_changed_event(event)
         else:
             logger.warning(f"Unknown event type: {type(event).__name__}")
     
@@ -311,3 +313,29 @@ class FundStatusEventHandler(EventConsumer):
         except Exception as e:
             logger.error(f"Error retrieving fund {fund_id}: {e}")
             return None
+    
+    def _handle_equity_balance_changed_event(self, event: EquityBalanceChangedEvent) -> None:
+        """
+        Handle an equity balance changed event.
+        
+        This method updates the fund status when the equity balance changes,
+        which can trigger transitions like ACTIVE -> REALIZED when equity reaches zero.
+        
+        Args:
+            event: The equity balance changed event
+        """
+        try:
+            logger.info(f"Processing equity balance change for fund {event.fund_id}")
+            
+            # Get the fund
+            fund = self._get_fund(event.fund_id)
+            if not fund:
+                logger.warning(f"Fund {event.fund_id} not found for status update")
+                return
+            
+            # Check and update fund status based on new equity balance
+            self._check_and_update_fund_status(fund)
+            
+        except Exception as e:
+            logger.error(f"Error handling equity balance changed event: {e}")
+            raise

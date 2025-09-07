@@ -17,8 +17,9 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
-from src.fund.models import FundEvent
+from src.fund.models import FundEvent, DistributionType
 from src.fund.enums import EventType, SortOrder, SortField, TaxPaymentType, GroupType
+from src.fund.repositories import FundEventRepository
 
 
 class DistributionEventRepository:
@@ -45,7 +46,7 @@ class DistributionEventRepository:
         self._cache: Dict[str, Any] = {}
         self._cache_ttl = cache_ttl
     
-    def create_distribution(self, fund_id: int, event_data: Dict[str, Any], session: Session) -> 'FundEvent | tuple[FundEvent, FundEvent]':
+    def create_distribution(self, fund_id: int, event_data: Dict[str, Any], session: Session) -> 'FundEvent':
         """
         Create a new distribution event and handle tax event creation/grouping if applicable.
         
@@ -55,7 +56,7 @@ class DistributionEventRepository:
             session: Database session
             
         Returns:
-            Created FundEvent object, or tuple of (distribution_event, tax_event) if withholding tax
+            Created FundEvent object (the distribution event)
             
         Raises:
             TypeError: If event_data is not a dictionary
@@ -75,7 +76,7 @@ class DistributionEventRepository:
         if event_data.get('event_type') != EventType.DISTRIBUTION:
             raise ValueError(f"Event type must be DISTRIBUTION, got {event_data.get('event_type')}")
 
-        if event_data.get('has_withholding_tax', True):
+        if event_data.get('has_withholding_tax') and event_data.get('distribution_type') == DistributionType.INTEREST.value:
             # Generate the necessary Group ID
             fund_event_repo = FundEventRepository()
             group_id = fund_event_repo.generate_group_id(session)
@@ -85,8 +86,8 @@ class DistributionEventRepository:
             event_data['group_id'] = group_id
             event_data['group_type'] = GroupType.INTEREST_WITHHOLDING
             event_data['group_position'] = 0
-            interest_distribution_event = FundEvent(**event_data)
-            session.add(interest_distribution_event)
+            distribution_event = FundEvent(**event_data)
+            session.add(distribution_event)
             session.flush()
 
             # Create the Tax Event
@@ -111,12 +112,12 @@ class DistributionEventRepository:
             self._clear_date_cache(event_data.get('event_date'))
             self._clear_type_cache(EventType.DISTRIBUTION)
             
-            return interest_distribution_event, tax_event
+            return distribution_event
         
         else:
             # Create the Distribution Event
-            event = FundEvent(**event_data)
-            session.add(event)
+            distribution_event = FundEvent(**event_data)
+            session.add(distribution_event)
             session.flush()
             
             # Clear relevant caches
@@ -124,7 +125,7 @@ class DistributionEventRepository:
             self._clear_date_cache(event_data.get('event_date'))
             self._clear_type_cache(EventType.DISTRIBUTION)
             
-            return event
+            return distribution_event
     
     def get_by_fund(self, fund_id: int, session: Session) -> List[FundEvent]:
         """

@@ -138,7 +138,7 @@ class TaxStatementRepository:
     def get_by_fund(self, fund_id: int, session: Session,
                     skip: int = 0,
                     limit: int = 100,
-                    sort_order: SortOrder = SortOrder.DESC) -> List[TaxStatement]:
+                    sort_order: SortOrder = SortOrder.ASC) -> List[TaxStatement]:
         """
         Get all tax statements for a specific fund.
         

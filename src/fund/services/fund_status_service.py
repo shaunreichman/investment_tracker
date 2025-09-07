@@ -186,8 +186,8 @@ class FundStatusService:
             if not session:
                 return
             
-            irr_service = FundIrRService(session)
-            fund.completed_irr_gross = irr_service.calculate_completed_irr(fund)
+            irr_service = FundIrRService()
+            fund.completed_irr_gross = irr_service.calculate_completed_irr(fund, session)
             fund.completed_irr_after_tax = None  # Not meaningful until completed
             fund.completed_irr_real = None       # Not meaningful until completed
             
@@ -199,22 +199,20 @@ class FundStatusService:
             # Update current_duration for realized status (uses end_date)
             fund.calculate_and_update_current_duration()
             
-            logger.info(f"Gross IRR calculated and stored for realized fund {fund.name}")
             
         elif status == FundStatus.COMPLETED:
             # COMPLETED: All IRRs are meaningful (tax obligations complete)
             if not session:
                 return
             
-            irr_service = FundIrRService(session)
-            fund.completed_irr_gross = irr_service.calculate_completed_irr(fund)
-            fund.completed_irr_after_tax = irr_service.calculate_completed_after_tax_irr(fund)
-            fund.completed_irr_real = irr_service.calculate_completed_real_irr(fund)
+            irr_service = FundIrRService()
+            fund.completed_irr_gross = irr_service.calculate_completed_irr(fund, session)
+            fund.completed_irr_after_tax = irr_service.calculate_completed_after_tax_irr(fund, session)
+            fund.completed_irr_real = irr_service.calculate_completed_real_irr(fund, session)
             
             # Update current_duration for completed status (uses end_date)
             fund.calculate_and_update_current_duration()
             
-            logger.info(f"All IRRs calculated and stored for completed fund {fund.name}")
     
     # ============================================================================
     # END DATE CALCULATION LOGIC
@@ -236,8 +234,9 @@ class FundStatusService:
         if not fund.start_date:
             return None
         
-        # Get all fund events using repository
-        events = self.event_repository.get_by_fund(fund.id, session)
+        # Get all fund events using repository (in chronological order)
+        from src.fund.repositories.fund_event_repository import SortOrder
+        events = self.event_repository.get_by_fund(fund.id, session, sort_order=SortOrder.ASC)
         if not events:
             return None
         

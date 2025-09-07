@@ -75,7 +75,7 @@ class FundEventRepository:
                     event_types: Optional[List[EventType]] = None,
                     skip: int = 0,
                     limit: int = 100,
-                    sort_order: SortOrder = SortOrder.DESC) -> List[FundEvent]:
+                    sort_order: SortOrder = SortOrder.ASC) -> List[FundEvent]:
         """
         Get all events for a specific fund.
         

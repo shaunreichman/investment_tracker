@@ -44,6 +44,10 @@ class TestFundRealizationWorkflow:
 
     def test_basic_fund_realization_workflow(self, db_session):
         """Test basic fund realization workflow: ACTIVE → REALIZED → COMPLETED"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -102,6 +106,10 @@ class TestFundRealizationWorkflow:
 
     def test_fund_completion_with_final_tax_statement(self, db_session):
         """Test fund completion workflow when final tax statement is received"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, TaxStatementFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -158,6 +166,10 @@ class TestFundRealizationWorkflow:
 
     def test_fund_reversion_from_completed_to_realized(self, db_session):
         """Test fund status reversion when final tax statement is removed"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, TaxStatementFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -221,6 +233,10 @@ class TestFundRealizationWorkflow:
 
     def test_nav_based_fund_realization_workflow(self, db_session):
         """Test fund realization workflow for NAV-based funds with unit operations"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -238,9 +254,12 @@ class TestFundRealizationWorkflow:
         assert fund.current_units == 0.0
         
         # Purchase units to establish equity
-        fund.add_unit_purchase(
-            units=1000.0,        # Fixed: use 'units' not 'units_purchased'
-            price=50.0,          # Fixed: use 'price' not 'unit_price'
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_unit_purchase(
+            fund=fund,
+            units=1000.0,
+            price=50.0,
             date=date(2023, 1, 1),
             description="Initial unit purchase",
             session=db_session
@@ -254,9 +273,12 @@ class TestFundRealizationWorkflow:
         assert fund.current_equity_balance == 50000.0
         
         # Sell all units to realize fund
-        fund.add_unit_sale(
-            units=1000.0,  # Fixed: use 'units' not 'units_sold'
-            price=55.0,    # Fixed: use 'price' not 'unit_price'
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event_service.add_unit_sale(
+            fund=fund,
+            units=1000.0,
+            price=55.0,
             date=date(2023, 6, 30),
             description="Full unit sale",
             session=db_session
@@ -280,6 +302,10 @@ class TestFundRealizationWorkflow:
 
     def test_fund_realization_with_distributions(self, db_session):
         """Test fund realization workflow with income distributions after equity balance reaches zero"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -331,6 +357,10 @@ class TestFundRealizationWorkflow:
 
     def test_fund_realization_business_rule_enforcement(self, db_session):
         """Test business rule enforcement during fund realization workflow"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -383,6 +413,10 @@ class TestFundRealizationWorkflow:
 
     def test_fund_completion_business_rule_enforcement(self, db_session):
         """Test business rule enforcement for completed funds"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, TaxStatementFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -432,8 +466,12 @@ class TestFundRealizationWorkflow:
 
     def test_fund_realization_with_cash_flow_integration(self, db_session):
         """Test fund realization workflow with cash flow integration"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, 
+        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory,
                        BankFactory, BankAccountFactory, FundEventCashFlowFactory):
             factory._meta.sqlalchemy_session = db_session
         
@@ -501,6 +539,10 @@ class TestFundRealizationWorkflow:
 
     def test_fund_realization_edge_cases(self, db_session):
         """Test fund realization workflow edge cases and boundary conditions"""
+        # Register event handlers for this test
+        from src.fund.events.consumption.handler_registry import register_all_handlers
+        register_all_handlers()
+        
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -539,7 +581,7 @@ class TestFundRealizationWorkflow:
         
         # Add and return very small amounts
         fund_event_service.add_capital_call(fund2, 0.01, date(2023, 1, 1), "Small capital call", session=db_session)
-        fund2.add_return_of_capital(0.01, date(2023, 6, 30), "Small capital return", session=db_session)
+        fund_event_service.add_return_of_capital(fund2, 0.01, date(2023, 6, 30), "Small capital return", session=db_session)
         db_session.commit()
         
         # Verify fund is realized even with very small amounts

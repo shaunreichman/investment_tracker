@@ -165,7 +165,9 @@ class FundIrRService:
             cash_flows, days_from_start = self._prepare_cash_flows(filtered_events, start_date)
             
             # Validate cash flows
-            if not IRRCalculator.validate_cash_flows(cash_flows, days_from_start):
+            is_valid = IRRCalculator.validate_cash_flows(cash_flows, days_from_start)
+            
+            if not is_valid:
                 return None
             
             # Calculate IRR using shared calculator
@@ -298,18 +300,19 @@ class FundIrRService:
     
     def _get_fund_events(self, fund: Fund, session: Session) -> List[FundEvent]:
         """
-        Get all events for a fund from the database.
+        Get all events for a fund from the database in chronological order.
         
         Args:
             fund: The fund to get events for
             session: Database session for data access
             
         Returns:
-            List[FundEvent]: List of fund events
+            List[FundEvent]: List of fund events sorted by date (ascending)
         """
         from src.fund.repositories import FundEventRepository
+        from src.fund.enums import SortOrder
         event_repository = FundEventRepository()
-        return event_repository.get_by_fund(fund.id, session)
+        return event_repository.get_by_fund(fund.id, session, sort_order=SortOrder.ASC)
     
     def _create_daily_risk_free_interest_charges(self, fund: Fund, session: Session, risk_free_rate_currency: Optional[str] = None) -> None:
         """

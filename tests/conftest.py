@@ -104,6 +104,11 @@ def engine(test_database_name):
     # Create all tables
     Base.metadata.create_all(bind=engine)
     
+    # Create the group_id_seq sequence that's needed for event grouping
+    with engine.connect() as conn:
+        conn.execute(text("CREATE SEQUENCE IF NOT EXISTS group_id_seq START WITH 1 INCREMENT BY 1"))
+        conn.commit()
+    
     yield engine
     
     # Cleanup: drop the test database
@@ -227,10 +232,14 @@ def cleanup_event_bus():
     yield
     try:
         from src.fund.events.consumption.event_bus import event_bus
+        from src.fund.events.consumption.handler_registry import handler_registry
+        
+        # Clear both event bus subscriptions and handler registry state
         event_bus.clear_subscriptions()
-        print("✅ Event bus subscriptions cleared")
+        handler_registry.clear_registrations()
+        print("✅ Event bus subscriptions and handler registry cleared")
     except Exception as e:
-        print(f"⚠️ Warning: Could not clear event bus subscriptions: {e}")
+        print(f"⚠️ Warning: Could not clear event system: {e}")
 
 
 class BaseTestCase:
