@@ -285,3 +285,105 @@ class FundValidationService:
                 return event
         
         return None
+    
+    def validate_distribution(self, fund: 'Fund', event_date: date, distribution_type: 'DistributionType',
+                            distribution_amount: float = None, has_withholding_tax: bool = False,
+                            gross_interest_amount: float = None, net_interest_amount: float = None,
+                            withholding_tax_amount: float = None, withholding_tax_rate: float = None,
+                            reference_number: str = None, session: Session = None) -> Dict[str, List[str]]:
+        """
+        Validate distribution event parameters.
+        
+        Args:
+            fund: The fund object
+            event_date: Distribution date
+            distribution_type: Type of distribution
+            distribution_amount: Simple distribution amount (when has_withholding_tax=False)
+            has_withholding_tax: Whether this distribution has withholding tax
+            gross_interest_amount: Gross interest amount (when has_withholding_tax=True)
+            net_interest_amount: Net interest amount (when has_withholding_tax=True)
+            withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
+            withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            Dict[str, List[str]]: Validation errors by field
+        """
+        errors = {}
+        
+        # BUSINESS RULE: Event date is required
+        if not event_date:
+            errors['event_date'] = ["Event date is required"]
+        
+        # BUSINESS RULE: Distribution type is required
+        if not distribution_type:
+            errors['distribution_type'] = ["Distribution type is required"]
+        
+        # BUSINESS RULE: Validate distribution type
+        if distribution_type:
+            try:
+                from src.fund.enums import DistributionType
+                if not isinstance(distribution_type, DistributionType):
+                    DistributionType.from_string(str(distribution_type))
+            except (ValueError, AttributeError):
+                errors['distribution_type'] = ["Invalid distribution_type"]
+        
+        # BUSINESS RULE: Validate withholding tax scenario
+        if has_withholding_tax:
+            # Withholding tax is only valid for INTEREST distributions
+            if distribution_type and distribution_type != DistributionType.INTEREST:
+                errors['distribution_type'] = ["Withholding tax is only valid for INTEREST distributions"]
+            
+            # Must have exactly one amount type (gross OR net)
+            amount_fields = [gross_interest_amount, net_interest_amount]
+            provided_amount_fields = sum(1 for field in amount_fields if field is not None)
+            
+            if provided_amount_fields == 0:
+                errors['amount'] = ["For withholding tax distributions, exactly one of gross_interest_amount OR net_interest_amount must be provided"]
+            elif provided_amount_fields > 1:
+                errors['amount'] = ["For withholding tax distributions, only one of gross_interest_amount OR net_interest_amount can be provided (not both)"]
+            
+            # Must have exactly one tax type (amount OR rate)
+            tax_fields = [withholding_tax_amount, withholding_tax_rate]
+            provided_tax_fields = sum(1 for field in tax_fields if field is not None)
+            
+            if provided_tax_fields == 0:
+                errors['tax'] = ["For withholding tax distributions, exactly one of withholding_tax_amount OR withholding_tax_rate must be provided"]
+            elif provided_tax_fields > 1:
+                errors['tax'] = ["For withholding tax distributions, only one of withholding_tax_amount OR withholding_tax_rate can be provided (not both)"]
+            
+            # Validate numeric values
+            for field_name, value in [
+                ('gross_interest_amount', gross_interest_amount),
+                ('net_interest_amount', net_interest_amount),
+                ('withholding_tax_amount', withholding_tax_amount),
+                ('withholding_tax_rate', withholding_tax_rate)
+            ]:
+                if value is not None:
+                    try:
+                        float_val = float(value)
+                        if field_name == 'withholding_tax_rate':
+                            if float_val < 0 or float_val > 100:
+                                errors[field_name] = [f"{field_name} must be between 0% and 100%"]
+                        else:
+                            if float_val <= 0:
+                                errors[field_name] = [f"{field_name} must be positive"]
+                    except (ValueError, TypeError):
+                        errors[field_name] = [f"{field_name} must be a valid number"]
+            
+            # Validate logical consistency
+            if gross_interest_amount and net_interest_amount and gross_interest_amount <= net_interest_amount:
+                errors['amount'] = ["Gross amount must be greater than net amount for withholding tax distributions"]
+        else:
+            # Simple distribution validation
+            if not distribution_amount:
+                errors['distribution_amount'] = ["Distribution amount is required for simple distributions"]
+            elif distribution_amount <= 0:
+                errors['distribution_amount'] = ["Distribution amount must be positive"]
+            
+            # Simple distributions should not have withholding tax fields
+            if any([gross_interest_amount, net_interest_amount, withholding_tax_amount, withholding_tax_rate]):
+                errors['withholding_tax'] = ["Withholding tax fields should not be provided for simple distributions"]
+        
+        return errors

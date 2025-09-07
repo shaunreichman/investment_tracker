@@ -432,52 +432,6 @@ class FundService:
         return fund
 
     
-    def add_distribution(self, fund_id: int, event_date: date, distribution_type: Any,
-                         distribution_amount: float = None, has_withholding_tax: bool = False,
-                         gross_interest_amount: float = None, net_interest_amount: float = None,
-                         withholding_tax_amount: float = None, withholding_tax_rate: float = None,
-                         description: str = None, reference_number: str = None,
-                         session: Session = None) -> Any:
-        """
-        Add distribution event through proper orchestration.
-        
-        Args:
-            fund_id: ID of the fund
-            event_date: Distribution date
-            distribution_type: Type of distribution
-            distribution_amount: Simple distribution amount
-            has_withholding_tax: Whether this distribution has withholding tax
-            gross_interest_amount: Gross interest amount
-            net_interest_amount: Net interest amount
-            withholding_tax_amount: Tax amount withheld
-            withholding_tax_rate: Tax rate percentage
-            description: Event description
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent or tuple: Distribution event, or (distribution_event, tax_event) for withholding tax
-        """
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            raise ValueError(f"Fund with ID {fund_id} not found")
-        
-        # Use orchestrator for event processing
-        event_data = {
-            'event_type': EventType.DISTRIBUTION,
-            'event_date': event_date,
-            'distribution_type': distribution_type,
-            'distribution_amount': distribution_amount,
-            'has_withholding_tax': has_withholding_tax,
-            'gross_interest_amount': gross_interest_amount,
-            'net_interest_amount': net_interest_amount,
-            'withholding_tax_amount': withholding_tax_amount,
-            'withholding_tax_rate': withholding_tax_rate,
-            'description': description,
-            'reference_number': reference_number
-        }
-        
-        return self.orchestrator.process_fund_event(event_data, session, fund)
     
     def get_fund_end_date(self, fund_id: int, session: Session) -> Optional[date]:
         """

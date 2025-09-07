@@ -20,9 +20,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    pass
+    # Create sequence for group IDs
+    op.execute("CREATE SEQUENCE IF NOT EXISTS group_id_seq START WITH 1 INCREMENT BY 1")
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    pass
+    # Drop the sequence
+    op.execute("DROP SEQUENCE IF EXISTS group_id_seq")

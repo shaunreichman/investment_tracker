@@ -449,49 +449,6 @@ class Fund(Base):
     
     
     
-    def add_distribution(self, event_date: date, distribution_type: 'DistributionType',
-                        distribution_amount: float = None, has_withholding_tax: bool = False,
-                        gross_interest_amount: float = None, net_interest_amount: float = None,
-                        withholding_tax_amount: float = None, withholding_tax_rate: float = None,
-                        description: str = None, reference_number: str = None,
-                        session=None) -> Union['FundEvent', tuple['FundEvent', Optional['FundEvent']]]:
-        """
-        Add a distribution event using the service layer.
-        
-        Note: This method delegates to the fund service for proper orchestration.
-        For direct control, use FundService.add_distribution() instead.
-        
-        Args:
-            event_date: Distribution date
-            distribution_type: Type of distribution
-            distribution_amount: Simple distribution amount (when has_withholding_tax=False)
-            has_withholding_tax: Whether this distribution has withholding tax
-            gross_interest_amount: Gross interest amount (when has_withholding_tax=True)
-            net_interest_amount: Net interest amount (when has_withholding_tax=True)
-            withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
-            withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
-            description: Event description
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent or tuple: Distribution event, or (distribution_event, tax_event) for withholding tax
-        """
-        # Delegate to service layer for proper orchestration
-        from src.fund.services.fund_service import FundService
-        fund_service = FundService()
-        return fund_service.add_distribution(
-            self.id, event_date, distribution_type,
-            distribution_amount=distribution_amount,
-            has_withholding_tax=has_withholding_tax,
-            gross_interest_amount=gross_interest_amount,
-            net_interest_amount=net_interest_amount,
-            withholding_tax_amount=withholding_tax_amount,
-            withholding_tax_rate=withholding_tax_rate,
-            description=description,
-            reference_number=reference_number,
-            session=session
-        )
     
     # ============================================================================
     # CORE BUSINESS PROPERTIES - Intrinsic Fund Properties

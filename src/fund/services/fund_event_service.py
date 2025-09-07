@@ -45,6 +45,7 @@ class FundEventService:
                  capital_event_repository: 'CapitalEventRepository' = None,
                  unit_event_repository: 'UnitEventRepository' = None,
                  tax_event_repository: 'TaxEventRepository' = None,
+                 distribution_event_repository: 'DistributionEventRepository' = None,
                  fund_event_query_repository: 'FundEventQueryRepository' = None,
                  validation_service: 'FundValidationService' = None):
         """
@@ -54,15 +55,17 @@ class FundEventService:
             capital_event_repository: Repository for capital events
             unit_event_repository: Repository for unit events
             tax_event_repository: Repository for tax events
+            distribution_event_repository: Repository for distribution events
             fund_event_query_repository: Repository for complex queries
             validation_service: Service for validation logic
         """
-        from src.fund.repositories import CapitalEventRepository, UnitEventRepository, TaxEventRepository, FundEventQueryRepository
+        from src.fund.repositories import CapitalEventRepository, UnitEventRepository, TaxEventRepository, DistributionEventRepository, FundEventQueryRepository
         from src.fund.services.fund_validation_service import FundValidationService
         
         self.capital_event_repository = capital_event_repository or CapitalEventRepository()
         self.unit_event_repository = unit_event_repository or UnitEventRepository()
         self.tax_event_repository = tax_event_repository or TaxEventRepository()
+        self.distribution_event_repository = distribution_event_repository or DistributionEventRepository()
         self.fund_event_query_repository = fund_event_query_repository or FundEventQueryRepository()
         self.validation_service = validation_service or FundValidationService()
     
@@ -461,44 +464,6 @@ class FundEventService:
         
         return prev_nav, nav_change_absolute, nav_change_percentage
     
-    def _check_duplicate_nav_event(self, fund: 'Fund', nav_per_share: float, date: date, 
-                                  reference_number: Optional[str], session: Optional[Session] = None) -> Optional['FundEvent']:
-        """
-        Check for existing duplicate NAV update event.
-        
-        Args:
-            fund: The fund object
-            nav_per_share: NAV per share value
-            date: Date of the NAV update
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent: Existing event if found, None otherwise
-        """
-        from src.fund.enums import EventType
-        from src.fund.repositories import FundEventRepository
-        
-        # Use business repository for duplicate checking
-        event_repo = FundEventRepository()
-        existing_events = event_repo.get_by_fund_and_types(fund.id, [EventType.NAV_UPDATE], session)
-        
-        # Filter by date
-        existing_events = [e for e in existing_events if e.event_date == date]
-        
-        # Check for exact match on reference number if provided
-        if reference_number:
-            for event in existing_events:
-                if event.reference_number == reference_number:
-                    return event
-        
-        # If no reference number, check for same NAV value on same date
-        for event in existing_events:
-            if event.nav_per_share == nav_per_share:
-                return event
-        
-        return None
-    
     def _update_subsequent_nav_change_fields(self, fund: 'Fund', new_nav_event: 'FundEvent', 
                                            session: Optional[Session] = None) -> None:
         """
@@ -759,3 +724,164 @@ class FundEventService:
             event.tax_withheld = event_data.get('tax_withheld', 0.0)
         
         return event
+    
+    def add_distribution(self, fund: 'Fund', event_date: date, distribution_type: 'DistributionType',
+                        distribution_amount: float = None, has_withholding_tax: bool = False,
+                        gross_interest_amount: float = None, net_interest_amount: float = None,
+                        withholding_tax_amount: float = None, withholding_tax_rate: float = None,
+                        description: str = None, reference_number: str = None,
+                        session: Optional[Session] = None) -> Union['FundEvent', tuple['FundEvent', Optional['FundEvent']]]:
+        """
+        Add distribution event - THE ONLY method for this operation.
+        
+        This method follows enterprise best practices:
+        1. Business validation
+        2. Create the event directly
+        3. Delegate secondary impacts to orchestrator
+        
+        Args:
+            fund: The fund object
+            event_date: Distribution date
+            distribution_type: Type of distribution
+            distribution_amount: Simple distribution amount (when has_withholding_tax=False)
+            has_withholding_tax: Whether this distribution has withholding tax
+            gross_interest_amount: Gross interest amount (when has_withholding_tax=True)
+            net_interest_amount: Net interest amount (when has_withholding_tax=True)
+            withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
+            withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
+            description: Event description
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent or tuple: Distribution event, or (distribution_event, tax_event) for withholding tax
+            
+        Raises:
+            ValueError: If validation fails
+            RuntimeError: If fund not found
+        """
+        from src.fund.enums import EventType
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
+        
+        # 1. Business validation using validation service
+        validation_errors = self.validation_service.validate_distribution(
+            fund, event_date, distribution_type, distribution_amount, has_withholding_tax,
+            gross_interest_amount, net_interest_amount, withholding_tax_amount, 
+            withholding_tax_rate, reference_number, session
+        )
+        if validation_errors:
+            # Convert validation errors to ValueError with first error message
+            first_error_field = next(iter(validation_errors))
+            first_error_message = validation_errors[first_error_field][0]
+            raise ValueError(first_error_message)
+        
+        # 2. Calculate distribution amounts and create event data
+        event_data = self._calculate_distribution_event_data(
+            fund, event_date, distribution_type, distribution_amount, has_withholding_tax,
+            gross_interest_amount, net_interest_amount, withholding_tax_amount, 
+            withholding_tax_rate, description, reference_number
+        )
+        
+        # 3. Create the distribution event directly (business logic)
+        # This handles tax event creation and grouping internally
+        if has_withholding_tax:
+            interest_event = self.distribution_event_repository.create_distribution(fund.id, event_data, session)
+        else:
+            interest_event, tax_withheld_event = self.distribution_event_repository.create_distribution(fund.id, event_data, session)
+        # 4. Delegate secondary impacts to orchestrator (side effects)
+        orchestrator = FundUpdateOrchestrator()
+        orchestrator_event_data = {
+            'event_type': EventType.DISTRIBUTION,
+            'event_id': interest_event.id,
+            'fund_id': fund.id,
+            'event_date': event_date,
+            'distribution_type': DistributionType.INTEREST
+        }
+        orchestrator.process_fund_event(orchestrator_event_data, session, fund)
+        
+        return interest_event
+    
+    def _calculate_distribution_event_data(self, fund: 'Fund', event_date: date, distribution_type: 'DistributionType',
+                                         distribution_amount: float = None, has_withholding_tax: bool = False,
+                                         gross_interest_amount: float = None, net_interest_amount: float = None,
+                                         withholding_tax_amount: float = None, withholding_tax_rate: float = None,
+                                         description: str = None, reference_number: str = None) -> Dict[str, Any]:
+        """
+        Calculate distribution event data based on parameters.
+        
+        This method handles the complex logic for both simple distributions
+        and withholding tax distributions.
+        """
+        from src.fund.enums import EventType
+        
+        event_data = {
+            'fund_id': fund.id,
+            'event_type': EventType.DISTRIBUTION,
+            'event_date': event_date,
+            'distribution_type': distribution_type.value if hasattr(distribution_type, 'value') else str(distribution_type),
+            'description': description or f"Distribution: {distribution_type}",
+            'reference_number': reference_number
+        }
+        
+        if has_withholding_tax:
+            # Complex withholding tax distribution
+            gross_amount, net_amount, tax_amount = self._calculate_withholding_tax_amounts(
+                gross_interest_amount, net_interest_amount, withholding_tax_amount, withholding_tax_rate
+            )
+            
+            event_data.update({
+                'amount': net_amount,  # Distribution amount is the net amount
+                'tax_withholding': tax_amount,  # Use correct field name from FundEvent model
+                'has_withholding_tax': True
+            })
+        else:
+            # Simple distribution
+            if not distribution_amount:
+                raise ValueError("distribution_amount is required for simple distributions")
+            
+            event_data.update({
+                'amount': distribution_amount,
+                'tax_withholding': 0.0,  # Use correct field name from FundEvent model
+                'has_withholding_tax': False
+            })
+        
+        return event_data
+    
+    def _calculate_withholding_tax_amounts(self, gross_interest_amount: float = None, 
+                                         net_interest_amount: float = None,
+                                         withholding_tax_amount: float = None, 
+                                         withholding_tax_rate: float = None) -> tuple[float, float, float]:
+        """
+        Calculate gross, net, and tax amounts for withholding tax distributions.
+        
+        This method implements the exact logic from the original distribution methods.
+        """
+        # Determine which amount type is provided
+        if gross_interest_amount is not None:
+            gross_amount = gross_interest_amount
+            if withholding_tax_amount is not None:
+                # Gross amount + tax amount provided
+                net_amount = gross_amount - withholding_tax_amount
+                tax_amount = withholding_tax_amount
+            elif withholding_tax_rate is not None:
+                # Gross amount + tax rate provided
+                tax_amount = gross_amount * (withholding_tax_rate / 100)
+                net_amount = gross_amount - tax_amount
+            else:
+                raise ValueError("Either withholding_tax_amount or withholding_tax_rate must be provided with gross_interest_amount")
+        elif net_interest_amount is not None:
+            net_amount = net_interest_amount
+            if withholding_tax_amount is not None:
+                # Net amount + tax amount provided
+                gross_amount = net_amount + withholding_tax_amount
+                tax_amount = withholding_tax_amount
+            elif withholding_tax_rate is not None:
+                # Net amount + tax rate provided
+                gross_amount = net_amount / (1 - withholding_tax_rate / 100)
+                tax_amount = gross_amount - net_amount
+            else:
+                raise ValueError("Either withholding_tax_amount or withholding_tax_rate must be provided with net_interest_amount")
+        else:
+            raise ValueError("Either gross_interest_amount or net_interest_amount must be provided")
+        
+        return gross_amount, net_amount, tax_amount

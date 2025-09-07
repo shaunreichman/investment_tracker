@@ -305,7 +305,10 @@ class TestFundRealizationWorkflow:
         assert fund.current_equity_balance == 0.0
         
         # Add income distribution after realization (should be allowed)
-        distribution = fund.add_distribution(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        distribution = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2023, 12, 31),
             distribution_type=DistributionType.INCOME,
             distribution_amount=5000.0,

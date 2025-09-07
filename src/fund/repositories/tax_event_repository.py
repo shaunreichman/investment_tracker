@@ -325,6 +325,12 @@ class TaxEventRepository:
         self._cache[cache_key] = events
         
         return events
+
+    def get_tax_event_by_group_id(self, group_id: int, session: Session) -> FundEvent:
+        """
+        Get a tax event by group id.
+        """
+        return session.query(FundEvent).filter(FundEvent.group_id == group_id).filter(FundEvent.event_type == EventType.TAX_PAYMENT.value).first()
     
     def delete_tax_events_by_type(self, fund_id: int, event_type: EventType, session: Session) -> int:
         """

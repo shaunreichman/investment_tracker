@@ -741,7 +741,10 @@ class TestFundBusinessLogicMethods:
         )
         
         # Execute
-        event = fund.add_distribution(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2023, 6, 1),
             distribution_type=DistributionType.INTEREST,
             distribution_amount=25000.0,
@@ -777,7 +780,10 @@ class TestFundBusinessLogicMethods:
         )
         
         # Execute with withholding tax
-        event = fund.add_distribution(
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        event = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2023, 6, 1),
             distribution_type=DistributionType.INTEREST,
             has_withholding_tax=True,

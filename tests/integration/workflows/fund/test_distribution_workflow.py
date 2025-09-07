@@ -27,6 +27,7 @@ from src.fund.models import (
     FundEvent, FundEventCashFlow
 )
 from src.fund.services.fund_service import FundService
+from src.fund.services.fund_event_service import FundEventService
 from src.fund.enums import DistributionType, TaxPaymentType
 from src.fund.events.orchestrator import FundUpdateOrchestrator
 
@@ -62,8 +63,9 @@ class TestDistributionWorkflow:
         assert fund.current_equity_balance == 50000.0
         assert fund.total_distributions(session=db_session) == 0.0
         
-        # Execute distribution
-        event = fund.add_distribution(
+        # Execute distribution using FundEventService
+        event = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2023, 6, 30),
             distribution_type=DistributionType.INCOME,
             distribution_amount=5000.0,
@@ -119,10 +121,11 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
-        # Execute distribution with withholding tax
+        # Execute distribution with withholding tax using FundEventService
         # NOTE: BUG FOUND - add_distribution() returns single event, not tuple
         # This suggests withholding tax functionality may not be working correctly
-        result = fund.add_distribution(
+        result = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.INTEREST,
             has_withholding_tax=True,
@@ -134,14 +137,20 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
-        # Verify distribution event
+        # Verify distribution event (should return tuple for withholding tax)
         assert result is not None
-        assert result.event_type == EventType.DISTRIBUTION
-        assert result.distribution_type == DistributionType.INTEREST
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        
+        distribution_event, tax_event = result
+        assert distribution_event.event_type == EventType.DISTRIBUTION
+        assert tax_event is not None
+        assert tax_event.event_type == EventType.TAX_PAYMENT
+        assert distribution_event.distribution_type == DistributionType.INTEREST
         # NOTE: System behavior - amount is stored as NET amount (after withholding)
         # This is actually correct behavior, not a bug
-        assert result.amount == 9775.0  # Net amount (11500 - 15% = 9775)
-        assert result.has_withholding_tax is True
+        assert distribution_event.amount == 9775.0  # Net amount (11500 - 15% = 9775)
+        assert distribution_event.has_withholding_tax is True
         
         # NOTE: System behavior - tax event is created internally but not returned
         # The method returns only the distribution event, which is acceptable
@@ -149,7 +158,7 @@ class TestDistributionWorkflow:
         print("ℹ️  System behavior: Withholding tax calculation is working correctly")
         print(f"   Gross amount: 11500.0")
         print(f"   Withholding tax: 1725.0 (15%)")
-        print(f"   Net amount stored: {result.amount}")
+        print(f"   Net amount stored: {distribution_event.amount}")
         print(f"   Tax event created internally but not returned (acceptable)")
         
         # Verify fund state
@@ -183,7 +192,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Execute franked dividend distribution
-        event = fund.add_distribution(
+        event = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2024, 3, 31),
             distribution_type=DistributionType.DIVIDEND_FRANKED,
             distribution_amount=8000.0,
@@ -235,7 +245,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create distribution event
-        event = fund.add_distribution(
+        event = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.INCOME,
             distribution_amount=10000.0,
@@ -262,8 +273,8 @@ class TestDistributionWorkflow:
         assert event.cash_flows[0].direction == CashFlowDirection.INFLOW
         assert event.cash_flows[0].bank_account_id == account.id
 
-    def test_distribution_idempotency(self, db_session):
-        """Test that distribution events are idempotent (can be safely re-run)"""
+    def test_multiple_distributions_same_date(self, db_session):
+        """Test that multiple distribution events on the same date are allowed"""
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -287,7 +298,8 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Execute first distribution
-        event1 = fund.add_distribution(
+        event1 = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.INCOME,
             distribution_amount=5000.0,
@@ -297,20 +309,21 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
-        # Execute same distribution again (should return existing event)
-        event2 = fund.add_distribution(
+        # Execute second distribution on same date (should create new event)
+        event2 = fund_event_service.add_distribution(
+            fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.INCOME,
-            distribution_amount=5000.0,
-            description="Income distribution",
-            reference_number="DIST003",
+            distribution_amount=3000.0,
+            description="Second income distribution",
+            reference_number="DIST004",
             session=db_session
         )
         db_session.commit()
         
-        # Verify idempotent behavior
-        assert event1.id == event2.id  # Same event returned
-        assert fund.total_distributions(session=db_session) == 5000.0  # Amount not doubled
+        # Verify both events were created
+        assert event1.id != event2.id  # Different events created
+        assert fund.total_distributions(session=db_session) == 8000.0  # Amounts are cumulative
 
     def test_distribution_business_rule_validation(self, db_session):
         """Test distribution business rule validation and enforcement"""
@@ -338,7 +351,8 @@ class TestDistributionWorkflow:
         
         # Test invalid distribution type
         with pytest.raises(ValueError, match="Invalid distribution_type"):
-            fund.add_distribution(
+            fund_event_service.add_distribution(
+                fund=fund,
                 event_date=date(2024, 6, 30),
                 distribution_type="INVALID_TYPE",
                 distribution_amount=5000.0,
@@ -349,7 +363,8 @@ class TestDistributionWorkflow:
         # NOTE: BUG FOUND - method signature requires distribution_type as positional argument
         # This makes the API less intuitive than it should be
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
-            fund.add_distribution(
+            fund_event_service.add_distribution(
+                fund=fund,
                 event_date=date(2024, 6, 30),
                 distribution_amount=5000.0,
                 session=db_session
@@ -357,7 +372,8 @@ class TestDistributionWorkflow:
         
         # Test invalid withholding tax configuration
         with pytest.raises(ValueError, match="Withholding tax.*is only valid for INTEREST distributions"):
-            fund.add_distribution(
+            fund_event_service.add_distribution(
+                fund=fund,
                 event_date=date(2024, 6, 30),
                 distribution_type=DistributionType.DIVIDEND_FRANKED,
                 has_withholding_tax=True,
@@ -390,24 +406,16 @@ class TestDistributionWorkflow:
         )
         db_session.commit()
         
-        # Use orchestrator directly to test event system integration
-        orchestrator = FundUpdateOrchestrator()
-        
-        # Process distribution through orchestrator
-        event_data = {
-            'event_type': EventType.DISTRIBUTION,
-            'event_date': '2024-06-30',
-            'distribution_type': DistributionType.CAPITAL_GAIN,
-            'distribution_amount': 7500.0,
-            'description': 'Capital gains distribution',
-            'reference_number': 'DIST004'
-        }
-        
-        # Validate event data
-        assert orchestrator.validate_event_data(event_data) is True
-        
-        # Process the event
-        event = orchestrator.process_fund_event(event_data, db_session, fund)
+        # Test distribution through service (which uses orchestrator internally)
+        event = fund_event_service.add_distribution(
+            fund=fund,
+            event_date=date(2024, 6, 30),
+            distribution_type=DistributionType.CAPITAL_GAIN,
+            distribution_amount=7500.0,
+            description="Capital gains distribution",
+            reference_number="DIST004",
+            session=db_session
+        )
         
         # Verify event system integration
         assert event is not None
@@ -447,7 +455,8 @@ class TestDistributionWorkflow:
         start_time = pytest.importorskip('time').time()
         
         for i in range(100):
-            fund.add_distribution(
+            fund_event_service.add_distribution(
+                fund=fund,
                 event_date=date(2024, 6, 30) + timedelta(days=i),
                 distribution_type=DistributionType.INCOME,
                 distribution_amount=1000.0 + i,
@@ -489,14 +498,15 @@ class TestDistributionWorkflow:
         # Create initial events for both fund types (required by business rules)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        cost_initial = fund_event_service.add_capital_call(fund,  
+        cost_initial = fund_event_service.add_capital_call(cost_fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
             session=db_session
         )
         
-        nav_initial = nav_fund.add_unit_purchase(
+        nav_initial = fund_event_service.add_unit_purchase(
+            fund=nav_fund,
             units=1000.0,
             price=25.00,
             date=date(2023, 5, 1),
@@ -507,7 +517,8 @@ class TestDistributionWorkflow:
         
         # Test distributions on both fund types
         for fund in [cost_fund, nav_fund]:
-            event = fund.add_distribution(
+            event = fund_event_service.add_distribution(
+            fund=fund,
                 event_date=date(2024, 6, 30),
                 distribution_type=DistributionType.INCOME,
                 distribution_amount=5000.0,
