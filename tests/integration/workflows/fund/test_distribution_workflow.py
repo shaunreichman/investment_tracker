@@ -48,8 +48,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        fund_service = FundService()
-        initial_event = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -108,8 +109,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        fund_service = FundService()
-        initial_event = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -170,8 +172,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        fund_service = FundService()
-        initial_event = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -221,8 +224,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        fund_service = FundService()
-        initial_event = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -272,8 +276,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        fund_service = FundService()
-        initial_event = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -321,8 +326,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        fund_service = FundService()
-        initial_event = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -374,8 +380,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        fund_service = FundService()
-        initial_event = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -426,8 +433,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial CAPITAL_CALL event (required for cost-based funds)
-        fund_service = FundService()
-        initial_event = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        initial_event = fund_event_service.add_capital_call(fund,  
             amount=500000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -479,8 +487,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create initial events for both fund types (required by business rules)
-        fund_service = FundService()
-        cost_initial = fund_service.add_capital_call(fund.id,  
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        cost_initial = fund_event_service.add_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",

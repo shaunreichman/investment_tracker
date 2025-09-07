@@ -33,12 +33,14 @@ class TestFundEventService:
         mock_unit_repo = Mock()
         mock_tax_repo = Mock()
         mock_query_repo = Mock()
+        mock_validation_service = Mock()
         
         return FundEventService(
             capital_event_repository=mock_capital_repo,
             unit_event_repository=mock_unit_repo,
             tax_event_repository=mock_tax_repo,
-            fund_event_query_repository=mock_query_repo
+            fund_event_query_repository=mock_query_repo,
+            validation_service=mock_validation_service
         )
     
     @pytest.fixture
@@ -80,102 +82,6 @@ class TestFundEventService:
         assert isinstance(service, FundEventService)
     
     
-    def test_add_return_of_capital_valid_inputs(self, service, mock_fund, mock_session):
-        """Test return of capital creation with valid inputs."""
-        # Setup
-        amount = 3000.0
-        return_date = date(2024, 6, 15)
-        description = "Q2 Return of Capital"
-        reference_number = "ROC_001"
-        
-        # Mock the created event
-        mock_event = Mock(spec=FundEvent)
-        mock_event.fund_id = 1
-        mock_event.event_type = EventType.RETURN_OF_CAPITAL
-        mock_event.event_date = return_date
-        mock_event.amount = amount
-        mock_event.description = description
-        mock_event.reference_number = reference_number
-        service.capital_event_repository.create_return_of_capital.return_value = mock_event
-        
-        # Execute
-        result = service.add_return_of_capital(
-            fund=mock_fund,
-            amount=amount,
-            date=return_date,
-            description=description,
-            reference_number=reference_number,
-            session=mock_session
-        )
-        
-        # Verify
-        assert result == mock_event
-        service.capital_event_repository.create_return_of_capital.assert_called_once_with(
-            1,
-            {
-                'fund_id': 1,
-                'event_type': EventType.RETURN_OF_CAPITAL,
-                'event_date': return_date,
-                'amount': amount,
-                'description': description,
-                'reference_number': reference_number
-            },
-            mock_session
-        )
-    
-    def test_add_return_of_capital_default_description(self, service, mock_fund, mock_session):
-        """Test return of capital creation with default description."""
-        # Setup
-        amount = 3000.0
-        return_date = date(2024, 6, 15)
-        
-        # Mock the created event
-        mock_event = Mock(spec=FundEvent)
-        expected_description = f"Return of capital of {amount}"
-        service.capital_event_repository.create_return_of_capital.return_value = mock_event
-        
-        # Execute
-        service.add_return_of_capital(
-            fund=mock_fund,
-            amount=amount,
-            date=return_date,
-            session=mock_session
-        )
-        
-        # Verify default description was used
-        service.capital_event_repository.create_return_of_capital.assert_called_once()
-        call_args = service.capital_event_repository.create_return_of_capital.call_args
-        assert call_args[0][1]['description'] == expected_description
-    
-    def test_add_return_of_capital_invalid_amount(self, service, mock_fund, mock_session):
-        """Test return of capital creation with invalid amount."""
-        # Test zero amount
-        with pytest.raises(ValueError, match="Return of capital amount must be positive"):
-            service.add_return_of_capital(
-                fund=mock_fund,
-                amount=0,
-                date=date(2024, 6, 15),
-                session=mock_session
-            )
-        
-        # Test negative amount
-        with pytest.raises(ValueError, match="Return of capital amount must be positive"):
-            service.add_return_of_capital(
-                fund=mock_fund,
-                amount=-1000,
-                date=date(2024, 6, 15),
-                session=mock_session
-            )
-    
-    def test_add_return_of_capital_missing_date(self, service, mock_fund, mock_session):
-        """Test return of capital creation with missing date."""
-        with pytest.raises(ValueError, match="Return of capital date is required"):
-            service.add_return_of_capital(
-                fund=mock_fund,
-                amount=3000.0,
-                date=None,
-                session=mock_session
-            )
     
     def test_add_unit_purchase_valid_inputs(self, service, mock_fund, mock_session):
         """Test unit purchase creation with valid inputs."""
@@ -375,7 +281,168 @@ class TestFundEventService:
                 session=mock_session
             )
     
+    # ============================================================================
+    # CAPITAL CALL AND RETURN OF CAPITAL EVENTS
+    # ============================================================================
     
+    @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
+    def test_add_capital_call_valid_inputs(self, mock_orchestrator_class, service, mock_fund, mock_session):
+        """Test capital call creation with valid inputs."""
+        # Setup
+        amount = 50000.0
+        call_date = date(2024, 3, 15)
+        description = "Q1 Capital Call"
+        reference_number = "CC_001"
+        
+        # Mock validation service returns no errors
+        service.validation_service.validate_capital_call.return_value = {}
+        
+        # Mock the created event
+        mock_event = Mock(spec=FundEvent)
+        mock_event.fund_id = 1
+        mock_event.event_type = EventType.CAPITAL_CALL
+        mock_event.amount = amount
+        mock_event.event_date = call_date
+        mock_event.description = description
+        mock_event.reference_number = reference_number
+        service.capital_event_repository.create_capital_call.return_value = mock_event
+        
+        # Mock orchestrator
+        mock_orchestrator = Mock()
+        mock_orchestrator_class.return_value = mock_orchestrator
+        
+        # Execute
+        result = service.add_capital_call(
+            fund=mock_fund,
+            amount=amount,
+            call_date=call_date,
+            description=description,
+            reference_number=reference_number,
+            session=mock_session
+        )
+        
+        # Verify
+        assert result == mock_event
+        service.validation_service.validate_capital_call.assert_called_once_with(
+            mock_fund, amount, call_date, reference_number, mock_session
+        )
+        service.capital_event_repository.create_capital_call.assert_called_once()
+        mock_orchestrator.process_fund_event.assert_called_once()
+    
+    def test_add_capital_call_invalid_amount(self, service, mock_fund, mock_session):
+        """Test capital call creation with invalid amount."""
+        # Mock validation service returns amount error
+        service.validation_service.validate_capital_call.return_value = {
+            'amount': ["Capital call amount must be a positive number"]
+        }
+        
+        # Test zero amount
+        with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
+            service.add_capital_call(
+                fund=mock_fund,
+                amount=0,
+                call_date=date(2024, 3, 15),
+                session=mock_session
+            )
+        
+        # Test negative amount
+        with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
+            service.add_capital_call(
+                fund=mock_fund,
+                amount=-1000,
+                call_date=date(2024, 3, 15),
+                session=mock_session
+            )
+    
+    def test_add_capital_call_wrong_fund_type(self, service, mock_fund, mock_session):
+        """Test capital call creation with wrong fund type."""
+        # Mock validation service returns fund type error
+        service.validation_service.validate_capital_call.return_value = {
+            'fund_type': ["Capital calls are only applicable for cost-based funds"]
+        }
+        
+        with pytest.raises(ValueError, match="Capital calls are only applicable for cost-based funds"):
+            service.add_capital_call(
+                fund=mock_fund,
+                amount=50000.0,
+                call_date=date(2024, 3, 15),
+                session=mock_session
+            )
+    
+    @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
+    def test_add_return_of_capital_valid_inputs(self, mock_orchestrator_class, service, mock_fund, mock_session):
+        """Test return of capital creation with valid inputs."""
+        # Setup
+        amount = 25000.0
+        return_date = date(2024, 9, 30)
+        description = "Q3 Capital Return"
+        reference_number = "ROC_001"
+        
+        # Mock validation service returns no errors
+        service.validation_service.validate_return_of_capital.return_value = {}
+        
+        # Mock the created event
+        mock_event = Mock(spec=FundEvent)
+        mock_event.fund_id = 1
+        mock_event.event_type = EventType.RETURN_OF_CAPITAL
+        mock_event.amount = amount
+        mock_event.event_date = return_date
+        mock_event.description = description
+        mock_event.reference_number = reference_number
+        service.capital_event_repository.create_return_of_capital.return_value = mock_event
+        
+        # Mock orchestrator
+        mock_orchestrator = Mock()
+        mock_orchestrator_class.return_value = mock_orchestrator
+        
+        # Execute
+        result = service.add_return_of_capital(
+            fund=mock_fund,
+            amount=amount,
+            return_date=return_date,
+            description=description,
+            reference_number=reference_number,
+            session=mock_session
+        )
+        
+        # Verify
+        assert result == mock_event
+        service.validation_service.validate_return_of_capital.assert_called_once_with(
+            mock_fund, amount, return_date, reference_number, mock_session
+        )
+        service.capital_event_repository.create_return_of_capital.assert_called_once()
+        mock_orchestrator.process_fund_event.assert_called_once()
+    
+    def test_add_return_of_capital_invalid_amount(self, service, mock_fund, mock_session):
+        """Test return of capital creation with invalid amount."""
+        # Mock validation service returns amount error
+        service.validation_service.validate_return_of_capital.return_value = {
+            'amount': ["Return amount must be a positive number"]
+        }
+        
+        # Test zero amount
+        with pytest.raises(ValueError, match="Return amount must be a positive number"):
+            service.add_return_of_capital(
+                fund=mock_fund,
+                amount=0,
+                return_date=date(2024, 9, 30),
+                session=mock_session
+            )
+    
+    def test_add_return_of_capital_wrong_fund_type(self, service, mock_fund, mock_session):
+        """Test return of capital creation with wrong fund type."""
+        # Mock validation service returns fund type error
+        service.validation_service.validate_return_of_capital.return_value = {
+            'fund_type': ["Returns of capital are only applicable for cost-based funds"]
+        }
+        
+        with pytest.raises(ValueError, match="Returns of capital are only applicable for cost-based funds"):
+            service.add_return_of_capital(
+                fund=mock_fund,
+                amount=25000.0,
+                return_date=date(2024, 9, 30),
+                session=mock_session
+            )
     
     def test_event_creation_edge_cases(self, service, mock_fund, mock_session):
         """Test event creation with edge case values."""

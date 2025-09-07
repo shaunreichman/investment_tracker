@@ -67,20 +67,31 @@ class FundUpdateOrchestrator:
             ValueError: If event data is invalid
             RuntimeError: If event processing fails
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
+            logger.info(f"Processing fund event: {event_data}")
+            
             # Step 1: Process the main event through the registry
+            logger.info("Step 1: Processing event through registry")
             event = self.registry.handle_event(event_data, session, fund)
+            logger.info(f"Event created: {event}")
             
             # Step 2: Handle any dependent updates
+            logger.info("Step 2: Handling dependent updates")
             self._handle_dependent_updates(event, session)
             
             # Step 3: Commit all changes
+            logger.info("Step 3: Committing changes")
             self._commit_changes(session)
             
+            logger.info("Event processing completed successfully")
             return event
             
         except Exception as e:
             # Step 4: Rollback on any error
+            logger.error(f"Error processing fund event: {e}")
             self._rollback_on_error(session, e)
             raise
     

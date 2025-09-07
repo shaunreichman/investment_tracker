@@ -58,24 +58,21 @@ class ReturnOfCapitalHandler(BaseFundEventHandler):
         Handle a return of capital event.
         
         This method:
-        1. Validates the event data
-        2. Checks for duplicate events (idempotent behavior)
-        3. Creates the return of capital event
-        4. Updates fund state
-        5. Publishes domain events
+        1. Gets the existing event (created by service)
+        2. Updates fund state
+        3. Publishes domain events
         
         Args:
             event_data: Dictionary containing event parameters
             
         Returns:
-            FundEvent: The created return of capital event
+            FundEvent: The return of capital event
             
         Raises:
             ValueError: If event data is invalid
             RuntimeError: If event processing fails
         """
-        # Validate event data
-        self.validate_event(event_data)
+        # Event validation is handled by the service layer
         
         # Extract parameters
         amount = float(event_data['amount'])
@@ -83,26 +80,15 @@ class ReturnOfCapitalHandler(BaseFundEventHandler):
         description = event_data.get('description')
         reference_number = event_data.get('reference_number')
         
-        # Check for existing duplicate event (idempotent behavior)
-        existing_event = self._check_duplicate_event(
-            EventType.RETURN_OF_CAPITAL,
-            event_date=event_date,
-            amount=amount,
-            reference_number=reference_number
-        )
+        # Get the existing event (created by service)
+        event_id = event_data.get('event_id')
+        if not event_id:
+            raise ValueError("event_id is required - event should be created by service first")
         
-        if existing_event:
-            # Return existing event without creating duplicate
-            return existing_event
-        
-        # Create new return of capital event
-        event = self._create_event(
-            EventType.RETURN_OF_CAPITAL,
-            event_date=event_date,
-            amount=amount,
-            description=description or f"Return of capital: ${amount:,.2f}",
-            reference_number=reference_number
-        )
+        # Event already created by service, get it from database
+        event = self.session.get(FundEvent, event_id)
+        if not event:
+            raise ValueError(f"Event with id {event_id} not found - event should be created by service first")
         
         # Update fund state
         self._update_fund_after_capital_event(event)

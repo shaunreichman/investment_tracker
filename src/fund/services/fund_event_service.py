@@ -45,7 +45,8 @@ class FundEventService:
                  capital_event_repository: 'CapitalEventRepository' = None,
                  unit_event_repository: 'UnitEventRepository' = None,
                  tax_event_repository: 'TaxEventRepository' = None,
-                 fund_event_query_repository: 'FundEventQueryRepository' = None):
+                 fund_event_query_repository: 'FundEventQueryRepository' = None,
+                 validation_service: 'FundValidationService' = None):
         """
         Initialize the FundEventService with specialized repositories.
         
@@ -54,58 +55,147 @@ class FundEventService:
             unit_event_repository: Repository for unit events
             tax_event_repository: Repository for tax events
             fund_event_query_repository: Repository for complex queries
+            validation_service: Service for validation logic
         """
         from src.fund.repositories import CapitalEventRepository, UnitEventRepository, TaxEventRepository, FundEventQueryRepository
+        from src.fund.services.fund_validation_service import FundValidationService
         
         self.capital_event_repository = capital_event_repository or CapitalEventRepository()
         self.unit_event_repository = unit_event_repository or UnitEventRepository()
         self.tax_event_repository = tax_event_repository or TaxEventRepository()
         self.fund_event_query_repository = fund_event_query_repository or FundEventQueryRepository()
+        self.validation_service = validation_service or FundValidationService()
     
     # ============================================================================
     # CAPITAL CALL AND RETURN OF CAPITAL EVENTS
     # ============================================================================
     
-    
-    def add_return_of_capital(self, fund: 'Fund', amount: float, date: date,
-                             description: Optional[str] = None, reference_number: Optional[str] = None,
-                             session: Optional[Session] = None) -> 'FundEvent':
+    def add_capital_call(self, fund: 'Fund', amount: float, call_date: date, 
+                        description: str = None, reference_number: str = None, 
+                        session: Session = None) -> 'FundEvent':
         """
-        [EXTRACTED] Add a return of capital event to the fund.
+        Add capital call event - THE ONLY method for this operation.
         
-        This method was extracted from the Fund model to improve separation of concerns.
+        This method follows enterprise best practices:
+        1. Business validation
+        2. Create the event directly
+        3. Delegate secondary impacts to orchestrator
         
         Args:
             fund: The fund object
-            amount: Amount of capital to return
-            date: Date of the return
-            description: Optional description
-            reference_number: Optional reference number
-            session: Database session (optional)
+            amount: Capital call amount
+            call_date: Date of the capital call
+            description: Description of the capital call
+            reference_number: External reference number
+            session: Database session
+            
+        Returns:
+            FundEvent: The created capital call event
+            
+        Raises:
+            ValueError: If validation fails
+            RuntimeError: If fund not found
+        """
+        from src.fund.enums import EventType
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
+        
+        # 1. Business validation using validation service
+        validation_errors = self.validation_service.validate_capital_call(
+            fund, amount, call_date, reference_number, session
+        )
+        if validation_errors:
+            # Convert validation errors to ValueError with first error message
+            first_error_field = next(iter(validation_errors))
+            first_error_message = validation_errors[first_error_field][0]
+            raise ValueError(first_error_message)
+        
+        # 2. Create the capital call event directly (business logic)
+        event = self.capital_event_repository.create_capital_call(fund.id, {
+            'fund_id': fund.id,
+            'event_type': EventType.CAPITAL_CALL,
+            'amount': amount,
+            'event_date': call_date,
+            'description': description or f"Capital call: ${amount:,.2f}",
+            'reference_number': reference_number
+        }, session)
+        
+        # 3. Delegate secondary impacts to orchestrator (side effects)
+        orchestrator = FundUpdateOrchestrator()
+        event_data = {
+            'event_type': EventType.CAPITAL_CALL,
+            'event_id': event.id,
+            'fund_id': fund.id,
+            'amount': amount,
+            'event_date': call_date
+        }
+        logger.info(f"About to call orchestrator with event_data: {event_data}")
+        orchestrator.process_fund_event(event_data, session, fund)
+        logger.info("Orchestrator call completed")
+        
+        logger.info(f"Added capital call event: ${amount:,.2f} on {call_date} for fund {fund.name}")
+        return event
+    
+    def add_return_of_capital(self, fund: 'Fund', amount: float, return_date: date,
+                             description: str = None, reference_number: str = None,
+                             session: Session = None) -> 'FundEvent':
+        """
+        Add return of capital event - THE ONLY method for this operation.
+        
+        This method follows enterprise best practices:
+        1. Business validation
+        2. Create the event directly
+        3. Delegate secondary impacts to orchestrator
+        
+        Args:
+            fund: The fund object
+            amount: Return amount
+            return_date: Date of the return
+            description: Description of the return
+            reference_number: External reference number
+            session: Database session
             
         Returns:
             FundEvent: The created return of capital event
+            
+        Raises:
+            ValueError: If validation fails
+            RuntimeError: If fund not found
         """
-        # Validate inputs
-        if amount <= 0:
-            raise ValueError("Return of capital amount must be positive")
-        if not date:
-            raise ValueError("Return of capital date is required")
+        from src.fund.enums import EventType
+        from src.fund.events.orchestrator import FundUpdateOrchestrator
         
-        # Prepare event data
-        event_data = {
+        # 1. Business validation using validation service
+        validation_errors = self.validation_service.validate_return_of_capital(
+            fund, amount, return_date, reference_number, session
+        )
+        if validation_errors:
+            # Convert validation errors to ValueError with first error message
+            first_error_field = next(iter(validation_errors))
+            first_error_message = validation_errors[first_error_field][0]
+            raise ValueError(first_error_message)
+        
+        # 2. Create the return of capital event directly
+        event = self.capital_event_repository.create_return_of_capital(fund.id, {
             'fund_id': fund.id,
             'event_type': EventType.RETURN_OF_CAPITAL,
-            'event_date': date,
             'amount': amount,
-            'description': description or f"Return of capital of {amount}",
+            'event_date': return_date,
+            'description': description or f"Return of capital: ${amount:,.2f}",
             'reference_number': reference_number
+        }, session)
+        
+        # 4. Delegate secondary impacts to orchestrator
+        orchestrator = FundUpdateOrchestrator()
+        event_data = {
+            'event_type': EventType.RETURN_OF_CAPITAL,
+            'event_id': event.id,
+            'fund_id': fund.id,
+            'amount': amount,
+            'event_date': return_date
         }
+        orchestrator.process_fund_event(event_data, session, fund)
         
-        # Delegate to specialized repository
-        event = self.capital_event_repository.create_return_of_capital(fund.id, event_data, session)
-        
-        logger.info(f"Added return of capital event: {amount} on {date} for fund {fund.name}")
+        logger.info(f"Added return of capital event: ${amount:,.2f} on {return_date} for fund {fund.name}")
         return event
     
     # ============================================================================

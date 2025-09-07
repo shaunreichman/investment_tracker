@@ -4,9 +4,10 @@ Comprehensive tests for fund validation service.
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
+from datetime import date
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.models import Fund
-from src.fund.enums import FundStatus
+from src.fund.enums import FundStatus, FundType
 
 
 class TestFundValidationService:
@@ -193,3 +194,252 @@ class TestFundValidationService:
         self.mock_fund_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
         self.mock_tax_statement_repo.get_statement_count_by_fund.assert_called_once_with(1, self.mock_session)
         self.mock_domain_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
+    # ==================== CAPITAL CALL VALIDATION TESTS ====================
+    
+    def test_validate_capital_call_success(self):
+        """Test successful capital call validation."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = 50000.0
+        call_date = date(2024, 3, 15)
+        reference_number = "CC_001"
+        
+        # Act
+        errors = self.validation_service.validate_capital_call(
+            fund, amount, call_date, reference_number, self.mock_session
+        )
+        
+        # Assert
+        assert errors == {}
+    
+    def test_validate_capital_call_invalid_amount_zero(self):
+        """Test capital call validation with zero amount."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = 0.0
+        call_date = date(2024, 3, 15)
+        
+        # Act
+        errors = self.validation_service.validate_capital_call(
+            fund, amount, call_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert 'amount' in errors
+        assert "Capital call amount must be a positive number" in errors['amount'][0]
+    
+    def test_validate_capital_call_invalid_amount_negative(self):
+        """Test capital call validation with negative amount."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = -1000.0
+        call_date = date(2024, 3, 15)
+        
+        # Act
+        errors = self.validation_service.validate_capital_call(
+            fund, amount, call_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert 'amount' in errors
+        assert "Capital call amount must be a positive number" in errors['amount'][0]
+    
+    def test_validate_capital_call_missing_date(self):
+        """Test capital call validation with missing date."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = 50000.0
+        call_date = None
+        
+        # Act
+        errors = self.validation_service.validate_capital_call(
+            fund, amount, call_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert 'call_date' in errors
+        assert "Capital call date is required" in errors['call_date'][0]
+    
+    def test_validate_capital_call_wrong_fund_type(self):
+        """Test capital call validation with NAV-based fund."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.NAV_BASED
+        amount = 50000.0
+        call_date = date(2024, 3, 15)
+        
+        # Act
+        errors = self.validation_service.validate_capital_call(
+            fund, amount, call_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert 'fund_type' in errors
+        assert "Capital calls are only applicable for cost-based funds" in errors['fund_type'][0]
+    
+    def test_validate_capital_call_multiple_errors(self):
+        """Test capital call validation with multiple errors."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.NAV_BASED  # Wrong fund type
+        amount = -1000.0  # Negative amount
+        call_date = None  # Missing date
+        
+        # Act
+        errors = self.validation_service.validate_capital_call(
+            fund, amount, call_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert len(errors) == 3
+        assert 'amount' in errors
+        assert 'call_date' in errors
+        assert 'fund_type' in errors
+        assert "Capital call amount must be a positive number" in errors['amount'][0]
+        assert "Capital call date is required" in errors['call_date'][0]
+        assert "Capital calls are only applicable for cost-based funds" in errors['fund_type'][0]
+    
+    # ==================== RETURN OF CAPITAL VALIDATION TESTS ====================
+    
+    def test_validate_return_of_capital_success(self):
+        """Test successful return of capital validation."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = 25000.0
+        return_date = date(2024, 9, 30)
+        reference_number = "ROC_001"
+        
+        # Act
+        errors = self.validation_service.validate_return_of_capital(
+            fund, amount, return_date, reference_number, self.mock_session
+        )
+        
+        # Assert
+        assert errors == {}
+    
+    def test_validate_return_of_capital_invalid_amount_zero(self):
+        """Test return of capital validation with zero amount."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = 0.0
+        return_date = date(2024, 9, 30)
+        
+        # Act
+        errors = self.validation_service.validate_return_of_capital(
+            fund, amount, return_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert 'amount' in errors
+        assert "Return amount must be a positive number" in errors['amount'][0]
+    
+    def test_validate_return_of_capital_invalid_amount_negative(self):
+        """Test return of capital validation with negative amount."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = -5000.0
+        return_date = date(2024, 9, 30)
+        
+        # Act
+        errors = self.validation_service.validate_return_of_capital(
+            fund, amount, return_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert 'amount' in errors
+        assert "Return amount must be a positive number" in errors['amount'][0]
+    
+    def test_validate_return_of_capital_missing_date(self):
+        """Test return of capital validation with missing date."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = 25000.0
+        return_date = None
+        
+        # Act
+        errors = self.validation_service.validate_return_of_capital(
+            fund, amount, return_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert 'return_date' in errors
+        assert "Return date is required" in errors['return_date'][0]
+    
+    def test_validate_return_of_capital_wrong_fund_type(self):
+        """Test return of capital validation with NAV-based fund."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.NAV_BASED
+        amount = 25000.0
+        return_date = date(2024, 9, 30)
+        
+        # Act
+        errors = self.validation_service.validate_return_of_capital(
+            fund, amount, return_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert 'fund_type' in errors
+        assert "Returns of capital are only applicable for cost-based funds" in errors['fund_type'][0]
+    
+    def test_validate_return_of_capital_multiple_errors(self):
+        """Test return of capital validation with multiple errors."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.NAV_BASED  # Wrong fund type
+        amount = -5000.0  # Negative amount
+        return_date = None  # Missing date
+        
+        # Act
+        errors = self.validation_service.validate_return_of_capital(
+            fund, amount, return_date, None, self.mock_session
+        )
+        
+        # Assert
+        assert len(errors) == 3
+        assert 'amount' in errors
+        assert 'return_date' in errors
+        assert 'fund_type' in errors
+        assert "Return amount must be a positive number" in errors['amount'][0]
+        assert "Return date is required" in errors['return_date'][0]
+        assert "Returns of capital are only applicable for cost-based funds" in errors['fund_type'][0]
+    
+    def test_validate_capital_call_with_none_session(self):
+        """Test capital call validation handles None session gracefully."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = 50000.0
+        call_date = date(2024, 3, 15)
+        
+        # Act
+        errors = self.validation_service.validate_capital_call(
+            fund, amount, call_date, None, None
+        )
+        
+        # Assert
+        assert errors == {}
+    
+    def test_validate_return_of_capital_with_none_session(self):
+        """Test return of capital validation handles None session gracefully."""
+        # Arrange
+        fund = Mock(spec=Fund)
+        fund.tracking_type = FundType.COST_BASED
+        amount = 25000.0
+        return_date = date(2024, 9, 30)
+        
+        # Act
+        errors = self.validation_service.validate_return_of_capital(
+            fund, amount, return_date, None, None
+        )
+        
+        # Assert
+        assert errors == {}

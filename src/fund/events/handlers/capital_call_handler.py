@@ -74,11 +74,7 @@ class CapitalCallHandler(BaseFundEventHandler):
             ValueError: If event data is invalid
             RuntimeError: If event processing fails
         """
-        # Validate event data
-        self.validate_event(event_data)
-        
-        # Validate first event business rules
-        self._validate_first_event(EventType.CAPITAL_CALL)
+        # Event validation is handled by the service layer
         
         # Extract parameters
         amount = float(event_data['amount'])
@@ -86,26 +82,15 @@ class CapitalCallHandler(BaseFundEventHandler):
         description = event_data.get('description')
         reference_number = event_data.get('reference_number')
         
-        # Check for existing duplicate event (idempotent behavior)
-        existing_event = self._check_duplicate_event(
-            EventType.CAPITAL_CALL,
-            event_date=event_date,
-            amount=amount,
-            reference_number=reference_number
-        )
+        # Get the existing event (created by service)
+        event_id = event_data.get('event_id')
+        if not event_id:
+            raise ValueError("event_id is required - event should be created by service first")
         
-        if existing_event:
-            # Return existing event without creating duplicate
-            return existing_event
-        
-        # Create new capital call event
-        event = self._create_event(
-            EventType.CAPITAL_CALL,
-            event_date=event_date,
-            amount=amount,
-            description=description or f"Capital call: ${amount:,.2f}",
-            reference_number=reference_number
-        )
+        # Event already created by service, get it from database
+        event = self.session.get(FundEvent, event_id)
+        if not event:
+            raise ValueError(f"Event with id {event_id} not found - event should be created by service first")
         
         # Update fund state
         self._update_fund_after_capital_event(event)
@@ -150,41 +135,32 @@ class CapitalCallHandler(BaseFundEventHandler):
         Args:
             event: The capital call event to update
         """
-        try:
-            # Get all capital events for this fund, ordered by date and ID
-            capital_events = self.session.query(FundEvent).filter(
-                FundEvent.fund_id == self.fund.id,
-                FundEvent.event_type.in_([EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL])
-            ).order_by(FundEvent.event_date, FundEvent.id).all()
-            
-            if not capital_events:
-                # This is the first capital event
-                event.current_equity_balance = event.amount or 0.0
-                return
-            
-            # Find the index of this event in the ordered list
-            event_index = None
-            for i, e in enumerate(capital_events):
-                if e.id == event.id:
-                    event_index = i
-                    break
-            
-            if event_index is None:
-                # Event not found in the list (shouldn't happen)
-                logger.warning(f"Event {event.id} not found in capital events list")
-                return
-            
-            # Use the new FundEquityService to update equity fields efficiently
-            from src.fund.services.fund_equity_service import FundEquityService
-            equity_service = FundEquityService(self.session)
-            equity_service.update_fund_equity_fields(self.fund)
-            
-            # The calculation service should have updated the event's fields
-            logger.debug(f"Updated equity balance fields for event {event.id}")
-            
-        except Exception as e:
-            logger.error(f"Error updating event equity fields: {e}")
-            raise
+        # Get all capital events for this fund, ordered by date and ID
+        capital_events = self.session.query(FundEvent).filter(
+            FundEvent.fund_id == self.fund.id,
+            FundEvent.event_type.in_([EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL])
+        ).order_by(FundEvent.event_date, FundEvent.id).all()
+        
+        if not capital_events:
+            # This is the first capital event
+            event.current_equity_balance = event.amount or 0.0
+            return
+        
+        # Find the index of this event in the ordered list
+        event_index = None
+        for i, e in enumerate(capital_events):
+            if e.id == event.id:
+                event_index = i
+                break
+        
+        if event_index is None:
+            # Event not found in the list (shouldn't happen)
+            return
+        
+        # Use the new FundEquityService to update equity fields efficiently
+        from src.fund.services.fund_equity_service import FundEquityService
+        equity_service = FundEquityService(self.session)
+        equity_service.update_fund_equity_fields(self.fund)
     
     def _publish_capital_chain_event(self, event: FundEvent) -> None:
         """
@@ -193,37 +169,30 @@ class CapitalCallHandler(BaseFundEventHandler):
         Args:
             event: The capital call event that was created
         """
-        try:
-            # Publish capital chain recalculation event
-            from src.fund.events.domain import CapitalChainRecalculatedEvent
-            from src.fund.events.consumption.event_bus import event_bus
-            
-            # Get old equity balance before the event
-            old_equity_balance = self.fund.current_equity_balance
-            
-            # Publish capital chain recalculation event
-            capital_event = CapitalChainRecalculatedEvent(
-                fund_id=self.fund.id,
-                event_date=event.event_date,
-                trigger_event_id=event.id,
-                trigger_event_type="CAPITAL_CALL",
-                old_equity_balance=old_equity_balance,
-                new_equity_balance=event.current_equity_balance,
-                change_reason=f"Capital chain recalculation after capital call: ${event.amount:,.2f}",
-                metadata={
-                    "event_amount": event.amount,
-                    "event_description": event.description,
-                    "reference_number": event.reference_number
-                }
-            )
-            
-            event_bus.publish(capital_event, self.session)
-            
-            logger.info(f"Published capital chain recalculation event for fund {self.fund.id}")
-            
-        except Exception as e:
-            logger.error(f"Error publishing capital chain recalculation event: {e}")
-            raise
+        # Publish capital chain recalculation event
+        from src.fund.events.domain import CapitalChainRecalculatedEvent
+        from src.fund.events.consumption.event_bus import event_bus
+        
+        # Get old equity balance before the event
+        old_equity_balance = self.fund.current_equity_balance
+        
+        # Publish capital chain recalculation event
+        capital_event = CapitalChainRecalculatedEvent(
+            fund_id=self.fund.id,
+            event_date=event.event_date,
+            trigger_event_id=event.id,
+            trigger_event_type="CAPITAL_CALL",
+            old_equity_balance=old_equity_balance,
+            new_equity_balance=event.current_equity_balance,
+            change_reason=f"Capital chain recalculation after capital call: ${event.amount:,.2f}",
+            metadata={
+                "event_amount": event.amount,
+                "event_description": event.description,
+                "reference_number": event.reference_number
+            }
+        )
+        
+        event_bus.publish(capital_event, self.session)
     
     def _publish_dependent_events(self, event: FundEvent) -> None:
         """

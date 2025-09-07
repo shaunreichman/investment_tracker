@@ -448,39 +448,6 @@ class Fund(Base):
     # ============================================================================
     
     
-    def add_return_of_capital(self, amount: float, return_date: date, description: str,
-                             reference_number: str = None, session=None) -> 'FundEvent':
-        """
-        Add a return of capital event using the service layer.
-        
-        Note: This method delegates to the fund service for proper orchestration.
-        For direct control, use FundService.add_return_of_capital() instead.
-        
-        Args:
-            amount: Return amount (must be positive)
-            return_date: Date of the return
-            description: Description of the return
-            reference_number: External reference number
-            session: Database session
-            
-        Returns:
-            FundEvent: The created return of capital event
-            
-        Raises:
-            ValueError: If fund is not cost-based or amount is invalid
-        """
-        if self.tracking_type != FundType.COST_BASED:
-            raise ValueError("Returns of capital are only applicable for cost-based funds")
-        
-        if not amount or amount <= 0:
-            raise ValueError("Return amount must be a positive number")
-        if not return_date:
-            raise ValueError("Date is required")
-        
-        # Delegate to service layer for proper orchestration
-        from src.fund.services.fund_service import FundService
-        fund_service = FundService()
-        return fund_service.add_return_of_capital(self.id, amount, return_date, description, reference_number, session)
     
     def add_distribution(self, event_date: date, distribution_type: 'DistributionType',
                         distribution_amount: float = None, has_withholding_tax: bool = False,
