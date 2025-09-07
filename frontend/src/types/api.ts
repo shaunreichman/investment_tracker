@@ -258,7 +258,6 @@ export interface FundStatistics {
 export interface DashboardData {
   portfolio_summary: PortfolioSummary;
   funds: DashboardFund[];
-  recent_events: FundEvent[];
   performance: any; // TODO: Define specific performance interface
 }
 

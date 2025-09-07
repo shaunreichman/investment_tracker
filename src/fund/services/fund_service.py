@@ -367,3 +367,57 @@ class FundService:
         from src.fund.services.fund_status_service import FundStatusService
         status_service = FundStatusService()
         return status_service.calculate_end_date(fund, session)
+    
+    def get_fund_start_date(self, fund: 'Fund', session: Session) -> Optional[date]:
+        """
+        Get fund start date (first event date).
+        
+        Args:
+            fund: The fund object
+            session: Database session
+            
+        Returns:
+            date or None: Fund start date if events exist
+        """
+        from src.fund.services.fund_event_service import FundEventService
+        event_service = FundEventService()
+        events = event_service.get_all_fund_events(fund, exclude_system_events=False, session=session)
+        if not events:
+            return None
+        
+        # Get the earliest event date
+        event_dates = [event.event_date for event in events if event.event_date]
+        return min(event_dates) if event_dates else None
+    
+    def get_fund_financial_years(self, fund: 'Fund', session: Session) -> List[str]:
+        """
+        Get all financial years from fund start date to current date.
+        
+        Args:
+            fund: The fund object
+            session: Database session
+            
+        Returns:
+            List[str]: List of financial years in descending order (most recent first)
+        """
+        # Get fund start date (use events if available, otherwise creation date)
+        start_date = self.get_fund_start_date(fund, session=session)
+        if not start_date:
+            start_date = fund.created_at.date()
+        
+        # Get entity for tax jurisdiction
+        from src.entity.models import Entity
+        entity = session.query(Entity).filter(Entity.id == fund.entity_id).first()
+        if not entity:
+            return []
+        
+        # Import calculation function from entity domain
+        from src.entity.calculations import get_financial_years_for_fund_period
+        from datetime import date
+        
+        # Calculate financial years from start date to current date
+        end_date = date.today()
+        financial_years = get_financial_years_for_fund_period(start_date, end_date, entity)
+        
+        # Return sorted list (most recent first)
+        return sorted(list(financial_years), reverse=True)

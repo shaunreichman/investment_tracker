@@ -328,59 +328,8 @@ class Fund(Base):
             return date(year, month, min(self.start_date.day, last_day))
     
     # ============================================================================
-    # CORE BUSINESS PROPERTIES - Intrinsic Fund Properties
-    # ============================================================================
-    
-    
-    # ============================================================================
-    # EVENT QUERY METHODS - Accessing Fund's Own Data
-    # ============================================================================
-    
-    def get_all_fund_events(self, exclude_system_events: bool = True, session=None) -> List['FundEvent']:
-        """Get all fund events.
-        
-        Args:
-            exclude_system_events: Whether to exclude system events
-            session: Database session
-            
-        Returns:
-            List[FundEvent]: List of fund events
-        """
-        if not session:
-            raise ValueError("Session required for get_all_fund_events")
-        
-        query = session.query(FundEvent).filter(FundEvent.fund_id == self.id)
-        if exclude_system_events:
-            # Filter out system events using the enum's is_system_event method
-            system_event_types = [event_type for event_type in EventType if EventType.is_system_event(event_type)]
-            if system_event_types:
-                query = query.filter(~FundEvent.event_type.in_(system_event_types))
-        
-        return query.order_by(FundEvent.event_date).all()
-    
-    def get_recent_events(self, limit: int = 10, exclude_system_events: bool = True, 
-                         session=None) -> List['FundEvent']:
-        """Get recent fund events.
-        
-        Args:
-            limit: Maximum number of events to return
-            exclude_system_events: Whether to exclude system events
-            session: Database session
-            
-        Returns:
-            List[FundEvent]: List of recent fund events
-        """
-        if not session:
-            raise ValueError("Session required for get_recent_events")
-        
-        events = self.get_all_fund_events(exclude_system_events=exclude_system_events, session=session)
-        return events[-limit:] if len(events) > limit else events
-    
-    
-    # ============================================================================
     # ADDITIONAL BUSINESS PROPERTIES - Convenience Properties
     # ============================================================================
-    
     
     @property
     def total_called_capital(self) -> float:
@@ -414,26 +363,6 @@ class Fund(Base):
             pass
         
         raise RuntimeError("No database session available. Use total_capital_called(session) method instead.")
-    
-    def get_start_date(self, session=None) -> Optional[date]:
-        """Get fund start date (first event date).
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            date or None: Fund start date if events exist
-        """
-        if not session:
-            raise ValueError("Session required for get_start_date")
-        
-        events = self.get_all_fund_events(session=session)
-        if not events:
-            return None
-        
-        # Get the earliest event date
-        event_dates = [event.event_date for event in events if event.event_date]
-        return min(event_dates) if event_dates else None
     
     
     def get_summary_data(self, session=None) -> Dict[str, Any]:
@@ -495,43 +424,3 @@ class Fund(Base):
         
         return summary_data
     
-    def get_financial_years(self, session=None) -> List[str]:
-        """Get all financial years from fund start date to current date.
-        
-        This method provides enterprise-grade financial year management by:
-        - Using the fund's actual start date (from events or creation)
-        - Respecting the entity's tax jurisdiction for financial year calculation
-        - Providing a clean interface for frontend consumption
-        
-        Args:
-            session: Database session (required for entity lookup and date calculations)
-            
-        Returns:
-            List[str]: List of financial years in descending order (most recent first)
-            
-        Raises:
-            ValueError: If session is not provided
-        """
-        if not session:
-            raise ValueError("Session required for get_financial_years")
-        
-        # Get fund start date (use events if available, otherwise creation date)
-        start_date = self.get_start_date(session=session)
-        if not start_date:
-            start_date = self.created_at.date()
-        
-        # Get entity for tax jurisdiction
-        entity = session.query(Entity).filter(Entity.id == self.entity_id).first()
-        if not entity:
-            return []
-        
-        # Import calculation function from entity domain
-        from src.entity.calculations import get_financial_years_for_fund_period
-        from datetime import date
-        
-        # Calculate financial years from start date to current date
-        end_date = date.today()
-        financial_years = get_financial_years_for_fund_period(start_date, end_date, entity)
-        
-        # Return sorted list (most recent first)
-        return sorted(list(financial_years), reverse=True)

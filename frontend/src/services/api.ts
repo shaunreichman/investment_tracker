@@ -343,9 +343,6 @@ class ApiClient {
     return this.request<PortfolioSummary>('/api/dashboard/portfolio-summary');
   }
 
-  async getRecentEvents(): Promise<FundEventListResponse> {
-    return this.request<FundEventListResponse>('/api/dashboard/recent-events');
-  }
 
   async getDashboardPerformance(): Promise<any> {
     return this.request<any>('/api/dashboard/performance');
@@ -353,17 +350,15 @@ class ApiClient {
 
   async getDashboardData(): Promise<DashboardData> {
     // Fetch all dashboard data in parallel
-    const [portfolioSummary, funds, recentEvents, performance] = await Promise.all([
+    const [portfolioSummary, funds, performance] = await Promise.all([
       this.getPortfolioSummary(),
       this.getFunds(),
-      this.getRecentEvents(),
       this.getDashboardPerformance(),
     ]);
 
     return {
       portfolio_summary: portfolioSummary,
       funds,
-      recent_events: recentEvents,
       performance,
     };
   }

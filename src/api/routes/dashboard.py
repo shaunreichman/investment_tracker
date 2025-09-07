@@ -47,20 +47,6 @@ def funds_list():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-@dashboard_bp.route('/api/dashboard/recent-events', methods=['GET'])
-def recent_events():
-    """Get recent fund events for the dashboard"""
-    try:
-        session = get_db_session()
-        try:
-            return dashboard_controller.recent_events(session)
-        finally:
-            session.close()
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 @dashboard_bp.route('/api/dashboard/performance', methods=['GET'])
 def dashboard_performance():
     """Get performance data for all funds"""

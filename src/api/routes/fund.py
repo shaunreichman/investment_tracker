@@ -40,8 +40,10 @@ def fund_detail(fund_id):
             # Get fund summary data using domain methods
             fund_data = fund.get_summary_data(session=session)
             
-            # Get all events using domain methods (excluding system events)
-            all_events = fund.get_all_fund_events(exclude_system_events=True, session=session)
+            # Get all events using service layer (excluding system events)
+            from src.fund.services.fund_event_service import FundEventService
+            event_service = FundEventService()
+            all_events = event_service.get_all_fund_events(fund, exclude_system_events=True, session=session)
             
             events_data = []
             for event in all_events:
