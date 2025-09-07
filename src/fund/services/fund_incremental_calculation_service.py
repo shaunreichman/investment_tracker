@@ -441,12 +441,8 @@ class FundIncrementalCalculationService:
         # SYSTEM: Check if status needs updating based on current equity balance
         if fund.current_equity_balance == 0 and fund.status == FundStatus.ACTIVE:
             fund.status = FundStatus.REALIZED
-            # Update current_duration for realized status (uses end_date)
-            fund.calculate_and_update_current_duration()
         elif fund.current_equity_balance > 0 and fund.status == FundStatus.REALIZED:
             fund.status = FundStatus.ACTIVE
-            # Update current_duration for active status (uses today's date)
-            fund.calculate_and_update_current_duration()
     
     def clear_cache(self) -> None:
         """

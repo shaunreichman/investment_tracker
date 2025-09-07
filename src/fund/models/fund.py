@@ -208,21 +208,6 @@ class Fund(Base):
         
         return True
     
-    def validate_irr_constraints(self) -> bool:
-        """Validate IRR-related constraints.
-        
-        Returns:
-            bool: True if validation passes
-            
-        Raises:
-            ValueError: If validation fails
-        """
-        for irr_field in [self.completed_irr_gross, self.completed_irr_after_tax, self.completed_irr_real]:
-            if irr_field is not None and (irr_field < -100 or irr_field > 1000):
-                raise ValueError("IRR values must be between -100% and 1000%")
-        
-        return True
-    
     def validate_nav_constraints(self) -> bool:
         """Validate NAV-related constraints.
         
@@ -255,7 +240,6 @@ class Fund(Base):
         self.validate_tracking_type_constraints()
         self.validate_date_constraints()
         self.validate_commitment_constraints()
-        self.validate_irr_constraints()
         self.validate_nav_constraints()
         return True
     
@@ -315,107 +299,7 @@ class Fund(Base):
         """
         return self.commitment_amount is not None and self.commitment_amount > 0
     
-    def get_commitment_utilization(self) -> float:
-        """Get commitment utilization percentage.
-        
-        Returns:
-            float: Commitment utilization as percentage (0-100)
-        """
-        if not self.has_commitment():
-            return 0.0
-        
-        return (self.current_equity_balance / self.commitment_amount) * 100
     
-    def get_remaining_commitment(self) -> float:
-        """Get remaining commitment amount.
-        
-        Returns:
-            float: Remaining commitment amount
-        """
-        if not self.has_commitment():
-            return 0.0
-        
-        return max(0, self.commitment_amount - self.current_equity_balance)
-    
-    def get_fund_duration_months(self) -> Optional[int]:
-        """Get the fund duration in months.
-        
-        Returns:
-            int or None: Duration in months if start and end dates are available
-        """
-        if not self.start_date or not self.end_date:
-            return None
-        
-        # Calculate months between start and end dates
-        year_diff = self.end_date.year - self.start_date.year
-        month_diff = self.end_date.month - self.start_date.month
-        
-        total_months = year_diff * 12 + month_diff
-        
-        # Adjust for day of month
-        if self.end_date.day < self.start_date.day:
-            total_months -= 1
-        
-        return max(0, total_months)
-    
-    def get_fund_age_months(self) -> Optional[int]:
-        """Get the fund age in months from start date to current date.
-        
-        Returns:
-            int or None: Age in months if start date is available
-        """
-        if not self.start_date:
-            return None
-        
-        today = date.today()
-        year_diff = today.year - self.start_date.year
-        month_diff = today.month - self.start_date.month
-        
-        total_months = year_diff * 12 + month_diff
-        
-        # Adjust for day of month
-        if today.day < self.start_date.day:
-            total_months -= 1
-        
-        return max(0, total_months)
-    
-    def calculate_and_update_current_duration(self) -> Optional[int]:
-        """Calculate and update the current_duration field based on fund status.
-        
-        For ACTIVE funds: calculates duration from start_date to today
-        For REALIZED/COMPLETED funds: calculates duration from start_date to end_date
-        
-        Returns:
-            int or None: Calculated duration in months
-        """
-        if not self.start_date:
-            self.current_duration = None
-            return None
-        
-        # Determine the end date based on fund status
-        if self.status in [FundStatus.REALIZED, FundStatus.COMPLETED]:
-            # Use the fund's end_date for completed funds
-            if not self.end_date:
-                self.current_duration = None
-                return None
-            end_date = self.end_date
-        else:
-            # Use today's date for active funds
-            end_date = date.today()
-        
-        # Calculate months between start and end dates
-        year_diff = end_date.year - self.start_date.year
-        month_diff = end_date.month - self.start_date.month
-        
-        total_months = year_diff * 12 + month_diff
-        
-        # Adjust for day of month
-        if end_date.day < self.start_date.day:
-            total_months -= 1
-        
-        calculated_duration = max(0, total_months)
-        self.current_duration = calculated_duration
-        return calculated_duration
     
     def get_expected_completion_date(self) -> Optional[date]:
         """Get the expected completion date based on start date and expected duration.
@@ -447,113 +331,6 @@ class Fund(Base):
     # CORE BUSINESS PROPERTIES - Intrinsic Fund Properties
     # ============================================================================
     
-    def total_capital_called(self, session=None) -> float:
-        """Get total capital called amount.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            float: Total capital called amount
-        """
-        if not session:
-            raise ValueError("Session required for total_capital_called")
-        
-        events = self.get_all_fund_events(session=session)
-        return sum(
-            event.amount for event in events 
-            if event.event_type == EventType.CAPITAL_CALL and event.amount
-        )
-    
-    def total_capital_returned(self, session=None) -> float:
-        """Get total capital returned amount.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            float: Total capital returned amount
-        """
-        if not session:
-            raise ValueError("Session required for total_capital_returned")
-        
-        events = self.get_all_fund_events(session=session)
-        return sum(
-            event.amount for event in events 
-            if event.event_type == EventType.RETURN_OF_CAPITAL and event.amount
-        )
-    
-    def total_distributions(self, session=None) -> float:
-        """Get total distributions amount.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            float: Total distributions amount
-        """
-        if not session:
-            raise ValueError("Session required for total_distributions")
-        
-        events = self.get_all_fund_events(session=session)
-        return sum(
-            event.amount for event in events 
-            if event.event_type == EventType.DISTRIBUTION and event.amount
-        )
-    
-    def total_tax_withheld(self, session=None) -> float:
-        """Get total tax withheld amount.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            float: Total tax withheld amount
-        """
-        if not session:
-            raise ValueError("Session required for total_tax_withheld")
-        
-        events = self.get_all_fund_events(session=session)
-        return sum(
-            event.amount for event in events 
-            if event.event_type == EventType.TAX_PAYMENT and event.amount
-        )
-    
-    def total_unit_purchases(self, session=None) -> float:
-        """Get total unit purchases amount.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            float: Total unit purchases amount
-        """
-        if not session:
-            raise ValueError("Session required for total_unit_purchases")
-        
-        events = self.get_all_fund_events(session=session)
-        return sum(
-            event.amount for event in events 
-            if event.event_type == EventType.UNIT_PURCHASE and event.amount
-        )
-    
-    def total_unit_sales(self, session=None) -> float:
-        """Get total unit sales amount.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            float: Total unit sales amount
-        """
-        if not session:
-            raise ValueError("Session required for total_unit_sales")
-        
-        events = self.get_all_fund_events(session=session)
-        return sum(
-            event.amount for event in events 
-            if event.event_type == EventType.UNIT_SALE and event.amount
-        )
     
     # ============================================================================
     # EVENT QUERY METHODS - Accessing Fund's Own Data
@@ -599,89 +376,11 @@ class Fund(Base):
         events = self.get_all_fund_events(exclude_system_events=exclude_system_events, session=session)
         return events[-limit:] if len(events) > limit else events
     
-    def get_events(self, event_types: List['EventType'] = None, start_date: date = None, 
-                   end_date: date = None, session=None) -> List['FundEvent']:
-        """Get fund events with optional filtering.
-        
-        Args:
-            event_types: List of event types to filter by
-            start_date: Start date for filtering
-            end_date: End date for filtering
-            session: Database session
-            
-        Returns:
-            List[FundEvent]: List of filtered fund events
-        """
-        if not session:
-            raise ValueError("Session required for get_events")
-        
-        events = self.get_all_fund_events(session=session)
-        
-        if event_types:
-            events = [e for e in events if e.event_type in event_types]
-        
-        if start_date:
-            events = [e for e in events if e.event_date and e.event_date >= start_date]
-        
-        if end_date:
-            events = [e for e in events if e.event_date and e.event_date <= end_date]
-        
-        return events
-    
-    def get_capital_calls(self, start_date: date = None, end_date: date = None, session=None) -> List['FundEvent']:
-        """Get capital call events with optional date filtering.
-        
-        Args:
-            start_date: Start date for filtering
-            end_date: End date for filtering
-            session: Database session
-            
-        Returns:
-            List[FundEvent]: List of capital call events
-        """
-        return self.get_events(event_types=[EventType.CAPITAL_CALL], 
-                             start_date=start_date, end_date=end_date, session=session)
-    
-    def get_capital_returns(self, start_date: date = None, end_date: date = None, session=None) -> List['FundEvent']:
-        """Get capital return events with optional date filtering.
-        
-        Args:
-            start_date: Start date for filtering
-            end_date: End date for filtering
-            session: Database session
-            
-        Returns:
-            List[FundEvent]: List of capital return events
-        """
-        return self.get_events(event_types=[EventType.RETURN_OF_CAPITAL], 
-                             start_date=start_date, end_date=end_date, session=session)
-    
-    def get_distributions(self, start_date: date = None, end_date: date = None, session=None) -> List['FundEvent']:
-        """Get distribution events with optional date filtering.
-        
-        Args:
-            start_date: Start date for filtering
-            end_date: End date for filtering
-            session: Database session
-            
-        Returns:
-            List[FundEvent]: List of distribution events
-        """
-        return self.get_events(event_types=[EventType.DISTRIBUTION], 
-                             start_date=start_date, end_date=end_date, session=session)
     
     # ============================================================================
     # ADDITIONAL BUSINESS PROPERTIES - Convenience Properties
     # ============================================================================
     
-    @property
-    def remaining_commitment(self) -> float:
-        """Get remaining commitment amount as a property.
-        
-        Returns:
-            float: Remaining commitment amount
-        """
-        return self.get_remaining_commitment()
     
     @property
     def total_called_capital(self) -> float:
@@ -736,29 +435,6 @@ class Fund(Base):
         event_dates = [event.event_date for event in events if event.event_date]
         return min(event_dates) if event_dates else None
     
-    def get_end_date(self, session=None) -> Optional[date]:
-        """Get fund end date using service layer.
-        
-        Note: This method delegates to the fund service for proper orchestration.
-        For direct control, use FundService.get_fund_end_date() instead.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            date or None: Fund end date if fund is completed or realized
-        """
-        if not session:
-            raise ValueError("Session required for get_end_date")
-        
-        # Calculate end date for both COMPLETED and REALIZED funds
-        if self.status not in [FundStatus.COMPLETED, FundStatus.REALIZED]:
-            return None
-        
-        # Delegate to service layer for proper orchestration
-        from src.fund.services.fund_service import FundService
-        fund_service = FundService()
-        return fund_service.get_fund_end_date(self.id, session)
     
     def get_summary_data(self, session=None) -> Dict[str, Any]:
         """Get summary data for the fund.

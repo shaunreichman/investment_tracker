@@ -197,7 +197,9 @@ class FundStatusService:
                 fund.end_date = calculated_end_date
             
             # Update current_duration for realized status (uses end_date)
-            fund.calculate_and_update_current_duration()
+            from src.fund.services.fund_duration_service import FundDurationService
+            duration_service = FundDurationService()
+            duration_service.update_fund_duration(fund, session)
             
             
         elif status == FundStatus.COMPLETED:
@@ -211,7 +213,9 @@ class FundStatusService:
             fund.completed_irr_real = irr_service.calculate_completed_real_irr(fund, session)
             
             # Update current_duration for completed status (uses end_date)
-            fund.calculate_and_update_current_duration()
+            from src.fund.services.fund_duration_service import FundDurationService
+            duration_service = FundDurationService()
+            duration_service.update_fund_duration(fund, session)
             
     
     # ============================================================================

@@ -125,18 +125,12 @@ class FundStatusEventHandler(EventConsumer):
             if event.new_status == FundStatus.COMPLETED:
                 # Fund is completed, trigger final calculations
                 self._handle_fund_completion(event, fund)
-                # Update current_duration for completed status (uses end_date)
-                fund.calculate_and_update_current_duration()
             elif event.new_status == FundStatus.REALIZED:
                 # Fund is realized, trigger IRR calculations
                 self._handle_fund_realization(event, fund)
-                # Update current_duration for realized status (uses end_date)
-                fund.calculate_and_update_current_duration()
             elif event.new_status == FundStatus.ACTIVE:
                 # Fund is active, ensure proper state
                 self._handle_fund_active(event, fund)
-                # Update current_duration for active status (uses today's date)
-                fund.calculate_and_update_current_duration()
             
             logger.info(f"Successfully updated fund status to {event.new_status} for fund {event.fund_id}")
             
