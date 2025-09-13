@@ -18,7 +18,7 @@ class FundDateService:
         self.entity_repository = EntityRepository()
         self.logger = logging.getLogger(__name__)
 
-    def update_fund_start_date(self, fund_id: int, event_id: Optional[int], fund_event_operation: FundEventOperation, session: Session) -> Optional[FundFieldChange]:
+    def update_fund_start_date(self, fund_id: int, event_id: Optional[int] = None, fund_event_operation: FundEventOperation = None, session: Session = None) -> Optional[FundFieldChange]:
         """
         Update the start date of a fund.
         """

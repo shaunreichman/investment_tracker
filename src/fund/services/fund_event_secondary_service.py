@@ -4,7 +4,6 @@ FundEventSecondaryService is responsible for handling secondary impacts of fund 
 
 from src.fund.models import Fund, FundFieldChange
 import logging
-from src.fund.services.fund_service import FundService
 from src.fund.enums import FundEventOperation, EventType
 from sqlalchemy.orm import Session
 from src.fund.services.fund_equity_service import FundEquityService
@@ -16,10 +15,8 @@ from src.fund.services.fund_nav_service import FundNavService
 
 class FundEventSecondaryService:
     def __init__(self):
-        self.fund_service = FundService()
         self.fund_equity_service = FundEquityService()
         self.fund_status_service = FundStatusService()
-        self.fund_date_service = FundDateService()
         self.fund_irr_service = FundIrRService()
         self.fund_pnl_service = FundPnlService()
         self.fund_nav_service = FundNavService()
@@ -29,16 +26,17 @@ class FundEventSecondaryService:
                                     fund_event_operation: FundEventOperation,
                                     session: Session,
                                     event_id: int):            
-
+        
+        fund_date_service = FundDateService(session)
+        
         all_changes: list[FundFieldChange] = []
 
         # 1. Update the Start Date of the Fund
         if EventType.is_equity_call_event(fund_event_type):
             if fund_event_operation == FundEventOperation.CREATE:
-                event = self.fund_event_service.get_fund_event(fund.id, event_id, session)
-                all_changes.append(self.fund_date_service.update_fund_start_date(fund_id=fund.id, event_id=event.id, fund_event_operation=fund_event_operation, session=session))
+                all_changes.append(fund_date_service.update_fund_start_date(fund_id=fund.id, event_id=event_id, fund_event_operation=fund_event_operation, session=session))
             else:
-                all_changes.append(self.fund_date_service.update_fund_start_date(fund_id=fund.id, fund_event_operation=fund_event_operation, session=session))
+                all_changes.append(fund_date_service.update_fund_start_date(fund_id=fund.id, fund_event_operation=fund_event_operation, session=session))
         
         # 2. Update the current equity balance of the fund
         if EventType.is_equity_event(fund_event_type):
@@ -46,7 +44,7 @@ class FundEventSecondaryService:
 
         # 3. Update the End Date of the Fund
         if EventType.is_equity_return_event(fund_event_type):
-            all_changes.append(self.fund_date_service.update_fund_end_date(fund.id, session))
+            all_changes.append(fund_date_service.update_fund_end_date(fund.id, session))
 
         # 4. Update the other balances of the fund
         if EventType.is_equity_event(fund_event_type):
@@ -60,7 +58,7 @@ class FundEventSecondaryService:
 
         # 6. Update the Duration of the Fund
         if EventType.is_equity_event(fund_event_type):
-            all_changes.append(self.fund_date_service.update_fund_duration(fund, session))
+            all_changes.append(fund_date_service.update_fund_duration(fund, session))
 
         # 7. Update the IRRs of the fund
         all_changes.append(self.fund_irr_service.update_irrs(fund, session))
@@ -69,7 +67,7 @@ class FundEventSecondaryService:
         if EventType.is_nav_update_event(fund_event_type):
             all_changes.append(self.fund_nav_service.update_nav_fund_fields(fund, session))
 
-        # 8. Update the Profitability of the Fund
+        # 9. Update the Profitability of the Fund
         all_changes.append(self.fund_pnl_service.update_fund_pnl(fund, session))
 
         return all_changes
