@@ -2,8 +2,7 @@
 FundEventSecondaryService is responsible for handling secondary impacts of fund events.
 """
 
-from src.fund.models import FundEvent, Fund, FundFieldChange, DomainFundEvent
-from typing import asdict
+from src.fund.models import Fund, FundFieldChange
 import logging
 from src.fund.services.fund_service import FundService
 from src.fund.enums import FundEventOperation, EventType
@@ -13,6 +12,7 @@ from src.fund.services.fund_status_service import FundStatusService
 from src.fund.services.fund_date_service import FundDateService
 from src.fund.services.fund_irr_service import FundIrRService
 from src.fund.services.fund_pnl_service import FundPnlService
+from src.fund.services.fund_nav_service import FundNavService
 
 class FundEventSecondaryService:
     def __init__(self):
@@ -22,6 +22,7 @@ class FundEventSecondaryService:
         self.fund_date_service = FundDateService()
         self.fund_irr_service = FundIrRService()
         self.fund_pnl_service = FundPnlService()
+        self.fund_nav_service = FundNavService()
         self.logger = logging.getLogger(__name__)
 
     def handle_event_secondary_impact(self, fund: Fund, fund_event_type: EventType, 

@@ -17,7 +17,6 @@ from datetime import date
 import logging
 
 from src.fund.repositories import FundRepository, FundEventRepository, TaxStatementRepository
-from src.fund.events.registry import FundEventHandlerRegistry
 from src.fund.enums import FundStatus, FundType, EventType, DistributionType, TaxPaymentType, GroupType, FundEventOperation, SortOrder
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.services.fund_event_service import FundEventService
@@ -38,7 +37,6 @@ class FundService:
         fund_repository (FundRepository): Repository for fund data access
         fund_event_repository (FundEventRepository): Repository for fund event data access
         tax_statement_repository (TaxStatementRepository): Repository for tax statement data access
-        registry (FundEventHandlerRegistry): Registry for event handlers
         fund_event_service (FundEventService): Service for fund event operations
         validation_service (FundValidationService): Service for fund validation operations
         logger (Logger): Logger for logging operations
@@ -49,7 +47,6 @@ class FundService:
         self.fund_repository = FundRepository()
         self.fund_event_repository = FundEventRepository()
         self.tax_statement_repository = TaxStatementRepository()
-        self.registry = FundEventHandlerRegistry()
         self.fund_event_service = FundEventService()
         self.validation_service = FundValidationService()
         self.logger = logging.getLogger(__name__)

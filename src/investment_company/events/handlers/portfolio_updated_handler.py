@@ -277,7 +277,6 @@ class PortfolioUpdatedHandler(BaseCompanyEventHandler):
         try:
             # Import fund domain services for coordination
             from src.fund.services.fund_service import FundService
-            from src.fund.events.registry import FundEventHandlerRegistry
             
             fund_service = FundService()
             fund = fund_service.get_fund_by_id(fund_id, self.session)

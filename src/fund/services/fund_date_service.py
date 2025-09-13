@@ -4,7 +4,8 @@ Service for handling fund date calculations.
 
 from src.fund.models import Fund, FundEvent, FundFieldChange
 from src.fund.enums import FundEventOperation, EventType, SortOrder, FundStatus
-from src.fund.repositories import FundEventRepository, FundRepository, EntityRepository
+from src.fund.repositories import FundEventRepository, FundRepository
+from src.entity.repositories import EntityRepository
 from typing import Optional, List
 from sqlalchemy.orm import Session
 import logging
@@ -117,7 +118,6 @@ class FundDateService:
         
         # Import calculation function from entity domain
         from src.entity.calculations import get_financial_years_for_fund_period
-        from datetime import date
         
         # Calculate financial years from start date to current date
         end_date = date.today()
