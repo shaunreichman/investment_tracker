@@ -14,7 +14,7 @@ Services orchestrate business logic, coordinate between controllers and reposito
 - **Enforce business rules**: Validate complex business constraints
 - **Coordinate transaction logic**: Ensure related operations are grouped together
 - **Delegate calculations**: Use calculator classes for mathematical operations
-- **Delegate events**: Use event orchestrators for event processing
+- **Handle event processing**: Choose appropriate pattern based on complexity
 
 ## Shouldn't Do
 - **Direct database queries**: Use repositories for data access
@@ -23,25 +23,46 @@ Services orchestrate business logic, coordinate between controllers and reposito
 - **Data transformation**: Keep focused on business logic
 - **Session management**: Let controllers manage database sessions
 
+## Event Processing Patterns
+
+### For Complex Business Logic (Fund Domain)
+- **Direct service calls**: Handle complex secondary impacts
+- **Service orchestration**: Coordinate multiple specialized services
+- **No handlers**: Business logic belongs in services
+
+### For Simple Side Effects (Other Domains)
+- **Delegate to orchestrators**: Use event orchestrators for simple side effects
+- **Handler routing**: Let orchestrators route to appropriate handlers
+
 ## Examples
 
 ```python
-# ✅ Good: Orchestrates business logic
-def create_fund(self, fund_data: Dict[str, Any], session: Session) -> Dict[str, Any]:
+# ✅ Good: Fund domain with complex business logic
+def add_capital_call(self, fund, amount, date, session):
     # Validate business rules
-    self.validation_service.validate_fund_creation(fund_data)
+    self.validation_service.validate_capital_call(fund, amount, date, session)
     
     # Coordinate repositories
-    fund = self.fund_repository.create(fund_data, session)
+    event = self.capital_repository.create_capital_call(...)
     
-    # Delegate calculations
-    equity_fields = FundEquityCalculator.recalculate_all_equity_fields(fund, session)
+    # Complex secondary impacts - call services directly
+    all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(...)
     
-    # Delegate events
-    event_data = {'event_type': 'fund_created', 'fund_id': fund.id}
-    self.event_orchestrator.process_fund_event(event_data, session, fund)
+    return event
+
+# ✅ Good: Company domain with simple side effects
+def create_company(self, data, session):
+    # Validate business rules
+    self.validation_service.validate_company_data(data, session)
     
-    return self._format_response(fund)
+    # Coordinate repositories
+    company = self.company_repository.create(data, session)
+    
+    # Simple side effects - delegate to orchestrator
+    event_data = {'event_type': 'company_created', 'company_id': company.id}
+    self.event_orchestrator.process_company_event(event_data, session, company)
+    
+    return company
 
 # ❌ Bad: Direct database access
 def create_fund(self, fund_data: Dict[str, Any], session: Session):
