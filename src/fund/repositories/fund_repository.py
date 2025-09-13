@@ -13,7 +13,7 @@ Key responsibilities:
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_
 
 from src.fund.models import Fund
 from src.fund.enums import FundStatus, FundType, SortOrder, SortField
@@ -69,7 +69,9 @@ class FundRepository:
         
         return fund
     
-    def get_by_investment_company(self, company_id: int, session: Session) -> List[Fund]:
+    def get_by_investment_company(self, company_id: int, session: Session,
+                                  sort_by: SortField = SortField.START_DATE,
+                                  sort_order: SortOrder = SortOrder.ASC) -> List[Fund]:
         """
         Get all funds for a specific investment company.
         
@@ -87,14 +89,27 @@ class FundRepository:
             return self._cache[cache_key]
         
         # Query database
-        funds = session.query(Fund).filter(Fund.investment_company_id == company_id).all()
-        
+        query = session.query(Fund).filter(Fund.investment_company_id == company_id)
+
+        # Apply sorting
+        if sort_by == SortField.NAME:
+            query = query.order_by(Fund.name.asc() if sort_order == SortOrder.ASC else Fund.name.desc())
+        elif sort_by == SortField.STATUS:
+            query = query.order_by(Fund.status.asc() if sort_order == SortOrder.ASC else Fund.status.desc())
+        elif sort_by == SortField.CREATED_AT:
+            query = query.order_by(Fund.created_at.asc() if sort_order == SortOrder.ASC else Fund.created_at.desc())
+        elif sort_by == SortField.START_DATE:
+            query = query.order_by(Fund.start_date.asc() if sort_order == SortOrder.ASC else Fund.start_date.desc())
+
+        funds = query.all()
         # Cache the result
         self._cache[cache_key] = funds
         
         return funds
     
-    def get_by_entity(self, entity_id: int, session: Session) -> List[Fund]:
+    def get_by_entity(self, entity_id: int, session: Session,
+                      sort_by: SortField = SortField.START_DATE,
+                      sort_order: SortOrder = SortOrder.ASC) -> List[Fund]:
         """
         Get all funds for a specific entity.
         
@@ -112,43 +127,49 @@ class FundRepository:
             return self._cache[cache_key]
         
         # Query database
-        funds = session.query(Fund).filter(Fund.entity_id == entity_id).all()
-        
+        query = session.query(Fund).filter(Fund.entity_id == entity_id)
+
+        # Apply sorting
+        if sort_by == SortField.NAME:
+            query = query.order_by(Fund.name.asc() if sort_order == SortOrder.ASC else Fund.name.desc())
+        elif sort_by == SortField.STATUS:
+            query = query.order_by(Fund.status.asc() if sort_order == SortOrder.ASC else Fund.status.desc())
+        elif sort_by == SortField.CREATED_AT:
+            query = query.order_by(Fund.created_at.asc() if sort_order == SortOrder.ASC else Fund.created_at.desc())
+        elif sort_by == SortField.START_DATE:
+            query = query.order_by(Fund.start_date.asc() if sort_order == SortOrder.ASC else Fund.start_date.desc())
+
+        funds = query.all()
         # Cache the result
         self._cache[cache_key] = funds
         
         return funds
     
-    def get_all(self, session: Session, 
-                skip: int = 0, 
-                limit: int = 100,
-                sort_by: SortField = SortField.NAME,
+    def get_all_funds(self, session: Session, 
+                sort_by: SortField = SortField.START_DATE,
                 sort_order: SortOrder = SortOrder.ASC) -> List[Fund]:
         """
-        Get all funds with pagination and sorting.
+        Get all funds with optional sorting.
         
         Args:
             session: Database session
-            skip: Number of records to skip
-            limit: Maximum number of records to return
             sort_by: Field to sort by
             sort_order: Sort order (ascending or descending)
             
         Returns:
-            List of funds with pagination and sorting applied
+            List of funds with optional sorting applied
         """
         query = session.query(Fund)
         
         # Apply sorting
         if sort_by == SortField.NAME:
-            query = query.order_by(func.asc(Fund.name) if sort_order == SortOrder.ASC else func.desc(Fund.name))
+            query = query.order_by(Fund.name.asc() if sort_order == SortOrder.ASC else Fund.name.desc())
         elif sort_by == SortField.STATUS:
-            query = query.order_by(func.asc(Fund.status) if sort_order == SortOrder.ASC else func.desc(Fund.status))
+            query = query.order_by(Fund.status.asc() if sort_order == SortOrder.ASC else Fund.status.desc())
         elif sort_by == SortField.CREATED_AT:
-            query = query.order_by(func.asc(Fund.created_at) if sort_order == SortOrder.ASC else func.desc(Fund.created_at))
-        
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
+            query = query.order_by(Fund.created_at.asc() if sort_order == SortOrder.ASC else Fund.created_at.desc())
+        elif sort_by == SortField.START_DATE:
+            query = query.order_by(Fund.start_date.asc() if sort_order == SortOrder.ASC else Fund.start_date.desc())
         
         return query.all()
     
@@ -288,30 +309,6 @@ class FundRepository:
         
         # Cache the result
         self._cache[cache_key] = funds
-        
-        return funds
-    
-    def search_funds(self, search_term: str, session: Session) -> List[Fund]:
-        """
-        Search funds by name or description.
-        
-        Args:
-            search_term: Search term to look for
-            session: Database session
-            
-        Returns:
-            List of funds matching the search term
-        """
-        if not search_term.strip():
-            return []
-        
-        # Query database with search
-        funds = session.query(Fund).filter(
-            or_(
-                Fund.name.ilike(f"%{search_term}%"),
-                Fund.description.ilike(f"%{search_term}%")
-            )
-        ).all()
         
         return funds
     

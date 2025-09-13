@@ -299,7 +299,6 @@ class TaxStatement(Base):
         Includes all unit purchases up to the end of the current FY, but only counts sales within the current FY.
         """
         from src.fund.models import FundEvent, EventType
-        from src.fund.services.fund_calculation_service import FundCalculationService
         
         # Get all unit purchase events up to the end of the current FY
         purchases = session.query(FundEvent).filter(
@@ -316,9 +315,10 @@ class TaxStatement(Base):
         ).order_by(FundEvent.event_date).all()
         # Merge and sort all events for FIFO processing
         events = sorted(purchases + sales, key=lambda e: e.event_date)
-        # Calculate capital gains using the refactored calculator
-        calculation_service = FundCalculationService()
-        capital_gains = calculation_service.calculate_nav_based_capital_gains(events)
+        # Calculate capital gains using the FIFO calculator
+        from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator
+        result = FifoCapitalGainsCalculator.calculate_capital_gains(events)
+        capital_gains = result.total_capital_gains
         # Update fields if not manually set
         if self.capital_gain_income_amount is None or self.capital_gain_income_amount == 0.0:
             self.capital_gain_income_amount = capital_gains

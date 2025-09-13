@@ -44,7 +44,7 @@ class FundUpdateOrchestrator:
         """
         self.registry = registry or FundEventHandlerRegistry()
     
-    def process_fund_event(self, event_data: Dict[str, Any], session: Session, fund: Fund) -> FundEvent:
+    def process_fund_create_event(self, event_data: Dict[str, Any], session: Session, fund: Fund) -> FundEvent:
         """
         Process a fund event through the complete pipeline.
         
@@ -61,7 +61,7 @@ class FundUpdateOrchestrator:
             fund: Fund instance to operate on
             
         Returns:
-            FundEvent: The created or updated event
+            FundEvent: The created event
             
         Raises:
             ValueError: If event data is invalid
@@ -71,11 +71,11 @@ class FundUpdateOrchestrator:
         logger = logging.getLogger(__name__)
         
         try:
-            logger.info(f"Processing fund event: {event_data}")
+            logger.info(f"Processing fund create event: {event_data}")
             
             # Step 1: Process the main event through the registry
             logger.info("Step 1: Processing event through registry")
-            event = self.registry.handle_event(event_data, session, fund)
+            event = self.registry.handle_create_event(event_data, session, fund)
             logger.info(f"Event created: {event}")
             
             # Step 2: Handle any dependent updates
@@ -91,10 +91,41 @@ class FundUpdateOrchestrator:
             
         except Exception as e:
             # Step 4: Rollback on any error
-            logger.error(f"Error processing fund event: {e}")
+            logger.error(f"Error processing fund create event: {e}")
             self._rollback_on_error(session, e)
             raise
-    
+
+    def process_fund_delete_event(self, event_data: Dict[str, Any], session: Session, fund: Fund) -> bool:
+        """
+        Process a fund event through the complete pipeline.
+        
+        This is the main entry point for all fund event processing.
+        It coordinates the entire pipeline:
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            logger.info(f"Processing fund delete event: {event_data}")
+            
+            # Step 1: Process the main event through the registry
+            logger.info("Step 1: Processing event through registry")
+            success = self.registry.handle_delete_event(event_data, session, fund)
+            logger.info(f"Event deleted: {success}")
+            
+            # Step 2: Commit all changes
+            logger.info("Step 2: Committing changes")
+            self._commit_changes(session)
+            
+            logger.info("Event processing completed successfully")
+            return success
+            
+        except Exception as e:
+            # Step 3: Rollback on any error
+            logger.error(f"Error processing fund delete event: {e}")
+            self._rollback_on_error(session, e)
+            raise
+
     def process_bulk_events(self, events_data: list[Dict[str, Any]], session: Session, fund: Fund) -> list[FundEvent]:
         """
         Process multiple fund events in a single transaction.
@@ -122,7 +153,7 @@ class FundUpdateOrchestrator:
         try:
             # Process each event
             for event_data in events_data:
-                event = self.registry.handle_event(event_data, session, fund)
+                event = self.registry.handle_create_event(event_data, session, fund)
                 events.append(event)
                 
                 # Handle dependent updates for this event

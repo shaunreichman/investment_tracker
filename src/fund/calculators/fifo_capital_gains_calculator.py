@@ -4,9 +4,6 @@ FIFO Capital Gains Calculator.
 Pure mathematical calculations for FIFO-based capital gains calculations.
 Follows calculator layer rules: stateless, pure functions, no dependencies.
 
-This calculator extracts the FIFO capital gains calculation logic from
-FundCalculationService to provide clean separation of concerns and improved testability.
-
 Key principles:
 - Pure functions with no side effects
 - No database operations (use services for database updates)
@@ -67,11 +64,6 @@ class CapitalGainResult:
 class FifoCapitalGainsCalculator:
     """
     Pure calculator for FIFO-based capital gains calculations.
-    
-    This calculator provides stateless, pure mathematical operations
-    for FIFO capital gains calculations without any dependencies. It extracts
-    the complex calculation logic from FundCalculationService to follow
-    the calculator layer rules.
     
     Business context:
         Used for tax calculations and performance reporting in NAV-based funds.

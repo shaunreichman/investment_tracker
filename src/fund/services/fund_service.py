@@ -14,11 +14,11 @@ Key responsibilities:
 from typing import List, Optional, Dict, Any, TYPE_CHECKING
 from sqlalchemy.orm import Session
 from datetime import date
+import logging
 
 from src.fund.repositories import FundRepository, FundEventRepository, TaxStatementRepository
-from src.fund.events.orchestrator import FundUpdateOrchestrator
 from src.fund.events.registry import FundEventHandlerRegistry
-from src.fund.enums import FundStatus, FundType, EventType, DistributionType, TaxPaymentType, GroupType
+from src.fund.enums import FundStatus, FundType, EventType, DistributionType, TaxPaymentType, GroupType, FundEventOperation, SortOrder
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.services.fund_event_service import FundEventService
 
@@ -38,8 +38,10 @@ class FundService:
         fund_repository (FundRepository): Repository for fund data access
         fund_event_repository (FundEventRepository): Repository for fund event data access
         tax_statement_repository (TaxStatementRepository): Repository for tax statement data access
-        orchestrator (FundUpdateOrchestrator): Orchestrator for fund update operations
         registry (FundEventHandlerRegistry): Registry for event handlers
+        fund_event_service (FundEventService): Service for fund event operations
+        validation_service (FundValidationService): Service for fund validation operations
+        logger (Logger): Logger for logging operations
     """
     
     def __init__(self):
@@ -47,11 +49,11 @@ class FundService:
         self.fund_repository = FundRepository()
         self.fund_event_repository = FundEventRepository()
         self.tax_statement_repository = TaxStatementRepository()
-        self.orchestrator = FundUpdateOrchestrator()
         self.registry = FundEventHandlerRegistry()
         self.fund_event_service = FundEventService()
         self.validation_service = FundValidationService()
-    
+        self.logger = logging.getLogger(__name__)
+
     def create_fund(self, fund_data: Dict[str, Any], session: Session) -> 'Fund':
         """
         Create a new fund.
@@ -165,88 +167,29 @@ class FundService:
         return fund
     
     def get_funds(self, session: Session, 
-                  skip: int = 0, 
-                  limit: int = 100,
                   status: Optional[FundStatus] = None,
-                  fund_type: Optional[FundType] = None,
-                  search: Optional[str] = None) -> List['Fund']:
+                  fund_type: Optional[FundType] = None) -> List['Fund']:
         """
-        Get funds with filtering, pagination, and search.
+        Get funds with filtering.
         
         Args:
             session: Database session
-            skip: Number of records to skip
-            limit: Maximum number of records to return
             status: Optional fund status filter
-            fund_type: Optional fund type filter
-            search: Optional search term
-            
+            fund_type: Optional fund type filter            
         Returns:
             List of Fund objects
         """
-        if search:
-            # Use search functionality
-            return self.fund_repository.search_funds(search, session)
-        elif status:
+        if status:
             # Filter by status
             return self.fund_repository.get_funds_by_status(status, session)
         elif fund_type:
             # Filter by fund type
             return self.fund_repository.get_funds_by_type(fund_type, session)
         else:
-            # Get all funds with pagination
-            return self.fund_repository.get_all(session, skip, limit)
-    
-    def delete_fund_event(self, fund_id: int, event_id: int, session: Session) -> bool:
-        """
-        Delete a fund event and recalculate fund summary fields.
-        
-        Args:
-            fund_id: ID of the fund
-            event_id: ID of the event to delete
-            session: Database session
-            
-        Returns:
-            True if event was deleted, False if not found
-        """
-        # Delete the event
-        success = self.fund_event_repository.delete(event_id, session)
-        
-        if success:
-            # Recalculate fund summary fields after deletion
-            self._recalculate_fund_summary_after_deletion(fund_id, session)
-        
-        return success
-    
-    def _recalculate_fund_summary_after_deletion(self, fund_id: int, session: Session) -> None:
-        """
-        Recalculate fund summary fields after an event deletion.
-        
-        This method uses domain calculators to ensure consistency and reusability
-        across the codebase.
-        
-        Args:
-            fund_id: ID of the fund to recalculate
-            session: Database session
-        """
-        from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
-        
-        # Get the fund using repository
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            return
-        
-        # Use domain calculators for consistent calculations
-        equity_fields = FundEquityCalculator.recalculate_all_equity_fields(fund, session)
-        
-        # Update fund fields using calculated values
-        fund.current_equity_balance = equity_fields['current_equity_balance']
-        fund.average_equity_balance = equity_fields['average_equity_balance']
-        fund.total_cost_basis = equity_fields['total_cost_basis']
+            # Get all funds
+            return self.fund_repository.get_all_funds(session)
     
     def get_fund_events(self, fund_id: int, session: Session,
-                       skip: int = 0, 
-                       limit: int = 100,
                        event_types: Optional[List[EventType]] = None) -> List['FundEvent']:
         """
         Get events for a specific fund.
@@ -254,15 +197,13 @@ class FundService:
         Args:
             fund_id: ID of the fund
             session: Database session
-            skip: Number of records to skip
-            limit: Maximum number of records to return
             event_types: Optional list of event types to filter by
             
         Returns:
             List of FundEvent objects
         """
         events = self.fund_event_repository.get_by_fund(
-            fund_id, session, event_types, skip, limit
+            fund_id, session, event_types
         )
         
         # Return domain objects
@@ -291,133 +232,3 @@ class FundService:
             return None
         
         return event
-    
-    def get_fund_summary(self, fund_id: int, session: Session) -> Optional['Fund']:
-        """
-        Get a comprehensive summary of a fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            
-        Returns:
-            Fund object with summary information, or None if not found
-        """
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            return None
-        
-        # Attach summary counts to fund object
-        # Note: These could be added as properties or methods to the Fund model
-        fund.event_count = self.fund_event_repository.get_event_count_by_fund(fund_id, session)
-        fund.tax_statement_count = self.tax_statement_repository.get_statement_count_by_fund(fund_id, session)
-        
-        return fund
-    
-    def get_fund_metrics(self, fund_id: int, session: Session) -> Optional['Fund']:
-        """
-        Get performance metrics for a fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            
-        Returns:
-            Fund object with metrics information, or None if not found
-        """
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            return None
-        
-        # Get recent events for metrics calculation
-        recent_events = self.fund_event_repository.get_by_fund(
-            fund_id, session, limit=50
-        )
-        
-        # Calculate basic metrics and attach to fund object
-        # Note: These could be added as properties or methods to the Fund model
-        fund.total_events = len(recent_events)
-        capital_events = [e for e in recent_events if e.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]]
-        distribution_events = [e for e in recent_events if e.event_type == EventType.DISTRIBUTION]
-        fund.capital_events_count = len(capital_events)
-        fund.distribution_events_count = len(distribution_events)
-        fund.last_event_date = recent_events[-1].event_date if recent_events else None
-        
-        return fund
-    
-    def get_fund_end_date(self, fund_id: int, session: Session) -> Optional[date]:
-        """
-        Get fund end date using status service.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            
-        Returns:
-            date or None: Fund end date if fund is completed or realized
-        """
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            return None
-        
-        if fund.status not in [FundStatus.COMPLETED, FundStatus.REALIZED]:
-            return None
-        
-        # Use status service for calculation
-        from src.fund.services.fund_status_service import FundStatusService
-        status_service = FundStatusService()
-        return status_service.calculate_end_date(fund, session)
-    
-    def get_fund_start_date(self, fund: 'Fund', session: Session) -> Optional[date]:
-        """
-        Get fund start date (first event date).
-        
-        Args:
-            fund: The fund object
-            session: Database session
-            
-        Returns:
-            date or None: Fund start date if events exist
-        """
-        from src.fund.services.fund_event_service import FundEventService
-        event_service = FundEventService()
-        events = event_service.get_all_fund_events(fund, exclude_system_events=False, session=session)
-        if not events:
-            return None
-        
-        # Get the earliest event date
-        event_dates = [event.event_date for event in events if event.event_date]
-        return min(event_dates) if event_dates else None
-    
-    def get_fund_financial_years(self, fund: 'Fund', session: Session) -> List[str]:
-        """
-        Get all financial years from fund start date to current date.
-        
-        Args:
-            fund: The fund object
-            session: Database session
-            
-        Returns:
-            List[str]: List of financial years in descending order (most recent first)
-        """
-        # Get fund start date (use events if available, otherwise creation date)
-        start_date = self.get_fund_start_date(fund, session=session)
-        if not start_date:
-            start_date = fund.created_at.date()
-        
-        # Get entity for tax jurisdiction
-        from src.entity.models import Entity
-        entity = session.query(Entity).filter(Entity.id == fund.entity_id).first()
-        if not entity:
-            return []
-        
-        # Import calculation function from entity domain
-        from src.entity.calculations import get_financial_years_for_fund_period
-        from datetime import date
-        
-        # Calculate financial years from start date to current date
-        end_date = date.today()
-        financial_years = get_financial_years_for_fund_period(start_date, end_date, entity)
-        
-        # Return sorted list (most recent first)
-        return sorted(list(financial_years), reverse=True)

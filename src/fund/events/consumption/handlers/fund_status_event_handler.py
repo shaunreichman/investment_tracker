@@ -277,7 +277,7 @@ class FundStatusEventHandler(EventConsumer):
             
             # Update status based on current equity balance
             # This will trigger IRR calculations if status changes to REALIZED
-            status_service.update_status_after_equity_event(fund, self.session)
+            status_service.update_status(fund, self.session)
             
             logger.info(f"Fund status check completed for fund {fund.id}")
             

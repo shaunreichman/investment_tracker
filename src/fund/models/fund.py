@@ -18,18 +18,8 @@ from src.entity.models import Entity
 
 
 class Fund(Base):
-    """Model representing an investment fund.
-    
-    Responsibilities:
-    - Data persistence and relationships
-    - Basic validation and constraints
-    - Orchestrator integration for business logic
-    - Domain event publishing
-    
-    Business Logic: Delegated to services through orchestrator
-    Calculations: Handled by FundCalculationService
-    Status Updates: Managed by FundStatusService
-    Event Processing: Coordinated by FundUpdateOrchestrator
+    """
+    Model representing an investment fund.
     """
     
     __tablename__ = 'funds'
@@ -55,7 +45,17 @@ class Fund(Base):
     completed_irr_gross = Column(Float, nullable=True)  # (CALCULATED) Completed gross IRR when realized/completed
     completed_irr_after_tax = Column(Float, nullable=True)  # (CALCULATED) Completed after-tax IRR when completed
     completed_irr_real = Column(Float, nullable=True)  # (CALCULATED) Completed real IRR when completed
-    
+
+    # Profitability storage fields (CALCULATED)
+    pnl = Column(Float, default=0.0)  # (CALCULATED) PNL
+    realized_pnl = Column(Float, default=0.0)  # (CALCULATED) Realized PNL
+    unrealized_pnl = Column(Float, default=0.0)  # (CALCULATED) Unrealized PNL
+    realized_pnl_capital_gain = Column(Float, default=0.0)  # (CALCULATED) Realized Capital Gain PNL
+    unrealized_pnl_capital_gain = Column(Float, default=0.0)  # (CALCULATED) Unrealized Capital Gain PNL
+    realized_pnl_dividend = Column(Float, default=0.0)  # (CALCULATED) Realized Dividend PNL
+    realized_pnl_interest = Column(Float, default=0.0)  # (CALCULATED) Realized Interest PNL
+    realized_pnl_distribution = Column(Float, default=0.0)  # (CALCULATED) Realized Distribution PNL
+
     # NAV-based fund specific fields (CALCULATED)
     current_units = Column(Float, default=0.0)  # (CALCULATED) current number of units owned
     current_unit_price = Column(Float, default=0.0)  # (CALCULATED) current unit price from latest NAV update
@@ -98,18 +98,6 @@ class Fund(Base):
             f"<Fund(id={self.id}, name='{self.name}', "
             f"tracking_type={self.tracking_type.value}, status={self.status.value})>"
         )
-    
-    @classmethod
-    def get_all(cls, session) -> List['Fund']:
-        """Get all funds from the database.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List[Fund]: List of all funds
-        """
-        return session.query(cls).all()
     
     def validate_basic_constraints(self) -> bool:
         """Basic data validation only.
@@ -331,40 +319,6 @@ class Fund(Base):
     # ADDITIONAL BUSINESS PROPERTIES - Convenience Properties
     # ============================================================================
     
-    @property
-    def total_called_capital(self) -> float:
-        """Get total called capital as a property (requires session context).
-        
-        Note: This property requires a session to be available in the current context.
-        For explicit control, use total_capital_called(session) method instead.
-        
-        Returns:
-            float: Total called capital amount
-            
-        Raises:
-            RuntimeError: If no session is available in current context
-        """
-        # Try to get session from current context
-        try:
-            from flask import current_app
-            if hasattr(current_app, 'config') and current_app.config.get('TEST_DB_SESSION'):
-                session = current_app.config['TEST_DB_SESSION']
-                return self.total_capital_called(session=session)
-        except:
-            pass
-        
-        # Try to get session from SQLAlchemy scoped session
-        try:
-            from sqlalchemy.orm import scoped_session
-            session = scoped_session.registry()
-            if session:
-                return self.total_capital_called(session=session)
-        except:
-            pass
-        
-        raise RuntimeError("No database session available. Use total_capital_called(session) method instead.")
-    
-    
     def get_summary_data(self, session=None) -> Dict[str, Any]:
         """Get summary data for the fund.
         
@@ -398,6 +352,14 @@ class Fund(Base):
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else None,
             'current_duration': self.current_duration,
+            'pnl': self.pnl,
+            'realized_pnl': self.realized_pnl,
+            'unrealized_pnl': self.unrealized_pnl,
+            'realized_pnl_capital_gain': self.realized_pnl_capital_gain,
+            'unrealized_pnl_capital_gain': self.unrealized_pnl_capital_gain,
+            'realized_pnl_dividend': self.realized_pnl_dividend,
+            'realized_pnl_interest': self.realized_pnl_interest,
+            'realized_pnl_distribution': self.realized_pnl_distribution,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }

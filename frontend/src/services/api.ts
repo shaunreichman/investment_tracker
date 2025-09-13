@@ -336,34 +336,6 @@ class ApiClient {
   }
 
   // ============================================================================
-  // DASHBOARD API
-  // ============================================================================
-
-  async getPortfolioSummary(): Promise<PortfolioSummary> {
-    return this.request<PortfolioSummary>('/api/dashboard/portfolio-summary');
-  }
-
-
-  async getDashboardPerformance(): Promise<any> {
-    return this.request<any>('/api/dashboard/performance');
-  }
-
-  async getDashboardData(): Promise<DashboardData> {
-    // Fetch all dashboard data in parallel
-    const [portfolioSummary, funds, performance] = await Promise.all([
-      this.getPortfolioSummary(),
-      this.getFunds(),
-      this.getDashboardPerformance(),
-    ]);
-
-    return {
-      portfolio_summary: portfolioSummary,
-      funds,
-      performance,
-    };
-  }
-
-  // ============================================================================
   // HEALTH CHECK
   // ============================================================================
 

@@ -241,7 +241,7 @@ class TestFundStatusServiceOrchestration:
             service.update_status(active_fund, mock_session)
             
             # Assert - Verify duration update was orchestrated
-            # Note: It's called twice - once in _calculate_and_store_irrs_for_status and once in update_status
+            # Note: It's called twice - once in calculate_and_store_irrs_for_status and once in update_status
             assert active_fund.calculate_and_update_current_duration.call_count >= 1
 
     def _create_mock_event(self, event_type: EventType, event_date: date, equity_balance: float):
@@ -336,7 +336,7 @@ class TestFundStatusServiceOrchestration:
         
         # Test ACTIVE status - should reset IRRs
         fund.status = FundStatus.ACTIVE
-        service._calculate_and_store_irrs_for_status(fund, FundStatus.ACTIVE, mock_session)
+        service.calculate_and_store_irrs_for_status(fund, FundStatus.ACTIVE, mock_session)
         assert fund.completed_irr_gross is None
         assert fund.completed_irr_after_tax is None
         assert fund.completed_irr_real is None
@@ -347,7 +347,7 @@ class TestFundStatusServiceOrchestration:
             mock_irr_service_class.return_value = mock_irr_service
             mock_irr_service.calculate_completed_irr.return_value = 0.15
             
-            service._calculate_and_store_irrs_for_status(fund, FundStatus.REALIZED, mock_session)
+            service.calculate_and_store_irrs_for_status(fund, FundStatus.REALIZED, mock_session)
             assert fund.completed_irr_gross == 0.15
             assert fund.completed_irr_after_tax is None
             assert fund.completed_irr_real is None
@@ -360,7 +360,7 @@ class TestFundStatusServiceOrchestration:
             mock_irr_service.calculate_completed_after_tax_irr.return_value = 0.15
             mock_irr_service.calculate_completed_real_irr.return_value = 0.13
             
-            service._calculate_and_store_irrs_for_status(fund, FundStatus.COMPLETED, mock_session)
+            service.calculate_and_store_irrs_for_status(fund, FundStatus.COMPLETED, mock_session)
             assert fund.completed_irr_gross == 0.18
             assert fund.completed_irr_after_tax == 0.15
             assert fund.completed_irr_real == 0.13
@@ -375,7 +375,7 @@ class TestFundStatusServiceOrchestration:
         fund.completed_irr_real = None
         
         # Should not raise an error for unknown status
-        service._calculate_and_store_irrs_for_status(fund, "UNKNOWN_STATUS", mock_session)
+        service.calculate_and_store_irrs_for_status(fund, "UNKNOWN_STATUS", mock_session)
         
         # IRRs should remain None
         assert fund.completed_irr_gross is None

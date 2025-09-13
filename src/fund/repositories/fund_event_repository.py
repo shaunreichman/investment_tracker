@@ -73,8 +73,8 @@ class FundEventRepository:
     
     def get_by_fund(self, fund_id: int, session: Session, 
                     event_types: Optional[List[EventType]] = None,
-                    skip: int = 0,
-                    limit: int = 100,
+                    start_date: Optional[date] = None,
+                    end_date: Optional[date] = None,
                     sort_order: SortOrder = SortOrder.ASC) -> List[FundEvent]:
         """
         Get all events for a specific fund.
@@ -83,14 +83,14 @@ class FundEventRepository:
             fund_id: ID of the fund
             session: Database session
             event_types: Optional list of event types to filter by
-            skip: Number of records to skip
-            limit: Maximum number of records to return
+            start_date: Optional start date to filter by
+            end_date: Optional end date to filter by
             sort_order: Sort order (ascending or descending)
             
         Returns:
             List of fund events for the specified fund
         """
-        cache_key = f"events:fund:{fund_id}:types:{event_types}:skip:{skip}:limit:{limit}"
+        cache_key = f"events:fund:{fund_id}:types:{event_types}:start_date:{start_date}:end_date:{end_date}:sort_order:{sort_order}"
         
         # Check cache first
         if cache_key in self._cache:
@@ -103,108 +103,25 @@ class FundEventRepository:
         if event_types:
             query = query.filter(FundEvent.event_type.in_([et.value for et in event_types]))
         
+        # Apply date range filter if specified
+        if start_date:
+            query = query.filter(FundEvent.event_date >= start_date)
+        if end_date:
+            query = query.filter(FundEvent.event_date <= end_date)
+        
         # Apply sorting (default to newest first)
         if sort_order == SortOrder.ASC:
             query = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
         else:
             query = query.order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
         
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
-        
         events = query.all()
         
         # Cache the result
         self._cache[cache_key] = events
         
         return events
-    
-    def get_by_date_range(self, start_date: date, end_date: date, 
-                         session: Session,
-                         fund_id: Optional[int] = None) -> List[FundEvent]:
-        """
-        Get all events within a date range.
-        
-        Args:
-            start_date: Start date for the range
-            end_date: End date for the range
-            session: Database session
-            fund_id: Optional fund ID to filter by
-            
-        Returns:
-            List of fund events within the date range
-        """
-        cache_key = f"events:date_range:{start_date}:{end_date}:fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Build query
-        query = session.query(FundEvent).filter(
-            and_(
-                FundEvent.event_date >= start_date,
-                FundEvent.event_date <= end_date
-            )
-        )
-        
-        # Apply fund filter if specified
-        if fund_id:
-            query = query.filter(FundEvent.fund_id == fund_id)
-        
-        # Order by date and ID
-        query = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
-        
-        events = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
-        
-        return events
-    
-    def get_by_type(self, event_type: EventType, session: Session,
-                    fund_id: Optional[int] = None,
-                    skip: int = 0,
-                    limit: int = 100) -> List[FundEvent]:
-        """
-        Get all events of a specific type.
-        
-        Args:
-            event_type: Type of event to retrieve
-            session: Database session
-            fund_id: Optional fund ID to filter by
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            
-        Returns:
-            List of fund events of the specified type
-        """
-        cache_key = f"events:type:{event_type.value}:fund:{fund_id}:skip:{skip}:limit:{limit}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Build query
-        query = session.query(FundEvent).filter(FundEvent.event_type == event_type.value)
-        
-        # Apply fund filter if specified
-        if fund_id:
-            query = query.filter(FundEvent.fund_id == fund_id)
-        
-        # Order by date and ID
-        query = query.order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
-        
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
-        
-        events = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
-        
-        return events
-    
+  
     def create(self, event_data: Dict[str, Any], session: Session) -> FundEvent:
         """
         Create a new fund event.

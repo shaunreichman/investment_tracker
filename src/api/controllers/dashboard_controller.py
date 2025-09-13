@@ -17,9 +17,7 @@ from flask import request, jsonify, current_app
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
 
-from src.fund.models import Fund
-from src.fund.enums import FundStatus
-from src.tax.models import TaxStatement
+from src.fund.services.fund_service import FundService
 
 
 class DashboardController:
@@ -31,12 +29,12 @@ class DashboardController:
     models and handles request/response formatting.
     
     Attributes:
-        None - Direct domain model usage for simplicity
+        fund_service (FundService): Service for fund operations
     """
     
     def __init__(self):
         """Initialize the dashboard controller."""
-        pass
+        self.fund_service = FundService()
     
     def health_check(self) -> tuple:
         """
@@ -51,43 +49,6 @@ class DashboardController:
             current_app.logger.error(f"Error in health check: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
-    def portfolio_summary(self, session: Session) -> tuple:
-        """
-        Get overall portfolio summary with key metrics.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            Tuple of (response_data, status_code)
-        """
-        try:
-            # Use domain methods to get all funds
-            funds = Fund.get_all(session=session)
-            
-            # Calculate summary metrics using domain data
-            total_funds = len(funds)
-            active_funds = sum(1 for fund in funds if fund.status == FundStatus.ACTIVE)
-            total_equity = sum(fund.current_equity_balance or 0.0 for fund in funds)
-            total_avg_equity = sum(fund.average_equity_balance or 0.0 for fund in funds)
-            
-            # Get tax statements count using domain method
-            total_tax_statements = session.query(TaxStatement).count()
-            
-            summary = {
-                "total_funds": total_funds,
-                "active_funds": active_funds,
-                "total_equity_balance": float(total_equity),
-                "total_average_equity_balance": float(total_avg_equity),
-                "total_tax_statements": total_tax_statements,
-                "last_updated": date.today().isoformat()
-            }
-            
-            return jsonify(summary), 200
-            
-        except Exception as e:
-            current_app.logger.error(f"Error getting portfolio summary: {str(e)}")
-            return jsonify({"error": "Internal server error"}), 500
     
     def funds_list(self, session: Session) -> tuple:
         """
@@ -100,8 +61,8 @@ class DashboardController:
             Tuple of (response_data, status_code)
         """
         try:
-            # Use domain methods to get all funds
-            funds = Fund.get_all(session=session)
+            # Use service layer to get all funds (follows proper architecture)
+            funds = self.fund_service.get_funds(session)
             
             fund_data = []
             for fund in funds:
@@ -125,34 +86,3 @@ class DashboardController:
             current_app.logger.error(f"Error getting funds list: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
-    def dashboard_performance(self, session: Session) -> tuple:
-        """
-        Get performance data for all funds.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            Tuple of (response_data, status_code)
-        """
-        try:
-            # Get all funds using domain methods
-            funds = Fund.get_all(session=session)
-            
-            performance_data = []
-            for fund in funds:
-                performance_data.append({
-                    "fund_id": fund.id,
-                    "fund_name": fund.name,
-                    "current_equity": float(fund.current_equity_balance) if fund.current_equity_balance else 0.0,
-                    "average_equity": float(fund.average_equity_balance) if fund.average_equity_balance else 0.0
-                })
-            
-            # Sort by fund name
-            performance_data.sort(key=lambda x: x['fund_name'])
-            
-            return jsonify({"performance": performance_data}), 200
-            
-        except Exception as e:
-            current_app.logger.error(f"Error getting dashboard performance: {str(e)}")
-            return jsonify({"error": "Internal server error"}), 500

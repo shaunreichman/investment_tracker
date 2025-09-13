@@ -12,6 +12,7 @@ from datetime import date
 from src.fund.events.base_handler import BaseFundEventHandler
 from src.fund.enums import EventType, FundType
 from src.fund.models import FundEvent
+from src.fund.repositories.fund_event_repository import FundEventRepository
 
 
 class NAVUpdateHandler(BaseFundEventHandler):
@@ -52,7 +53,7 @@ class NAVUpdateHandler(BaseFundEventHandler):
         
         self._validate_required_date(event_date, 'event_date')
     
-    def handle(self, event_data: Dict[str, Any]) -> FundEvent:
+    def handle_create_event(self, event_data: Dict[str, Any]) -> FundEvent:
         """
         Handle a NAV update event.
         
@@ -86,7 +87,8 @@ class NAVUpdateHandler(BaseFundEventHandler):
             raise ValueError("event_id is required - event should be created by service first")
         
         # Event already created by service, get it from database
-        event = self.session.get(FundEvent, event_id)
+        fund_event_repository = FundEventRepository(self.session)
+        event = fund_event_repository.get_event_by_id(event_id)
         if not event:
             raise ValueError(f"Event with id {event_id} not found - event should be created by service first")
         
@@ -100,34 +102,24 @@ class NAVUpdateHandler(BaseFundEventHandler):
         self._publish_dependent_events(event)
         
         return event
-    
-    def _calculate_nav_change_fields(self, nav_per_share: float, event_date: date) -> tuple[Optional[float], Optional[float], Optional[float]]:
+
+    def handle_delete_event(self, event_data: Dict[str, Any]) -> bool:
         """
-        Calculate NAV change fields for the event.
+        Handle a NAV update event deletion.
         
         Args:
-            nav_per_share: New NAV per share
-            event_date: Date of the NAV update
-            
-        Returns:
-            tuple: (previous_nav, nav_change_absolute, nav_change_percentage)
+            event_data: Dictionary containing event parameters
         """
-        # Get the previous NAV event for this fund
-        previous_event = self.session.query(FundEvent).filter(
-            FundEvent.fund_id == self.fund.id,
-            FundEvent.event_type == EventType.NAV_UPDATE,
-            FundEvent.event_date < event_date
-        ).order_by(FundEvent.event_date.desc(), FundEvent.id.desc()).first()
+        event_id = event_data.get('event_id')
+        if not event_id:
+            raise ValueError("event_id is required - event should have existed first before deletion")
         
-        if not previous_event:
-            # This is the first NAV update
-            return None, None, None
+        # We need to confirm the event doesn't exist anymore by calling the repository layer
+        fund_event_repository = FundEventRepository(self.session)
+        if fund_event_repository.get_event_by_id(event_id):
+            raise ValueError(f"Event with id {event_id} still exists - event should have been deleted first")
         
-        previous_nav = previous_event.nav_per_share
-        nav_change_absolute = nav_per_share - previous_nav
-        nav_change_percentage = (nav_change_absolute / previous_nav) * 100 if previous_nav else 0.0
-        
-        return previous_nav, nav_change_absolute, nav_change_percentage
+        return True
     
     def _update_fund_after_nav_event(self, event: FundEvent) -> None:
         """

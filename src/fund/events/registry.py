@@ -78,7 +78,7 @@ class FundEventHandlerRegistry:
         
         return handler_class(session, fund)
     
-    def handle_event(self, event_data: Dict, session, fund) -> FundEvent:
+    def handle_create_event(self, event_data: Dict, session, fund) -> FundEvent:
         """
         Handle an event by routing it to the appropriate handler.
         
@@ -94,7 +94,7 @@ class FundEventHandlerRegistry:
             fund: Fund instance to operate on
             
         Returns:
-            FundEvent: The created or updated event
+            FundEvent: The created event
             
         Raises:
             ValueError: If event_type is missing or invalid
@@ -116,7 +116,38 @@ class FundEventHandlerRegistry:
         
         # Get and use the appropriate handler
         handler = self.get_handler(event_type, session, fund)
-        return handler.handle(event_data)
+        return handler.handle_create_event(event_data)
+
+    # Handle Deleted Event - return True if successful
+    def handle_delete_event(self, event_data: Dict, session, fund) -> bool:
+        """
+        Handle a deleted event by routing it to the appropriate handler.
+        
+        Args:
+            event_data: Dictionary containing event parameters including 'event_type'
+            session: Database session for all operations
+            fund: Fund instance to operate on
+            
+        Returns:
+            bool: True if the event was deleted successfully
+        """
+        # Extract event type from event data
+        event_type_raw = event_data.get('event_type')
+        if not event_type_raw:
+            raise ValueError("event_type is required in event_data")
+        
+        # Handle both string and enum object inputs
+        if isinstance(event_type_raw, EventType):
+            event_type = event_type_raw
+        else:
+            try:
+                event_type = EventType.from_string(event_type_raw)
+            except ValueError as e:
+                raise ValueError(f"Invalid event_type '{event_type_raw}': {e}")
+        
+        # Get and use the appropriate handler
+        handler = self.get_handler(event_type, session, fund)
+        return handler.handle_delete_event(event_data)
     
     def is_handler_registered(self, event_type: EventType) -> bool:
         """
@@ -182,6 +213,7 @@ class FundEventHandlerRegistry:
         from src.fund.events.handlers.unit_purchase_handler import UnitPurchaseHandler
         from src.fund.events.handlers.unit_sale_handler import UnitSaleHandler
         from src.fund.events.handlers.tax_payment_handler import TaxPaymentHandler
+        from src.fund.events.handlers.fund_event_deletion_handler import FundEventDeletionHandler
         
         # Register all handlers
         self.register_handler(EventType.CAPITAL_CALL, CapitalCallHandler)
@@ -191,3 +223,4 @@ class FundEventHandlerRegistry:
         self.register_handler(EventType.UNIT_PURCHASE, UnitPurchaseHandler)
         self.register_handler(EventType.UNIT_SALE, UnitSaleHandler)
         self.register_handler(EventType.TAX_PAYMENT, TaxPaymentHandler)
+        self.register_handler(EventType.EVENT_DELETED, FundEventDeletionHandler)

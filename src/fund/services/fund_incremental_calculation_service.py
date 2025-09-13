@@ -18,7 +18,6 @@ from sqlalchemy import func
 
 from src.fund.models import Fund, FundEvent, EventType, FundType
 from src.fund.enums import FundStatus
-from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator, FifoUnit
 from src.fund.repositories import FundEventQueryRepository
 
@@ -33,7 +32,6 @@ class FundIncrementalCalculationService:
     
     def __init__(self):
         """Initialize the FundIncrementalCalculationService."""
-        self.calculation_service = FundCalculationService()
         self.fund_event_query_repository = FundEventQueryRepository()
         # MANUAL: Cache for intermediate calculation results to avoid recomputation
         self._calculation_cache: Dict[int, Dict[str, Any]] = {}

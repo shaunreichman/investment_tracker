@@ -18,6 +18,5 @@ from abc import ABC, abstractmethod
 
 from src.fund.models import Fund, FundEvent
 from src.fund.enums import EventType, FundType, FundStatus
-from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.services.fund_status_service import FundStatusService
 from src.fund.services.tax_calculation_service import TaxCalculationService

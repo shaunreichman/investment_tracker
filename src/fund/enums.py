@@ -83,6 +83,33 @@ class FundType(Enum):
             raise ValueError(f"Invalid FundType: {value}. Must be one of: {[t.value for t in cls]}")
 
 
+class FundEventOperation(Enum):
+    """
+    Fund event operation enum.
+    
+    Defines all possible operations that can occur on a fund event.
+    
+    Values:
+        EVENT_CREATED: Fund event creation operation
+        EVENT_DELETED: Fund event deletion operation
+        EVENT_UPDATED: Fund event update operation
+    """
+    EVENT_CREATED = 'EVENT_CREATED'
+    EVENT_UPDATED = 'EVENT_UPDATED'
+    EVENT_DELETED = 'EVENT_DELETED'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
+    
+    @classmethod
+    def from_string(cls, value: str) -> 'FundEventOperation':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid FundEventOperation: {value}. Must be one of: {[e.value for e in cls]}")
+
 class EventType(Enum):
     """
     Fund event type enum.
@@ -145,6 +172,32 @@ class EventType(Enum):
             cls.DAILY_RISK_FREE_INTEREST_CHARGE
         }
         return event_type in system_events
+
+    @classmethod
+    def is_equity_call_event(cls, event_type: 'EventType') -> bool:
+        """Check if an event type is a equity call event."""
+        equity_events = {
+            cls.CAPITAL_CALL,
+            cls.UNIT_PURCHASE,
+        }
+        return event_type in equity_events
+
+    @classmethod
+    def is_equity_return_event(cls, event_type: 'EventType') -> bool:
+        """Check if an event type is a equity return event."""
+        equity_events = {
+            cls.RETURN_OF_CAPITAL,
+            cls.UNIT_SALE,
+        }
+        return event_type in equity_events
+
+    @classmethod
+    def is_tax_statement_event(cls, event_type: 'EventType') -> bool:
+        """Check if an event type is a tax statement event."""
+        tax_statement_events = {
+            cls.TAX_PAYMENT
+        }
+        return event_type in tax_statement_events
 
 
 class DistributionType(Enum):

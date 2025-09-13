@@ -3,9 +3,6 @@ Debt Cost Calculator.
 
 Pure mathematical calculations for debt cost and opportunity cost calculations.
 Follows calculator layer rules: stateless, pure functions, no dependencies.
-
-This calculator extracts the debt cost calculation logic from FundCalculationService
-to provide clean separation of concerns and improved testability.
 """
 
 from typing import List, Dict, Any, Tuple
@@ -34,11 +31,6 @@ class DebtCostResult:
 class DebtCostCalculator:
     """
     Pure calculator for debt cost and opportunity cost calculations.
-    
-    This calculator provides stateless, pure mathematical operations
-    for debt cost calculations without any dependencies. It extracts
-    the complex calculation logic from FundCalculationService to follow
-    the calculator layer rules.
     
     Business context:
         Used for real IRR calculations in Fund models, to account for 

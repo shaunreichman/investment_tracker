@@ -219,7 +219,7 @@ class TestFundRealizationWorkflow:
         assert fund.status == FundStatus.REALIZED
         
         # BUG DETECTED: The FundStatusService.update_status_after_tax_statement method
-        # is missing a call to _calculate_and_store_irrs_for_status when status changes to REALIZED
+        # is missing a call to calculate_and_store_irrs_for_status when status changes to REALIZED
         # This causes IRR fields to retain their previous values instead of being reset
         
         # Expected behavior: IRR fields should be reset for REALIZED status
@@ -229,7 +229,7 @@ class TestFundRealizationWorkflow:
         assert fund.completed_irr_real is None, f"BUG: Real IRR should be None for realized funds, got {fund.completed_irr_real}"
         
         # The bug is in FundStatusService.update_status_after_tax_statement method
-        # Missing line: self._calculate_and_store_irrs_for_status(fund, FundStatus.REALIZED, session)
+        # Missing line: self.calculate_and_store_irrs_for_status(fund, FundStatus.REALIZED, session)
 
     def test_nav_based_fund_realization_workflow(self, db_session):
         """Test fund realization workflow for NAV-based funds with unit operations"""

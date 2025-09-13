@@ -16,7 +16,6 @@ from src.fund.events.domain import CapitalChainRecalculatedEvent
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models import Fund, FundEvent
 from src.fund.enums import FundType, EventType
-from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
 
 logger = logging.getLogger(__name__)

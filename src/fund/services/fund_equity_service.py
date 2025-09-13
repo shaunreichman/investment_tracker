@@ -11,11 +11,13 @@ Key principles:
 - Single computation approach for performance
 """
 
-from typing import List
+from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from src.fund.models import Fund, FundEvent
+from src.fund.models import Fund, FundFieldChange
 from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
+from src.fund.repositories.fund_event_repository import FundEventRepository
+from src.fund.enums import EventType, SortOrder
 
 
 class FundEquityService:
@@ -37,7 +39,10 @@ class FundEquityService:
         self.session = session
         self.calculator = FundEquityCalculator()
     
-    def update_fund_equity_fields(self, fund: Fund) -> dict:
+    def update_fund_equity_fields(self, fund: Fund, session: Session,
+                                  current_equity_flag: bool = True,
+                                  average_equity_flag: bool = True,
+                                  total_cost_basis_flag: bool = True) -> Optional[List[FundFieldChange]]:
         """
         Update all equity fields for a fund with single computation - EFFICIENT.
         
@@ -50,42 +55,37 @@ class FundEquityService:
         Returns:
             Dictionary with updated values and metadata
         """
+        old_current_equity_balance = fund.current_equity_balance
+        old_average_equity_balance = fund.average_equity_balance
+        old_total_cost_basis = fund.total_cost_basis
         # SINGLE COMPUTATION: Get events and calculate balances once
-        events = self._get_relevant_events(fund)
+        events = FundEventRepository.get_by_fund(fund.id, session, 
+                    event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
+                    sort_order=SortOrder.ASC)
         event_balances = self.calculator.calculate_event_equity_balances(fund, events)
         
         # DERIVED CALCULATIONS: All other values calculated from pre-computed balances
-        current_equity = self.calculator.calculate_current_equity_from_balances(event_balances)
-        average_equity = self.calculator.calculate_average_equity_from_balances(events, event_balances)
-        total_cost_basis = self.calculator.calculate_total_cost_basis_from_balances(event_balances, fund, events)
-        
-        # Update fund fields
-        fund.current_equity_balance = current_equity
-        fund.average_equity_balance = average_equity
-        fund.total_cost_basis = total_cost_basis
+        if current_equity_flag:
+            current_equity = self.calculator.calculate_current_equity_from_balances(event_balances)
+            fund.current_equity_balance = current_equity
+        if average_equity_flag:
+            average_equity = self.calculator.calculate_average_equity_from_balances(events, event_balances)
+            fund.average_equity_balance = average_equity
+        if total_cost_basis_flag:
+            total_cost_basis = self.calculator.calculate_total_cost_basis_from_balances(event_balances, fund, events)
+            fund.total_cost_basis = total_cost_basis
         
         # Update only changed events for efficiency
-        updated_events_count = 0
         for event, (balance, has_changed) in zip(events, event_balances):
             if has_changed:
                 event.current_equity_balance = balance
-                updated_events_count += 1
+
+        equity_changes = []
+        if old_current_equity_balance != fund.current_equity_balance:
+            equity_changes.append(FundFieldChange(field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=fund.current_equity_balance))
+        if old_average_equity_balance != fund.average_equity_balance:
+            equity_changes.append(FundFieldChange(field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=fund.average_equity_balance))
+        if old_total_cost_basis != fund.total_cost_basis:
+            equity_changes.append(FundFieldChange(field_name='total_cost_basis', old_value=old_total_cost_basis, new_value=fund.total_cost_basis))
         
-        return {
-            'current_equity_balance': current_equity,
-            'average_equity_balance': average_equity,
-            'total_cost_basis': total_cost_basis,
-            'updated_events': updated_events_count
-        }
-    
-    def _get_relevant_events(self, fund: Fund) -> List[FundEvent]:
-        """
-        Get relevant events for the fund type.
-        
-        Args:
-            fund: The fund to get events for
-            
-        Returns:
-            List of relevant events
-        """
-        return FundEquityCalculator._get_relevant_events(fund, self.session)
+        return equity_changes if equity_changes else None

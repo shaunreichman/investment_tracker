@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from src.fund.enums import FundStatus, FundType, EventType
 from src.fund.services.fund_service import FundService
+from src.fund.services.fund_event_service import FundEventService
 from src.fund.formatters import format_fund_with_events, format_fund, format_funds_list, format_events_list, format_event_response, format_event
 
 
@@ -35,7 +36,8 @@ class FundController:
     def __init__(self):
         """Initialize the fund controller."""
         self.fund_service = FundService()
-    
+        self.fund_event_service = FundEventService()
+
     def get_fund(self, fund_id: int) -> tuple:
         """
         Get a fund by ID.
@@ -195,18 +197,15 @@ class FundController:
     
     def get_funds(self) -> tuple:
         """
-        Get funds with filtering, pagination, and search.
+        Get funds with filtering, and search.
         
         Returns:
             Tuple of (response_data, status_code)
         """
         try:
             # Get query parameters
-            skip = request.args.get('skip', 0, type=int)
-            limit = request.args.get('limit', 100, type=int)
             status = request.args.get('status')
             fund_type = request.args.get('fund_type')
-            search = request.args.get('search')
             
             # Parse enums if provided
             parsed_status = None
@@ -228,7 +227,7 @@ class FundController:
             
             # Get funds
             funds = self.fund_service.get_funds(
-                session, skip, limit, parsed_status, parsed_fund_type, search
+                session, parsed_status, parsed_fund_type
             )
             
             return jsonify(funds), 200
@@ -264,7 +263,7 @@ class FundController:
             
             # Add the capital call event using FundEventService
             # (Business validation happens in the service layer)
-            event = self.fund_service.fund_event_service.add_capital_call(
+            event = self.fund_event_service.add_capital_call(
                 fund=fund,
                 amount=float(event_data['amount']),
                 call_date=event_data['event_date'],  # Already parsed by middleware
@@ -329,7 +328,7 @@ class FundController:
                 event_date = datetime.fromisoformat(event_date).date()
             
             # Add the return of capital event using FundEventService
-            event = self.fund_service.fund_event_service.add_return_of_capital(
+            event = self.fund_event_service.add_return_of_capital(
                 fund=fund,
                 amount=float(event_data['amount']),
                 return_date=event_date,
@@ -394,7 +393,7 @@ class FundController:
                 event_date = datetime.fromisoformat(event_date).date()
             
             # Add the unit purchase event using FundEventService
-            event = self.fund_service.fund_event_service.add_unit_purchase(
+            event = self.fund_event_service.add_unit_purchase(
                 fund=fund,
                 units=float(event_data['units_purchased']),
                 price=float(event_data['unit_price']),
@@ -461,7 +460,7 @@ class FundController:
                 event_date = datetime.fromisoformat(event_date).date()
             
             # Add the unit sale event using FundEventService
-            event = self.fund_service.fund_event_service.add_unit_sale(
+            event = self.fund_event_service.add_unit_sale(
                 fund=fund,
                 units=float(event_data['units_sold']),
                 price=float(event_data['unit_price']),
@@ -528,7 +527,7 @@ class FundController:
                 event_date = datetime.fromisoformat(event_date).date()
             
             # Add the NAV update event using FundEventService
-            event = self.fund_service.fund_event_service.add_nav_update(
+            event = self.fund_event_service.add_nav_update(
                 fund=fund,
                 nav_per_share=float(event_data['nav_per_share']),
                 date=event_date,
@@ -605,7 +604,7 @@ class FundController:
                     event_data.get('interest_withholding_tax_rate') is not None
                 ])):
                 # Withholding tax distribution
-                event = self.fund_service.fund_event_service.add_distribution(
+                event = self.fund_event_service.add_distribution(
                     fund=fund,
                     event_date=event_date,
                     distribution_type=distribution_type,
@@ -623,7 +622,7 @@ class FundController:
                 if 'amount' not in event_data:
                     return jsonify({'error': 'Required field "amount" is missing for simple distribution'}), 400
                 
-                event = self.fund_service.fund_event_service.add_distribution(
+                event = self.fund_event_service.add_distribution(
                     fund=fund,
                     event_date=event_date,
                     distribution_type=distribution_type,
@@ -668,7 +667,7 @@ class FundController:
             session = self._get_session()
             
             # Get fund events - service returns a list directly
-            events = self.fund_service.get_fund_events(fund_id, session)
+            events = self.fund_event_service.get_fund_events(fund_id, session)
             
             if events is None:
                 return jsonify({'error': 'Fund not found'}), 404
@@ -701,7 +700,7 @@ class FundController:
             session = self._get_session()
             
             # Delete the event
-            success = self.fund_service.delete_fund_event(fund_id, event_id, session)
+            success = self.fund_event_service.delete_fund_event(fund_id, event_id, session)
             
             if not success:
                 return jsonify({'error': 'Event not found'}), 404
@@ -715,64 +714,6 @@ class FundController:
             current_app.logger.error(f"Error deleting fund event: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
-        finally:
-            if 'session' in locals():
-                session.close()
-    
-    def get_fund_summary(self, fund_id: int) -> tuple:
-        """
-        Get a comprehensive summary of a fund.
-        
-        Args:
-            fund_id: ID of the fund
-            
-        Returns:
-            Tuple of (response_data, status_code)
-        """
-        try:
-            # Get database session
-            session = self._get_session()
-            
-            # Get fund summary
-            summary = self.fund_service.get_fund_summary(fund_id, session)
-            
-            if not summary:
-                return jsonify({'error': 'Fund not found'}), 404
-            
-            return jsonify(summary), 200
-            
-        except Exception as e:
-            current_app.logger.error(f"Error getting fund summary: {str(e)}")
-            return jsonify({'error': 'Internal server error'}), 500
-        finally:
-            if 'session' in locals():
-                session.close()
-    
-    def get_fund_metrics(self, fund_id: int) -> tuple:
-        """
-        Get performance metrics for a fund.
-        
-        Args:
-            fund_id: ID of the fund
-            
-        Returns:
-            Tuple of (response_data, status_code)
-        """
-        try:
-            # Get database session
-            session = self._get_session()
-            
-            # Get fund metrics
-            metrics = self.fund_service.get_fund_metrics(fund_id, session)
-            
-            if not metrics:
-                return jsonify({'error': 'Fund not found'}), 404
-            
-            return jsonify(metrics), 200
-            
-        except Exception as e:
-            current_app.logger.error(f"Error getting fund metrics: {str(e)}")
             return jsonify({'error': 'Internal server error'}), 500
         finally:
             if 'session' in locals():
@@ -828,7 +769,7 @@ class FundController:
                 return jsonify({'error': 'Fund not found'}), 404
             
             # Validate event exists and belongs to fund
-            event = self.fund_service.get_fund_event(fund_id, event_id, session)
+            event = self.fund_event_service.get_fund_event(fund_id, event_id, session)
             if not event:
                 return jsonify({'error': 'Fund event not found'}), 404
             

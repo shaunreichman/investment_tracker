@@ -12,6 +12,7 @@ from datetime import date
 from src.fund.events.base_handler import BaseFundEventHandler
 from src.fund.enums import EventType, DistributionType, GroupType
 from src.fund.models import FundEvent
+from src.fund.repositories.fund_event_repository import FundEventRepository
 
 
 class DistributionHandler(BaseFundEventHandler):
@@ -75,7 +76,7 @@ class DistributionHandler(BaseFundEventHandler):
                 raise ValueError(f"Tax event with group id {event_data.get('group_id')} not found - event should be created by service first")
 
     
-    def handle(self, event_data: Dict[str, Any]) -> FundEvent:
+    def handle_create_event(self, event_data: Dict[str, Any]) -> FundEvent:
         """
         Handle a distribution event.
         
@@ -99,7 +100,8 @@ class DistributionHandler(BaseFundEventHandler):
         if not event_id:
             raise ValueError("event_id is required - event should be created by service first")
         
-        event = self.session.get(FundEvent, event_id)
+        fund_event_repository = FundEventRepository(self.session)
+        event = fund_event_repository.get_event_by_id(event_id)
         if not event:
             raise ValueError(f"Event with id {event_id} not found - event should be created by service first")
         
@@ -113,7 +115,30 @@ class DistributionHandler(BaseFundEventHandler):
         self._publish_dependent_events(event)
         
         return event
-    
+
+    def handle_delete_event(self, event_data: Dict[str, Any]) -> bool:
+        """
+        Handle a distribution event deletion.
+        
+        Args:
+            event_data: Dictionary containing event parameters
+
+        Returns:
+            bool: True if the event was deleted successfully
+
+        Raises:
+            ValueError: If event data is invalid
+        """
+        event_id = event_data.get('event_id')
+        if not event_id:
+            raise ValueError("event_id is required - event should have existed first before deletion")
+        
+        # We need to confirm the event doesn't exist anymore by calling the repository layer
+        fund_event_repository = FundEventRepository(self.session)
+        if fund_event_repository.get_event_by_id(event_id):
+            raise ValueError(f"Event with id {event_id} still exists - event should have been deleted first")
+        
+        return True
     
     
     def _update_fund_after_distribution(self, event: FundEvent) -> None:

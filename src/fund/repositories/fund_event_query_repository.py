@@ -77,6 +77,33 @@ class FundEventQueryRepository:
         
         return events
     
+    def get_events_by_fund(self, fund_id: int, session: Session) -> List[FundEvent]:
+        """
+        Get all events for a specific fund.
+        
+        Args:
+            fund_id: ID of the fund
+            session: Database session
+            
+        Returns:
+            List of all events for the fund
+        """
+        cache_key = f"events_by_fund:fund:{fund_id}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database
+        events = session.query(FundEvent).filter(
+            FundEvent.fund_id == fund_id
+        ).order_by(FundEvent.event_date.asc()).all()
+        
+        # Cache the result
+        self._cache[cache_key] = events
+        
+        return events
+    
     def get_events_by_date_range(self, fund_id: int, start_date: date, end_date: date, session: Session) -> List[FundEvent]:
         """
         Get events for a fund within a date range.

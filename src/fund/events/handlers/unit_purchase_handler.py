@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 from src.fund.events.base_handler import BaseFundEventHandler
 from src.fund.enums import EventType, FundType
 from src.fund.models import FundEvent
-from src.fund.services.fund_calculation_service import FundCalculationService
+from src.fund.repositories.fund_event_repository import FundEventRepository
 
 
 class UnitPurchaseHandler(BaseFundEventHandler):
@@ -65,7 +65,7 @@ class UnitPurchaseHandler(BaseFundEventHandler):
             except (ValueError, TypeError):
                 raise ValueError("Brokerage fee must be a valid number")
     
-    def handle(self, event_data: Dict[str, Any]) -> FundEvent:
+    def handle_create_event(self, event_data: Dict[str, Any]) -> FundEvent:
         """
         Handle a unit purchase event.
         
@@ -100,7 +100,8 @@ class UnitPurchaseHandler(BaseFundEventHandler):
             raise ValueError("event_id is required - event should be created by service first")
         
         # Event already created by service, get it from database
-        event = self.session.get(FundEvent, event_id)
+        fund_event_repository = FundEventRepository(self.session)
+        event = fund_event_repository.get_event_by_id(event_id)
         if not event:
             raise ValueError(f"Event with id {event_id} not found - event should be created by service first")
         
@@ -114,6 +115,30 @@ class UnitPurchaseHandler(BaseFundEventHandler):
         self._handle_status_transition(event)
         
         return event
+    
+    def handle_delete_event(self, event_data: Dict[str, Any]) -> bool:
+        """
+        Handle a unit purchase event deletion.
+        
+        Args:
+            event_data: Dictionary containing event parameters
+
+        Returns:
+            bool: True if the event was deleted successfully
+
+        Raises:
+            ValueError: If event data is invalid
+        """
+        event_id = event_data.get('event_id')
+        if not event_id:
+            raise ValueError("event_id is required - event should have existed first before deletion")
+        
+        # We need to confirm the event doesn't exist anymore by calling the repository layer
+        fund_event_repository = FundEventRepository(self.session)
+        if fund_event_repository.get_event_by_id(event_id):
+            raise ValueError(f"Event with id {event_id} still exists - event should have been deleted first")
+        
+        return True
     
     def _update_fund_after_unit_event(self, event: FundEvent) -> None:
         """

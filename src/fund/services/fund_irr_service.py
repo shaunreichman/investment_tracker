@@ -18,7 +18,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 
 from src.shared.calculations.irr_calculator import IRRCalculator
-from src.fund.models import Fund, FundEvent
+from src.fund.models import Fund, FundEvent, FundFieldChange
 from src.fund.enums import EventType, FundStatus
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,48 @@ class FundIrRService:
         This service is stateless and does not store database sessions.
         """
         pass
+
+    def update_irrs(self, fund: 'Fund', session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
+        """
+        Calculate and store IRRs for a specific fund status.
+                
+        Args:
+            fund: The fund object
+            session: Database session (optional)
+        """
+        old_completed_irr_gross = fund.completed_irr_gross
+        old_completed_irr_after_tax = fund.completed_irr_after_tax
+        old_completed_irr_real = fund.completed_irr_real
+        
+        if fund.status == FundStatus.ACTIVE:
+            # ACTIVE: No IRRs meaningful (fund has capital at risk)
+            fund.completed_irr_gross = None
+            fund.completed_irr_after_tax = None
+            fund.completed_irr_real = None
+            logger.info(f"IRRs reset to None for active fund {fund.name}")
+            
+        elif fund.status == FundStatus.REALIZED:
+            # REALIZED: Only gross IRR is meaningful (all capital returned)
+            fund.completed_irr_gross = self.calculate_completed_irr(fund, session)
+            fund.completed_irr_after_tax = None  # Not meaningful until completed
+            fund.completed_irr_real = None       # Not meaningful until completed
+            logger.info(f"IRR Gross calculated and stored for realized fund {fund.name}")
+
+        elif fund.status == FundStatus.COMPLETED:
+            # COMPLETED: All IRRs are meaningful (tax obligations complete)
+            fund.completed_irr_gross = self.calculate_completed_irr(fund, session)
+            fund.completed_irr_after_tax = self.calculate_completed_after_tax_irr(fund, session)
+            fund.completed_irr_real = self.calculate_completed_real_irr(fund, session)
+            logger.info(f"All IRRs calculated and stored for completed fund {fund.name}")
+
+        irr_changes = []
+        if old_completed_irr_gross != fund.completed_irr_gross:
+            irr_changes.append(FundFieldChange(field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=fund.completed_irr_gross))
+        if old_completed_irr_after_tax != fund.completed_irr_after_tax:
+            irr_changes.append(FundFieldChange(field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=fund.completed_irr_after_tax))
+        if old_completed_irr_real != fund.completed_irr_real:
+            irr_changes.append(FundFieldChange(field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=fund.completed_irr_real))
+        return irr_changes if irr_changes else None
     
     # ============================================================================
     # CORE IRR CALCULATION METHODS
@@ -111,9 +153,6 @@ class FundIrRService:
         """
         if fund.status not in [FundStatus.COMPLETED]:
             return None
-        
-        # Create daily risk-free interest charges if needed
-        self._create_daily_risk_free_interest_charges(fund, session, risk_free_rate_currency)
         
         events = self._get_fund_events(fund, session)
         return self._calculate_irr_base(
@@ -245,58 +284,8 @@ class FundIrRService:
         return cash_flows, days_from_start
     
     # ============================================================================
-    # CONVENIENCE METHODS
-    # ============================================================================
-    
-    
-    def should_calculate_irr(self, fund: Fund) -> bool:
-        """
-        Check if IRR should be calculated for a fund.
-        
-        Args:
-            fund: The fund to check
-            
-        Returns:
-            bool: True if IRR should be calculated
-        """
-        return fund.status in [FundStatus.REALIZED, FundStatus.COMPLETED]
-    
-    # ============================================================================
     # DATABASE OPERATIONS
-    # ============================================================================
-    
-    def calculate_all_irrs(self, fund: Fund, session: Session, risk_free_rate_currency: Optional[str] = None) -> Dict[str, Optional[float]]:
-        """
-        Calculate all IRR types for a fund.
-        
-        This method calculates IRRs but does not store them. The calling service
-        should handle persistence through repositories.
-        
-        Args:
-            fund: The fund to calculate IRRs for
-            session: Database session for data access
-            risk_free_rate_currency: Currency for risk-free rate calculations
-            
-        Returns:
-            Dict[str, Optional[float]]: Dictionary containing all IRR types
-        """
-        try:
-            # Calculate all IRRs
-            completed_irr = self.calculate_completed_irr(fund, session)
-            completed_after_tax_irr = self.calculate_completed_after_tax_irr(fund, session)
-            completed_real_irr = self.calculate_completed_real_irr(fund, session, risk_free_rate_currency)
-            
-            logger.info(f"Calculated IRRs for fund {fund.id}")
-            return {
-                'completed_irr': completed_irr,
-                'completed_after_tax_irr': completed_after_tax_irr,
-                'completed_real_irr': completed_real_irr
-            }
-            
-        except Exception as e:
-            logger.error(f"Error calculating IRRs for fund {fund.id}: {e}")
-            raise
-    
+    # ============================================================================    
     
     def _get_fund_events(self, fund: Fund, session: Session) -> List[FundEvent]:
         """
@@ -313,16 +302,3 @@ class FundIrRService:
         from src.fund.enums import SortOrder
         event_repository = FundEventRepository()
         return event_repository.get_by_fund(fund.id, session, sort_order=SortOrder.ASC)
-    
-    def _create_daily_risk_free_interest_charges(self, fund: Fund, session: Session, risk_free_rate_currency: Optional[str] = None) -> None:
-        """
-        Create daily risk-free interest charges for a fund.
-        
-        Args:
-            fund: The fund to create charges for
-            session: Database session for data access
-            risk_free_rate_currency: Currency for risk-free rate calculations
-        """
-        # This method would implement the logic to create daily risk-free interest charges
-        # For now, it's a placeholder that matches the original implementation
-        pass

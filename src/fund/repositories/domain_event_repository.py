@@ -12,12 +12,12 @@ Key responsibilities:
 """
 
 from typing import List, Optional, Dict, Any
-from datetime import date, datetime
+from datetime import date
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, func
+from sqlalchemy import and_, desc, func
 
-from src.fund.models import DomainEvent
-from src.fund.events.domain.base_event import FundDomainEvent
+from src.fund.models import DomainEvent, DomainFundEvent
+from src.fund.enums import FundEventOperation, EventType
 
 
 class DomainEventRepository:
@@ -40,12 +40,12 @@ class DomainEventRepository:
         """
         self.session = session
     
-    def store_domain_event(self, domain_event: FundDomainEvent) -> DomainEvent:
+    def store_domain_event(self, domain_event: DomainFundEvent) -> DomainEvent:
         """
         Store a domain event in the database.
         
         Args:
-            domain_event: FundDomainEvent instance to store
+            domain_event: DomainFundEvent instance to store
             
         Returns:
             DomainEvent: Stored database record
@@ -63,12 +63,12 @@ class DomainEventRepository:
         self.session.flush()  # Get the ID without committing
         return db_event
     
-    def store_domain_events(self, domain_events: List[FundDomainEvent]) -> List[DomainEvent]:
+    def store_domain_events(self, domain_events: List[DomainFundEvent]) -> List[DomainEvent]:
         """
         Store multiple domain events in the database.
         
         Args:
-            domain_events: List of FundDomainEvent instances to store
+            domain_events: List of DomainFundEvent instances to store
             
         Returns:
             List[DomainEvent]: List of stored database records
@@ -78,6 +78,30 @@ class DomainEventRepository:
             db_event = self.store_domain_event(domain_event)
             db_events.append(db_event)
         return db_events
+
+    def store_domain_fund_event(self, fund_id: int, event_type: EventType, event_operation: FundEventOperation, event_id: int, event_data: Dict[str, Any], session: Session) -> DomainFundEvent:
+        """
+        Store a domain fund event in the database.
+        
+        Args:
+            fund_id: Fund ID
+            event_type: Event type
+            event_operation: Event operation
+            event_id: Event ID
+            event_data: Event data
+            session: Session
+        """
+        db_event = DomainFundEvent(
+            fund_id=fund_id,
+            event_type=event_type,
+            event_operation=event_operation,
+            event_id=event_id,
+            event_data=event_data
+        )
+        session.add(db_event)
+        session.flush()
+        return db_event
+
     
     def get_by_id(self, event_id: int) -> Optional[DomainEvent]:
         """
@@ -156,24 +180,6 @@ class DomainEventRepository:
             query = query.filter(DomainEvent.fund_id == fund_id)
         
         return query.order_by(desc(DomainEvent.timestamp)).all()
-    
-    def get_recent_events(self, fund_id: Optional[int] = None, limit: int = 100) -> List[DomainEvent]:
-        """
-        Get the most recent domain events.
-        
-        Args:
-            fund_id: Optional fund ID filter
-            limit: Maximum number of events to return
-            
-        Returns:
-            List[DomainEvent]: List of recent domain events
-        """
-        query = self.session.query(DomainEvent)
-        
-        if fund_id:
-            query = query.filter(DomainEvent.fund_id == fund_id)
-        
-        return query.order_by(desc(DomainEvent.timestamp)).limit(limit).all()
     
     def delete_by_fund(self, fund_id: int) -> int:
         """

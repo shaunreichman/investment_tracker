@@ -55,7 +55,7 @@ class TaxPaymentHandler(BaseFundEventHandler):
         except (ValueError, TypeError):
             raise ValueError("Amount must be a valid number")
     
-    def handle(self, event_data: Dict[str, Any]) -> FundEvent:
+    def handle_create_event(self, event_data: Dict[str, Any]) -> FundEvent:
         """
         Handle a tax payment event.
         

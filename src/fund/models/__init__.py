@@ -18,13 +18,15 @@ from src.fund.enums import (
 )
 
 # Import fund models
-from src.fund.models.domain_event import DomainEvent
+from src.fund.models.domain_event import DomainEvent, DomainFundEvent, FundFieldChange
 from src.fund.models.fund_event_cash_flow import FundEventCashFlow
 from src.fund.models.fund_event import FundEvent
 from src.fund.models.fund import Fund
 
 __all__ = [
     'DomainEvent',
+    'DomainFundEvent',
+    'FundFieldChange',
     'FundEventCashFlow', 
     'FundEvent',
     'Fund',

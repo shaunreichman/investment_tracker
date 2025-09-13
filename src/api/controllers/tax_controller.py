@@ -247,9 +247,9 @@ class TaxController:
             if not fund:
                 return jsonify({"error": "Fund not found"}), 404
             
-            from src.fund.services.fund_service import FundService
-            fund_service = FundService()
-            financial_years = fund_service.get_fund_financial_years(fund, session=session)
+            from src.fund.services.fund_date_service import FundDateService
+            fund_date_service = FundDateService()
+            financial_years = fund_date_service.get_fund_financial_years(fund, session=session)
             
             return jsonify({"financial_years": financial_years}), 200
             
