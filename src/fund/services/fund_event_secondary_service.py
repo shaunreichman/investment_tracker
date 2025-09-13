@@ -15,11 +15,6 @@ from src.fund.services.fund_nav_service import FundNavService
 
 class FundEventSecondaryService:
     def __init__(self):
-        self.fund_equity_service = FundEquityService()
-        self.fund_status_service = FundStatusService()
-        self.fund_irr_service = FundIrRService()
-        self.fund_pnl_service = FundPnlService()
-        self.fund_nav_service = FundNavService()
         self.logger = logging.getLogger(__name__)
 
     def handle_event_secondary_impact(self, fund: Fund, fund_event_type: EventType, 
@@ -28,6 +23,11 @@ class FundEventSecondaryService:
                                     event_id: int):            
         
         fund_date_service = FundDateService(session)
+        fund_equity_service = FundEquityService(session)
+        fund_status_service = FundStatusService(session)
+        fund_irr_service = FundIrRService(session)
+        fund_pnl_service = FundPnlService(session)
+        fund_nav_service = FundNavService(session)
         
         all_changes: list[FundFieldChange] = []
 
@@ -40,7 +40,7 @@ class FundEventSecondaryService:
         
         # 2. Update the current equity balance of the fund
         if EventType.is_equity_event(fund_event_type):
-            all_changes.append(self.fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=True))
+            all_changes.append(fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=True))
 
         # 3. Update the End Date of the Fund
         if EventType.is_equity_return_event(fund_event_type):
@@ -48,26 +48,26 @@ class FundEventSecondaryService:
 
         # 4. Update the other balances of the fund
         if EventType.is_equity_event(fund_event_type):
-            all_changes.append(self.fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=False))
+            all_changes.append(fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=False))
 
         # 5. Update the Fund Status
         if EventType.is_equity_event(fund_event_type):
-            all_changes.append(self.fund_status_service.update_status_after_equity_event(fund, session))
+            all_changes.append(fund_status_service.update_status_after_equity_event(fund, session))
         if EventType.is_tax_statement_event(fund_event_type):
-            all_changes.append(self.fund_status_service.update_status_after_tax_statement(fund, session))
+            all_changes.append(fund_status_service.update_status_after_tax_statement(fund, session))
 
         # 6. Update the Duration of the Fund
         if EventType.is_equity_event(fund_event_type):
             all_changes.append(fund_date_service.update_fund_duration(fund, session))
 
         # 7. Update the IRRs of the fund
-        all_changes.append(self.fund_irr_service.update_irrs(fund, session))
+        all_changes.append(fund_irr_service.update_irrs(fund, session))
 
         # 8. Update the NAV of the Fund
         if EventType.is_nav_update_event(fund_event_type):
-            all_changes.append(self.fund_nav_service.update_nav_fund_fields(fund, session))
+            all_changes.append(fund_nav_service.update_nav_fund_fields(fund, session))
 
         # 9. Update the Profitability of the Fund
-        all_changes.append(self.fund_pnl_service.update_fund_pnl(fund, session))
+        all_changes.append(fund_pnl_service.update_fund_pnl(fund, session))
 
         return all_changes
