@@ -14,10 +14,9 @@ Key responsibilities:
 import logging
 from typing import List, Optional, Dict, Any
 from datetime import date
-from decimal import Decimal
 from sqlalchemy.orm import Session
-
 from src.fund.enums import EventType, DistributionType, FundEventOperation
+from src.fund.repositories import DomainEventRepository
 from typing import TYPE_CHECKING
 
 # Configure logger for this module
@@ -48,8 +47,7 @@ class FundEventService:
                  distribution_event_repository: 'DistributionEventRepository' = None,
                  fund_event_query_repository: 'FundEventQueryRepository' = None,
                  validation_service: 'FundValidationService' = None,
-                 fund_event_secondary_service: 'FundEventSecondaryService' = None,
-                 domain_event_repository: 'DomainEventRepository' = None):
+                 fund_event_secondary_service: 'FundEventSecondaryService' = None):
         """
         Initialize the FundEventService with specialized repositories.
         
@@ -61,7 +59,6 @@ class FundEventService:
             fund_event_query_repository: Repository for complex queries
             validation_service: Service for validation logic
             fund_event_secondary_service: Service for handling secondary impacts
-            domain_event_repository: Repository for domain events
         """
         from src.fund.repositories import CapitalEventRepository, UnitEventRepository, TaxEventRepository, DistributionEventRepository, FundEventQueryRepository, DomainEventRepository
         from src.fund.services.fund_validation_service import FundValidationService
@@ -73,7 +70,6 @@ class FundEventService:
         self.fund_event_query_repository = fund_event_query_repository or FundEventQueryRepository()
         self.validation_service = validation_service or FundValidationService()
         self.fund_event_secondary_service = fund_event_secondary_service or FundEventSecondaryService()
-        self.domain_event_repository = domain_event_repository or DomainEventRepository()
     # ============================================================================
     # CAPITAL CALL AND RETURN OF CAPITAL EVENTS
     # ============================================================================
@@ -130,7 +126,8 @@ class FundEventService:
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
-            domain_event = self.domain_event_repository.store_domain_fund_event(
+            domain_event_repository = DomainEventRepository(session)
+            domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.CAPITAL_CALL,
                 event_operation=FundEventOperation.EVENT_CREATED,
@@ -193,7 +190,8 @@ class FundEventService:
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
-            domain_event = self.domain_event_repository.store_domain_fund_event(
+            domain_event_repository = DomainEventRepository(session)
+            domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.RETURN_OF_CAPITAL,
                 event_operation=FundEventOperation.EVENT_CREATED,
@@ -266,7 +264,8 @@ class FundEventService:
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
-            domain_event = self.domain_event_repository.store_domain_fund_event(
+            domain_event_repository = DomainEventRepository(session)
+            domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.UNIT_PURCHASE,
                 event_operation=FundEventOperation.EVENT_CREATED,
@@ -335,7 +334,8 @@ class FundEventService:
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
-            domain_event = self.domain_event_repository.store_domain_fund_event(
+            domain_event_repository = DomainEventRepository(session)
+            domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.UNIT_SALE,
                 event_operation=FundEventOperation.EVENT_CREATED,
@@ -405,7 +405,8 @@ class FundEventService:
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
-            domain_event = self.domain_event_repository.store_domain_fund_event(
+            domain_event_repository = DomainEventRepository(session)
+            domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.NAV_UPDATE,
                 event_operation=FundEventOperation.EVENT_CREATED,
@@ -484,7 +485,8 @@ class FundEventService:
         
         # 5. Store the domain fund event containing the changes
         if all_changes:
-            domain_event = self.domain_event_repository.store_domain_fund_event(
+            domain_event_repository = DomainEventRepository(session)
+            domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.DISTRIBUTION,
                 event_operation=FundEventOperation.EVENT_CREATED,
@@ -613,7 +615,8 @@ class FundEventService:
             all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
                             fund_event_type=event_type, fund_event_operation=FundEventOperation.EVENT_DELETED, session=session)
             if all_changes:
-                domain_event = self.domain_event_repository.store_domain_fund_event(
+                domain_event_repository = DomainEventRepository(session)
+                domain_event = domain_event_repository.store_domain_fund_event(
                     fund_id=fund_id,
                     event_type=event_type,
                     event_operation=FundEventOperation.EVENT_DELETED,
