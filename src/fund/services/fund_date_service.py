@@ -3,7 +3,7 @@ Service for handling fund date calculations.
 """
 
 from src.fund.models import Fund, FundEvent, FundFieldChange
-from src.fund.enums import EventType, SortOrder, FundStatus
+from src.shared.enums import SortOrder
 from src.shared.enums import EventOperation
 from src.fund.repositories import FundEventRepository, FundRepository
 from src.entity.repositories import EntityRepository

@@ -119,9 +119,10 @@ class BankingController:
 
 
 
-    def create_bank(self, session: Session, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
+    def create_bank(self, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
         """Create a new bank with enhanced validation and response."""
         start_time = time.time()
+        session = self._get_session()
         
         try:
             # Validate required fields
@@ -167,9 +168,10 @@ class BankingController:
             error_response, status_code = self._handle_error(e, "create_bank")
             return error_response, status_code
 
-    def update_bank(self, bank_id: int, session: Session, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
+    def update_bank(self, bank_id: int, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
         """Update a bank with enhanced validation and response."""
         start_time = time.time()
+        session = self._get_session()
         
         try:
             # Update bank using service
@@ -201,9 +203,10 @@ class BankingController:
             error_response, status_code = self._handle_error(e, "update_bank")
             return error_response, status_code
 
-    def delete_bank(self, bank_id: int, session: Session) -> Tuple[BankingSuccessResponse, int]:
+    def delete_bank(self, bank_id: int) -> Tuple[BankingSuccessResponse, int]:
         """Delete a bank with enhanced response."""
         start_time = time.time()
+        session = self._get_session()
         
         try:
             # Delete bank using service
@@ -224,7 +227,7 @@ class BankingController:
             error_response, status_code = self._handle_error(e, "delete_bank")
             return error_response, status_code
 
-    def get_bank_accounts(self, session: Session, page: int = 1, page_size: int = 50) -> Tuple[BankingSuccessResponse, int]:
+    def get_bank_accounts(self, page: int = 1, page_size: int = 50) -> Tuple[BankingSuccessResponse, int]:
         """Get all bank accounts with pagination and summary data."""
         start_time = time.time()
         
@@ -280,9 +283,10 @@ class BankingController:
             error_response, status_code = self._handle_error(e, "get_bank_accounts")
             return error_response, status_code
 
-    def create_bank_account(self, session: Session, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
+    def create_bank_account(self, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
         """Create a new bank account with enhanced validation and response."""
         start_time = time.time()
+        session = self._get_session()
         
         try:
             # Validate required fields
@@ -346,9 +350,10 @@ class BankingController:
             error_response, status_code = self._handle_error(e, "create_bank_account")
             return error_response, status_code
 
-    def update_bank_account(self, account_id: int, session: Session, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
+    def update_bank_account(self, account_id: int, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
         """Update a bank account with enhanced validation and response."""
         start_time = time.time()
+        session = self._get_session()
         
         try:
             # Update account using service
@@ -392,9 +397,10 @@ class BankingController:
             error_response, status_code = self._handle_error(e, "update_bank_account")
             return error_response, status_code
 
-    def delete_bank_account(self, account_id: int, session: Session) -> Tuple[BankingSuccessResponse, int]:
+    def delete_bank_account(self, account_id: int) -> Tuple[BankingSuccessResponse, int]:
         """Delete a bank account with enhanced response."""
         start_time = time.time()
+        session = self._get_session()
         
         try:
             # Delete account using service
@@ -415,9 +421,10 @@ class BankingController:
             error_response, status_code = self._handle_error(e, "delete_bank_account")
             return error_response, status_code
 
-    def get_bank_account_balance(self, account_id: int, session: Session) -> Tuple[BankingSuccessResponse, int]:
+    def get_bank_account_balance(self, account_id: int) -> Tuple[BankingSuccessResponse, int]:
         """Get current balance for a bank account with enhanced response."""
         start_time = time.time()
+        session = self._get_session()
         
         try:
             # Check if account exists using service
@@ -451,9 +458,10 @@ class BankingController:
             error_response, status_code = self._handle_error(e, "get_bank_account_balance")
             return error_response, status_code
 
-    def get_bank_account_transactions(self, account_id: int, session: Session, page: int = 1, page_size: int = 50) -> Tuple[BankingSuccessResponse, int]:
+    def get_bank_account_transactions(self, account_id: int, page: int = 1, page_size: int = 50) -> Tuple[BankingSuccessResponse, int]:
         """Get transaction history for a bank account with enhanced response."""
         start_time = time.time()
+        session = self._get_session()
         
         try:
             # Check if account exists using service
@@ -487,3 +495,13 @@ class BankingController:
             self._log_operation("get_bank_account_transactions", start_time, False, account_id=account_id, error=str(e))
             error_response, status_code = self._handle_error(e, "get_bank_account_transactions")
             return error_response, status_code
+
+    def _get_session(self) -> Session:
+        """
+        Get the current database session from middleware.
+        
+        Returns:
+            Database session from Flask's g context
+        """
+        from src.api.middleware.database_session import get_current_session
+        return get_current_session()

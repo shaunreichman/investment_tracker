@@ -8,12 +8,8 @@ All endpoints use middleware validation for input data.
 """
 
 from flask import Blueprint, jsonify, request
-from sqlalchemy.orm import joinedload
-from datetime import datetime, date
-from src.fund.models import Fund, FundEvent, FundEventCashFlow
-from src.fund.enums import FundStatus, FundType, EventType, CashFlowDirection
-from src.entity.models import Entity
-from src.banking.models import BankAccount
+from datetime import datetime
+from src.fund.models import FundEvent, FundEventCashFlow
 from src.tax.models import TaxStatement
 from src.fund.repositories import FundRepository
 from src.api.middleware.validation import validate_fund_data, validate_fund_event_data, validate_cash_flow_data
@@ -26,131 +22,27 @@ fund_bp = Blueprint('fund', __name__)
 def fund_detail(fund_id):
     """Get detailed information about a specific fund"""
     try:
-        from src.api.database import get_db_session
-        session = get_db_session()
+        from src.api.controllers.fund_controller import FundController
+
+        # Parse query parameters for controlling response detail level
+        include_events = request.args.get('include_events', 'true').lower() == 'true'
+        include_cash_flows = request.args.get('include_cash_flows', 'false').lower() == 'true'
+        include_tax_statements = request.args.get('include_tax_statements', 'false').lower() == 'true'
         
-        try:
-            # Use repository to get fund
-            fund_repository = FundRepository()
-            fund = fund_repository.get_by_id(fund_id, session=session)
-            
-            if not fund:
-                return jsonify({"error": "Fund not found"}), 404
-            
-            # Get fund summary data using domain methods
-            fund_data = fund.get_summary_data(session=session)
-            
-            # Get all events using service layer (excluding system events)
-            from src.fund.services.fund_event_service import FundEventService
-            event_service = FundEventService()
-            all_events = event_service.get_all_fund_events(fund, exclude_system_events=True, session=session)
-            
-            events_data = []
-            for event in all_events:
-                event_data = {
-                    "id": event.id,
-                    "event_type": event.event_type.value.upper() if event.event_type else None,
-                    "event_date": event.event_date.isoformat() if event.event_date else None,
-                    "amount": float(event.amount) if event.amount else None,
-                    "description": event.description,
-                    "reference_number": event.reference_number,
-                    "distribution_type": event.distribution_type.value.upper() if event.distribution_type else None,
-                    "tax_payment_type": event.tax_payment_type.value.upper() if event.tax_payment_type else None,
-                    "units_owned": float(event.units_owned) if event.units_owned else None,
-                    "units_purchased": float(event.units_purchased) if event.units_purchased else None,
-                    "units_sold": float(event.units_sold) if event.units_sold else None,
-                    "unit_price": float(event.unit_price) if event.unit_price else None,
-                    "nav_per_share": float(event.nav_per_share) if event.nav_per_share else None,
-                    "previous_nav_per_share": float(event.previous_nav_per_share) if event.previous_nav_per_share else None,
-                    "nav_change_absolute": float(event.nav_change_absolute) if event.nav_change_absolute else None,
-                    "nav_change_percentage": float(event.nav_change_percentage) if event.nav_change_percentage else None,
-                    "brokerage_fee": float(event.brokerage_fee) if event.brokerage_fee else None,
-                    "tax_withholding": float(event.tax_withholding) if event.tax_withholding else None,
-                    "has_withholding_tax": bool(event.has_withholding_tax) if event.has_withholding_tax is not None else None,
-                    "created_at": event.created_at.isoformat() if event.created_at else None,
-                    # CALCULATED: Grouping flags set by backend when creating events
-                    "is_grouped": bool(event.is_grouped) if event.is_grouped is not None else False,
-                    "group_id": event.group_id,
-                    "group_type": event.group_type.value if event.group_type else None,
-                    "group_position": event.group_position
-                }
-                
-                # Add tax statement fields for TAX_PAYMENT and EOFY_DEBT_COST events
-                if event.event_type.value in ['TAX_PAYMENT', 'EOFY_DEBT_COST'] and event.tax_statement_id:
-                    tax_statement = session.query(TaxStatement).filter(TaxStatement.id == event.tax_statement_id).first()
-                    if tax_statement:
-                        # Add tax statement fields for TAX_PAYMENT events
-                        if event.event_type.value == 'TAX_PAYMENT':
-                            event_data.update({
-                                "interest_income_amount": float(tax_statement.interest_income_amount) if tax_statement.interest_income_amount else None,
-                                "interest_income_tax_rate": float(tax_statement.interest_income_tax_rate) if tax_statement.interest_income_tax_rate else None,
-                                "dividend_franked_income_amount": float(tax_statement.dividend_franked_income_amount) if tax_statement.dividend_franked_income_amount else None,
-                                "dividend_franked_income_tax_rate": float(tax_statement.dividend_franked_income_tax_rate) if tax_statement.dividend_franked_income_tax_rate else None,
-                                "dividend_unfranked_income_amount": float(tax_statement.dividend_unfranked_income_amount) if tax_statement.dividend_unfranked_income_amount else None,
-                                "dividend_unfranked_income_tax_rate": float(tax_statement.dividend_unfranked_income_tax_rate) if tax_statement.dividend_unfranked_income_tax_rate else None,
-                                "capital_gain_income_amount": float(tax_statement.capital_gain_income_amount) if tax_statement.capital_gain_income_amount else None,
-                                "capital_gain_income_tax_rate": float(tax_statement.capital_gain_income_tax_rate) if tax_statement.capital_gain_income_tax_rate else None,
-                            })
-                        # Add tax statement fields for EOFY_DEBT_COST events
-                        elif event.event_type.value == 'eofy_debt_cost':
-                            event_data.update({
-                                "eofy_debt_interest_deduction_sum_of_daily_interest": float(tax_statement.eofy_debt_interest_deduction_sum_of_daily_interest) if tax_statement.eofy_debt_interest_deduction_sum_of_daily_interest else None,
-                                "eofy_debt_interest_deduction_rate": float(tax_statement.eofy_debt_interest_deduction_rate) if tax_statement.eofy_debt_interest_deduction_rate else None,
-                                "eofy_debt_interest_deduction_total_deduction": float(tax_statement.eofy_debt_interest_deduction_total_deduction) if tax_statement.eofy_debt_interest_deduction_total_deduction else None,
-                            })
-                
-                events_data.append(event_data)
-            
-            # Get tax statements for this fund
-            tax_statements = session.query(TaxStatement).filter(
-                TaxStatement.fund_id == fund_id
-            ).order_by(TaxStatement.financial_year.desc()).all()
-            
-            tax_statements_data = []
-            for statement in tax_statements:
-                statement_data = {
-                    "id": statement.id,
-                    "entity_id": statement.entity_id,
-                    "financial_year": statement.financial_year,
-                    "statement_date": statement.statement_date.isoformat() if statement.statement_date else None,
-                    "tax_payment_date": statement.get_tax_payment_date().isoformat() if statement.get_tax_payment_date() else None,
-                    "eofy_debt_interest_deduction_rate": float(statement.eofy_debt_interest_deduction_rate) if statement.eofy_debt_interest_deduction_rate else None,
-                    "interest_received_in_cash": float(statement.interest_received_in_cash) if statement.interest_received_in_cash else None,
-                    "interest_receivable_this_fy": float(statement.interest_receivable_this_fy) if statement.interest_receivable_this_fy else None,
-                    "interest_receivable_prev_fy": float(statement.interest_receivable_prev_fy) if statement.interest_receivable_prev_fy else None,
-                    "interest_non_resident_withholding_tax_from_statement": float(statement.interest_non_resident_withholding_tax_from_statement) if statement.interest_non_resident_withholding_tax_from_statement else None,
-                    "interest_income_tax_rate": float(statement.interest_income_tax_rate) if statement.interest_income_tax_rate else None,
-                    "interest_income_amount": float(statement.interest_income_amount) if statement.interest_income_amount else None,
-                    "interest_tax_amount": float(statement.interest_tax_amount) if statement.interest_tax_amount else None,
-                    "dividend_franked_income_amount": float(statement.dividend_franked_income_amount) if statement.dividend_franked_income_amount else None,
-                    "dividend_franked_income_tax_rate": float(statement.dividend_franked_income_tax_rate) if statement.dividend_franked_income_tax_rate else None,
-                    "dividend_unfranked_income_amount": float(statement.dividend_unfranked_income_amount) if statement.dividend_unfranked_income_amount else None,
-                    "dividend_unfranked_income_tax_rate": float(statement.dividend_unfranked_income_tax_rate) if statement.dividend_unfranked_income_tax_rate else None,
-                    "capital_gain_income_amount": float(statement.capital_gain_income_amount) if statement.capital_gain_income_amount else None,
-                    "capital_gain_income_tax_rate": float(statement.capital_gain_income_tax_rate) if statement.capital_gain_income_tax_rate else None,
-                    "created_at": statement.created_at.isoformat() if statement.created_at else None,
-                    "updated_at": statement.updated_at.isoformat() if statement.updated_at else None
-                }
-                tax_statements_data.append(statement_data)
-            
-            # Combine all data
-            response_data = {
-                "fund": fund_data,
-                "events": events_data,
-                "statistics": {
-                    # Add any additional statistics that might be needed
-                    "total_events": len(events_data),
-                    "total_tax_statements": len(tax_statements_data)
-                }
-            }
-            
-            return jsonify(response_data), 200
-            
-        finally:
-            session.close()
-            
+        controller = FundController()
+        dto = controller.get_fund(
+            fund_id=fund_id,
+            include_events=include_events,
+            include_cash_flows=include_cash_flows,
+            include_tax_statements=include_tax_statements
+        )
+        
+        # Use standardized response handler
+        return handle_controller_response(dto, success_status_code=200)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        from src.api.dto.api_response import ApiResponse
+        response = ApiResponse(success=False, message=str(e))
+        return jsonify(response.to_dict()), 500
 
 
 @fund_bp.route('/api/funds', methods=['POST'])
@@ -159,10 +51,17 @@ def create_fund():
     """Create a new fund using the new FundController architecture"""
     try:
         from src.api.controllers.fund_controller import FundController
+        
         controller = FundController()
-        return controller.create_fund()
+        dto = controller.create_fund()
+        
+        # Use standardized response handler
+        return handle_controller_response(dto, success_status_code=201)
+            
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        from src.api.dto.api_response import ApiResponse
+        response = ApiResponse(success=False, message=str(e))
+        return jsonify(response.to_dict()), 500
 
 
 @fund_bp.route('/api/funds/<int:fund_id>', methods=['DELETE'])
@@ -170,10 +69,17 @@ def delete_fund(fund_id):
     """Delete a fund using enterprise validation"""
     try:
         from src.api.controllers.fund_controller import FundController
+        
         controller = FundController()
-        return controller.delete_fund(fund_id)
+        dto = controller.delete_fund(fund_id)
+        
+        # Use specialized DELETE response handler
+        return handle_delete_response(dto)
+            
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        from src.api.dto.api_response import ApiResponse
+        response = ApiResponse(success=False, message=str(e))
+        return jsonify(response.to_dict()), 500
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events', methods=['POST'])
@@ -182,40 +88,40 @@ def create_fund_event(fund_id):
     """Create a new fund event using the new FundController architecture"""
     try:
         from src.api.controllers.fund_controller import FundController
-        from src.api.database import get_db_session
+        from src.api.dto.api_response import ApiResponse
         
-        # Create database session
-        session = get_db_session()
+        controller = FundController()
+        # Use validated data from middleware
+        validated_data = request.validated_data
         
-        try:
-            controller = FundController()
-            # Use validated data from middleware
-            validated_data = request.validated_data
-            
-            # Route to specific method based on event type
-            event_type = validated_data.get('event_type')
-            if not event_type:
-                return jsonify({'error': 'event_type is required'}), 400
-            
-            if event_type == 'CAPITAL_CALL':
-                return controller.add_capital_call(fund_id)
-            elif event_type == 'RETURN_OF_CAPITAL':
-                return controller.add_return_of_capital(fund_id)
-            elif event_type == 'UNIT_PURCHASE':
-                return controller.add_unit_purchase(fund_id)
-            elif event_type == 'UNIT_SALE':
-                return controller.add_unit_sale(fund_id)
-            elif event_type == 'NAV_UPDATE':
-                return controller.add_nav_update(fund_id)
-            elif event_type == 'DISTRIBUTION':
-                return controller.add_distribution(fund_id)
-            else:
-                return jsonify({'error': f'Unsupported event type: {event_type}'}), 400
-        finally:
-            session.close()
+        # Route to specific method based on event type
+        event_type = validated_data.get('event_type')
+        if not event_type:
+            response = ApiResponse(success=False, message='event_type is required')
+            return jsonify(response.to_dict()), 400
+        
+        if event_type == 'CAPITAL_CALL':
+            dto = controller.add_capital_call(fund_id, validated_data)
+        elif event_type == 'RETURN_OF_CAPITAL':
+            dto = controller.add_return_of_capital(fund_id, validated_data)
+        elif event_type == 'UNIT_PURCHASE':
+            dto = controller.add_unit_purchase(fund_id, validated_data)
+        elif event_type == 'UNIT_SALE':
+            dto = controller.add_unit_sale(fund_id, validated_data)
+        elif event_type == 'NAV_UPDATE':
+            dto = controller.add_nav_update(fund_id, validated_data)
+        elif event_type == 'DISTRIBUTION':
+            dto = controller.add_distribution(fund_id, validated_data)
+        else:
+            response = ApiResponse(success=False, message=f'Unsupported event type: {event_type}')
+            return jsonify(response.to_dict()), 400
+        
+        # Use standardized response handler
+        return handle_controller_response(dto, success_status_code=201)
             
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        response = ApiResponse(success=False, message=str(e))
+        return jsonify(response.to_dict()), 500
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events/<int:event_id>', methods=['DELETE'])
@@ -223,10 +129,17 @@ def delete_fund_event(fund_id, event_id):
     """Delete a specific fund event using the new FundController architecture"""
     try:
         from src.api.controllers.fund_controller import FundController
+        
         controller = FundController()
-        return controller.delete_fund_event(fund_id, event_id)
+        dto = controller.delete_fund_event(fund_id, event_id)
+        
+        # Use specialized DELETE response handler
+        return handle_delete_response(dto)
+            
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        from src.api.dto.api_response import ApiResponse
+        response = ApiResponse(success=False, message=str(e))
+        return jsonify(response.to_dict()), 500
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events', methods=['GET'])
@@ -234,10 +147,18 @@ def get_fund_events(fund_id):
     """Get all events for a specific fund - optimized for fast table updates"""
     try:
         from src.api.controllers.fund_controller import FundController
+        
         controller = FundController()
-        return controller.get_fund_events(fund_id)
+        dto = controller.get_fund_events(fund_id)
+        
+        # Use standardized response handler
+        return handle_controller_response(dto, success_status_code=200)
+            
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # Unexpected error
+        from src.api.dto.api_response import ApiResponse
+        response = ApiResponse(success=False, message=str(e))
+        return jsonify(response.to_dict()), 500
 
 
 # Tax statement creation is now handled by the tax routes with middleware validation
@@ -478,3 +399,52 @@ def get_cash_flows():
             
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+########################################################
+# Helper functions
+########################################################
+
+def handle_controller_response(dto, success_status_code=200):
+    """
+    Standardized handler for controller DTO responses.
+    
+    Args:
+        dto: ControllerResponseDTO from controller
+        success_status_code: HTTP status code for success (default 200)
+        
+    Returns:
+        Tuple of (json_response, status_code)
+    """
+    from src.api.dto.api_response import ApiResponse
+    from src.api.dto.controller_response_dto import ControllerResponseStatus
+    
+    if dto.error:
+        # Use standardized status code mapping from enum
+        status_code = ControllerResponseStatus.get_status_code(dto.status)
+        response = ApiResponse(success=False, message=dto.error)
+        return jsonify(response.to_dict()), status_code
+    else:
+        # Success case - data already formatted by controller
+        response = ApiResponse(data=dto.data)
+        return jsonify(response.to_dict()), success_status_code
+
+def handle_delete_response(dto):
+    """
+    Specialized handler for DELETE operations that return 204 No Content on success.
+    
+    Args:
+        dto: ControllerResponseDTO from controller
+        
+    Returns:
+        Tuple of (response, status_code) or ('', 204) for success
+    """
+    from src.api.dto.api_response import ApiResponse
+    from src.api.dto.controller_response_dto import ControllerResponseStatus
+    if dto.error:
+        # Use standardized status code mapping from enum
+        status_code = ControllerResponseStatus.get_status_code(dto.status)
+        response = ApiResponse(success=False, message=dto.error)
+        return jsonify(response.to_dict()), status_code
+    else:
+        # Success case - DELETE operations return 204 No Content
+        return '', 204

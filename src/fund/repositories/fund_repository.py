@@ -16,7 +16,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType, SortOrder, SortFieldFund
+from src.fund.enums import FundStatus, FundType, SortFieldFund
+from src.shared.enums import SortOrder
 
 
 class FundRepository:

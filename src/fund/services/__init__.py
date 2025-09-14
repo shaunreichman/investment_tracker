@@ -12,13 +12,11 @@ The package follows enterprise best practices with:
 """
 
 from src.fund.services.fund_status_service import FundStatusService
-from src.fund.services.tax_calculation_service import TaxCalculationService
 from src.fund.services.fund_event_service import FundEventService
 from src.fund.services.fund_service import FundService
 
 __all__ = [
     'FundStatusService', 
-    'TaxCalculationService',
     'FundEventService',
     'FundService'
 ]

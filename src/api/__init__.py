@@ -13,6 +13,7 @@ from src.api.routes import fund, company, dashboard, entity, banking, tax, healt
 
 # Import middleware
 from src.api.middleware import setup_error_handlers, setup_logging_middleware
+from src.api.middleware.database_session import setup_database_session_middleware
 
 def create_app(db_config=None):
     app = Flask(__name__)
@@ -31,6 +32,7 @@ def create_app(db_config=None):
         # Don't fail app startup if event system fails
 
     # Set up middleware
+    setup_database_session_middleware(app)  # Must be first - provides database sessions
     setup_error_handlers(app)
     setup_logging_middleware(app)
     

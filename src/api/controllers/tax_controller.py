@@ -20,7 +20,7 @@ from datetime import datetime
 from src.tax.models import TaxStatement
 from src.fund.models import Fund
 from src.entity.models import Entity
-from src.fund.enums import SortOrder
+from src.shared.enums import SortOrder
 
 
 class TaxController:

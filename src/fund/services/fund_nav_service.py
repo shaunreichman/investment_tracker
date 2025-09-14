@@ -4,7 +4,7 @@ Service for handling fund NAV calculations.
 
 from sqlalchemy.orm import Session
 from src.fund.repositories import FundEventRepository
-from src.fund.enums import EventType, SortOrder
+from src.shared.enums import SortOrder
 from src.fund.models import Fund, FundFieldChange, FundEvent
 import logging
 from typing import List

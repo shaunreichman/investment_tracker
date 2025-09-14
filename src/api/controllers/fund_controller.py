@@ -19,8 +19,8 @@ from src.api.dto.api_response import ApiResponse
 from src.fund.enums import FundStatus, FundType, EventType
 from src.fund.services.fund_service import FundService
 from src.fund.services.fund_event_service import FundEventService
-from src.api.controllers.formatters.fund_formatter import format_fund_with_events, format_fund, format_event
-
+from src.api.controllers.formatters.fund_formatter import format_fund_comprehensive, format_fund, format_event
+from src.api.dto.controller_response_dto import ControllerResponseDTO, ControllerResponseStatus
 class FundController:
     """
     Controller for fund operations.
@@ -38,44 +38,52 @@ class FundController:
         self.fund_service = FundService()
         self.fund_event_service = FundEventService()
 
-    def get_fund(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def get_fund(self, fund_id: int, include_events: bool = True, include_cash_flows: bool = False, include_tax_statements: bool = False):
         """
-        Get a fund by ID.
+        Get a fund by ID with optional detailed information.
         
         Args:
             fund_id: ID of the fund to retrieve
+            include_events: Whether to include fund events in the response
+            include_cash_flows: Whether to include cash flows for each event
+            include_tax_statements: Whether to include tax statements for the fund
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing fund data and status
         """
         try:
-            # Get database session (this would be injected in a real Flask app)
+            # Get database session
             session = self._get_session()
             
             # Get the fund (now returns domain object)
             fund = self.fund_service.get_fund(fund_id, session)
             
             if not fund:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
+                return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
             
-            # Format the response using formatter
-            formatted_fund = format_fund_with_events(fund)
+            # Format the response using comprehensive formatter with specified options
+            formatted_fund = format_fund_comprehensive(
+                fund, 
+                include_events=include_events, 
+                include_cash_flows=include_cash_flows,
+                include_tax_statements=include_tax_statements
+            )
 
-            return jsonify(ApiResponse(data=formatted_fund).to_dict()), 200
+            return ControllerResponseDTO(data=formatted_fund, status=ControllerResponseStatus.SUCCESS.value)
             
         except Exception as e:
             current_app.logger.error(f"Error getting fund {fund_id}: {str(e)}")
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
         finally:
             if 'session' in locals():
                 session.close()
     
-    def create_fund(self) -> Tuple[ApiResponse, int]:
+    def create_fund(self):
         """
         Create a new fund.
         
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing fund data or error
             
         Note: Input data is pre-validated by middleware validation decorator.
         """
@@ -83,74 +91,37 @@ class FundController:
             # Get pre-validated data from middleware
             fund_data = getattr(request, 'validated_data', {})
             if not fund_data:
-                return jsonify(ApiResponse(success=False, message='No validated data available').to_dict()), 400
+                return ControllerResponseDTO(error='No validated data available', status=ControllerResponseStatus.VALIDATION_ERROR.value)
             
             # Get database session
             session = self._get_session()
             
-            # Create the fund with validated data (now returns domain object)
-            fund = self.fund_service.create_fund(fund_data, session)
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Format the response using formatter
-            formatted_fund = format_fund(fund)
-            return jsonify(ApiResponse(data=formatted_fund).to_dict()), 201
-            
-        except ValueError as e:
-            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
-        except Exception as e:
-            current_app.logger.error(f"Error creating fund: {str(e)}")
-            if 'session' in locals():
+            try:
+                # Create the fund with validated data (now returns domain object)
+                fund = self.fund_service.create_fund(fund_data, session)
+                
+                # Commit the transaction
+                session.commit()
+                
+                # Format the response using formatter
+                formatted_fund = format_fund(fund)
+                return ControllerResponseDTO(data=formatted_fund, status=ControllerResponseStatus.CREATED.value)
+                
+            except ValueError as e:
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
-                session.close()
-    
-    def update_fund(self, fund_id: int) -> Tuple[ApiResponse, int]:
-        """
-        Update an existing fund.
-        
-        Args:
-            fund_id: ID of the fund to update
-            
-        Returns:
-            Tuple of (response_data, status_code)
-            
-        Note: Input data is pre-validated by middleware validation decorator.
-        """
-        try:
-            # Get pre-validated data from middleware
-            fund_data = getattr(request, 'validated_data', {})
-            if not fund_data:
-                return jsonify(ApiResponse(success=False, message='No validated data available').to_dict()), 400
-            
-            # Get database session
-            session = self._get_session()
-            
-            # Update the fund with validated data
-            fund = self.fund_service.update_fund(fund_id, fund_data, session)
-            
-            if not fund:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
-            
-            # Commit the transaction
-            session.commit()
-            
-            return jsonify(ApiResponse(data=fund).to_dict()), 200
-            
-        except Exception as e:
-            current_app.logger.error(f"Error updating fund {fund_id}: {str(e)}")
-            if 'session' in locals():
+                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+            except Exception as e:
+                current_app.logger.error(f"Error creating fund: {str(e)}")
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error in create_fund: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
     
-    def delete_fund(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def delete_fund(self, fund_id: int):
         """
         Delete a fund with enterprise validation.
         
@@ -158,7 +129,7 @@ class FundController:
             fund_id: ID of the fund to delete
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing status or error
         """
         try:
             # Get database session
@@ -169,482 +140,441 @@ class FundController:
                 success = self.fund_service.delete_fund(fund_id, session)
                 
                 if not success:
-                    return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
+                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
                 
                 # Commit the transaction
                 session.commit()
                 
-                return jsonify(ApiResponse(success=True, message='Fund deleted successfully').to_dict()), 200
+                return ControllerResponseDTO(status=ControllerResponseStatus.DELETED.value, message="Fund deleted successfully")
                 
             except ValueError as e:
                 # ENTERPRISE ERROR HANDLING: Validation errors
                 session.rollback()
-                return jsonify(ApiResponse(success=False, message='Fund deletion validation failed', details=str(e)).to_dict()), 400
+                return ControllerResponseDTO(error=f"Fund deletion validation failed: {str(e)}", status=ControllerResponseStatus.VALIDATION_ERROR.value)
                 
             except Exception as e:
                 # ENTERPRISE ERROR HANDLING: Unexpected errors
+                current_app.logger.error(f"Error deleting fund: {str(e)}")
                 session.rollback()
-                return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
                 
             finally:
                 session.close()
             
         except Exception as e:
-            current_app.logger.error(f"Error deleting fund {fund_id}: {str(e)}")
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
+            current_app.logger.error(f"Error in delete_fund: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
     
-    def get_funds(self) -> Tuple[ApiResponse, int]:
-        """
-        Get funds with filtering, and search.
-        
-        Returns:
-            Tuple of (response_data, status_code)
-        """
-        try:
-            # Get query parameters
-            status = request.args.get('status')
-            fund_type = request.args.get('fund_type')
-            
-            # Parse enums if provided
-            parsed_status = None
-            if status:
-                try:
-                    parsed_status = FundStatus(status)
-                except ValueError:
-                    return jsonify(ApiResponse(success=False, message=f'Invalid status: {status}').to_dict()), 400
-            
-            parsed_fund_type = None
-            if fund_type:
-                try:
-                    parsed_fund_type = FundType(fund_type)
-                except ValueError:
-                    return jsonify(ApiResponse(success=False, message=f'Invalid fund_type: {fund_type}').to_dict()), 400
-            
-            # Get database session
-            session = self._get_session()
-            
-            # Get funds
-            funds = self.fund_service.get_funds(
-                session, parsed_status, parsed_fund_type
-            )
-            
-            return jsonify(ApiResponse(data=funds).to_dict()), 200
-            
-        except Exception as e:
-            current_app.logger.error(f"Error getting funds: {str(e)}")
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
-                session.close()
-    
-    def add_capital_call(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def add_capital_call(self, fund_id: int, event_data: dict):
         """
         Add a capital call event.
         
         Args:
             fund_id: ID of the fund
+            event_data: Validated event data from middleware
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing event data or error
         """
+        
         try:
-            # Get pre-validated data from middleware
-            event_data = request.validated_data
-            
             # Get database session
             session = self._get_session()
             
-            # Get the fund
-            fund = self.fund_service.get_fund(fund_id, session)
-            if not fund:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
-            
-            # Add the capital call event using FundEventService
-            # (Business validation happens in the service layer)
-            event = self.fund_event_service.add_capital_call(
-                fund=fund,
-                amount=float(event_data['amount']),
-                call_date=event_data['event_date'],  # Already parsed by middleware
-                description=event_data.get('description'),
-                reference_number=event_data.get('reference_number'),
-                session=session
-            )
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Format the event for JSON response
-            formatted_event = format_event(event)
-            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
-            
-        except ValueError as e:
-            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
-        except Exception as e:
-            current_app.logger.error(f"Error adding capital call: {str(e)}")
-            if 'session' in locals():
+            try:
+                # Get the fund
+                fund = self.fund_service.get_fund(fund_id, session)
+                if not fund:
+                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+
+                event = self.fund_event_service.add_capital_call(
+                    fund=fund,
+                    amount=float(event_data['amount']),
+                    call_date=event_data['event_date'],  # Already parsed by middleware
+                    description=event_data.get('description'),
+                    reference_number=event_data.get('reference_number'),
+                    session=session
+                )
+                
+                session.commit()
+                
+                formatted_event = format_event(event)
+                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                
+            except ValueError as e:
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
+                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+            except Exception as e:
+                current_app.logger.error(f"Error adding capital call: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error in add_capital_call: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status="server_error")
     
-    def add_return_of_capital(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def add_return_of_capital(self, fund_id: int, event_data: dict):
         """
         Add a return of capital event.
         
         Args:
             fund_id: ID of the fund
+            event_data: Validated event data from middleware
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing event data or error
         """
+        
         try:
-            # Get request data
-            event_data = request.get_json()
-            if not event_data:
-                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
-            
-            # Validate required fields
+            # Validate required fields (business validation)
             required_fields = ['amount', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")
             
             # Get database session
             session = self._get_session()
             
-            # Get the fund
-            fund = self.fund_service.get_fund(fund_id, session)
-            if not fund:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
-            
-            # Parse event date
-            event_date = event_data['event_date']
-            if isinstance(event_date, str):
-                from datetime import datetime
-                event_date = datetime.fromisoformat(event_date).date()
-            
-            # Add the return of capital event using FundEventService
-            event = self.fund_event_service.add_return_of_capital(
-                fund=fund,
-                amount=float(event_data['amount']),
-                return_date=event_date,
-                description=event_data.get('description'),
-                reference_number=event_data.get('reference_number'),
-                session=session
-            )
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Format the event for JSON response
-            formatted_event = format_event(event)
-            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
-            
-        except ValueError as e:
-            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
-        except Exception as e:
-            current_app.logger.error(f"Error adding return of capital: {str(e)}")
-            if 'session' in locals():
+            try:
+                # Get the fund
+                fund = self.fund_service.get_fund(fund_id, session)
+                if not fund:
+                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                
+                # Parse event date (business logic)
+                event_date = event_data['event_date']
+                if isinstance(event_date, str):
+                    from datetime import datetime
+                    event_date = datetime.fromisoformat(event_date).date()
+                
+                # Add the return of capital event using FundEventService
+                event = self.fund_event_service.add_return_of_capital(
+                    fund=fund,
+                    amount=float(event_data['amount']),
+                    return_date=event_date,
+                    description=event_data.get('description'),
+                    reference_number=event_data.get('reference_number'),
+                    session=session
+                )
+                
+                # Commit the transaction
+                session.commit()
+                
+                # Format the event for response
+                formatted_event = format_event(event)
+                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                
+            except ValueError as e:
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
+                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+            except Exception as e:
+                current_app.logger.error(f"Error adding return of capital: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error in add_return_of_capital: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status="server_error")
     
-    def add_unit_purchase(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def add_unit_purchase(self, fund_id: int, event_data: dict):
         """
         Add a unit purchase event.
         
         Args:
             fund_id: ID of the fund
+            event_data: Validated event data from middleware
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing event data or error
         """
+        
         try:
-            # Get request data
-            event_data = request.get_json()
-            if not event_data:
-                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
-            
-            # Validate required fields
+            # Validate required fields (business validation)
             required_fields = ['units_purchased', 'unit_price', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")
             
             # Get database session
             session = self._get_session()
             
-            # Get the fund
-            fund = self.fund_service.get_fund(fund_id, session)
-            if not fund:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
-            
-            # Parse event date
-            event_date = event_data['event_date']
-            if isinstance(event_date, str):
-                from datetime import datetime
-                event_date = datetime.fromisoformat(event_date).date()
-            
-            # Add the unit purchase event using FundEventService
-            event = self.fund_event_service.add_unit_purchase(
-                fund=fund,
-                units=float(event_data['units_purchased']),
-                price=float(event_data['unit_price']),
-                date=event_date,
-                brokerage_fee=float(event_data.get('brokerage_fee', 0.0)),
-                description=event_data.get('description'),
-                reference_number=event_data.get('reference_number'),
-                session=session
-            )
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Format the event for JSON response
-            formatted_event = format_event(event)
-            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
-            
-        except ValueError as e:
-            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
-        except Exception as e:
-            current_app.logger.error(f"Error adding unit purchase: {str(e)}")
-            if 'session' in locals():
+            try:
+                # Get the fund
+                fund = self.fund_service.get_fund(fund_id, session)
+                if not fund:
+                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                
+                # Parse event date (business logic)
+                event_date = event_data['event_date']
+                if isinstance(event_date, str):
+                    from datetime import datetime
+                    event_date = datetime.fromisoformat(event_date).date()
+                
+                # Add the unit purchase event using FundEventService
+                event = self.fund_event_service.add_unit_purchase(
+                    fund=fund,
+                    units=float(event_data['units_purchased']),
+                    price=float(event_data['unit_price']),
+                    date=event_date,
+                    brokerage_fee=float(event_data.get('brokerage_fee', 0.0)),
+                    description=event_data.get('description'),
+                    reference_number=event_data.get('reference_number'),
+                    session=session
+                )
+                
+                # Commit the transaction
+                session.commit()
+                
+                # Format the event for response
+                formatted_event = format_event(event)
+                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                
+            except ValueError as e:
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
+                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+            except Exception as e:
+                current_app.logger.error(f"Error adding unit purchase: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error in add_unit_purchase: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status="server_error")
     
-    def add_unit_sale(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def add_unit_sale(self, fund_id: int, event_data: dict):
         """
         Add a unit sale event.
         
         Args:
             fund_id: ID of the fund
+            event_data: Validated event data from middleware
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing event data or error
         """
+        
         try:
-            # Get request data
-            event_data = request.get_json()
-            if not event_data:
-                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
-            
-            # Validate required fields
+            # Validate required fields (business validation)
             required_fields = ['units_sold', 'unit_price', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")
             
             # Get database session
             session = self._get_session()
             
-            # Get the fund
-            fund = self.fund_service.get_fund(fund_id, session)
-            if not fund:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
-            
-            # Parse event date
-            event_date = event_data['event_date']
-            if isinstance(event_date, str):
-                from datetime import datetime
-                event_date = datetime.fromisoformat(event_date).date()
-            
-            # Add the unit sale event using FundEventService
-            event = self.fund_event_service.add_unit_sale(
-                fund=fund,
-                units=float(event_data['units_sold']),
-                price=float(event_data['unit_price']),
-                date=event_date,
-                brokerage_fee=float(event_data.get('brokerage_fee', 0.0)),
-                description=event_data.get('description'),
-                reference_number=event_data.get('reference_number'),
-                session=session
-            )
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Format the event for JSON response
-            formatted_event = format_event(event)
-            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
-            
-        except ValueError as e:
-            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
-        except Exception as e:
-            current_app.logger.error(f"Error adding unit sale: {str(e)}")
-            if 'session' in locals():
+            try:
+                # Get the fund
+                fund = self.fund_service.get_fund(fund_id, session)
+                if not fund:
+                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                
+                # Parse event date (business logic)
+                event_date = event_data['event_date']
+                if isinstance(event_date, str):
+                    from datetime import datetime
+                    event_date = datetime.fromisoformat(event_date).date()
+                
+                # Add the unit sale event using FundEventService
+                event = self.fund_event_service.add_unit_sale(
+                    fund=fund,
+                    units=float(event_data['units_sold']),
+                    price=float(event_data['unit_price']),
+                    date=event_date,
+                    brokerage_fee=float(event_data.get('brokerage_fee', 0.0)),
+                    description=event_data.get('description'),
+                    reference_number=event_data.get('reference_number'),
+                    session=session
+                )
+                
+                # Commit the transaction
+                session.commit()
+                
+                # Format the event for response
+                formatted_event = format_event(event)
+                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                
+            except ValueError as e:
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
+                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+            except Exception as e:
+                current_app.logger.error(f"Error adding unit sale: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error in add_unit_sale: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status="server_error")
     
-    def add_nav_update(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def add_nav_update(self, fund_id: int, event_data: dict):
         """
         Add a NAV update event.
         
         Args:
             fund_id: ID of the fund
+            event_data: Validated event data from middleware
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing event data or error
         """
+        
         try:
-            # Get request data
-            event_data = request.get_json()
-            if not event_data:
-                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
-            
-            # Validate required fields
+            # Validate required fields (business validation)
             required_fields = ['nav_per_share', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
-            
-            # Get database session
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")            
+
             session = self._get_session()
             
-            # Get the fund
-            fund = self.fund_service.get_fund(fund_id, session)
-            if not fund:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
-            
-            # Parse event date
-            event_date = event_data['event_date']
-            if isinstance(event_date, str):
-                from datetime import datetime
-                event_date = datetime.fromisoformat(event_date).date()
-            
-            # Add the NAV update event using FundEventService
-            event = self.fund_event_service.add_nav_update(
-                fund=fund,
-                nav_per_share=float(event_data['nav_per_share']),
-                date=event_date,
-                description=event_data.get('description'),
-                reference_number=event_data.get('reference_number'),
-                session=session
-            )
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Format the event for JSON response
-            formatted_event = format_event(event)
-            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
-            
-        except ValueError as e:
-            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
-        except Exception as e:
-            current_app.logger.error(f"Error adding NAV update: {str(e)}")
-            if 'session' in locals():
+            try:
+                fund = self.fund_service.get_fund(fund_id, session)
+                if not fund:
+                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                
+                # Parse event date (business logic)
+                event_date = event_data['event_date']
+                if isinstance(event_date, str):
+                    from datetime import datetime
+                    event_date = datetime.fromisoformat(event_date).date()
+                
+                # Add the NAV update event using FundEventService
+                event = self.fund_event_service.add_nav_update(
+                    fund=fund,
+                    nav_per_share=float(event_data['nav_per_share']),
+                    date=event_date,
+                    description=event_data.get('description'),
+                    reference_number=event_data.get('reference_number'),
+                    session=session
+                )
+                
+                # Commit the transaction
+                session.commit()
+                
+                # Format the event for response
+                formatted_event = format_event(event)
+                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                
+            except ValueError as e:
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
+                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+            except Exception as e:
+                current_app.logger.error(f"Error adding NAV update: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error in add_nav_update: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status="server_error")
     
-    def add_distribution(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def add_distribution(self, fund_id: int, event_data: dict):
         """
         Add a distribution event.
         
         Args:
             fund_id: ID of the fund
+            event_data: Validated event data from middleware
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing event data or error
         """
+        
         try:
-            # Get request data
-            event_data = request.get_json()
-            if not event_data:
-                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
-            
-            # Validate required fields
+            # Validate required fields (business validation)
             required_fields = ['event_date', 'distribution_type']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")
             
             # Get database session
             session = self._get_session()
             
-            # Get the fund
-            fund = self.fund_service.get_fund(fund_id, session)
-            if not fund:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
-            
-            # Parse event date
-            event_date = event_data['event_date']
-            if isinstance(event_date, str):
-                from datetime import datetime
-                event_date = datetime.fromisoformat(event_date).date()
-            
-            # Parse distribution type
-            from src.fund.enums import DistributionType
-            distribution_type = DistributionType(event_data['distribution_type'])
-            
-            # Handle withholding tax distributions
-            if (event_data.get('distribution_type') == 'INTEREST' and
-                any([
-                    event_data.get('interest_gross_amount') is not None,
-                    event_data.get('interest_net_amount') is not None,
-                    event_data.get('interest_withholding_tax_amount') is not None,
-                    event_data.get('interest_withholding_tax_rate') is not None
-                ])):
-                # Withholding tax distribution
-                event = self.fund_event_service.add_distribution(
-                    fund=fund,
-                    event_date=event_date,
-                    distribution_type=distribution_type,
-                    has_withholding_tax=True,
-                    gross_interest_amount=float(event_data.get('interest_gross_amount', 0)) if event_data.get('interest_gross_amount') else None,
-                    net_interest_amount=float(event_data.get('interest_net_amount', 0)) if event_data.get('interest_net_amount') else None,
-                    withholding_tax_amount=float(event_data.get('interest_withholding_tax_amount', 0)) if event_data.get('interest_withholding_tax_amount') else None,
-                    withholding_tax_rate=float(event_data.get('interest_withholding_tax_rate', 0)) if event_data.get('interest_withholding_tax_rate') else None,
-                    description=event_data.get('description'),
-                    reference_number=event_data.get('reference_number'),
-                    session=session
-                )
-            else:
-                # Simple distribution
-                if 'amount' not in event_data:
-                    return jsonify(ApiResponse(success=False, message='Required field "amount" is missing for simple distribution').to_dict()), 400
+            try:
+                # Get the fund
+                fund = self.fund_service.get_fund(fund_id, session)
+                if not fund:
+                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
                 
-                event = self.fund_event_service.add_distribution(
-                    fund=fund,
-                    event_date=event_date,
-                    distribution_type=distribution_type,
-                    distribution_amount=float(event_data['amount']),
-                    has_withholding_tax=False,
-                    description=event_data.get('description'),
-                    reference_number=event_data.get('reference_number'),
-                    session=session
-                )
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Format the event for JSON response
-            formatted_event = format_event(event)
-            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
-            
-        except ValueError as e:
-            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
-        except Exception as e:
-            current_app.logger.error(f"Error adding distribution: {str(e)}")
-            if 'session' in locals():
+                # Parse event date (business logic)
+                event_date = event_data['event_date']
+                if isinstance(event_date, str):
+                    from datetime import datetime
+                    event_date = datetime.fromisoformat(event_date).date()
+                
+                # Parse distribution type (business logic)
+                from src.fund.enums import DistributionType
+                distribution_type = DistributionType(event_data['distribution_type'])
+                
+                # Handle withholding tax distributions (business logic)
+                if (event_data.get('distribution_type') == 'INTEREST' and
+                    any([
+                        event_data.get('interest_gross_amount') is not None,
+                        event_data.get('interest_net_amount') is not None,
+                        event_data.get('interest_withholding_tax_amount') is not None,
+                        event_data.get('interest_withholding_tax_rate') is not None
+                    ])):
+                    # Withholding tax distribution
+                    event = self.fund_event_service.add_distribution(
+                        fund=fund,
+                        event_date=event_date,
+                        distribution_type=distribution_type,
+                        has_withholding_tax=True,
+                        gross_interest_amount=float(event_data.get('interest_gross_amount', 0)) if event_data.get('interest_gross_amount') else None,
+                        net_interest_amount=float(event_data.get('interest_net_amount', 0)) if event_data.get('interest_net_amount') else None,
+                        withholding_tax_amount=float(event_data.get('interest_withholding_tax_amount', 0)) if event_data.get('interest_withholding_tax_amount') else None,
+                        withholding_tax_rate=float(event_data.get('interest_withholding_tax_rate', 0)) if event_data.get('interest_withholding_tax_rate') else None,
+                        description=event_data.get('description'),
+                        reference_number=event_data.get('reference_number'),
+                        session=session
+                    )
+                else:
+                    # Simple distribution
+                    if 'amount' not in event_data:
+                        return ControllerResponseDTO(error='Required field "amount" is missing for simple distribution', status="validation_error")
+                    
+                    event = self.fund_event_service.add_distribution(
+                        fund=fund,
+                        event_date=event_date,
+                        distribution_type=distribution_type,
+                        distribution_amount=float(event_data['amount']),
+                        has_withholding_tax=False,
+                        description=event_data.get('description'),
+                        reference_number=event_data.get('reference_number'),
+                        session=session
+                    )
+                
+                # Commit the transaction
+                session.commit()
+                
+                # Format the event for response
+                formatted_event = format_event(event)
+                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                
+            except ValueError as e:
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
+                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+            except Exception as e:
+                current_app.logger.error(f"Error adding distribution: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error in add_distribution: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status="server_error")
     
-    def get_fund_events(self, fund_id: int) -> Tuple[ApiResponse, int]:
+    def get_fund_events(self, fund_id: int):
         """
         Get all events for a specific fund - optimized for fast table updates.
         
@@ -652,31 +582,30 @@ class FundController:
             fund_id: ID of the fund
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing events and status
         """
         try:
             # Get database session
             session = self._get_session()
-            
-            # Get fund events - service returns a list directly
-            events = self.fund_event_service.get_fund_events(fund_id, session)
-            
-            if events is None:
-                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
-            
-            # Format events using the formatter (grouping fields are already in the database)
-            formatted_events = [format_event(event) for event in events]
-            
-            return jsonify(ApiResponse(data=formatted_events).to_dict()), 200
-            
-        except Exception as e:
-            print(f"❌ FundController.get_fund_events error: {e}")
-            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 500
-        finally:
-            if 'session' in locals():
+            try:
+                # Get fund events - service returns a list directly
+                events = self.fund_event_service.get_fund_events(fund_id, session)
+                if events is None:
+                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                formatted_events = [format_event(event) for event in events]
+                return ControllerResponseDTO(data=formatted_events, status=ControllerResponseStatus.SUCCESS.value)
+            except ValueError as e:
+                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+            except Exception as e:
+                current_app.logger.error(f"Error getting fund events: {str(e)}")
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+        except Exception as e:
+            current_app.logger.error(f"Error in get_fund_events: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status="server_error")
     
-    def delete_fund_event(self, fund_id: int, event_id: int) -> Tuple[ApiResponse, int]:
+    def delete_fund_event(self, fund_id: int, event_id: int):
         """
         Delete a fund event.
         
@@ -685,61 +614,28 @@ class FundController:
             event_id: ID of the event to delete
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing status or error
         """
         try:
             # Get database session
             session = self._get_session()
-            
-            # Delete the event
-            success = self.fund_event_service.delete_fund_event(fund_id, event_id, session)
-            
-            if not success:
-                return jsonify(ApiResponse(success=False, message='Event not found').to_dict()), 404
-            
-            # Commit the transaction
-            session.commit()
-            
-            return '', 204  # DELETE operations return 204 No Content
-            
-        except Exception as e:
-            current_app.logger.error(f"Error deleting fund event: {str(e)}")
-            if 'session' in locals():
+            try:
+                success = self.fund_event_service.delete_fund_event(fund_id, event_id, session)
+                if not success:
+                    return ControllerResponseDTO(error="Event not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                session.commit()
+                return ControllerResponseDTO(status=ControllerResponseStatus.DELETED.value)
+            except Exception as e:
+                current_app.logger.error(f"Error deleting fund event: {str(e)}")
                 session.rollback()
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
-        finally:
-            if 'session' in locals():
+                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            finally:
                 session.close()
+        except Exception as e:
+            current_app.logger.error(f"Error in delete_fund_event: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status="server_error")
     
-    def _get_session(self) -> Session:
-        """
-        Get a database session.
-        
-        In a real Flask application, this would be injected or retrieved
-        from a session factory. For now, we'll use the existing Flask session management.
-        
-        Returns:
-            Database session
-        """
-        from flask import current_app
-        # Access the get_db_session function from the Flask app context
-        # The function is defined in the Flask app, so we need to access it differently
-        try:
-            # Try to get the test session first
-            if current_app.config.get('TEST_DB_SESSION'):
-                return current_app.config['TEST_DB_SESSION']
-        except:
-            pass
-        
-        # For now, let's use a simple approach - create a session directly
-        # This is not ideal but will work for testing
-        from src.database import create_database_engine
-        from sqlalchemy.orm import sessionmaker
-        engine = create_database_engine()
-        Session = sessionmaker(bind=engine)
-        return Session()
-    
-    def add_cash_flow_to_event(self, fund_id: int, event_id: int, cash_flow_data: dict) -> Tuple[ApiResponse, int]:
+    def add_fund_event_cash_flow(self, fund_id: int, event_id: int, cash_flow_data: dict) -> Tuple[ApiResponse, int]:
         """
         Add a cash flow to a fund event with pre-validated data.
         
@@ -813,3 +709,13 @@ class FundController:
         finally:
             if 'session' in locals():
                 session.close()
+    
+    def _get_session(self) -> Session:
+        """
+        Get the current database session from middleware.
+        
+        Returns:
+            Database session from Flask's g context
+        """
+        from src.api.middleware.database_session import get_current_session
+        return get_current_session()

@@ -9,7 +9,6 @@ All endpoints use the banking controller with DTO responses.
 
 from flask import Blueprint, jsonify, request
 from src.api.controllers.banking_controller import BankingController
-from src.api.database import get_db_session
 from src.api.middleware.validation import (
     validate_bank_data, 
     validate_bank_account_data,
@@ -21,6 +20,20 @@ banking_bp = Blueprint('banking', __name__)
 
 # Initialize banking controller
 banking_controller = BankingController()
+
+
+@banking_bp.route('/api/v2/banks/<int:bank_id>', methods=['GET'])
+def get_bank(bank_id):
+    """
+    Get a bank by ID.
+    
+    Path Parameters:
+        bank_id (int): ID of the bank to retrieve
+    
+    Returns:
+        Standardized response with bank data
+    """
+    return banking_controller.get_bank(bank_id)
 
 
 @banking_bp.route('/api/v2/banks', methods=['POST'])
@@ -38,14 +51,10 @@ def create_bank():
         Standardized response with created bank data
     """
     try:
-        session = get_db_session()
-        try:
-            # Use validated data from middleware
-            validated_data = request.validated_data
-            response, status_code = banking_controller.create_bank(session, validated_data)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        # Use validated data from middleware
+        validated_data = request.validated_data
+        response, status_code = banking_controller.create_bank(validated_data)
+        return jsonify(response.to_dict()), status_code
     except Exception as e:
         return jsonify({
             "success": False,
@@ -74,14 +83,10 @@ def update_bank(bank_id):
         Standardized response with updated bank data
     """
     try:
-        session = get_db_session()
-        try:
-            # Use validated data from middleware
-            validated_data = request.validated_data
-            response, status_code = banking_controller.update_bank(bank_id, session, validated_data)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        # Use validated data from middleware
+        validated_data = request.validated_data
+        response, status_code = banking_controller.update_bank(bank_id, validated_data)
+        return jsonify(response.to_dict()), status_code
     except Exception as e:
         return jsonify({
             "success": False,
@@ -104,12 +109,8 @@ def delete_bank(bank_id):
         Standardized response confirming deletion
     """
     try:
-        session = get_db_session()
-        try:
-            response, status_code = banking_controller.delete_bank(bank_id, session)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        response, status_code = banking_controller.delete_bank(bank_id)
+        return jsonify(response.to_dict()), status_code
     except Exception as e:
         return jsonify({
             "success": False,
@@ -137,12 +138,8 @@ def get_bank_accounts():
         page = int(request.args.get('page', 1))
         page_size = min(int(request.args.get('page_size', 50)), 100)  # Cap at 100
         
-        session = get_db_session()
-        try:
-            response, status_code = banking_controller.get_bank_accounts(session, page=page, page_size=page_size)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        response, status_code = banking_controller.get_bank_accounts(page=page, page_size=page_size)
+        return jsonify(response.to_dict()), status_code
     except ValueError:
         return jsonify({
             "success": False,
@@ -180,14 +177,10 @@ def create_bank_account():
         Standardized response with created bank account data
     """
     try:
-        session = get_db_session()
-        try:
-            # Use validated data from middleware
-            validated_data = getattr(request, 'validated_data', request.get_json() or {})
-            response, status_code = banking_controller.create_bank_account(session, validated_data)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        # Use validated data from middleware
+        validated_data = getattr(request, 'validated_data', request.get_json() or {})
+        response, status_code = banking_controller.create_bank_account(validated_data)
+        return jsonify(response.to_dict()), status_code
     except Exception as e:
         return jsonify({
             "success": False,
@@ -219,14 +212,10 @@ def update_bank_account(account_id):
         Standardized response with updated bank account data
     """
     try:
-        session = get_db_session()
-        try:
-            # Use validated data from middleware
-            validated_data = getattr(request, 'validated_data', request.get_json() or {})
-            response, status_code = banking_controller.update_bank_account(account_id, session, validated_data)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        # Use validated data from middleware
+        validated_data = getattr(request, 'validated_data', request.get_json() or {})
+        response, status_code = banking_controller.update_bank_account(account_id, validated_data)
+        return jsonify(response.to_dict()), status_code
     except Exception as e:
         return jsonify({
             "success": False,
@@ -249,12 +238,8 @@ def delete_bank_account(account_id):
         Standardized response confirming deletion
     """
     try:
-        session = get_db_session()
-        try:
-            response, status_code = banking_controller.delete_bank_account(account_id, session)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        response, status_code = banking_controller.delete_bank_account(account_id)
+        return jsonify(response.to_dict()), status_code
     except Exception as e:
         return jsonify({
             "success": False,
@@ -277,12 +262,8 @@ def get_bank_account_balance(account_id):
         Standardized response with account balance information
     """
     try:
-        session = get_db_session()
-        try:
-            response, status_code = banking_controller.get_bank_account_balance(account_id, session)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        response, status_code = banking_controller.get_bank_account_balance(account_id)
+        return jsonify(response.to_dict()), status_code
     except Exception as e:
         return jsonify({
             "success": False,
@@ -313,14 +294,10 @@ def get_bank_account_transactions(account_id):
         page = int(request.args.get('page', 1))
         page_size = min(int(request.args.get('page_size', 50)), 100)  # Cap at 100
         
-        session = get_db_session()
-        try:
-            response, status_code = banking_controller.get_bank_account_transactions(
-                account_id, session, page=page, page_size=page_size
-            )
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
+        response, status_code = banking_controller.get_bank_account_transactions(
+            account_id, page=page, page_size=page_size
+        )
+        return jsonify(response.to_dict()), status_code
     except ValueError:
         return jsonify({
             "success": False,

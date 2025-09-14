@@ -299,6 +299,6 @@ class FundIrRService:
             List[FundEvent]: List of fund events sorted by date (ascending)
         """
         from src.fund.repositories import FundEventRepository
-        from src.fund.enums import SortOrder
+        from src.shared.enums import SortOrder
         event_repository = FundEventRepository()
         return event_repository.get_by_fund(fund.id, session, sort_order=SortOrder.ASC)

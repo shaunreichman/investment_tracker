@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from src.fund.models import Fund, FundFieldChange
 from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
 from src.fund.repositories.fund_event_repository import FundEventRepository
-from src.fund.enums import EventType, SortOrder
+from src.shared.enums import SortOrder
 
 
 class FundEquityService:

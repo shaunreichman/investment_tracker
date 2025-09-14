@@ -12,13 +12,13 @@ Key responsibilities:
 """
 
 from typing import List, Optional, Dict, Any
-from datetime import date, datetime
-from decimal import Decimal
+from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
 from src.fund.models import FundEvent
-from src.fund.enums import EventType, SortOrder
+from src.fund.enums import EventType
+from src.shared.enums import SortOrder
 
 
 class FundEventRepository:
