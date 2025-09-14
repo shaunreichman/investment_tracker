@@ -113,7 +113,7 @@ class BaseBankingEventHandler(ABC):
         Raises:
             ValueError: If bank not found
         """
-        bank = self.bank_service.get_bank_by_id(bank_id, self.session)
+        bank = self.bank_service.get_bank(bank_id, self.session)
         if not bank:
             raise ValueError(f"Bank with ID {bank_id} not found")
         return bank

@@ -18,7 +18,8 @@ from typing import List
 
 from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
 from src.fund.models import Fund, FundFieldChange
-from src.fund.enums import EventType, FundEventOperation
+from src.fund.enums import EventType
+from src.shared.enums import EventOperation
 
 
 class TestFundEventSecondaryService:
@@ -79,7 +80,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 1
         event_type = EventType.CAPITAL_CALL
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances and their return values
         mock_date_service_instance = Mock()
@@ -163,7 +164,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 2
         event_type = EventType.RETURN_OF_CAPITAL
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -219,7 +220,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 3
         event_type = EventType.NAV_UPDATE
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -275,7 +276,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 4
         event_type = EventType.TAX_PAYMENT
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -328,7 +329,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 1
         event_type = EventType.CAPITAL_CALL
-        operation = FundEventOperation.DELETE
+        operation = EventOperation.DELETE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -384,7 +385,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 1
         event_type = EventType.CAPITAL_CALL
-        operation = FundEventOperation.UPDATE
+        operation = EventOperation.UPDATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -440,7 +441,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 5
         event_type = EventType.UNIT_PURCHASE
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -496,7 +497,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 6
         event_type = EventType.UNIT_SALE
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -552,7 +553,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 7
         event_type = EventType.DAILY_RISK_FREE_INTEREST_CHARGE
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -604,7 +605,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 8
         event_type = EventType.DISTRIBUTION
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -660,7 +661,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 1
         event_type = EventType.CAPITAL_CALL
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -707,7 +708,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 1
         event_type = EventType.CAPITAL_CALL
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Create multiple mock changes
         change1 = Mock(spec=FundFieldChange)
@@ -778,7 +779,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 1
         event_type = EventType.CAPITAL_CALL
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Mock service instances
         mock_date_service_instance = Mock()
@@ -830,7 +831,7 @@ class TestFundEventSecondaryService:
         # Arrange
         event_id = 1
         event_type = EventType.CAPITAL_CALL
-        operation = FundEventOperation.CREATE
+        operation = EventOperation.CREATE
         
         # Create multiple mock changes
         change1 = Mock(spec=FundFieldChange)

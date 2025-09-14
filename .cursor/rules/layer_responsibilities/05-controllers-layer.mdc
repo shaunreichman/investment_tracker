@@ -1,54 +1,43 @@
 ---
-description: Controllers Layer: HTTP request/response handling and API orchestration
-globs: **/controllers/*.py
+description: Controller Layer — Orchestration of services and domain logic
+globs: **/api/controllers/*.py
 alwaysApply: false
 ---
 
-# Controllers Layer Rules
+# Controller Layer Rules
 
 ## Role
-Controllers handle HTTP requests, validate input, coordinate services, and format responses.
+Controllers orchestrate service calls, domain objects, and DTOs.  
+They act as the bridge between the **route layer (HTTP)** and the **service layer (business logic)**.
 
 ## Should Do
-- **Request validation**: Validate HTTP request data
-- **Response formatting**: Format data for API responses
-- **Error handling**: Handle and format error responses
+- **Orchestrate services**: Call one or more services to perform the requested action
+- **Aggregate results**: Combine data from multiple services if needed
+- **Validate orchestration inputs**: Perform simple validation of IDs, required params, etc.
+- **Use Formatters**: Use helper methods for generating dicts
+- **Transform domain objects**: Map domain entities into dicts for response formatting
+- **Return plain data**: Provide Python dicts to the route layer
 - **Session management**: Manage database sessions
-- **Service coordination**: Delegate to appropriate services
 
 ## Shouldn't Do
-- **Business logic**: Delegate to services
-- **Data access**: Use repositories through services
-- **Complex calculations**: Delegate to calculator classes
-- **Data validation**: Use validation services
+- **HTTP concerns**: No `jsonify`, no response codes, no Flask/FastAPI-specific formatting
+- **Database operations**: Never directly use repositories; always call services
+- **Cross-cutting concerns**: Leave logging, error handling, and auth to middleware or decorators
+- **Complex calculations**: Defer to services or calculators
 
 ## Examples
 
 ```python
-# ✅ Good: HTTP handling and service coordination
-def create_fund(self, session: Session, fund_data: Dict[str, Any]) -> tuple:
-    # Coordinate services
-    fund = self.fund_service.create_fund(fund_data, session)
-    # Manage transaction
-    session.commit()
-    return jsonify(fund), 201
+# ✅ Good: Controller orchestrates services
+class FundController:
+    def get_fund(self, fund_id: int, session: Session) -> dict:
+        fund = self.fund_service.get_fund(fund_id, session)
+        if not fund:
+            return {"error": "Fund not found"}
+        return format_fund_with_events(fund)
 
-# ❌ Bad: Business logic in controller
-def create_fund(self):
-    fund_data = request.get_json()
-    if fund_data['amount'] > 1000000:  # Business rule
-        return jsonify({'error': 'Amount too large'}), 400
-    # ... business logic
-
-# ❌ Bad: Service managing transactions
-def create_fund(self, session: Session, fund_data: Dict):
-    fund = self.fund_service.create_fund(fund_data, session)
-    # Services should not commit - let controller handle it
-    return jsonify(fund), 201
-```
-
-## Key Principles
-- **Thin controllers**: Minimal logic, delegate to services
-- **Consistent responses**: Use standard response formats
-- **Error handling**: Proper HTTP status codes and error messages
-- **Session management**: Proper database session lifecycle
+# ❌ Bad: Controller doing HTTP response formatting
+class FundController:
+    def get_fund(self, fund_id: int):
+        fund = self.fund_service.get_fund(fund_id)
+        return jsonify({"fund": fund})   # HTTP concern, should be in route

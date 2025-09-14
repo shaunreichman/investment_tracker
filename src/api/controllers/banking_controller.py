@@ -10,8 +10,10 @@ from flask import request, jsonify, current_app
 from sqlalchemy.orm import Session
 from datetime import datetime
 import time
-
+from src.api.dto.api_response import ApiResponse
+from src.api.controllers.formatters.banking_formatter import format_bank, format_bank_with_accounts
 from src.banking.models import Bank, BankAccount
+
 from src.banking.services.bank_service import BankService
 from src.banking.services.bank_account_service import BankAccountService
 from src.banking.services.banking_validation_service import BankingValidationService
@@ -83,49 +85,39 @@ class BankingController:
                 "Internal server error"
             ), 500
 
-    def get_banks(self, session: Session, page: int = 1, page_size: int = 50) -> Tuple[BankingSuccessResponse, int]:
-        """Get all banks with pagination and summary data."""
-        start_time = time.time()
+    def get_bank(self, bank_id: int) -> Tuple[ApiResponse, int]:
+        """
+        Get a bank by ID.
         
+        Args:
+            bank_id: ID of the bank to retrieve
+            
+        Returns:
+            Tuple of (response_data, status_code)
+        """
         try:
-            # Get banks with pagination using repository
-            banks, total_count = self.bank_repository.get_banks_paginated(
-                session, page=page, page_size=page_size
-            )
+            # Get database session (this would be injected in a real Flask app)
+            session = self._get_session()
             
-            # Convert to DTOs
-            bank_responses = []
-            for bank in banks:
-                bank_response = BankResponse(
-                    id=bank.id,
-                    name=bank.name,
-                    country=bank.country,
-                    swift_bic=bank.swift_bic,
-                    created_at=bank.created_at,
-                    updated_at=bank.updated_at
-                )
-                bank_responses.append(bank_response)
+            # Get the fund (now returns domain object)
+            bank = self.bank_service.get_bank(bank_id, session)
             
-            # Create paginated response
-            list_response = create_list_response(
-                data=bank_responses,
-                total_count=total_count,
-                page=page,
-                page_size=page_size
-            )
+            if not bank:
+                return jsonify(ApiResponse(success=False, message='Bank not found').to_dict()), 404
             
-            response = create_success_response(
-                data=list_response,
-                message=f"Retrieved {len(bank_responses)} banks"
-            )
-            
-            self._log_operation("get_banks", start_time, True, count=len(bank_responses))
-            return response, 200
+            # Format the response using formatter
+            formatted_bank = format_bank(bank)
+
+            return jsonify(ApiResponse(data=formatted_bank).to_dict()), 200
             
         except Exception as e:
-            self._log_operation("get_banks", start_time, False, error=str(e))
-            error_response, status_code = self._handle_error(e, "get_banks")
-            return error_response, status_code
+            current_app.logger.error(f"Error getting bank {bank_id}: {str(e)}")
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
+        finally:
+            if 'session' in locals():
+                session.close()       
+
+
 
     def create_bank(self, session: Session, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
         """Create a new bank with enhanced validation and response."""
@@ -317,7 +309,7 @@ class BankingController:
             session.commit()
             
             # Get bank information for response
-            bank = self.bank_service.get_bank_by_id(data['bank_id'], session)
+            bank = self.bank_service.get_bank(data['bank_id'], session)
             
             # Create response DTOs
             bank_response = BankResponse(

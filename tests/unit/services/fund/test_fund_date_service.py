@@ -22,12 +22,13 @@ What we DON'T test here (tested elsewhere):
 import pytest
 from datetime import date, datetime
 from unittest.mock import Mock, patch, MagicMock
-
+from src.shared.enums import EventOperation
 from src.fund.services.fund_date_service import FundDateService
-from src.fund.enums import FundEventOperation, EventType, SortOrder, FundStatus
+from src.fund.enums import EventType, FundStatus
 from src.fund.models.fund import Fund
 from src.fund.models.fund_event import FundEvent
 from src.fund.models.domain_event import FundFieldChange
+
 
 
 @pytest.fixture
@@ -84,7 +85,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=1, 
-            fund_event_operation=FundEventOperation.CREATE
+            fund_event_operation=EventOperation.CREATE
         )
         
         # Assert
@@ -116,7 +117,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=1, 
-            fund_event_operation=FundEventOperation.CREATE
+            fund_event_operation=EventOperation.CREATE
         )
         
         # Assert
@@ -138,7 +139,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=1, 
-            fund_event_operation=FundEventOperation.CREATE
+            fund_event_operation=EventOperation.CREATE
         )
         
         # Assert
@@ -161,7 +162,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=None, 
-            fund_event_operation=FundEventOperation.UPDATE
+            fund_event_operation=EventOperation.UPDATE
         )
         
         # Assert
@@ -181,7 +182,7 @@ class TestUpdateFundStartDate:
             fund_id=999, 
             session=db_session,
             event_id=1, 
-            fund_event_operation=FundEventOperation.CREATE
+            fund_event_operation=EventOperation.CREATE
         )
         
         # Assert
@@ -198,7 +199,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=999, 
-            fund_event_operation=FundEventOperation.CREATE
+            fund_event_operation=EventOperation.CREATE
         )
         
         # Assert
@@ -221,7 +222,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=1, 
-            fund_event_operation=FundEventOperation.CREATE
+            fund_event_operation=EventOperation.CREATE
         )
         
         # Assert
@@ -239,7 +240,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=None, 
-            fund_event_operation=FundEventOperation.UPDATE
+            fund_event_operation=EventOperation.UPDATE
         )
         
         # Assert
@@ -264,7 +265,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=1, 
-            fund_event_operation=FundEventOperation.CREATE
+            fund_event_operation=EventOperation.CREATE
         )
         
         # Assert
@@ -283,7 +284,7 @@ class TestUpdateFundStartDate:
             fund_id=1, 
             session=db_session,
             event_id=None,  # None event_id with CREATE operation
-            fund_event_operation=FundEventOperation.CREATE
+            fund_event_operation=EventOperation.CREATE
         )
         
         # Assert

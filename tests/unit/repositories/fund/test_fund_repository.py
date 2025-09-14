@@ -22,7 +22,7 @@ from decimal import Decimal
 
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models.fund import Fund
-from src.fund.enums import FundStatus, FundType, SortOrder, SortField
+from src.fund.enums import FundStatus, FundType
 
 
 class TestFundRepository:

@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
 from src.fund.models import FundEvent
-from src.fund.enums import EventType, SortOrder, SortField
+from src.fund.enums import EventType, SortOrder, SortFieldFund
 
 
 class CapitalEventRepository:
@@ -102,7 +102,7 @@ class CapitalEventRepository:
                           skip: int = 0, limit: int = 100,
                           start_date: Optional[date] = None,
                           end_date: Optional[date] = None,
-                          sort_by: SortField = SortField.EVENT_DATE,
+                          sort_by: SortFieldFund = SortFieldFund.EVENT_DATE,
                           sort_order: SortOrder = SortOrder.ASC) -> List[FundEvent]:
         """
         Get capital events for a specific fund.
@@ -141,7 +141,7 @@ class CapitalEventRepository:
             query = query.filter(FundEvent.event_date <= end_date)
         
         # Apply sorting
-        if sort_by == SortField.EVENT_DATE:
+        if sort_by == SortFieldFund.EVENT_DATE:
             sort_column = FundEvent.event_date
         else:
             sort_column = getattr(FundEvent, sort_by.value)

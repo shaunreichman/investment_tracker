@@ -147,27 +147,6 @@ class TestBankRepository:
         cache_key = "bank:name_country:Test Bank:AU"
         assert cache_key in bank_repository._cache
     
-    def test_get_by_swift_bic_cache_hit(self, bank_repository, mock_session, sample_bank):
-        """Test get_by_swift_bic returns cached bank when available."""
-        cache_key = f"bank:swift_bic:{sample_bank.swift_bic}"
-        bank_repository._cache[cache_key] = sample_bank
-        
-        result = bank_repository.get_by_swift_bic(sample_bank.swift_bic, mock_session)
-        
-        assert result == sample_bank
-        mock_session.query.assert_not_called()
-    
-    def test_get_by_swift_bic_cache_miss(self, bank_repository, mock_session, sample_bank):
-        """Test get_by_swift_bic queries database and caches result on cache miss."""
-        mock_query = Mock()
-        mock_query.filter.return_value.first.return_value = sample_bank
-        mock_session.query.return_value = mock_query
-        
-        result = bank_repository.get_by_swift_bic("TESTAU2S", mock_session)
-        
-        assert result == sample_bank
-        assert 'bank:swift_bic:TESTAU2S' in bank_repository._cache
-    
     def test_get_banks_paginated(self, bank_repository, mock_session, sample_banks_list):
         """Test get_banks_paginated returns correct pagination results."""
         # Create separate mock queries for the two different queries
@@ -515,18 +494,3 @@ class TestBankRepository:
         # Test with empty country code
         result = bank_repository.get_by_country("", mock_session)
         assert result == []
-    
-    def test_swift_bic_validation(self, bank_repository, mock_session):
-        """Test repository handles invalid SWIFT/BIC codes gracefully."""
-        mock_query = Mock()
-        mock_query.filter.return_value.first.return_value = None
-        mock_session.query.return_value = mock_query
-        
-        # Test with empty SWIFT/BIC
-        result = bank_repository.get_by_swift_bic("", mock_session)
-        assert result is None
-        
-        # Test with very long SWIFT/BIC
-        long_swift = "A" * 100
-        result = bank_repository.get_by_swift_bic(long_swift, mock_session)
-        assert result is None

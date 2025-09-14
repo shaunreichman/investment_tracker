@@ -17,7 +17,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc, func
 
 from src.fund.models import DomainEvent, DomainFundEvent
-from src.fund.enums import FundEventOperation, EventType
+from src.fund.enums import EventType
+from src.shared.enums import EventOperation
+
 
 
 class DomainEventRepository:
@@ -79,7 +81,7 @@ class DomainEventRepository:
             db_events.append(db_event)
         return db_events
 
-    def store_domain_fund_event(self, fund_id: int, event_type: EventType, event_operation: FundEventOperation, event_id: int, event_data: Dict[str, Any], session: Session) -> DomainFundEvent:
+    def store_domain_fund_event(self, fund_id: int, event_type: EventType, event_operation: EventOperation, event_id: int, event_data: Dict[str, Any], session: Session) -> DomainFundEvent:
         """
         Store a domain fund event in the database.
         

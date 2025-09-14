@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
 from src.fund.models import FundEvent, DistributionType
-from src.fund.enums import EventType, SortOrder, SortField, TaxPaymentType, GroupType
+from src.fund.enums import EventType, TaxPaymentType, GroupType
 from src.fund.repositories import FundEventRepository
 
 

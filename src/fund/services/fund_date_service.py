@@ -3,7 +3,8 @@ Service for handling fund date calculations.
 """
 
 from src.fund.models import Fund, FundEvent, FundFieldChange
-from src.fund.enums import FundEventOperation, EventType, SortOrder, FundStatus
+from src.fund.enums import EventType, SortOrder, FundStatus
+from src.shared.enums import EventOperation
 from src.fund.repositories import FundEventRepository, FundRepository
 from src.entity.repositories import EntityRepository
 from typing import Optional, List
@@ -18,7 +19,7 @@ class FundDateService:
         self.entity_repository = EntityRepository()
         self.logger = logging.getLogger(__name__)
 
-    def update_fund_start_date(self, fund_id: int, session: Session, event_id: Optional[int] = None, fund_event_operation: FundEventOperation = None) -> Optional[FundFieldChange]:
+    def update_fund_start_date(self, fund_id: int, session: Session, event_id: Optional[int] = None, fund_event_operation: EventOperation = None) -> Optional[FundFieldChange]:
         """
         Update the start date of a fund.
         """
@@ -28,7 +29,7 @@ class FundDateService:
 
         old_start_date = fund.start_date
 
-        if fund_event_operation == FundEventOperation.CREATE:
+        if fund_event_operation == EventOperation.CREATE:
             # Faster to update the start date of the fund by looking at the event
             event = self.fund_event_repository.get_by_id(event_id, session)
             if not event or event.fund_id != fund_id:

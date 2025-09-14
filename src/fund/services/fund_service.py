@@ -17,7 +17,7 @@ from datetime import date
 import logging
 
 from src.fund.repositories import FundRepository, FundEventRepository, TaxStatementRepository
-from src.fund.enums import FundStatus, FundType, EventType, DistributionType, TaxPaymentType, GroupType, FundEventOperation, SortOrder
+from src.fund.enums import FundStatus, FundType, EventType
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.services.fund_event_service import FundEventService
 

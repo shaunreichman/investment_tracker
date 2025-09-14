@@ -281,8 +281,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Execute
             result = service.update_bank(
                 bank_id=1,
@@ -309,8 +309,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Execute
             result = service.update_bank(
                 bank_id=1,
@@ -332,8 +332,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return None
-        with patch.object(service, 'get_bank_by_id', return_value=None):
+        # Mock get_bank to return None
+        with patch.object(service, 'get_bank', return_value=None):
             # Execute and verify exception
             with pytest.raises(RuntimeError, match="Bank not found"):
                 service.update_bank(
@@ -356,8 +356,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Execute and verify exception
             with pytest.raises(ValueError, match="Invalid bank data"):
                 service.update_bank(
@@ -378,8 +378,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Mock _has_dependent_accounts to return False
             with patch.object(service, '_has_dependent_accounts', return_value=False):
                 # Execute
@@ -400,8 +400,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return None
-        with patch.object(service, 'get_bank_by_id', return_value=None):
+        # Mock get_bank to return None
+        with patch.object(service, 'get_bank', return_value=None):
             # Execute and verify exception
             with pytest.raises(RuntimeError, match="Bank not found"):
                 service.delete_bank(
@@ -419,8 +419,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Mock _has_dependent_accounts to return True
             with patch.object(service, '_has_dependent_accounts', return_value=True):
                 # Execute and verify exception
@@ -439,7 +439,7 @@ class TestBankService:
     # BANK QUERY TESTS
     # ============================================================================
     
-    def test_get_bank_by_id(self, mock_validation_service, mock_bank_repository, mock_session, sample_bank):
+    def test_get_bank(self, mock_validation_service, mock_bank_repository, mock_session, sample_bank):
         """Test getting bank by ID."""
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
@@ -448,7 +448,7 @@ class TestBankService:
         mock_bank_repository.get_by_id.return_value = sample_bank
         
         # Execute
-        result = service.get_bank_by_id(1, mock_session)
+        result = service.get_bank(1, mock_session)
         
         # Verify
         assert result is sample_bank
@@ -568,8 +568,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Mock get_dependent_accounts_count to return 0
             with patch.object(service, 'get_dependent_accounts_count', return_value=0):
                 # Execute
@@ -584,8 +584,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return None
-        with patch.object(service, 'get_bank_by_id', return_value=None):
+        # Mock get_bank to return None
+        with patch.object(service, 'get_bank', return_value=None):
             # Execute
             can_delete, reason = service.can_delete_bank(999, mock_session)
         
@@ -598,8 +598,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Mock get_dependent_accounts_count to return 3
             with patch.object(service, 'get_dependent_accounts_count', return_value=3):
                 # Execute
@@ -618,8 +618,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Execute
             can_update, reason = service.validate_bank_for_update(1, update_data, mock_session)
         
@@ -635,8 +635,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return None
-        with patch.object(service, 'get_bank_by_id', return_value=None):
+        # Mock get_bank to return None
+        with patch.object(service, 'get_bank', return_value=None):
             # Execute
             can_update, reason = service.validate_bank_for_update(999, {'name': 'Updated'}, mock_session)
         
@@ -653,8 +653,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Execute
             can_update, reason = service.validate_bank_for_update(1, update_data, mock_session)
         
@@ -671,8 +671,8 @@ class TestBankService:
         # Create service
         service = BankService(mock_validation_service, mock_bank_repository)
         
-        # Mock get_bank_by_id to return our sample bank
-        with patch.object(service, 'get_bank_by_id', return_value=sample_bank):
+        # Mock get_bank to return our sample bank
+        with patch.object(service, 'get_bank', return_value=sample_bank):
             # Execute
             can_update, reason = service.validate_bank_for_update(1, update_data, mock_session)
         

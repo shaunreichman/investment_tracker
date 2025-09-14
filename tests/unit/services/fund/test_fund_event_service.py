@@ -18,9 +18,10 @@ from decimal import Decimal
 from unittest.mock import Mock, patch, MagicMock
 
 from src.fund.services.fund_event_service import FundEventService
-from src.fund.enums import EventType, DistributionType, FundEventOperation
+from src.fund.enums import EventType, DistributionType
 from src.fund.models.fund import Fund
 from src.fund.models.fund_event import FundEvent
+from src.shared.enums import EventOperation
 
 
 class TestFundEventService:
@@ -433,7 +434,7 @@ class TestFundEventService:
         mock_domain_event_repo.store_domain_fund_event.assert_called_once_with(
             fund_id=1,
             event_type=EventType.CAPITAL_CALL,
-            event_operation=FundEventOperation.CREATE,
+            event_operation=EventOperation.CREATE,
             event_id=1,
             event_data={"changes": [{"field": "value", "old_value": 0, "new_value": amount}]},
             session=mock_session

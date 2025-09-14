@@ -11,7 +11,9 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, 
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.enums import FundEventOperation, EventType
+from src.fund.enums import EventType
+from src.shared.enums import EventOperation
+
 
 
 class DomainEvent(Base):
@@ -113,7 +115,7 @@ class DomainFundEvent(Base):
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
     fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (SYSTEM) link to fund
     event_type = Column(Enum(EventType), nullable=False)  # (SYSTEM) type of event
-    event_operation = Column(Enum(FundEventOperation), nullable=False)  # (SYSTEM) operation on the fund event
+    event_operation = Column(Enum(EventOperation), nullable=False)  # (SYSTEM) operation on the fund event
     event_id = Column(Integer, ForeignKey('fund_events.id'), nullable=False, index=True)  # (SYSTEM) link to fund event
     event_data = Column(JSON, nullable=True)  # (SYSTEM) event-specific data payload
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)  # (SYSTEM) when event occurred

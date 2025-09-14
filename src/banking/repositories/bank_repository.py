@@ -15,6 +15,8 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
+from src.banking.enums import SortFieldBank
+from src.shared.enums import SortOrder
 from src.banking.models import Bank
 
 
@@ -41,6 +43,46 @@ class BankRepository:
         """
         self._cache: Dict[str, Any] = {}
         self._cache_ttl = cache_ttl
+
+    def get_all_banks(self, session: Session, sort_by: SortFieldBank = SortFieldBank.NAME, sort_order: SortOrder = SortOrder.ASC) -> List[Bank]:
+        """
+        Get all banks.
+
+        Args:
+            session: Database session
+            sort_by: Sort field
+            sort_order: Sort order
+            
+        Returns:
+            List of banks
+            
+        Raises:
+            ValueError: If sort field is invalid
+        """
+
+        # Validate sort field
+        if sort_by not in SortFieldBank:
+            raise ValueError(f"Invalid sort field: {sort_by}")
+
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}")
+
+        cache_key = "banks:all"
+
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        # Get all banks
+        banks = session.query(Bank).all()
+
+        # Sort banks
+        banks = sorted(banks, key=lambda x: getattr(x, sort_by.value), reverse=sort_order == SortOrder.DESC)
+
+        # Cache the result
+        self._cache[cache_key] = banks
+        return banks
     
     def get_by_id(self, bank_id: int, session: Session) -> Optional[Bank]:
         """
@@ -99,55 +141,6 @@ class BankRepository:
             self._cache[cache_key] = bank
         
         return bank
-    
-    def get_by_swift_bic(self, swift_bic: str, session: Session) -> Optional[Bank]:
-        """
-        Get a bank by SWIFT/BIC code.
-        
-        Args:
-            swift_bic: SWIFT/BIC identifier
-            session: Database session
-            
-        Returns:
-            Bank object if found, None otherwise
-        """
-        cache_key = f"bank:swift_bic:{swift_bic}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        bank = session.query(Bank).filter(Bank.swift_bic == swift_bic).first()
-        
-        # Cache the result
-        if bank:
-            self._cache[cache_key] = bank
-        
-        return bank
-    
-    def get_banks_paginated(self, session: Session, page: int = 1, page_size: int = 50) -> tuple[List[Bank], int]:
-        """
-        Get banks with pagination support.
-        
-        Args:
-            session: Database session
-            page: Page number (1-based)
-            page_size: Number of items per page
-            
-        Returns:
-            Tuple of (banks_list, total_count)
-        """
-        # Calculate offset
-        offset = (page - 1) * page_size
-        
-        # Get total count
-        total_count = session.query(func.count(Bank.id)).scalar()
-        
-        # Get paginated results
-        banks = session.query(Bank).order_by(Bank.name).offset(offset).limit(page_size).all()
-        
-        return banks, total_count
     
     def get_by_country(self, country: str, session: Session) -> List[Bank]:
         """

@@ -11,15 +11,15 @@ Key responsibilities:
 - Input validation and error handling
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from flask import request, jsonify, current_app
 from sqlalchemy.orm import Session
 
+from src.api.dto.api_response import ApiResponse
 from src.fund.enums import FundStatus, FundType, EventType
 from src.fund.services.fund_service import FundService
 from src.fund.services.fund_event_service import FundEventService
-from src.fund.formatters import format_fund_with_events, format_fund, format_funds_list, format_events_list, format_event_response, format_event
-
+from src.api.controllers.formatters.fund_formatter import format_fund_with_events, format_fund, format_event
 
 class FundController:
     """
@@ -38,7 +38,7 @@ class FundController:
         self.fund_service = FundService()
         self.fund_event_service = FundEventService()
 
-    def get_fund(self, fund_id: int) -> tuple:
+    def get_fund(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Get a fund by ID.
         
@@ -56,20 +56,21 @@ class FundController:
             fund = self.fund_service.get_fund(fund_id, session)
             
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Format the response using formatter
             formatted_fund = format_fund_with_events(fund)
-            return jsonify(formatted_fund), 200
+
+            return jsonify(ApiResponse(data=formatted_fund).to_dict()), 200
             
         except Exception as e:
             current_app.logger.error(f"Error getting fund {fund_id}: {str(e)}")
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def create_fund(self) -> tuple:
+    def create_fund(self) -> Tuple[ApiResponse, int]:
         """
         Create a new fund.
         
@@ -82,7 +83,7 @@ class FundController:
             # Get pre-validated data from middleware
             fund_data = getattr(request, 'validated_data', {})
             if not fund_data:
-                return jsonify({'error': 'No validated data available'}), 400
+                return jsonify(ApiResponse(success=False, message='No validated data available').to_dict()), 400
             
             # Get database session
             session = self._get_session()
@@ -95,20 +96,20 @@ class FundController:
             
             # Format the response using formatter
             formatted_fund = format_fund(fund)
-            return jsonify(formatted_fund), 201
+            return jsonify(ApiResponse(data=formatted_fund).to_dict()), 201
             
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
         except Exception as e:
             current_app.logger.error(f"Error creating fund: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def update_fund(self, fund_id: int) -> tuple:
+    def update_fund(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Update an existing fund.
         
@@ -124,7 +125,7 @@ class FundController:
             # Get pre-validated data from middleware
             fund_data = getattr(request, 'validated_data', {})
             if not fund_data:
-                return jsonify({'error': 'No validated data available'}), 400
+                return jsonify(ApiResponse(success=False, message='No validated data available').to_dict()), 400
             
             # Get database session
             session = self._get_session()
@@ -133,23 +134,23 @@ class FundController:
             fund = self.fund_service.update_fund(fund_id, fund_data, session)
             
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Commit the transaction
             session.commit()
             
-            return jsonify(fund), 200
+            return jsonify(ApiResponse(data=fund).to_dict()), 200
             
         except Exception as e:
             current_app.logger.error(f"Error updating fund {fund_id}: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def delete_fund(self, fund_id: int) -> tuple:
+    def delete_fund(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Delete a fund with enterprise validation.
         
@@ -168,34 +169,31 @@ class FundController:
                 success = self.fund_service.delete_fund(fund_id, session)
                 
                 if not success:
-                    return jsonify({'error': 'Fund not found'}), 404
+                    return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
                 
                 # Commit the transaction
                 session.commit()
                 
-                return jsonify({'message': 'Fund deleted successfully'}), 200
+                return jsonify(ApiResponse(success=True, message='Fund deleted successfully').to_dict()), 200
                 
             except ValueError as e:
                 # ENTERPRISE ERROR HANDLING: Validation errors
                 session.rollback()
-                return jsonify({
-                    'error': 'Fund deletion validation failed',
-                    'details': str(e)
-                }), 400
+                return jsonify(ApiResponse(success=False, message='Fund deletion validation failed', details=str(e)).to_dict()), 400
                 
             except Exception as e:
                 # ENTERPRISE ERROR HANDLING: Unexpected errors
                 session.rollback()
-                return jsonify({'error': 'Internal server error'}), 500
+                return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
                 
             finally:
                 session.close()
             
         except Exception as e:
             current_app.logger.error(f"Error deleting fund {fund_id}: {str(e)}")
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
     
-    def get_funds(self) -> tuple:
+    def get_funds(self) -> Tuple[ApiResponse, int]:
         """
         Get funds with filtering, and search.
         
@@ -213,14 +211,14 @@ class FundController:
                 try:
                     parsed_status = FundStatus(status)
                 except ValueError:
-                    return jsonify({'error': f'Invalid status: {status}'}), 400
+                    return jsonify(ApiResponse(success=False, message=f'Invalid status: {status}').to_dict()), 400
             
             parsed_fund_type = None
             if fund_type:
                 try:
                     parsed_fund_type = FundType(fund_type)
                 except ValueError:
-                    return jsonify({'error': f'Invalid fund_type: {fund_type}'}), 400
+                    return jsonify(ApiResponse(success=False, message=f'Invalid fund_type: {fund_type}').to_dict()), 400
             
             # Get database session
             session = self._get_session()
@@ -230,16 +228,16 @@ class FundController:
                 session, parsed_status, parsed_fund_type
             )
             
-            return jsonify(funds), 200
+            return jsonify(ApiResponse(data=funds).to_dict()), 200
             
         except Exception as e:
             current_app.logger.error(f"Error getting funds: {str(e)}")
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def add_capital_call(self, fund_id: int) -> tuple:
+    def add_capital_call(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Add a capital call event.
         
@@ -259,7 +257,7 @@ class FundController:
             # Get the fund
             fund = self.fund_service.get_fund(fund_id, session)
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Add the capital call event using FundEventService
             # (Business validation happens in the service layer)
@@ -276,22 +274,21 @@ class FundController:
             session.commit()
             
             # Format the event for JSON response
-            from src.fund.formatters import format_event
             formatted_event = format_event(event)
-            return jsonify(formatted_event), 201
+            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
             
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
         except Exception as e:
             current_app.logger.error(f"Error adding capital call: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def add_return_of_capital(self, fund_id: int) -> tuple:
+    def add_return_of_capital(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Add a return of capital event.
         
@@ -305,13 +302,13 @@ class FundController:
             # Get request data
             event_data = request.get_json()
             if not event_data:
-                return jsonify({'error': 'No data provided'}), 400
+                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
             
             # Validate required fields
             required_fields = ['amount', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
             
             # Get database session
             session = self._get_session()
@@ -319,7 +316,7 @@ class FundController:
             # Get the fund
             fund = self.fund_service.get_fund(fund_id, session)
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Parse event date
             event_date = event_data['event_date']
@@ -341,22 +338,21 @@ class FundController:
             session.commit()
             
             # Format the event for JSON response
-            from src.fund.formatters import format_event
             formatted_event = format_event(event)
-            return jsonify(formatted_event), 201
+            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
             
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
         except Exception as e:
             current_app.logger.error(f"Error adding return of capital: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def add_unit_purchase(self, fund_id: int) -> tuple:
+    def add_unit_purchase(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Add a unit purchase event.
         
@@ -370,13 +366,13 @@ class FundController:
             # Get request data
             event_data = request.get_json()
             if not event_data:
-                return jsonify({'error': 'No data provided'}), 400
+                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
             
             # Validate required fields
             required_fields = ['units_purchased', 'unit_price', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
             
             # Get database session
             session = self._get_session()
@@ -384,7 +380,7 @@ class FundController:
             # Get the fund
             fund = self.fund_service.get_fund(fund_id, session)
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Parse event date
             event_date = event_data['event_date']
@@ -408,22 +404,21 @@ class FundController:
             session.commit()
             
             # Format the event for JSON response
-            from src.fund.formatters import format_event
             formatted_event = format_event(event)
-            return jsonify(formatted_event), 201
+            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
             
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
         except Exception as e:
             current_app.logger.error(f"Error adding unit purchase: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def add_unit_sale(self, fund_id: int) -> tuple:
+    def add_unit_sale(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Add a unit sale event.
         
@@ -437,13 +432,13 @@ class FundController:
             # Get request data
             event_data = request.get_json()
             if not event_data:
-                return jsonify({'error': 'No data provided'}), 400
+                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
             
             # Validate required fields
             required_fields = ['units_sold', 'unit_price', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
             
             # Get database session
             session = self._get_session()
@@ -451,7 +446,7 @@ class FundController:
             # Get the fund
             fund = self.fund_service.get_fund(fund_id, session)
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Parse event date
             event_date = event_data['event_date']
@@ -475,22 +470,21 @@ class FundController:
             session.commit()
             
             # Format the event for JSON response
-            from src.fund.formatters import format_event
             formatted_event = format_event(event)
-            return jsonify(formatted_event), 201
+            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
             
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
         except Exception as e:
             current_app.logger.error(f"Error adding unit sale: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def add_nav_update(self, fund_id: int) -> tuple:
+    def add_nav_update(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Add a NAV update event.
         
@@ -504,13 +498,13 @@ class FundController:
             # Get request data
             event_data = request.get_json()
             if not event_data:
-                return jsonify({'error': 'No data provided'}), 400
+                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
             
             # Validate required fields
             required_fields = ['nav_per_share', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
             
             # Get database session
             session = self._get_session()
@@ -518,7 +512,7 @@ class FundController:
             # Get the fund
             fund = self.fund_service.get_fund(fund_id, session)
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Parse event date
             event_date = event_data['event_date']
@@ -540,22 +534,21 @@ class FundController:
             session.commit()
             
             # Format the event for JSON response
-            from src.fund.formatters import format_event
             formatted_event = format_event(event)
-            return jsonify(formatted_event), 201
+            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
             
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
         except Exception as e:
             current_app.logger.error(f"Error adding NAV update: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def add_distribution(self, fund_id: int) -> tuple:
+    def add_distribution(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Add a distribution event.
         
@@ -569,13 +562,13 @@ class FundController:
             # Get request data
             event_data = request.get_json()
             if not event_data:
-                return jsonify({'error': 'No data provided'}), 400
+                return jsonify(ApiResponse(success=False, message='No data provided').to_dict()), 400
             
             # Validate required fields
             required_fields = ['event_date', 'distribution_type']
             for field in required_fields:
                 if field not in event_data:
-                    return jsonify({'error': f'Required field "{field}" is missing'}), 400
+                    return jsonify(ApiResponse(success=False, message=f'Required field "{field}" is missing').to_dict()), 400
             
             # Get database session
             session = self._get_session()
@@ -583,7 +576,7 @@ class FundController:
             # Get the fund
             fund = self.fund_service.get_fund(fund_id, session)
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Parse event date
             event_date = event_data['event_date']
@@ -620,7 +613,7 @@ class FundController:
             else:
                 # Simple distribution
                 if 'amount' not in event_data:
-                    return jsonify({'error': 'Required field "amount" is missing for simple distribution'}), 400
+                    return jsonify(ApiResponse(success=False, message='Required field "amount" is missing for simple distribution').to_dict()), 400
                 
                 event = self.fund_event_service.add_distribution(
                     fund=fund,
@@ -637,22 +630,21 @@ class FundController:
             session.commit()
             
             # Format the event for JSON response
-            from src.fund.formatters import format_event
             formatted_event = format_event(event)
-            return jsonify(formatted_event), 201
+            return jsonify(ApiResponse(data=formatted_event).to_dict()), 201
             
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 400
         except Exception as e:
             current_app.logger.error(f"Error adding distribution: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def get_fund_events(self, fund_id: int) -> tuple:
+    def get_fund_events(self, fund_id: int) -> Tuple[ApiResponse, int]:
         """
         Get all events for a specific fund - optimized for fast table updates.
         
@@ -670,21 +662,21 @@ class FundController:
             events = self.fund_event_service.get_fund_events(fund_id, session)
             
             if events is None:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Format events using the formatter (grouping fields are already in the database)
             formatted_events = [format_event(event) for event in events]
             
-            return jsonify(formatted_events), 200
+            return jsonify(ApiResponse(data=formatted_events).to_dict()), 200
             
         except Exception as e:
             print(f"❌ FundController.get_fund_events error: {e}")
-            return jsonify({'error': str(e)}), 500
+            return jsonify(ApiResponse(success=False, message=str(e)).to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
     
-    def delete_fund_event(self, fund_id: int, event_id: int) -> tuple:
+    def delete_fund_event(self, fund_id: int, event_id: int) -> Tuple[ApiResponse, int]:
         """
         Delete a fund event.
         
@@ -703,7 +695,7 @@ class FundController:
             success = self.fund_event_service.delete_fund_event(fund_id, event_id, session)
             
             if not success:
-                return jsonify({'error': 'Event not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Event not found').to_dict()), 404
             
             # Commit the transaction
             session.commit()
@@ -714,7 +706,7 @@ class FundController:
             current_app.logger.error(f"Error deleting fund event: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()
@@ -747,7 +739,7 @@ class FundController:
         Session = sessionmaker(bind=engine)
         return Session()
     
-    def add_cash_flow_to_event(self, fund_id: int, event_id: int, cash_flow_data: dict) -> tuple:
+    def add_cash_flow_to_event(self, fund_id: int, event_id: int, cash_flow_data: dict) -> Tuple[ApiResponse, int]:
         """
         Add a cash flow to a fund event with pre-validated data.
         
@@ -766,22 +758,22 @@ class FundController:
             # Validate fund exists
             fund = self.fund_service.get_fund(fund_id, session)
             if not fund:
-                return jsonify({'error': 'Fund not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund not found').to_dict()), 404
             
             # Validate event exists and belongs to fund
             event = self.fund_event_service.get_fund_event(fund_id, event_id, session)
             if not event:
-                return jsonify({'error': 'Fund event not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Fund event not found').to_dict()), 404
             
             # Validate bank account exists
             from src.banking.models import BankAccount
             bank_account = session.query(BankAccount).filter(BankAccount.id == cash_flow_data['bank_account_id']).first()
             if not bank_account:
-                return jsonify({'error': 'Bank account not found'}), 404
+                return jsonify(ApiResponse(success=False, message='Bank account not found').to_dict()), 404
             
             # Validate currency matches bank account
             if cash_flow_data['currency'].upper() != bank_account.currency.upper():
-                return jsonify({'error': 'Cash flow currency must match bank account currency'}), 400
+                return jsonify(ApiResponse(success=False, message='Cash flow currency must match bank account currency').to_dict()), 400
             
             # Add cash flow using domain method
             cash_flow = event.add_cash_flow(
@@ -811,13 +803,13 @@ class FundController:
                 "message": "Cash flow added successfully"
             }
             
-            return jsonify(response_data), 201
+            return jsonify(ApiResponse(data=response_data).to_dict()), 201
             
         except Exception as e:
             current_app.logger.error(f"Error adding cash flow to event: {str(e)}")
             if 'session' in locals():
                 session.rollback()
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
         finally:
             if 'session' in locals():
                 session.close()

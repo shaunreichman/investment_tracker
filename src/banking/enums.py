@@ -12,7 +12,6 @@ Core Banking Enums:
 - AccountType: Bank account classification types
 
 System & API Enums:
-- SortOrder: Sorting order (ASC, DESC)
 - SortField: Sortable fields (name, country, currency, etc.)
 - Environment: Deployment environment (development, staging, production)
 
@@ -189,14 +188,12 @@ class BankType(Enum):
         INVESTMENT: Investment bank (securities and advisory)
         CENTRAL: Central bank (monetary policy and regulation)
         COOPERATIVE: Cooperative bank (member-owned)
-        ISLAMIC: Islamic bank (Sharia-compliant banking)
         DIGITAL: Digital-only bank (online banking)
     """
     COMMERCIAL = 'COMMERCIAL'
     INVESTMENT = 'INVESTMENT'
     CENTRAL = 'CENTRAL'
     COOPERATIVE = 'COOPERATIVE'
-    ISLAMIC = 'ISLAMIC'
     DIGITAL = 'DIGITAL'
     
     def __str__(self) -> str:
@@ -215,7 +212,7 @@ class BankType(Enum):
     def requires_licensing(cls, bank_type: 'BankType') -> bool:
         """Check if bank type requires special licensing."""
         licensed_types = {
-            cls.INVESTMENT, cls.CENTRAL, cls.ISLAMIC
+            cls.INVESTMENT, cls.CENTRAL
         }
         return bank_type in licensed_types
     
@@ -274,37 +271,52 @@ class AccountType(Enum):
         }
         return account_type in kyc_required
 
-
-class SortOrder(Enum):
+class SortFieldBank(Enum):
     """
-    Sort order enum.
-    
-    Defines the order for sorting operations in APIs and queries.
-    
-    Values:
-        ASC: Ascending order (A-Z, 1-9, oldest to newest)
-        DESC: Descending order (Z-A, 9-1, newest to oldest)
+    Sort field enum for banks.
     """
-    ASC = 'ASC'
-    DESC = 'DESC'
+    NAME = 'NAME'
+    COUNTRY = 'COUNTRY'
+    CURRENCY = 'CURRENCY'
+    TYPE = 'TYPE'
+    STATUS = 'STATUS'
+    CREATED_AT = 'CREATED_AT'
+    UPDATED_AT = 'UPDATED_AT'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""
         return self.value
     
     @classmethod
-    def from_string(cls, value: str) -> 'SortOrder':
+    def from_string(cls, value: str) -> 'SortFieldBank':
         """Create enum from string value."""
         try:
             return cls(value)
         except ValueError:
-            raise ValueError(f"Invalid SortOrder: {value}. Must be one of: {[o.value for o in cls]}")
+            raise ValueError(f"Invalid SortFieldBank: {value}. Must be one of: {[f.value for f in cls]}")
+
+class SortFieldBankAccount(Enum):
+    """
+    Sort field enum for bank accounts.
+    """
+    NAME = 'NAME'
+    ACCOUNT_NUMBER = 'ACCOUNT_NUMBER'
+    CURRENCY = 'CURRENCY'
+    STATUS = 'STATUS'
+    CREATED_AT = 'CREATED_AT'
+    UPDATED_AT = 'UPDATED_AT'
+    
+    def __str__(self) -> str:
+        """Return the string representation of the enum value."""
+        return self.value
     
     @classmethod
-    def is_reverse(cls, order: 'SortOrder') -> bool:
-        """Check if sort order is reverse/descending."""
-        return order == cls.DESC
-
+    def from_string(cls, value: str) -> 'SortFieldBankAccount':
+        """Create enum from string value."""
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(f"Invalid SortFieldBankAccount: {value}. Must be one of: {[f.value for f in cls]}")
 
 class BankingDomainEventType(Enum):
     """

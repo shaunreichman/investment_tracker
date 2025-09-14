@@ -140,7 +140,7 @@ class BankService:
             RuntimeError: If bank not found
         """
         # Get existing bank
-        bank = self.get_bank_by_id(bank_id, session)
+        bank = self.get_bank(bank_id, session)
         if not bank:
             raise RuntimeError("Bank not found")
         
@@ -197,7 +197,7 @@ class BankService:
             RuntimeError: If bank not found or has dependencies
         """
         # Get existing bank
-        bank = self.get_bank_by_id(bank_id, session)
+        bank = self.get_bank(bank_id, session)
         if not bank:
             raise RuntimeError("Bank not found")
         
@@ -225,7 +225,7 @@ class BankService:
     # BANK QUERIES
     # ============================================================================
     
-    def get_bank_by_id(self, bank_id: int, session: Session) -> Optional[Bank]:
+    def get_bank(self, bank_id: int, session: Session) -> Optional[Bank]:
         """
         Get a bank by its ID.
         
@@ -330,7 +330,7 @@ class BankService:
             tuple[bool, str]: (can_delete, reason_if_not)
         """
         # Check if bank exists
-        bank = self.get_bank_by_id(bank_id, session)
+        bank = self.get_bank(bank_id, session)
         if not bank:
             return False, "Bank not found"
         
@@ -355,7 +355,7 @@ class BankService:
         """
         try:
             # Check if bank exists
-            bank = self.get_bank_by_id(bank_id, session)
+            bank = self.get_bank(bank_id, session)
             if not bank:
                 return False, "Bank not found"
             
@@ -392,7 +392,7 @@ class BankService:
             RuntimeError: If event processing fails
         """
         # Get the bank first
-        bank = self.get_bank_by_id(bank_id, session)
+        bank = self.get_bank(bank_id, session)
         if not bank:
             raise RuntimeError(f"Bank with ID {bank_id} not found")
         

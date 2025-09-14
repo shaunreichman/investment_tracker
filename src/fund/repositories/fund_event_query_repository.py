@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
 from src.fund.models import FundEvent
-from src.fund.enums import EventType, SortOrder, SortField
+from src.fund.enums import EventType
 
 
 class FundEventQueryRepository:

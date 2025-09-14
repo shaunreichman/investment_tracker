@@ -4,7 +4,8 @@ FundEventSecondaryService is responsible for handling secondary impacts of fund 
 
 from src.fund.models import Fund, FundFieldChange
 import logging
-from src.fund.enums import FundEventOperation, EventType
+from src.fund.enums import EventType
+from src.shared.enums import EventOperation
 from sqlalchemy.orm import Session
 from src.fund.services.fund_equity_service import FundEquityService
 from src.fund.services.fund_status_service import FundStatusService
@@ -18,7 +19,7 @@ class FundEventSecondaryService:
         self.logger = logging.getLogger(__name__)
 
     def handle_event_secondary_impact(self, fund: Fund, fund_event_type: EventType, 
-                                    fund_event_operation: FundEventOperation,
+                                    fund_event_operation: EventOperation,
                                     session: Session,
                                     event_id: int):            
         
@@ -33,7 +34,7 @@ class FundEventSecondaryService:
 
         # 1. Update the Start Date of the Fund
         if EventType.is_equity_call_event(fund_event_type):
-            if fund_event_operation == FundEventOperation.CREATE:
+            if fund_event_operation == EventOperation.CREATE:
                 all_changes.append(fund_date_service.update_fund_start_date(fund_id=fund.id, event_id=event_id, fund_event_operation=fund_event_operation, session=session))
             else:
                 all_changes.append(fund_date_service.update_fund_start_date(fund_id=fund.id, fund_event_operation=fund_event_operation, session=session))

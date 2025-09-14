@@ -16,7 +16,7 @@ Core Fund Enums:
 
 System & API Enums:
 - SortOrder: Sorting order (ASC, DESC)
-- SortField: Sortable fields (name, date, amount, etc.)
+- SortFieldFund: Sortable fields (name, date, amount, etc.)
 - Environment: Deployment environment (development, staging, production)
 - Currency: Supported currencies (AUD, USD, EUR, etc.)
 
@@ -81,34 +81,6 @@ class FundType(Enum):
             return cls(value)
         except ValueError:
             raise ValueError(f"Invalid FundType: {value}. Must be one of: {[t.value for t in cls]}")
-
-
-class FundEventOperation(Enum):
-    """
-    Fund event operation enum.
-    
-    Defines all possible operations that can occur on a fund event.
-    
-    Values:
-        CREATE: Fund event creation operation
-        DELETE: Fund event deletion operation
-        UPDATE: Fund event update operation
-    """
-    CREATE = 'CREATE'
-    UPDATE = 'UPDATE'
-    DELETE = 'DELETE'
-    
-    def __str__(self) -> str:
-        """Return the string representation of the enum value."""
-        return self.value
-    
-    @classmethod
-    def from_string(cls, value: str) -> 'FundEventOperation':
-        """Create enum from string value."""
-        try:
-            return cls(value)
-        except ValueError:
-            raise ValueError(f"Invalid FundEventOperation: {value}. Must be one of: {[e.value for e in cls]}")
 
 class EventType(Enum):
     """
@@ -405,39 +377,7 @@ class TaxJurisdiction(Enum):
         """Check if jurisdiction has capital gains tax discount rules."""
         return jurisdiction in {cls.AU, cls.UK}
 
-
-class SortOrder(Enum):
-    """
-    Sort order enum.
-    
-    Defines the order for sorting operations in APIs and queries.
-    
-    Values:
-        ASC: Ascending order (A-Z, 1-9, oldest to newest)
-        DESC: Descending order (Z-A, 9-1, newest to oldest)
-    """
-    ASC = 'ASC'
-    DESC = 'DESC'
-    
-    def __str__(self) -> str:
-        """Return the string representation of the enum value."""
-        return self.value
-    
-    @classmethod
-    def from_string(cls, value: str) -> 'SortOrder':
-        """Create enum from string value."""
-        try:
-            return cls(value)
-        except ValueError:
-            raise ValueError(f"Invalid SortOrder: {value}. Must be one of: {[o.value for o in cls]}")
-    
-    @classmethod
-    def is_reverse(cls, order: 'SortOrder') -> bool:
-        """Check if sort order is reverse/descending."""
-        return order == cls.DESC
-
-
-class SortField(Enum):
+class SortFieldFund(Enum):
     """
     Sort field enum.
     
@@ -466,15 +406,15 @@ class SortField(Enum):
         return self.value
     
     @classmethod
-    def from_string(cls, value: str) -> 'SortField':
+    def from_string(cls, value: str) -> 'SortFieldFund':
         """Create enum from string value."""
         try:
             return cls(value)
         except ValueError:
-            raise ValueError(f"Invalid SortField: {value}. Must be one of: {[f.value for f in cls]}")
+            raise ValueError(f"Invalid SortFieldFund: {value}. Must be one of: {[f.value for f in cls]}")
     
     @classmethod
-    def is_numeric_field(cls, field: 'SortField') -> bool:
+    def is_numeric_field(cls, field: 'SortFieldFund') -> bool:
         """Check if sort field contains numeric values."""
         numeric_fields = {
             cls.COMMITMENT_AMOUNT,

@@ -15,7 +15,8 @@ import logging
 from typing import List, Optional, Dict, Any
 from datetime import date
 from sqlalchemy.orm import Session
-from src.fund.enums import EventType, DistributionType, FundEventOperation
+from src.fund.enums import EventType, DistributionType
+from src.shared.enums import EventOperation
 from src.fund.repositories import DomainEventRepository
 from typing import TYPE_CHECKING
 
@@ -122,7 +123,7 @@ class FundEventService:
 
         # 3. Handle the secondary impacts
         all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
-                            fund_event_type=EventType.CAPITAL_CALL, fund_event_operation=FundEventOperation.CREATE, session=session)
+                            fund_event_type=EventType.CAPITAL_CALL, fund_event_operation=EventOperation.CREATE, session=session)
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
@@ -130,7 +131,7 @@ class FundEventService:
             domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.CAPITAL_CALL,
-                event_operation=FundEventOperation.CREATE,
+                event_operation=EventOperation.CREATE,
                 event_id=event.id,
                 event_data={"changes": [change.to_dict() for change in all_changes]},
                 session=session
@@ -186,7 +187,7 @@ class FundEventService:
         
          # 3. Handle the secondary impacts
         all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
-                            fund_event_type=EventType.RETURN_OF_CAPITAL, fund_event_operation=FundEventOperation.CREATE, session=session)
+                            fund_event_type=EventType.RETURN_OF_CAPITAL, fund_event_operation=EventOperation.CREATE, session=session)
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
@@ -194,7 +195,7 @@ class FundEventService:
             domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.RETURN_OF_CAPITAL,
-                event_operation=FundEventOperation.CREATE,
+                event_operation=EventOperation.CREATE,
                 event_id=event.id,
                 event_data={"changes": [change.to_dict() for change in all_changes]},
                 session=session
@@ -260,7 +261,7 @@ class FundEventService:
         
         # 3. Handle the secondary impacts
         all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
-                            fund_event_type=EventType.UNIT_PURCHASE, fund_event_operation=FundEventOperation.CREATE, session=session)    
+                            fund_event_type=EventType.UNIT_PURCHASE, fund_event_operation=EventOperation.CREATE, session=session)    
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
@@ -268,7 +269,7 @@ class FundEventService:
             domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.UNIT_PURCHASE,
-                event_operation=FundEventOperation.CREATE,
+                event_operation=EventOperation.CREATE,
                 event_id=event.id,
                 event_data={"changes": [change.to_dict() for change in all_changes]},
                 session=session
@@ -330,7 +331,7 @@ class FundEventService:
         
         # 3. Handle the secondary impacts
         all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
-                            fund_event_type=EventType.UNIT_SALE, fund_event_operation=FundEventOperation.CREATE, session=session)    
+                            fund_event_type=EventType.UNIT_SALE, fund_event_operation=EventOperation.CREATE, session=session)    
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
@@ -338,7 +339,7 @@ class FundEventService:
             domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.UNIT_SALE,
-                event_operation=FundEventOperation.CREATE,
+                event_operation=EventOperation.CREATE,
                 event_id=event.id,
                 event_data={"changes": [change.to_dict() for change in all_changes]},
                 session=session
@@ -401,7 +402,7 @@ class FundEventService:
 
         # 3. Handle the secondary impacts
         all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
-                            fund_event_type=EventType.NAV_UPDATE, fund_event_operation=FundEventOperation.CREATE, session=session)    
+                            fund_event_type=EventType.NAV_UPDATE, fund_event_operation=EventOperation.CREATE, session=session)    
 
         # 4. Store the domain fund event containing the changes
         if all_changes:
@@ -409,7 +410,7 @@ class FundEventService:
             domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.NAV_UPDATE,
-                event_operation=FundEventOperation.CREATE,
+                event_operation=EventOperation.CREATE,
                 event_id=event.id,
                 event_data={"changes": [change.to_dict() for change in all_changes]},
                 session=session
@@ -481,7 +482,7 @@ class FundEventService:
         
         # 4. Handle the secondary impacts
         all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=distribution_event.id, 
-                            fund_event_type=EventType.DISTRIBUTION, fund_event_operation=FundEventOperation.CREATE, session=session)    
+                            fund_event_type=EventType.DISTRIBUTION, fund_event_operation=EventOperation.CREATE, session=session)    
         
         # 5. Store the domain fund event containing the changes
         if all_changes:
@@ -489,7 +490,7 @@ class FundEventService:
             domain_event = domain_event_repository.store_domain_fund_event(
                 fund_id=fund.id,
                 event_type=EventType.DISTRIBUTION,
-                event_operation=FundEventOperation.CREATE,
+                event_operation=EventOperation.CREATE,
                 event_id=distribution_event.id,
                 event_data={"changes": [change.to_dict() for change in all_changes]},
                 session=session
@@ -613,13 +614,13 @@ class FundEventService:
         if success:
             # 2. Process the secondary operations
             all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
-                            fund_event_type=event_type, fund_event_operation=FundEventOperation.DELETE, session=session)
+                            fund_event_type=event_type, fund_event_operation=EventOperation.DELETE, session=session)
             if all_changes:
                 domain_event_repository = DomainEventRepository(session)
                 domain_event = domain_event_repository.store_domain_fund_event(
                     fund_id=fund_id,
                     event_type=event_type,
-                    event_operation=FundEventOperation.DELETE,
+                    event_operation=EventOperation.DELETE,
                     event_id=event.id,
                     event_data={"changes": [change.to_dict() for change in all_changes]},
                     session=session

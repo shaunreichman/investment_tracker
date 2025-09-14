@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType, SortOrder, SortField
+from src.fund.enums import FundStatus, FundType, SortOrder, SortFieldFund
 
 
 class FundRepository:
@@ -70,7 +70,7 @@ class FundRepository:
         return fund
     
     def get_by_investment_company(self, company_id: int, session: Session,
-                                  sort_by: SortField = SortField.START_DATE,
+                                  sort_by: SortFieldFund = SortFieldFund.START_DATE,
                                   sort_order: SortOrder = SortOrder.ASC) -> List[Fund]:
         """
         Get all funds for a specific investment company.
@@ -92,13 +92,13 @@ class FundRepository:
         query = session.query(Fund).filter(Fund.investment_company_id == company_id)
 
         # Apply sorting
-        if sort_by == SortField.NAME:
+        if sort_by == SortFieldFund.NAME:
             query = query.order_by(Fund.name.asc() if sort_order == SortOrder.ASC else Fund.name.desc())
-        elif sort_by == SortField.STATUS:
+        elif sort_by == SortFieldFund.STATUS:
             query = query.order_by(Fund.status.asc() if sort_order == SortOrder.ASC else Fund.status.desc())
-        elif sort_by == SortField.CREATED_AT:
+        elif sort_by == SortFieldFund.CREATED_AT:
             query = query.order_by(Fund.created_at.asc() if sort_order == SortOrder.ASC else Fund.created_at.desc())
-        elif sort_by == SortField.START_DATE:
+        elif sort_by == SortFieldFund.START_DATE:
             query = query.order_by(Fund.start_date.asc() if sort_order == SortOrder.ASC else Fund.start_date.desc())
 
         funds = query.all()
@@ -108,7 +108,7 @@ class FundRepository:
         return funds
     
     def get_by_entity(self, entity_id: int, session: Session,
-                      sort_by: SortField = SortField.START_DATE,
+                      sort_by: SortFieldFund = SortFieldFund.START_DATE,
                       sort_order: SortOrder = SortOrder.ASC) -> List[Fund]:
         """
         Get all funds for a specific entity.
@@ -130,13 +130,13 @@ class FundRepository:
         query = session.query(Fund).filter(Fund.entity_id == entity_id)
 
         # Apply sorting
-        if sort_by == SortField.NAME:
+        if sort_by == SortFieldFund.NAME:
             query = query.order_by(Fund.name.asc() if sort_order == SortOrder.ASC else Fund.name.desc())
-        elif sort_by == SortField.STATUS:
+        elif sort_by == SortFieldFund.STATUS:
             query = query.order_by(Fund.status.asc() if sort_order == SortOrder.ASC else Fund.status.desc())
-        elif sort_by == SortField.CREATED_AT:
+        elif sort_by == SortFieldFund.CREATED_AT:
             query = query.order_by(Fund.created_at.asc() if sort_order == SortOrder.ASC else Fund.created_at.desc())
-        elif sort_by == SortField.START_DATE:
+        elif sort_by == SortFieldFund.START_DATE:
             query = query.order_by(Fund.start_date.asc() if sort_order == SortOrder.ASC else Fund.start_date.desc())
 
         funds = query.all()
@@ -146,7 +146,7 @@ class FundRepository:
         return funds
     
     def get_all_funds(self, session: Session, 
-                sort_by: SortField = SortField.START_DATE,
+                sort_by: SortFieldFund = SortFieldFund.START_DATE,
                 sort_order: SortOrder = SortOrder.ASC) -> List[Fund]:
         """
         Get all funds with optional sorting.
@@ -162,13 +162,13 @@ class FundRepository:
         query = session.query(Fund)
         
         # Apply sorting
-        if sort_by == SortField.NAME:
+        if sort_by == SortFieldFund.NAME:
             query = query.order_by(Fund.name.asc() if sort_order == SortOrder.ASC else Fund.name.desc())
-        elif sort_by == SortField.STATUS:
+        elif sort_by == SortFieldFund.STATUS:
             query = query.order_by(Fund.status.asc() if sort_order == SortOrder.ASC else Fund.status.desc())
-        elif sort_by == SortField.CREATED_AT:
+        elif sort_by == SortFieldFund.CREATED_AT:
             query = query.order_by(Fund.created_at.asc() if sort_order == SortOrder.ASC else Fund.created_at.desc())
-        elif sort_by == SortField.START_DATE:
+        elif sort_by == SortFieldFund.START_DATE:
             query = query.order_by(Fund.start_date.asc() if sort_order == SortOrder.ASC else Fund.start_date.desc())
         
         return query.all()

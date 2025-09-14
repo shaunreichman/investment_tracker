@@ -23,48 +23,6 @@ banking_bp = Blueprint('banking', __name__)
 banking_controller = BankingController()
 
 
-@banking_bp.route('/api/v2/banks', methods=['GET'])
-def get_banks():
-    """
-    Get list of all banks with pagination and summary data.
-    
-    Query Parameters:
-        page (int): Page number (default: 1)
-        page_size (int): Number of items per page (default: 50, max: 100)
-    
-    Returns:
-        Standardized response with paginated bank data
-    """
-    try:
-        # Get pagination parameters
-        page = int(request.args.get('page', 1))
-        page_size = min(int(request.args.get('page_size', 50)), 100)  # Cap at 100
-        
-        session = get_db_session()
-        try:
-            response, status_code = banking_controller.get_banks(session, page=page, page_size=page_size)
-            return jsonify(response.to_dict()), status_code
-        finally:
-            session.close()
-    except ValueError:
-        return jsonify({
-            "success": False,
-            "error": {
-                "code": "INVALID_FORMAT",
-                "message": "Invalid pagination parameters",
-                "details": {"page": "Must be integer", "page_size": "Must be integer"}
-            }
-        }), 400
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": {
-                "code": "INTERNAL_ERROR",
-                "message": "Internal server error"
-            }
-        }), 500
-
-
 @banking_bp.route('/api/v2/banks', methods=['POST'])
 @validate_bank_data
 def create_bank():
