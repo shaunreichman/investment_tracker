@@ -13,6 +13,7 @@ from src.fund.models import FundEvent, FundEventCashFlow
 from src.tax.models import TaxStatement
 from src.fund.repositories import FundRepository
 from src.api.middleware.validation import validate_fund_data, validate_fund_event_data, validate_cash_flow_data
+from src.api.middleware.response_handlers import handle_controller_response, handle_delete_response
 
 # Create blueprint for fund routes
 fund_bp = Blueprint('fund', __name__)
@@ -399,52 +400,3 @@ def get_cash_flows():
             
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-########################################################
-# Helper functions
-########################################################
-
-def handle_controller_response(dto, success_status_code=200):
-    """
-    Standardized handler for controller DTO responses.
-    
-    Args:
-        dto: ControllerResponseDTO from controller
-        success_status_code: HTTP status code for success (default 200)
-        
-    Returns:
-        Tuple of (json_response, status_code)
-    """
-    from src.api.dto.api_response import ApiResponse
-    from src.api.dto.controller_response_dto import ControllerResponseStatus
-    
-    if dto.error:
-        # Use standardized status code mapping from enum
-        status_code = ControllerResponseStatus.get_status_code(dto.status)
-        response = ApiResponse(success=False, message=dto.error)
-        return jsonify(response.to_dict()), status_code
-    else:
-        # Success case - data already formatted by controller
-        response = ApiResponse(data=dto.data)
-        return jsonify(response.to_dict()), success_status_code
-
-def handle_delete_response(dto):
-    """
-    Specialized handler for DELETE operations that return 204 No Content on success.
-    
-    Args:
-        dto: ControllerResponseDTO from controller
-        
-    Returns:
-        Tuple of (response, status_code) or ('', 204) for success
-    """
-    from src.api.dto.api_response import ApiResponse
-    from src.api.dto.controller_response_dto import ControllerResponseStatus
-    if dto.error:
-        # Use standardized status code mapping from enum
-        status_code = ControllerResponseStatus.get_status_code(dto.status)
-        response = ApiResponse(success=False, message=dto.error)
-        return jsonify(response.to_dict()), status_code
-    else:
-        # Success case - DELETE operations return 204 No Content
-        return '', 204

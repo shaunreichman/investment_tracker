@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import time
 from src.api.dto.api_response import ApiResponse
+from src.api.dto.controller_response_dto import ControllerResponseDTO, ControllerResponseStatus
 from src.api.controllers.formatters.banking_formatter import format_bank, format_bank_with_accounts
 from src.banking.models import Bank, BankAccount
 
@@ -19,19 +20,6 @@ from src.banking.services.bank_account_service import BankAccountService
 from src.banking.services.banking_validation_service import BankingValidationService
 from src.banking.repositories.bank_repository import BankRepository
 from src.banking.repositories.bank_account_repository import BankAccountRepository
-from src.api.dto.banking import (
-    BankingErrorCode,
-    BankResponse,
-    BankAccountResponse,
-    BankAccountBalanceResponse,
-    BankAccountTransactionsResponse,
-    BankingListResponse,
-    BankingSuccessResponse,
-    BankingErrorResponse,
-    create_success_response,
-    create_error_response,
-    create_list_response
-)
 
 
 class BankingController:
@@ -85,7 +73,7 @@ class BankingController:
                 "Internal server error"
             ), 500
 
-    def get_bank(self, bank_id: int) -> Tuple[ApiResponse, int]:
+    def get_bank(self, bank_id: int):
         """
         Get a bank by ID.
         
@@ -93,33 +81,33 @@ class BankingController:
             bank_id: ID of the bank to retrieve
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO: DTO containing bank data and status
         """
         try:
-            # Get database session (this would be injected in a real Flask app)
+            # Get database session
             session = self._get_session()
             
-            # Get the fund (now returns domain object)
+            # Get the bank (now returns domain object)
             bank = self.bank_service.get_bank(bank_id, session)
             
             if not bank:
-                return jsonify(ApiResponse(success=False, message='Bank not found').to_dict()), 404
+                return ControllerResponseDTO(error="Bank not found", status=ControllerResponseStatus.NOT_FOUND.value)
             
             # Format the response using formatter
             formatted_bank = format_bank(bank)
 
-            return jsonify(ApiResponse(data=formatted_bank).to_dict()), 200
+            return ControllerResponseDTO(data=formatted_bank, status=ControllerResponseStatus.SUCCESS.value)
             
         except Exception as e:
             current_app.logger.error(f"Error getting bank {bank_id}: {str(e)}")
-            return jsonify(ApiResponse(success=False, message='Internal server error').to_dict()), 500
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
         finally:
             if 'session' in locals():
                 session.close()       
 
 
 
-    def create_bank(self, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
+    def create_bank(self, data: Dict[str, Any]):
         """Create a new bank with enhanced validation and response."""
         start_time = time.time()
         session = self._get_session()
@@ -129,10 +117,10 @@ class BankingController:
             required_fields = ['name', 'country']
             for field in required_fields:
                 if field not in data or not data[field]:
-                    return create_error_response(
-                        BankingErrorCode.MISSING_REQUIRED_FIELD,
-                        f"Missing required field: {field}"
-                    ), 400
+                    return ControllerResponseDTO(
+                        error=f"Missing required field: {field}",
+                        status=ControllerResponseStatus.BAD_REQUEST.value
+                    )
             
             # Create new bank using service
             new_bank = self.bank_service.create_bank(
@@ -145,30 +133,18 @@ class BankingController:
             # Commit transaction
             session.commit()
             
-            # Create response DTO
-            bank_response = BankResponse(
-                id=new_bank.id,
-                name=new_bank.name,
-                country=new_bank.country,
-                swift_bic=new_bank.swift_bic,
-                created_at=new_bank.created_at,
-                updated_at=new_bank.updated_at
-            )
-            
-            response = create_success_response(
-                data=bank_response,
-                message="Bank created successfully"
-            )
+            # Format the response using formatter
+            formatted_bank = format_bank(new_bank)
             
             self._log_operation("create_bank", start_time, True, bank_id=new_bank.id)
-            return response, 201
+            return ControllerResponseDTO(data=formatted_bank, status=ControllerResponseStatus.CREATED.value)
             
         except Exception as e:
             self._log_operation("create_bank", start_time, False, error=str(e))
-            error_response, status_code = self._handle_error(e, "create_bank")
-            return error_response, status_code
+            current_app.logger.error(f"Error creating bank: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
 
-    def update_bank(self, bank_id: int, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
+    def update_bank(self, bank_id: int, data: Dict[str, Any]):
         """Update a bank with enhanced validation and response."""
         start_time = time.time()
         session = self._get_session()
@@ -177,113 +153,47 @@ class BankingController:
             # Update bank using service
             bank = self.bank_service.update_bank(bank_id, data, session)
             
+            if not bank:
+                return ControllerResponseDTO(error="Bank not found", status=ControllerResponseStatus.NOT_FOUND.value)
+            
             # Commit transaction
             session.commit()
             
-            # Create response DTO
-            bank_response = BankResponse(
-                id=bank.id,
-                name=bank.name,
-                country=bank.country,
-                swift_bic=bank.swift_bic,
-                created_at=bank.created_at,
-                updated_at=bank.updated_at
-            )
-            
-            response = create_success_response(
-                data=bank_response,
-                message="Bank updated successfully"
-            )
+            # Format the response using formatter
+            formatted_bank = format_bank(bank)
             
             self._log_operation("update_bank", start_time, True, bank_id=bank_id)
-            return response, 200
+            return ControllerResponseDTO(data=formatted_bank, status=ControllerResponseStatus.SUCCESS.value)
             
         except Exception as e:
             self._log_operation("update_bank", start_time, False, bank_id=bank_id, error=str(e))
-            error_response, status_code = self._handle_error(e, "update_bank")
-            return error_response, status_code
+            current_app.logger.error(f"Error updating bank {bank_id}: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
 
-    def delete_bank(self, bank_id: int) -> Tuple[BankingSuccessResponse, int]:
+    def delete_bank(self, bank_id: int):
         """Delete a bank with enhanced response."""
         start_time = time.time()
         session = self._get_session()
         
         try:
             # Delete bank using service
-            self.bank_service.delete_bank(bank_id, session)
+            success = self.bank_service.delete_bank(bank_id, session)
+            
+            if not success:
+                return ControllerResponseDTO(error="Bank not found", status=ControllerResponseStatus.NOT_FOUND.value)
             
             # Commit transaction
             session.commit()
             
-            response = create_success_response(
-                message="Bank deleted successfully"
-            )
-            
             self._log_operation("delete_bank", start_time, True, bank_id=bank_id)
-            return response, 200
+            return ControllerResponseDTO(status=ControllerResponseStatus.SUCCESS.value)
             
         except Exception as e:
             self._log_operation("delete_bank", start_time, False, bank_id=bank_id, error=str(e))
-            error_response, status_code = self._handle_error(e, "delete_bank")
-            return error_response, status_code
+            current_app.logger.error(f"Error deleting bank {bank_id}: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
 
-    def get_bank_accounts(self, page: int = 1, page_size: int = 50) -> Tuple[BankingSuccessResponse, int]:
-        """Get all bank accounts with pagination and summary data."""
-        start_time = time.time()
-        
-        try:
-            # Get bank accounts with pagination using repository
-            accounts, total_count = self.bank_account_repository.get_bank_accounts_paginated(
-                session, page=page, page_size=page_size
-            )
-            
-            # Convert to DTOs
-            account_responses = []
-            for account in accounts:
-                bank_response = BankResponse(
-                    id=account.bank.id,
-                    name=account.bank.name,
-                    country=account.bank.country,
-                    swift_bic=account.bank.swift_bic,
-                    created_at=account.bank.created_at,
-                    updated_at=account.bank.updated_at
-                )
-                
-                account_response = BankAccountResponse(
-                    id=account.id,
-                    account_name=account.account_name,
-                    account_number=account.account_number,
-                    currency=account.currency,
-                    is_active=account.is_active,
-                    entity_id=account.entity_id,
-                    bank=bank_response,
-                    created_at=account.created_at,
-                    updated_at=account.updated_at
-                )
-                account_responses.append(account_response)
-            
-            # Create paginated response
-            list_response = create_list_response(
-                data=account_responses,
-                total_count=total_count,
-                page=page,
-                page_size=page_size
-            )
-            
-            response = create_success_response(
-                data=list_response,
-                message=f"Retrieved {len(account_responses)} bank accounts"
-            )
-            
-            self._log_operation("get_bank_accounts", start_time, True, count=len(account_responses))
-            return response, 200
-            
-        except Exception as e:
-            self._log_operation("get_bank_accounts", start_time, False, error=str(e))
-            error_response, status_code = self._handle_error(e, "get_bank_accounts")
-            return error_response, status_code
-
-    def create_bank_account(self, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
+    def create_bank_account(self, data: Dict[str, Any]):
         """Create a new bank account with enhanced validation and response."""
         start_time = time.time()
         session = self._get_session()
@@ -293,10 +203,10 @@ class BankingController:
             required_fields = ['entity_id', 'bank_id', 'account_name', 'account_number', 'currency']
             for field in required_fields:
                 if field not in data or not data[field]:
-                    return create_error_response(
-                        BankingErrorCode.MISSING_REQUIRED_FIELD,
-                        f"Missing required field: {field}"
-                    ), 400
+                    return ControllerResponseDTO(
+                        error=f"Missing required field: {field}",
+                        status=ControllerResponseStatus.BAD_REQUEST.value
+                    )
             
             # Create new bank account using service
             new_account = self.bank_account_service.create_bank_account(
@@ -312,45 +222,18 @@ class BankingController:
             # Commit transaction
             session.commit()
             
-            # Get bank information for response
-            bank = self.bank_service.get_bank(data['bank_id'], session)
-            
-            # Create response DTOs
-            bank_response = BankResponse(
-                id=bank.id,
-                name=bank.name,
-                country=bank.country,
-                swift_bic=bank.swift_bic,
-                created_at=bank.created_at,
-                updated_at=bank.updated_at
-            )
-            
-            account_response = BankAccountResponse(
-                id=new_account.id,
-                account_name=new_account.account_name,
-                account_number=new_account.account_number,
-                currency=new_account.currency,
-                is_active=new_account.is_active,
-                entity_id=new_account.entity_id,
-                bank=bank_response,
-                created_at=new_account.created_at,
-                updated_at=new_account.updated_at
-            )
-            
-            response = create_success_response(
-                data=account_response,
-                message="Bank account created successfully"
-            )
+            # Format the response using formatter
+            formatted_account = format_bank_with_accounts(new_account.bank, [new_account])
             
             self._log_operation("create_bank_account", start_time, True, account_id=new_account.id)
-            return response, 201
+            return ControllerResponseDTO(data=formatted_account['accounts'][0], status=ControllerResponseStatus.CREATED.value)
             
         except Exception as e:
             self._log_operation("create_bank_account", start_time, False, error=str(e))
-            error_response, status_code = self._handle_error(e, "create_bank_account")
-            return error_response, status_code
+            current_app.logger.error(f"Error creating bank account: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
 
-    def update_bank_account(self, account_id: int, data: Dict[str, Any]) -> Tuple[BankingSuccessResponse, int]:
+    def update_bank_account(self, account_id: int, data: Dict[str, Any]):
         """Update a bank account with enhanced validation and response."""
         start_time = time.time()
         session = self._get_session()
@@ -359,143 +242,46 @@ class BankingController:
             # Update account using service
             account = self.bank_account_service.update_bank_account(account_id, data, session)
             
+            if not account:
+                return ControllerResponseDTO(error="Bank account not found", status=ControllerResponseStatus.NOT_FOUND.value)
+            
             # Commit transaction
             session.commit()
             
-            # Create response DTOs
-            bank_response = BankResponse(
-                id=account.bank.id,
-                name=account.bank.name,
-                country=account.bank.country,
-                swift_bic=account.bank.swift_bic,
-                created_at=account.bank.created_at,
-                updated_at=account.bank.updated_at
-            )
-            
-            account_response = BankAccountResponse(
-                id=account.id,
-                account_name=account.account_name,
-                account_number=account.account_number,
-                currency=account.currency,
-                is_active=account.is_active,
-                entity_id=account.entity_id,
-                bank=bank_response,
-                created_at=account.created_at,
-                updated_at=account.updated_at
-            )
-            
-            response = create_success_response(
-                data=account_response,
-                message="Bank account updated successfully"
-            )
+            # Format the response using formatter
+            formatted_account = format_bank_with_accounts(account.bank, [account])
             
             self._log_operation("update_bank_account", start_time, True, account_id=account_id)
-            return response, 200
+            return ControllerResponseDTO(data=formatted_account['accounts'][0], status=ControllerResponseStatus.SUCCESS.value)
             
         except Exception as e:
             self._log_operation("update_bank_account", start_time, False, account_id=account_id, error=str(e))
-            error_response, status_code = self._handle_error(e, "update_bank_account")
-            return error_response, status_code
+            current_app.logger.error(f"Error updating bank account {account_id}: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
 
-    def delete_bank_account(self, account_id: int) -> Tuple[BankingSuccessResponse, int]:
+    def delete_bank_account(self, account_id: int):
         """Delete a bank account with enhanced response."""
         start_time = time.time()
         session = self._get_session()
         
         try:
             # Delete account using service
-            self.bank_account_service.delete_bank_account(account_id, session)
+            success = self.bank_account_service.delete_bank_account(account_id, session)
+            
+            if not success:
+                return ControllerResponseDTO(error="Bank account not found", status=ControllerResponseStatus.NOT_FOUND.value)
             
             # Commit transaction
             session.commit()
             
-            response = create_success_response(
-                message="Bank account deleted successfully"
-            )
-            
             self._log_operation("delete_bank_account", start_time, True, account_id=account_id)
-            return response, 200
+            return ControllerResponseDTO(status=ControllerResponseStatus.SUCCESS.value)
             
         except Exception as e:
             self._log_operation("delete_bank_account", start_time, False, account_id=account_id, error=str(e))
-            error_response, status_code = self._handle_error(e, "delete_bank_account")
-            return error_response, status_code
-
-    def get_bank_account_balance(self, account_id: int) -> Tuple[BankingSuccessResponse, int]:
-        """Get current balance for a bank account with enhanced response."""
-        start_time = time.time()
-        session = self._get_session()
-        
-        try:
-            # Check if account exists using service
-            account = self.bank_account_service.get_bank_account_by_id(account_id, session)
-            if not account:
-                return create_error_response(
-                    BankingErrorCode.BANK_ACCOUNT_NOT_FOUND,
-                    "Bank account not found"
-                ), 404
-            
-            # Create response DTO
-            balance_response = BankAccountBalanceResponse(
-                account_id=account.id,
-                account_number=account.account_number,
-                currency=account.currency,
-                balance=None,  # Balance tracking not yet implemented
-                last_updated=datetime.utcnow(),
-                message="Balance tracking not yet implemented - transaction system required"
-            )
-            
-            response = create_success_response(
-                data=balance_response,
-                message="Account balance information retrieved"
-            )
-            
-            self._log_operation("get_bank_account_balance", start_time, True, account_id=account_id)
-            return response, 200
-            
-        except Exception as e:
-            self._log_operation("get_bank_account_balance", start_time, False, account_id=account_id, error=str(e))
-            error_response, status_code = self._handle_error(e, "get_bank_account_balance")
-            return error_response, status_code
-
-    def get_bank_account_transactions(self, account_id: int, page: int = 1, page_size: int = 50) -> Tuple[BankingSuccessResponse, int]:
-        """Get transaction history for a bank account with enhanced response."""
-        start_time = time.time()
-        session = self._get_session()
-        
-        try:
-            # Check if account exists using service
-            account = self.bank_account_service.get_bank_account_by_id(account_id, session)
-            if not account:
-                return create_error_response(
-                    BankingErrorCode.BANK_ACCOUNT_NOT_FOUND,
-                    "Bank account not found"
-                ), 404
-            
-            # Create response DTO
-            transactions_response = BankAccountTransactionsResponse(
-                account_id=account.id,
-                account_number=account.account_number,
-                currency=account.currency,
-                transactions=[],  # Transaction history not yet implemented
-                total_count=0,
-                page=page,
-                page_size=page_size
-            )
-            
-            response = create_success_response(
-                data=transactions_response,
-                message="Transaction history not yet implemented - transaction system required"
-            )
-            
-            self._log_operation("get_bank_account_transactions", start_time, True, account_id=account_id)
-            return response, 200
-            
-        except Exception as e:
-            self._log_operation("get_bank_account_transactions", start_time, False, account_id=account_id, error=str(e))
-            error_response, status_code = self._handle_error(e, "get_bank_account_transactions")
-            return error_response, status_code
-
+            current_app.logger.error(f"Error deleting bank account {account_id}: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+    
     def _get_session(self) -> Session:
         """
         Get the current database session from middleware.

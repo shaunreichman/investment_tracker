@@ -9,6 +9,7 @@ All endpoints use the banking controller with DTO responses.
 
 from flask import Blueprint, jsonify, request
 from src.api.controllers.banking_controller import BankingController
+from src.api.middleware.response_handlers import handle_controller_response, handle_delete_response
 from src.api.middleware.validation import (
     validate_bank_data, 
     validate_bank_account_data,
@@ -33,7 +34,8 @@ def get_bank(bank_id):
     Returns:
         Standardized response with bank data
     """
-    return banking_controller.get_bank(bank_id)
+    dto = banking_controller.get_bank(bank_id)
+    return handle_controller_response(dto, success_status_code=200)
 
 
 @banking_bp.route('/api/v2/banks', methods=['POST'])
@@ -53,8 +55,8 @@ def create_bank():
     try:
         # Use validated data from middleware
         validated_data = request.validated_data
-        response, status_code = banking_controller.create_bank(validated_data)
-        return jsonify(response.to_dict()), status_code
+        dto = banking_controller.create_bank(validated_data)
+        return handle_controller_response(dto, success_status_code=201)
     except Exception as e:
         return jsonify({
             "success": False,
@@ -85,8 +87,8 @@ def update_bank(bank_id):
     try:
         # Use validated data from middleware
         validated_data = request.validated_data
-        response, status_code = banking_controller.update_bank(bank_id, validated_data)
-        return jsonify(response.to_dict()), status_code
+        dto = banking_controller.update_bank(bank_id, validated_data)
+        return handle_controller_response(dto, success_status_code=200)
     except Exception as e:
         return jsonify({
             "success": False,
@@ -109,8 +111,8 @@ def delete_bank(bank_id):
         Standardized response confirming deletion
     """
     try:
-        response, status_code = banking_controller.delete_bank(bank_id)
-        return jsonify(response.to_dict()), status_code
+        dto = banking_controller.delete_bank(bank_id)
+        return handle_delete_response(dto)
     except Exception as e:
         return jsonify({
             "success": False,
@@ -119,45 +121,6 @@ def delete_bank(bank_id):
                 "message": "Internal server error"
             }
         }), 500
-
-
-@banking_bp.route('/api/v2/bank-accounts', methods=['GET'])
-def get_bank_accounts():
-    """
-    Get list of all bank accounts with pagination and summary data.
-    
-    Query Parameters:
-        page (int): Page number (default: 1)
-        page_size (int): Number of items per page (default: 50, max: 100)
-    
-    Returns:
-        Standardized response with paginated bank account data
-    """
-    try:
-        # Get pagination parameters
-        page = int(request.args.get('page', 1))
-        page_size = min(int(request.args.get('page_size', 50)), 100)  # Cap at 100
-        
-        response, status_code = banking_controller.get_bank_accounts(page=page, page_size=page_size)
-        return jsonify(response.to_dict()), status_code
-    except ValueError:
-        return jsonify({
-            "success": False,
-            "error": {
-                "code": "INVALID_FORMAT",
-                "message": "Invalid pagination parameters",
-                "details": {"page": "Must be integer", "page_size": "Must be integer"}
-            }
-        }), 400
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": {
-                "code": "INTERNAL_ERROR",
-                "message": "Internal server error"
-            }
-        }), 500
-
 
 @banking_bp.route('/api/v2/bank-accounts', methods=['POST'])
 @validate_bank_account_data
@@ -179,8 +142,8 @@ def create_bank_account():
     try:
         # Use validated data from middleware
         validated_data = getattr(request, 'validated_data', request.get_json() or {})
-        response, status_code = banking_controller.create_bank_account(validated_data)
-        return jsonify(response.to_dict()), status_code
+        dto = banking_controller.create_bank_account(validated_data)
+        return handle_controller_response(dto, success_status_code=201)
     except Exception as e:
         return jsonify({
             "success": False,
@@ -189,7 +152,6 @@ def create_bank_account():
                 "message": "Internal server error"
             }
         }), 500
-
 
 @banking_bp.route('/api/v2/bank-accounts/<int:account_id>', methods=['PUT'])
 @validate_bank_account_data
@@ -214,8 +176,8 @@ def update_bank_account(account_id):
     try:
         # Use validated data from middleware
         validated_data = getattr(request, 'validated_data', request.get_json() or {})
-        response, status_code = banking_controller.update_bank_account(account_id, validated_data)
-        return jsonify(response.to_dict()), status_code
+        dto = banking_controller.update_bank_account(account_id, validated_data)
+        return handle_controller_response(dto, success_status_code=200)
     except Exception as e:
         return jsonify({
             "success": False,
@@ -238,75 +200,8 @@ def delete_bank_account(account_id):
         Standardized response confirming deletion
     """
     try:
-        response, status_code = banking_controller.delete_bank_account(account_id)
-        return jsonify(response.to_dict()), status_code
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": {
-                "code": "INTERNAL_ERROR",
-                "message": "Internal server error"
-            }
-        }), 500
-
-
-@banking_bp.route('/api/v2/bank-accounts/<int:account_id>/balance', methods=['GET'])
-def get_bank_account_balance(account_id):
-    """
-    Get current balance for a bank account.
-    
-    Path Parameters:
-        account_id (int): ID of the account
-    
-    Returns:
-        Standardized response with account balance information
-    """
-    try:
-        response, status_code = banking_controller.get_bank_account_balance(account_id)
-        return jsonify(response.to_dict()), status_code
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": {
-                "code": "INTERNAL_ERROR",
-                "message": "Internal server error"
-            }
-        }), 500
-
-
-@banking_bp.route('/api/v2/bank-accounts/<int:account_id>/transactions', methods=['GET'])
-def get_bank_account_transactions(account_id):
-    """
-    Get transaction history for a bank account.
-    
-    Path Parameters:
-        account_id (int): ID of the account
-    
-    Query Parameters:
-        page (int): Page number (default: 1)
-        page_size (int): Number of items per page (default: 50, max: 100)
-    
-    Returns:
-        Standardized response with transaction history information
-    """
-    try:
-        # Get pagination parameters
-        page = int(request.args.get('page', 1))
-        page_size = min(int(request.args.get('page_size', 50)), 100)  # Cap at 100
-        
-        response, status_code = banking_controller.get_bank_account_transactions(
-            account_id, page=page, page_size=page_size
-        )
-        return jsonify(response.to_dict()), status_code
-    except ValueError:
-        return jsonify({
-            "success": False,
-            "error": {
-                "code": "INVALID_FORMAT",
-                "message": "Invalid pagination parameters",
-                "details": {"page": "Must be integer", "page_size": "Must be integer"}
-            }
-        }), 400
+        dto = banking_controller.delete_bank_account(account_id)
+        return handle_delete_response(dto)
     except Exception as e:
         return jsonify({
             "success": False,
