@@ -64,7 +64,7 @@ class FundEventSecondaryService:
         all_changes.append(fund_irr_service.update_irrs(fund, session))
 
         # 8. Update the NAV of the Fund
-        if EventType.is_nav_update_event(fund_event_type):
+        if fund_event_type == EventType.NAV_UPDATE:
             all_changes.append(fund_nav_service.update_nav_fund_fields(fund, session))
 
         # 9. Update the Profitability of the Fund

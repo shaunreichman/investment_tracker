@@ -18,7 +18,7 @@ class FundDateService:
         self.entity_repository = EntityRepository()
         self.logger = logging.getLogger(__name__)
 
-    def update_fund_start_date(self, fund_id: int, event_id: Optional[int] = None, fund_event_operation: FundEventOperation = None, session: Session = None) -> Optional[FundFieldChange]:
+    def update_fund_start_date(self, fund_id: int, session: Session, event_id: Optional[int] = None, fund_event_operation: FundEventOperation = None) -> Optional[FundFieldChange]:
         """
         Update the start date of a fund.
         """
@@ -80,7 +80,7 @@ class FundDateService:
         Update the duration of a fund.
         """
         if not fund.start_date:
-            raise ValueError ("Fund StartDate not set - can't set the current_duration") 
+            raise ValueError ("Fund.start_date not set - can't set the current_duration") 
         old_duration = fund.current_duration
 
         if fund.end_date:
@@ -109,12 +109,12 @@ class FundDateService:
         # Get fund start date (use events if available, otherwise creation date)
         start_date = fund.start_date
         if not start_date:
-            raise ValueError("Fund start date is not set")
+            raise ValueError("Fund.start_date is not set")
         
         # Get entity for tax jurisdiction
         entity = self.entity_repository.get_by_id(fund.entity_id, session)
         if not entity:
-            ValueError("Entity is not set")
+            raise ValueError("Entity is not set")
         
         # Import calculation function from entity domain
         from src.entity.calculations import get_financial_years_for_fund_period

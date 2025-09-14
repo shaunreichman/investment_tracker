@@ -90,13 +90,13 @@ class FundEventOperation(Enum):
     Defines all possible operations that can occur on a fund event.
     
     Values:
-        EVENT_CREATED: Fund event creation operation
-        EVENT_DELETED: Fund event deletion operation
-        EVENT_UPDATED: Fund event update operation
+        CREATE: Fund event creation operation
+        DELETE: Fund event deletion operation
+        UPDATE: Fund event update operation
     """
-    EVENT_CREATED = 'EVENT_CREATED'
-    EVENT_UPDATED = 'EVENT_UPDATED'
-    EVENT_DELETED = 'EVENT_DELETED'
+    CREATE = 'CREATE'
+    UPDATE = 'UPDATE'
+    DELETE = 'DELETE'
     
     def __str__(self) -> str:
         """Return the string representation of the enum value."""

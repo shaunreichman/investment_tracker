@@ -1,17 +1,18 @@
 """
 Tests for FundIrRService.
 
-This module tests the IRR calculation service, including both the business logic
-and the integration with the shared IRR calculator.
+This module tests the IRR calculation service, focusing on the core business logic
+and integration with the shared IRR calculator. Tests cover the main public methods
+and key internal logic without testing removed/non-existent methods.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import date, datetime
+from unittest.mock import Mock, patch
+from datetime import date
 from decimal import Decimal
 
 from src.fund.services.fund_irr_service import FundIrRService
-from src.fund.models import Fund, FundEvent
+from src.fund.models import Fund, FundEvent, FundFieldChange
 from src.fund.enums import FundStatus, EventType
 
 
@@ -184,13 +185,11 @@ class TestFundIrRService:
     def test_calculate_completed_real_irr_completed_fund(self, service, mock_completed_fund, mock_events_with_tax, mock_session):
         """Test completed real IRR calculation for completed funds."""
         with patch.object(service, '_get_fund_events', return_value=mock_events_with_tax), \
-             patch.object(service, '_create_daily_risk_free_interest_charges') as mock_charges, \
              patch.object(service, '_calculate_irr_base', return_value=0.16) as mock_calc:
             
             result = service.calculate_completed_real_irr(mock_completed_fund, mock_session)
             
             assert result == 0.16
-            mock_charges.assert_called_once_with(mock_completed_fund, mock_session, None)
             mock_calc.assert_called_once_with(
                 mock_events_with_tax,
                 mock_completed_fund.start_date,
@@ -206,45 +205,97 @@ class TestFundIrRService:
         assert result is None
     
     # ============================================================================
-    # CONVENIENCE METHOD TESTS
+    # MAIN ORCHESTRATION METHOD TESTS
     # ============================================================================
     
+    def test_update_irrs_active_fund(self, service, mock_fund, mock_session):
+        """Test update_irrs resets IRRs to None for active funds."""
+        # Set initial values
+        mock_fund.completed_irr_gross = 0.15
+        mock_fund.completed_irr_after_tax = 0.12
+        mock_fund.completed_irr_real = 0.10
+        
+        result = service.update_irrs(mock_fund, mock_session)
+        
+        # Verify IRRs were reset to None
+        assert mock_fund.completed_irr_gross is None
+        assert mock_fund.completed_irr_after_tax is None
+        assert mock_fund.completed_irr_real is None
+        
+        # Verify field changes were tracked
+        assert result is not None
+        assert len(result) == 3
+        assert any(change.field_name == 'completed_irr_gross' and change.new_value is None for change in result)
+        assert any(change.field_name == 'completed_irr_after_tax' and change.new_value is None for change in result)
+        assert any(change.field_name == 'completed_irr_real' and change.new_value is None for change in result)
     
-    def test_should_calculate_irr_realized_fund(self, service, mock_realized_fund, mock_session):
-        """Test should_calculate_irr returns True for realized funds."""
-        result = service.should_calculate_irr(mock_realized_fund)
-        assert result is True
+    def test_update_irrs_realized_fund(self, service, mock_realized_fund, mock_events, mock_session):
+        """Test update_irrs calculates only gross IRR for realized funds."""
+        # Set initial values for after_tax and real IRRs
+        mock_realized_fund.completed_irr_after_tax = 0.12
+        mock_realized_fund.completed_irr_real = 0.10
+        
+        with patch.object(service, 'calculate_completed_irr', return_value=0.15) as mock_calc:
+            result = service.update_irrs(mock_realized_fund, mock_session)
+            
+            # Verify only gross IRR was calculated
+            assert mock_realized_fund.completed_irr_gross == 0.15
+            assert mock_realized_fund.completed_irr_after_tax is None
+            assert mock_realized_fund.completed_irr_real is None
+            
+            # Verify field changes were tracked (3 changes: gross set, after_tax and real reset to None)
+            assert result is not None
+            assert len(result) == 3
+            
+            # Check that all three field changes are tracked
+            field_names = [change.field_name for change in result]
+            assert 'completed_irr_gross' in field_names
+            assert 'completed_irr_after_tax' in field_names
+            assert 'completed_irr_real' in field_names
+            
+            # Verify the gross IRR change
+            gross_change = next(change for change in result if change.field_name == 'completed_irr_gross')
+            assert gross_change.new_value == 0.15
+            
+            mock_calc.assert_called_once_with(mock_realized_fund, mock_session)
     
-    def test_should_calculate_irr_completed_fund(self, service, mock_completed_fund, mock_session):
-        """Test should_calculate_irr returns True for completed funds."""
-        result = service.should_calculate_irr(mock_completed_fund)
-        assert result is True
-    
-    def test_should_calculate_irr_active_fund(self, service, mock_fund, mock_session):
-        """Test should_calculate_irr returns False for active funds."""
-        result = service.should_calculate_irr(mock_fund)
-        assert result is False
-    
-    # ============================================================================
-    # DATABASE OPERATION TESTS
-    # ============================================================================
-    
-    def test_calculate_all_irrs(self, service, mock_completed_fund, mock_session):
-        """Test calculate_all_irrs method."""
-        with patch.object(service, 'calculate_completed_irr', return_value=0.15) as mock_irr, \
+    def test_update_irrs_completed_fund(self, service, mock_completed_fund, mock_events_with_tax, mock_session):
+        """Test update_irrs calculates all IRRs for completed funds."""
+        with patch.object(service, 'calculate_completed_irr', return_value=0.15) as mock_gross, \
              patch.object(service, 'calculate_completed_after_tax_irr', return_value=0.12) as mock_after_tax, \
              patch.object(service, 'calculate_completed_real_irr', return_value=0.10) as mock_real:
             
-            result = service.calculate_all_irrs(mock_completed_fund, mock_session)
+            result = service.update_irrs(mock_completed_fund, mock_session)
             
-            assert result['completed_irr'] == 0.15
-            assert result['completed_after_tax_irr'] == 0.12
-            assert result['completed_real_irr'] == 0.10
+            # Verify all IRRs were calculated
+            assert mock_completed_fund.completed_irr_gross == 0.15
+            assert mock_completed_fund.completed_irr_after_tax == 0.12
+            assert mock_completed_fund.completed_irr_real == 0.10
             
-            # Verify service methods were called
-            mock_irr.assert_called_once_with(mock_completed_fund, mock_session)
+            # Verify field changes were tracked
+            assert result is not None
+            assert len(result) == 3
+            
+            # Verify all methods were called
+            mock_gross.assert_called_once_with(mock_completed_fund, mock_session)
             mock_after_tax.assert_called_once_with(mock_completed_fund, mock_session)
-            mock_real.assert_called_once_with(mock_completed_fund, mock_session, None)
+            mock_real.assert_called_once_with(mock_completed_fund, mock_session)
+    
+    def test_update_irrs_no_changes(self, service, mock_completed_fund, mock_session):
+        """Test update_irrs returns None when no IRR values change."""
+        # Set initial values that won't change
+        mock_completed_fund.completed_irr_gross = 0.15
+        mock_completed_fund.completed_irr_after_tax = 0.12
+        mock_completed_fund.completed_irr_real = 0.10
+        
+        with patch.object(service, 'calculate_completed_irr', return_value=0.15), \
+             patch.object(service, 'calculate_completed_after_tax_irr', return_value=0.12), \
+             patch.object(service, 'calculate_completed_real_irr', return_value=0.10):
+            
+            result = service.update_irrs(mock_completed_fund, mock_session)
+            
+            # Verify no changes were tracked
+            assert result is None
     
     
     # ============================================================================
@@ -325,7 +376,6 @@ class TestFundIrRService:
     def test_calculate_completed_real_irr_integration(self, service, mock_completed_fund, mock_events_with_tax, mock_session):
         """Test completed real IRR calculation with real calculation logic."""
         with patch.object(service, '_get_fund_events', return_value=mock_events_with_tax), \
-             patch.object(service, '_create_daily_risk_free_interest_charges') as mock_charges, \
              patch.object(service, '_calculate_irr_base', return_value=0.10) as mock_calc:
             
             result = service.calculate_completed_real_irr(mock_completed_fund, mock_session)
@@ -339,3 +389,104 @@ class TestFundIrRService:
                 include_risk_free_charges=True,
                 include_eofy_debt_cost=True
             )
+    
+    # ============================================================================
+    # INTERNAL METHOD TESTS
+    # ============================================================================
+    
+    def test_filter_events_for_irr_basic_events(self, service):
+        """Test _filter_events_for_irr filters basic cash flow events."""
+        events = []
+        
+        # Create various event types
+        capital_call = Mock(spec=FundEvent)
+        capital_call.event_type = EventType.CAPITAL_CALL
+        events.append(capital_call)
+        
+        distribution = Mock(spec=FundEvent)
+        distribution.event_type = EventType.DISTRIBUTION
+        events.append(distribution)
+        
+        tax_payment = Mock(spec=FundEvent)
+        tax_payment.event_type = EventType.TAX_PAYMENT
+        events.append(tax_payment)
+        
+        risk_free_charge = Mock(spec=FundEvent)
+        risk_free_charge.event_type = EventType.DAILY_RISK_FREE_INTEREST_CHARGE
+        events.append(risk_free_charge)
+        
+        other_event = Mock(spec=FundEvent)
+        other_event.event_type = EventType.NAV_UPDATE
+        events.append(other_event)
+        
+        # Test basic filtering (no tax, no risk-free charges)
+        filtered = service._filter_events_for_irr(events, False, False, False)
+        assert len(filtered) == 2  # Only capital_call and distribution
+        assert capital_call in filtered
+        assert distribution in filtered
+    
+    def test_filter_events_for_irr_with_tax(self, service):
+        """Test _filter_events_for_irr includes tax payments when requested."""
+        events = []
+        
+        capital_call = Mock(spec=FundEvent)
+        capital_call.event_type = EventType.CAPITAL_CALL
+        events.append(capital_call)
+        
+        tax_payment = Mock(spec=FundEvent)
+        tax_payment.event_type = EventType.TAX_PAYMENT
+        events.append(tax_payment)
+        
+        # Test with tax payments included
+        filtered = service._filter_events_for_irr(events, True, False, False)
+        assert len(filtered) == 2
+        assert capital_call in filtered
+        assert tax_payment in filtered
+    
+    def test_prepare_cash_flows(self, service):
+        """Test _prepare_cash_flows converts events to cash flows correctly."""
+        events = []
+        
+        # Capital call (outflow)
+        capital_call = Mock(spec=FundEvent)
+        capital_call.event_type = EventType.CAPITAL_CALL
+        capital_call.event_date = date(2020, 1, 1)
+        capital_call.amount = Decimal('100000.00')
+        events.append(capital_call)
+        
+        # Distribution (inflow)
+        distribution = Mock(spec=FundEvent)
+        distribution.event_type = EventType.DISTRIBUTION
+        distribution.event_date = date(2023, 12, 31)
+        distribution.amount = Decimal('150000.00')
+        events.append(distribution)
+        
+        start_date = date(2020, 1, 1)
+        cash_flows, days_from_start = service._prepare_cash_flows(events, start_date)
+        
+        # Verify cash flows
+        assert len(cash_flows) == 2
+        assert cash_flows[0] == -100000.00  # Outflow (negative)
+        assert cash_flows[1] == 150000.00   # Inflow (positive)
+        
+        # Verify days from start
+        assert len(days_from_start) == 2
+        assert days_from_start[0] == 0      # Same day
+        assert days_from_start[1] == 1460   # ~4 years later
+    
+    def test_prepare_cash_flows_with_none_amount(self, service):
+        """Test _prepare_cash_flows handles None amounts correctly."""
+        events = []
+        
+        event = Mock(spec=FundEvent)
+        event.event_type = EventType.CAPITAL_CALL
+        event.event_date = date(2020, 1, 1)
+        event.amount = None  # None amount
+        events.append(event)
+        
+        start_date = date(2020, 1, 1)
+        cash_flows, days_from_start = service._prepare_cash_flows(events, start_date)
+        
+        # Verify None amount is converted to 0
+        assert cash_flows[0] == 0.0
+        assert days_from_start[0] == 0
