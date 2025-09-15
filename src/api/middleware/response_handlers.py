@@ -11,10 +11,10 @@ Key Functions:
 
 from flask import jsonify
 from src.api.dto.api_response import ApiResponse
-from src.api.dto.controller_response_dto import ControllerResponseStatus
+from src.api.dto.controller_response_dto import ControllerResponseDTO
 
 
-def handle_controller_response(dto, success_status_code=200):
+def handle_controller_response(dto):
     """
     Standardized handler for controller DTO responses.
     
@@ -23,58 +23,73 @@ def handle_controller_response(dto, success_status_code=200):
     
     Args:
         dto: ControllerResponseDTO from controller
-        success_status_code: HTTP status code for success (default 200)
         
     Returns:
         Tuple of (json_response, status_code)
         
     Examples:
         # Success case
-        dto = ControllerResponseDTO(data={"id": 1}, status=ControllerResponseStatus.SUCCESS.value)
-        return handle_controller_response(dto, 201)  # Returns 201 Created
+        dto = ControllerResponseDTO(data={"id": 1}, response_code=ApiResponseCode.SUCCESS)
+        return handle_controller_response(dto)  # Returns 200 OK
         
         # Error case
-        dto = ControllerResponseDTO(error="Not found", status=ControllerResponseStatus.NOT_FOUND.value)
+        dto = ControllerResponseDTO(error="Not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
         return handle_controller_response(dto)  # Returns 404 Not Found
     """
+    # Handle HTTP status code mapping at the API layer
+    status_code = dto.response_code.get_http_status_code()
+    
     if dto.error:
-        # Use standardized status code mapping from enum
-        status_code = ControllerResponseStatus.get_status_code(dto.status)
-        response = ApiResponse(success=False, message=dto.error)
-        return jsonify(response.to_dict()), status_code
+        # Create error response
+        response = ApiResponse(
+            response_code=dto.response_code,
+            message=dto.error,
+            data=dto.data
+        )
     else:
         # Success case - data already formatted by controller
-        response = ApiResponse(data=dto.data)
-        return jsonify(response.to_dict()), success_status_code
+        response = ApiResponse(
+            response_code=dto.response_code,
+            data=dto.data,
+            message=dto.message
+        )
+    
+    return jsonify(response.to_dict()), status_code
 
 
 def handle_delete_response(dto):
     """
-    Specialized handler for DELETE operations that return 204 No Content on success.
+    Specialized handler for DELETE operations.
     
-    DELETE operations follow REST conventions where successful deletion
-    returns 204 No Content with an empty response body.
+    DELETE operations return 204 No Content on success, but still use
+    ApiResponse for consistency with the rest of the API.
     
     Args:
         dto: ControllerResponseDTO from controller
         
     Returns:
-        Tuple of (response, status_code) or ('', 204) for success
+        Tuple of (json_response, status_code)
         
     Examples:
         # Success case
-        dto = ControllerResponseDTO(status=ControllerResponseStatus.SUCCESS.value)
-        return handle_delete_response(dto)  # Returns ('', 204)
+        dto = ControllerResponseDTO(response_code=ApiResponseCode.DELETED, message="Fund deleted successfully")
+        return handle_delete_response(dto)  # Returns ApiResponse with 204
         
         # Error case
-        dto = ControllerResponseDTO(error="Not found", status=ControllerResponseStatus.NOT_FOUND.value)
+        dto = ControllerResponseDTO(error="Not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
         return handle_delete_response(dto)  # Returns error response with 404
     """
     if dto.error:
-        # Use standardized status code mapping from enum
-        status_code = ControllerResponseStatus.get_status_code(dto.status)
-        response = ApiResponse(success=False, message=dto.error)
+        # Use the response code's HTTP status mapping
+        status_code = dto.response_code.get_http_status_code()
+        response = ApiResponse(response_code=dto.response_code, message=dto.error)
         return jsonify(response.to_dict()), status_code
     else:
-        # Success case - DELETE operations return 204 No Content
-        return '', 204
+        # Success case - Use ApiResponse for consistency, even with 204
+        status_code = dto.response_code.get_http_status_code()
+        response = ApiResponse(
+            response_code=dto.response_code,
+            data=dto.data,
+            message=dto.message or "Resource deleted successfully"
+        )
+        return jsonify(response.to_dict()), status_code

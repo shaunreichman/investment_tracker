@@ -16,6 +16,7 @@ from src.api.middleware.validation import validate_fund_data, validate_fund_even
 from src.api.middleware.response_handlers import handle_controller_response, handle_delete_response
 from src.api.controllers.fund_controller import FundController
 from src.api.dto.api_response import ApiResponse
+from src.api.dto.response_codes import ApiResponseCode
 
 # Create blueprint for fund routes
 fund_bp = Blueprint('fund', __name__)
@@ -53,11 +54,14 @@ def fund_detail(fund_id):
             include_tax_statements=include_tax_statements
         )
         
-        return handle_controller_response(dto, success_status_code=200)
+        return handle_controller_response(dto)
     
     except Exception as e:
-        response = ApiResponse(success=False, message=str(e))
-        return jsonify(response.to_dict()), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/funds', methods=['POST'])
@@ -78,11 +82,14 @@ def create_fund():
     """
     try:
         dto = fund_controller.create_fund()
-        return handle_controller_response(dto, success_status_code=201)
+        return handle_controller_response(dto)
             
     except Exception as e:
-        response = ApiResponse(success=False, message=str(e))
-        return jsonify(response.to_dict()), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/funds/<int:fund_id>', methods=['DELETE'])
@@ -101,8 +108,11 @@ def delete_fund(fund_id):
         return handle_delete_response(dto)
             
     except Exception as e:
-        response = ApiResponse(success=False, message=str(e))
-        return jsonify(response.to_dict()), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events', methods=['POST'])
@@ -130,8 +140,11 @@ def create_fund_event(fund_id):
         # Route to specific method based on event type
         event_type = validated_data.get('event_type')
         if not event_type:
-            response = ApiResponse(success=False, message='event_type is required')
-            return jsonify(response.to_dict()), 400
+            response = ApiResponse(
+                response_code=ApiResponseCode.VALIDATION_ERROR,
+                message='event_type is required'
+            )
+            return jsonify(response.to_dict()), response.response_code.get_http_status_code()
         
         if event_type == 'CAPITAL_CALL':
             dto = fund_controller.add_capital_call(fund_id, validated_data)
@@ -146,14 +159,20 @@ def create_fund_event(fund_id):
         elif event_type == 'DISTRIBUTION':
             dto = fund_controller.add_distribution(fund_id, validated_data)
         else:
-            response = ApiResponse(success=False, message=f'Unsupported event type: {event_type}')
-            return jsonify(response.to_dict()), 400
+            response = ApiResponse(
+                response_code=ApiResponseCode.VALIDATION_ERROR,
+                message=f'Unsupported event type: {event_type}'
+            )
+            return jsonify(response.to_dict()), response.response_code.get_http_status_code()
         
-        return handle_controller_response(dto, success_status_code=201)
+        return handle_controller_response(dto)
             
     except Exception as e:
-        response = ApiResponse(success=False, message=str(e))
-        return jsonify(response.to_dict()), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events/<int:event_id>', methods=['DELETE'])
@@ -173,8 +192,11 @@ def delete_fund_event(fund_id, event_id):
         return handle_delete_response(dto)
             
     except Exception as e:
-        response = ApiResponse(success=False, message=str(e))
-        return jsonify(response.to_dict()), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events', methods=['GET'])
@@ -190,11 +212,14 @@ def get_fund_events(fund_id):
     """
     try:
         dto = fund_controller.get_fund_events(fund_id)
-        return handle_controller_response(dto, success_status_code=200)
+        return handle_controller_response(dto)
             
     except Exception as e:
-        response = ApiResponse(success=False, message=str(e))
-        return jsonify(response.to_dict()), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 # Tax statement creation is now handled by the tax routes with middleware validation
@@ -254,7 +279,11 @@ def get_fund_tax_statements(fund_id):
             session.close()
             
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows', methods=['GET'])
@@ -312,7 +341,11 @@ def get_fund_event_cash_flows(fund_id, event_id):
             session.close()
             
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows', methods=['POST'])
@@ -326,7 +359,11 @@ def add_fund_event_cash_flow(fund_id, event_id):
         validated_data = request.validated_data
         return controller.add_cash_flow_to_event(fund_id, event_id, validated_data)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events/<int:event_id>/cash-flows/<int:cash_flow_id>', methods=['DELETE'])
@@ -362,7 +399,11 @@ def remove_fund_event_cash_flow(fund_id, event_id, cash_flow_id):
             session.close()
             
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 @fund_bp.route('/api/cash-flows', methods=['GET'])
@@ -396,14 +437,22 @@ def get_cash_flows():
                     start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
                     query = query.filter(FundEventCashFlow.transfer_date >= start_dt)
                 except ValueError:
-                    return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
+                    response = ApiResponse(
+                        response_code=ApiResponseCode.VALIDATION_ERROR,
+                        message="Invalid start_date format. Use YYYY-MM-DD"
+                    )
+                    return jsonify(response.to_dict()), response.response_code.get_http_status_code()
             
             if end_date:
                 try:
                     end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
                     query = query.filter(FundEventCashFlow.transfer_date <= end_dt)
                 except ValueError:
-                    return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
+                    response = ApiResponse(
+                        response_code=ApiResponseCode.VALIDATION_ERROR,
+                        message="Invalid end_date format. Use YYYY-MM-DD"
+                    )
+                    return jsonify(response.to_dict()), response.response_code.get_http_status_code()
             
             cash_flows = query.order_by(FundEventCashFlow.transfer_date.desc()).all()
             
@@ -434,4 +483,8 @@ def get_cash_flows():
             session.close()
             
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()

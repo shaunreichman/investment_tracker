@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import time
 from src.api.dto.api_response import ApiResponse
-from src.api.dto.controller_response_dto import ControllerResponseDTO, ControllerResponseStatus
+from src.api.dto.controller_response_dto import ControllerResponseDTO
+from src.api.dto.response_codes import ApiResponseCode
 from src.api.controllers.formatters.banking_formatter import format_bank, format_bank_with_accounts
 from src.banking.models import Bank, BankAccount
 
@@ -91,16 +92,16 @@ class BankingController:
             bank = self.bank_service.get_bank(bank_id, session)
             
             if not bank:
-                return ControllerResponseDTO(error="Bank not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
             
             # Format the response using formatter
             formatted_bank = format_bank(bank)
 
-            return ControllerResponseDTO(data=formatted_bank, status=ControllerResponseStatus.SUCCESS.value)
+            return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.SUCCESS)
             
         except Exception as e:
             current_app.logger.error(f"Error getting bank {bank_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
         finally:
             if 'session' in locals():
                 session.close()       
@@ -119,7 +120,7 @@ class BankingController:
                 if field not in data or not data[field]:
                     return ControllerResponseDTO(
                         error=f"Missing required field: {field}",
-                        status=ControllerResponseStatus.BAD_REQUEST.value
+                        response_code=ApiResponseCode.BAD_REQUEST
                     )
             
             # Create new bank using service
@@ -137,12 +138,12 @@ class BankingController:
             formatted_bank = format_bank(new_bank)
             
             self._log_operation("create_bank", start_time, True, bank_id=new_bank.id)
-            return ControllerResponseDTO(data=formatted_bank, status=ControllerResponseStatus.CREATED.value)
+            return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.CREATED)
             
         except Exception as e:
             self._log_operation("create_bank", start_time, False, error=str(e))
             current_app.logger.error(f"Error creating bank: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
     def update_bank(self, bank_id: int, data: Dict[str, Any]):
         """Update a bank with enhanced validation and response."""
@@ -154,7 +155,7 @@ class BankingController:
             bank = self.bank_service.update_bank(bank_id, data, session)
             
             if not bank:
-                return ControllerResponseDTO(error="Bank not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
             
             # Commit transaction
             session.commit()
@@ -163,12 +164,12 @@ class BankingController:
             formatted_bank = format_bank(bank)
             
             self._log_operation("update_bank", start_time, True, bank_id=bank_id)
-            return ControllerResponseDTO(data=formatted_bank, status=ControllerResponseStatus.SUCCESS.value)
+            return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.SUCCESS)
             
         except Exception as e:
             self._log_operation("update_bank", start_time, False, bank_id=bank_id, error=str(e))
             current_app.logger.error(f"Error updating bank {bank_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
     def delete_bank(self, bank_id: int):
         """Delete a bank with enhanced response."""
@@ -180,18 +181,18 @@ class BankingController:
             success = self.bank_service.delete_bank(bank_id, session)
             
             if not success:
-                return ControllerResponseDTO(error="Bank not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
             
             # Commit transaction
             session.commit()
             
             self._log_operation("delete_bank", start_time, True, bank_id=bank_id)
-            return ControllerResponseDTO(status=ControllerResponseStatus.SUCCESS.value)
+            return ControllerResponseDTO(response_code=ApiResponseCode.SUCCESS)
             
         except Exception as e:
             self._log_operation("delete_bank", start_time, False, bank_id=bank_id, error=str(e))
             current_app.logger.error(f"Error deleting bank {bank_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
     def create_bank_account(self, data: Dict[str, Any]):
         """Create a new bank account with enhanced validation and response."""
@@ -205,7 +206,7 @@ class BankingController:
                 if field not in data or not data[field]:
                     return ControllerResponseDTO(
                         error=f"Missing required field: {field}",
-                        status=ControllerResponseStatus.BAD_REQUEST.value
+                        response_code=ApiResponseCode.BAD_REQUEST
                     )
             
             # Create new bank account using service
@@ -226,12 +227,12 @@ class BankingController:
             formatted_account = format_bank_with_accounts(new_account.bank, [new_account])
             
             self._log_operation("create_bank_account", start_time, True, account_id=new_account.id)
-            return ControllerResponseDTO(data=formatted_account['accounts'][0], status=ControllerResponseStatus.CREATED.value)
+            return ControllerResponseDTO(data=formatted_account['accounts'][0], response_code=ApiResponseCode.CREATED)
             
         except Exception as e:
             self._log_operation("create_bank_account", start_time, False, error=str(e))
             current_app.logger.error(f"Error creating bank account: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
     def update_bank_account(self, account_id: int, data: Dict[str, Any]):
         """Update a bank account with enhanced validation and response."""
@@ -243,7 +244,7 @@ class BankingController:
             account = self.bank_account_service.update_bank_account(account_id, data, session)
             
             if not account:
-                return ControllerResponseDTO(error="Bank account not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                return ControllerResponseDTO(error="Bank account not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
             
             # Commit transaction
             session.commit()
@@ -252,12 +253,12 @@ class BankingController:
             formatted_account = format_bank_with_accounts(account.bank, [account])
             
             self._log_operation("update_bank_account", start_time, True, account_id=account_id)
-            return ControllerResponseDTO(data=formatted_account['accounts'][0], status=ControllerResponseStatus.SUCCESS.value)
+            return ControllerResponseDTO(data=formatted_account['accounts'][0], response_code=ApiResponseCode.SUCCESS)
             
         except Exception as e:
             self._log_operation("update_bank_account", start_time, False, account_id=account_id, error=str(e))
             current_app.logger.error(f"Error updating bank account {account_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
     def delete_bank_account(self, account_id: int):
         """Delete a bank account with enhanced response."""
@@ -269,18 +270,18 @@ class BankingController:
             success = self.bank_account_service.delete_bank_account(account_id, session)
             
             if not success:
-                return ControllerResponseDTO(error="Bank account not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                return ControllerResponseDTO(error="Bank account not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
             
             # Commit transaction
             session.commit()
             
             self._log_operation("delete_bank_account", start_time, True, account_id=account_id)
-            return ControllerResponseDTO(status=ControllerResponseStatus.SUCCESS.value)
+            return ControllerResponseDTO(response_code=ApiResponseCode.SUCCESS)
             
         except Exception as e:
             self._log_operation("delete_bank_account", start_time, False, account_id=account_id, error=str(e))
             current_app.logger.error(f"Error deleting bank account {account_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def _get_session(self) -> Session:
         """

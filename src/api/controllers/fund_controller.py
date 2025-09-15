@@ -20,7 +20,8 @@ from src.fund.enums import FundStatus, FundType, EventType
 from src.fund.services.fund_service import FundService
 from src.fund.services.fund_event_service import FundEventService
 from src.api.controllers.formatters.fund_formatter import format_fund_comprehensive, format_fund, format_event
-from src.api.dto.controller_response_dto import ControllerResponseDTO, ControllerResponseStatus
+from src.api.dto.controller_response_dto import ControllerResponseDTO
+from src.api.dto.response_codes import ApiResponseCode
 class FundController:
     """
     Controller for fund operations.
@@ -59,7 +60,7 @@ class FundController:
             fund = self.fund_service.get_fund(fund_id, session)
             
             if not fund:
-                return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
             
             # Format the response using comprehensive formatter with specified options
             formatted_fund = format_fund_comprehensive(
@@ -69,11 +70,11 @@ class FundController:
                 include_tax_statements=include_tax_statements
             )
 
-            return ControllerResponseDTO(data=formatted_fund, status=ControllerResponseStatus.SUCCESS.value)
+            return ControllerResponseDTO(data=formatted_fund, response_code=ApiResponseCode.SUCCESS)
             
         except Exception as e:
             current_app.logger.error(f"Error getting fund {fund_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
         finally:
             if 'session' in locals():
                 session.close()
@@ -91,7 +92,7 @@ class FundController:
             # Get pre-validated data from middleware
             fund_data = getattr(request, 'validated_data', {})
             if not fund_data:
-                return ControllerResponseDTO(error='No validated data available', status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
             
             # Get database session
             session = self._get_session()
@@ -105,21 +106,21 @@ class FundController:
                 
                 # Format the response using formatter
                 formatted_fund = format_fund(fund)
-                return ControllerResponseDTO(data=formatted_fund, status=ControllerResponseStatus.CREATED.value)
+                return ControllerResponseDTO(data=formatted_fund, response_code=ApiResponseCode.CREATED)
                 
             except ValueError as e:
                 session.rollback()
-                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.VALIDATION_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error creating fund: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
                 
         except Exception as e:
             current_app.logger.error(f"Error in create_fund: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def delete_fund(self, fund_id: int):
         """
@@ -140,30 +141,30 @@ class FundController:
                 success = self.fund_service.delete_fund(fund_id, session)
                 
                 if not success:
-                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 # Commit the transaction
                 session.commit()
                 
-                return ControllerResponseDTO(status=ControllerResponseStatus.DELETED.value, message="Fund deleted successfully")
+                return ControllerResponseDTO(response_code=ApiResponseCode.DELETED, message="Fund deleted successfully")
                 
             except ValueError as e:
                 # ENTERPRISE ERROR HANDLING: Validation errors
                 session.rollback()
-                return ControllerResponseDTO(error=f"Fund deletion validation failed: {str(e)}", status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=f"Fund deletion validation failed: {str(e)}", response_code=ApiResponseCode.VALIDATION_ERROR)
                 
             except Exception as e:
                 # ENTERPRISE ERROR HANDLING: Unexpected errors
                 current_app.logger.error(f"Error deleting fund: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
                 
             finally:
                 session.close()
             
         except Exception as e:
             current_app.logger.error(f"Error in delete_fund: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def add_capital_call(self, fund_id: int, event_data: dict):
         """
@@ -185,7 +186,7 @@ class FundController:
                 # Get the fund
                 fund = self.fund_service.get_fund(fund_id, session)
                 if not fund:
-                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 event = self.fund_event_service.add_capital_call(
                     fund=fund,
@@ -199,21 +200,21 @@ class FundController:
                 session.commit()
                 
                 formatted_event = format_event(event)
-                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                return ControllerResponseDTO(data=formatted_event, response_code=ApiResponseCode.CREATED)
                 
             except ValueError as e:
                 session.rollback()
-                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.VALIDATION_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error adding capital call: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
                 
         except Exception as e:
             current_app.logger.error(f"Error in add_capital_call: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status="server_error")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def add_return_of_capital(self, fund_id: int, event_data: dict):
         """
@@ -232,7 +233,7 @@ class FundController:
             required_fields = ['amount', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', response_code=ApiResponseCode.VALIDATION_ERROR)
             
             # Get database session
             session = self._get_session()
@@ -241,7 +242,7 @@ class FundController:
                 # Get the fund
                 fund = self.fund_service.get_fund(fund_id, session)
                 if not fund:
-                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 # Parse event date (business logic)
                 event_date = event_data['event_date']
@@ -264,21 +265,21 @@ class FundController:
                 
                 # Format the event for response
                 formatted_event = format_event(event)
-                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                return ControllerResponseDTO(data=formatted_event, response_code=ApiResponseCode.CREATED)
                 
             except ValueError as e:
                 session.rollback()
-                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.VALIDATION_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error adding return of capital: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
                 
         except Exception as e:
             current_app.logger.error(f"Error in add_return_of_capital: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status="server_error")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def add_unit_purchase(self, fund_id: int, event_data: dict):
         """
@@ -297,7 +298,7 @@ class FundController:
             required_fields = ['units_purchased', 'unit_price', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', response_code=ApiResponseCode.VALIDATION_ERROR)
             
             # Get database session
             session = self._get_session()
@@ -306,7 +307,7 @@ class FundController:
                 # Get the fund
                 fund = self.fund_service.get_fund(fund_id, session)
                 if not fund:
-                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 # Parse event date (business logic)
                 event_date = event_data['event_date']
@@ -331,21 +332,21 @@ class FundController:
                 
                 # Format the event for response
                 formatted_event = format_event(event)
-                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                return ControllerResponseDTO(data=formatted_event, response_code=ApiResponseCode.CREATED)
                 
             except ValueError as e:
                 session.rollback()
-                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.VALIDATION_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error adding unit purchase: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
                 
         except Exception as e:
             current_app.logger.error(f"Error in add_unit_purchase: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status="server_error")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def add_unit_sale(self, fund_id: int, event_data: dict):
         """
@@ -364,7 +365,7 @@ class FundController:
             required_fields = ['units_sold', 'unit_price', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', response_code=ApiResponseCode.VALIDATION_ERROR)
             
             # Get database session
             session = self._get_session()
@@ -373,7 +374,7 @@ class FundController:
                 # Get the fund
                 fund = self.fund_service.get_fund(fund_id, session)
                 if not fund:
-                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 # Parse event date (business logic)
                 event_date = event_data['event_date']
@@ -398,21 +399,21 @@ class FundController:
                 
                 # Format the event for response
                 formatted_event = format_event(event)
-                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                return ControllerResponseDTO(data=formatted_event, response_code=ApiResponseCode.CREATED)
                 
             except ValueError as e:
                 session.rollback()
-                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.VALIDATION_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error adding unit sale: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
                 
         except Exception as e:
             current_app.logger.error(f"Error in add_unit_sale: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status="server_error")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def add_nav_update(self, fund_id: int, event_data: dict):
         """
@@ -431,14 +432,14 @@ class FundController:
             required_fields = ['nav_per_share', 'event_date']
             for field in required_fields:
                 if field not in event_data:
-                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")            
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', response_code=ApiResponseCode.VALIDATION_ERROR)            
 
             session = self._get_session()
             
             try:
                 fund = self.fund_service.get_fund(fund_id, session)
                 if not fund:
-                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 # Parse event date (business logic)
                 event_date = event_data['event_date']
@@ -461,21 +462,21 @@ class FundController:
                 
                 # Format the event for response
                 formatted_event = format_event(event)
-                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                return ControllerResponseDTO(data=formatted_event, response_code=ApiResponseCode.CREATED)
                 
             except ValueError as e:
                 session.rollback()
-                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.VALIDATION_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error adding NAV update: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
                 
         except Exception as e:
             current_app.logger.error(f"Error in add_nav_update: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status="server_error")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def add_distribution(self, fund_id: int, event_data: dict):
         """
@@ -494,7 +495,7 @@ class FundController:
             required_fields = ['event_date', 'distribution_type']
             for field in required_fields:
                 if field not in event_data:
-                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', status="validation_error")
+                    return ControllerResponseDTO(error=f'Required field "{field}" is missing', response_code=ApiResponseCode.VALIDATION_ERROR)
             
             # Get database session
             session = self._get_session()
@@ -503,7 +504,7 @@ class FundController:
                 # Get the fund
                 fund = self.fund_service.get_fund(fund_id, session)
                 if not fund:
-                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 # Parse event date (business logic)
                 event_date = event_data['event_date']
@@ -540,7 +541,7 @@ class FundController:
                 else:
                     # Simple distribution
                     if 'amount' not in event_data:
-                        return ControllerResponseDTO(error='Required field "amount" is missing for simple distribution', status="validation_error")
+                        return ControllerResponseDTO(error='Required field "amount" is missing for simple distribution', response_code=ApiResponseCode.VALIDATION_ERROR)
                     
                     event = self.fund_event_service.add_distribution(
                         fund=fund,
@@ -558,21 +559,21 @@ class FundController:
                 
                 # Format the event for response
                 formatted_event = format_event(event)
-                return ControllerResponseDTO(data=formatted_event, status=ControllerResponseStatus.CREATED.value)
+                return ControllerResponseDTO(data=formatted_event, response_code=ApiResponseCode.CREATED)
                 
             except ValueError as e:
                 session.rollback()
-                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.VALIDATION_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error adding distribution: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
                 
         except Exception as e:
             current_app.logger.error(f"Error in add_distribution: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status="server_error")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def get_fund_events(self, fund_id: int):
         """
@@ -591,19 +592,19 @@ class FundController:
                 # Get fund events - service returns a list directly
                 events = self.fund_event_service.get_fund_events(fund_id, session)
                 if events is None:
-                    return ControllerResponseDTO(error="Fund not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 formatted_events = [format_event(event) for event in events]
-                return ControllerResponseDTO(data=formatted_events, status=ControllerResponseStatus.SUCCESS.value)
+                return ControllerResponseDTO(data=formatted_events, response_code=ApiResponseCode.SUCCESS)
             except ValueError as e:
-                return ControllerResponseDTO(error=str(e), status=ControllerResponseStatus.VALIDATION_ERROR.value)
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.VALIDATION_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error getting fund events: {str(e)}")
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
         except Exception as e:
             current_app.logger.error(f"Error in get_fund_events: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status="server_error")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def delete_fund_event(self, fund_id: int, event_id: int):
         """
@@ -622,18 +623,18 @@ class FundController:
             try:
                 success = self.fund_event_service.delete_fund_event(fund_id, event_id, session)
                 if not success:
-                    return ControllerResponseDTO(error="Event not found", status=ControllerResponseStatus.NOT_FOUND.value)
+                    return ControllerResponseDTO(error="Event not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 session.commit()
-                return ControllerResponseDTO(status=ControllerResponseStatus.DELETED.value)
+                return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
             except Exception as e:
                 current_app.logger.error(f"Error deleting fund event: {str(e)}")
                 session.rollback()
-                return ControllerResponseDTO(error="Internal server error", status=ControllerResponseStatus.SERVER_ERROR.value)
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
         except Exception as e:
             current_app.logger.error(f"Error in delete_fund_event: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", status="server_error")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
     def add_fund_event_cash_flow(self, fund_id: int, event_id: int, cash_flow_data: dict) -> Tuple[ApiResponse, int]:
         """
