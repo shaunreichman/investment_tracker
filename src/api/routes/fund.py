@@ -14,34 +14,48 @@ from src.tax.models import TaxStatement
 from src.fund.repositories import FundRepository
 from src.api.middleware.validation import validate_fund_data, validate_fund_event_data, validate_cash_flow_data
 from src.api.middleware.response_handlers import handle_controller_response, handle_delete_response
+from src.api.controllers.fund_controller import FundController
+from src.api.dto.api_response import ApiResponse
 
 # Create blueprint for fund routes
 fund_bp = Blueprint('fund', __name__)
 
+# Initialize fund controller (single instance for all routes)
+fund_controller = FundController()
+
 
 @fund_bp.route('/api/funds/<int:fund_id>', methods=['GET'])
 def fund_detail(fund_id):
-    """Get detailed information about a specific fund"""
+    """
+    Get detailed information about a specific fund.
+    
+    Path Parameters:
+        fund_id (int): ID of the fund to retrieve
+    
+    Query Parameters:
+        include_events (bool): Include fund events in response (default: true)
+        include_cash_flows (bool): Include cash flow details (default: false)
+        include_tax_statements (bool): Include tax statement data (default: false)
+        
+    Returns:
+        Standardized response with fund data and optional related information
+    """
     try:
-        from src.api.controllers.fund_controller import FundController
-
         # Parse query parameters for controlling response detail level
         include_events = request.args.get('include_events', 'true').lower() == 'true'
         include_cash_flows = request.args.get('include_cash_flows', 'false').lower() == 'true'
         include_tax_statements = request.args.get('include_tax_statements', 'false').lower() == 'true'
         
-        controller = FundController()
-        dto = controller.get_fund(
+        dto = fund_controller.get_fund(
             fund_id=fund_id,
             include_events=include_events,
             include_cash_flows=include_cash_flows,
             include_tax_statements=include_tax_statements
         )
         
-        # Use standardized response handler
         return handle_controller_response(dto, success_status_code=200)
+    
     except Exception as e:
-        from src.api.dto.api_response import ApiResponse
         response = ApiResponse(success=False, message=str(e))
         return jsonify(response.to_dict()), 500
 
@@ -49,36 +63,44 @@ def fund_detail(fund_id):
 @fund_bp.route('/api/funds', methods=['POST'])
 @validate_fund_data
 def create_fund():
-    """Create a new fund using the new FundController architecture"""
+    """
+    Create a new fund.
+    
+    Request Body:
+        name (str): Fund name (required)
+        description (str): Fund description (optional)
+        start_date (str): Fund start date in YYYY-MM-DD format (required)
+        end_date (str): Fund end date in YYYY-MM-DD format (optional)
+        entity_id (int): Associated entity ID (required)
+    
+    Returns:
+        Standardized response with created fund data
+    """
     try:
-        from src.api.controllers.fund_controller import FundController
-        
-        controller = FundController()
-        dto = controller.create_fund()
-        
-        # Use standardized response handler
+        dto = fund_controller.create_fund()
         return handle_controller_response(dto, success_status_code=201)
             
     except Exception as e:
-        from src.api.dto.api_response import ApiResponse
         response = ApiResponse(success=False, message=str(e))
         return jsonify(response.to_dict()), 500
 
 
 @fund_bp.route('/api/funds/<int:fund_id>', methods=['DELETE'])
 def delete_fund(fund_id):
-    """Delete a fund using enterprise validation"""
+    """
+    Delete a fund.
+    
+    Path Parameters:
+        fund_id (int): ID of the fund to delete
+    
+    Returns:
+        Standardized response confirming deletion (204 No Content on success)
+    """
     try:
-        from src.api.controllers.fund_controller import FundController
-        
-        controller = FundController()
-        dto = controller.delete_fund(fund_id)
-        
-        # Use specialized DELETE response handler
+        dto = fund_controller.delete_fund(fund_id)
         return handle_delete_response(dto)
             
     except Exception as e:
-        from src.api.dto.api_response import ApiResponse
         response = ApiResponse(success=False, message=str(e))
         return jsonify(response.to_dict()), 500
 
@@ -86,12 +108,22 @@ def delete_fund(fund_id):
 @fund_bp.route('/api/funds/<int:fund_id>/events', methods=['POST'])
 @validate_fund_event_data
 def create_fund_event(fund_id):
-    """Create a new fund event using the new FundController architecture"""
+    """
+    Create a new fund event.
+    
+    Path Parameters:
+        fund_id (int): ID of the fund
+    
+    Request Body:
+        event_type (str): Type of event (CAPITAL_CALL, RETURN_OF_CAPITAL, UNIT_PURCHASE, UNIT_SALE)
+        amount (float): Event amount (required)
+        event_date (str): Event date in YYYY-MM-DD format (required)
+        description (str): Event description (optional)
+    
+    Returns:
+        Standardized response with created event data
+    """
     try:
-        from src.api.controllers.fund_controller import FundController
-        from src.api.dto.api_response import ApiResponse
-        
-        controller = FundController()
         # Use validated data from middleware
         validated_data = request.validated_data
         
@@ -102,22 +134,21 @@ def create_fund_event(fund_id):
             return jsonify(response.to_dict()), 400
         
         if event_type == 'CAPITAL_CALL':
-            dto = controller.add_capital_call(fund_id, validated_data)
+            dto = fund_controller.add_capital_call(fund_id, validated_data)
         elif event_type == 'RETURN_OF_CAPITAL':
-            dto = controller.add_return_of_capital(fund_id, validated_data)
+            dto = fund_controller.add_return_of_capital(fund_id, validated_data)
         elif event_type == 'UNIT_PURCHASE':
-            dto = controller.add_unit_purchase(fund_id, validated_data)
+            dto = fund_controller.add_unit_purchase(fund_id, validated_data)
         elif event_type == 'UNIT_SALE':
-            dto = controller.add_unit_sale(fund_id, validated_data)
+            dto = fund_controller.add_unit_sale(fund_id, validated_data)
         elif event_type == 'NAV_UPDATE':
-            dto = controller.add_nav_update(fund_id, validated_data)
+            dto = fund_controller.add_nav_update(fund_id, validated_data)
         elif event_type == 'DISTRIBUTION':
-            dto = controller.add_distribution(fund_id, validated_data)
+            dto = fund_controller.add_distribution(fund_id, validated_data)
         else:
             response = ApiResponse(success=False, message=f'Unsupported event type: {event_type}')
             return jsonify(response.to_dict()), 400
         
-        # Use standardized response handler
         return handle_controller_response(dto, success_status_code=201)
             
     except Exception as e:
@@ -127,37 +158,41 @@ def create_fund_event(fund_id):
 
 @fund_bp.route('/api/funds/<int:fund_id>/events/<int:event_id>', methods=['DELETE'])
 def delete_fund_event(fund_id, event_id):
-    """Delete a specific fund event using the new FundController architecture"""
+    """
+    Delete a specific fund event.
+    
+    Path Parameters:
+        fund_id (int): ID of the fund
+        event_id (int): ID of the event to delete
+    
+    Returns:
+        Standardized response confirming deletion (204 No Content on success)
+    """
     try:
-        from src.api.controllers.fund_controller import FundController
-        
-        controller = FundController()
-        dto = controller.delete_fund_event(fund_id, event_id)
-        
-        # Use specialized DELETE response handler
+        dto = fund_controller.delete_fund_event(fund_id, event_id)
         return handle_delete_response(dto)
             
     except Exception as e:
-        from src.api.dto.api_response import ApiResponse
         response = ApiResponse(success=False, message=str(e))
         return jsonify(response.to_dict()), 500
 
 
 @fund_bp.route('/api/funds/<int:fund_id>/events', methods=['GET'])
 def get_fund_events(fund_id):
-    """Get all events for a specific fund - optimized for fast table updates"""
+    """
+    Get all events for a specific fund.
+    
+    Path Parameters:
+        fund_id (int): ID of the fund
+    
+    Returns:
+        Standardized response with list of fund events
+    """
     try:
-        from src.api.controllers.fund_controller import FundController
-        
-        controller = FundController()
-        dto = controller.get_fund_events(fund_id)
-        
-        # Use standardized response handler
+        dto = fund_controller.get_fund_events(fund_id)
         return handle_controller_response(dto, success_status_code=200)
             
     except Exception as e:
-        # Unexpected error
-        from src.api.dto.api_response import ApiResponse
         response = ApiResponse(success=False, message=str(e))
         return jsonify(response.to_dict()), 500
 
