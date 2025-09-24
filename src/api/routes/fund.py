@@ -10,7 +10,7 @@ All endpoints use middleware validation for input data.
 from flask import Blueprint, jsonify, request
 from datetime import datetime
 from src.fund.models import FundEvent, FundEventCashFlow
-from src.tax.models import TaxStatement
+# from src.tax.models import TaxStatement  # Replaced by FundTaxStatement
 from src.fund.repositories import FundRepository
 from src.api.middleware.validation import validate_fund_data, validate_fund_event_data, validate_cash_flow_data
 from src.api.middleware.response_handlers import handle_controller_response, handle_delete_response

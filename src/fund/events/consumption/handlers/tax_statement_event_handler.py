@@ -353,7 +353,7 @@ class TaxStatementEventHandler(EventConsumer):
             return None
             
         try:
-            from src.tax.models import TaxStatement
+            from src.fund.models.fund_tax_statement import FundTaxStatement
             
             # First get the fund to determine the entity_id
             fund = self.session.query(Fund).filter(Fund.id == fund_id).first()

@@ -4,7 +4,6 @@ Fund Duration Calculator.
 Pure mathematical calculation logic for fund duration operations.
 """
 
-from typing import Optional
 from datetime import date
 
 

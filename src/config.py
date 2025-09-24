@@ -4,7 +4,6 @@ This module handles database connection configuration for the centralized Postgr
 """
 
 import os
-from typing import Optional
 
 
 class DatabaseConfig:

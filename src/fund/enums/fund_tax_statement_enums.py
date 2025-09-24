@@ -7,7 +7,6 @@ This module contains all enum definitions for the fund tax statement system.
 from enum import Enum
 
 
-
 class SortFieldFundTaxStatement(Enum):
     """
     Sort field enum for fund tax statements.

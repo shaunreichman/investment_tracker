@@ -9,19 +9,10 @@ Architecture mirrors the successful fund refactor pattern.
 """
 
 # Import models
-from .contact import Contact
-from .investment_company import InvestmentCompany
+from src.investment_company.models.contact import Contact
+from src.investment_company.models.investment_company import InvestmentCompany
 
 __all__ = [
     'Contact',
     'InvestmentCompany',
 ]
-
-# Version information
-__version__ = '2.0.0'
-
-# Architecture information
-__architecture__ = 'service-oriented'
-__pattern__ = 'event-driven'
-__responsibility__ = 'data-persistence-only'
-__structure__ = 'separated-models'

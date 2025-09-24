@@ -10,7 +10,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, 
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.enums.fund_tax_statement_enums import FundTaxStatementFinancialYearType
+# from src.fund.enums.fund_tax_statement_enums import FundTaxStatementFinancialYearType
 
 
 class FundTaxStatement(Base):
@@ -68,6 +68,8 @@ class FundTaxStatement(Base):
     # Additional fields
     accountant = Column(String(255))  # (MANUAL) name of fund's accountant who prepared the tax statement
     notes = Column(Text)  # (MANUAL) additional notes
+    
+    # Metadata
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated
     

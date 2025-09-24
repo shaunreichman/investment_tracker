@@ -9,7 +9,7 @@ from typing import Dict, List, Any
 
 from src.investment_company.models import InvestmentCompany
 from src.investment_company.enums.company_enums import CompanyType
-from src.fund.enums import FundStatus
+from src.fund.enums.fund_enums import FundStatus
 from sqlalchemy.orm import Session
 
 

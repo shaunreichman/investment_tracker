@@ -5,7 +5,7 @@ Service for handling fund date calculations.
 from src.fund.models import Fund, FundFieldChange
 from src.shared.enums.shared_enums import SortOrder, EventOperation
 from src.fund.enums.fund_event_enums import EventType
-from src.fund.enums.fund_enums import FundStatus
+from src.fund.enums.fund_enums import FundStatus, FundTaxStatementFinancialYearType
 from src.fund.repositories import FundEventRepository, FundRepository
 from src.entity.repositories import EntityRepository
 from typing import Optional, List
@@ -19,7 +19,7 @@ class FundDateService:
         self.fund_event_repository = FundEventRepository()
         self.entity_repository = EntityRepository()
         self.logger = logging.getLogger(__name__)
-
+    
     def update_fund_start_date(self, fund_id: int, session: Session, event_id: Optional[int] = None, fund_event_operation: EventOperation = None) -> Optional[FundFieldChange]:
         """
         Update the start date of a fund.
@@ -110,18 +110,27 @@ class FundDateService:
         start_date = fund.start_date
         if not start_date:
             raise ValueError("Fund.start_date is not set")
-        
-        # Get entity for tax jurisdiction
-        entity = self.entity_repository.get_entity_by_id(fund.entity_id, session)
-        if not entity:
-            raise ValueError("Entity is not set")
-        
-        # Import calculation function from entity domain
-        from src.entity.calculations import get_financial_years_for_fund_period
-        
-        # Calculate financial years from start date to current date
+
         end_date = date.today()
-        financial_years = get_financial_years_for_fund_period(start_date, end_date, entity)
+
+        financial_years = set()
         
-        # Return sorted list (most recent first)
-        return sorted(list(financial_years), reverse=True)
+        financial_year_type = fund.tax_statement_financial_year_type
+        if financial_year_type == FundTaxStatementFinancialYearType.CALENDAR_YEAR:
+            for year in range(start_date.year, end_date.year + 1):
+                financial_years.add(str(year))
+        elif financial_year_type == FundTaxStatementFinancialYearType.HALF_YEAR:
+            if start_date.month <= 6:
+                start_year = start_date.year
+            else:
+                start_year = start_date.year + 1
+            if end_date.month <= 6:
+                end_year = end_date.year
+            else:
+                end_year = end_date.year + 1
+            for year in range(start_year, end_year + 1):
+                financial_years.add(str(year))
+        else:
+            raise ValueError(f"Invalid financial year type: {financial_year_type}")
+        
+        return financial_years

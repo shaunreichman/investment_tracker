@@ -7,7 +7,6 @@ This module contains all enum definitions for the fund event cash flow system.
 from enum import Enum
 
 
-
 class CashFlowDirection(Enum):
     """
     Cash flow direction enum.

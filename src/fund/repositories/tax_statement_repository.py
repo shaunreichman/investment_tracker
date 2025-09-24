@@ -16,7 +16,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, asc, desc
 
-from src.tax.models import TaxStatement
+from src.fund.models.fund_tax_statement import FundTaxStatement
 from src.shared.enums.shared_enums import SortOrder
 
 

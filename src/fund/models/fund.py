@@ -6,7 +6,7 @@ representing investment funds in the system.
 """
 
 from datetime import date, datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
@@ -34,6 +34,8 @@ class Fund(Base):
     currency = Column(Enum(Currency), nullable=False, default=Currency.AUD)  # (MANUAL) currency code for the fund
     tax_jurisdiction = Column(Enum(Country), nullable=False, default=Country.AU)  # (MANUAL) tax jurisdiction for the fund
     tax_statement_financial_year_type = Column(Enum(FundTaxStatementFinancialYearType), nullable=False)  # (CALCULATED) financial year type (eg. CALENDAR_YEAR or HALF_YEAR)
+    
+    # Metadata
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated
 

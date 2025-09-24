@@ -5,13 +5,13 @@ This module provides the DomainEvent model class,
 representing domain events in the fund system.
 """
 
-from typing import Optional, List, Any
-from datetime import date, datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON, Index
+from typing import Any
+from datetime import datetime, timezone
+from sqlalchemy import Column, Integer, String, DateTime, Enum, ForeignKey, Text, JSON, Index
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.enums import EventType
+from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import EventOperation
 
 

@@ -13,9 +13,11 @@ Services:
 from src.banking.services.bank_service import BankService
 from src.banking.services.bank_account_service import BankAccountService
 from src.banking.services.banking_validation_service import BankingValidationService
+from src.banking.services.bank_account_balance_service import BankAccountBalanceService
 
 __all__ = [
     'BankService',
     'BankAccountService', 
-    'BankingValidationService'
+    'BankingValidationService',
+    'BankAccountBalanceService',
 ]

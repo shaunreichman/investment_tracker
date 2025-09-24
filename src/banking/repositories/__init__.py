@@ -11,12 +11,10 @@ Key responsibilities:
 - Caching strategies for performance optimization
 """
 
-from .bank_repository import BankRepository
-from .bank_account_repository import BankAccountRepository
-from .banking_summary_repository import BankingSummaryRepository
+from src.banking.repositories.bank_repository import BankRepository
+from src.banking.repositories.bank_account_repository import BankAccountRepository
 
 __all__ = [
     "BankRepository",
     "BankAccountRepository", 
-    "BankingSummaryRepository"
 ]

@@ -5,7 +5,7 @@ Pure mathematical calculations for debt cost and opportunity cost calculations.
 Follows calculator layer rules: stateless, pure functions, no dependencies.
 """
 
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Optional
 from datetime import date, timedelta
 from dataclasses import dataclass
 
@@ -13,30 +13,20 @@ from src.fund.models.fund_event import FundEvent
 from src.rates.models.risk_free_rate import RiskFreeRate
 
 
-@dataclass
-class DebtCostResult:
-    """
-    Result of debt cost calculation.
+# @dataclass
+# class DebtCostResult:
+#     """
+#     Result of debt cost calculation.
     
-    Contains all the calculated values from the debt cost calculation
-    to provide comprehensive information about the opportunity cost.
-    """
-    total_debt_cost: float
-    average_risk_free_rate: float
-    debt_cost_percentage: float
-    investment_duration_years: float
-    average_equity: float
-    total_days: int
-
-@dataclass
-class DailyDebtCost:
-    """
-    Daily debt cost calculation result.
-    """
-    date: date
-    debt_cost: float
-    equity: float
-    rate: float
+#     Contains all the calculated values from the debt cost calculation
+#     to provide comprehensive information about the opportunity cost.
+#     """
+#     total_debt_cost: float
+#     average_risk_free_rate: float
+#     debt_cost_percentage: float
+#     investment_duration_years: float
+#     average_equity: float
+#     total_days: int
 
 
 class DailyDebtCostCalculator:
@@ -54,7 +44,7 @@ class DailyDebtCostCalculator:
         risk_free_rates: List[RiskFreeRate], 
         start_date: Optional[date] = None, 
         end_date: Optional[date] = None, 
-    ) -> DebtCostResult:
+    ) -> Dict[date, Dict[str, Any]]:
         """
         Calculate debt cost (opportunity cost) using daily/period-by-period accuracy.
         
@@ -84,7 +74,7 @@ class DailyDebtCostCalculator:
         equity_periods = DailyDebtCostCalculator._build_equity_periods(filtered_events)
         
         # Calculate debt cost for each equity period
-        return DailyDebtCostCalculator._calculate_period_debt_costs(equity_periods, rate_periods, start_date, end_date)
+        return DailyDebtCostCalculator._calculate_daily_debt_costs(equity_periods, rate_periods)
     
     @staticmethod
     def _build_rate_periods(risk_free_rates: List[RiskFreeRate], start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[Dict[str, Any]]:

@@ -5,13 +5,13 @@ This module provides the FundEvent model class,
 representing events that occur within funds.
 """
 
-from typing import Optional, List
-from datetime import date, datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON, Index
+from typing import List
+from datetime import datetime, timezone
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.enums import EventType, DistributionType, FundTrackingType, TaxPaymentType, GroupType
+from src.fund.enums.fund_event_enums import EventType, DistributionType, FundTrackingType, TaxPaymentType, GroupType
 
 
 class FundEvent(Base):

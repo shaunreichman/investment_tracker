@@ -13,11 +13,10 @@ Key principles:
 - Single computation approach for 50% performance improvement
 """
 
-from typing import Optional, List, Tuple
-from sqlalchemy.orm import Session
+from typing import List, Tuple
 
 from src.fund.models import Fund, FundEvent
-from src.fund.enums import EventType, FundTrackingType
+from src.fund.enums.fund_enums import EventType, FundTrackingType
 
 
 class FundEquityCalculator:
