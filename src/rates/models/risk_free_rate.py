@@ -29,9 +29,9 @@ class RiskFreeRate(Base):
 
     # Composite unique constraint
     __table_args__ = (
-        UniqueConstraint('currency', 'rate_date', 'rate_type', name='uq_risk_free_rate'),
+        UniqueConstraint('currency', 'date', 'rate_type', name='uq_risk_free_rate'),
     )
     
     def __repr__(self):
-        return f"<RiskFreeRate(id={self.id}, currency='{self.currency}', date={self.rate_date}, rate={self.rate}%)>"
+        return f"<RiskFreeRate(id={self.id}, currency='{self.currency}', date={self.date}, rate={self.rate}%)>"
     

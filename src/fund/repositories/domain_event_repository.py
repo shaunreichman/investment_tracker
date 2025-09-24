@@ -12,14 +12,12 @@ Key responsibilities:
 """
 
 from typing import List, Optional, Dict, Any
-from datetime import date
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, desc, func
+from sqlalchemy import desc
 
 from src.fund.models import DomainEvent, DomainFundEvent
 from src.fund.enums import EventType
 from src.shared.enums.shared_enums import EventOperation
-
 
 
 class DomainEventRepository:
@@ -33,14 +31,14 @@ class DomainEventRepository:
     4. Managing event lifecycle
     """
     
-    def __init__(self, session: Session):
+    def __init__(self):
         """
         Initialize the repository.
         
         Args:
             session: Database session for all operations
         """
-        self.session = session
+        pass
 
     def store_domain_fund_event(self, fund_id: int, event_type: EventType, event_operation: EventOperation, event_id: int, event_data: Dict[str, Any], session: Session) -> DomainFundEvent:
         """

@@ -8,22 +8,14 @@ for business logic components to interact with data.
 
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.repositories.fund_event_repository import FundEventRepository
-from src.fund.repositories.capital_event_repository import CapitalEventRepository
-from src.fund.repositories.unit_event_repository import UnitEventRepository
-from src.fund.repositories.tax_event_repository import TaxEventRepository
-from src.fund.repositories.distribution_event_repository import DistributionEventRepository
-from src.fund.repositories.tax_statement_repository import TaxStatementRepository
-from src.fund.repositories.domain_event_repository import DomainEventRepository
+from src.fund.repositories.fund_event_cash_flow_repository import FundEventCashFlowRepository
 from src.fund.repositories.fund_tax_statement_repository import FundTaxStatementRepository
+from src.fund.repositories.domain_event_repository import DomainEventRepository
 
 __all__ = [
     'FundRepository',
     'FundEventRepository',
-    'CapitalEventRepository',
-    'UnitEventRepository',
-    'TaxEventRepository',
-    'DistributionEventRepository',
-    'TaxStatementRepository',
-    'DomainEventRepository',
+    'FundEventCashFlowRepository',
     'FundTaxStatementRepository',
+    'DomainEventRepository',
 ]

@@ -46,7 +46,7 @@ class FundStatusService:
     # STATUS TRANSITION LOGIC AND BUSINESS RULES
     # ============================================================================
     
-    def update_status_after_equity_event(self, fund: 'Fund', session: Optional[Session] = None) -> bool:
+    def update_status_after_equity_event(self, fund: Fund, session: Optional[Session] = None) -> bool:
         """
         Update the fund status based on current equity balance and tax statement status.
         
@@ -76,7 +76,7 @@ class FundStatusService:
             status_changes.append(FundFieldChange(field_name='status', old_value=old_status, new_value=fund.status))
         return status_changes if status_changes else None
     
-    def update_status_after_tax_statement(self, fund: 'Fund', session: Optional[Session] = None) -> bool:
+    def update_status_after_tax_statement(self, fund: Fund, session: Optional[Session] = None) -> bool:
         """
         Update fund status after a tax statement event.
                 
@@ -106,7 +106,7 @@ class FundStatusService:
             status_changes.append(FundFieldChange(field_name='status', old_value=old_status, new_value=fund.status))
         return status_changes if status_changes else None
     
-    def _is_final_tax_statement_received(self, fund: 'Fund', session: Optional[Session] = None) -> bool:
+    def _is_final_tax_statement_received(self, fund: Fund, session: Optional[Session] = None) -> bool:
         """
         Check if the final tax statement has been received for a realized fund.
         
@@ -135,12 +135,9 @@ class FundStatusService:
             return False
         
         # Use repository for data access instead of direct model access
-        from src.fund.repositories import TaxStatementRepository
-        tax_statement_repository = TaxStatementRepository()
-        
-        # Check if there's a tax statement with a tax payment date after the end date
-        # This indicates that tax obligations for periods after the fund ended are now due
-        tax_statements = tax_statement_repository.get_by_fund_after_date(fund.id, end_date, session)
+        from src.fund.repositories import FundTaxStatementRepository
+        fund_tax_statement_repository = FundTaxStatementRepository()
+        tax_statements = fund_tax_statement_repository.get_fund_tax_statements(fund_id=fund.id, start_tax_payment_date=end_date, session=session)
         
         # Return True if any tax statement has a payment date after the end date
         return len(tax_statements) > 0

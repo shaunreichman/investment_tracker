@@ -11,7 +11,8 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, 
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.enums.fund_event_enums import EventType, DistributionType, FundTrackingType, TaxPaymentType, GroupType
+from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType
+from src.fund.enums.fund_enums import FundTrackingType
 
 
 class FundEvent(Base):
@@ -86,7 +87,7 @@ class FundEvent(Base):
     # Relationships
     fund = relationship("Fund", back_populates="fund_events")
     cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan")
-    tax_statement = relationship("TaxStatement", lazy='selectin')  # Eager load for tax statement data
+    tax_statement = relationship("FundTaxStatement", lazy='selectin')  # Eager load for tax statement data
     
     # Performance indexes
     __table_args__ = (

@@ -47,6 +47,8 @@ class FundTaxStatementRepository:
                                 fund_id: Optional[int] = None,
                                 entity_id: Optional[int] = None,
                                 financial_year: Optional[str] = None,
+                                start_tax_payment_date: Optional[date] = None,
+                                end_tax_payment_date: Optional[date] = None,
                                 sort_by: SortFieldFundTaxStatement = SortFieldFundTaxStatement.FINANCIAL_YEAR,
                                 sort_order: SortOrder = SortOrder.ASC) -> List[FundTaxStatement]:
         """
@@ -57,6 +59,8 @@ class FundTaxStatementRepository:
             fund_id: ID of the fund to filter by
             entity_id: ID of the entity to filter by
             financial_year: Financial year to filter by
+            start_tax_payment_date: Start tax payment date to filter by
+            end_tax_payment_date: End tax payment date to filter by
             sort_by: Field to sort by
             sort_order: Order to sort by
 
@@ -86,6 +90,10 @@ class FundTaxStatementRepository:
             query = query.filter(FundTaxStatement.entity_id == entity_id)
         if financial_year:
             query = query.filter(FundTaxStatement.financial_year == financial_year)
+        if start_tax_payment_date:
+            query = query.filter(FundTaxStatement.tax_payment_date >= start_tax_payment_date)
+        if end_tax_payment_date:
+            query = query.filter(FundTaxStatement.tax_payment_date <= end_tax_payment_date)
 
         # Sort the results
         if sort_by == SortFieldFundTaxStatement.FINANCIAL_YEAR:

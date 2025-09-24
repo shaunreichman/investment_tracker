@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 import logging
 
 from src.entity.repositories import EntityRepository
-from src.entity.services import EntityValidationService
+from src.entity.services.entity_validation_service import EntityValidationService
 from src.entity.models import Entity
 from src.entity.enums.entity_enums import SortFieldEntity, EntityType
 from src.shared.enums.shared_enums import SortOrder, Country

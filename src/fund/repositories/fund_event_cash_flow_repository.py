@@ -12,14 +12,10 @@ Key responsibilities:
 """
 
 from typing import List, Optional, Dict, Any
-from datetime import date, datetime
-from decimal import Decimal
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
 
 from src.fund.models import FundEventCashFlow
-from src.fund.enums import CashFlowDirection
-from src.fund.enums import SortFieldFundEventCashFlow
+from src.fund.enums.fund_event_cash_flow_enums import SortFieldFundEventCashFlow
 from src.shared.enums.shared_enums import SortOrder
 
 

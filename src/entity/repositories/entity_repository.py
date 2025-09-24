@@ -16,7 +16,8 @@ from sqlalchemy.orm import Session
 
 from src.entity.models import Entity
 from src.entity.enums.entity_enums import SortFieldEntity
-from src.shared.enums.shared_enums import SortOrder, EntityType
+from src.shared.enums.shared_enums import SortOrder
+from src.entity.enums.entity_enums import EntityType
 
 
 class EntityRepository:

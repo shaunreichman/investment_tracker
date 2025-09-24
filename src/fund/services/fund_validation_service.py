@@ -5,13 +5,12 @@ Provides comprehensive validation for fund operations including deletion validat
 Follows enterprise patterns established in company validation service.
 """
 
-from typing import Dict, List, Optional, Any
-from datetime import date
+from typing import Dict, List, Any
 from sqlalchemy.orm import Session
 from src.fund.models import Fund
-from src.fund.enums.fund_enums import FundStatus, FundTrackingType
+from src.fund.enums.fund_enums import FundTrackingType
 from src.fund.enums.fund_event_enums import EventType, DistributionType
-from src.fund.repositories import FundEventRepository, TaxStatementRepository, DomainEventRepository, CapitalEventRepository
+from src.fund.repositories import FundEventRepository, FundTaxStatementRepository
 
 
 class FundValidationService:
@@ -20,9 +19,7 @@ class FundValidationService:
     def __init__(self):
         """Initialize the validation service with required repositories."""
         self.fund_event_repository = FundEventRepository()
-        self.tax_statement_repository = TaxStatementRepository()
-        self.capital_event_repository = CapitalEventRepository()
-        # DomainEventRepository requires session, so we'll create it when needed
+        self.fund_tax_statement_repository = FundTaxStatementRepository()
     
     def validate_fund_deletion(self, fund: Fund, session: Session) -> Dict[str, List[str]]:
         """
@@ -46,20 +43,11 @@ class FundValidationService:
             ]
         
         # BUSINESS RULE: Prevent deletion of funds with tax statements
-        tax_statements_count = self.tax_statement_repository.get_statement_count_by_fund(fund.id, session)
-        if tax_statements_count > 0:
+        tax_statements = self.fund_tax_statement_repository.get_fund_tax_statements(fund_id=fund.id, session=session)
+        if len(tax_statements) > 0:
             errors['tax_statements'] = [
-                f'Cannot delete fund with {tax_statements_count} tax statements. '
+                f'Cannot delete fund with {len(tax_statements)} tax statements. '
                 f'Fund must have 0 tax statements to be deleted.'
-            ]
-        
-        # BUSINESS RULE: Prevent deletion of funds with domain events
-        domain_event_repository = DomainEventRepository(session)
-        domain_events_count = domain_event_repository.get_event_count_by_fund(fund.id, session)
-        if domain_events_count > 0:
-            errors['domain_events'] = [
-                f'Cannot delete fund with {domain_events_count} domain events. '
-                f'Fund must have 0 domain events to be deleted.'
             ]
         
         return errors
@@ -94,9 +82,6 @@ class FundValidationService:
         
         Args:
             event_data: Event data
-            amount: Capital call amount
-            call_date: Date of the capital call
-            reference_number: External reference number
             session: Database session
             
         Returns:
@@ -129,10 +114,7 @@ class FundValidationService:
         Validate return of capital creation.
         
         Args:
-            fund: Fund object
-            amount: Return amount
-            date: Date of the return
-            reference_number: External reference number
+            event_data: Event data
             session: Database session
             
         Returns:

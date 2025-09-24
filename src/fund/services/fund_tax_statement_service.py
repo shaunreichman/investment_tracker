@@ -34,6 +34,8 @@ class FundTaxStatementService:
         fund_id: Optional[int] = None,
         entity_id: Optional[int] = None,
         financial_year: Optional[str] = None,
+        start_tax_payment_date: Optional[date] = None,
+        end_tax_payment_date: Optional[date] = None,
         sort_by: SortFieldFundTaxStatement = SortFieldFundTaxStatement.FINANCIAL_YEAR,
         sort_order: SortOrder = SortOrder.ASC
     )-> List[FundTaxStatement]:
@@ -44,6 +46,8 @@ class FundTaxStatementService:
             fund_id: ID of the fund to filter by
             entity_id: ID of the entity to filter by
             financial_year: Financial year to filter by
+            start_tax_payment_date: Start tax payment date to filter by
+            end_tax_payment_date: End tax payment date to filter by
             sort_by: Field to sort by
             sort_order: Order to sort by
             session: Database session
@@ -51,7 +55,7 @@ class FundTaxStatementService:
         Returns:
             List[FundTaxStatement]: List of fund tax statements
         """
-        return self.fund_tax_statement_repository.get_fund_tax_statements(fund_id, entity_id, financial_year, status, sort_by, sort_order, session)
+        return self.fund_tax_statement_repository.get_fund_tax_statements(fund_id, entity_id, financial_year, start_tax_payment_date, end_tax_payment_date, sort_by, sort_order, session)
         
     
     def get_fund_tax_statement_by_id(self, fund_tax_statement_id: int, session: Session) -> Optional[FundTaxStatement]:

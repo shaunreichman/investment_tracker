@@ -15,19 +15,14 @@ import logging
 from typing import List, Optional, Dict, Any
 from datetime import date
 from sqlalchemy.orm import Session
+from src.fund.models import FundEvent
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType, SortFieldFundEvent
 from src.shared.enums.shared_enums import EventOperation, SortOrder
-from src.fund.repositories import DomainEventRepository
-from typing import TYPE_CHECKING
+from src.fund.repositories import DomainEventRepository, FundEventRepository
+from src.fund.services import FundValidationService, FundEventSecondaryService
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from src.fund.models import Fund, FundEvent
-    from src.fund.repositories import CapitalEventRepository, UnitEventRepository, TaxEventRepository, DistributionEventRepository
-    from src.fund.services import FundValidationService
-
 
 class FundEventService:
     """
@@ -41,36 +36,13 @@ class FundEventService:
     - Event querying and filtering
     """
     
-    def __init__(self, 
-                 capital_event_repository: 'CapitalEventRepository' = None,
-                 unit_event_repository: 'UnitEventRepository' = None,
-                 tax_event_repository: 'TaxEventRepository' = None,
-                 distribution_event_repository: 'DistributionEventRepository' = None,
-                 fund_event_repository: 'FundEventRepository' = None,
-                 validation_service: 'FundValidationService' = None,
-                 fund_event_secondary_service: 'FundEventSecondaryService' = None):
+    def __init__(self): 
         """
         Initialize the FundEventService with specialized repositories.
-        
-        Args:
-            capital_event_repository: Repository for capital events
-            unit_event_repository: Repository for unit events
-            tax_event_repository: Repository for tax events
-            distribution_event_repository: Repository for distribution events
-            fund_event_repository: Repository for complex queries
-            validation_service: Service for validation logic
-            fund_event_secondary_service: Service for handling secondary impacts
         """
-        from src.fund.repositories import CapitalEventRepository, UnitEventRepository, TaxEventRepository, DistributionEventRepository, FundEventRepository, DomainEventRepository
-        from src.fund.services.fund_validation_service import FundValidationService
-        from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
-        self.capital_event_repository = capital_event_repository or CapitalEventRepository()
-        self.unit_event_repository = unit_event_repository or UnitEventRepository()
-        self.tax_event_repository = tax_event_repository or TaxEventRepository()
-        self.distribution_event_repository = distribution_event_repository or DistributionEventRepository()
-        self.fund_event_repository = fund_event_repository or FundEventRepository()
-        self.validation_service = validation_service or FundValidationService()
-        self.fund_event_secondary_service = fund_event_secondary_service or FundEventSecondaryService()
+        self.fund_event_repository = FundEventRepository()
+        self.validation_service = FundValidationService()
+        self.fund_event_secondary_service = FundEventSecondaryService()
     
 
     def get_fund_events(self, session: Session,
