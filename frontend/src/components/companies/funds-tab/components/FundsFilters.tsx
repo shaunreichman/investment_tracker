@@ -33,7 +33,7 @@ export const FundsFilters: React.FC<FundsFiltersProps> = ({
   onSearchChange,
   onStatusFilterChange,
   onCurrencyFilterChange,
-  onFundTypeFilterChange,
+  onFundTrackingTypeFilterChange,
   onViewModeChange,
   onClearFilters,
 }) => {
@@ -89,7 +89,7 @@ export const FundsFilters: React.FC<FundsFiltersProps> = ({
             <Select
               value={fundTypeFilter}
               label="Fund Type Filter"
-              onChange={onFundTypeFilterChange}
+              onChange={onFundTrackingTypeFilterChange}
             >
               <MenuItem value="all">All Types</MenuItem>
               <MenuItem value="venture_capital">Venture Capital</MenuItem>
@@ -147,7 +147,7 @@ export const FundsFilters: React.FC<FundsFiltersProps> = ({
               <Chip
                 label={`Type: ${fundTypeFilter}`}
                 size="small"
-                onDelete={() => onFundTypeFilterChange({ target: { value: 'all' } } as any)}
+                onDelete={() => onFundTrackingTypeFilterChange({ target: { value: 'all' } } as any)}
               />
             )}
             {searchTerm && (

@@ -13,7 +13,7 @@ import {
   CreateInvestmentCompanyData,
   Entity,
   CreateEntityData,
-  FundType,
+  FundTrackingType,
   FundStatus,
   EventType
 } from '../types/api';
@@ -29,7 +29,7 @@ const createMockFund = (overrides: Partial<Fund> = {}): Fund => ({
   investment_company_id: 1,
   commitment_amount: 1000000,
   expected_irr: 0.15,
-  tracking_type: FundType.NAV_BASED,
+  tracking_type: FundTrackingType.NAV_BASED,
   status: FundStatus.ACTIVE,
   currency: 'AUD',
   current_equity_balance: 1000000,
@@ -171,7 +171,7 @@ describe('API Client', () => {
           investment_company_id: 1,
           commitment_amount: 1000000,
           expected_irr: 0.15,
-          tracking_type: FundType.NAV_BASED
+          tracking_type: FundTrackingType.NAV_BASED
         };
         
         const mockFund = createMockFund(createData);

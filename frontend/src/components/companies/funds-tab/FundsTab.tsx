@@ -38,7 +38,7 @@ export const FundsTab: React.FC<FundsTabProps> = ({
     fundTypeFilter,
     handleStatusFilterChange,
     handleCurrencyFilterChange,
-    handleFundTypeFilterChange,
+    handleFundTrackingTypeFilterChange,
     clearAllFilters,
   } = useFundsFilters({
     initialFilters: {
@@ -114,7 +114,7 @@ export const FundsTab: React.FC<FundsTabProps> = ({
         onSearchChange={handleSearchChange}
         onStatusFilterChange={handleStatusFilterChange}
         onCurrencyFilterChange={handleCurrencyFilterChange}
-        onFundTypeFilterChange={handleFundTypeFilterChange}
+        onFundTrackingTypeFilterChange={handleFundTrackingTypeFilterChange}
         onViewModeChange={handleViewModeChange}
         onClearFilters={clearAllFilters}
       />

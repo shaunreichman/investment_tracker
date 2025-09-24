@@ -17,7 +17,7 @@ from decimal import Decimal
 from unittest.mock import Mock, patch
 
 from src.fund.services.fund_calculation_service import FundCalculationService
-from src.fund.enums import EventType, FundType
+from src.fund.enums import EventType, FundTrackingType
 from tests.factories import FundEventFactory, FundFactory
 
 
@@ -30,7 +30,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_no_events(self):
         """Test NAV field calculation with no events"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = []
         
         self.service.calculate_nav_fields_on_subsequent_capital_fund_events_after_capital_event(
@@ -42,7 +42,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_single_purchase(self):
         """Test NAV field calculation with single purchase event"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -69,7 +69,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_single_sale(self):
         """Test NAV field calculation with single sale event"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -111,7 +111,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_multiple_purchases_fifo_order(self):
         """Test NAV field calculation with multiple purchases maintaining FIFO order"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -153,7 +153,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_fifo_consumption_order(self):
         """Test NAV field calculation with FIFO consumption order"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -199,7 +199,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_partial_fifo_consumption(self):
         """Test NAV field calculation with partial FIFO consumption"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -235,7 +235,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_start_idx_not_zero(self):
         """Test NAV field calculation starting from non-zero index"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -296,7 +296,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_zero_units_purchase(self):
         """Test NAV field calculation with zero units purchase"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -322,7 +322,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_zero_units_sale(self):
         """Test NAV field calculation with zero units sale"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -356,7 +356,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_zero_unit_price(self):
         """Test NAV field calculation with zero unit price"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -380,7 +380,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_no_brokerage_fees(self):
         """Test NAV field calculation with no brokerage fees"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -404,7 +404,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_non_capital_event(self):
         """Test NAV field calculation with non-capital event (should not affect FIFO)"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -434,7 +434,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_high_precision_calculations(self):
         """Test NAV field calculation with high precision numbers"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -461,7 +461,7 @@ class TestFIFOCalculationService:
     
     def test_calculate_nav_fields_very_large_numbers(self):
         """Test NAV field calculation with very large numbers"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -492,7 +492,7 @@ class TestFIFOCalculationEdgeCases:
     
     def test_calculate_nav_fields_insufficient_units_for_sale(self):
         """Test NAV field calculation when sale exceeds available units"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -527,7 +527,7 @@ class TestFIFOCalculationEdgeCases:
     
     def test_calculate_nav_fields_negative_brokerage_fees_validation(self):
         """Test that negative brokerage fees are not allowed (validation should prevent this)"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -548,7 +548,7 @@ class TestFIFOCalculationEdgeCases:
     
     def test_calculate_nav_fields_mixed_event_sequence(self):
         """Test NAV field calculation with mixed event sequence"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,

@@ -50,7 +50,7 @@ from src.investment_company.events.domain import (
 )
 from src.investment_company.enums import CompanyType, CompanyStatus, CompanyDomainEventType
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType
+from src.fund.enums import FundStatus, FundTrackingType
 from src.entity.models import Entity
 from tests.factories import InvestmentCompanyFactory, ContactFactory, FundFactory, EntityFactory
 

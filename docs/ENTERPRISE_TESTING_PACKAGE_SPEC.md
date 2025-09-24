@@ -766,7 +766,7 @@ Each phase must meet its success criteria before proceeding to the next phase. Q
 def test_orchestrator_validation(self):
     mock_session = Mock(spec=Session)
     mock_fund = Mock(spec=Fund)
-    mock_fund.tracking_type = FundType.COST_BASED
+    mock_fund.tracking_type = FundTrackingType.COST_BASED
     
     orchestrator = FundUpdateOrchestrator()
     result = orchestrator.validate_event_data({'event_type': 'CAPITAL_CALL'})
@@ -798,13 +798,13 @@ def test_fund_workflow_integration(self, db_session):
     
     # Create real objects
     fund = FundFactory.create(
-        tracking_type=FundType.COST_BASED,
+        tracking_type=FundTrackingType.COST_BASED,
         commitment_amount=100000.0
     )
     db_session.commit()
     
     # Test complete workflow
-    fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+    fund.create_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
     assert fund.current_equity_balance == 50000.0
 ```
 

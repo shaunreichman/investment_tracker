@@ -6,7 +6,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import { AccountBalance } from '@mui/icons-material';
-import { ExtendedFund, FundType, FundStatus } from '../../../../types/api';
+import { ExtendedFund, FundTrackingType, FundStatus } from '../../../../types/api';
 // formatCurrency is supplied via props
 
 interface SectionProps {
@@ -23,11 +23,11 @@ interface SectionProps {
 const EquitySection: React.FC<SectionProps> = React.memo(({ fund, formatCurrency, formatDate, isLoading = false }) => {
 
   // Enhanced data organization for equity and NAV metrics
-  const isActiveNavFund = fund.tracking_type === FundType.NAV_BASED && fund.status === FundStatus.ACTIVE;
+  const isActiveNavFund = fund.tracking_type === FundTrackingType.NAV_BASED && fund.status === FundStatus.ACTIVE;
   
   const equityMetrics = [
     // Current Balance for cost-based funds, Current Cost of Units only for active NAV-based funds
-    ...(fund.tracking_type === FundType.COST_BASED ? [{
+    ...(fund.tracking_type === FundTrackingType.COST_BASED ? [{
       label: 'Current Balance',
       value: fund.current_equity_balance ?? null,
       color: 'primary.main',
@@ -41,7 +41,7 @@ const EquitySection: React.FC<SectionProps> = React.memo(({ fund, formatCurrency
       priority: 1
     }] : []),
     {
-      label: fund.tracking_type === FundType.NAV_BASED ? 'Average Cost of Units' : 'Average Balance',
+      label: fund.tracking_type === FundTrackingType.NAV_BASED ? 'Average Cost of Units' : 'Average Balance',
       value: fund.average_equity_balance ?? null,
       color: 'primary.main',
       icon: '📊',
@@ -99,7 +99,7 @@ const EquitySection: React.FC<SectionProps> = React.memo(({ fund, formatCurrency
       <Box display="flex" alignItems="center" mb={0.5}>
         <AccountBalance color="primary" sx={{ mr: 0.5, fontSize: 16 }} />
         <Typography variant="h6" sx={{ fontSize: 16 }}>
-          {fund.tracking_type === FundType.NAV_BASED ? 'Equity & NAV Summary' : 'Equity Position'}
+          {fund.tracking_type === FundTrackingType.NAV_BASED ? 'Equity & NAV Summary' : 'Equity Position'}
         </Typography>
         {/* Show loading indicator for this section */}
         {isLoading && (

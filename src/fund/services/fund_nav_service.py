@@ -4,7 +4,8 @@ Service for handling fund NAV calculations.
 
 from sqlalchemy.orm import Session
 from src.fund.repositories import FundEventRepository
-from src.shared.enums import SortOrder
+from src.fund.enums.fund_event_enums import EventType
+from src.shared.enums.shared_enums import SortOrder
 from src.fund.models import Fund, FundFieldChange, FundEvent
 import logging
 from typing import List
@@ -21,7 +22,7 @@ class FundNavService:
         old_current_unit_price = fund.current_unit_price
         old_current_nav_total = fund.current_nav_total
 
-        events = FundEventRepository.get_by_fund(fund.id, session, 
+        events = FundEventRepository.get_fund_events(session, fund.id, 
                     event_types=[EventType.NAV_UPDATE],
                     sort_order=SortOrder.ASC)
         if events:

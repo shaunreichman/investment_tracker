@@ -8,13 +8,14 @@ delegated to services through the orchestrator.
 
 # Import enums first to ensure they're registered with SQLAlchemy
 from src.fund.enums import (
-    FundType,
+    FundTrackingType,
     FundStatus,
     EventType,
     DistributionType,
     CashFlowDirection,
     TaxPaymentType,
-    GroupType
+    GroupType,
+    SortFieldFundTaxStatement
 )
 
 # Import fund models
@@ -22,6 +23,7 @@ from src.fund.models.domain_event import DomainEvent, DomainFundEvent, FundField
 from src.fund.models.fund_event_cash_flow import FundEventCashFlow
 from src.fund.models.fund_event import FundEvent
 from src.fund.models.fund import Fund
+from src.fund.models.fund_tax_statement import FundTaxStatement
 
 __all__ = [
     'DomainEvent',
@@ -30,14 +32,16 @@ __all__ = [
     'FundEventCashFlow', 
     'FundEvent',
     'Fund',
+    'FundTaxStatement',
     # Also export enums for convenience
-    'FundType',
+    'FundTrackingType',
     'FundStatus',
     'EventType',
     'DistributionType',
     'CashFlowDirection',
     'TaxPaymentType',
-    'GroupType'
+    'GroupType',
+    'SortFieldFundTaxStatement',
 ]
 
 # Version information

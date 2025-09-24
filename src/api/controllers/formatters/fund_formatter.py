@@ -5,8 +5,7 @@ Formatters for Fund objects.
 """
 
 from typing import Dict, Any, Optional, List
-from src.fund.models import Fund, FundEvent, FundEventCashFlow
-from src.api.controllers.formatters.tax_formatter import format_tax_statement
+from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement
 
 def format_fund(fund: Fund) -> Dict[str, Any]:
     """
@@ -79,7 +78,7 @@ def format_fund(fund: Fund) -> Dict[str, Any]:
     }
 
 
-def format_event(event: FundEvent) -> Dict[str, Any]:
+def format_fund_event(event: FundEvent) -> Dict[str, Any]:
     """
     Format a FundEvent object for HTTP response.
     
@@ -141,7 +140,7 @@ def format_event(event: FundEvent) -> Dict[str, Any]:
     }
 
 
-def format_cash_flow(cash_flow: FundEventCashFlow) -> Dict[str, Any]:
+def format_fund_event_cash_flow(cash_flow: FundEventCashFlow) -> Dict[str, Any]:
     """
     Format a FundEventCashFlow object for HTTP response.
     
@@ -172,10 +171,52 @@ def format_cash_flow(cash_flow: FundEventCashFlow) -> Dict[str, Any]:
         'account_name': cash_flow.bank_account.account_name if hasattr(cash_flow, 'bank_account') and cash_flow.bank_account else None,
     }
 
+def format_fund_tax_statement(fund_tax_statement: FundTaxStatement) -> Dict[str, Any]:
+    """
+    Format a FundTaxStatement object for HTTP response.
+    """
+    return {
+        'id': fund_tax_statement.id,
+        'financial_year': fund_tax_statement.financial_year,
+        'financial_year_start_date': fund_tax_statement.financial_year_start_date.isoformat() if fund_tax_statement.financial_year_start_date else None,
+        'financial_year_end_date': fund_tax_statement.financial_year_end_date.isoformat() if fund_tax_statement.financial_year_end_date else None,
+        'tax_payment_date': fund_tax_statement.tax_payment_date.isoformat() if fund_tax_statement.tax_payment_date else None,
+        'statement_date': fund_tax_statement.statement_date.isoformat() if fund_tax_statement.statement_date else None,
+        'interest_income_amount': float(fund_tax_statement.interest_income_amount) if fund_tax_statement.interest_income_amount is not None else None,
+        'interest_income_tax_rate': float(fund_tax_statement.interest_income_tax_rate) if fund_tax_statement.interest_income_tax_rate is not None else None,
+        'interest_tax_amount': float(fund_tax_statement.interest_tax_amount) if fund_tax_statement.interest_tax_amount is not None else None,
+        'interest_received_in_cash': float(fund_tax_statement.interest_received_in_cash) if fund_tax_statement.interest_received_in_cash is not None else None,
+        'interest_receivable_this_fy': float(fund_tax_statement.interest_receivable_this_fy) if fund_tax_statement.interest_receivable_this_fy is not None else None,
+        'interest_receivable_prev_fy': float(fund_tax_statement.interest_receivable_prev_fy) if fund_tax_statement.interest_receivable_prev_fy is not None else None,
+        'interest_non_resident_withholding_tax_from_statement': float(fund_tax_statement.interest_non_resident_withholding_tax_from_statement) if fund_tax_statement.interest_non_resident_withholding_tax_from_statement is not None else None,
+        'interest_non_resident_withholding_tax_already_withheld': float(fund_tax_statement.interest_non_resident_withholding_tax_already_withheld) if fund_tax_statement.interest_non_resident_withholding_tax_already_withheld is not None else None,
+        'dividend_franked_income_amount': float(fund_tax_statement.dividend_franked_income_amount) if fund_tax_statement.dividend_franked_income_amount is not None else None,
+        'dividend_unfranked_income_amount': float(fund_tax_statement.dividend_unfranked_income_amount) if fund_tax_statement.dividend_unfranked_income_amount is not None else None,
+        'dividend_franked_income_tax_rate': float(fund_tax_statement.dividend_franked_income_tax_rate) if fund_tax_statement.dividend_franked_income_tax_rate is not None else None,
+        'dividend_unfranked_income_tax_rate': float(fund_tax_statement.dividend_unfranked_income_tax_rate) if fund_tax_statement.dividend_unfranked_income_tax_rate is not None else None,
+        'dividend_franked_tax_amount': float(fund_tax_statement.dividend_franked_tax_amount) if fund_tax_statement.dividend_franked_tax_amount is not None else None,
+        'dividend_unfranked_tax_amount': float(fund_tax_statement.dividend_unfranked_tax_amount) if fund_tax_statement.dividend_unfranked_tax_amount is not None else None,
+        'dividend_franked_income_amount_from_tax_statement_flag': bool(fund_tax_statement.dividend_franked_income_amount_from_tax_statement_flag) if fund_tax_statement.dividend_franked_income_amount_from_tax_statement_flag is not None else None,
+        'dividend_unfranked_income_amount_from_tax_statement_flag': bool(fund_tax_statement.dividend_unfranked_income_amount_from_tax_statement_flag) if fund_tax_statement.dividend_unfranked_income_amount_from_tax_statement_flag is not None else None,
+        'capital_gain_income_amount': float(fund_tax_statement.capital_gain_income_amount) if fund_tax_statement.capital_gain_income_amount is not None else None,
+        'capital_gain_income_tax_rate': float(fund_tax_statement.capital_gain_income_tax_rate) if fund_tax_statement.capital_gain_income_tax_rate is not None else None,
+        'capital_gain_tax_amount': float(fund_tax_statement.capital_gain_tax_amount) if fund_tax_statement.capital_gain_tax_amount is not None else None,
+        'capital_gain_discount_amount': float(fund_tax_statement.capital_gain_discount_amount) if fund_tax_statement.capital_gain_discount_amount is not None else None,
+        'capital_gain_income_amount_from_tax_statement_flag': bool(fund_tax_statement.capital_gain_income_amount_from_tax_statement_flag) if fund_tax_statement.capital_gain_income_amount_from_tax_statement_flag is not None else None,
+        'eofy_debt_interest_deduction_sum_of_daily_interest': float(fund_tax_statement.eofy_debt_interest_deduction_sum_of_daily_interest) if fund_tax_statement.eofy_debt_interest_deduction_sum_of_daily_interest is not None else None,
+        'eofy_debt_interest_deduction_rate': float(fund_tax_statement.eofy_debt_interest_deduction_rate) if fund_tax_statement.eofy_debt_interest_deduction_rate is not None else None,
+        'eofy_debt_interest_deduction_total_deduction': float(fund_tax_statement.eofy_debt_interest_deduction_total_deduction) if fund_tax_statement.eofy_debt_interest_deduction_total_deduction is not None else None,
+        'non_resident': bool(fund_tax_statement.non_resident) if fund_tax_statement.non_resident is not None else None,
+        'accountant': fund_tax_statement.accountant,
+        'notes': fund_tax_statement.notes,
+        'created_at': fund_tax_statement.created_at.isoformat() if fund_tax_statement.created_at else None,
+        'updated_at': fund_tax_statement.updated_at.isoformat() if fund_tax_statement.updated_at else None
+    }
+
 
 def format_fund_comprehensive(
     fund: Fund, 
-    include_events: bool = True, 
+    include_events: bool = False, 
     include_cash_flows: bool = False,
     include_tax_statements: bool = False
 ) -> Dict[str, Any]:
@@ -199,12 +240,12 @@ def format_fund_comprehensive(
         if hasattr(fund, 'events') and fund.events:
             events_data = []
             for event in fund.events:
-                event_data = format_event(event)
+                event_data = format_fund_event(event)
                 
                 # Add cash flows if requested
                 if include_cash_flows:
                     if hasattr(event, 'cash_flows') and event.cash_flows:
-                        event_data['cash_flows'] = [format_cash_flow(cf) for cf in event.cash_flows]
+                        event_data['cash_flows'] = [format_fund_event_cash_flow(cf) for cf in event.cash_flows]
                     else:
                         event_data['cash_flows'] = []
                 
@@ -219,8 +260,9 @@ def format_fund_comprehensive(
         if hasattr(fund, 'tax_statements') and fund.tax_statements:
             # Sort by financial year descending (most recent first)
             sorted_statements = sorted(fund.tax_statements, key=lambda s: s.financial_year, reverse=True)
-            fund_data['tax_statements'] = [format_tax_statement(statement) for statement in sorted_statements]
+            fund_data['tax_statements'] = [format_fund_tax_statement(statement) for statement in sorted_statements]
         else:
             fund_data['tax_statements'] = []
     
     return fund_data
+

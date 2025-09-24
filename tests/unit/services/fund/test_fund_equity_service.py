@@ -18,7 +18,7 @@ from typing import List
 
 from src.fund.services.fund_equity_service import FundEquityService
 from src.fund.models import Fund, FundFieldChange, FundEvent
-from src.fund.enums import EventType, SortOrder, FundType, FundStatus
+from src.fund.enums import EventType, SortOrder, FundTrackingType, FundStatus
 
 
 class TestFundEquityService:
@@ -39,7 +39,7 @@ class TestFundEquityService:
         """Create a mock Fund object for testing."""
         fund = Mock(spec=Fund)
         fund.id = 1
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.status = FundStatus.ACTIVE
         fund.current_equity_balance = Decimal('10000.00')
         fund.average_equity_balance = Decimal('9500.00')

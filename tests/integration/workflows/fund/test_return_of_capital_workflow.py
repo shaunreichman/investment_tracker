@@ -30,7 +30,7 @@ from tests.factories import (
     BankFactory, BankAccountFactory, FundEventCashFlowFactory
 )
 from src.fund.models import (
-    Fund, FundType, EventType, CashFlowDirection,
+    Fund, FundTrackingType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
 from src.fund.services.fund_service import FundService
@@ -49,7 +49,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Create fund with cost-based tracking and initial capital
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -57,7 +57,7 @@ class TestReturnOfCapitalWorkflow:
         # Add initial capital call to establish equity balance
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Initial state validation
@@ -68,7 +68,7 @@ class TestReturnOfCapitalWorkflow:
         # Execute return of capital
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_return_of_capital(
+        event = fund_event_service.create_return_of_capital(
             fund=fund,
             amount=20000.0,
             return_date=date(2023, 6, 30),
@@ -106,7 +106,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Create fund with larger commitment
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=200000.0
         )
         db_session.commit()
@@ -114,7 +114,7 @@ class TestReturnOfCapitalWorkflow:
         # Add initial capital call
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 100000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_capital_call(fund, 100000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Initial state
@@ -122,7 +122,7 @@ class TestReturnOfCapitalWorkflow:
         assert fund.current_equity_balance == 100000.0
         
         # First return of capital
-        fund_event_service.add_return_of_capital(fund, 30000.0, date(2023, 3, 31), "Q1 return", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 30000.0, date(2023, 3, 31), "Q1 return", session=db_session)
         db_session.commit()
         
         # Verify intermediate state
@@ -130,7 +130,7 @@ class TestReturnOfCapitalWorkflow:
         assert fund.current_equity_balance == 70000.0  # 100000 - 30000
         
         # Second return of capital
-        fund_event_service.add_return_of_capital(fund, 25000.0, date(2023, 6, 30), "Q2 return", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 25000.0, date(2023, 6, 30), "Q2 return", session=db_session)
         db_session.commit()
         
         # Verify final state
@@ -161,7 +161,7 @@ class TestReturnOfCapitalWorkflow:
         account = BankAccountFactory.create(entity=entity, bank=bank, currency="AUD")
         fund = FundFactory.create(
             entity=entity,
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             currency="AUD"
         )
@@ -170,13 +170,13 @@ class TestReturnOfCapitalWorkflow:
         # Add initial capital call
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Create return of capital event
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_return_of_capital(
+        event = fund_event_service.create_return_of_capital(
             fund=fund,
             amount=20000.0,
             return_date=date(2023, 6, 30),
@@ -220,7 +220,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Test 1: NAV-based funds cannot have returns of capital
         nav_fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -228,7 +228,7 @@ class TestReturnOfCapitalWorkflow:
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
         with pytest.raises(ValueError, match="Returns of capital are only applicable for cost-based funds"):
-            fund_event_service.add_return_of_capital(
+            fund_event_service.create_return_of_capital(
                 fund=nav_fund,
                 amount=10000.0,
                 return_date=date(2023, 6, 30),
@@ -238,7 +238,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Test 2: Cannot return more capital than currently invested
         cost_fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -246,12 +246,12 @@ class TestReturnOfCapitalWorkflow:
         # Add capital call
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(cost_fund, 30000.0, date(2023, 1, 1), "Initial call", session=db_session)
+        fund_event_service.create_capital_call(cost_fund, 30000.0, date(2023, 1, 1), "Initial call", session=db_session)
         db_session.commit()
         
         # Try to return more than invested (should work but result in negative balance)
         # This tests the system's handling of edge cases
-        event = fund_event_service.add_return_of_capital(
+        event = fund_event_service.create_return_of_capital(
             fund=cost_fund,
             amount=40000.0,  # More than the 30000 invested
             return_date=date(2023, 6, 30),
@@ -276,14 +276,14 @@ class TestReturnOfCapitalWorkflow:
         
         # Create fund with initial capital
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
         
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
         db_session.commit()
         
         # Initial state
@@ -292,7 +292,7 @@ class TestReturnOfCapitalWorkflow:
         assert initial_equity == 50000.0
         
         # Execute return of capital through service
-        event = fund_event_service.add_return_of_capital(
+        event = fund_event_service.create_return_of_capital(
             fund=fund,
             amount=20000.0,
             return_date=date(2023, 6, 30),
@@ -325,7 +325,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Create fund with initial capital
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -333,7 +333,7 @@ class TestReturnOfCapitalWorkflow:
         # Add capital call
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
         db_session.commit()
         
         # Initial status should be ACTIVE
@@ -342,7 +342,7 @@ class TestReturnOfCapitalWorkflow:
         assert fund.current_equity_balance == 50000.0
         
         # Partial return of capital - should remain ACTIVE
-        fund_event_service.add_return_of_capital(fund, 20000.0, date(2023, 6, 30), "Partial return", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 20000.0, date(2023, 6, 30), "Partial return", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -350,7 +350,7 @@ class TestReturnOfCapitalWorkflow:
         assert fund.current_equity_balance == 30000.0
         
         # Full return of capital - should transition to REALIZED
-        fund_event_service.add_return_of_capital(fund, 30000.0, date(2023, 12, 31), "Full return", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 30000.0, date(2023, 12, 31), "Full return", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -366,7 +366,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Create fund with initial capital
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -374,7 +374,7 @@ class TestReturnOfCapitalWorkflow:
         # Add capital call
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial call", session=db_session)
         db_session.commit()
         
         # Record initial state for consistency validation
@@ -388,7 +388,7 @@ class TestReturnOfCapitalWorkflow:
         assert initial_remaining == 50000.0
         
         # Execute return of capital
-        fund_event_service.add_return_of_capital(fund, 20000.0, date(2023, 6, 30), "Consistency test", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 20000.0, date(2023, 6, 30), "Consistency test", session=db_session)
         db_session.commit()
         
         # Verify data consistency across all calculations
@@ -427,7 +427,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Test 1: Return of capital on same date as capital call
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -437,8 +437,8 @@ class TestReturnOfCapitalWorkflow:
         # Add capital call and return on same date
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 50000.0, same_date, "Same day call", session=db_session)
-        fund_event_service.add_return_of_capital(fund, 20000.0, same_date, "Same day return", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, same_date, "Same day call", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 20000.0, same_date, "Same day return", session=db_session)
         db_session.commit()
         
         # Verify final state
@@ -446,7 +446,7 @@ class TestReturnOfCapitalWorkflow:
         assert fund.current_equity_balance == 30000.0  # 50000 - 20000
         
         # Test 2: Multiple returns on same date
-        fund_event_service.add_return_of_capital(fund, 15000.0, same_date, "Second same day return", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 15000.0, same_date, "Second same day return", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -459,7 +459,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Test 3: Return of capital with zero amount (should fail)
         with pytest.raises(ValueError, match="Return amount must be a positive number"):
-            fund_event_service.add_return_of_capital(fund, 
+            fund_event_service.create_return_of_capital(fund, 
                 amount=0.0,
                 return_date=date(2023, 7, 1),
                 description="Zero amount",
@@ -468,7 +468,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Test 4: Return of capital with negative amount (should fail)
         with pytest.raises(ValueError, match="Return amount must be a positive number"):
-            fund_event_service.add_return_of_capital(fund, 
+            fund_event_service.create_return_of_capital(fund, 
                 amount=-1000.0,
                 return_date=date(2023, 7, 1),
                 description="Negative amount",
@@ -483,7 +483,7 @@ class TestReturnOfCapitalWorkflow:
         
         # Create fund with larger commitment
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0  # 1M commitment
         )
         db_session.commit()
@@ -495,7 +495,7 @@ class TestReturnOfCapitalWorkflow:
         for amount, call_date in zip(call_amounts, call_dates):
             from src.fund.services.fund_event_service import FundEventService
             fund_event_service = FundEventService()
-            fund_event_service.add_capital_call(fund, amount, call_date, f"Call {amount}", session=db_session)
+            fund_event_service.create_capital_call(fund, amount, call_date, f"Call {amount}", session=db_session)
             db_session.commit()
         
         # Verify initial state
@@ -507,7 +507,7 @@ class TestReturnOfCapitalWorkflow:
         return_dates = [date(2023, 12, 1), date(2024, 3, 1), date(2024, 6, 1), date(2024, 9, 1)]
         
         for amount, return_date in zip(return_amounts, return_dates):
-            fund_event_service.add_return_of_capital(fund, amount, return_date, f"Return {amount}", session=db_session)
+            fund_event_service.create_return_of_capital(fund, amount, return_date, f"Return {amount}", session=db_session)
             db_session.commit()
         
         # Verify final state

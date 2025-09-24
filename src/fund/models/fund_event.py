@@ -11,7 +11,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, 
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.enums import EventType, DistributionType, FundType, TaxPaymentType, GroupType
+from src.fund.enums import EventType, DistributionType, FundTrackingType, TaxPaymentType, GroupType
 
 
 class FundEvent(Base):
@@ -66,6 +66,10 @@ class FundEvent(Base):
     # Calculated fields
     current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event. For cost-based funds: net capital after this event
     
+    # Debt cost fields
+    dc_current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) current equity balance used for this daily debt cost event
+    dc_risk_free_rate = Column(Float, nullable=True)  # (CALCULATED) risk free rate used for this daily debt cost event
+
     # System flags
     is_cash_flow_complete = Column(Boolean, default=False)  # (SYSTEM) auto-managed flag set by reconciliation logic
     
@@ -172,7 +176,7 @@ class FundEvent(Base):
         
         return True
     
-    def validate_fund_type_compatibility(self, fund_tracking_type: FundType) -> bool:
+    def validate_fund_type_compatibility(self, fund_tracking_type: FundTrackingType) -> bool:
         """Validate that event is compatible with fund tracking type.
         
         Args:
@@ -184,11 +188,11 @@ class FundEvent(Base):
         Raises:
             ValueError: If event is incompatible with fund type
         """
-        if fund_tracking_type == FundType.NAV_BASED:
+        if fund_tracking_type == FundTrackingType.NAV_BASED:
             if self.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]:
                 raise ValueError(f"{self.event_type.value} events are not applicable for NAV-based funds")
         
-        elif fund_tracking_type == FundType.COST_BASED:
+        elif fund_tracking_type == FundTrackingType.COST_BASED:
             if self.event_type == EventType.NAV_UPDATE:
                 raise ValueError("NAV update events are not applicable for cost-based funds")
         
@@ -570,111 +574,3 @@ class FundEvent(Base):
                 f"Group positions must be sequential starting from 0. "
                 f"Expected {expected_positions}, got {sorted_positions}"
             )
-    
-    def is_capital_inflow(self) -> bool:
-        """Check if event represents capital inflow to the fund.
-        
-        Returns:
-            bool: True if capital inflow event
-        """
-        return self.event_type in [EventType.CAPITAL_CALL, EventType.UNIT_PURCHASE]
-    
-    def is_capital_outflow(self) -> bool:
-        """Check if event represents capital outflow from the fund.
-        
-        Returns:
-            bool: True if capital outflow event
-        """
-        return self.event_type in [EventType.RETURN_OF_CAPITAL, EventType.UNIT_SALE]
-    
-    def is_equity_event(self) -> bool:
-        """Check if event is an equity event.
-        
-        Returns:
-            bool: True if equity event
-        """
-        return self.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
-    
-    def is_distribution_event(self) -> bool:
-        """Check if event is a distribution event.
-        
-        Returns:
-            bool: True if distribution event
-        """
-        return self.event_type == EventType.DISTRIBUTION
-    
-    def is_system_event(self) -> bool:
-        """Check if event is a system-generated event.
-        
-        Returns:
-            bool: True if system event
-        """
-        return self.event_type in [EventType.DAILY_RISK_FREE_INTEREST_CHARGE]
-    
-    def get_effective_amount(self) -> float:
-        """Get the effective amount for calculations (positive for inflows, negative for outflows).
-        
-        Returns:
-            float: Effective amount for calculations
-        """
-        # NAV update events don't have amounts
-        if self.event_type == EventType.NAV_UPDATE:
-            return 0.0
-        
-        if self.is_capital_inflow():
-            return abs(self.amount or 0.0)
-        else:
-            return -abs(self.amount or 0.0)
-    
-    def set_grouping(self, group_id: int, group_type: GroupType, group_position: int) -> None:
-        """Set grouping information for this event.
-        
-        Args:
-            group_id: Unique identifier for the group
-            group_type: Type of grouping
-            group_position: Position within the group (0=first, 1=second, etc.)
-        """
-        self.is_grouped = True
-        self.group_id = group_id
-        self.group_type = group_type
-        self.group_position = group_position
-    
-    def clear_grouping(self) -> None:
-        """Clear grouping information for this event."""
-        self.is_grouped = False
-        self.group_id = None
-        self.group_type = None
-        self.group_position = None
-    
-    def get_total_units_change(self) -> float:
-        """Get the total change in units for this event.
-        
-        Returns:
-            float: Total units change (positive for purchases, negative for sales)
-        """
-        if self.event_type == EventType.UNIT_PURCHASE:
-            return self.units_purchased or 0.0
-        elif self.event_type == EventType.UNIT_SALE:
-            return -(self.units_sold or 0.0)
-        elif self.event_type == EventType.NAV_UPDATE:
-            # NAV update events don't change units, they only update NAV per share
-            return 0.0
-        else:
-            return 0.0
-    
-    def get_total_cost(self) -> float:
-        """Get the total cost for this event.
-        
-        Returns:
-            float: Total cost including brokerage fees
-        """
-        if self.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
-            units = self.units_purchased or self.units_sold or 0.0
-            unit_price = self.unit_price or 0.0
-            brokerage_fee = self.brokerage_fee or 0.0
-            return (units * unit_price) + brokerage_fee
-        elif self.event_type == EventType.NAV_UPDATE:
-            # NAV update events don't have costs
-            return 0.0
-        else:
-            return abs(self.amount or 0.0)

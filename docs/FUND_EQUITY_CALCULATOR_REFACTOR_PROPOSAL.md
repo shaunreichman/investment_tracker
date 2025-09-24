@@ -263,9 +263,9 @@ class FundEquityCalculator:
     @staticmethod
     def calculate_event_equity_balances(fund: Fund, events: List[FundEvent]) -> List[Tuple[float, bool]]:
         """Calculate equity balance for each event - SINGLE COMPUTATION"""
-        if fund.tracking_type == FundType.COST_BASED:
+        if fund.tracking_type == FundTrackingType.COST_BASED:
             return FundEquityCalculator._process_cost_based_events(events)
-        elif fund.tracking_type == FundType.NAV_BASED:
+        elif fund.tracking_type == FundTrackingType.NAV_BASED:
             return FundEquityCalculator._process_nav_based_events(events)
         else:
             raise ValueError(f"Unsupported fund type: {fund.tracking_type}")

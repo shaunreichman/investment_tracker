@@ -66,7 +66,7 @@ describe('FundsTab', () => {
       fundTypeFilter: 'all',
       handleStatusFilterChange: jest.fn(),
       handleCurrencyFilterChange: jest.fn(),
-      handleFundTypeFilterChange: jest.fn(),
+      handleFundTrackingTypeFilterChange: jest.fn(),
       clearAllFilters: jest.fn(),
     });
   });

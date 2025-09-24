@@ -1,7 +1,7 @@
-import { ExtendedFund, ExtendedFundEvent, FundType } from '../../types/api';
+import { ExtendedFund, ExtendedFundEvent, FundTrackingType } from '../../types/api';
 
 export const prepareChartData = (events: ExtendedFundEvent[], fund: ExtendedFund) => {
-  if (fund.tracking_type !== FundType.NAV_BASED) {
+  if (fund.tracking_type !== FundTrackingType.NAV_BASED) {
     return { navData: [], purchaseData: [], saleData: [] } as const;
   }
 

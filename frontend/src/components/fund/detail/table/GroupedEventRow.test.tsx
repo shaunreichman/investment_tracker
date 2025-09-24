@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, fireEvent } from '@testing-library/react';
 import { renderTableComponent } from '../../../../test-utils';
 import { GroupedEventRow } from './GroupedEventRow';
-import { ExtendedFund, ExtendedFundEvent, GroupType, FundType, EventType, DistributionType } from '../../../../types/api';
+import { ExtendedFund, ExtendedFundEvent, GroupType, FundTrackingType, EventType, DistributionType } from '../../../../types/api';
 import { GroupedEvent } from './useEventGrouping';
 
 // ============================================================================
@@ -14,7 +14,7 @@ const createMockFund = (overrides: Partial<ExtendedFund> = {}): ExtendedFund => 
   id: 1,
   name: 'Test Fund',
   currency: 'AUD',
-  tracking_type: FundType.NAV_BASED,
+  tracking_type: FundTrackingType.NAV_BASED,
   investment_company_id: 1,
   entity_id: 1,
   current_equity_balance: 10000,
@@ -193,7 +193,7 @@ describe('GroupedEventRow', () => {
 
   describe('Fund tracking type handling', () => {
     it('should show NAV update column for NAV-based funds', () => {
-      const navBasedFund = createMockFund({ tracking_type: FundType.NAV_BASED });
+      const navBasedFund = createMockFund({ tracking_type: FundTrackingType.NAV_BASED });
       
       renderTableComponent(
         <GroupedEventRow
@@ -211,7 +211,7 @@ describe('GroupedEventRow', () => {
     });
 
     it('should not show NAV update column for non-NAV-based funds', () => {
-      const unitBasedFund = createMockFund({ tracking_type: FundType.COST_BASED });
+      const unitBasedFund = createMockFund({ tracking_type: FundTrackingType.COST_BASED });
       
       renderTableComponent(
         <GroupedEventRow

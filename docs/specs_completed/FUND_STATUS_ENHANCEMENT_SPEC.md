@@ -448,7 +448,7 @@ def recalculate_capital_chain_from(self, event, session=None):
     # 5. Commit session
     session.commit()
 
-def add_distribution(self, amount, event_date, distribution_type=DistributionType.INTEREST, description=None, reference_number=None, session=None):
+def create_distribution(self, amount, event_date, distribution_type=DistributionType.INTEREST, description=None, reference_number=None, session=None):
     """Add distribution with automatic end date update"""
     event = FundEvent.create_distribution_static(
         fund_id=self.id, event_date=event_date, amount=amount,
@@ -515,7 +515,7 @@ def update_status_after_tax_statement(self, session=None):
 
 ### **New Flow**
 ```python
-# Event method (e.g., add_capital_call)
+# Event method (e.g., create_capital_call)
 event = FundEvent(...)
 session.add(event)
 session.flush()

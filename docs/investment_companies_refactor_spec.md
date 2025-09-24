@@ -155,7 +155,7 @@ InvestmentCompanyRepository
 ├── Implements caching strategies
 └── Provides optimized queries for common operations
 
-ContactRepository
+CompanyContactRepository
 ├── Manages contact persistence
 ├── Handles bulk operations efficiently
 └── Provides contact querying capabilities
@@ -210,7 +210,7 @@ CompanySummaryRepository
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                        Data Access Layer                                       │
 ├─────────────────────────────────────────────────────────────────────────────────┤
-│  InvestmentCompanyRepository  ←→  ContactRepository  ←→  CompanySummaryRepository │
+│  InvestmentCompanyRepository  ←→  CompanyContactRepository  ←→  CompanySummaryRepository │
 └─────────────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -258,7 +258,7 @@ Event System (future: sideways communication, no circular dependencies)
 
 **Tasks**:
 - [x] **Create CompanyRepository**: Handle all company CRUD operations and queries
-- [x] **Create ContactRepository**: Manage contact persistence and relationship queries  
+- [x] **Create CompanyContactRepository**: Manage contact persistence and relationship queries  
 - [x] **Create FundRepository**: Handle fund data access for company operations (reuse existing fund repository)
 - [x] **Test Repository Layer**: Test all repositories with existing models
 - [x] **Performance Validation**: Ensure no performance regression from abstraction
@@ -597,7 +597,7 @@ src/investment_company/
 ├── repositories/
 │   ├── __init__.py
 │   ├── company_repository.py
-│   ├── contact_repository.py
+│   ├── company_contact_repository.py
 │   └── fund_repository.py
 ├── events/
 │   ├── __init__.py

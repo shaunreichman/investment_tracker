@@ -17,7 +17,7 @@ from decimal import Decimal
 from unittest.mock import Mock, patch
 
 from src.fund.services.fund_calculation_service import FundCalculationService
-from src.fund.enums import EventType, FundType
+from src.fund.enums import EventType, FundTrackingType
 from tests.factories import FundEventFactory, FundFactory
 
 
@@ -37,7 +37,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_only_purchases(self):
         """Test NAV-based capital gains with only purchase events"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -62,7 +62,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_simple_sale_profit(self):
         """Test NAV-based capital gains with simple profitable sale"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -94,7 +94,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_simple_sale_loss(self):
         """Test NAV-based capital gains with simple loss-making sale"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -126,7 +126,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_fifo_ordering(self):
         """Test NAV-based capital gains with FIFO ordering (first in, first out)"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -168,7 +168,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_partial_fifo_consumption(self):
         """Test NAV-based capital gains with partial FIFO consumption"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -200,7 +200,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_multiple_sales_fifo(self):
         """Test NAV-based capital gains with multiple sales maintaining FIFO order"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -252,7 +252,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_zero_units_purchase(self):
         """Test NAV-based capital gains with zero units purchase"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -269,7 +269,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_zero_units_sale(self):
         """Test NAV-based capital gains with zero units sale"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -294,7 +294,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_zero_unit_price_purchase(self):
         """Test NAV-based capital gains with zero unit price purchase"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -311,7 +311,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_zero_unit_price_sale(self):
         """Test NAV-based capital gains with zero unit price sale"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -336,7 +336,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_no_brokerage_fees(self):
         """Test NAV-based capital gains with no brokerage fees"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -368,7 +368,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_validation_enforcement(self):
         """Test that validation prevents negative brokerage fees from being processed"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         # Create events with valid brokerage fees
         events = [
@@ -407,7 +407,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_mixed_event_types(self):
         """Test NAV-based capital gains with mixed event types (only purchases/sales count)"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -451,7 +451,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_high_precision_calculations(self):
         """Test NAV-based capital gains with high precision calculations"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -483,7 +483,7 @@ class TestNAVBasedCapitalGainsCalculations:
     
     def test_nav_based_capital_gains_edge_case_very_small_amounts(self):
         """Test NAV-based capital gains with very small amounts"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -524,7 +524,7 @@ class TestNAVCalculationEdgeCases:
     
     def test_nav_based_capital_gains_insufficient_units_for_sale(self):
         """Test NAV-based capital gains when sale exceeds available units"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,
@@ -556,7 +556,7 @@ class TestNAVCalculationEdgeCases:
     
     def test_nav_based_capital_gains_negative_brokerage_fees_validation(self):
         """Test that negative brokerage fees are not allowed (validation should prevent this)"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         # Test that creating events with negative brokerage fees raises validation error
         with pytest.raises(ValueError, match="Brokerage fee cannot be negative"):
@@ -583,7 +583,7 @@ class TestNAVCalculationEdgeCases:
     
     def test_nav_based_capital_gains_very_large_numbers(self):
         """Test NAV-based capital gains with very large numbers"""
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         events = [
             FundEventFactory(
                 fund=fund,

@@ -21,7 +21,7 @@ from tests.factories import (
     BankFactory, BankAccountFactory, FundEventCashFlowFactory
 )
 from src.fund.models import (
-    Fund, FundType, EventType, CashFlowDirection,
+    Fund, FundTrackingType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
 from src.fund.services.fund_service import FundService
@@ -38,7 +38,7 @@ class TestCapitalCallWorkflow:
         
         # Create fund with cost-based tracking
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -51,7 +51,7 @@ class TestCapitalCallWorkflow:
         # Execute capital call
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Verify fund state updates
@@ -81,7 +81,7 @@ class TestCapitalCallWorkflow:
         account = BankAccountFactory.create(entity=entity, bank=bank, currency="AUD")
         fund = FundFactory.create(
             entity=entity,
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             currency="AUD"
         )
@@ -90,7 +90,7 @@ class TestCapitalCallWorkflow:
         # Create capital call event
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 15), "Capital call with cash flow", session=db_session)
+        event = fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 15), "Capital call with cash flow", session=db_session)
         db_session.commit()
         
         # Add cash flow for the capital call
@@ -118,7 +118,7 @@ class TestCapitalCallWorkflow:
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=200000.0
         )
         db_session.commit()
@@ -131,7 +131,7 @@ class TestCapitalCallWorkflow:
         # First capital call
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 75000.0, date(2023, 1, 1), "First capital call", session=db_session)
+        fund_event_service.create_capital_call(fund, 75000.0, date(2023, 1, 1), "First capital call", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -140,7 +140,7 @@ class TestCapitalCallWorkflow:
         assert fund.remaining_commitment == 125000.0
         
         # Second capital call
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 3, 1), "Second capital call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 3, 1), "Second capital call", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -168,7 +168,7 @@ class TestCapitalCallWorkflow:
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -177,18 +177,18 @@ class TestCapitalCallWorkflow:
         with pytest.raises(ValueError, match="Cannot call more capital than remaining commitment"):
             from src.fund.services.fund_event_service import FundEventService
             fund_event_service = FundEventService()
-            fund_event_service.add_capital_call(fund, 150000.0, date(2023, 1, 1), "Excessive capital call", session=db_session)
+            fund_event_service.create_capital_call(fund, 150000.0, date(2023, 1, 1), "Excessive capital call", session=db_session)
         
         # Test: Cannot call negative amount
         with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
-            fund_event_service.add_capital_call(fund, -10000.0, date(2023, 1, 1), "Negative capital call", session=db_session)
+            fund_event_service.create_capital_call(fund, -10000.0, date(2023, 1, 1), "Negative capital call", session=db_session)
         
         # Test: Cannot call zero amount
         with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
-            fund_event_service.add_capital_call(fund, 0.0, date(2023, 1, 1), "Zero capital call", session=db_session)
+            fund_event_service.create_capital_call(fund, 0.0, date(2023, 1, 1), "Zero capital call", session=db_session)
         
         # Test: Valid capital call should work
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 1), "Valid capital call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 1), "Valid capital call", session=db_session)
         db_session.commit()
         
         fund = db_session.get(Fund, fund.id)
@@ -202,7 +202,7 @@ class TestCapitalCallWorkflow:
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -211,7 +211,7 @@ class TestCapitalCallWorkflow:
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
         with pytest.raises(ValueError, match="Capital calls are only applicable for cost-based funds"):
-            fund_event_service.add_capital_call(fund, 40000.0, date(2023, 1, 1), "NAV-based capital call", session=db_session)
+            fund_event_service.create_capital_call(fund, 40000.0, date(2023, 1, 1), "NAV-based capital call", session=db_session)
         
         # Verify no events were created
         events = fund.get_all_fund_events(session=db_session)
@@ -224,7 +224,7 @@ class TestCapitalCallWorkflow:
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -236,7 +236,7 @@ class TestCapitalCallWorkflow:
         
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_capital_call(fund, amount, call_date, description, session=db_session)
+        event = fund_event_service.create_capital_call(fund, amount, call_date, description, session=db_session)
         db_session.commit()
         
         # Verify event metadata
@@ -257,7 +257,7 @@ class TestCapitalCallWorkflow:
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -270,7 +270,7 @@ class TestCapitalCallWorkflow:
         # Execute capital call
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 25000.0, date(2023, 1, 1), "Transaction test call", session=db_session)
+        fund_event_service.create_capital_call(fund, 25000.0, date(2023, 1, 1), "Transaction test call", session=db_session)
         db_session.commit()
         
         # Verify all related state changes are consistent

@@ -13,16 +13,18 @@ from sqlalchemy.orm import relationship
 from src.shared.base import Base
 
 class Contact(Base):
-    """Model representing a contact person at an investment company."""
+    """
+    Model representing a contact person at an investment company.
+    """
     __tablename__ = 'contacts'
     
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
     investment_company_id = Column(Integer, ForeignKey('investment_companies.id'), nullable=False)  # (SYSTEM) foreign key to investment company
     name = Column(String(255), nullable=False)  # (MANUAL) contact person's name
-    title = Column(String(255))  # (MANUAL) contact person's job title
-    direct_number = Column(String(50))  # (MANUAL) direct phone number
-    direct_email = Column(String(255))  # (MANUAL) direct email address
-    notes = Column(Text)  # (MANUAL) additional notes about the contact
+    title = Column(String(255), nullable=True)  # (MANUAL) contact person's job title
+    direct_number = Column(String(50), nullable=True)  # (MANUAL) direct phone number
+    direct_email = Column(String(255), nullable=True)  # (MANUAL) direct email address
+    notes = Column(Text, nullable=True)  # (MANUAL) additional notes about the contact
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) creation timestamp
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) last update timestamp
     

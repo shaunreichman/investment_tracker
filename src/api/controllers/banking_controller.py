@@ -5,23 +5,14 @@ This controller provides enterprise-grade REST API endpoints for banking operati
 with standardized response formats, comprehensive error handling, and performance optimization.
 """
 
-from typing import List, Optional, Dict, Any, Tuple
-from flask import request, jsonify, current_app
+from flask import request, current_app
 from sqlalchemy.orm import Session
-from datetime import datetime
-import time
-from src.api.dto.api_response import ApiResponse
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.dto.response_codes import ApiResponseCode
-from src.api.controllers.formatters.banking_formatter import format_bank, format_bank_with_accounts
-from src.banking.models import Bank, BankAccount
+from src.api.controllers.formatters.banking_formatter import format_bank, format_bank_account, format_bank_comprehensive
 
 from src.banking.services.bank_service import BankService
 from src.banking.services.bank_account_service import BankAccountService
-from src.banking.services.banking_validation_service import BankingValidationService
-from src.banking.repositories.bank_repository import BankRepository
-from src.banking.repositories.bank_account_repository import BankAccountRepository
-
 
 class BankingController:
     """Enterprise-grade controller for banking operations with comprehensive features."""
@@ -30,259 +21,346 @@ class BankingController:
         """Initialize the enhanced banking controller."""
         self.bank_service = BankService()
         self.bank_account_service = BankAccountService()
-        self.validation_service = BankingValidationService()
-        self.bank_repository = BankRepository()
-        self.bank_account_repository = BankAccountRepository()
     
-    def _log_operation(self, operation: str, start_time: float, success: bool, **kwargs):
-        """Log operation performance and results."""
-        duration = (time.time() - start_time) * 1000
-        status = "SUCCESS" if success else "FAILED"
-        
-        current_app.logger.info(
-            f"Banking API {operation}: {status} in {duration:.2f}ms",
-            extra={
-                "operation": operation,
-                "duration_ms": duration,
-                "success": success,
-                **kwargs
-            }
-        )
     
-    def _handle_error(self, error: Exception, operation: str) -> Tuple[BankingErrorResponse, int]:
-        """Handle errors and return standardized error responses."""
-        if isinstance(error, ValueError):
-            return create_error_response(
-                BankingErrorCode.VALIDATION_ERROR,
-                str(error)
-            ), 400
-        elif isinstance(error, RuntimeError):
-            if "not found" in str(error).lower():
-                return create_error_response(
-                    BankingErrorCode.BANK_NOT_FOUND if "bank" in operation.lower() else BankingErrorCode.BANK_ACCOUNT_NOT_FOUND,
-                    str(error)
-                ), 404
-            else:
-                return create_error_response(
-                    BankingErrorCode.VALIDATION_ERROR,
-                    str(error)
-                ), 400
-        else:
-            current_app.logger.error(f"Unexpected error in {operation}: {str(error)}")
-            return create_error_response(
-                BankingErrorCode.INTERNAL_ERROR,
-                "Internal server error"
-            ), 500
+    ###############################################################################
+    # BANK ENDPOINTS
+    ###############################################################################
 
-    def get_bank(self, bank_id: int):
+    ###############################################
+    # Get bank
+    ###############################################
+
+    def get_banks(self, include_bank_accounts: bool = False) -> ControllerResponseDTO:
+        """
+        Get all banks.
+        
+        Returns:
+            ControllerResponseDTO: DTO containing banks data and status
+        """
+        try:
+            session = self._get_session()
+            try:
+                banks = self.bank_service.get_banks(session)
+                if banks is None:
+                    return ControllerResponseDTO(error="Banks not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                if include_bank_accounts:
+                    for bank in banks:
+                        bank.accounts = self.bank_account_service.get_bank_accounts(bank.id, session)
+
+                formatted_banks = [format_bank_comprehensive(bank, include_bank_accounts=include_bank_accounts) for bank in banks]
+                return ControllerResponseDTO(data=formatted_banks, response_code=ApiResponseCode.SUCCESS)
+
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error getting banks: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting banks: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+        except Exception as e:
+            current_app.logger.error(f"Error getting banks: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+    def get_bank_by_id(self, bank_id: int, include_bank_accounts: bool = False) -> ControllerResponseDTO:
         """
         Get a bank by ID.
         
         Args:
             bank_id: ID of the bank to retrieve
+            include_bank_accounts: Whether to include bank accounts
+
+        Returns:
+            ControllerResponseDTO: DTO containing bank data and status
+        """
+        try:
+            session = self._get_session()
+            
+            try:
+                bank = self.bank_service.get_bank_by_id(bank_id, session)
+                if not bank:
+                    return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
+                if include_bank_accounts:
+                    bank.accounts = self.bank_account_service.get_bank_accounts(bank_id, session)
+
+                formatted_bank = format_bank_comprehensive(bank, include_bank_accounts=include_bank_accounts)
+                return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.SUCCESS)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error getting bank {bank_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting bank {bank_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()   
+
+        except Exception as e:
+            current_app.logger.error(f"Error getting bank {bank_id}: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+
+    ###############################################
+    # Create bank
+    ###############################################
+
+    def create_bank(self) -> ControllerResponseDTO:
+        """
+        Create a new bank with enhanced validation and response.
             
         Returns:
             ControllerResponseDTO: DTO containing bank data and status
         """
         try:
-            # Get database session
+            # Get pre-validated data from middleware
+            bank_data = getattr(request, 'validated_data', {})
+            if not bank_data:
+                return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
+
             session = self._get_session()
             
-            # Get the bank (now returns domain object)
-            bank = self.bank_service.get_bank(bank_id, session)
-            
-            if not bank:
-                return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-            
-            # Format the response using formatter
-            formatted_bank = format_bank(bank)
+            try:
+                bank = self.bank_service.create_bank(bank_data, session)
+                
+                session.commit()
+                
+                formatted_bank = format_bank(bank)
+                return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.CREATED)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error creating bank: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error creating bank: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
 
-            return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.SUCCESS)
-            
         except Exception as e:
-            current_app.logger.error(f"Error getting bank {bank_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
-        finally:
-            if 'session' in locals():
-                session.close()       
-
-
-
-    def create_bank(self, data: Dict[str, Any]):
-        """Create a new bank with enhanced validation and response."""
-        start_time = time.time()
-        session = self._get_session()
-        
-        try:
-            # Validate required fields
-            required_fields = ['name', 'country']
-            for field in required_fields:
-                if field not in data or not data[field]:
-                    return ControllerResponseDTO(
-                        error=f"Missing required field: {field}",
-                        response_code=ApiResponseCode.BAD_REQUEST
-                    )
-            
-            # Create new bank using service
-            new_bank = self.bank_service.create_bank(
-                name=data['name'],
-                country=data['country'],
-                swift_bic=data.get('swift_bic'),
-                session=session
-            )
-            
-            # Commit transaction
-            session.commit()
-            
-            # Format the response using formatter
-            formatted_bank = format_bank(new_bank)
-            
-            self._log_operation("create_bank", start_time, True, bank_id=new_bank.id)
-            return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.CREATED)
-            
-        except Exception as e:
-            self._log_operation("create_bank", start_time, False, error=str(e))
             current_app.logger.error(f"Error creating bank: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def update_bank(self, bank_id: int, data: Dict[str, Any]):
-        """Update a bank with enhanced validation and response."""
-        start_time = time.time()
-        session = self._get_session()
-        
-        try:
-            # Update bank using service
-            bank = self.bank_service.update_bank(bank_id, data, session)
-            
-            if not bank:
-                return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-            
-            # Commit transaction
-            session.commit()
-            
-            # Format the response using formatter
-            formatted_bank = format_bank(bank)
-            
-            self._log_operation("update_bank", start_time, True, bank_id=bank_id)
-            return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.SUCCESS)
-            
-        except Exception as e:
-            self._log_operation("update_bank", start_time, False, bank_id=bank_id, error=str(e))
-            current_app.logger.error(f"Error updating bank {bank_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def delete_bank(self, bank_id: int):
-        """Delete a bank with enhanced response."""
-        start_time = time.time()
-        session = self._get_session()
+    ###############################################
+    # Delete bank
+    ###############################################
+
+    def delete_bank(self, bank_id: int) -> ControllerResponseDTO:
+        """
+        Delete a bank with enhanced response.
         
+        Args:
+            bank_id: ID of the bank to delete
+            
+        Returns:
+            ControllerResponseDTO: DTO containing bank data and status
+        """
         try:
-            # Delete bank using service
-            success = self.bank_service.delete_bank(bank_id, session)
-            
-            if not success:
-                return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-            
-            # Commit transaction
-            session.commit()
-            
-            self._log_operation("delete_bank", start_time, True, bank_id=bank_id)
-            return ControllerResponseDTO(response_code=ApiResponseCode.SUCCESS)
-            
+            session = self._get_session()
+        
+            try:
+                success = self.bank_service.delete_bank(bank_id, session)
+                if not success:
+                    return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
+                session.commit()
+                
+                return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error deleting bank {bank_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error deleting bank {bank_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
         except Exception as e:
-            self._log_operation("delete_bank", start_time, False, bank_id=bank_id, error=str(e))
             current_app.logger.error(f"Error deleting bank {bank_id}: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def create_bank_account(self, data: Dict[str, Any]):
-        """Create a new bank account with enhanced validation and response."""
-        start_time = time.time()
-        session = self._get_session()
-        
+
+    ###############################################################################
+    # BANK ACCOUNT ENDPOINTS
+    ###############################################################################
+
+    ###############################################
+    # Get bank accounts
+    ###############################################
+
+    def get_bank_accounts(self, bank_id: int) -> ControllerResponseDTO:
+        """
+        Get all bank accounts with enhanced validation and response.
+
+        Args:
+            bank_id: ID of the bank to get bank accounts for
+            
+        Returns:
+            ControllerResponseDTO: DTO containing bank accounts data and status
+        """
         try:
-            # Validate required fields
-            required_fields = ['entity_id', 'bank_id', 'account_name', 'account_number', 'currency']
-            for field in required_fields:
-                if field not in data or not data[field]:
-                    return ControllerResponseDTO(
-                        error=f"Missing required field: {field}",
-                        response_code=ApiResponseCode.BAD_REQUEST
-                    )
-            
-            # Create new bank account using service
-            new_account = self.bank_account_service.create_bank_account(
-                entity_id=data['entity_id'],
-                bank_id=data['bank_id'],
-                account_name=data['account_name'],
-                account_number=data['account_number'],
-                currency=data['currency'],
-                is_active=data.get('is_active', True),
-                session=session
-            )
-            
-            # Commit transaction
-            session.commit()
-            
-            # Format the response using formatter
-            formatted_account = format_bank_with_accounts(new_account.bank, [new_account])
-            
-            self._log_operation("create_bank_account", start_time, True, account_id=new_account.id)
-            return ControllerResponseDTO(data=formatted_account['accounts'][0], response_code=ApiResponseCode.CREATED)
-            
+            session = self._get_session()
+
+            try:
+                bank_accounts = self.bank_account_service.get_bank_accounts(session, bank_id)
+                if not bank_accounts:
+                    return ControllerResponseDTO(error="Bank accounts not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+
+                formatted_bank_accounts = [format_bank_account(bank_account) for bank_account in bank_accounts]
+                return ControllerResponseDTO(data=formatted_bank_accounts, response_code=ApiResponseCode.SUCCESS)
+
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error getting bank accounts {bank_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting bank accounts {bank_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
         except Exception as e:
-            self._log_operation("create_bank_account", start_time, False, error=str(e))
+            current_app.logger.error(f"Error getting bank accounts {bank_id}: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+    def get_bank_account_by_id(self, bank_account_id: int) -> ControllerResponseDTO:
+        """
+        Get a bank account by ID with enhanced validation and response.
+        
+        Args:
+            bank_account_id: ID of the bank account to retrieve
+            
+        Returns:
+            ControllerResponseDTO: DTO containing bank account data and status
+        """
+        try:
+            session = self._get_session()
+
+            try:
+                bank_account = self.bank_account_service.get_bank_account_by_id(bank_account_id, session)
+                if not bank_account:
+                    return ControllerResponseDTO(error="Bank account not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
+                formatted_bank_account = format_bank_account(bank_account)
+                return ControllerResponseDTO(data=formatted_bank_account, response_code=ApiResponseCode.SUCCESS)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error getting bank account {bank_account_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting bank account {bank_account_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
+        except Exception as e:
+            current_app.logger.error(f"Error getting bank account {bank_account_id}: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+
+    ###############################################
+    # Create bank account
+    ###############################################
+
+    def create_bank_account(self) -> ControllerResponseDTO:
+        """
+        Create a new bank account with enhanced validation and response.
+        
+        Returns:
+            ControllerResponseDTO: DTO containing bank account data and status
+        """
+        try:
+            # Get pre-validated data from middleware
+            bank_account_data = getattr(request, 'validated_data', {})
+            if not bank_account_data:
+                return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
+
+            session = self._get_session()
+        
+            try:
+                bank_account = self.bank_account_service.create_bank_account(bank_account_data, session)
+                
+                session.commit()
+                
+                formatted_bank_account = format_bank_account(bank_account)
+
+                return ControllerResponseDTO(data=formatted_bank_account, response_code=ApiResponseCode.CREATED)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error creating bank account: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error creating bank account: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
+        except Exception as e:
             current_app.logger.error(f"Error creating bank account: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def update_bank_account(self, account_id: int, data: Dict[str, Any]):
-        """Update a bank account with enhanced validation and response."""
-        start_time = time.time()
-        session = self._get_session()
-        
-        try:
-            # Update account using service
-            account = self.bank_account_service.update_bank_account(account_id, data, session)
-            
-            if not account:
-                return ControllerResponseDTO(error="Bank account not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-            
-            # Commit transaction
-            session.commit()
-            
-            # Format the response using formatter
-            formatted_account = format_bank_with_accounts(account.bank, [account])
-            
-            self._log_operation("update_bank_account", start_time, True, account_id=account_id)
-            return ControllerResponseDTO(data=formatted_account['accounts'][0], response_code=ApiResponseCode.SUCCESS)
-            
-        except Exception as e:
-            self._log_operation("update_bank_account", start_time, False, account_id=account_id, error=str(e))
-            current_app.logger.error(f"Error updating bank account {account_id}: {str(e)}")
-            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def delete_bank_account(self, account_id: int):
-        """Delete a bank account with enhanced response."""
-        start_time = time.time()
-        session = self._get_session()
+    ###############################################
+    # Delete bank account
+    ###############################################
+
+    def delete_bank_account(self, bank_account_id: int) -> ControllerResponseDTO:
+        """
+        Delete a bank account with enhanced response.
         
+        Args:
+            bank_account_id: ID of the bank account to delete
+            
+        Returns:
+            ControllerResponseDTO: DTO containing bank account data and status
+        """
         try:
-            # Delete account using service
-            success = self.bank_account_service.delete_bank_account(account_id, session)
+            session = self._get_session()
             
-            if not success:
-                return ControllerResponseDTO(error="Bank account not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-            
-            # Commit transaction
-            session.commit()
-            
-            self._log_operation("delete_bank_account", start_time, True, account_id=account_id)
-            return ControllerResponseDTO(response_code=ApiResponseCode.SUCCESS)
-            
+            try:
+                success = self.bank_account_service.delete_bank_account(bank_account_id, session)
+                if not success:
+                    return ControllerResponseDTO(error="Bank account not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
+                session.commit()                
+                return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
+
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error deleting bank account {bank_account_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error deleting bank account {bank_account_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
         except Exception as e:
-            self._log_operation("delete_bank_account", start_time, False, account_id=account_id, error=str(e))
-            current_app.logger.error(f"Error deleting bank account {account_id}: {str(e)}")
+            current_app.logger.error(f"Error deleting bank account {bank_account_id}: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
-    
+        
+
+    ###############################################################################
+    # SESSION HANDLING
+    ###############################################################################
+
     def _get_session(self) -> Session:
         """
         Get the current database session from middleware.

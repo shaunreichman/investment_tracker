@@ -20,7 +20,7 @@ from src.fund.events.domain import (
 )
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models import Fund
-from src.fund.enums import FundType
+from src.fund.enums import FundTrackingType
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ class CompanyRecordEventHandler(EventConsumer):
             
             # Create company record update event
             # For NAV-based funds, NAV changes affect company performance metrics
-            if fund.tracking_type == FundType.NAV_BASED:
+            if fund.tracking_type == FundTrackingType.NAV_BASED:
                 self._update_company_nav(event.fund_id, event.event_date, event.new_nav)
             else:
                 logger.debug(f"Fund {event.fund_id} is not NAV-based, NAV changes don't affect company records")

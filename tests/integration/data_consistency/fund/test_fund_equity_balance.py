@@ -25,7 +25,7 @@ from tests.factories import (
     FundFactory, EntityFactory, InvestmentCompanyFactory,
     FundEventFactory
 )
-from src.fund.models import Fund, FundEvent, FundType, EventType
+from src.fund.models import Fund, FundEvent, FundTrackingType, EventType
 from src.fund.services.fund_calculation_service import FundCalculationService
 from src.fund.services.fund_status_service import FundStatusService
 from src.fund.enums import FundStatus
@@ -50,7 +50,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund with factories
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -72,7 +72,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund and capital call
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -111,7 +111,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund with initial capital
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -164,7 +164,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create NAV-based fund
         fund = FundFactory(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -199,7 +199,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create cost-based fund
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -230,7 +230,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -264,7 +264,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund with events
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -304,7 +304,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -342,7 +342,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -406,7 +406,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund with complex event history
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=200000.0
         )
         db_session.commit()
@@ -485,7 +485,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -520,7 +520,7 @@ class TestFundEquityBalanceConsistency:
         """
         # Create fund with events
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=150000.0
         )
         db_session.commit()

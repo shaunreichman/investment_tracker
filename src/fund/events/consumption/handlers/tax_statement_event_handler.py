@@ -15,7 +15,7 @@ from src.fund.events.consumption.base_consumer import EventConsumer
 from src.fund.repositories.tax_statement_repository import TaxStatementRepository
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models import Fund
-from src.fund.enums import FundType
+from src.fund.enums import FundTrackingType
 from src.fund.events.domain import TaxStatementUpdatedEvent
 
 logger = logging.getLogger(__name__)

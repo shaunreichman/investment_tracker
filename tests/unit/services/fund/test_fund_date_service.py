@@ -22,7 +22,7 @@ What we DON'T test here (tested elsewhere):
 import pytest
 from datetime import date, datetime
 from unittest.mock import Mock, patch, MagicMock
-from src.shared.enums import EventOperation
+from src.shared.enums.shared_enums import EventOperation
 from src.fund.services.fund_date_service import FundDateService
 from src.fund.enums import EventType, FundStatus
 from src.fund.models.fund import Fund

@@ -93,7 +93,7 @@ Create a professional, create-only event form that leverages the unified distrib
 **Goal**: Integrate with unified distribution method and flag-based grouping
 
 **Tasks**:
-- [x] Integrate with unified `add_distribution()` method
+- [x] Integrate with unified `create_distribution()` method
 - [x] Support `has_withholding_tax` flag for interest distributions
 - [x] Implement proper payload transformation for all event types
 - [x] Handle tax statement creation with comprehensive field mapping
@@ -414,7 +414,7 @@ const handleRetry = () => {
 - [x] Optimize form performance and responsiveness
 
 ### Phase 3: Backend Integration
-- [x] Integrate with unified add_distribution() method
+- [x] Integrate with unified create_distribution() method
 - [x] Support has_withholding_tax flag for interest distributions
 - [x] Implement proper payload transformation for all event types
 - [x] Handle tax statement creation with comprehensive field mapping

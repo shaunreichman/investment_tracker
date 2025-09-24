@@ -7,36 +7,55 @@ All business logic has been moved to dedicated services.
 """
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, Boolean, Enum, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, Enum, Index, Float, Date
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.models import Fund
-from src.fund.enums import FundStatus
-from src.investment_company.enums import CompanyType, CompanyStatus
+from src.investment_company.enums.company_enums import CompanyType, CompanyStatus
 
 class InvestmentCompany(Base):
-    """Model representing an investment company/firm.
-    
-    This is now a pure data container with no business logic.
-    All business logic has been moved to dedicated services.
-    
-    Database Constraints:
-    - company_type: Enum constraint using CompanyType enum
-    - status: Enum constraint using CompanyStatus enum with default ACTIVE
+    """
+    Model representing an investment company which manages funds.
     """
     __tablename__ = 'investment_companies'
     
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    name = Column(String(255), nullable=False, unique=True)  # (MANUAL) investment company name
-    description = Column(Text)  # (MANUAL) company description
+    name = Column(String(255), nullable=False)  # (MANUAL) investment company name
+    description = Column(Text, nullable=True)  # (MANUAL) company description
     company_type = Column(Enum(CompanyType), nullable=True)  # (MANUAL) type of company using CompanyType enum
-    status = Column(Enum(CompanyStatus), default=CompanyStatus.ACTIVE, nullable=False)  # (CALCULATED) company status using CompanyStatus enum
-    business_address = Column(Text)  # (MANUAL) business address
-    website = Column(String(255))  # (MANUAL) company website URL
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) creation timestamp
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) last update timestamp
     
+    # Company information
+    business_address = Column(Text, nullable=True)  # (MANUAL) business address
+    website = Column(String(255), nullable=True)  # (MANUAL) company website URL
+
+    # Equity storage fields (CALCULATED)
+    total_commitment_amount = Column(Float, default=0.0)  # (CALCULATED) total commitment amount from funds
+    current_equity_balance = Column(Float, default=0.0)  # (CALCULATED) current equity balance from capital movements
+    average_equity_balance = Column(Float, default=0.0)  # (CALCULATED) time-weighted average equity balance
+
+    # IRR storage fields (CALCULATED)
+    completed_irr_gross = Column(Float, nullable=True)  # (CALCULATED) Completed gross IRR only of realized/completed funds
+    completed_irr_after_tax = Column(Float, nullable=True)  # (CALCULATED) Completed after-tax IRR only of realized/completed funds
+    completed_irr_real = Column(Float, nullable=True)  # (CALCULATED) Completed real IRR only of realized/completed funds
+
+    # Profitability storage fields (CALCULATED)
+    pnl = Column(Float, default=0.0)  # (CALCULATED) PNL
+    realized_pnl = Column(Float, default=0.0)  # (CALCULATED) Realized PNL
+    unrealized_pnl = Column(Float, default=0.0)  # (CALCULATED) Unrealized PNL
+    realized_pnl_capital_gain = Column(Float, default=0.0)  # (CALCULATED) Realized Capital Gain PNL
+    unrealized_pnl_capital_gain = Column(Float, default=0.0)  # (CALCULATED) Unrealized Capital Gain PNL
+    realized_pnl_dividend = Column(Float, default=0.0)  # (CALCULATED) Realized Dividend PNL
+    realized_pnl_interest = Column(Float, default=0.0)  # (CALCULATED) Realized Interest PNL
+    realized_pnl_distribution = Column(Float, default=0.0)  # (CALCULATED) Realized Distribution PNL
+
+    # Additional information
+    status = Column(Enum(CompanyStatus), nullable=True)  # (CALCULATED) company status using CompanyStatus enum
+    start_date = Column(Date, nullable=True)  # (CALCULATED) company start date
+    end_date = Column(Date, nullable=True)  # (CALCULATED) company end date
+    current_duration = Column(Integer, nullable=True)  # (CALCULATED) current company duration in months based on status
+
     # Relationships
     funds = relationship("Fund", back_populates="investment_company", cascade="all, delete-orphan")
     contacts = relationship("Contact", back_populates="investment_company", cascade="all, delete-orphan")

@@ -7,7 +7,7 @@ import {
   IconButton
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
-import { ExtendedFundEvent, ExtendedFund, GroupType, FundType } from '../../../../types/api';
+import { ExtendedFundEvent, ExtendedFund, GroupType, FundTrackingType } from '../../../../types/api';
 import { formatCurrency, formatDate } from '../../../../utils/formatters';
 import { EventTypeChip } from '../../../ui/EventTypeChip';
 import { GroupedEvent } from './useEventGrouping';
@@ -39,7 +39,7 @@ const GroupedEventRowComponent: React.FC<GroupedEventRowProps> = ({
 }) => {
   // CALCULATED: Extract events from the grouped event
   const { events, displayDate, displayDescription, groupType } = groupedEvent;
-  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  const isNavBased = fund.tracking_type === FundTrackingType.NAV_BASED;
 
   // CALCULATED: Handle different group types
   if (groupType === GroupType.TAX_STATEMENT) {
@@ -247,7 +247,7 @@ const TaxStatementGroupRow: React.FC<{
   displayDescription: string;
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }> = ({ events, fund, showTaxEvents, showNavUpdates, displayDate, displayDescription, onDeleteEvent }) => {
-  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  const isNavBased = fund.tracking_type === FundTrackingType.NAV_BASED;
   
   // CALCULATED: Categorize events by type for display
   const taxPaymentEvents = events.filter(e => e.event_type === 'TAX_PAYMENT') as ExtendedFundEvent[];
@@ -418,7 +418,7 @@ const InterestWithholdingGroupRow: React.FC<{
   displayDescription: string;
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }> = ({ events, fund, showTaxEvents, showNavUpdates, displayDate, displayDescription, onDeleteEvent }) => {
-  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  const isNavBased = fund.tracking_type === FundTrackingType.NAV_BASED;
   
   // CALCULATED: Extract interest and withholding events
   const interestEvent = events.find(e => e.event_type === 'DISTRIBUTION') as ExtendedFundEvent | undefined;
@@ -579,7 +579,7 @@ const TaxStatementDetailRow: React.FC<{
   showNavUpdates: boolean;
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }> = ({ event, fund, showTaxEvents, showNavUpdates, onDeleteEvent }) => {
-  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  const isNavBased = fund.tracking_type === FundTrackingType.NAV_BASED;
   
   // CALCULATED: Determine if this event is editable
   const isEditable = ![
@@ -700,7 +700,7 @@ const OtherEventRow: React.FC<{
   showNavUpdates: boolean;
   onDeleteEvent: (event: ExtendedFundEvent) => void;
 }> = ({ event, fund, showTaxEvents, showNavUpdates, onDeleteEvent }) => {
-  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  const isNavBased = fund.tracking_type === FundTrackingType.NAV_BASED;
   const isEquity = event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE' || 
                    event.event_type === 'CAPITAL_CALL' || event.event_type === 'RETURN_OF_CAPITAL';
   const isDistribution = event.event_type === 'DISTRIBUTION';
@@ -809,7 +809,7 @@ const EquityCellContent: React.FC<{ event: ExtendedFundEvent; fund: ExtendedFund
   event, 
   fund 
 }) => {
-  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  const isNavBased = fund.tracking_type === FundTrackingType.NAV_BASED;
 
   if (isNavBased) {
     if (event.event_type === 'UNIT_PURCHASE') {

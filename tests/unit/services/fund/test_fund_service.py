@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from datetime import date
 
 from src.fund.services.fund_service import FundService
-from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.enums import FundStatus, FundTrackingType, EventType
 from src.fund.models import Fund, FundEvent
 
 
@@ -102,7 +102,7 @@ class TestFundService:
         # Assert
         call_args = fund_service.fund_repository.create.call_args[0]
         processed_data = call_args[0]
-        assert processed_data['tracking_type'] == FundType.COST_BASED
+        assert processed_data['tracking_type'] == FundTrackingType.COST_BASED
 
     def test_update_fund_success(self, fund_service, mock_session):
         """Test successful fund update."""
@@ -225,7 +225,7 @@ class TestFundService:
     def test_get_funds_by_type(self, fund_service, mock_session):
         """Test getting funds filtered by type."""
         # Arrange
-        fund_type = FundType.COST_BASED
+        fund_type = FundTrackingType.COST_BASED
         mock_funds = [Mock(spec=Fund)]
         fund_service.fund_repository.get_funds_by_type.return_value = mock_funds
 
@@ -411,7 +411,7 @@ class TestFundService:
             assert result == mock_fund
             call_args = fund_service.fund_repository.create.call_args[0]
             processed_data = call_args[0]
-            assert processed_data['tracking_type'] == FundType(tracking_type)
+            assert processed_data['tracking_type'] == FundTrackingType(tracking_type)
 
     def test_create_fund_with_fund_type_string_preserved(self, fund_service, mock_session):
         """Test that fund_type string values are preserved as-is for backward compatibility."""
@@ -482,7 +482,7 @@ class TestFundService:
         """Test getting funds with both status and type filters (should prioritize status)."""
         # Arrange
         status = FundStatus.ACTIVE
-        fund_type = FundType.COST_BASED
+        fund_type = FundTrackingType.COST_BASED
         mock_funds = [Mock(spec=Fund)]
         fund_service.fund_repository.get_funds_by_status.return_value = mock_funds
 

@@ -6,17 +6,19 @@ providing RESTful endpoints for entity management.
 
 Key responsibilities:
 - Entity CRUD endpoints
-- Business logic delegation to domain models
+- Business logic delegation to service layer
 - Response formatting and error handling
 
 Note: All input validation is handled by middleware validation decorators.
 """
 
-from typing import List, Optional, Dict, Any
-from flask import request, jsonify, current_app
+from flask import request, current_app
 from sqlalchemy.orm import Session
 
-from src.entity.models import Entity
+from src.entity.services.entity_service import EntityService
+from src.api.controllers.formatters.entity_formatter import format_entity
+from src.api.dto.controller_response_dto import ControllerResponseDTO
+from src.api.dto.response_codes import ApiResponseCode
 
 
 class EntityController:
@@ -24,227 +26,191 @@ class EntityController:
     Controller for entity operations.
     
     This controller handles HTTP requests and provides REST API endpoints
-    for entity operations. It delegates business logic to the domain
-    models and handles request/response formatting.
+    for entity operations. It delegates business logic to the service
+    layer and handles request/response formatting.
     
     All input validation is handled by middleware validation decorators.
     
     Attributes:
-        None - Direct domain model usage for simplicity
+        entity_service (EntityService): Service for entity business logic
     """
     
     def __init__(self):
         """Initialize the entity controller."""
-        pass
+        self.entity_service = EntityService()
     
-    def get_entities(self, session: Session) -> tuple:
+    ################################################################################
+    # ENTITY ENDPOINTS
+    ###############################################################################
+
+    ###############################################
+    # Get entities
+    ###############################################
+    
+    def get_entities(self) -> ControllerResponseDTO:
         """
         Get all entities with summary data.
-        
-        Args:
-            session: Database session
-            
+                    
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO
         """
         try:
-            # Get all entities using domain methods
-            entities = Entity.get_all(session=session)
-            
-            # Format response data to match actual Entity model
-            entities_data = []
-            for entity in entities:
-                entity_data = {
-                    "id": entity.id,
-                    "name": entity.name,
-                    "description": entity.description,
-                    "tax_jurisdiction": entity.tax_jurisdiction,
-                    "created_at": entity.created_at.isoformat() if entity.created_at else None,
-                    "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
-                }
-                entities_data.append(entity_data)
-            
-            return jsonify(entities_data), 200
-            
+            session = self._get_session()
+            try:
+                entities = self.entity_service.get_entities(session=session)
+                if entities is None:
+                    return ControllerResponseDTO(error="Entities not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
+                formatted_entities = [format_entity(entity) for entity in entities]
+                return ControllerResponseDTO(data=formatted_entities, response_code=ApiResponseCode.SUCCESS)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error getting entities: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting entities: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
         except Exception as e:
             current_app.logger.error(f"Error getting entities: {str(e)}")
-            return jsonify({"error": "Internal server error"}), 500
-    
-    def create_entity(self, session: Session) -> tuple:
-        """
-        Create a new entity.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            Tuple of (response_data, status_code)
-            
-        Note: Input data is pre-validated by middleware validation decorator.
-        """
-        try:
-            # Get pre-validated data from middleware
-            data = getattr(request, 'validated_data', {})
-            if not data:
-                return jsonify({"error": "No validated data available"}), 400
-            
-            # Create entity using domain method with correct parameters
-            entity = Entity.create(
-                name=data['name'],
-                description=data.get('description'),
-                tax_jurisdiction=data.get('tax_jurisdiction', 'AU'),
-                session=session
-            )
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Return created entity data matching actual model
-            response_data = {
-                "id": entity.id,
-                "name": entity.name,
-                "description": entity.description,
-                "tax_jurisdiction": entity.tax_jurisdiction,
-                "created_at": entity.created_at.isoformat() if entity.created_at else None,
-                "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
-            }
-            
-            return jsonify(response_data), 201
-            
-        except ValueError as e:
-            # Handle business logic errors (e.g., duplicate names, validation errors)
-            current_app.logger.warning(f"Business logic error creating entity: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
-            return jsonify({"error": str(e)}), 400
-            
-        except Exception as e:
-            current_app.logger.error(f"Error creating entity: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
-            return jsonify({"error": "Internal server error"}), 500
-    
-    def get_entity(self, session: Session, entity_id: int) -> tuple:
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+    def get_entity(self, entity_id: int) -> ControllerResponseDTO:
         """
         Get an entity by ID.
         
         Args:
-            session: Database session
             entity_id: ID of the entity to retrieve
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO
         """
         try:
-            # Get entity using domain method
-            entity = Entity.get_by_id(entity_id, session=session)
-            
-            if not entity:
-                return jsonify({"error": "Entity not found"}), 404
-            
-            # Format response data to match actual Entity model
-            entity_data = {
-                "id": entity.id,
-                "name": entity.name,
-                "description": entity.description,
-                "tax_jurisdiction": entity.tax_jurisdiction,
-                "created_at": entity.created_at.isoformat() if entity.created_at else None,
-                "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
-            }
-            
-            return jsonify(entity_data), 200
-            
+            session = self._get_session()
+            try:
+                entity = self.entity_service.get_entity_by_id(entity_id, session)
+                if not entity:
+                    return ControllerResponseDTO(error="Entity not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
+                formatted_entity = format_entity(entity)
+                return ControllerResponseDTO(data=formatted_entity, response_code=ApiResponseCode.SUCCESS)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error getting entity {entity_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting entity {entity_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
         except Exception as e:
             current_app.logger.error(f"Error getting entity {entity_id}: {str(e)}")
-            return jsonify({"error": "Internal server error"}), 500
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
     
-    def update_entity(self, session: Session, entity_id: int) -> tuple:
+    ###############################################
+    # Create entity
+    ###############################################
+    
+    def create_entity(self) -> ControllerResponseDTO:
         """
-        Update an existing entity.
-        
-        Args:
-            session: Database session
-            entity_id: ID of the entity to update
+        Create a new entity.
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO
             
         Note: Input data is pre-validated by middleware validation decorator.
         """
         try:
-            # Get entity and validate it exists
-            entity = Entity.get_by_id(entity_id, session=session)
-            if not entity:
-                return jsonify({"error": "Entity not found"}), 404
-            
             # Get pre-validated data from middleware
-            data = getattr(request, 'validated_data', {})
-            if not data:
-                return jsonify({"error": "No validated data available"}), 400
-            
-            # Update entity fields to match actual model
-            if 'name' in data:
-                entity.name = data['name']
-            if 'description' in data:
-                entity.description = data['description']
-            if 'tax_jurisdiction' in data:
-                entity.tax_jurisdiction = data['tax_jurisdiction']
-            
-            # Commit the transaction
-            session.commit()
-            
-            # Return updated entity data matching actual model
-            response_data = {
-                "id": entity.id,
-                "name": entity.name,
-                "description": entity.description,
-                "tax_jurisdiction": entity.tax_jurisdiction,
-                "created_at": entity.created_at.isoformat() if entity.created_at else None,
-                "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
-            }
-            
-            return jsonify(response_data), 200
-            
-        except ValueError as e:
-            # Handle business logic errors
-            current_app.logger.warning(f"Business logic error updating entity {entity_id}: {str(e)}")
-            if 'session' in locals():
+            entity_data = getattr(request, 'validated_data', {})
+            if not entity_data:
+                return ControllerResponseDTO(error="No validated data available", response_code=ApiResponseCode.VALIDATION_ERROR)
+                
+            session = self._get_session()
+
+            try:
+                entity = self.entity_service.create_entity(entity_data, session)
+                
+                session.commit()
+                
+                formatted_entity = format_entity(entity)
+                return ControllerResponseDTO(data=formatted_entity, response_code=ApiResponseCode.CREATED)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error creating entity: {str(e)}")
                 session.rollback()
-            return jsonify({"error": str(e)}), 400
-            
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error creating entity: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
         except Exception as e:
-            current_app.logger.error(f"Error updating entity {entity_id}: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
-            return jsonify({"error": "Internal server error"}), 500
+            current_app.logger.error(f"Error creating entity: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
     
-    def delete_entity(self, session: Session, entity_id: int) -> tuple:
+
+    ###############################################
+    # Delete entity
+    ###############################################
+    
+    def delete_entity(self, entity_id: int) -> ControllerResponseDTO:
         """
         Delete an entity.
         
         Args:
-            session: Database session
             entity_id: ID of the entity to delete
             
         Returns:
-            Tuple of (response_data, status_code)
+            ControllerResponseDTO
         """
         try:
-            # Get entity and validate it exists
-            entity = Entity.get_by_id(entity_id, session=session)
-            if not entity:
-                return jsonify({"error": "Entity not found"}), 404
-            
-            # Delete entity using domain method
-            Entity.delete(entity_id, session=session)
-            
-            # Commit the transaction
-            session.commit()
-            
-            return jsonify({"message": "Entity deleted successfully"}), 200
-            
+            session = self._get_session()
+            try:
+                success = self.entity_service.delete_entity(entity_id, session)
+                if not success:
+                    return ControllerResponseDTO(error="Entity not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
+                session.commit()
+                
+                return ControllerResponseDTO(message="Entity deleted successfully", response_code=ApiResponseCode.DELETED)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error deleting entity {entity_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error deleting entity {entity_id}: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
         except Exception as e:
             current_app.logger.error(f"Error deleting entity {entity_id}: {str(e)}")
-            if 'session' in locals():
-                session.rollback()
-            return jsonify({"error": "Internal server error"}), 500
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+
+    ###############################################################
+    # SESSION HANDLING
+    ###############################################################
+    
+    def _get_session(self) -> Session:
+        """
+        Get the current database session from middleware.
+        
+        Returns:
+            Database session from Flask's g context
+        """
+        from src.api.middleware.database_session import get_current_session
+        return get_current_session()

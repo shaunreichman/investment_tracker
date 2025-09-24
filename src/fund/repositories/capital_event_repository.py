@@ -15,11 +15,12 @@ Key responsibilities:
 from typing import List, Optional, Dict, Any
 from datetime import date
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, func
 
 from src.fund.models import FundEvent
-from src.fund.enums import SortFieldFund
-from src.shared.enums import SortOrder
+from src.fund.enums import SortFieldFund, EventType
+from src.shared.enums.shared_enums import SortOrder
+
 
 
 class CapitalEventRepository:
@@ -97,166 +98,6 @@ class CapitalEventRepository:
         self._clear_fund_cache(fund_id)
         
         return event
-    
-    def get_capital_events(self, fund_id: int, session: Session, 
-                          skip: int = 0, limit: int = 100,
-                          start_date: Optional[date] = None,
-                          end_date: Optional[date] = None,
-                          sort_by: SortFieldFund = SortFieldFund.EVENT_DATE,
-                          sort_order: SortOrder = SortOrder.ASC) -> List[FundEvent]:
-        """
-        Get capital events for a specific fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            start_date: Optional start date filter
-            end_date: Optional end date filter
-            sort_by: Field to sort by
-            sort_order: Sort order (ASC or DESC)
-            
-        Returns:
-            List of capital events
-        """
-        cache_key = f"capital_events:fund:{fund_id}:skip:{skip}:limit:{limit}:start:{start_date}:end:{end_date}:sort:{sort_by.value}:order:{sort_order.value}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Build query
-        query = session.query(FundEvent).filter(
-            and_(
-                FundEvent.fund_id == fund_id,
-                FundEvent.event_type.in_([EventType.CAPITAL_CALL.value, EventType.RETURN_OF_CAPITAL.value])
-            )
-        )
-        
-        # Apply date filters
-        if start_date:
-            query = query.filter(FundEvent.event_date >= start_date)
-        if end_date:
-            query = query.filter(FundEvent.event_date <= end_date)
-        
-        # Apply sorting
-        if sort_by == SortFieldFund.EVENT_DATE:
-            sort_column = FundEvent.event_date
-        else:
-            sort_column = getattr(FundEvent, sort_by.value)
-        if sort_order == SortOrder.DESC:
-            query = query.order_by(sort_column.desc())
-        else:
-            query = query.order_by(sort_column.asc())
-        
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
-        
-        events = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
-        
-        return events
-    
-    def get_total_capital_calls(self, fund_id: int, session: Session) -> float:
-        """
-        Get total capital calls for a fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            
-        Returns:
-            Total capital calls amount
-        """
-        cache_key = f"total_capital_calls:fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            and_(
-                FundEvent.fund_id == fund_id,
-                FundEvent.event_type == EventType.CAPITAL_CALL.value
-            )
-        ).scalar()
-        
-        result = float(total) if total else 0.0
-        
-        # Cache the result
-        self._cache[cache_key] = result
-        
-        return result
-    
-    def get_total_capital_returns(self, fund_id: int, session: Session) -> float:
-        """
-        Get total capital returns for a fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            
-        Returns:
-            Total capital returns amount
-        """
-        cache_key = f"total_capital_returns:fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        total = session.query(func.sum(FundEvent.amount)).filter(
-            and_(
-                FundEvent.fund_id == fund_id,
-                FundEvent.event_type == EventType.RETURN_OF_CAPITAL.value
-            )
-        ).scalar()
-        
-        result = float(total) if total else 0.0
-        
-        # Cache the result
-        self._cache[cache_key] = result
-        
-        return result
-    
-    def get_capital_events_by_date_range(self, fund_id: int, start_date: date, end_date: date, session: Session) -> List[FundEvent]:
-        """
-        Get capital events for a fund within a date range.
-        
-        Args:
-            fund_id: ID of the fund
-            start_date: Start date for the range
-            end_date: End date for the range
-            session: Database session
-            
-        Returns:
-            List of capital events in the date range
-        """
-        cache_key = f"capital_events:fund:{fund_id}:start:{start_date}:end:{end_date}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        events = session.query(FundEvent).filter(
-            and_(
-                FundEvent.fund_id == fund_id,
-                FundEvent.event_type.in_([EventType.CAPITAL_CALL.value, EventType.RETURN_OF_CAPITAL.value]),
-                FundEvent.event_date >= start_date,
-                FundEvent.event_date <= end_date
-            )
-        ).order_by(FundEvent.event_date.asc()).all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
-        
-        return events
     
     def _clear_fund_cache(self, fund_id: int) -> None:
         """Clear cache for events by fund."""

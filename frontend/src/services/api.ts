@@ -410,7 +410,7 @@ const funds = await apiClient.getFunds();
 // Create a new fund
 const newFund = await apiClient.createFund({
   name: 'My Fund',
-  tracking_type: FundType.COST_BASED,
+  tracking_type: FundTrackingType.COST_BASED,
   investment_company_id: 1,
   entity_id: 1,
 });

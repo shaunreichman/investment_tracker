@@ -14,9 +14,11 @@ The package follows enterprise best practices with:
 from src.fund.services.fund_status_service import FundStatusService
 from src.fund.services.fund_event_service import FundEventService
 from src.fund.services.fund_service import FundService
+from src.fund.services.fund_tax_statement_service import FundTaxStatementService
 
 __all__ = [
     'FundStatusService', 
     'FundEventService',
-    'FundService'
+    'FundService',
+    'FundTaxStatementService',
 ]

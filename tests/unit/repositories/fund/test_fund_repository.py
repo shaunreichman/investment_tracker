@@ -22,7 +22,7 @@ from decimal import Decimal
 
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models.fund import Fund
-from src.fund.enums import FundStatus, FundType
+from src.fund.enums import FundStatus, FundTrackingType
 
 
 class TestFundRepository:
@@ -57,7 +57,7 @@ class TestFundRepository:
         fund.investment_company_id = 1
         fund.entity_id = 1
         fund.status = FundStatus.ACTIVE
-        fund.fund_type = FundType.NAV_BASED
+        fund.fund_type = FundTrackingType.NAV_BASED
         fund.created_at = datetime.now(timezone.utc)
         return fund
     
@@ -72,7 +72,7 @@ class TestFundRepository:
         return {
             'name': 'New Test Fund',
             'description': 'A new test fund',
-            'tracking_type': FundType.NAV_BASED,
+            'tracking_type': FundTrackingType.NAV_BASED,
             'status': FundStatus.ACTIVE,
             'commitment_amount': Decimal('1000000.00'),
             'investment_company_id': 1,
@@ -171,7 +171,7 @@ class TestFundRepository:
         funds_list = [Mock(), Mock()]
         mock_session.query.return_value.all.return_value = funds_list
         
-        result = fund_repository.get_funds_by_type(FundType.NAV_BASED, mock_session)
+        result = fund_repository.get_funds_by_type(FundTrackingType.NAV_BASED, mock_session)
         
         assert result == funds_list
         mock_session.query.assert_called_once()

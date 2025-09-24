@@ -142,7 +142,7 @@ class TestCompanyService:
         # Store original service attributes for restoration
         self._original_attributes = {
             'company_repository': self.service.company_repository,
-            'contact_repository': self.service.contact_repository,
+            'company_contact_repository': self.service.company_contact_repository,
             'portfolio_service': self.service.portfolio_service,
             'summary_service': self.service.summary_service,
             'contact_service': self.service.contact_service,
@@ -158,7 +158,7 @@ class TestCompanyService:
     def _mock_service_dependencies(self):
         """Mock all service dependencies for isolated testing."""
         self.service.company_repository = Mock()
-        self.service.contact_repository = Mock()
+        self.service.company_contact_repository = Mock()
         self.service.portfolio_service = Mock()
         self.service.summary_service = Mock()
         self.service.contact_service = Mock()
@@ -175,7 +175,7 @@ class TestCompanyServiceInitialization(TestCompanyService):
         
         # Assert
         assert service.company_repository is not None
-        assert service.contact_repository is not None
+        assert service.company_contact_repository is not None
         assert service.portfolio_service is not None
         assert service.summary_service is not None
         assert service.contact_service is not None

@@ -234,7 +234,7 @@ try:
     # Domain methods accept session parameter
     company = InvestmentCompany.create(name="Test Company", session=session)
     fund = company.create_fund(entity, "My Fund", session=session)
-    fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
+    fund.create_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
     session.commit()
 finally:
     session.close()
@@ -253,8 +253,8 @@ fund = company.create_fund(entity, "My Fund", session=session)
 #### **Event Creation Patterns**
 ```python
 # ✅ Use domain methods for events
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
-fund.add_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
+fund.create_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
+fund.create_distribution_with_tax_rate(gross_amount=5000, tax_rate=10.0, session=session)
 
 # ✅ Use TaxEventManager for tax payments
 from src.tax.events import TaxEventManager
@@ -422,10 +422,10 @@ DB_POOL_RECYCLE = 3600      # Recycle connections every hour
 ### **Pattern: Session Parameter**
 ```python
 # ✅ CORRECT: Always use keyword argument
-fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
+fund.create_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
 
 # ❌ INCORRECT: Positional argument
-fund.add_capital_call(100000, date(2023, 1, 1), session)  # Error!
+fund.create_capital_call(100000, date(2023, 1, 1), session)  # Error!
 ```
 
 ### **Decorator Usage**
@@ -455,7 +455,7 @@ fund = Fund(investment_company_id=company.id, ...)  # No validation, no business
 ```python
 # ✅ CORRECT: Use direct object methods
 fund = company.create_fund(entity, "My Fund", session=session)
-event = fund.add_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
+event = fund.create_capital_call(amount=100000, date=date(2023, 1, 1), session=session)
 ```
 
 ---
@@ -496,11 +496,11 @@ event = FundEvent(event_type=EventType.TAX_PAYMENT, ...)  # System should create
 
 ### **Key Methods**
 - For NAV-based funds:
-  - `add_unit_purchase`, `update_unit_purchase`
-  - `add_unit_sale`, `update_unit_sale`
+  - `create_unit_purchase`, `update_unit_purchase`
+  - `create_unit_sale`, `update_unit_sale`
 - For cost-based funds:
-  - `add_capital_call`, `update_capital_call`
-  - `add_return_of_capital`, `update_return_of_capital`
+  - `create_capital_call`, `update_capital_call`
+  - `create_return_of_capital`, `update_return_of_capital`
 - All methods automatically call `recalculate_capital_chain_from(event, session=session)` after insert/update.
 
 ### **Unified Recalculation Orchestrator**
@@ -524,7 +524,7 @@ event = FundEvent(event_type=EventType.TAX_PAYMENT, ...)  # System should create
 ### **Example Usage**
 ```python
 # NAV-based fund: add a unit purchase
-fund.add_unit_purchase(units=100, price=10.0, date=date(2024, 1, 1), session=session)
+fund.create_unit_purchase(units=100, price=10.0, date=date(2024, 1, 1), session=session)
 
 # Cost-based fund: update a capital call
 fund.update_capital_call(event_id=123, amount=50000.0, date=date(2024, 2, 1), session=session)
@@ -582,8 +582,8 @@ const handleSubmit = async (formData: any) => {
   const apiData = {
     ...formData,
     tracking_type: formData.tracking_type === 'nav_based' 
-      ? FundType.NAV_BASED 
-      : FundType.COST_BASED,
+      ? FundTrackingType.NAV_BASED 
+      : FundTrackingType.COST_BASED,
     amount: formData.amount ? parseFloat(formData.amount) : null,
     event_date: formData.event_date ? new Date(formData.event_date) : undefined
   };
@@ -1134,8 +1134,8 @@ const handleSubmit = async (formData: any) => {
   const apiData = {
     ...formData,
     tracking_type: formData.tracking_type === 'nav_based' 
-      ? FundType.NAV_BASED 
-      : FundType.COST_BASED,
+      ? FundTrackingType.NAV_BASED 
+      : FundTrackingType.COST_BASED,
     amount: formData.amount ? parseFloat(formData.amount) : null
   };
   await createFund.mutate(apiData);
@@ -1282,7 +1282,7 @@ class Fund(Base):
     # MANUAL FIELDS
     name = Column(String(255), nullable=False)  # (MANUAL) fund name
     fund_type = Column(String(100))  # (MANUAL) type of fund (e.g., 'Private Equity', 'Venture Capital')
-    tracking_type = Column(Enum(FundType), nullable=False)  # (MANUAL) NAV_BASED or COST_BASED
+    tracking_type = Column(Enum(FundTrackingType), nullable=False)  # (MANUAL) NAV_BASED or COST_BASED
     
     # CALCULATED FIELDS
     current_equity_balance = Column(Float, default=0.0)  # (CALCULATED) current equity balance from capital movements
@@ -1312,7 +1312,7 @@ investment_company_id = Column(Integer, ForeignKey('investment_companies.id'), n
 entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)  # (MANUAL) foreign key to entity, must be set at creation
 name = Column(String(255), nullable=False)  # (MANUAL) fund name
 fund_type = Column(String(100))  # (MANUAL) type of fund (e.g., 'Private Equity', 'Venture Capital')
-tracking_type = Column(Enum(FundType), nullable=False)  # (MANUAL) NAV_BASED or COST_BASED
+tracking_type = Column(Enum(FundTrackingType), nullable=False)  # (MANUAL) NAV_BASED or COST_BASED
 description = Column(Text)  # (MANUAL) fund description
 currency = Column(String(10), default="AUD")  # (MANUAL) currency code for the fund
 commitment_amount = Column(Float, nullable=True)  # (MANUAL) total amount committed to the fund
@@ -1438,7 +1438,7 @@ try:
         entity=entity,
         name="My Fund",
         fund_type="Private Debt",
-        tracking_type=FundType.COST_BASED,
+        tracking_type=FundTrackingType.COST_BASED,
         currency="AUD",
         description="Fund description",
         session=session
@@ -1448,7 +1448,7 @@ try:
 #### **Step 2: Add Initial Events**
 ```python
     # Add capital call to establish equity
-    fund.add_capital_call(
+    fund.create_capital_call(
         amount=100000.0,
         date=date(2023, 1, 1),
         description="Initial capital call",
@@ -1456,7 +1456,7 @@ try:
     )
     
     # Add distribution with tax
-    fund.add_distribution_with_tax_rate(
+    fund.create_distribution_with_tax_rate(
         event_date=date(2023, 6, 30),
         gross_amount=5000.0,
         tax_rate=10.0,

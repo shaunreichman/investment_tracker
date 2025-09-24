@@ -31,7 +31,7 @@ from tests.factories import (
     TaxStatementFactory
 )
 from src.fund.models import (
-    Fund, FundType, EventType, CashFlowDirection,
+    Fund, FundTrackingType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
 from src.fund.services.fund_service import FundService
@@ -54,7 +54,7 @@ class TestFundRealizationWorkflow:
         
         # Create fund with cost-based tracking
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             start_date=date(2023, 1, 1)
         )
@@ -67,7 +67,7 @@ class TestFundRealizationWorkflow:
         # Add initial capital call to establish equity balance
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_capital_call(fund, 50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         db_session.commit()
         
         # Verify fund is still active with equity
@@ -76,7 +76,7 @@ class TestFundRealizationWorkflow:
         assert fund.current_equity_balance == 50000.0
         
         # Return all capital to trigger realization
-        fund_event_service.add_return_of_capital(
+        fund_event_service.create_return_of_capital(
             fund=fund,
             amount=50000.0,
             return_date=date(2023, 6, 30),
@@ -116,7 +116,7 @@ class TestFundRealizationWorkflow:
         
         # Create fund and realize it first
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             start_date=date(2023, 1, 1)
         )
@@ -125,8 +125,8 @@ class TestFundRealizationWorkflow:
         # Add capital call and return to realize fund
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
-        fund_event_service.add_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
+        fund_event_service.create_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         db_session.commit()
         
         # Verify fund is realized
@@ -176,7 +176,7 @@ class TestFundRealizationWorkflow:
         
         # Create fund and complete it
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             start_date=date(2023, 1, 1)
         )
@@ -185,8 +185,8 @@ class TestFundRealizationWorkflow:
         # Realize and complete fund
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
-        fund_event_service.add_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
+        fund_event_service.create_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         
         tax_statement = TaxStatementFactory.create(
             fund=fund,
@@ -243,7 +243,7 @@ class TestFundRealizationWorkflow:
         
         # Create NAV-based fund
         fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0,
             start_date=date(2023, 1, 1)
         )
@@ -256,7 +256,7 @@ class TestFundRealizationWorkflow:
         # Purchase units to establish equity
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=1000.0,
             price=50.0,
@@ -275,7 +275,7 @@ class TestFundRealizationWorkflow:
         # Sell all units to realize fund
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_unit_sale(
+        fund_event_service.create_unit_sale(
             fund=fund,
             units=1000.0,
             price=55.0,
@@ -312,7 +312,7 @@ class TestFundRealizationWorkflow:
         
         # Create fund and realize it
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             start_date=date(2023, 1, 1)
         )
@@ -321,8 +321,8 @@ class TestFundRealizationWorkflow:
         # Add capital call and return to realize fund
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
-        fund_event_service.add_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
+        fund_event_service.create_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         db_session.commit()
         
         # Verify fund is realized
@@ -333,7 +333,7 @@ class TestFundRealizationWorkflow:
         # Add income distribution after realization (should be allowed)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        distribution = fund_event_service.add_distribution(
+        distribution = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2023, 12, 31),
             distribution_type=DistributionType.INCOME,
@@ -367,7 +367,7 @@ class TestFundRealizationWorkflow:
         
         # Create fund and realize it
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             start_date=date(2023, 1, 1)
         )
@@ -376,8 +376,8 @@ class TestFundRealizationWorkflow:
         # Realize fund
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
-        fund_event_service.add_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
+        fund_event_service.create_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         db_session.commit()
         
         # Verify fund is realized
@@ -423,7 +423,7 @@ class TestFundRealizationWorkflow:
         
         # Create fund and complete it
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             start_date=date(2023, 1, 1)
         )
@@ -432,8 +432,8 @@ class TestFundRealizationWorkflow:
         # Realize and complete fund
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
-        fund_event_service.add_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
+        fund_event_service.create_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 50000.0, date(2023, 6, 30), "Full capital return", session=db_session)
         
         tax_statement = TaxStatementFactory.create(
             fund=fund,
@@ -481,7 +481,7 @@ class TestFundRealizationWorkflow:
         account = BankAccountFactory.create(entity=entity, bank=bank, currency="AUD")
         fund = FundFactory.create(
             entity=entity,
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             currency="AUD",
             start_date=date(2023, 1, 1)
@@ -491,7 +491,7 @@ class TestFundRealizationWorkflow:
         # Add capital call with cash flow
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
+        event = fund_event_service.create_capital_call(fund,  50000.0, date(2023, 1, 1), "Initial capital call", session=db_session)
         cash_flow = FundEventCashFlowFactory.create(
             fund_event=event,
             bank_account=account,
@@ -505,7 +505,7 @@ class TestFundRealizationWorkflow:
         # Return capital with cash flow
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        return_event = fund_event_service.add_return_of_capital(
+        return_event = fund_event_service.create_return_of_capital(
             fund=fund,
             amount=50000.0,
             return_date=date(2023, 6, 30),
@@ -549,7 +549,7 @@ class TestFundRealizationWorkflow:
         
         # Test case: Fund with zero commitment amount
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=0.0,  # Zero commitment
             start_date=date(2023, 1, 1)
         )
@@ -562,8 +562,8 @@ class TestFundRealizationWorkflow:
         # Add and return capital to test realization
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_capital_call(fund,  10000.0, date(2023, 1, 1), "Capital call", session=db_session)
-        fund_event_service.add_return_of_capital(fund, 10000.0, date(2023, 6, 30), "Capital return", session=db_session)
+        fund_event_service.create_capital_call(fund,  10000.0, date(2023, 1, 1), "Capital call", session=db_session)
+        fund_event_service.create_return_of_capital(fund, 10000.0, date(2023, 6, 30), "Capital return", session=db_session)
         db_session.commit()
         
         # Verify fund is realized
@@ -573,15 +573,15 @@ class TestFundRealizationWorkflow:
         
         # Test case: Fund with very small amounts
         fund2 = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=0.01,  # Very small commitment
             start_date=date(2023, 1, 1)
         )
         db_session.commit()
         
         # Add and return very small amounts
-        fund_event_service.add_capital_call(fund2, 0.01, date(2023, 1, 1), "Small capital call", session=db_session)
-        fund_event_service.add_return_of_capital(fund2, 0.01, date(2023, 6, 30), "Small capital return", session=db_session)
+        fund_event_service.create_capital_call(fund2, 0.01, date(2023, 1, 1), "Small capital call", session=db_session)
+        fund_event_service.create_return_of_capital(fund2, 0.01, date(2023, 6, 30), "Small capital return", session=db_session)
         db_session.commit()
         
         # Verify fund is realized even with very small amounts

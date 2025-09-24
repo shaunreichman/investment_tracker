@@ -13,9 +13,10 @@ Key responsibilities:
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
 
 from src.entity.models import Entity
+from src.entity.enums.entity_enums import SortFieldEntity
+from src.shared.enums.shared_enums import SortOrder, EntityType
 
 
 class EntityRepository:
@@ -41,8 +42,72 @@ class EntityRepository:
         """
         self._cache: Dict[str, Any] = {}
         self._cache_ttl = cache_ttl
-    
-    def get_by_id(self, entity_id: int, session: Session) -> Optional[Entity]:
+
+
+    ################################################################################
+    # Get Entity
+    ################################################################################
+
+    def get_entities(self, session: Session, 
+                    entity_type: Optional[EntityType] = None,
+                    tax_jurisdiction: Optional[str] = None,
+                    name: Optional[str] = None,
+                    sort_by: SortFieldEntity = SortFieldEntity.NAME,
+                    sort_order: SortOrder = SortOrder.ASC
+    ) -> List[Entity]:
+        """
+        Get entities with filtering.
+        
+        Args:
+            session: Database session
+            entity_type: Optional entity type filter
+            tax_jurisdiction: Optional tax jurisdiction filter
+            name: Optional name filter
+            sort_by: Optional sort field
+            sort_order: Optional sort order
+        Returns:
+            List of Entity objects
+        """
+        cache_key = f"entities:entity_type:{entity_type}:tax_jurisdiction:{tax_jurisdiction}:name:{name}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
+
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Validate sort field
+        if sort_by not in SortFieldEntity:
+            raise ValueError(f"Invalid sort field: {sort_by}")
+        
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}")
+        
+        # Query database
+        entities = session.query(Entity)
+        if entity_type:
+            entities = entities.filter(Entity.entity_type == entity_type.value)
+        if tax_jurisdiction:
+            entities = entities.filter(Entity.tax_jurisdiction == tax_jurisdiction)
+        if name:
+            entities = entities.filter(Entity.name == name)
+        
+        # Apply sorting
+        if sort_by == SortFieldEntity.NAME:
+            entities = entities.order_by(Entity.name.asc() if sort_order == SortOrder.ASC else Entity.name.desc())
+        elif sort_by == SortFieldEntity.TYPE:
+            entities = entities.order_by(Entity.type.asc() if sort_order == SortOrder.ASC else Entity.type.desc())
+        elif sort_by == SortFieldEntity.CREATED_AT:
+            entities = entities.order_by(Entity.created_at.asc() if sort_order == SortOrder.ASC else Entity.created_at.desc())
+        elif sort_by == SortFieldEntity.UPDATED_AT:
+            entities = entities.order_by(Entity.updated_at.asc() if sort_order == SortOrder.ASC else Entity.updated_at.desc())
+        
+        entities = entities.all()
+        
+        # Cache the result
+        self._cache[cache_key] = entities
+        return entities
+
+    def get_entity_by_id(self, entity_id: int, session: Session) -> Optional[Entity]:
         """
         Get an entity by its ID.
         
@@ -53,7 +118,7 @@ class EntityRepository:
         Returns:
             Entity object if found, None otherwise
         """
-        cache_key = f"entity:{entity_id}"
+        cache_key = f"entity:id:{entity_id}"
         
         # Check cache first
         if cache_key in self._cache:
@@ -62,96 +127,30 @@ class EntityRepository:
         # Query database
         entity = session.query(Entity).filter(Entity.id == entity_id).first()
         
-        # Cache the result (including None to prevent race conditions)
-        self._cache[cache_key] = entity
+        # Cache the result
+        if entity:
+            self._cache[cache_key] = entity
         
         return entity
+
+
+    ################################################################################
+    # Create Entity
+    ################################################################################
     
-    def get_by_name(self, name: str, session: Session) -> Optional[Entity]:
-        """
-        Get an entity by its name.
-        
-        Args:
-            name: Entity name
-            session: Database session
-            
-        Returns:
-            Entity object if found, None otherwise
-        """
-        cache_key = f"entity:name:{name}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        entity = session.query(Entity).filter(Entity.name == name.strip()).first()
-        
-        # Cache the result (including None to prevent race conditions)
-        self._cache[cache_key] = entity
-        
-        return entity
     
-    def get_all(self, session: Session) -> List[Entity]:
-        """
-        Get all entities.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of all entities
-        """
-        cache_key = "entities:all"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        entities = session.query(Entity).order_by(Entity.name).all()
-        
-        # Cache the result
-        self._cache[cache_key] = entities
-        
-        return entities
-    
-    def get_by_tax_jurisdiction(self, tax_jurisdiction: str, session: Session) -> List[Entity]:
-        """
-        Get all entities for a specific tax jurisdiction.
-        
-        Args:
-            tax_jurisdiction: Tax jurisdiction code
-            session: Database session
-            
-        Returns:
-            List of entities in the specified tax jurisdiction
-        """
-        cache_key = f"entities:tax_jurisdiction:{tax_jurisdiction}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        entities = session.query(Entity).filter(Entity.tax_jurisdiction == tax_jurisdiction).all()
-        
-        # Cache the result
-        self._cache[cache_key] = entities
-        
-        return entities
-    
-    def create(self, entity: Entity, session: Session) -> Entity:
+    def create_entity(self, entity_data: Dict[str, Any], session: Session) -> Entity:
         """
         Create a new entity.
         
         Args:
-            entity: Entity instance to create
+            entity_data: Dictionary containing entity data
             session: Database session
             
         Returns:
             Created entity instance
         """
+        entity = Entity(**entity_data)
         session.add(entity)
         session.flush()
         
@@ -159,145 +158,32 @@ class EntityRepository:
         self._clear_entity_caches()
         
         return entity
+
+
+    ################################################################################
+    # Delete Entity
+    ################################################################################
     
-    def update(self, entity: Entity, session: Session) -> Entity:
-        """
-        Update an existing entity.
-        
-        Args:
-            entity: Entity instance to update
-            session: Database session
-            
-        Returns:
-            Updated entity instance
-        """
-        session.flush()
-        
-        # Clear relevant caches
-        self._clear_entity_caches()
-        
-        return entity
-    
-    def delete(self, entity: Entity, session: Session) -> None:
+    def delete_entity(self, entity_id: int, session: Session) -> None:
         """
         Delete an entity.
         
         Args:
-            entity: Entity instance to delete
+            entity_id: ID of the entity to delete
             session: Database session
         """
+        entity = self.get_entity_by_id(entity_id, session)
+        if not entity:
+            return False
+        
         session.delete(entity)
         session.flush()
         
         # Clear relevant caches
         self._clear_entity_caches()
-    
-    def exists(self, entity_id: int, session: Session) -> bool:
-        """
-        Check if an entity exists.
+
+        return True
         
-        Args:
-            entity_id: ID of the entity to check
-            session: Database session
-            
-        Returns:
-            True if entity exists, False otherwise
-        """
-        cache_key = f"entity:exists:{entity_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        exists = session.query(Entity).filter(Entity.id == entity_id).first() is not None
-        
-        # Cache the result
-        self._cache[cache_key] = exists
-        
-        return exists
-    
-    def count_by_tax_jurisdiction(self, tax_jurisdiction: str, session: Session) -> int:
-        """
-        Count entities in a specific tax jurisdiction.
-        
-        Args:
-            tax_jurisdiction: Tax jurisdiction code
-            session: Database session
-            
-        Returns:
-            Number of entities in the tax jurisdiction
-        """
-        cache_key = f"entities:count:tax_jurisdiction:{tax_jurisdiction}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(Entity).filter(Entity.tax_jurisdiction == tax_jurisdiction).count()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def get_total_count(self, session: Session) -> int:
-        """
-        Get total count of all entities.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            Total number of entities
-        """
-        cache_key = "entities:total_count"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(Entity).count()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def search(self, search_term: str, session: Session) -> List[Entity]:
-        """
-        Search entities by name or description.
-        
-        Args:
-            search_term: Search term
-            session: Database session
-            
-        Returns:
-            List of matching entities
-        """
-        if not search_term:
-            return []
-        
-        cache_key = f"entities:search:{search_term}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with search
-        entities = session.query(Entity).filter(
-            or_(
-                Entity.name.ilike(f"%{search_term}%"),
-                Entity.description.ilike(f"%{search_term}%")
-            )
-        ).all()
-        
-        # Cache the result
-        self._cache[cache_key] = entities
-        
-        return entities
     
     def _clear_entity_caches(self) -> None:
         """Clear all entity-related caches."""

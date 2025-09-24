@@ -18,6 +18,7 @@ from src.api.middleware.validation import (
 from src.api.dto.api_response import ApiResponse
 from src.api.dto.response_codes import ApiResponseCode
 
+
 # Create blueprint for enhanced banking routes
 banking_bp = Blueprint('banking', __name__)
 
@@ -25,7 +26,33 @@ banking_bp = Blueprint('banking', __name__)
 banking_controller = BankingController()
 
 
-@banking_bp.route('/api/v2/banks/<int:bank_id>', methods=['GET'])
+###############################################################################
+# BANK ENDPOINTS
+###############################################################################
+
+###############################################
+# Get bank
+###############################################
+
+@banking_bp.route('/api/banks', methods=['GET'])
+def get_banks():
+    """
+    Get all banks.
+    
+    Returns:
+        Standardized response with banks data
+    """
+    try:
+        dto = banking_controller.get_banks()
+        return handle_controller_response(dto)
+    except Exception as e:
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error getting banks: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
+
+@banking_bp.route('/api/banks/<int:bank_id>', methods=['GET'])
 def get_bank(bank_id):
     """
     Get a bank by ID.
@@ -37,17 +64,21 @@ def get_bank(bank_id):
         Standardized response with bank data
     """
     try:
-        dto = banking_controller.get_bank(bank_id)
+        dto = banking_controller.get_bank_by_id(bank_id)
         return handle_controller_response(dto)
     except Exception as e:
         response = ApiResponse(
             response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-            message=f"Unexpected error: {str(e)}"
+            message=f"Unexpected error getting bank {bank_id}: {str(e)}"
         )
         return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
-@banking_bp.route('/api/v2/banks', methods=['POST'])
+###############################################
+# Create bank
+###############################################
+
+@banking_bp.route('/api/banks', methods=['POST'])
 @validate_bank_data
 def create_bank():
     """
@@ -62,49 +93,21 @@ def create_bank():
         Standardized response with created bank data
     """
     try:
-        # Use validated data from middleware
-        validated_data = request.validated_data
-        dto = banking_controller.create_bank(validated_data)
+        dto = banking_controller.create_bank()
         return handle_controller_response(dto)
     except Exception as e:
         response = ApiResponse(
             response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-            message=f"Unexpected error: {str(e)}"
+            message=f"Unexpected error creating bank: {str(e)}"
         )
         return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
-@banking_bp.route('/api/v2/banks/<int:bank_id>', methods=['PUT'])
-@validate_bank_data
-def update_bank(bank_id):
-    """
-    Update a bank.
-    
-    Path Parameters:
-        bank_id (int): ID of the bank to update
-    
-    Request Body:
-        name (str): Bank name (optional)
-        country (str): ISO 3166-1 alpha-2 country code (optional)
-        swift_bic (str): Optional SWIFT/BIC identifier
-    
-    Returns:
-        Standardized response with updated bank data
-    """
-    try:
-        # Use validated data from middleware
-        validated_data = request.validated_data
-        dto = banking_controller.update_bank(bank_id, validated_data)
-        return handle_controller_response(dto)
-    except Exception as e:
-        response = ApiResponse(
-            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-            message=f"Unexpected error: {str(e)}"
-        )
-        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
+###############################################
+# Delete bank
+###############################################
 
-
-@banking_bp.route('/api/v2/banks/<int:bank_id>', methods=['DELETE'])
+@banking_bp.route('/api/banks/<int:bank_id>', methods=['DELETE'])
 def delete_bank(bank_id):
     """
     Delete a bank.
@@ -121,11 +124,67 @@ def delete_bank(bank_id):
     except Exception as e:
         response = ApiResponse(
             response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-            message=f"Unexpected error: {str(e)}"
+            message=f"Unexpected error deleting bank {bank_id}: {str(e)}"
         )
         return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
-@banking_bp.route('/api/v2/bank-accounts', methods=['POST'])
+
+###############################################################################
+# BANK ACCOUNT ENDPOINTS
+###############################################################################
+
+###############################################
+# Get bank accounts
+###############################################
+
+@banking_bp.route('/api/bank-accounts', methods=['GET'])
+def get_bank_accounts(bank_id):
+    """
+    Get all bank accounts.
+    
+    Path Parameters:
+        bank_id (int): ID of the bank to get bank accounts for
+    
+    Returns:
+        Standardized response with bank accounts data
+    """
+    try:
+        dto = banking_controller.get_bank_accounts(bank_id)
+        return handle_controller_response(dto)
+    except Exception as e:
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error getting bank accounts {bank_id}: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
+
+@banking_bp.route('/api/bank-accounts/<int:bank_account_id>', methods=['GET'])
+def get_bank_account_by_id(bank_account_id):
+    """
+    Get a bank account by ID.
+    
+    Path Parameters:
+        bank_account_id (int): ID of the bank account to retrieve
+    
+    Returns:
+        Standardized response with bank account data
+    """
+    try:
+        dto = banking_controller.get_bank_account_by_id(bank_account_id)
+        return handle_controller_response(dto)
+    except Exception as e:
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error getting bank account {bank_account_id}: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
+
+
+###############################################
+# Create bank account
+###############################################
+
+@banking_bp.route('/api/bank-accounts', methods=['POST'])
 @validate_bank_account_data
 def create_bank_account():
     """
@@ -143,67 +202,37 @@ def create_bank_account():
         Standardized response with created bank account data
     """
     try:
-        # Use validated data from middleware
-        validated_data = getattr(request, 'validated_data', request.get_json() or {})
-        dto = banking_controller.create_bank_account(validated_data)
+        dto = banking_controller.create_bank_account()
         return handle_controller_response(dto)
     except Exception as e:
         response = ApiResponse(
             response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-            message=f"Unexpected error: {str(e)}"
-        )
-        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
-
-@banking_bp.route('/api/v2/bank-accounts/<int:account_id>', methods=['PUT'])
-@validate_bank_account_data
-def update_bank_account(account_id):
-    """
-    Update a bank account.
-    
-    Path Parameters:
-        account_id (int): ID of the account to update
-    
-    Request Body:
-        entity_id (int): Owner entity ID (optional)
-        bank_id (int): Linked bank ID (optional)
-        account_name (str): Human-readable account name (optional)
-        account_number (str): Account number (optional)
-        currency (str): ISO-4217 currency code (optional)
-        is_active (bool): Active status flag (optional)
-    
-    Returns:
-        Standardized response with updated bank account data
-    """
-    try:
-        # Use validated data from middleware
-        validated_data = getattr(request, 'validated_data', request.get_json() or {})
-        dto = banking_controller.update_bank_account(account_id, validated_data)
-        return handle_controller_response(dto)
-    except Exception as e:
-        response = ApiResponse(
-            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-            message=f"Unexpected error: {str(e)}"
+            message=f"Unexpected error creating bank account: {str(e)}"
         )
         return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
-@banking_bp.route('/api/v2/bank-accounts/<int:account_id>', methods=['DELETE'])
-def delete_bank_account(account_id):
+###############################################
+# Delete bank account
+###############################################
+
+@banking_bp.route('/api/bank-accounts/<int:account_id>', methods=['DELETE'])
+def delete_bank_account(bank_account_id):
     """
     Delete a bank account.
     
     Path Parameters:
-        account_id (int): ID of the account to delete
+        bank_account_id (int): ID of the bank account to delete
     
     Returns:
         Standardized response confirming deletion
     """
     try:
-        dto = banking_controller.delete_bank_account(account_id)
+        dto = banking_controller.delete_bank_account(bank_account_id)
         return handle_delete_response(dto)
     except Exception as e:
         response = ApiResponse(
             response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-            message=f"Unexpected error: {str(e)}"
+            message=f"Unexpected error deleting bank account {bank_account_id}: {str(e)}"
         )
         return jsonify(response.to_dict()), response.response_code.get_http_status_code()

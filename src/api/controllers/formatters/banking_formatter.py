@@ -34,16 +34,17 @@ def format_bank_account(bank_account: BankAccount) -> Dict[str, Any]:
         'updated_at': bank_account.updated_at.isoformat() if bank_account.updated_at else None
     }
 
-def format_bank_with_accounts(bank: Bank) -> Dict[str, Any]:
+def format_bank_comprehensive(bank: Bank, inlcude_bank_accounts: bool = False) -> Dict[str, Any]:
     """
-    Format a Bank object with accounts for HTTP response.
+    Format a Bank object with comprehensive data.
     """
     bank_data = format_bank(bank)
 
     # Add accounts if they exist
-    if hasattr(bank, 'accounts') and bank.accounts:
+    if inlcude_bank_accounts:
         bank_data['accounts'] = [format_bank_account(account) for account in bank.accounts]
     else:
         bank_data['accounts'] = []
 
     return bank_data
+

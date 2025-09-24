@@ -5,7 +5,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import TransactionSummarySection from './TransactionSummarySection';
-import { ExtendedFund, FundEvent, FundType, FundStatus, EventType } from '../../../../types/api';
+import { ExtendedFund, FundEvent, FundTrackingType, FundStatus, EventType } from '../../../../types/api';
 
 // ============================================================================
 // MOCK DATA FACTORIES
@@ -18,7 +18,7 @@ const createMockFund = (overrides: Partial<ExtendedFund> = {}): ExtendedFund => 
   investment_company_id: 1,
   commitment_amount: 1000000,
   expected_irr: 0.15,
-  tracking_type: FundType.NAV_BASED,
+  tracking_type: FundTrackingType.NAV_BASED,
   status: FundStatus.ACTIVE,
   start_date: '2023-01-01',
   end_date: '2028-01-01',
@@ -95,7 +95,7 @@ describe('TransactionSummarySection', () => {
     });
 
     it('should render with NAV-based fund', () => {
-      const fund = createMockFund({ tracking_type: FundType.NAV_BASED });
+      const fund = createMockFund({ tracking_type: FundTrackingType.NAV_BASED });
       
       renderWithTheme(<TransactionSummarySection fund={fund} formatCurrency={(amount) => `$${amount}`} formatDate={(date) => date || ''} />);
       
@@ -105,7 +105,7 @@ describe('TransactionSummarySection', () => {
     });
 
     it('should render with cost-based fund', () => {
-      const fund = createMockFund({ tracking_type: FundType.COST_BASED });
+      const fund = createMockFund({ tracking_type: FundTrackingType.COST_BASED });
       
       renderWithTheme(<TransactionSummarySection fund={fund} formatCurrency={(amount) => `$${amount}`} formatDate={(date) => date || ''} />);
       
@@ -122,7 +122,7 @@ describe('TransactionSummarySection', () => {
   describe('Business Logic Calculations', () => {
     it('should handle negative amounts correctly', () => {
       const fund = createMockFund({
-        tracking_type: FundType.COST_BASED,
+        tracking_type: FundTrackingType.COST_BASED,
         total_capital_calls: -500000,
         total_distributions: -150000
       });
@@ -170,7 +170,7 @@ describe('TransactionSummarySection', () => {
   describe('NAV-Based Fund Calculations', () => {
     it('should calculate NAV-based performance correctly', () => {
       const fund = createMockFund({
-        tracking_type: FundType.NAV_BASED,
+        tracking_type: FundTrackingType.NAV_BASED,
         total_unit_purchases: 600000,
         total_unit_sales: 50000,
         total_distributions: 150000
@@ -186,7 +186,7 @@ describe('TransactionSummarySection', () => {
 
     it('should handle NAV updates correctly', () => {
       const fund = createMockFund({
-        tracking_type: FundType.NAV_BASED,
+        tracking_type: FundTrackingType.NAV_BASED,
         current_nav_total: 1200000,
         total_unit_purchases: 800000
       });
@@ -206,7 +206,7 @@ describe('TransactionSummarySection', () => {
   describe('Cost-Based Fund Calculations', () => {
     it('should calculate cost-based performance correctly', () => {
       const fund = createMockFund({
-        tracking_type: FundType.COST_BASED,
+        tracking_type: FundTrackingType.COST_BASED,
         total_capital_calls: 500000,
         total_capital_returns: 100000,
         total_distributions: 150000
@@ -222,7 +222,7 @@ describe('TransactionSummarySection', () => {
 
     it('should handle cost-based fund without NAV updates', () => {
       const fund = createMockFund({
-        tracking_type: FundType.COST_BASED,
+        tracking_type: FundTrackingType.COST_BASED,
         current_nav_total: 0,
         total_capital_calls: 500000
       });
@@ -245,7 +245,7 @@ describe('TransactionSummarySection', () => {
       
       // Component requires a valid fund, so we'll test with a minimal valid fund
       const minimalFund = createMockFund({
-        tracking_type: FundType.NAV_BASED,
+        tracking_type: FundTrackingType.NAV_BASED,
         total_unit_purchases: 0,
         total_distributions: 0,
         total_tax_payments: 0,
@@ -282,7 +282,7 @@ describe('TransactionSummarySection', () => {
 
     it('should handle very small amounts correctly', () => {
       const fund = createMockFund({
-        tracking_type: FundType.COST_BASED,
+        tracking_type: FundTrackingType.COST_BASED,
         total_capital_calls: 0.01,
         total_distributions: 0.001
       });
@@ -420,7 +420,7 @@ describe('TransactionSummarySection', () => {
 
     it('should handle mixed tracking types', () => {
       const fund = createMockFund({
-        tracking_type: FundType.NAV_BASED,
+        tracking_type: FundTrackingType.NAV_BASED,
         total_unit_purchases: 600000,
         total_capital_calls: 500000 // This should not be displayed for NAV-based
       });

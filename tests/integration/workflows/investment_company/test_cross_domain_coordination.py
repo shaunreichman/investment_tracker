@@ -27,7 +27,7 @@ from src.investment_company.services.fund_coordination_service import FundCoordi
 from src.investment_company.services.company_portfolio_service import CompanyPortfolioService
 from src.investment_company.enums import CompanyType, CompanyStatus
 from src.fund.models import Fund, FundEvent
-from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.enums import FundStatus, FundTrackingType, EventType
 from src.entity.models import Entity
 from tests.factories import InvestmentCompanyFactory, ContactFactory, FundFactory, EntityFactory, FundEventFactory
 
@@ -53,8 +53,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Coordination Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value,
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value,
             'currency': 'AUD',
             'description': 'Fund for coordination testing',
             'commitment_amount': 5000000.0,
@@ -129,8 +129,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Validation Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         # Act: Validate business rules through coordination service
@@ -164,8 +164,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Event Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         # Act: Create fund and capture events
@@ -203,8 +203,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Portfolio Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         # Act: Create fund and verify portfolio updates
@@ -265,8 +265,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Inactive Company Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         # Act: Validate business rules
@@ -300,8 +300,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Invalid Entity Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         # Act: Validate business rules
@@ -332,8 +332,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Delegation Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         # Act: Create fund through coordination service
@@ -393,8 +393,8 @@ class TestCrossDomainCoordination:
         # Create first fund
         fund_data_1 = {
             'name': 'First Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         coordination_service = FundCoordinationService()
@@ -408,8 +408,8 @@ class TestCrossDomainCoordination:
         # Create second fund
         fund_data_2 = {
             'name': 'Second Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         fund2 = coordination_service.coordinate_fund_creation(
@@ -422,8 +422,8 @@ class TestCrossDomainCoordination:
         # Act: Try to create third fund (should fail validation)
         fund_data_3 = {
             'name': 'Third Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         validation_results = coordination_service.validate_fund_creation_business_rules(
@@ -451,8 +451,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Consistency Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         # Act: Create fund through coordination
@@ -498,8 +498,8 @@ class TestCrossDomainCoordination:
         
         fund_data = {
             'name': 'Stateless Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value
         }
         
         # Act: Create multiple coordination service instances

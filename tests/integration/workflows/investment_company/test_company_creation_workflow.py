@@ -26,7 +26,7 @@ from src.investment_company.services.contact_management_service import ContactMa
 from src.investment_company.services.company_validation_service import CompanyValidationService
 from src.investment_company.enums import CompanyType, CompanyStatus
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType
+from src.fund.enums import FundStatus, FundTrackingType
 from src.entity.models import Entity
 from tests.factories import InvestmentCompanyFactory, ContactFactory, FundFactory, EntityFactory
 
@@ -187,8 +187,8 @@ class TestCompanyCreationWorkflow:
         
         fund_data = {
             'name': 'Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value,
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value,
             'currency': 'AUD',
             'description': 'Test fund for portfolio',
             'commitment_amount': 1000000.0,
@@ -449,8 +449,8 @@ class TestCompanyCreationWorkflow:
             company=company,
             entity=entity,
             name='Cross-Domain Fund',
-            fund_type=FundType.NAV_BASED.value,
-            tracking_type=FundType.NAV_BASED.value,
+            fund_type=FundTrackingType.NAV_BASED.value,
+            tracking_type=FundTrackingType.NAV_BASED.value,
             currency='USD',
             description='Fund for cross-domain testing',
             commitment_amount=5000000.0,

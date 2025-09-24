@@ -43,7 +43,7 @@ Backend Testing Suite — Professional, Layered, and Fast
 - `tests/unit/`
   - Pure functions in `src/*/calculations.py` (e.g., IRR helpers, transformers that don’t hit DB)
 - `tests/domain/`
-  - Model class methods and domain methods: `Fund.add_distribution`, `create_daily_risk_free_interest_charges`, `update_status`, tax event creation
+  - Model class methods and domain methods: `Fund.create_distribution`, `create_daily_risk_free_interest_charges`, `update_status`, tax event creation
 - `tests/api/`
   - Flask `test_client` tests for endpoints: contract, validation, happy-paths, critical error paths
 - `tests/property/` (introduced gradually)

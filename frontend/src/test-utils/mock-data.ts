@@ -6,7 +6,7 @@ import {
   EnhancedFundsResponse,
   EnhancedFund,
   FundStatus,
-  FundType,
+  FundTrackingType,
   EventType
 } from '../types/api';
 
@@ -81,7 +81,7 @@ export const createMockFund = (overrides: Partial<Fund> = {}): Fund => ({
   id: 1,
   name: 'Test Fund 1',
   fund_type: 'Private Equity',
-  tracking_type: FundType.NAV_BASED,
+  tracking_type: FundTrackingType.NAV_BASED,
   description: 'A test fund for demonstration purposes',
   currency: 'AUD',
   commitment_amount: 1000000,

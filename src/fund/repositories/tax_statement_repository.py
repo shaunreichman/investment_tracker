@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, asc, desc
 
 from src.tax.models import TaxStatement
-from src.shared.enums import SortOrder
+from src.shared.enums.shared_enums import SortOrder
 
 
 class TaxStatementRepository:
@@ -70,71 +70,6 @@ class TaxStatementRepository:
         
         return statement
     
-    def get_by_fund_and_year(self, fund_id: int, financial_year: str, 
-                            session: Session) -> Optional[TaxStatement]:
-        """
-        Get a tax statement for a specific fund and financial year.
-        
-        Args:
-            fund_id: ID of the fund
-            financial_year: Financial year (e.g., '2023-24')
-            session: Database session
-            
-        Returns:
-            TaxStatement object if found, None otherwise
-        """
-        cache_key = f"tax_statement:fund:{fund_id}:year:{financial_year}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        statement = session.query(TaxStatement).filter(
-            and_(
-                TaxStatement.fund_id == fund_id,
-                TaxStatement.financial_year == financial_year
-            )
-        ).first()
-        
-        # Cache the result
-        if statement:
-            self._cache[cache_key] = statement
-        
-        return statement
-    
-    def get_by_entity_and_year(self, entity_id: int, financial_year: str, 
-                              session: Session) -> List[TaxStatement]:
-        """
-        Get all tax statements for a specific entity and financial year.
-        
-        Args:
-            entity_id: ID of the entity
-            financial_year: Financial year (e.g., '2023-24')
-            session: Database session
-            
-        Returns:
-            List of TaxStatement objects for the entity and year
-        """
-        cache_key = f"tax_statements:entity:{entity_id}:year:{financial_year}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        statements = session.query(TaxStatement).filter(
-            and_(
-                TaxStatement.entity_id == entity_id,
-                TaxStatement.financial_year == financial_year
-            )
-        ).all()
-        
-        # Cache the result
-        self._cache[cache_key] = statements
-        
-        return statements
-    
     def get_by_fund(self, fund_id: int, session: Session,
                     skip: int = 0,
                     limit: int = 100,
@@ -160,48 +95,6 @@ class TaxStatementRepository:
         
         # Build query
         query = session.query(TaxStatement).filter(TaxStatement.fund_id == fund_id)
-        
-        # Apply sorting
-        if sort_order == SortOrder.ASC:
-            query = query.order_by(asc(TaxStatement.financial_year), asc(TaxStatement.id))
-        else:
-            query = query.order_by(desc(TaxStatement.financial_year), desc(TaxStatement.id))
-        
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
-        
-        statements = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = statements
-        
-        return statements
-    
-    def get_by_entity(self, entity_id: int, session: Session,
-                     skip: int = 0,
-                     limit: int = 100,
-                     sort_order: SortOrder = SortOrder.DESC) -> List[TaxStatement]:
-        """
-        Get all tax statements for a specific entity.
-        
-        Args:
-            entity_id: ID of the entity
-            session: Database session
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            sort_order: Sort order (SortOrder.ASC or SortOrder.DESC)
-            
-        Returns:
-            List of TaxStatement objects for the entity
-        """
-        cache_key = f"tax_statements:entity:{entity_id}:skip:{skip}:limit:{limit}:sort:{sort_order}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Build query
-        query = session.query(TaxStatement).filter(TaxStatement.entity_id == entity_id)
         
         # Apply sorting
         if sort_order == SortOrder.ASC:
@@ -321,37 +214,6 @@ class TaxStatementRepository:
         self._clear_year_cache(financial_year)
         
         return True
-    
-    def get_final_statements(self, fund_id: int, session: Session) -> List[TaxStatement]:
-        """
-        Get all final tax statements for a fund.
-        
-        Note: This method currently returns all tax statements for the fund.
-        The concept of "final" tax statements is determined by business logic
-        comparing tax_payment_date with fund end date, not by a database field.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            
-        Returns:
-            List of TaxStatement objects for the fund
-        """
-        cache_key = f"final_tax_statements:fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database for all statements (final determination is business logic)
-        statements = session.query(TaxStatement).filter(
-            TaxStatement.fund_id == fund_id
-        ).order_by(desc(TaxStatement.financial_year)).all()
-        
-        # Cache the result
-        self._cache[cache_key] = statements
-        
-        return statements
     
     def get_statement_count_by_fund(self, fund_id: int, session: Session) -> int:
         """

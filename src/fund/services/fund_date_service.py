@@ -2,9 +2,10 @@
 Service for handling fund date calculations.
 """
 
-from src.fund.models import Fund, FundEvent, FundFieldChange
-from src.shared.enums import SortOrder
-from src.shared.enums import EventOperation
+from src.fund.models import Fund, FundFieldChange
+from src.shared.enums.shared_enums import SortOrder, EventOperation
+from src.fund.enums.fund_event_enums import EventType
+from src.fund.enums.fund_enums import FundStatus
 from src.fund.repositories import FundEventRepository, FundRepository
 from src.entity.repositories import EntityRepository
 from typing import Optional, List
@@ -23,7 +24,7 @@ class FundDateService:
         """
         Update the start date of a fund.
         """
-        fund = self.fund_repository.get_by_id(fund_id, session)
+        fund = self.fund_repository.get_fund_by_id(fund_id, session)
         if not fund:
             return None
 
@@ -31,7 +32,7 @@ class FundDateService:
 
         if fund_event_operation == EventOperation.CREATE:
             # Faster to update the start date of the fund by looking at the event
-            event = self.fund_event_repository.get_by_id(event_id, session)
+            event = self.fund_event_repository.get_fund_event_by_id(event_id, session)
             if not event or event.fund_id != fund_id:
                 return None
             if event.event_type == EventType.CAPITAL_CALL or event.event_type == EventType.UNIT_PURCHASE:
@@ -40,8 +41,7 @@ class FundDateService:
                     self.logger.info(f"Updated fund {fund.id} start_date to {event.event_date}")
         else:
             # Update the start date of the fund by looking at all the fund events
-            events = self.fund_event_repository.get_by_fund(fund_id=fund_id,
-                                            session=session,
+            events = self.fund_event_repository.get_fund_events(session=session, fund_id=fund_id,
                                             event_types=[EventType.CAPITAL_CALL, EventType.UNIT_PURCHASE],
                                             sort_order=SortOrder.ASC)
             if events:
@@ -56,15 +56,14 @@ class FundDateService:
         """
         Update the end date of a fund.
         """
-        fund = self.fund_repository.get_by_id(fund_id, session)
+        fund = self.fund_repository.get_fund_by_id(fund_id, session)
         if not fund:
             return None
 
         old_end_date = fund.end_date
         
         if fund.status == FundStatus.REALIZED or fund.status == FundStatus.COMPLETED:
-            events = self.fund_event_repository.get_by_fund(fund_id=fund_id,
-                                            session=session,
+            events = self.fund_event_repository.get_fund_events(session=session, fund_id=fund_id,
                                             event_types=[EventType.RETURN_OF_CAPITAL, EventType.UNIT_SALE],
                                             sort_order=SortOrder.DESC)
             if events:
@@ -76,7 +75,7 @@ class FundDateService:
             return FundFieldChange(field_name='end_date', old_value=old_end_date, new_value=fund.end_date)
         return None
 
-    def update_fund_duration(self, fund: 'Fund', session: Session) -> Optional[FundFieldChange]:
+    def update_fund_duration(self, fund: Fund, session: Session) -> Optional[FundFieldChange]:
         """
         Update the duration of a fund.
         """
@@ -96,7 +95,7 @@ class FundDateService:
             return FundFieldChange(field_name='current_duration', old_value=old_duration, new_value=fund.current_duration)
         return None
 
-    def get_fund_financial_years(self, fund: 'Fund', session: Session) -> List[str]:
+    def get_fund_financial_years(self, fund: Fund, session: Session) -> List[str]:
         """
         Get all financial years from fund start date to current date.
         
@@ -113,7 +112,7 @@ class FundDateService:
             raise ValueError("Fund.start_date is not set")
         
         # Get entity for tax jurisdiction
-        entity = self.entity_repository.get_by_id(fund.entity_id, session)
+        entity = self.entity_repository.get_entity_by_id(fund.entity_id, session)
         if not entity:
             raise ValueError("Entity is not set")
         

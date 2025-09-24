@@ -13,13 +13,15 @@ Key principles:
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Tuple
 from datetime import date
 from sqlalchemy.orm import Session
 
 from src.shared.calculations.irr_calculator import IRRCalculator
 from src.fund.models import Fund, FundEvent, FundFieldChange
-from src.fund.enums import EventType, FundStatus
+from src.fund.enums.fund_event_enums import EventType
+from src.fund.enums.fund_enums import FundStatus
+from src.fund.repositories import FundEventRepository
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +41,9 @@ class FundIrRService:
         
         This service is stateless and does not store database sessions.
         """
-        pass
+        self.fund_event_repository = FundEventRepository()
 
-    def update_irrs(self, fund: 'Fund', session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
+    def update_irrs(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
         """
         Calculate and store IRRs for a specific fund status.
                 
@@ -103,7 +105,7 @@ class FundIrRService:
         if fund.status not in [FundStatus.REALIZED, FundStatus.COMPLETED]:
             return None
         
-        events = self._get_fund_events(fund, session)
+        events = self.fund_event_repository.get_fund_events(session, fund.id)
         return self._calculate_irr_base(
             events,
             fund.start_date,
@@ -128,7 +130,7 @@ class FundIrRService:
         if fund.status not in [FundStatus.COMPLETED]:
             return None
         
-        events = self._get_fund_events(fund, session)
+        events = self.fund_event_repository.get_fund_events(session, fund.id)
         return self._calculate_irr_base(
             events,
             fund.start_date,
@@ -154,7 +156,7 @@ class FundIrRService:
         if fund.status not in [FundStatus.COMPLETED]:
             return None
         
-        events = self._get_fund_events(fund, session)
+        events = self.fund_event_repository.get_fund_events(session, fund.id)
         return self._calculate_irr_base(
             events,
             fund.start_date,
@@ -283,22 +285,3 @@ class FundIrRService:
         
         return cash_flows, days_from_start
     
-    # ============================================================================
-    # DATABASE OPERATIONS
-    # ============================================================================    
-    
-    def _get_fund_events(self, fund: Fund, session: Session) -> List[FundEvent]:
-        """
-        Get all events for a fund from the database in chronological order.
-        
-        Args:
-            fund: The fund to get events for
-            session: Database session for data access
-            
-        Returns:
-            List[FundEvent]: List of fund events sorted by date (ascending)
-        """
-        from src.fund.repositories import FundEventRepository
-        from src.shared.enums import SortOrder
-        event_repository = FundEventRepository()
-        return event_repository.get_by_fund(fund.id, session, sort_order=SortOrder.ASC)

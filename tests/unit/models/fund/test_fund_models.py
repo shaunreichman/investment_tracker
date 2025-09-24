@@ -21,7 +21,7 @@ from unittest.mock import Mock, patch, MagicMock
 from src.fund.models.fund import Fund
 from src.fund.models.fund_event import FundEvent
 from src.fund.models.fund_event_cash_flow import FundEventCashFlow
-from src.fund.enums import FundType, EventType, FundStatus, DistributionType
+from src.fund.enums import FundTrackingType, EventType, FundStatus, DistributionType
 from tests.factories import FundFactory
 
 
@@ -34,7 +34,7 @@ class TestFundModel:
         return {
             'name': 'Test Fund',
             'description': 'A test fund for unit testing',
-            'tracking_type': FundType.NAV_BASED,
+            'tracking_type': FundTrackingType.NAV_BASED,
             'status': FundStatus.ACTIVE,
             'start_date': date(2020, 1, 1),
             'end_date': None,
@@ -49,7 +49,7 @@ class TestFundModel:
         fund = Fund(**fund_data)
         
         assert fund.name == 'Test Fund'
-        assert fund.tracking_type == FundType.NAV_BASED
+        assert fund.tracking_type == FundTrackingType.NAV_BASED
         assert fund.status == FundStatus.ACTIVE
         assert fund.start_date == date(2020, 1, 1)
         assert fund.commitment_amount == Decimal('1000000.00')
@@ -161,7 +161,7 @@ class TestFundStatusTransitions:
         """Create a basic fund for status testing."""
         return Fund(
             name='Status Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -217,7 +217,7 @@ class TestFundStatusTransitions:
         assert fund.is_active() is False
 
 
-class TestFundTypeValidation:
+class TestFundTrackingTypeValidation:
     """Test suite for fund type-specific validation"""
     
     @pytest.fixture
@@ -225,7 +225,7 @@ class TestFundTypeValidation:
         """Create NAV-based fund for testing."""
         return Fund(
             name='NAV Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -237,7 +237,7 @@ class TestFundTypeValidation:
         """Create cost-based fund for testing."""
         return Fund(
             name='Cost Fund',
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -297,7 +297,7 @@ class TestFundDateValidation:
         """Create a fund for date testing."""
         return Fund(
             name='Date Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -360,7 +360,7 @@ class TestFundCommitmentValidation:
         """Create a fund for commitment testing."""
         return Fund(
             name='Commitment Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -416,7 +416,7 @@ class TestFundIRRValidation:
         """Create a fund for IRR testing."""
         return Fund(
             name='IRR Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -469,7 +469,7 @@ class TestFundNAVValidation:
         """Create NAV-based fund for NAV testing."""
         return Fund(
             name='NAV Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -509,7 +509,7 @@ class TestFundNAVValidation:
         """Test that cost-based funds don't validate NAV constraints."""
         cost_fund = Fund(
             name='Cost Test Fund',
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -528,7 +528,7 @@ class TestFundComprehensiveValidation:
         """Create a fund for comprehensive testing."""
         return Fund(
             name='Comprehensive Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             end_date=date(2023, 12, 31),  # Use past date to avoid future validation
@@ -588,7 +588,7 @@ class TestFundModelRelationships:
         """Test fund to events relationship."""
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -635,7 +635,7 @@ class TestFundModelBusinessRules:
         """Test fund completion business rules."""
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -656,7 +656,7 @@ class TestFundModelBusinessRules:
         """Test event chronology business rules."""
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             start_date=date(2020, 1, 1),
             investment_company_id=1,
@@ -727,7 +727,7 @@ class TestFundBusinessLogicMethods:
         return mock_orch
     
     @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
-    def test_add_distribution_basic(self, mock_orchestrator_class, mock_session):
+    def test_create_distribution_basic(self, mock_orchestrator_class, mock_session):
         """Test basic distribution creation."""
         # Setup
         mock_orchestrator_class.return_value = Mock()
@@ -735,7 +735,7 @@ class TestFundBusinessLogicMethods:
         
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             investment_company_id=1,
             entity_id=1
         )
@@ -743,7 +743,7 @@ class TestFundBusinessLogicMethods:
         # Execute
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_distribution(
+        event = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2023, 6, 1),
             distribution_type=DistributionType.INTEREST,
@@ -766,7 +766,7 @@ class TestFundBusinessLogicMethods:
         assert event_data['description'] == "Interest distribution"
     
     @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
-    def test_add_distribution_with_tax(self, mock_orchestrator_class, mock_session):
+    def test_create_distribution_with_tax(self, mock_orchestrator_class, mock_session):
         """Test distribution creation with withholding tax."""
         # Setup
         mock_orchestrator_class.return_value = Mock()
@@ -774,7 +774,7 @@ class TestFundBusinessLogicMethods:
         
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             investment_company_id=1,
             entity_id=1
         )
@@ -782,7 +782,7 @@ class TestFundBusinessLogicMethods:
         # Execute with withholding tax
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_distribution(
+        event = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2023, 6, 1),
             distribution_type=DistributionType.INTEREST,
@@ -809,7 +809,7 @@ class TestFundBusinessLogicMethods:
         assert event_data['withholding_tax_rate'] == 15.0
     
     @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
-    def test_add_nav_update_basic(self, mock_orchestrator_class, mock_session):
+    def test_create_nav_update_basic(self, mock_orchestrator_class, mock_session):
         """Test basic NAV update creation."""
         # Setup
         mock_orchestrator_class.return_value = Mock()
@@ -817,13 +817,13 @@ class TestFundBusinessLogicMethods:
         
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             investment_company_id=1,
             entity_id=1
         )
         
         # Execute
-        event = fund.add_nav_update(25.50, date(2023, 6, 1), "Monthly NAV update", session=mock_session)
+        event = fund.create_nav_update(25.50, date(2023, 6, 1), "Monthly NAV update", session=mock_session)
         
         # Verify
         assert event is not None
@@ -837,28 +837,28 @@ class TestFundBusinessLogicMethods:
         assert event_data['event_date'] == date(2023, 6, 1)
         assert event_data['description'] == "Monthly NAV update"
     
-    def test_add_nav_update_validation_errors(self, mock_session):
+    def test_create_nav_update_validation_errors(self, mock_session):
         """Test NAV update validation error cases."""
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             investment_company_id=1,
             entity_id=1
         )
         
         # Test: Invalid NAV per share
         with pytest.raises(ValueError, match="NAV per share must be a positive number"):
-            fund.add_nav_update(0.0, date(2023, 6, 1), "Test update", session=mock_session)
+            fund.create_nav_update(0.0, date(2023, 6, 1), "Test update", session=mock_session)
         
         with pytest.raises(ValueError, match="NAV per share must be a positive number"):
-            fund.add_nav_update(-10.0, date(2023, 6, 1), "Test update", session=mock_session)
+            fund.create_nav_update(-10.0, date(2023, 6, 1), "Test update", session=mock_session)
         
         # Test: Missing date
         with pytest.raises(ValueError, match="Date is required"):
-            fund.add_nav_update(25.50, None, "Test update", session=mock_session)
+            fund.create_nav_update(25.50, None, "Test update", session=mock_session)
     
     @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
-    def test_add_unit_purchase_basic(self, mock_orchestrator_class, mock_session):
+    def test_create_unit_purchase_basic(self, mock_orchestrator_class, mock_session):
         """Test basic unit purchase creation."""
         # Setup
         mock_orchestrator_class.return_value = Mock()
@@ -866,13 +866,13 @@ class TestFundBusinessLogicMethods:
         
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             investment_company_id=1,
             entity_id=1
         )
         
         # Execute
-        event = fund.add_unit_purchase(1000.0, 25.50, date(2023, 6, 1), "Initial purchase", session=mock_session)
+        event = fund.create_unit_purchase(1000.0, 25.50, date(2023, 6, 1), "Initial purchase", session=mock_session)
         
         # Verify
         assert event is not None
@@ -887,35 +887,35 @@ class TestFundBusinessLogicMethods:
         assert event_data['event_date'] == date(2023, 6, 1)
         assert event_data['description'] == "Initial purchase"
     
-    def test_add_unit_purchase_validation_errors(self, mock_session):
+    def test_create_unit_purchase_validation_errors(self, mock_session):
         """Test unit purchase validation error cases."""
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             investment_company_id=1,
             entity_id=1
         )
         
         # Test: Invalid units
         with pytest.raises(ValueError, match="Units must be a positive number"):
-            fund.add_unit_purchase(0.0, 25.50, date(2023, 6, 1), "Test purchase", session=mock_session)
+            fund.create_unit_purchase(0.0, 25.50, date(2023, 6, 1), "Test purchase", session=mock_session)
         
         with pytest.raises(ValueError, match="Units must be a positive number"):
-            fund.add_unit_purchase(-100.0, 25.50, date(2023, 6, 1), "Test purchase", session=mock_session)
+            fund.create_unit_purchase(-100.0, 25.50, date(2023, 6, 1), "Test purchase", session=mock_session)
         
         # Test: Invalid price
         with pytest.raises(ValueError, match="Unit price must be a positive number"):
-            fund.add_unit_purchase(1000.0, 0.0, date(2023, 6, 1), "Test purchase", session=mock_session)
+            fund.create_unit_purchase(1000.0, 0.0, date(2023, 6, 1), "Test purchase", session=mock_session)
         
         with pytest.raises(ValueError, match="Unit price must be a positive number"):
-            fund.add_unit_purchase(1000.0, -10.0, date(2023, 6, 1), "Test purchase", session=mock_session)
+            fund.create_unit_purchase(1000.0, -10.0, date(2023, 6, 1), "Test purchase", session=mock_session)
         
         # Test: Missing date
         with pytest.raises(ValueError, match="Date is required"):
-            fund.add_unit_purchase(1000.0, 25.50, None, "Test purchase", session=mock_session)
+            fund.create_unit_purchase(1000.0, 25.50, None, "Test purchase", session=mock_session)
     
     @patch('src.fund.events.orchestrator.FundUpdateOrchestrator')
-    def test_add_unit_sale_basic(self, mock_orchestrator_class, mock_session):
+    def test_create_unit_sale_basic(self, mock_orchestrator_class, mock_session):
         """Test basic unit sale creation."""
         # Setup
         mock_orchestrator_class.return_value = Mock()
@@ -923,13 +923,13 @@ class TestFundBusinessLogicMethods:
         
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             investment_company_id=1,
             entity_id=1
         )
         
         # Execute
-        event = fund.add_unit_sale(500.0, 30.00, date(2023, 6, 1), "Partial sale", session=mock_session)
+        event = fund.create_unit_sale(500.0, 30.00, date(2023, 6, 1), "Partial sale", session=mock_session)
         
         # Verify
         assert event is not None
@@ -944,45 +944,45 @@ class TestFundBusinessLogicMethods:
         assert event_data['event_date'] == date(2023, 6, 1)
         assert event_data['description'] == "Partial sale"
     
-    def test_add_unit_sale_validation_errors(self, mock_session):
+    def test_create_unit_sale_validation_errors(self, mock_session):
         """Test unit sale validation error cases."""
         fund = Fund(
             name='Test Fund',
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             investment_company_id=1,
             entity_id=1
         )
         
         # Test: Invalid units
         with pytest.raises(ValueError, match="Units must be a positive number"):
-            fund.add_unit_sale(0.0, 30.00, date(2023, 6, 1), "Test sale", session=mock_session)
+            fund.create_unit_sale(0.0, 30.00, date(2023, 6, 1), "Test sale", session=mock_session)
         
         with pytest.raises(ValueError, match="Units must be a positive number"):
-            fund.add_unit_sale(-100.0, 30.00, date(2023, 6, 1), "Test sale", session=mock_session)
+            fund.create_unit_sale(-100.0, 30.00, date(2023, 6, 1), "Test sale", session=mock_session)
         
         # Test: Invalid price
         with pytest.raises(ValueError, match="Unit price must be a positive number"):
-            fund.add_unit_sale(500.0, 0.0, date(2023, 6, 1), "Test sale", session=mock_session)
+            fund.create_unit_sale(500.0, 0.0, date(2023, 6, 1), "Test sale", session=mock_session)
         
         with pytest.raises(ValueError, match="Unit price must be a positive number"):
-            fund.add_unit_sale(500.0, -10.0, date(2023, 6, 1), "Test sale", session=mock_session)
+            fund.create_unit_sale(500.0, -10.0, date(2023, 6, 1), "Test sale", session=mock_session)
         
         # Test: Missing date
         with pytest.raises(ValueError, match="Date is required"):
-            fund.add_unit_sale(500.0, 30.00, None, "Test sale", session=mock_session)
+            fund.create_unit_sale(500.0, 30.00, None, "Test sale", session=mock_session)
 
 
 class TestFundEnums:
     """Test suite for fund enums"""
     
     def test_fund_type_enum_values(self):
-        """Test FundType enum has expected values."""
-        assert FundType.NAV_BASED.value == 'NAV_BASED'
-        assert FundType.COST_BASED.value == 'COST_BASED'
+        """Test FundTrackingType enum has expected values."""
+        assert FundTrackingType.NAV_BASED.value == 'NAV_BASED'
+        assert FundTrackingType.COST_BASED.value == 'COST_BASED'
         
         # Test enum membership
-        assert 'NAV_BASED' in FundType.__members__
-        assert 'COST_BASED' in FundType.__members__
+        assert 'NAV_BASED' in FundTrackingType.__members__
+        assert 'COST_BASED' in FundTrackingType.__members__
     
     def test_event_type_enum_values(self):
         """Test EventType enum has expected values."""

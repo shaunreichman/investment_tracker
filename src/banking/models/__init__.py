@@ -13,7 +13,7 @@ Enums:
 - Currency: ISO 4217 currency codes
 - AccountStatus: Bank account lifecycle status
 - BankType: Banking institution classification
-- AccountType: Bank account classification types
+- BankAccountType: Bank account classification types
 
 All models delegate business logic to services for clean separation of concerns.
 """

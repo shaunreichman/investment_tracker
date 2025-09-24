@@ -5,7 +5,7 @@ import {
   Box
 } from '@mui/material';
 import { Receipt } from '@mui/icons-material';
-import { ExtendedFund, FundType } from '../../../../types/api';
+import { ExtendedFund, FundTrackingType } from '../../../../types/api';
 // formatCurrency is supplied via props
 
 interface SectionProps {
@@ -22,12 +22,12 @@ interface SectionProps {
 const TransactionSummarySection: React.FC<SectionProps> = ({ fund, formatCurrency, formatDate, isLoading = false }) => {
   const transactionData = [
     // Capital transactions (cost-based funds)
-    ...(fund.tracking_type === FundType.COST_BASED ? [
+    ...(fund.tracking_type === FundTrackingType.COST_BASED ? [
       { type: 'Capital Calls', amount: fund.total_capital_calls ?? null, color: 'error.main', icon: '📤' },
       { type: 'Returns of Capital', amount: fund.total_capital_returns ?? null, color: 'success.main', icon: '📥' }
     ] : []),
     // Unit transactions (NAV-based funds)
-    ...(fund.tracking_type === FundType.NAV_BASED ? [
+    ...(fund.tracking_type === FundTrackingType.NAV_BASED ? [
       { type: 'Unit Purchases', amount: fund.total_unit_purchases ?? null, color: 'primary.main', icon: '📈' },
       { type: 'Unit Sales', amount: fund.total_unit_sales ?? null, color: 'secondary.main', icon: '📉' }
     ] : []),

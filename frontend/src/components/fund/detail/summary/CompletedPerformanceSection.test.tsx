@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CompletedPerformanceSection from './CompletedPerformanceSection';
-import { ExtendedFund, FundType, FundStatus } from '../../../../types/api';
+import { ExtendedFund, FundTrackingType, FundStatus } from '../../../../types/api';
 
 // Create a mock theme for testing
 const theme = createTheme();
@@ -21,7 +21,7 @@ const createMockFund = (overrides: Partial<ExtendedFund> = {}): ExtendedFund => 
   id: 1,
   name: 'Test Fund',
   status: FundStatus.COMPLETED, // Changed from ACTIVE to COMPLETED
-  tracking_type: FundType.NAV_BASED,
+  tracking_type: FundTrackingType.NAV_BASED,
   start_date: '2020-01-01',
   end_date: '2025-01-01',
   current_nav_total: 1000000,

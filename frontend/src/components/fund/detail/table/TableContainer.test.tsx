@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import TableContainer from './TableContainer';
-import { ExtendedFund, ExtendedFundEvent, FundType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../../types/api';
+import { ExtendedFund, ExtendedFundEvent, FundTrackingType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../../types/api';
 
 // ============================================================================
 // TABLE CONTAINER COMPONENT TESTS
@@ -57,7 +57,7 @@ jest.mock('./TableBody', () => ({
 const mockFund: ExtendedFund = {
   id: 1,
   name: 'Test Fund',
-  tracking_type: FundType.COST_BASED,
+  tracking_type: FundTrackingType.COST_BASED,
   currency: 'AUD',
   investment_company: 'Test Company',
   entity: 'Test Entity',
@@ -253,7 +253,7 @@ describe('TableContainer', () => {
   });
 
   it('should handle NAV-based funds correctly', () => {
-    const navBasedFund = { ...mockFund, tracking_type: FundType.NAV_BASED };
+    const navBasedFund = { ...mockFund, tracking_type: FundTrackingType.NAV_BASED };
     
     renderTableContainer({
       events: mockEvents,

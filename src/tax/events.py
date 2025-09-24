@@ -232,8 +232,11 @@ class TaxEventManager:
             group_position = base_priority * 10 + i  # Ensures consistent ordering
             
             # Set grouping flags
-            event.set_grouping(group_id, GroupType.TAX_STATEMENT, group_position)
-            
+            event.is_grouped = True
+            event.group_id = group_id
+            event.group_type = GroupType.TAX_STATEMENT
+            event.group_position = group_position
+
             # Validate that grouped events share the same financial year
             if hasattr(tax_statement, 'financial_year') and tax_statement.financial_year:
                 FundEvent.validate_group_date_consistency(session, group_id, event.event_date)

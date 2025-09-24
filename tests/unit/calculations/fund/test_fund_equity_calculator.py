@@ -17,7 +17,7 @@ from decimal import Decimal
 from unittest.mock import Mock, patch
 
 from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
-from src.fund.enums import EventType, FundType, FundStatus
+from src.fund.enums import EventType, FundTrackingType, FundStatus
 from tests.factories import FundEventFactory, FundFactory, EntityFactory, InvestmentCompanyFactory
 
 
@@ -31,7 +31,7 @@ class TestFundEquityCalculatorCostBased:
     def test_calculate_current_equity_cost_based_no_events(self, db_session):
         """Test current equity calculation for cost-based fund with no events"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.COST_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.COST_BASED)
         
         # Act
         result = self.calculator.calculate_current_equity(fund, db_session)
@@ -42,7 +42,7 @@ class TestFundEquityCalculatorCostBased:
     def test_calculate_current_equity_cost_based_capital_calls_only(self, db_session):
         """Test current equity calculation for cost-based fund with capital calls only"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.COST_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.COST_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -68,7 +68,7 @@ class TestFundEquityCalculatorCostBased:
     def test_calculate_current_equity_cost_based_with_returns(self, db_session):
         """Test current equity calculation for cost-based fund with capital calls and returns"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.COST_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.COST_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -102,7 +102,7 @@ class TestFundEquityCalculatorCostBased:
         """Test average equity calculation for cost-based fund with single event"""
         # Arrange
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             status=FundStatus.ACTIVE,
             
         )
@@ -126,7 +126,7 @@ class TestFundEquityCalculatorCostBased:
         """Test average equity calculation for cost-based fund with multiple events"""
         # Arrange
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             status=FundStatus.ACTIVE,
             
         )
@@ -160,7 +160,7 @@ class TestFundEquityCalculatorCostBased:
     def test_calculate_total_cost_basis_cost_based(self, db_session):
         """Test total cost basis calculation for cost-based fund"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.COST_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.COST_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -193,7 +193,7 @@ class TestFundEquityCalculatorCostBased:
     def test_recalculate_all_equity_fields_cost_based(self, db_session):
         """Test recalculating all equity fields for cost-based fund"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.COST_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.COST_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -237,7 +237,7 @@ class TestFundEquityCalculatorNAVBased:
     def test_calculate_current_equity_nav_based_no_events(self, db_session):
         """Test current equity calculation for NAV-based fund with no events"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         # Act
         result = self.calculator.calculate_current_equity(fund, db_session)
@@ -248,7 +248,7 @@ class TestFundEquityCalculatorNAVBased:
     def test_calculate_current_equity_nav_based_purchases_only(self, db_session):
         """Test current equity calculation for NAV-based fund with purchases only"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -279,7 +279,7 @@ class TestFundEquityCalculatorNAVBased:
     def test_calculate_current_equity_nav_based_with_sales(self, db_session):
         """Test current equity calculation for NAV-based fund with purchases and sales"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         # Purchase 100 units at $10 + $50 brokerage = $1050 total, $10.50 per unit
         FundEventFactory(
@@ -326,7 +326,7 @@ class TestFundEquityCalculatorNAVBased:
         """Test average equity calculation for NAV-based fund with single purchase"""
         # Arrange
         fund = FundFactory(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             
         )
@@ -352,7 +352,7 @@ class TestFundEquityCalculatorNAVBased:
         """Test average equity calculation for NAV-based fund with multiple events"""
         # Arrange
         fund = FundFactory(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             
         )
@@ -386,7 +386,7 @@ class TestFundEquityCalculatorNAVBased:
     def test_calculate_total_cost_basis_nav_based(self, db_session):
         """Test total cost basis calculation for NAV-based fund"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -428,7 +428,7 @@ class TestFundEquityCalculatorNAVBased:
         """Test recalculating all equity fields for NAV-based fund"""
         # Arrange
         fund = FundFactory(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             current_units=100.0,
             current_unit_price=10.5,
             current_nav_total=1050.0,
@@ -504,7 +504,7 @@ class TestFundEquityCalculatorEdgeCases:
     def test_nav_based_calculation_with_zero_units(self, db_session):
         """Test NAV-based calculations with zero units"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -536,7 +536,7 @@ class TestFundEquityCalculatorEdgeCases:
     def test_nav_based_calculation_with_zero_prices(self, db_session):
         """Test NAV-based calculations with zero unit prices"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -557,7 +557,7 @@ class TestFundEquityCalculatorEdgeCases:
     def test_cost_based_calculation_with_null_amounts(self, db_session):
         """Test cost-based calculations with null amounts"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.COST_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.COST_BASED)
         
         FundEventFactory(
             fund=fund,
@@ -591,7 +591,7 @@ class TestFundEquityCalculatorPerformance:
     def test_large_number_of_events_performance(self, db_session):
         """Test performance with large number of events"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.NAV_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.NAV_BASED)
         
         # Create 100 purchase events
         for i in range(100):
@@ -618,7 +618,7 @@ class TestFundEquityCalculatorPerformance:
     def test_memory_usage_with_many_events(self, db_session):
         """Test memory usage doesn't grow excessively with many events"""
         # Arrange
-        fund = FundFactory(tracking_type=FundType.COST_BASED)
+        fund = FundFactory(tracking_type=FundTrackingType.COST_BASED)
         
         # Create 1000 events
         for i in range(1000):

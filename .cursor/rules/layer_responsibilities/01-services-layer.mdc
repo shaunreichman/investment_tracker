@@ -38,7 +38,7 @@ Services orchestrate business logic, coordinate between controllers and reposito
 
 ```python
 # ✅ Good: Fund domain with complex business logic
-def add_capital_call(self, fund, amount, date, session):
+def create_capital_call(self, fund, amount, date, session):
     # Validate business rules
     self.validation_service.validate_capital_call(fund, amount, date, session)
     

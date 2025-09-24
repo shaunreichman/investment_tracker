@@ -4,7 +4,7 @@ import { Add as AddIcon } from '@mui/icons-material';
 import CreateEntityModal from '../../CreateEntityModal';
 import { useEntities } from '../../../hooks/useEntities';
 import { useCreateFund } from '../../../hooks/useFunds';
-import { FundType } from '../../../types/api';
+import { FundTrackingType } from '../../../types/api';
 import { fundValidators, validationRules } from '../../../utils/validators';
 import TemplateSelectionSection from './TemplateSelectionSection';
 import FundFormSection from './FundFormSection';
@@ -98,7 +98,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         entity_id: parseInt(values.entity_id),
         name: values.name.trim(),
         fund_type: values.fund_type,
-        tracking_type: values.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED,
+        tracking_type: values.tracking_type === 'nav_based' ? FundTrackingType.NAV_BASED : FundTrackingType.COST_BASED,
         currency: values.currency,
         ...(values.commitment_amount && { commitment_amount: parseFloat(values.commitment_amount) }),
         ...(values.expected_irr && { expected_irr: parseFloat(values.expected_irr) }),

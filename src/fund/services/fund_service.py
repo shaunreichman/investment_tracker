@@ -11,19 +11,16 @@ Key responsibilities:
 - Business rule enforcement
 """
 
-from typing import List, Optional, Dict, Any, TYPE_CHECKING
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from datetime import date
 import logging
 
 from src.fund.repositories import FundRepository, FundEventRepository, TaxStatementRepository
-from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.enums.fund_enums import FundStatus, FundTrackingType, FundInvestmentType, SortFieldFund, FundTaxStatementFinancialYearType
+from src.shared.enums.shared_enums import SortOrder, Country, Currency
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.services.fund_event_service import FundEventService
-
-if TYPE_CHECKING:
-    from src.fund.models import Fund, FundEvent
-
+from src.fund.models import Fund
 
 class FundService:
     """
@@ -51,7 +48,58 @@ class FundService:
         self.validation_service = FundValidationService()
         self.logger = logging.getLogger(__name__)
 
-    def create_fund(self, fund_data: Dict[str, Any], session: Session) -> 'Fund':
+
+    ################################################################################
+    # Get Fund
+    ################################################################################
+
+    def get_funds(self, session: Session,
+                    company_id: Optional[int] = None,
+                    entity_id: Optional[int] = None,
+                    fund_status: Optional[FundStatus] = None,
+                    fund_tracking_type: Optional[FundTrackingType] = None,
+                    sort_by: SortFieldFund = SortFieldFund.START_DATE,
+                    sort_order: SortOrder = SortOrder.ASC) -> List[Fund]:
+        """
+        Get funds with filtering.
+        
+        Args:
+            session: Database session
+            company_id: Optional company ID filter
+            entity_id: Optional entity ID filter
+            fund_status: Optional fund status filter
+            fund_tracking_type: Optional fund tracking type filter
+            sort_by: Field to sort by
+            sort_order: Sort order (ascending or descending)
+            
+        Returns:
+            List of Fund objects
+        """
+        return self.fund_repository.get_funds(session, company_id, entity_id, fund_status, fund_tracking_type, sort_by, sort_order)
+
+    def get_fund_by_id(self, fund_id: int, session: Session) -> Optional[Fund]:
+        """
+        Get a fund by its ID including all events.
+        
+        Args:
+            fund_id: ID of the fund to retrieve
+            session: Database session
+            
+        Returns:
+            Fund: The fund object with events, or None if not found
+        """
+        fund = self.fund_repository.get_fund_by_id(fund_id, session)
+        if not fund:
+            return None
+ 
+        return fund
+    
+
+    ################################################################################
+    # Create Fund
+    ################################################################################
+
+    def create_fund(self, fund_data: Dict[str, Any], session: Session) -> Fund:
         """
         Create a new fund.
         
@@ -66,51 +114,56 @@ class FundService:
             ValueError: If required fields are missing or invalid
         """
         # Validate required fields
-        required_fields = ['name', 'entity_id', 'investment_company_id']
+        required_fields = ['name', 'entity_id', 'investment_company_id', 'tracking_type', 'tax_jurisdiction', 'currency']
         for field in required_fields:
             if field not in fund_data:
                 raise ValueError(f"Required field '{field}' is missing")
         
         # Convert string enum values to enum objects
         processed_data = fund_data.copy()
-        if 'fund_type' in processed_data and isinstance(processed_data['fund_type'], str):
-            # For backward compatibility, allow any string value for fund_type
-            # The old system used String(100) column, not enum
-            pass  # Keep as string
-        if 'tracking_type' in processed_data and isinstance(processed_data['tracking_type'], str):
-            # tracking_type should be a valid FundType enum
+        if 'fund_investment_type' in processed_data and isinstance(processed_data['fund_investment_type'], str):
+            # fund_type should be a valid FundTrackingType enum
             try:
-                processed_data['tracking_type'] = FundType(processed_data['tracking_type'])
+                processed_data['fund_investment_type'] = FundInvestmentType(processed_data['fund_investment_type'])
             except ValueError:
-                raise ValueError(f"Invalid tracking_type: {processed_data['tracking_type']}. Must be one of: {[t.value for t in FundType]}")
+                raise ValueError(f"Invalid fund_investment_type: {processed_data['fund_investment_type']}. Must be one of: {[t.value for t in FundInvestmentType]}")
+        if 'tracking_type' in processed_data and isinstance(processed_data['tracking_type'], str):
+            # tracking_type should be a valid FundTrackingType enum
+            try:
+                processed_data['tracking_type'] = FundTrackingType(processed_data['tracking_type'])
+            except ValueError:
+                raise ValueError(f"Invalid tracking_type: {processed_data['tracking_type']}. Must be one of: {[t.value for t in FundTrackingType]}")
+        if 'tax_jurisdiction' in processed_data and isinstance(processed_data['tax_jurisdiction'], str):
+            # tax_jurisdiction should be a valid Country enum
+            try:
+                processed_data['tax_jurisdiction'] = Country(processed_data['tax_jurisdiction'])
+            except ValueError:
+                raise ValueError(f"Invalid tax_jurisdiction: {processed_data['tax_jurisdiction']}. Must be one of: {[t.value for t in Country]}")
+        if 'currency' in processed_data and isinstance(processed_data['currency'], str):
+            # currency should be a valid Currency enum
+            try:
+                processed_data['currency'] = Currency(processed_data['currency'])
+            except ValueError:
+                raise ValueError(f"Invalid currency: {processed_data['currency']}. Must be one of: {[t.value for t in Currency]}")
+
+        # Set the tax statement financial year type based on the tax jurisdiction
+        processed_data['tax_statement_financial_year_type'] = FundTaxStatementFinancialYearType.TAX_JURISDICTION_TO_FINANCIAL_YEAR_TYPE_MAP[processed_data['tax_jurisdiction']]
         
+        # Set the fund status to ACTIVE on creation
+        processed_data['status'] = FundStatus.ACTIVE
+
         # Create the fund
-        fund = self.fund_repository.create(processed_data, session)
-        
-        # Return domain object
-        return fund
-    
-    def update_fund(self, fund_id: int, fund_data: Dict[str, Any], 
-                   session: Session) -> Optional['Fund']:
-        """
-        Update an existing fund.
-        
-        Args:
-            fund_id: ID of the fund to update
-            fund_data: Dictionary containing updated fund data
-            session: Database session
-            
-        Returns:
-            Fund: The updated fund object, or None if not found
-        """
-        # Update the fund
-        fund = self.fund_repository.update(fund_id, fund_data, session)
+        fund = self.fund_repository.create_fund(processed_data, session)
         if not fund:
-            return None
+            raise ValueError(f"Failed to create fund")
         
-        # Return domain object
         return fund
     
+
+    ################################################################################
+    # Delete Fund
+    ################################################################################
+
     def delete_fund(self, fund_id: int, session: Session) -> bool:
         """
         Delete a fund with enterprise-grade validation.
@@ -126,7 +179,7 @@ class FundService:
             ValueError: If deletion validation fails
         """
         # Get existing fund
-        fund = self.fund_repository.get_by_id(fund_id, session)
+        fund = self.fund_repository.get_fund_by_id(fund_id, session)
         if not fund:
             return False
         
@@ -136,96 +189,4 @@ class FundService:
             raise ValueError(f"Deletion validation failed: {validation_errors}")
         
         # Delete the fund
-        return self.fund_repository.delete(fund_id, session)
-    
-    def get_fund(self, fund_id: int, session: Session) -> Optional['Fund']:
-        """
-        Get a fund by its ID including all events.
-        
-        Args:
-            fund_id: ID of the fund to retrieve
-            session: Database session
-            
-        Returns:
-            Fund: The fund object with events, or None if not found
-        """
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            return None
-        
-        # Get fund events using the repository
-        events = self.fund_event_repository.get_by_fund(fund_id, session)
-        
-        # Attach events to fund object (or use proper relationship)
-        # Note: This assumes the Fund model has a way to attach events
-        # If not, the controller can fetch events separately
-        fund.events = events
-        
-        return fund
-    
-    def get_funds(self, session: Session, 
-                  status: Optional[FundStatus] = None,
-                  fund_type: Optional[FundType] = None) -> List['Fund']:
-        """
-        Get funds with filtering.
-        
-        Args:
-            session: Database session
-            status: Optional fund status filter
-            fund_type: Optional fund type filter            
-        Returns:
-            List of Fund objects
-        """
-        if status:
-            # Filter by status
-            return self.fund_repository.get_funds_by_status(status, session)
-        elif fund_type:
-            # Filter by fund type
-            return self.fund_repository.get_funds_by_type(fund_type, session)
-        else:
-            # Get all funds
-            return self.fund_repository.get_all_funds(session)
-    
-    def get_fund_events(self, fund_id: int, session: Session,
-                       event_types: Optional[List[EventType]] = None) -> List['FundEvent']:
-        """
-        Get events for a specific fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            event_types: Optional list of event types to filter by
-            
-        Returns:
-            List of FundEvent objects
-        """
-        events = self.fund_event_repository.get_by_fund(
-            fund_id, session, event_types
-        )
-        
-        # Return domain objects
-        return events
-    
-    def get_fund_event(self, fund_id: int, event_id: int, session: Session) -> Optional['FundEvent']:
-        """
-        Get a specific fund event by ID.
-        
-        Args:
-            fund_id: ID of the fund
-            event_id: ID of the event
-            session: Database session
-            
-        Returns:
-            FundEvent object if found, None otherwise
-        """
-        # First verify the fund exists
-        fund = self.fund_repository.get_by_id(fund_id, session)
-        if not fund:
-            return None
-        
-        # Get the specific event
-        event = self.fund_event_repository.get_by_id(event_id, session)
-        if not event or event.fund_id != fund_id:
-            return None
-        
-        return event
+        return self.fund_repository.delete_fund(fund_id, session)

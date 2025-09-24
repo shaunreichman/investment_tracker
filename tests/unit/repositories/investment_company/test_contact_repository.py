@@ -1,7 +1,7 @@
 """
-Tests for ContactRepository.
+Tests for CompanyContactRepository.
 
-This module tests the ContactRepository class to ensure it provides
+This module tests the CompanyContactRepository class to ensure it provides
 clean data access abstraction without breaking existing functionality.
 """
 
@@ -10,16 +10,16 @@ from unittest.mock import Mock, MagicMock, patch
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
-from src.investment_company.repositories.contact_repository import ContactRepository
+from src.investment_company.repositories.company_contact_repository import CompanyContactRepository
 from src.investment_company.models import Contact, InvestmentCompany
 
 
-class TestContactRepository:
-    """Test cases for ContactRepository."""
+class TestCompanyContactRepository:
+    """Test cases for CompanyContactRepository."""
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.repository = ContactRepository()
+        self.repository = CompanyContactRepository()
         self.mock_session = Mock(spec=Session)
         self.mock_query = Mock()
         self.mock_session.query.return_value = self.mock_query

@@ -15,7 +15,7 @@ from src.fund.events.consumption.base_consumer import EventConsumer
 from src.fund.events.domain import CapitalChainRecalculatedEvent
 from src.fund.repositories.fund_repository import FundRepository
 from src.fund.models import Fund, FundEvent
-from src.fund.enums import FundType, EventType
+from src.fund.enums import FundTrackingType, EventType
 from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
 
 logger = logging.getLogger(__name__)
@@ -89,10 +89,10 @@ class CapitalChainEventHandler(EventConsumer):
             equity_service.update_fund_equity_fields(fund)
             
             # Update other fund summary fields based on fund type
-            if fund.tracking_type == FundType.NAV_BASED:
+            if fund.tracking_type == FundTrackingType.NAV_BASED:
                 # For cost-based funds, update capital-related fields
                 self._update_nav_based_summary_fields(fund, capital_events)
-            elif fund.tracking_type == FundType.COST_BASED:
+            elif fund.tracking_type == FundTrackingType.COST_BASED:
                 # For NAV-based funds, update unit-related fields
                 self._update_cost_based_summary_fields(fund, capital_events)
             
@@ -112,10 +112,10 @@ class CapitalChainEventHandler(EventConsumer):
         Returns:
             List of capital events ordered by date and ID
         """
-        if fund.tracking_type == FundType.NAV_BASED:
+        if fund.tracking_type == FundTrackingType.NAV_BASED:
             # For NAV-based funds, get unit purchase/sale events
             capital_event_types = [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
-        elif fund.tracking_type == FundType.COST_BASED:
+        elif fund.tracking_type == FundTrackingType.COST_BASED:
             # For cost-based funds, get capital call/return events
             capital_event_types = [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]
         

@@ -32,7 +32,7 @@ from tests.factories import (
     TaxStatementFactory
 )
 from src.fund.models import (
-    Fund, FundType, EventType, CashFlowDirection,
+    Fund, FundTrackingType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
 from src.fund.enums import DistributionType, TaxPaymentType
@@ -50,7 +50,7 @@ class TestUnitPurchaseWorkflow:
         
         # Create NAV-based fund
         fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -63,7 +63,7 @@ class TestUnitPurchaseWorkflow:
         # Execute unit purchase
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_unit_purchase(
+        event = fund_event_service.create_unit_purchase(
             fund=fund,
             units=1000.0,
             price=25.50,
@@ -100,7 +100,7 @@ class TestUnitPurchaseWorkflow:
         account = BankAccountFactory.create(entity=entity, bank=bank, currency="AUD")
         fund = FundFactory.create(
             entity=entity,
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0,
             currency="AUD"
         )
@@ -109,7 +109,7 @@ class TestUnitPurchaseWorkflow:
         # Create unit purchase event
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_unit_purchase(
+        event = fund_event_service.create_unit_purchase(
             fund=fund,
             units=500.0,
             price=30.00,
@@ -149,7 +149,7 @@ class TestUnitPurchaseWorkflow:
         
         # Create NAV-based fund
         fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=200000.0
         )
         db_session.commit()
@@ -157,7 +157,7 @@ class TestUnitPurchaseWorkflow:
         # First unit purchase
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=1000.0,
             price=20.00,
@@ -168,7 +168,7 @@ class TestUnitPurchaseWorkflow:
         db_session.commit()
         
         # Second unit purchase
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=500.0,
             price=25.00,
@@ -205,7 +205,7 @@ class TestUnitSaleWorkflow:
         
         # Create NAV-based fund with existing units
         fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -213,7 +213,7 @@ class TestUnitSaleWorkflow:
         # Add initial unit purchase
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=1000.0,
             price=25.00,
@@ -231,7 +231,7 @@ class TestUnitSaleWorkflow:
         # Execute unit sale
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_unit_sale(
+        event = fund_event_service.create_unit_sale(
             fund=fund,
             units=400.0,
             price=30.00,
@@ -268,7 +268,7 @@ class TestUnitSaleWorkflow:
         account = BankAccountFactory.create(entity=entity, bank=bank, currency="AUD")
         fund = FundFactory.create(
             entity=entity,
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0,
             currency="AUD"
         )
@@ -277,7 +277,7 @@ class TestUnitSaleWorkflow:
         # Add initial unit purchase
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=1000.0,
             price=20.00,
@@ -290,7 +290,7 @@ class TestUnitSaleWorkflow:
         # Create unit sale event
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        event = fund_event_service.add_unit_sale(
+        event = fund_event_service.create_unit_sale(
             fund=fund,
             units=300.0,
             price=25.00,
@@ -330,7 +330,7 @@ class TestUnitSaleWorkflow:
         
         # Create NAV-based fund with limited units
         fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=50000.0
         )
         db_session.commit()
@@ -338,7 +338,7 @@ class TestUnitSaleWorkflow:
         # Add unit purchase
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=500.0,
             price=20.00,
@@ -356,7 +356,7 @@ class TestUnitSaleWorkflow:
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
         with pytest.raises(ValueError, match="Insufficient units"):
-            fund_event_service.add_unit_sale(
+            fund_event_service.create_unit_sale(
                 fund=fund,
                 units=600.0,  # More than available
                 price=25.00,
@@ -382,7 +382,7 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         
         # Create NAV-based fund
         fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=150000.0
         )
         db_session.commit()
@@ -390,7 +390,7 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         # Phase 1: Initial unit purchase
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=1000.0,
             price=20.00,
@@ -401,7 +401,7 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Phase 2: Additional unit purchase
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=500.0,
             price=25.00,
@@ -412,7 +412,7 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Phase 3: Partial unit sale
-        fund_event_service.add_unit_sale(
+        fund_event_service.create_unit_sale(
             fund=fund,
             units=300.0,
             price=30.00,
@@ -423,7 +423,7 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Phase 4: Repurchase after sale
-        fund_event_service.add_unit_purchase(
+        fund_event_service.create_unit_purchase(
             fund=fund,
             units=200.0,
             price=22.00,
@@ -460,7 +460,7 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         entity = EntityFactory.create()
         fund = FundFactory.create(
             entity=entity,
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0
         )
         
@@ -474,7 +474,7 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         # Execute unit purchase
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        purchase_event = fund_event_service.add_unit_purchase(
+        purchase_event = fund_event_service.create_unit_purchase(
             fund=fund,
             units=1000.0,
             price=25.00,
@@ -485,7 +485,7 @@ class TestUnitPurchaseSaleCombinedWorkflow:
         db_session.commit()
         
         # Execute unit sale
-        sale_event = fund_event_service.add_unit_sale(
+        sale_event = fund_event_service.create_unit_sale(
             fund=fund,
             units=400.0,
             price=30.00,

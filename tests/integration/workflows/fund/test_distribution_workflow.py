@@ -23,7 +23,7 @@ from tests.factories import (
     TaxStatementFactory
 )
 from src.fund.models import (
-    Fund, FundType, EventType, CashFlowDirection,
+    Fund, FundTrackingType, EventType, CashFlowDirection,
     FundEvent, FundEventCashFlow
 )
 from src.fund.services.fund_service import FundService
@@ -43,7 +43,7 @@ class TestDistributionWorkflow:
         
         # Create fund with cost-based tracking
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -51,7 +51,7 @@ class TestDistributionWorkflow:
         # Create initial CAPITAL_CALL event (required for cost-based funds)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        initial_event = fund_event_service.add_capital_call(fund,  
+        initial_event = fund_event_service.create_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -64,7 +64,7 @@ class TestDistributionWorkflow:
         assert fund.total_distributions(session=db_session) == 0.0
         
         # Execute distribution using FundEventService
-        event = fund_event_service.add_distribution(
+        event = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2023, 6, 30),
             distribution_type=DistributionType.INCOME,
@@ -99,7 +99,7 @@ class TestDistributionWorkflow:
         entity = EntityFactory.create()
         fund = FundFactory.create(
             entity=entity,
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         
@@ -113,7 +113,7 @@ class TestDistributionWorkflow:
         # Create initial CAPITAL_CALL event (required for cost-based funds)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        initial_event = fund_event_service.add_capital_call(fund,  
+        initial_event = fund_event_service.create_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -122,9 +122,9 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Execute distribution with withholding tax using FundEventService
-        # NOTE: BUG FOUND - add_distribution() returns single event, not tuple
+        # NOTE: BUG FOUND - create_distribution() returns single event, not tuple
         # This suggests withholding tax functionality may not be working correctly
-        result = fund_event_service.add_distribution(
+        result = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.INTEREST,
@@ -194,7 +194,7 @@ class TestDistributionWorkflow:
         
         # Create fund
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -202,7 +202,7 @@ class TestDistributionWorkflow:
         # Create initial CAPITAL_CALL event (required for cost-based funds)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        initial_event = fund_event_service.add_capital_call(fund,  
+        initial_event = fund_event_service.create_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -211,7 +211,7 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Execute franked dividend distribution
-        event = fund_event_service.add_distribution(
+        event = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2024, 3, 31),
             distribution_type=DistributionType.DIVIDEND_FRANKED,
@@ -246,7 +246,7 @@ class TestDistributionWorkflow:
         account = BankAccountFactory.create(entity=entity, bank=bank, currency="AUD")
         fund = FundFactory.create(
             entity=entity,
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0,
             currency="AUD"
         )
@@ -255,7 +255,7 @@ class TestDistributionWorkflow:
         # Create initial CAPITAL_CALL event (required for cost-based funds)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        initial_event = fund_event_service.add_capital_call(fund,  
+        initial_event = fund_event_service.create_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -264,7 +264,7 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Create distribution event
-        event = fund_event_service.add_distribution(
+        event = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.INCOME,
@@ -300,7 +300,7 @@ class TestDistributionWorkflow:
         
         # Create fund
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -308,7 +308,7 @@ class TestDistributionWorkflow:
         # Create initial CAPITAL_CALL event (required for cost-based funds)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        initial_event = fund_event_service.add_capital_call(fund,  
+        initial_event = fund_event_service.create_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -317,7 +317,7 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Execute first distribution
-        event1 = fund_event_service.add_distribution(
+        event1 = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.INCOME,
@@ -329,7 +329,7 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Execute second distribution on same date (should create new event)
-        event2 = fund_event_service.add_distribution(
+        event2 = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.INCOME,
@@ -352,7 +352,7 @@ class TestDistributionWorkflow:
         
         # Create fund
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -360,7 +360,7 @@ class TestDistributionWorkflow:
         # Create initial CAPITAL_CALL event (required for cost-based funds)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        initial_event = fund_event_service.add_capital_call(fund,  
+        initial_event = fund_event_service.create_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -370,7 +370,7 @@ class TestDistributionWorkflow:
         
         # Test invalid distribution type
         with pytest.raises(ValueError, match="Invalid distribution_type"):
-            fund_event_service.add_distribution(
+            fund_event_service.create_distribution(
                 fund=fund,
                 event_date=date(2024, 6, 30),
                 distribution_type="INVALID_TYPE",
@@ -382,7 +382,7 @@ class TestDistributionWorkflow:
         # NOTE: BUG FOUND - method signature requires distribution_type as positional argument
         # This makes the API less intuitive than it should be
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
-            fund_event_service.add_distribution(
+            fund_event_service.create_distribution(
                 fund=fund,
                 event_date=date(2024, 6, 30),
                 distribution_amount=5000.0,
@@ -391,7 +391,7 @@ class TestDistributionWorkflow:
         
         # Test invalid withholding tax configuration
         with pytest.raises(ValueError, match="Withholding tax.*is only valid for INTEREST distributions"):
-            fund_event_service.add_distribution(
+            fund_event_service.create_distribution(
                 fund=fund,
                 event_date=date(2024, 6, 30),
                 distribution_type=DistributionType.DIVIDEND_FRANKED,
@@ -409,7 +409,7 @@ class TestDistributionWorkflow:
         
         # Create fund
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -417,7 +417,7 @@ class TestDistributionWorkflow:
         # Create initial CAPITAL_CALL event (required for cost-based funds)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        initial_event = fund_event_service.add_capital_call(fund,  
+        initial_event = fund_event_service.create_capital_call(fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -426,7 +426,7 @@ class TestDistributionWorkflow:
         db_session.commit()
         
         # Test distribution through service (which uses orchestrator internally)
-        event = fund_event_service.add_distribution(
+        event = fund_event_service.create_distribution(
             fund=fund,
             event_date=date(2024, 6, 30),
             distribution_type=DistributionType.CAPITAL_GAIN,
@@ -454,7 +454,7 @@ class TestDistributionWorkflow:
         
         # Create fund
         fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0
         )
         db_session.commit()
@@ -462,7 +462,7 @@ class TestDistributionWorkflow:
         # Create initial CAPITAL_CALL event (required for cost-based funds)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        initial_event = fund_event_service.add_capital_call(fund,  
+        initial_event = fund_event_service.create_capital_call(fund,  
             amount=500000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
@@ -474,7 +474,7 @@ class TestDistributionWorkflow:
         start_time = pytest.importorskip('time').time()
         
         for i in range(100):
-            fund_event_service.add_distribution(
+            fund_event_service.create_distribution(
                 fund=fund,
                 event_date=date(2024, 6, 30) + timedelta(days=i),
                 distribution_type=DistributionType.INCOME,
@@ -503,13 +503,13 @@ class TestDistributionWorkflow:
         
         # Test cost-based fund
         cost_fund = FundFactory.create(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=100000.0
         )
         
         # Test NAV-based fund
         nav_fund = FundFactory.create(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=100000.0
         )
         db_session.commit()
@@ -517,14 +517,14 @@ class TestDistributionWorkflow:
         # Create initial events for both fund types (required by business rules)
         from src.fund.services.fund_event_service import FundEventService
         fund_event_service = FundEventService()
-        cost_initial = fund_event_service.add_capital_call(cost_fund,  
+        cost_initial = fund_event_service.create_capital_call(cost_fund,  
             amount=50000.0,
             call_date=date(2023, 5, 1),
             description="Initial capital call",
             session=db_session
         )
         
-        nav_initial = fund_event_service.add_unit_purchase(
+        nav_initial = fund_event_service.create_unit_purchase(
             fund=nav_fund,
             units=1000.0,
             price=25.00,
@@ -536,7 +536,7 @@ class TestDistributionWorkflow:
         
         # Test distributions on both fund types
         for fund in [cost_fund, nav_fund]:
-            event = fund_event_service.add_distribution(
+            event = fund_event_service.create_distribution(
             fund=fund,
                 event_date=date(2024, 6, 30),
                 distribution_type=DistributionType.INCOME,

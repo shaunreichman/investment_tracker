@@ -16,7 +16,7 @@ This specification was **successfully implemented** through Phases 1-4, deliveri
 The two completed specs (`DISTRIBUTION_METHOD_CONSOLIDATION_SPEC.md` and `EVENT_RELATIONSHIP_GROUPING_SPEC.md`) fundamentally changed the architecture:
 
 1. **Edit Functionality Completely Removed**: Both specs removed all edit functionality in favor of delete + create pattern
-2. **Unified Distribution Method**: Backend now uses single `add_distribution()` method instead of multiple specialized methods  
+2. **Unified Distribution Method**: Backend now uses single `create_distribution()` method instead of multiple specialized methods  
 3. **Flag-Based Grouping**: Frontend now uses `has_withholding_tax` flag instead of complex date/event type matching
 
 ### **🎯 DECISION TO SHIFT TO CREATE-ONLY**
@@ -303,7 +303,7 @@ The unified event form implementation has been **successfully completed** throug
 **Phase 5 was cancelled** due to a fundamental architectural shift:
 
 #### **Why the Shift Occurred**
-1. **Distribution Method Consolidation**: Backend moved to unified `add_distribution()` method
+1. **Distribution Method Consolidation**: Backend moved to unified `create_distribution()` method
 2. **Event Relationship Grouping**: Frontend moved to flag-based grouping with `has_withholding_tax`
 3. **Edit Functionality Removal**: Both specs removed edit functionality in favor of delete + create pattern
 4. **Simplified Architecture**: Create-only approach eliminates mode switching complexity

@@ -143,7 +143,7 @@ This document outlines the complete migration plan for reorganizing the investme
 
 #### Enums to migrate:
 1. `EventType(enum.Enum)` - Event types (✅ COMPLETED)
-2. `FundType(enum.Enum)` - Fund types (✅ COMPLETED)
+2. `FundTrackingType(enum.Enum)` - Fund types (✅ COMPLETED)
 3. `DistributionType(enum.Enum)` - Distribution types (✅ COMPLETED)
 4. `TaxPaymentType(enum.Enum)` - Tax payment types (✅ COMPLETED)
 
@@ -241,7 +241,7 @@ src/
 #### 2.1 Fund Models (✅ COMPLETED)
 - [x] **Task 2.1.1**: Migrate Fund class from `src/models.py` to `src/fund/models.py`
 - [x] **Task 2.1.2**: Migrate FundEvent class from `src/models.py` to `src/fund/models.py`
-- [x] **Task 2.1.3**: Migrate enums (EventType, FundType, DistributionType, TaxPaymentType) to `src/fund/models.py`
+- [x] **Task 2.1.3**: Migrate enums (EventType, FundTrackingType, DistributionType, TaxPaymentType) to `src/fund/models.py`
 - [x] **Task 2.1.4**: Update all imports and relationships
 - [x] **Task 2.1.5**: Verify all imports work correctly
 

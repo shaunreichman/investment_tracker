@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from unittest.mock import Mock
 
 from src.fund.calculators.debt_cost_calculator import DebtCostCalculator, DebtCostResult
-from src.fund.enums import EventType, FundType
+from src.fund.enums import EventType, FundTrackingType
 
 
 @dataclass
@@ -50,7 +50,7 @@ class TestDebtCostCalculator:
         
         # Mock fund with tracking type
         mock_fund = Mock()
-        mock_fund.tracking_type = FundType.COST_BASED
+        mock_fund.tracking_type = FundTrackingType.COST_BASED
         
         # Mock events
         events = [
@@ -94,7 +94,7 @@ class TestDebtCostCalculator:
         
         # Mock fund with NAV-based tracking type
         mock_fund = Mock()
-        mock_fund.tracking_type = FundType.NAV_BASED
+        mock_fund.tracking_type = FundTrackingType.NAV_BASED
         
         # Mock NAV-based events
         events = [
@@ -165,7 +165,7 @@ class TestDebtCostCalculator:
         
         # Mock fund
         mock_fund = Mock()
-        mock_fund.tracking_type = FundType.COST_BASED
+        mock_fund.tracking_type = FundTrackingType.COST_BASED
         
         # Mock events
         events = [
@@ -207,7 +207,7 @@ class TestDebtCostCalculator:
         """Test equity change calculation for capital call."""
         # Mock fund
         mock_fund = Mock()
-        mock_fund.tracking_type = FundType.COST_BASED
+        mock_fund.tracking_type = FundTrackingType.COST_BASED
         
         # Mock event
         event = MockFundEvent(
@@ -227,7 +227,7 @@ class TestDebtCostCalculator:
         """Test equity change calculation for return of capital."""
         # Mock fund
         mock_fund = Mock()
-        mock_fund.tracking_type = FundType.COST_BASED
+        mock_fund.tracking_type = FundTrackingType.COST_BASED
         
         # Mock event
         event = MockFundEvent(
@@ -247,7 +247,7 @@ class TestDebtCostCalculator:
         """Test equity change calculation for unit purchase."""
         # Mock fund
         mock_fund = Mock()
-        mock_fund.tracking_type = FundType.NAV_BASED
+        mock_fund.tracking_type = FundTrackingType.NAV_BASED
         
         # Mock event
         event = MockFundEvent(
@@ -268,7 +268,7 @@ class TestDebtCostCalculator:
         """Test equity change calculation for unit sale."""
         # Mock fund
         mock_fund = Mock()
-        mock_fund.tracking_type = FundType.NAV_BASED
+        mock_fund.tracking_type = FundTrackingType.NAV_BASED
         
         # Mock event
         event = MockFundEvent(

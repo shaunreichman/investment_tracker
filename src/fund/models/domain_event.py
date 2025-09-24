@@ -12,8 +12,7 @@ from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
 from src.fund.enums import EventType
-from src.shared.enums import EventOperation
-
+from src.shared.enums.shared_enums import EventOperation
 
 
 class DomainEvent(Base):
@@ -80,25 +79,6 @@ class DomainEvent(Base):
             raise ValueError("Invalid processing status")
         
         return True
-    
-    def mark_as_processing(self) -> None:
-        """Mark event as being processed."""
-        self.processed = 'PROCESSING'
-        self.processed_at = None
-        self.error_message = None
-    
-    def mark_as_completed(self) -> None:
-        """Mark event as successfully processed."""
-        self.processed = 'COMPLETED'
-        self.processed_at = datetime.now(timezone.utc)
-        self.error_message = None
-    
-    def mark_as_failed(self, error_message: str) -> None:
-        """Mark event as failed with error message."""
-        self.processed = 'FAILED'
-        self.processed_at = datetime.now(timezone.utc)
-        self.error_message = error_message
-
 
 
 class DomainFundEvent(Base):

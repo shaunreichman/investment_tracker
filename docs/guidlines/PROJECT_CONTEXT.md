@@ -169,8 +169,8 @@ from src.models import Fund       # ❌ Old pattern
 **Database session issues:**
 ```python
 # Always use keyword arguments
-fund.add_capital_call(amount=100000, session=session)  # ✅ Correct
-fund.add_capital_call(100000, session)                 # ❌ Wrong
+fund.create_capital_call(amount=100000, session=session)  # ✅ Correct
+fund.create_capital_call(100000, session)                 # ❌ Wrong
 ```
 
 **Test failures:**

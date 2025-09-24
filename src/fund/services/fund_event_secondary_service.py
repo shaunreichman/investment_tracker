@@ -5,7 +5,7 @@ FundEventSecondaryService is responsible for handling secondary impacts of fund 
 from src.fund.models import Fund, FundFieldChange
 import logging
 from src.fund.enums import EventType
-from src.shared.enums import EventOperation
+from src.shared.enums.shared_enums import EventOperation
 from sqlalchemy.orm import Session
 from src.fund.services.fund_equity_service import FundEquityService
 from src.fund.services.fund_status_service import FundStatusService
@@ -18,7 +18,7 @@ class FundEventSecondaryService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def handle_event_secondary_impact(self, fund: Fund, fund_event_type: EventType, 
+    def handle_event_secondary_impact(self, fund_id: int, fund_event_type: EventType, 
                                     fund_event_operation: EventOperation,
                                     session: Session,
                                     event_id: int):            
@@ -31,6 +31,8 @@ class FundEventSecondaryService:
         fund_nav_service = FundNavService(session)
         
         all_changes: list[FundFieldChange] = []
+
+        fund = self.fund_repository.get_fund_by_id(fund_id, session)
 
         # 1. Update the Start Date of the Fund
         if EventType.is_equity_call_event(fund_event_type):
@@ -63,6 +65,8 @@ class FundEventSecondaryService:
 
         # 7. Update the IRRs of the fund
         all_changes.append(fund_irr_service.update_irrs(fund, session))
+
+        ##### If deleting a capital event, we should check if a debt cost exists on this date and if so we should recalculate the debt costs for the fund
 
         # 8. Update the NAV of the Fund
         if fund_event_type == EventType.NAV_UPDATE:

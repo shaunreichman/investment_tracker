@@ -13,7 +13,7 @@ import {
 } from './useFunds';
 import {
   Fund,
-  FundType,
+  FundTrackingType,
   FundStatus,
   FundEvent,
   EventType,
@@ -33,7 +33,7 @@ const createMockFund = (overrides: Partial<Fund> = {}): Fund => ({
   investment_company_id: 1,
   commitment_amount: 1000000,
   expected_irr: 0.15,
-  tracking_type: FundType.NAV_BASED,
+  tracking_type: FundTrackingType.NAV_BASED,
   status: FundStatus.ACTIVE,
   currency: 'AUD',
   current_equity_balance: 1000000,
@@ -206,7 +206,7 @@ describe('useFunds', () => {
   describe('useCreateFund', () => {
     it('should create a fund successfully', async () => {
       const mockFund = createMockFund();
-      const createData = { name: 'New Fund', entity_id: 1, investment_company_id: 1, tracking_type: FundType.NAV_BASED };
+      const createData = { name: 'New Fund', entity_id: 1, investment_company_id: 1, tracking_type: FundTrackingType.NAV_BASED };
       mockApiClient.createFund.mockResolvedValue(mockFund);
 
       const { result } = renderHook(() => useCreateFund());
@@ -220,7 +220,7 @@ describe('useFunds', () => {
 
     it('should handle fund creation errors', async () => {
       const errorMessage = 'Failed to create fund';
-      const createData = { name: 'New Fund', entity_id: 1, investment_company_id: 1, tracking_type: FundType.NAV_BASED };
+      const createData = { name: 'New Fund', entity_id: 1, investment_company_id: 1, tracking_type: FundTrackingType.NAV_BASED };
       mockApiClient.createFund.mockRejectedValue(new Error(errorMessage));
 
       const { result } = renderHook(() => useCreateFund());
@@ -436,8 +436,8 @@ describe('useFunds', () => {
 
   describe('Integration', () => {
     it('should work with different fund types', async () => {
-      const navFund = createMockFund({ tracking_type: FundType.NAV_BASED });
-              const costFund = createMockFund({ tracking_type: FundType.COST_BASED, id: 2 });
+      const navFund = createMockFund({ tracking_type: FundTrackingType.NAV_BASED });
+              const costFund = createMockFund({ tracking_type: FundTrackingType.COST_BASED, id: 2 });
 
       mockApiClient.getFund.mockResolvedValueOnce(navFund);
       mockApiClient.getFund.mockResolvedValueOnce(costFund);
@@ -452,7 +452,7 @@ describe('useFunds', () => {
         expect(costResult.current.loading).toBe(false);
       });
 
-              expect(navResult.current.data?.tracking_type).toBe(FundType.NAV_BASED);
+              expect(navResult.current.data?.tracking_type).toBe(FundTrackingType.NAV_BASED);
       expect(costResult.current.data?.tracking_type).toBe('cost_based');
     });
 

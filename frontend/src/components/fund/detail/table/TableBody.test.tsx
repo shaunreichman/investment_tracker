@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { TableBody } from './TableBody';
-import { ExtendedFundEvent, ExtendedFund, FundType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../../types/api';
+import { ExtendedFundEvent, ExtendedFund, FundTrackingType, FundStatus, EventType, DistributionType, TaxPaymentType } from '../../../../types/api';
 
 // ============================================================================
 // TABLE BODY COMPONENT TESTS
@@ -38,7 +38,7 @@ const mockUseEventGrouping = require('./useEventGrouping').useEventGrouping;
 const mockFund: ExtendedFund = {
   id: 1,
   name: 'Test Fund',
-  tracking_type: FundType.COST_BASED,
+  tracking_type: FundTrackingType.COST_BASED,
   currency: 'AUD',
   investment_company: 'Test Company',
   entity: 'Test Entity',

@@ -273,7 +273,7 @@ class Fund(Base):
         pass
     
     # Clean delegation through orchestrator
-    def add_capital_call(self, amount, date, **kwargs):
+    def create_capital_call(self, amount, date, **kwargs):
         """Delegate to orchestrator for business logic."""
         return self.orchestrator.process_capital_call(
             fund=self, amount=amount, date=date, **kwargs
@@ -294,12 +294,12 @@ class FundManager:
         self.orchestrator = FundUpdateOrchestrator()
     
     # Core fund operations
-    def add_capital_call(self, amount, date, **kwargs):
+    def create_capital_call(self, amount, date, **kwargs):
         return self.orchestrator.process_capital_call(
             fund=self.fund, amount=amount, date=date, **kwargs
         )
     
-    def add_distribution(self, amount, date, **kwargs):
+    def create_distribution(self, amount, date, **kwargs):
         return self.orchestrator.process_distribution(
             fund=self.fund, amount=amount, date=date, **kwargs
         )
@@ -325,7 +325,7 @@ class FundManager:
 ### **Service Integration Pattern**
 ```python
 # GOOD: Clean delegation through orchestrator
-def add_capital_call(self, amount, date, **kwargs):
+def create_capital_call(self, amount, date, **kwargs):
     """Add capital call through orchestrator."""
     return self.orchestrator.process_capital_call(
         fund=self,
@@ -343,7 +343,7 @@ def calculation_service(self) -> FundCalculationService:
 ### **Event-Driven Architecture**
 ```python
 # Models publish events
-def add_capital_call(self, amount, date, **kwargs):
+def create_capital_call(self, amount, date, **kwargs):
     event = self.orchestrator.process_capital_call(self, amount, date, **kwargs)
     
     # Publish domain event

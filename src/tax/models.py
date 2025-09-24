@@ -268,7 +268,7 @@ class TaxStatement(Base):
         Returns the capital_gain_income_amount.
         """
         from sqlalchemy.orm import object_session
-        from src.fund.models import FundEvent, EventType, DistributionType, FundType, Fund
+        from src.fund.models import FundEvent, EventType, DistributionType, FundTrackingType, Fund
         
         if session is None:
             session = object_session(self)
@@ -286,7 +286,7 @@ class TaxStatement(Base):
         if not fy_start or not fy_end:
             return 0.0
         
-        if fund.tracking_type == FundType.NAV_BASED:
+        if fund.tracking_type == FundTrackingType.NAV_BASED:
             # For NAV-based funds, calculate capital gains from unit sales using FIFO
             return self._calculate_nav_based_capital_gains(session, fy_start, fy_end)
         else:
@@ -375,7 +375,7 @@ class TaxStatement(Base):
         """
         from sqlalchemy.orm import object_session
         from src.entity.models import Entity
-        from src.fund.models import Fund, FundType, EventType, FundEvent
+        from src.fund.models import Fund, FundTrackingType, EventType, FundEvent
         from datetime import date, timedelta
         
         if session is None:
@@ -392,7 +392,7 @@ class TaxStatement(Base):
         
         # Get the fund to check if it's NAV-based
         fund = session.query(Fund).filter(Fund.id == self.fund_id).first()
-        if not fund or fund.tracking_type != FundType.NAV_BASED:
+        if not fund or fund.tracking_type != FundTrackingType.NAV_BASED:
             self.capital_gain_discount_amount = 0.0
             return 0.0
         

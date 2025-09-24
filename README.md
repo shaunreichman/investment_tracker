@@ -41,7 +41,7 @@ The project uses a domain-driven architecture where:
 - **All imports** should use the new domain modules:
 
 ```python
-from src.fund.models import Fund, FundEvent, FundType
+from src.fund.models import Fund, FundEvent, FundTrackingType
 from src.tax.models import TaxStatement
 from src.entity.models import Entity
 from src.rates.models import RiskFreeRate
@@ -276,7 +276,7 @@ try:
     # 1. Create NAV-based fund (minimal manual fields)
     fund = Fund(
         name="ABC Ltd",
-        tracking_type=FundType.NAV_BASED,
+        tracking_type=FundTrackingType.NAV_BASED,
         fund_type="Equity - Consumer Discretionary",
         currency="AUD"
     )
@@ -325,7 +325,7 @@ try:
     # Create cost-based fund
     fund = Fund(
         name="Private Equity Fund",
-        tracking_type=FundType.COST_BASED,
+        tracking_type=FundTrackingType.COST_BASED,
         commitment_amount=1000000.0,
         expected_irr=15.0,
         expected_duration_months=120

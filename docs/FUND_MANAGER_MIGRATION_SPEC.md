@@ -23,27 +23,27 @@ FundStatusService → Status Management & Transitions
 
 #### **Capital Movement Operations**
 ```python
-def add_capital_call(self, amount: float, call_date: date, description: str, 
+def create_capital_call(self, amount: float, call_date: date, description: str, 
                     reference_number: str = None, session: Session = None) -> FundEvent
 
-def add_return_of_capital(self, amount: float, return_date: date, description: str,
+def create_return_of_capital(self, amount: float, return_date: date, description: str,
                          reference_number: str = None, session: Session = None) -> FundEvent
 
-def add_distribution(self, event_date: date, distribution_type: DistributionType,
+def create_distribution(self, event_date: date, distribution_type: DistributionType,
                     distribution_amount: float = None, has_withholding_tax: bool = False,
                     gross_interest_amount: float = None, net_interest_amount: float = None,
                     withholding_tax_amount: float = None, withholding_tax_rate: float = None,
                     description: str = None, reference_number: str = None,
                     session: Session = None) -> Union[FundEvent, tuple[FundEvent, Optional[FundEvent]]]
 
-def add_nav_update(self, nav_per_share: float, update_date: date, description: str = None,
+def create_nav_update(self, nav_per_share: float, update_date: date, description: str = None,
                   reference_number: str = None, session: Session = None) -> FundEvent
 
-def add_unit_purchase(self, units: float, unit_price: float, purchase_date: date,
+def create_unit_purchase(self, units: float, unit_price: float, purchase_date: date,
                      description: str = None, reference_number: str = None,
                      session: Session = None) -> FundEvent
 
-def add_unit_sale(self, units: float, unit_price: float, sale_date: date,
+def create_unit_sale(self, units: float, unit_price: float, sale_date: date,
                   description: str = None, reference_number: str = None,
                   session: Session = None) -> FundEvent
 ```
@@ -125,14 +125,14 @@ def get_summary_data(self, session: Session = None) -> Dict[str, Any]
 ```python
 # ❌ BAD: Unnecessary indirection
 fund_manager = FundManager(fund)
-event = fund_manager.add_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+event = fund_manager.create_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
 total_called = fund_manager.total_capital_called()
 ```
 
 ### **After (Rich Domain Model)**
 ```python
 # ✅ GOOD: Direct domain operations
-event = fund.add_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
+event = fund.create_capital_call(50000.0, date(2023, 1, 1), "Initial call", session=db_session)
 total_called = fund.total_capital_called()
 ```
 

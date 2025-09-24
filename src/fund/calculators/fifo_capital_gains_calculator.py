@@ -16,8 +16,9 @@ from typing import List, Tuple, Optional
 from datetime import date
 from dataclasses import dataclass
 from collections import deque
+from sqlalchemy.orm import Session
 
-from src.fund.enums import EventType
+from src.fund.enums.fund_event_enums import EventType
 from src.fund.models import FundEvent
 
 
@@ -72,7 +73,7 @@ class FifoCapitalGainsCalculator:
     """
     
     @staticmethod
-    def calculate_capital_gains(events: List[FundEvent]) -> CapitalGainResult:
+    def calculate_capital_gains(fund_id: int, cg_start_date: Optional[date], cg_end_date: Optional[date], session: Session) -> CapitalGainResult:
         """
         Calculate total capital gains using FIFO method.
         
@@ -81,8 +82,9 @@ class FifoCapitalGainsCalculator:
         the total capital gains using the FIFO method.
         
         Args:
-            events: List of FundEvent objects (unit purchases/sales)
-            
+            fund_id: ID of the fund
+            cg_start_date: Start date of the capital gains calculation
+            cg_end_date: End date of the capital gains calculation
         Returns:
             CapitalGainResult with detailed calculation results
             
@@ -91,12 +93,12 @@ class FifoCapitalGainsCalculator:
             - Sale: proceeds per unit = unit_price - (brokerage_fee / units_sold)
             - FIFO: First purchased units are sold first
         """
-        # Filter and sort events by date
-        unit_events = [
-            e for e in events 
-            if e.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
-        ]
-        unit_events.sort(key=lambda e: e.event_date)
+        from src.fund.repositories import FundEventRepository
+        fund_event_repository = FundEventRepository()
+        unit_events = fund_event_repository.get_fund_events(fund_id=fund_id,
+            event_types=[EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
+            session=session)
+
         
         fifo_queue = deque()
         total_capital_gains = 0.0
@@ -119,10 +121,16 @@ class FifoCapitalGainsCalculator:
                 capital_gain, sale_proceeds, brokerage_fee = FifoCapitalGainsCalculator.calculate_capital_gains_for_sale(
                     event, fifo_queue
                 )
-                total_capital_gains += capital_gain
+                if event.event_date >= cg_start_date and event.event_date <= cg_end_date:
+                    total_capital_gains += capital_gain
+                else:
+                    total_capital_gains += 0.0
                 total_units_sold += event.units_sold or 0
                 total_sale_proceeds += sale_proceeds
                 total_brokerage_fees += brokerage_fee
+
+        # Calculate remaining units
+        remaining_units = sum(unit.units for unit in fifo_queue)
         
         # Calculate averages
         average_cost_per_unit = 0.0
@@ -132,9 +140,6 @@ class FifoCapitalGainsCalculator:
             # Calculate average cost from FIFO queue (simplified)
             total_cost = sum(unit.effective_price * unit.units for unit in fifo_queue)
             average_cost_per_unit = total_cost / total_units_sold if total_units_sold > 0 else 0.0
-        
-        # Calculate remaining units
-        remaining_units = sum(unit.units for unit in fifo_queue)
         
         return CapitalGainResult(
             total_capital_gains=total_capital_gains,

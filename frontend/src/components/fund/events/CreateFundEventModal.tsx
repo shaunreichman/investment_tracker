@@ -19,7 +19,7 @@ import { FormContainer } from '../../ui/FormContainer';
 import { useUnifiedForm } from '../../../hooks/forms/useUnifiedForm';
 import { createValidator, validationRules } from '../../../utils/validators';
 import { SuccessBanner } from '../../ui/SuccessBanner';
-import { FundType } from '../../../types/api';
+import { FundTrackingType } from '../../../types/api';
 import { useFundFinancialYears } from '../../../hooks';
 
 interface CreateFundEventModalProps {
@@ -27,7 +27,7 @@ interface CreateFundEventModalProps {
   onClose: () => void;
   onSuccess: () => void;
   fundId: number;
-  fundTrackingType: FundType;
+  fundTrackingType: FundTrackingType;
 }
 
 // Basic form data interface for common fields

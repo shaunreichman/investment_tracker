@@ -100,7 +100,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+        with patch.object(self.contact_service.company_contact_repository, 'create') as mock_create:
             mock_create.return_value = mock_contact
             
             # Act
@@ -133,7 +133,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+        with patch.object(self.contact_service.company_contact_repository, 'create') as mock_create:
             mock_create.return_value = mock_contact
             
             # Act
@@ -201,7 +201,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+        with patch.object(self.contact_service.company_contact_repository, 'create') as mock_create:
             mock_create.return_value = mock_contact
             
             # Act - Note: the service trims whitespace before validation
@@ -257,7 +257,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+        with patch.object(self.contact_service.company_contact_repository, 'create') as mock_create:
             mock_create.return_value = mock_contact
             
             for email in valid_emails:
@@ -284,7 +284,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+        with patch.object(self.contact_service.company_contact_repository, 'create') as mock_create:
             mock_create.return_value = mock_contact
             
             # Act
@@ -335,7 +335,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+        with patch.object(self.contact_service.company_contact_repository, 'create') as mock_create:
             mock_create.return_value = mock_contact
             
             for phone in valid_phones:
@@ -362,7 +362,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+        with patch.object(self.contact_service.company_contact_repository, 'create') as mock_create:
             mock_create.return_value = mock_contact
             
             # Act
@@ -400,8 +400,8 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository methods
-        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get, \
-             patch.object(self.contact_service.contact_repository, 'update') as mock_update:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_id') as mock_get, \
+             patch.object(self.contact_service.company_contact_repository, 'update') as mock_update:
             mock_get.return_value = mock_contact
             mock_update.return_value = mock_contact
             
@@ -428,8 +428,8 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository methods
-        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get, \
-             patch.object(self.contact_service.contact_repository, 'update') as mock_update:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_id') as mock_get, \
+             patch.object(self.contact_service.company_contact_repository, 'update') as mock_update:
             mock_get.return_value = mock_contact
             mock_update.return_value = mock_contact
             
@@ -452,7 +452,7 @@ class TestContactManagementService:
         update_data = {'name': 'Updated Name'}
         
         # Mock repository methods
-        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_id') as mock_get:
             mock_get.return_value = None
             
             # Act
@@ -474,7 +474,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository methods
-        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_id') as mock_get:
             mock_get.return_value = mock_contact
             
             # Act & Assert
@@ -497,7 +497,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository methods
-        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_id') as mock_get:
             mock_get.return_value = mock_contact
             
             # Act & Assert
@@ -516,7 +516,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository methods
-        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_id') as mock_get:
             mock_get.return_value = mock_contact
             
             # Act & Assert
@@ -537,7 +537,7 @@ class TestContactManagementService:
         contact_id = 1
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'delete') as mock_delete:
+        with patch.object(self.contact_service.company_contact_repository, 'delete') as mock_delete:
             mock_delete.return_value = True
             
             # Act
@@ -553,7 +553,7 @@ class TestContactManagementService:
         contact_id = 999
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'delete') as mock_delete:
+        with patch.object(self.contact_service.company_contact_repository, 'delete') as mock_delete:
             mock_delete.return_value = False
             
             # Act
@@ -576,7 +576,7 @@ class TestContactManagementService:
         company.contacts = [contact1, contact2]
         
         # Mock the repository method
-        with patch.object(self.contact_service.contact_repository, 'get_by_company') as mock_get:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_company') as mock_get:
             mock_get.return_value = [contact1, contact2]
             
             # Act
@@ -594,7 +594,7 @@ class TestContactManagementService:
         company = ContactTestDataBuilder.create_company(contacts=[])
         
         # Mock the repository method
-        with patch.object(self.contact_service.contact_repository, 'get_by_company') as mock_get:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_company') as mock_get:
             mock_get.return_value = []
             
             # Act
@@ -676,7 +676,7 @@ class TestContactManagementService:
         mock_contact = ContactTestDataBuilder.create_contact()
         
         # Mock repository method
-        with patch.object(self.contact_service.contact_repository, 'create') as mock_create:
+        with patch.object(self.contact_service.company_contact_repository, 'create') as mock_create:
             mock_create.return_value = mock_contact
             
             # Act
@@ -715,8 +715,8 @@ class TestContactManagementService:
         )
         
         # Mock repository methods
-        with patch.object(self.contact_service.contact_repository, 'get_by_id') as mock_get, \
-             patch.object(self.contact_service.contact_repository, 'update') as mock_update:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_id') as mock_get, \
+             patch.object(self.contact_service.company_contact_repository, 'update') as mock_update:
             mock_get.return_value = mock_contact
             mock_update.return_value = mock_contact
             
@@ -738,7 +738,7 @@ class TestContactManagementService:
         company = ContactTestDataBuilder.create_company(contacts=[])
         
         # Mock the repository method
-        with patch.object(self.contact_service.contact_repository, 'get_by_company') as mock_get:
+        with patch.object(self.contact_service.company_contact_repository, 'get_by_company') as mock_get:
             mock_get.return_value = []
             
             # Act

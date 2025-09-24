@@ -38,7 +38,7 @@ export type ApiResponseWrapper<T> = ApiResponse<T> | T;
 // ENUM TYPES
 // ============================================================================
 
-export enum FundType {
+export enum FundTrackingType {
   NAV_BASED = 'NAV_BASED',
   COST_BASED = 'COST_BASED'
 }
@@ -119,7 +119,7 @@ export interface Fund {
   id: number;
   name: string;
   fund_type?: string | undefined;
-  tracking_type: FundType;
+  tracking_type: FundTrackingType;
   description?: string | undefined;
   currency: string;
   commitment_amount?: number | undefined;
@@ -278,7 +278,7 @@ export interface CreateEntityData {
 export interface CreateFundData {
   name: string;
   fund_type?: string;
-  tracking_type: FundType;
+  tracking_type: FundTrackingType;
   description?: string;
   currency?: string;
   commitment_amount?: number;

@@ -12,9 +12,9 @@ from src.fund.repositories.capital_event_repository import CapitalEventRepositor
 from src.fund.repositories.unit_event_repository import UnitEventRepository
 from src.fund.repositories.tax_event_repository import TaxEventRepository
 from src.fund.repositories.distribution_event_repository import DistributionEventRepository
-from src.fund.repositories.fund_event_query_repository import FundEventQueryRepository
 from src.fund.repositories.tax_statement_repository import TaxStatementRepository
 from src.fund.repositories.domain_event_repository import DomainEventRepository
+from src.fund.repositories.fund_tax_statement_repository import FundTaxStatementRepository
 
 __all__ = [
     'FundRepository',
@@ -23,7 +23,7 @@ __all__ = [
     'UnitEventRepository',
     'TaxEventRepository',
     'DistributionEventRepository',
-    'FundEventQueryRepository',
     'TaxStatementRepository',
     'DomainEventRepository',
+    'FundTaxStatementRepository',
 ]

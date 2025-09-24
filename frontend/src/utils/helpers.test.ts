@@ -20,7 +20,7 @@ import {
   deepClone,
   deepEqual,
 } from './helpers';
-import { EventType, DistributionType, TaxPaymentType, FundType, FundStatus, ExtendedFundEvent, ExtendedFund } from '../types/api';
+import { EventType, DistributionType, TaxPaymentType, FundTrackingType, FundStatus, ExtendedFundEvent, ExtendedFund } from '../types/api';
 
 describe('helpers', () => {
   describe('getEventTypeColor', () => {
@@ -112,7 +112,7 @@ describe('helpers', () => {
       const fund: ExtendedFund = {
         id: 1,
         name: 'Test Fund',
-        tracking_type: FundType.NAV_BASED,
+        tracking_type: FundTrackingType.NAV_BASED,
         status: FundStatus.ACTIVE,
         currency: 'AUD',
         current_equity_balance: 100000,
@@ -132,7 +132,7 @@ describe('helpers', () => {
       const fund: ExtendedFund = {
         id: 1,
         name: 'Test Fund',
-        tracking_type: FundType.COST_BASED,
+        tracking_type: FundTrackingType.COST_BASED,
         status: FundStatus.ACTIVE,
         currency: 'AUD',
         current_equity_balance: 100000,
@@ -152,7 +152,7 @@ describe('helpers', () => {
       const fund: ExtendedFund = {
         id: 1,
         name: 'Test Fund',
-        tracking_type: FundType.NAV_BASED,
+        tracking_type: FundTrackingType.NAV_BASED,
         status: FundStatus.COMPLETED,
         currency: 'AUD',
         current_equity_balance: 0,
@@ -208,7 +208,7 @@ describe('helpers', () => {
     const fund: ExtendedFund = {
       id: 1,
       name: 'Test Fund',
-      tracking_type: FundType.NAV_BASED,
+      tracking_type: FundTrackingType.NAV_BASED,
       status: FundStatus.ACTIVE,
       currency: 'AUD',
       current_equity_balance: 100000,
@@ -237,7 +237,7 @@ describe('helpers', () => {
     });
 
     it('should return empty arrays for cost-based funds', () => {
-      const costBasedFund: ExtendedFund = { ...fund, tracking_type: FundType.COST_BASED };
+      const costBasedFund: ExtendedFund = { ...fund, tracking_type: FundTrackingType.COST_BASED };
       const events = [navEvent, purchaseEvent, saleEvent];
       const chartData = prepareChartData(events, costBasedFund);
 

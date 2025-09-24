@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import CreateFundEventModal from './CreateFundEventModal';
-import { FundType } from '../../../types/api';
+import { FundTrackingType } from '../../../types/api';
 
 // Mock the hooks
 jest.mock('../../../hooks/useErrorHandler');
@@ -109,7 +109,7 @@ describe('CreateFundEventModal', () => {
     onClose: jest.fn(),
     onSuccess: jest.fn(),
     fundId: 1,
-    fundTrackingType: FundType.COST_BASED,
+    fundTrackingType: FundTrackingType.COST_BASED,
   };
 
   // Note: mockEvent retained only if needed in future tests

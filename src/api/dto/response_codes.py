@@ -53,6 +53,7 @@ class ApiResponseCode(Enum):
     # === BUSINESS LOGIC ERRORS ===
     AUTHENTICATION_ERROR = "AUTHENTICATION_ERROR"
     AUTHORIZATION_ERROR = "AUTHORIZATION_ERROR"
+    BUSINESS_LOGIC_ERROR = "BUSINESS_LOGIC_ERROR"
     BUSINESS_RULE_VIOLATION = "BUSINESS_RULE_VIOLATION"
     INSUFFICIENT_FUNDS = "INSUFFICIENT_FUNDS"
     DUPLICATE_ENTRY = "DUPLICATE_ENTRY"
@@ -105,6 +106,7 @@ class ApiResponseCode(Enum):
             
             # Business logic
             ApiResponseCode.BUSINESS_RULE_VIOLATION: 400,
+            ApiResponseCode.BUSINESS_LOGIC_ERROR: 400,
             ApiResponseCode.INSUFFICIENT_FUNDS: 400,
             ApiResponseCode.DUPLICATE_ENTRY: 409,
             ApiResponseCode.RATE_LIMIT_EXCEEDED: 429,
@@ -158,6 +160,7 @@ class ApiResponseCode(Enum):
             # Business logic
             ApiResponseCode.AUTHENTICATION_ERROR: "Authentication failed",
             ApiResponseCode.AUTHORIZATION_ERROR: "Access denied",
+            ApiResponseCode.BUSINESS_LOGIC_ERROR: "Business logic error",
             ApiResponseCode.BUSINESS_RULE_VIOLATION: "Business rule violation",
             ApiResponseCode.INSUFFICIENT_FUNDS: "Insufficient funds for operation",
             ApiResponseCode.DUPLICATE_ENTRY: "Duplicate entry detected",

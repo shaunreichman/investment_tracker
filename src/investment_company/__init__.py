@@ -1,51 +1,31 @@
 """
-Investment Company Module.
+Company Module.
 
-This module provides investment company management functionality,
-including models, services, repositories, API controllers, and event handling.
+This module provides company management functionality,
+including models, services, and repositories.
 
 Key responsibilities:
-- Investment company data models
+- Company data models
 - Business logic services
 - Data access repositories
-- API endpoint controllers
-- Event-driven architecture
 """
 
-from .models import InvestmentCompany, Contact
-from .services import (
-    CompanyPortfolioService,
-    CompanySummaryService,
-    ContactManagementService,
-    CompanyValidationService
-)
-from .repositories import CompanyRepository, ContactRepository
-from .api import CompanyController
-from .events import (
-    BaseCompanyEventHandler,
-    CompanyEventHandlerRegistry,
-    CompanyUpdateOrchestrator,
-    CompanyDomainEvent,
-    CompanyCreatedEvent,
-    ContactAddedEvent,
-    PortfolioUpdatedEvent
-)
+from src.investment_company.models import InvestmentCompany, Contact
+from src.investment_company.services import CompanyService, CompanyContactService, CompanyValidationService
+from src.investment_company.repositories import CompanyRepository, CompanyContactRepository
+from src.investment_company.enums.company_enums import CompanyType, CompanyStatus, SortFieldCompany
+from src.investment_company.enums.company_contact_enums import SortFieldContact
 
 __all__ = [
     'InvestmentCompany',
     'Contact',
-    'CompanyPortfolioService',
-    'CompanySummaryService',
-    'ContactManagementService',
+    'CompanyService',
+    'CompanyContactService',
     'CompanyValidationService',
     'CompanyRepository',
-    'ContactRepository',
-    'CompanyController',
-    'BaseCompanyEventHandler',
-    'CompanyEventHandlerRegistry',
-    'CompanyUpdateOrchestrator',
-    'CompanyDomainEvent',
-    'CompanyCreatedEvent',
-    'ContactAddedEvent',
-    'PortfolioUpdatedEvent',
+    'CompanyContactRepository',
+    'CompanyType',
+    'CompanyStatus',
+    'SortFieldCompany',
+    'SortFieldContact',
 ] 

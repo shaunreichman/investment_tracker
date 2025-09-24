@@ -19,7 +19,7 @@ export const useFundsFilters = ({
 }: UseFundsFiltersProps) => {
   const [statusFilter, setStatusFilter] = useState(initialFilters.status_filter || 'all');
   const [currencyFilter, setCurrencyFilter] = useState(initialFilters.currency_filter || 'all');
-  const [fundTypeFilter, setFundTypeFilter] = useState(initialFilters.fund_type_filter || 'all');
+  const [fundTypeFilter, setFundTrackingTypeFilter] = useState(initialFilters.fund_type_filter || 'all');
 
   const handleStatusFilterChange = useCallback((event: any) => {
     const value = event.target.value;
@@ -33,16 +33,16 @@ export const useFundsFilters = ({
     onFiltersChange({ currency_filter: value, page: 1 });
   }, [onFiltersChange]);
 
-  const handleFundTypeFilterChange = useCallback((event: any) => {
+  const handleFundTrackingTypeFilterChange = useCallback((event: any) => {
     const value = event.target.value;
-    setFundTypeFilter(value);
+    setFundTrackingTypeFilter(value);
     onFiltersChange({ fund_type_filter: value, page: 1 });
   }, [onFiltersChange]);
 
   const clearAllFilters = useCallback(() => {
     setStatusFilter('all');
     setCurrencyFilter('all');
-    setFundTypeFilter('all');
+    setFundTrackingTypeFilter('all');
     onFiltersChange({
       status_filter: 'all',
       currency_filter: 'all',
@@ -59,7 +59,7 @@ export const useFundsFilters = ({
     fundTypeFilter,
     handleStatusFilterChange,
     handleCurrencyFilterChange,
-    handleFundTypeFilterChange,
+    handleFundTrackingTypeFilterChange,
     clearAllFilters,
     hasActiveFilters,
   };

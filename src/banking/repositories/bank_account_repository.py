@@ -13,11 +13,10 @@ Key responsibilities:
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
-from sqlalchemy.orm import joinedload
 
 from src.banking.models import BankAccount
-from src.banking.enums import AccountStatus
+from src.banking.enums.bank_account_enums import BankAccountType, BankAccountStatus, SortFieldBankAccount
+from src.shared.enums.shared_enums import Currency, SortOrder
 
 
 class BankAccountRepository:
@@ -43,567 +42,157 @@ class BankAccountRepository:
         """
         self._cache: Dict[str, Any] = {}
         self._cache_ttl = cache_ttl
-    
-    def get_by_id(self, account_id: int, session: Session) -> Optional[BankAccount]:
-        """
-        Get a bank account by its ID.
-        
-        Args:
-            account_id: ID of the account to retrieve
-            session: Database session
-            
-        Returns:
-            BankAccount object if found, None otherwise
-        """
-        cache_key = f"bank_account:{account_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        account = session.query(BankAccount).filter(BankAccount.id == account_id).first()
-        
-        # Cache the result (including None to prevent race conditions)
-        self._cache[cache_key] = account
-        
-        return account
-    
-    def get_by_unique(self, entity_id: int, bank_id: int, account_number: str, session: Session) -> Optional[BankAccount]:
-        """
-        Get a bank account by unique combination.
-        
-        Args:
-            entity_id: Owner entity ID
-            bank_id: Linked bank ID
-            account_number: Account number
-            session: Database session
-            
-        Returns:
-            BankAccount object if found, None otherwise
-        """
-        cache_key = f"bank_account:unique:{entity_id}:{bank_id}:{account_number}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        account = session.query(BankAccount).filter(
-            and_(
-                BankAccount.entity_id == entity_id,
-                BankAccount.bank_id == bank_id,
-                BankAccount.account_number == account_number
-            )
-        ).first()
-        
-        # Cache the result (including None to prevent race conditions)
-        self._cache[cache_key] = account
-        
-        return account
-    
-    def get_by_bank_and_number(self, bank_id: int, account_number: str, session: Session) -> Optional[BankAccount]:
-        """
-        Get a bank account by bank ID and account number (across all entities).
-        
-        Args:
-            bank_id: Linked bank ID
-            account_number: Account number
-            session: Database session
-            
-        Returns:
-            BankAccount object if found, None otherwise
-        """
-        cache_key = f"bank_account:bank_number:{bank_id}:{account_number}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        account = session.query(BankAccount).filter(
-            and_(
-                BankAccount.bank_id == bank_id,
-                BankAccount.account_number == account_number
-            )
-        ).first()
-        
-        # Cache the result (including None to prevent race conditions)
-        self._cache[cache_key] = account
-        
-        return account
-    
-    def get_by_entity(self, entity_id: int, session: Session) -> List[BankAccount]:
-        """
-        Get all bank accounts for a specific entity.
-        
-        Args:
-            entity_id: Owner entity ID
-            session: Database session
-            
-        Returns:
-            List of BankAccount objects
-        """
-        cache_key = f"bank_accounts:entity:{entity_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with bank relationship loaded
-        accounts = session.query(BankAccount).options(
-            joinedload(BankAccount.bank)
-        ).filter(BankAccount.entity_id == entity_id).all()
-        
-        # Cache the result
-        if accounts:
-            self._cache[cache_key] = accounts
-        
-        return accounts
-    
-    def get_bank_accounts_paginated(self, session: Session, page: int = 1, page_size: int = 50) -> tuple[List[BankAccount], int]:
-        """
-        Get bank accounts with pagination support.
-        
-        Args:
-            session: Database session
-            page: Page number (1-based)
-            page_size: Number of items per page
-            
-        Returns:
-            Tuple of (accounts_list, total_count)
-        """
-        # Calculate offset
-        offset = (page - 1) * page_size
-        
-        # Get total count
-        total_count = session.query(func.count(BankAccount.id)).scalar()
-        
-        # Get paginated results with bank relationship loaded
-        accounts = session.query(BankAccount).options(
-            joinedload(BankAccount.bank)
-        ).order_by(BankAccount.account_name).offset(offset).limit(page_size).all()
-        
-        return accounts, total_count
-    
-    def get_by_bank(self, bank_id: int, session: Session) -> List[BankAccount]:
-        """
-        Get all bank accounts for a specific bank.
-        
-        Args:
-            bank_id: Bank ID
-            session: Database session
-            
-        Returns:
-            List of bank accounts at the specified bank
-        """
-        cache_key = f"bank_accounts:bank:{bank_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        accounts = session.query(BankAccount).filter(BankAccount.bank_id == bank_id).all()
-        
-        # Cache the result
-        self._cache[cache_key] = accounts
-        
-        return accounts
-    
-    def get_by_currency(self, currency: str, session: Session) -> List[BankAccount]:
-        """
-        Get all bank accounts with a specific currency.
-        
-        Args:
-            currency: Currency code
-            session: Database session
-            
-        Returns:
-            List of bank accounts with the specified currency
-        """
-        cache_key = f"bank_accounts:currency:{currency}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        accounts = session.query(BankAccount).filter(BankAccount.currency == currency).all()
-        
-        # Cache the result
-        self._cache[cache_key] = accounts
-        
-        return accounts
-    
-    def get_active_accounts(self, session: Session) -> List[BankAccount]:
-        """
-        Get all active bank accounts.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of active bank accounts
-        """
-        cache_key = "bank_accounts:active"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        accounts = session.query(BankAccount).filter(BankAccount.status == AccountStatus.ACTIVE).all()
-        
-        # Cache the result
-        self._cache[cache_key] = accounts
-        
-        return accounts
-    
-    def get_inactive_accounts(self, session: Session) -> List[BankAccount]:
-        """
-        Get all inactive bank accounts.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of inactive bank accounts
-        """
-        cache_key = "bank_accounts:inactive"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        accounts = session.query(BankAccount).filter(BankAccount.status != AccountStatus.ACTIVE).all()
-        
-        # Cache the result
-        self._cache[cache_key] = accounts
-        
-        return accounts
-    
-    def get_all(self, session: Session) -> List[BankAccount]:
+
+
+    ################################################################################
+    # Get Bank Account
+    ################################################################################
+
+    def get_bank_accounts(self, session: Session,
+            bank_id: Optional[int] = None,
+            entity_id: Optional[int] = None,
+            currency: Optional[Currency] = None,
+            status: Optional[BankAccountStatus] = None,
+            account_type: Optional[BankAccountType] = None,
+            sort_by: SortFieldBankAccount = SortFieldBankAccount.CREATED_AT,
+            sort_order: SortOrder = SortOrder.ASC
+    ) -> List[BankAccount]:
         """
         Get all bank accounts.
         
         Args:
             session: Database session
+            bank_id: ID of the bank to retrieve
+            entity_id: ID of the entity to retrieve
+            currency: Currency of the bank accounts to retrieve
+            status: Status of the bank accounts to retrieve
+            account_type: Type of the bank accounts to retrieve
+        Returns:
+            List of bank accounts
+        """
+        cache_key = f"bank_accounts:bank_id:{bank_id}:entity_id:{entity_id}:currency:{currency}:status:{status}:account_type:{account_type}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        # Validate sort field
+        if sort_by not in SortFieldBankAccount:
+            raise ValueError(f"Invalid sort field: {sort_by}")
+
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}")
+        
+        # Get all bank accounts
+        bank_accounts = session.query(BankAccount)
+        if bank_id:
+            bank_accounts = bank_accounts.filter(BankAccount.bank_id == bank_id)
+        if entity_id:
+            bank_accounts = bank_accounts.filter(BankAccount.entity_id == entity_id)
+        if currency:
+            bank_accounts = bank_accounts.filter(BankAccount.currency == currency.value)
+        if status:
+            bank_accounts = bank_accounts.filter(BankAccount.status == status.value)
+        if account_type:
+            bank_accounts = bank_accounts.filter(BankAccount.account_type == account_type.value)
+
+        # Apply sorting
+        if sort_by == SortFieldBankAccount.NAME:
+            bank_accounts = bank_accounts.order_by(BankAccount.account_name.asc() if sort_order == SortOrder.ASC else BankAccount.account_name.desc())
+        elif sort_by == SortFieldBankAccount.ACCOUNT_NUMBER:
+            bank_accounts = bank_accounts.order_by(BankAccount.account_number.asc() if sort_order == SortOrder.ASC else BankAccount.account_number.desc())
+        elif sort_by == SortFieldBankAccount.CURRENCY:
+            bank_accounts = bank_accounts.order_by(BankAccount.currency.asc() if sort_order == SortOrder.ASC else BankAccount.currency.desc())
+        elif sort_by == SortFieldBankAccount.STATUS:
+            bank_accounts = bank_accounts.order_by(BankAccount.status.asc() if sort_order == SortOrder.ASC else BankAccount.status.desc())
+        elif sort_by == SortFieldBankAccount.CREATED_AT:
+            bank_accounts = bank_accounts.order_by(BankAccount.created_at.asc() if sort_order == SortOrder.ASC else BankAccount.created_at.desc())
+
+        bank_accounts = bank_accounts.all()
+
+        # Cache the result
+        self._cache[cache_key] = bank_accounts
+
+        return bank_accounts
+    
+    def get_bank_account_by_id(self, bank_account_id: int, session: Session) -> Optional[BankAccount]:
+        """
+        Get a bank account by its ID.
+        
+        Args:
+            bank_account_id: ID of the account to retrieve
+            session: Database session
             
         Returns:
-            List of all bank accounts
+            BankAccount object if found, None otherwise
         """
-        cache_key = "bank_accounts:all"
+        cache_key = f"bank_account:{bank_account_id}"
         
         # Check cache first
         if cache_key in self._cache:
             return self._cache[cache_key]
         
         # Query database
-        accounts = session.query(BankAccount).all()
+        account = session.query(BankAccount).filter(BankAccount.id == bank_account_id).first()
         
         # Cache the result
-        self._cache[cache_key] = accounts
+        if account:
+            self._cache[cache_key] = account
         
-        return accounts
+        return account
+
+
+    ################################################################################
+    # Create Bank Account
+    ################################################################################
     
-    def get_with_bank_info(self, session: Session) -> List[Dict[str, Any]]:
-        """
-        Get all bank accounts with bank information.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of bank accounts with bank details
-        """
-        cache_key = "bank_accounts:with_bank_info"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with join
-        result = session.query(
-            BankAccount,
-            BankAccount.bank
-        ).join(BankAccount.bank).all()
-        
-        # Format result
-        accounts_data = []
-        for account, bank in result:
-            account_data = {
-                'id': account.id,
-                'entity_id': account.entity_id,
-                'bank_id': account.bank_id,
-                'account_name': account.account_name,
-                'account_number': account.account_number,
-                'currency': account.currency,
-                'is_active': account.status == AccountStatus.ACTIVE,
-                'bank_name': bank.name,
-                'bank_country': bank.country,
-                'bank_swift_bic': bank.swift_bic
-            }
-            accounts_data.append(account_data)
-        
-        # Cache the result
-        self._cache[cache_key] = accounts_data
-        
-        return accounts_data
-    
-    def get_by_entity_with_bank_info(self, entity_id: int, session: Session) -> List[Dict[str, Any]]:
-        """
-        Get bank accounts for an entity with bank information.
-        
-        Args:
-            entity_id: Owner entity ID
-            session: Database session
-            
-        Returns:
-            List of bank accounts with bank details for the entity
-        """
-        cache_key = f"bank_accounts:entity_with_bank_info:{entity_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with join
-        result = session.query(
-            BankAccount,
-            BankAccount.bank
-        ).join(BankAccount.bank).filter(BankAccount.entity_id == entity_id).all()
-        
-        # Format result
-        accounts_data = []
-        for account, bank in result:
-            account_data = {
-                'id': account.id,
-                'entity_id': account.entity_id,
-                'bank_id': account.bank_id,
-                'account_name': account.account_name,
-                'account_number': account.account_number,
-                'currency': account.currency,
-                'is_active': account.status == AccountStatus.ACTIVE,
-                'bank_name': bank.name,
-                'bank_country': bank.country,
-                'bank_swift_bic': bank.swift_bic
-            }
-            accounts_data.append(account_data)
-        
-        # Cache the result
-        self._cache[cache_key] = accounts_data
-        
-        return accounts_data
-    
-    def create(self, account: BankAccount, session: Session) -> BankAccount:
+    def create_bank_account(self, bank_account_data: Dict[str, Any], session: Session) -> BankAccount:
         """
         Create a new bank account.
         
         Args:
-            account: BankAccount instance to create
+            bank_account_data: Dictionary containing bank account data
             session: Database session
-            
-        Returns:
-            Created bank account instance
         """
-        session.add(account)
+        bank_account = BankAccount(**bank_account_data)
+        session.add(bank_account)
         session.flush()
         
         # Clear relevant caches
         self._clear_bank_account_caches()
         
-        return account
+        return bank_account
+
+
+    ################################################################################
+    # Delete Bank Account
+    ################################################################################
     
-    def update(self, account: BankAccount, session: Session) -> BankAccount:
-        """
-        Update an existing bank account.
-        
-        Args:
-            account: BankAccount instance to update
-            session: Database session
-            
-        Returns:
-            Updated bank account instance
-        """
-        session.flush()
-        
-        # Clear relevant caches
-        self._clear_bank_account_caches()
-        
-        return account
-    
-    def delete(self, account: BankAccount, session: Session) -> None:
+    def delete_bank_account(self, bank_account_id: int, session: Session) -> bool:
         """
         Delete a bank account.
         
         Args:
-            account: BankAccount instance to delete
+            bank_account_id: ID of the bank account to delete
             session: Database session
         """
-        session.delete(account)
+        bank_account = self.get_bank_account_by_id(bank_account_id, session)
+        if not bank_account:
+            return False
+
+        session.delete(bank_account)
         session.flush()
         
         # Clear relevant caches
         self._clear_bank_account_caches()
-    
-    def exists(self, account_id: int, session: Session) -> bool:
-        """
-        Check if a bank account exists.
-        
-        Args:
-            account_id: ID of the account to check
-            session: Database session
-            
-        Returns:
-            True if account exists, False otherwise
-        """
-        cache_key = f"bank_account:exists:{account_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        exists = session.query(BankAccount).filter(BankAccount.id == account_id).first() is not None
-        
-        # Cache the result
-        self._cache[cache_key] = exists
-        
-        return exists
-    
-    def count_by_entity(self, entity_id: int, session: Session) -> int:
-        """
-        Count bank accounts for a specific entity.
-        
-        Args:
-            entity_id: Owner entity ID
-            session: Database session
-            
-        Returns:
-            Number of bank accounts owned by the entity
-        """
-        cache_key = f"bank_accounts:count:entity:{entity_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(BankAccount).filter(BankAccount.entity_id == entity_id).count()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def count_by_bank(self, bank_id: int, session: Session) -> int:
-        """
-        Count bank accounts for a specific bank.
-        
-        Args:
-            bank_id: Bank ID
-            session: Database session
-            
-        Returns:
-            Number of bank accounts at the specified bank
-        """
-        cache_key = f"bank_accounts:count:bank:{bank_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(BankAccount).filter(BankAccount.bank_id == bank_id).count()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def count_by_currency(self, currency: str, session: Session) -> int:
-        """
-        Count bank accounts with a specific currency.
-        
-        Args:
-            currency: Currency code
-            session: Database session
-            
-        Returns:
-            Number of bank accounts with the specified currency
-        """
-        cache_key = f"bank_accounts:count:currency:{currency}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(BankAccount).filter(BankAccount.currency == currency).count()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def get_total_count(self, session: Session) -> int:
-        """
-        Get total count of all bank accounts.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            Total number of bank accounts
-        """
-        cache_key = "bank_accounts:total_count"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(BankAccount).count()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def search(self, search_term: str, session: Session) -> List[BankAccount]:
-        """
-        Search bank accounts by name or account number.
-        
-        Args:
-            search_term: Search term
-            session: Database session
-            
-        Returns:
-            List of matching bank accounts
-        """
-        if not search_term:
-            return []
-        
-        cache_key = f"bank_accounts:search:{search_term}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with search
-        accounts = session.query(BankAccount).filter(
-            or_(
-                BankAccount.account_name.ilike(f"%{search_term}%"),
-                BankAccount.account_number.ilike(f"%{search_term}%")
-            )
-        ).all()
-        
-        # Cache the result
-        self._cache[cache_key] = accounts
-        
-        return accounts
+
+        return True
+
+
+    ################################################################################
+    # Clear Cache
+    ################################################################################
     
     def _clear_bank_account_caches(self) -> None:
         """Clear all bank account-related caches."""
@@ -616,30 +205,6 @@ class BankAccountRepository:
         cache_key = f"bank_account:unique:{entity_id}:{bank_id}:{account_number}"
         if cache_key in self._cache:
             del self._cache[cache_key]
-    
-    def check_uniqueness_direct(self, entity_id: int, bank_id: int, account_number: str, session: Session) -> bool:
-        """
-        Check uniqueness directly in database without caching.
-        
-        Args:
-            entity_id: Owner entity ID
-            bank_id: Linked bank ID
-            account_number: Account number
-            session: Database session
-            
-        Returns:
-            True if unique, False if duplicate exists
-        """
-        # Direct database query to check uniqueness
-        existing = session.query(BankAccount).filter(
-            and_(
-                BankAccount.entity_id == entity_id,
-                BankAccount.bank_id == bank_id,
-                BankAccount.account_number == account_number
-            )
-        ).first()
-        
-        return existing is None
     
     def clear_cache(self) -> None:
         """Clear all caches."""

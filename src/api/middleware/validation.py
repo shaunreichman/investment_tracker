@@ -17,11 +17,10 @@ from functools import wraps
 from flask import request, jsonify, current_app
 from datetime import datetime, date
 
-# Import actual enums to ensure validation matches business logic
-from src.fund.enums import (
-    FundStatus, FundType, EventType, DistributionType, 
-    CashFlowDirection, TaxPaymentType, GroupType, TaxJurisdiction, Currency
-)
+from src.shared.enums.shared_enums import Country, Currency
+from src.fund.enums.fund_event_enums import GroupType, EventType, TaxPaymentType
+from src.fund.enums.fund_event_cash_flow_enums import CashFlowDirection
+from src.fund.enums.fund_enums import FundStatus, FundTrackingType, DistributionType
 
 
 class ValidationError(Exception):
@@ -380,7 +379,7 @@ def validate_fund_data(func: Callable) -> Callable:
     
     Validates:
     - Required fields (name, entity_id, investment_company_id, tracking_type)
-    - Tracking type validation against FundType enum
+    - Tracking type validation against FundTrackingType enum
     - Fund type validation (optional string field)
     - String field sanitization
     - Optional field validation
@@ -421,10 +420,10 @@ def validate_fund_data(func: Callable) -> Callable:
             
             # Validate tracking_type using actual enum - CORRECTED field name
             try:
-                tracking_type = FundType(data['tracking_type'].upper())
+                tracking_type = FundTrackingType(data['tracking_type'].upper())
                 data['tracking_type'] = tracking_type
             except ValueError:
-                valid_types = [t.value for t in FundType]
+                valid_types = [t.value for t in FundTrackingType]
                 raise ValidationError(f"Invalid tracking_type. Must be one of: {', '.join(valid_types)}", 'tracking_type')
             
             # Validate entity_id and investment_company_id are positive integers
@@ -533,10 +532,10 @@ def validate_entity_data(func: Callable) -> Callable:
             # Validate tax_jurisdiction using actual enum
             if 'tax_jurisdiction' in data and data['tax_jurisdiction'] is not None:
                 try:
-                    tax_jurisdiction = TaxJurisdiction(data['tax_jurisdiction'].upper())
+                    tax_jurisdiction = Country(data['tax_jurisdiction'].upper())
                     data['tax_jurisdiction'] = tax_jurisdiction.value
                 except ValueError:
-                    valid_jurisdictions = [j.value for j in TaxJurisdiction]
+                    valid_jurisdictions = [j.value for j in Country]
                     raise ValidationError(f"Invalid tax_jurisdiction. Must be one of: {', '.join(valid_jurisdictions)}", 'tax_jurisdiction')
             
             # Validate optional fields

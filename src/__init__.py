@@ -10,7 +10,7 @@ from src.entity.calculations import get_financial_years_for_fund_period
 
 # Fund domain
 from src.fund.models import Fund, FundEvent
-from src.fund.enums import FundType, EventType, DistributionType, TaxPaymentType
+from src.fund.enums import FundTrackingType, EventType, DistributionType, TaxPaymentType
 
 
 # Tax domain
@@ -35,7 +35,7 @@ __all__ = [
     'Entity', 'get_financial_years_for_fund_period',
     
     # Fund
-    'Fund', 'FundEvent', 'FundType', 'EventType', 'DistributionType', 'TaxPaymentType',
+    'Fund', 'FundEvent', 'FundTrackingType', 'EventType', 'DistributionType', 'TaxPaymentType',
 
     
     # Tax

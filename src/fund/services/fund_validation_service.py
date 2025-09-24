@@ -5,11 +5,12 @@ Provides comprehensive validation for fund operations including deletion validat
 Follows enterprise patterns established in company validation service.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from datetime import date
 from sqlalchemy.orm import Session
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.enums.fund_enums import FundStatus, FundTrackingType
+from src.fund.enums.fund_event_enums import EventType, DistributionType
 from src.fund.repositories import FundEventRepository, TaxStatementRepository, DomainEventRepository, CapitalEventRepository
 
 
@@ -37,10 +38,10 @@ class FundValidationService:
         errors = {}
         
         # BUSINESS RULE: Only allow deletion if fund has 0 fund events
-        fund_events_count = self.fund_event_repository.get_event_count_by_fund(fund.id, session)
-        if fund_events_count > 0:
+        fund_events = self.fund_event_repository.get_fund_events(session, fund.id)
+        if len(fund_events) > 0:
             errors['fund_events'] = [
-                f'Cannot delete fund with {fund_events_count} fund events. '
+                f'Cannot delete fund with {len(fund_events)} fund events. '
                 f'Fund must have 0 events to be deleted.'
             ]
         
@@ -62,27 +63,37 @@ class FundValidationService:
             ]
         
         return errors
-    
-    def get_deletion_rules(self) -> List[str]:
+
+    def validate_fund_event_creation(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
-        Get list of fund deletion business rules.
+        Validate fund event creation.
         
-        Returns:
-            List of human-readable deletion rules
+        Args:
+            event_data: Event data
+            session: Database session
         """
-        return [
-            "Fund must have 0 fund events to be deleted",
-            "Fund must have 0 tax statements to be deleted", 
-            "Fund must have 0 domain events to be deleted"
-        ]
+        event_type = event_data['event_type']
+        if event_type == EventType.CAPITAL_CALL:
+            return self.validate_capital_call(event_data, session)
+        elif event_type == EventType.RETURN_OF_CAPITAL:
+            return self.validate_return_of_capital(event_data, session)
+        elif event_type == EventType.UNIT_PURCHASE:
+            return self.validate_unit_purchase(event_data, session)
+        elif event_type == EventType.UNIT_SALE:
+            return self.validate_unit_sale(event_data, session)
+        elif event_type == EventType.NAV_UPDATE:
+            return self.validate_nav_update(event_data, session)
+        elif event_type == EventType.DISTRIBUTION:
+            return self.validate_distribution(event_data, session)
+        else:
+            raise ValueError(f"Invalid event type: {event_type}")
     
-    def validate_capital_call(self, fund: Fund, amount: float, call_date: date, 
-                            reference_number: str = None, session: Session = None) -> Dict[str, List[str]]:
+    def validate_capital_call(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate capital call creation.
         
         Args:
-            fund: Fund object
+            event_data: Event data
             amount: Capital call amount
             call_date: Date of the capital call
             reference_number: External reference number
@@ -92,34 +103,35 @@ class FundValidationService:
             dict: Validation errors by field name
         """
         errors = {}
+
+        required_fields = ['amount', 'date', 'tracking_type']
+        for field in required_fields:
+            if field not in event_data:
+                errors[field] = [f"{field} is required"]
         
         # BUSINESS RULE: Amount must be positive
-        if not amount or amount <= 0:
+        if not event_data['amount'] or event_data['amount'] <= 0:
             errors['amount'] = ["Capital call amount must be a positive number"]
         
-        # BUSINESS RULE: Call date is required
-        if not call_date:
-            errors['call_date'] = ["Capital call date is required"]
-        
         # BUSINESS RULE: Capital calls only for cost-based funds
-        if fund.tracking_type != FundType.COST_BASED:
+        if event_data['tracking_type'] != FundTrackingType.COST_BASED:
             errors['fund_type'] = ["Capital calls are only applicable for cost-based funds"]
         
         # BUSINESS RULE: Cannot call more than remaining commitment
-        if fund.commitment_amount and amount > fund.get_remaining_commitment():
+        fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
+        if fund.commitment_amount and event_data['amount'] > fund.commitment_amount:
             errors['amount'] = ["Cannot call more capital than remaining commitment"]
         
         return errors
     
-    def validate_return_of_capital(self, fund: Fund, amount: float, return_date: date,
-                                 reference_number: str = None, session: Session = None) -> Dict[str, List[str]]:
+    def validate_return_of_capital(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate return of capital creation.
         
         Args:
             fund: Fund object
             amount: Return amount
-            return_date: Date of the return
+            date: Date of the return
             reference_number: External reference number
             session: Database session
             
@@ -127,184 +139,130 @@ class FundValidationService:
             dict: Validation errors by field name
         """
         errors = {}
+
+        required_fields = ['amount', 'date', 'tracking_type']
+        for field in required_fields:
+            if field not in event_data:
+                errors[field] = [f"{field} is required"]
         
         # BUSINESS RULE: Amount must be positive
-        if not amount or amount <= 0:
+        if not event_data['amount'] or event_data['amount'] <= 0:
             errors['amount'] = ["Return amount must be a positive number"]
         
-        # BUSINESS RULE: Return date is required
-        if not return_date:
-            errors['return_date'] = ["Return date is required"]
-        
         # BUSINESS RULE: Returns only for cost-based funds
-        if fund.tracking_type != FundType.COST_BASED:
+        if event_data['tracking_type'] != FundTrackingType.COST_BASED:
             errors['fund_type'] = ["Returns of capital are only applicable for cost-based funds"]
+
+        # BUSINESS RULE: Cannot return more capital than remaining equity
+        fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
+        if fund.current_equity_balance and event_data['amount'] > fund.current_equity_balance:
+            errors['amount'] = ["Cannot return more capital than remaining equity"]
         
         return errors
     
-    def validate_unit_purchase(self, fund: 'Fund', units: float, price: float, 
-                              purchase_date: date, reference_number: str = None, 
-                              session: Session = None) -> Dict[str, List[str]]:
+    def validate_unit_purchase(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate unit purchase business rules.
         
         Args:
-            fund: The fund to validate against
-            units: Number of units to purchase
-            price: Price per unit
-            purchase_date: Date of the purchase
-            reference_number: External reference number
+            event_data: Event data
             session: Database session
             
         Returns:
             Dict[str, List[str]]: Validation errors by field
         """
         errors = {}
+
+        required_fields = ['units', 'price', 'date', 'tracking_type']
+        for field in required_fields:
+            if field not in event_data:
+                errors[field] = [f"{field} is required"]
         
         # BUSINESS RULE: Units must be positive
-        if not units or units <= 0:
+        if event_data['units'] <= 0:
             errors['units'] = ["Units must be a positive number"]
         
         # BUSINESS RULE: Price must be positive
-        if not price or price <= 0:
+        if event_data['price'] <= 0:
             errors['price'] = ["Unit price must be a positive number"]
         
-        # BUSINESS RULE: Purchase date is required
-        if not purchase_date:
-            errors['purchase_date'] = ["Purchase date is required"]
-        
         # BUSINESS RULE: Unit purchases only for NAV-based funds
-        if fund.tracking_type != FundType.NAV_BASED:
+        if event_data['tracking_type'] != FundTrackingType.NAV_BASED:
             errors['fund_type'] = ["Unit purchases are only applicable for NAV-based funds"]
         
         return errors
     
-    def validate_unit_sale(self, fund: 'Fund', units: float, price: float, 
-                          sale_date: date, reference_number: str = None, 
-                          session: Session = None) -> Dict[str, List[str]]:
+    def validate_unit_sale(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate unit sale business rules.
         
         Args:
-            fund: The fund to validate against
-            units: Number of units to sell
-            price: Price per unit
-            sale_date: Date of the sale
-            reference_number: External reference number
+            event_data: Event data
             session: Database session
             
         Returns:
             Dict[str, List[str]]: Validation errors by field
         """
         errors = {}
-        
+
+        required_fields = ['units', 'price', 'date', 'tracking_type']
+        for field in required_fields:
+            if field not in event_data:
+                errors[field] = [f"{field} is required"]
+                
         # BUSINESS RULE: Units must be positive
-        if not units or units <= 0:
+        if event_data['units'] <= 0:
             errors['units'] = ["Units must be a positive number"]
         
         # BUSINESS RULE: Price must be positive
-        if not price or price <= 0:
+        if event_data['price'] <= 0:
             errors['price'] = ["Unit price must be a positive number"]
         
-        # BUSINESS RULE: Sale date is required
-        if not sale_date:
-            errors['sale_date'] = ["Sale date is required"]
-        
         # BUSINESS RULE: Unit sales only for NAV-based funds
-        if fund.tracking_type != FundType.NAV_BASED:
+        if event_data['tracking_type'] != FundTrackingType.NAV_BASED:
             errors['fund_type'] = ["Unit sales are only applicable for NAV-based funds"]
         
         # BUSINESS RULE: Cannot sell more units than available
-        if units > fund.current_units:
-            errors['units'] = [f"Insufficient units: trying to sell {units} but only {fund.current_units} available"]
+        fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
+        if event_data['units'] > fund.current_units:
+            errors['units'] = [f"Insufficient units: trying to sell {event_data['units']} but only {fund.current_units} available"]
         
         return errors
     
-    def validate_nav_update(self, fund: 'Fund', nav_per_share: float, update_date: date, 
-                           reference_number: str = None, session: Session = None) -> Dict[str, List[str]]:
+    def validate_nav_update(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate NAV update business rules.
         
         Args:
-            fund: The fund to validate against
-            nav_per_share: NAV per share value
-            update_date: Date of the NAV update
-            reference_number: External reference number
+            event_data: Event data
             session: Database session
             
         Returns:
             Dict[str, List[str]]: Validation errors by field
         """
         errors = {}
-        
+
+        required_fields = ['nav_per_share', 'date', 'tracking_type']
+        for field in required_fields:
+            if field not in event_data:
+                errors[field] = [f"{field} is required"]
+
         # BUSINESS RULE: NAV per share must be positive
-        if not nav_per_share or nav_per_share <= 0:
+        if event_data['nav_per_share'] <= 0:
             errors['nav_per_share'] = ["NAV per share must be a positive number"]
         
-        # BUSINESS RULE: Update date is required
-        if not update_date:
-            errors['update_date'] = ["Update date is required"]
-        
         # BUSINESS RULE: NAV updates only for NAV-based funds
-        if fund.tracking_type != FundType.NAV_BASED:
+        if event_data['tracking_type'] != FundTrackingType.NAV_BASED:
             errors['fund_type'] = ["NAV updates are only applicable for NAV-based funds"]
-        
-        # BUSINESS RULE: No duplicate NAV events on same date
-        if session:
-            duplicate_event = self._check_duplicate_nav_event(fund, nav_per_share, update_date, reference_number, session)
-            if duplicate_event:
-                errors['duplicate'] = [f"NAV update already exists for {update_date}"]
         
         return errors
     
-    def _check_duplicate_nav_event(self, fund: 'Fund', nav_per_share: float, date: date, 
-                                  reference_number: str, session: Session) -> Optional['FundEvent']:
-        """
-        Check for existing NAV update event on the same date.
-        
-        Args:
-            fund: The fund object
-            nav_per_share: NAV per share value (not used in check)
-            date: Date of the NAV update
-            reference_number: External reference number (not used in check)
-            session: Database session
-            
-        Returns:
-            FundEvent: Existing event if found on same date, None otherwise
-        """
-        from src.fund.enums import EventType
-        from src.fund.repositories import FundEventRepository
-        
-        # Use business repository (not query repository) for validation
-        event_repo = FundEventRepository()
-        existing_events = event_repo.get_by_fund_and_types(fund.id, [EventType.NAV_UPDATE], session)
-        
-        # Check if any NAV event exists on the same date
-        for event in existing_events:
-            if event.event_date == date:
-                return event
-        
-        return None
-    
-    def validate_distribution(self, fund: 'Fund', event_date: date, distribution_type: 'DistributionType',
-                            distribution_amount: float = None, has_withholding_tax: bool = False,
-                            gross_interest_amount: float = None, net_interest_amount: float = None,
-                            withholding_tax_amount: float = None, withholding_tax_rate: float = None,
-                            reference_number: str = None, session: Session = None) -> Dict[str, List[str]]:
+    def validate_distribution(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate distribution event parameters.
         
         Args:
-            fund: The fund object
-            event_date: Distribution date
-            distribution_type: Type of distribution
-            distribution_amount: Simple distribution amount (when has_withholding_tax=False)
-            has_withholding_tax: Whether this distribution has withholding tax
-            gross_interest_amount: Gross interest amount (when has_withholding_tax=True)
-            net_interest_amount: Net interest amount (when has_withholding_tax=True)
-            withholding_tax_amount: Tax amount withheld (when has_withholding_tax=True)
-            withholding_tax_rate: Tax rate percentage (when has_withholding_tax=True)
-            reference_number: External reference number
+            event_data: Event data
             session: Database session
             
         Returns:
@@ -312,31 +270,27 @@ class FundValidationService:
         """
         errors = {}
         
+        required_fields = ['date', 'distribution_type', 'has_withholding_tax']
+        for field in required_fields:
+            if field not in event_data:
+                errors[field] = [f"{field} is required"]
+        
         # BUSINESS RULE: Event date is required
-        if not event_date:
-            errors['event_date'] = ["Event date is required"]
+        if not event_data['date']:
+            errors['date'] = ["Event date is required"]
         
         # BUSINESS RULE: Distribution type is required
-        if not distribution_type:
+        if not event_data['distribution_type']:
             errors['distribution_type'] = ["Distribution type is required"]
         
-        # BUSINESS RULE: Validate distribution type
-        if distribution_type:
-            try:
-                from src.fund.enums import DistributionType
-                if not isinstance(distribution_type, DistributionType):
-                    DistributionType.from_string(str(distribution_type))
-            except (ValueError, AttributeError):
-                errors['distribution_type'] = ["Invalid distribution_type"]
-        
         # BUSINESS RULE: Validate withholding tax scenario
-        if has_withholding_tax:
+        if event_data['has_withholding_tax']:
             # Withholding tax is only valid for INTEREST distributions
-            if distribution_type and distribution_type != DistributionType.INTEREST:
+            if event_data['distribution_type'] and event_data['distribution_type'] != DistributionType.INTEREST:
                 errors['distribution_type'] = ["Withholding tax is only valid for INTEREST distributions"]
             
             # Must have exactly one amount type (gross OR net)
-            amount_fields = [gross_interest_amount, net_interest_amount]
+            amount_fields = [event_data['gross_interest_amount'], event_data['net_interest_amount']]
             provided_amount_fields = sum(1 for field in amount_fields if field is not None)
             
             if provided_amount_fields == 0:
@@ -345,7 +299,7 @@ class FundValidationService:
                 errors['amount'] = ["For withholding tax distributions, only one of gross_interest_amount OR net_interest_amount can be provided (not both)"]
             
             # Must have exactly one tax type (amount OR rate)
-            tax_fields = [withholding_tax_amount, withholding_tax_rate]
+            tax_fields = [event_data['withholding_tax_amount'], event_data['withholding_tax_rate']]
             provided_tax_fields = sum(1 for field in tax_fields if field is not None)
             
             if provided_tax_fields == 0:
@@ -355,10 +309,10 @@ class FundValidationService:
             
             # Validate numeric values
             for field_name, value in [
-                ('gross_interest_amount', gross_interest_amount),
-                ('net_interest_amount', net_interest_amount),
-                ('withholding_tax_amount', withholding_tax_amount),
-                ('withholding_tax_rate', withholding_tax_rate)
+                ('gross_interest_amount', event_data['gross_interest_amount']),
+                ('net_interest_amount', event_data['net_interest_amount']),
+                ('withholding_tax_amount', event_data['withholding_tax_amount']),
+                ('withholding_tax_rate', event_data['withholding_tax_rate'])
             ]:
                 if value is not None:
                     try:
@@ -373,17 +327,17 @@ class FundValidationService:
                         errors[field_name] = [f"{field_name} must be a valid number"]
             
             # Validate logical consistency
-            if gross_interest_amount and net_interest_amount and gross_interest_amount <= net_interest_amount:
+            if event_data['gross_interest_amount'] and event_data['net_interest_amount'] and event_data['gross_interest_amount'] <= event_data['net_interest_amount']:
                 errors['amount'] = ["Gross amount must be greater than net amount for withholding tax distributions"]
         else:
             # Simple distribution validation
-            if not distribution_amount:
+            if not event_data['distribution_amount']:
                 errors['distribution_amount'] = ["Distribution amount is required for simple distributions"]
-            elif distribution_amount <= 0:
+            elif event_data['distribution_amount'] <= 0:
                 errors['distribution_amount'] = ["Distribution amount must be positive"]
             
             # Simple distributions should not have withholding tax fields
-            if any([gross_interest_amount, net_interest_amount, withholding_tax_amount, withholding_tax_rate]):
+            if any([event_data['gross_interest_amount'], event_data['net_interest_amount'], event_data['withholding_tax_amount'], event_data['withholding_tax_rate']]):
                 errors['withholding_tax'] = ["Withholding tax fields should not be provided for simple distributions"]
         
         return errors

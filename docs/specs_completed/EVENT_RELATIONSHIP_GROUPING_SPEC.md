@@ -63,7 +63,7 @@ Currently, interest distribution events with tax withheld create two separate fu
 - ✅ All tests passing with no differences from baseline
 - ✅ API responses include has_withholding_tax flag correctly
 - ✅ Frontend grouping logic uses flag-based approach successfully
-- ✅ Unified add_distribution method properly sets flag for new events
+- ✅ Unified create_distribution method properly sets flag for new events
 
 ## Success Metrics
 - **Simplified Frontend Logic**: 70% reduction in grouping complexity ✅
@@ -136,7 +136,7 @@ const withholdingEvent = interestEvent?.has_withholding_tax ?
 
 ### Distribution Method Consolidation Integration
 The event relationship grouping spec was successfully integrated with the distribution method consolidation:
-- ✅ Unified `add_distribution()` method properly sets `has_withholding_tax` flag
+- ✅ Unified `create_distribution()` method properly sets `has_withholding_tax` flag
 - ✅ All distribution scenarios now use consistent flag-setting logic
 - ✅ API layer simplified to use unified method
 - ✅ Improved validation for withholding tax scenarios
@@ -145,7 +145,7 @@ The event relationship grouping spec was successfully integrated with the distri
 Database audit confirmed all existing events have correct flag values:
 - 11 interest distribution events with `has_withholding_tax=True` (all have related withholding tax events)
 - 1 interest distribution event with `has_withholding_tax=False` (correctly has no related withholding tax event)
-- All new events created via unified `add_distribution()` method set flag correctly
+- All new events created via unified `create_distribution()` method set flag correctly
 
 ### Frontend Implementation
 The frontend successfully uses the flag for simplified grouping:

@@ -21,7 +21,7 @@ from src.fund.services.fund_event_service import FundEventService
 from src.fund.enums import EventType, DistributionType
 from src.fund.models.fund import Fund
 from src.fund.models.fund_event import FundEvent
-from src.shared.enums import EventOperation
+from src.shared.enums.shared_enums import EventOperation
 
 
 class TestFundEventService:
@@ -96,7 +96,7 @@ class TestFundEventService:
     # UNIT PURCHASE AND SALE EVENTS
     # ============================================================================
     
-    def test_add_unit_purchase_valid_inputs(self, service, mock_fund, mock_session):
+    def test_create_unit_purchase_valid_inputs(self, service, mock_fund, mock_session):
         """Test unit purchase creation with valid inputs."""
         # Setup
         units = 100.0
@@ -125,7 +125,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_unit_purchase(
+        result = service.create_unit_purchase(
             fund=mock_fund,
             units=units,
             price=unit_price,
@@ -157,7 +157,7 @@ class TestFundEventService:
         )
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_unit_purchase_validation_error(self, service, mock_fund, mock_session):
+    def test_create_unit_purchase_validation_error(self, service, mock_fund, mock_session):
         """Test unit purchase creation with validation error."""
         # Mock validation service returns error
         service.validation_service.validate_unit_purchase.return_value = {
@@ -165,7 +165,7 @@ class TestFundEventService:
         }
         
         with pytest.raises(ValueError, match="Units must be positive"):
-            service.add_unit_purchase(
+            service.create_unit_purchase(
                 fund=mock_fund,
                 units=0,
                 price=25.50,
@@ -173,7 +173,7 @@ class TestFundEventService:
                 session=mock_session
             )
     
-    def test_add_unit_sale_valid_inputs(self, service, mock_fund, mock_session):
+    def test_create_unit_sale_valid_inputs(self, service, mock_fund, mock_session):
         """Test unit sale creation with valid inputs."""
         # Setup
         units = 50.0
@@ -202,7 +202,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_unit_sale(
+        result = service.create_unit_sale(
             fund=mock_fund,
             units=units,
             price=unit_price,
@@ -234,7 +234,7 @@ class TestFundEventService:
         )
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_unit_sale_validation_error(self, service, mock_fund, mock_session):
+    def test_create_unit_sale_validation_error(self, service, mock_fund, mock_session):
         """Test unit sale creation with validation error."""
         # Mock validation service returns error
         service.validation_service.validate_unit_sale.return_value = {
@@ -242,7 +242,7 @@ class TestFundEventService:
         }
         
         with pytest.raises(ValueError, match="Units must be positive"):
-            service.add_unit_sale(
+            service.create_unit_sale(
                 fund=mock_fund,
                 units=0,
                 price=30.00,
@@ -250,7 +250,7 @@ class TestFundEventService:
                 session=mock_session
             )
     
-    def test_add_unit_purchase_with_brokerage_fee(self, service, mock_fund, mock_session):
+    def test_create_unit_purchase_with_brokerage_fee(self, service, mock_fund, mock_session):
         """Test unit purchase creation with brokerage fee."""
         # Setup
         units = 100.0
@@ -281,7 +281,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_unit_purchase(
+        result = service.create_unit_purchase(
             fund=mock_fund,
             units=units,
             price=unit_price,
@@ -314,7 +314,7 @@ class TestFundEventService:
         )
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_unit_sale_with_brokerage_fee(self, service, mock_fund, mock_session):
+    def test_create_unit_sale_with_brokerage_fee(self, service, mock_fund, mock_session):
         """Test unit sale creation with brokerage fee."""
         # Setup
         units = 50.0
@@ -345,7 +345,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_unit_sale(
+        result = service.create_unit_sale(
             fund=mock_fund,
             units=units,
             price=unit_price,
@@ -378,7 +378,7 @@ class TestFundEventService:
         )
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_capital_call_with_domain_event_storage(self, service, mock_fund, mock_session):
+    def test_create_capital_call_with_domain_event_storage(self, service, mock_fund, mock_session):
         """Test capital call creation with domain event storage when secondary service returns changes."""
         # Setup
         amount = 50000.0
@@ -413,7 +413,7 @@ class TestFundEventService:
         # Execute with proper mocking of the DomainEventRepository instantiation
         with patch('src.fund.services.fund_event_service.DomainEventRepository') as mock_domain_repo_class:
             mock_domain_repo_class.return_value = mock_domain_event_repo
-            result = service.add_capital_call(
+            result = service.create_capital_call(
                 fund=mock_fund,
                 amount=amount,
                 call_date=call_date,
@@ -440,7 +440,7 @@ class TestFundEventService:
             session=mock_session
         )
     
-    def test_add_capital_call_no_domain_event_when_no_changes(self, service, mock_fund, mock_session):
+    def test_create_capital_call_no_domain_event_when_no_changes(self, service, mock_fund, mock_session):
         """Test capital call creation without domain event storage when secondary service returns no changes."""
         # Setup
         amount = 50000.0
@@ -466,7 +466,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_capital_call(
+        result = service.create_capital_call(
             fund=mock_fund,
             amount=amount,
             call_date=call_date,
@@ -486,7 +486,7 @@ class TestFundEventService:
         # Verify no domain event repository was instantiated (since no changes)
         # This is implicit - if DomainEventRepository was called, it would be patched
     
-    def test_add_capital_call_default_description(self, service, mock_fund, mock_session):
+    def test_create_capital_call_default_description(self, service, mock_fund, mock_session):
         """Test capital call creation with default description when none provided."""
         # Setup
         amount = 50000.0
@@ -511,7 +511,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute - no description provided
-        result = service.add_capital_call(
+        result = service.create_capital_call(
             fund=mock_fund,
             amount=amount,
             call_date=call_date,
@@ -534,7 +534,7 @@ class TestFundEventService:
             mock_session
         )
     
-    def test_add_return_of_capital_default_description(self, service, mock_fund, mock_session):
+    def test_create_return_of_capital_default_description(self, service, mock_fund, mock_session):
         """Test return of capital creation with default description when none provided."""
         # Setup
         amount = 25000.0
@@ -559,7 +559,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute - no description provided
-        result = service.add_return_of_capital(
+        result = service.create_return_of_capital(
             fund=mock_fund,
             amount=amount,
             return_date=return_date,
@@ -582,7 +582,7 @@ class TestFundEventService:
             mock_session
         )
     
-    def test_add_unit_purchase_default_description(self, service, mock_fund, mock_session):
+    def test_create_unit_purchase_default_description(self, service, mock_fund, mock_session):
         """Test unit purchase creation with default description when none provided."""
         # Setup
         units = 100.0
@@ -610,7 +610,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute - no description provided
-        result = service.add_unit_purchase(
+        result = service.create_unit_purchase(
             fund=mock_fund,
             units=units,
             price=unit_price,
@@ -637,7 +637,7 @@ class TestFundEventService:
             mock_session
         )
     
-    def test_add_unit_sale_default_description(self, service, mock_fund, mock_session):
+    def test_create_unit_sale_default_description(self, service, mock_fund, mock_session):
         """Test unit sale creation with default description when none provided."""
         # Setup
         units = 50.0
@@ -665,7 +665,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute - no description provided
-        result = service.add_unit_sale(
+        result = service.create_unit_sale(
             fund=mock_fund,
             units=units,
             price=unit_price,
@@ -692,7 +692,7 @@ class TestFundEventService:
             mock_session
         )
     
-    def test_add_nav_update_default_description(self, service, mock_fund, mock_session):
+    def test_create_nav_update_default_description(self, service, mock_fund, mock_session):
         """Test NAV update creation with default description when none provided."""
         # Setup
         nav_date = date(2024, 6, 30)
@@ -717,7 +717,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute - no description provided
-        result = service.add_nav_update(
+        result = service.create_nav_update(
             fund=mock_fund,
             nav_per_share=nav_per_share,
             date=nav_date,
@@ -743,7 +743,7 @@ class TestFundEventService:
             mock_session
         )
     
-    def test_add_nav_update_valid_inputs(self, service, mock_fund, mock_session):
+    def test_create_nav_update_valid_inputs(self, service, mock_fund, mock_session):
         """Test NAV update creation with valid inputs."""
         # Setup
         nav_date = date(2024, 6, 30)
@@ -769,7 +769,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_nav_update(
+        result = service.create_nav_update(
             fund=mock_fund,
             nav_per_share=nav_per_share,
             date=nav_date,
@@ -800,7 +800,7 @@ class TestFundEventService:
         )
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_nav_update_validation_error(self, service, mock_fund, mock_session):
+    def test_create_nav_update_validation_error(self, service, mock_fund, mock_session):
         """Test NAV update creation with validation error."""
         # Mock validation service returns error
         service.validation_service.validate_nav_update.return_value = {
@@ -808,7 +808,7 @@ class TestFundEventService:
         }
         
         with pytest.raises(ValueError, match="NAV per share must be positive"):
-            service.add_nav_update(
+            service.create_nav_update(
                 fund=mock_fund,
                 nav_per_share=0,
                 date=date(2024, 6, 30),
@@ -819,7 +819,7 @@ class TestFundEventService:
     # CAPITAL CALL AND RETURN OF CAPITAL EVENTS
     # ============================================================================
     
-    def test_add_capital_call_valid_inputs(self, service, mock_fund, mock_session):
+    def test_create_capital_call_valid_inputs(self, service, mock_fund, mock_session):
         """Test capital call creation with valid inputs."""
         # Setup
         amount = 50000.0
@@ -845,7 +845,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_capital_call(
+        result = service.create_capital_call(
             fund=mock_fund,
             amount=amount,
             call_date=call_date,
@@ -873,7 +873,7 @@ class TestFundEventService:
         )
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_capital_call_validation_error(self, service, mock_fund, mock_session):
+    def test_create_capital_call_validation_error(self, service, mock_fund, mock_session):
         """Test capital call creation with validation error."""
         # Mock validation service returns error
         service.validation_service.validate_capital_call.return_value = {
@@ -881,14 +881,14 @@ class TestFundEventService:
         }
         
         with pytest.raises(ValueError, match="Capital call amount must be a positive number"):
-            service.add_capital_call(
+            service.create_capital_call(
                 fund=mock_fund,
                 amount=0,
                 call_date=date(2024, 3, 15),
                 session=mock_session
             )
     
-    def test_add_return_of_capital_valid_inputs(self, service, mock_fund, mock_session):
+    def test_create_return_of_capital_valid_inputs(self, service, mock_fund, mock_session):
         """Test return of capital creation with valid inputs."""
         # Setup
         amount = 25000.0
@@ -914,7 +914,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_return_of_capital(
+        result = service.create_return_of_capital(
             fund=mock_fund,
             amount=amount,
             return_date=return_date,
@@ -942,7 +942,7 @@ class TestFundEventService:
         )
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_return_of_capital_validation_error(self, service, mock_fund, mock_session):
+    def test_create_return_of_capital_validation_error(self, service, mock_fund, mock_session):
         """Test return of capital creation with validation error."""
         # Mock validation service returns error
         service.validation_service.validate_return_of_capital.return_value = {
@@ -950,7 +950,7 @@ class TestFundEventService:
         }
         
         with pytest.raises(ValueError, match="Return amount must be positive"):
-            service.add_return_of_capital(
+            service.create_return_of_capital(
                 fund=mock_fund,
                 amount=0,
                 return_date=date(2024, 9, 30),
@@ -961,7 +961,7 @@ class TestFundEventService:
     # DISTRIBUTION EVENTS
     # ============================================================================
     
-    def test_add_distribution_simple(self, service, mock_fund, mock_session):
+    def test_create_distribution_simple(self, service, mock_fund, mock_session):
         """Test simple distribution creation."""
         # Setup
         event_date = date(2024, 6, 30)
@@ -988,7 +988,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_distribution(
+        result = service.create_distribution(
             fund=mock_fund,
             event_date=event_date,
             distribution_type=distribution_type,
@@ -1004,7 +1004,7 @@ class TestFundEventService:
         service.distribution_event_repository.create_distribution.assert_called_once()
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_distribution_with_withholding_tax(self, service, mock_fund, mock_session):
+    def test_create_distribution_with_withholding_tax(self, service, mock_fund, mock_session):
         """Test distribution creation with withholding tax."""
         # Setup
         event_date = date(2024, 6, 30)
@@ -1034,7 +1034,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute
-        result = service.add_distribution(
+        result = service.create_distribution(
             fund=mock_fund,
             event_date=event_date,
             distribution_type=distribution_type,
@@ -1054,7 +1054,7 @@ class TestFundEventService:
         service.distribution_event_repository.create_distribution.assert_called_once()
         service.fund_event_secondary_service.handle_event_secondary_impact.assert_called_once()
     
-    def test_add_distribution_validation_error(self, service, mock_fund, mock_session):
+    def test_create_distribution_validation_error(self, service, mock_fund, mock_session):
         """Test distribution creation with validation error."""
         # Mock validation service returns error
         service.validation_service.validate_distribution.return_value = {
@@ -1062,7 +1062,7 @@ class TestFundEventService:
         }
         
         with pytest.raises(ValueError, match="Distribution amount must be positive"):
-            service.add_distribution(
+            service.create_distribution(
                 fund=mock_fund,
                 event_date=date(2024, 6, 30),
                 distribution_type=DistributionType.DIVIDEND_FRANKED,
@@ -1070,7 +1070,7 @@ class TestFundEventService:
                 session=mock_session
             )
     
-    def test_add_distribution_default_description(self, service, mock_fund, mock_session):
+    def test_create_distribution_default_description(self, service, mock_fund, mock_session):
         """Test distribution creation with default description when none provided."""
         # Setup
         event_date = date(2024, 6, 30)
@@ -1096,7 +1096,7 @@ class TestFundEventService:
         service.fund_event_secondary_service.handle_event_secondary_impact.return_value = []
         
         # Execute - no description provided
-        result = service.add_distribution(
+        result = service.create_distribution(
             fund=mock_fund,
             event_date=event_date,
             distribution_type=distribution_type,

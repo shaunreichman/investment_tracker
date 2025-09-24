@@ -110,7 +110,7 @@ class GroupType(enum.Enum):
 - **Date Validation**: Strict enforcement that grouped events share the same date
 
 **Implementation Status**:
-- ✅ Event creation logic updated in `fund.add_distribution()` method
+- ✅ Event creation logic updated in `fund.create_distribution()` method
 - ✅ `get_next_group_id()` method implemented for unique group identifiers
 - ✅ `set_grouping()` and `clear_grouping()` methods implemented
 - ✅ Date validation enforced through `validate_group_date_consistency()`

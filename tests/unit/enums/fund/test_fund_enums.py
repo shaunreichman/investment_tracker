@@ -7,7 +7,7 @@ type safety and clean separation of concerns for the fund system.
 
 import pytest
 from src.fund.enums import (
-    FundStatus, FundType, EventType, DistributionType, GroupType,
+    FundStatus, FundTrackingType, EventType, DistributionType, GroupType,
     CashFlowDirection, TaxPaymentType, TaxJurisdiction,
     get_all_enum_values, validate_enum_value, get_enum_display_name
 )
@@ -44,22 +44,22 @@ class TestFundStatus:
             FundStatus.from_string('invalid_status')
 
 
-class TestFundType:
-    """Test suite for FundType enum."""
+class TestFundTrackingType:
+    """Test suite for FundTrackingType enum."""
     
     def test_enum_values(self):
-        """Test that FundType has the correct values."""
-        assert FundType.COST_BASED.value == 'COST_BASED'
-        assert FundType.NAV_BASED.value == 'NAV_BASED'
+        """Test that FundTrackingType has the correct values."""
+        assert FundTrackingType.COST_BASED.value == 'COST_BASED'
+        assert FundTrackingType.NAV_BASED.value == 'NAV_BASED'
     
     def test_enum_count(self):
-        """Test that FundType has exactly 2 values."""
-        assert len(FundType) == 2
+        """Test that FundTrackingType has exactly 2 values."""
+        assert len(FundTrackingType) == 2
     
     def test_from_string_valid(self):
-        """Test creating FundType from valid string values."""
-        assert FundType.from_string('COST_BASED') == FundType.COST_BASED
-        assert FundType.from_string('NAV_BASED') == FundType.NAV_BASED
+        """Test creating FundTrackingType from valid string values."""
+        assert FundTrackingType.from_string('COST_BASED') == FundTrackingType.COST_BASED
+        assert FundTrackingType.from_string('NAV_BASED') == FundTrackingType.NAV_BASED
 
 
 class TestEventType:
@@ -219,17 +219,17 @@ class TestEnumUtilityFunctions:
     def test_validate_enum_value_valid(self):
         """Test validating valid enum values."""
         assert validate_enum_value(FundStatus, 'ACTIVE') is True
-        assert validate_enum_value(FundType, 'NAV_BASED') is True
+        assert validate_enum_value(FundTrackingType, 'NAV_BASED') is True
     
     def test_validate_enum_value_invalid(self):
         """Test validating invalid enum values."""
         assert validate_enum_value(FundStatus, 'invalid') is False
-        assert validate_enum_value(FundType, 'invalid_type') is False
+        assert validate_enum_value(FundTrackingType, 'invalid_type') is False
     
     def test_get_enum_display_name(self):
         """Test getting human-readable display names."""
         assert get_enum_display_name(FundStatus.ACTIVE) == 'Active'
-        assert get_enum_display_name(FundType.NAV_BASED) == 'Nav Based'
+        assert get_enum_display_name(FundTrackingType.NAV_BASED) == 'Nav Based'
         assert get_enum_display_name(EventType.CAPITAL_CALL) == 'Capital Call'
 
 

@@ -13,7 +13,7 @@ Other aspects covered elsewhere:
 import pytest
 
 from src.banking.enums import (
-    Country, Currency, AccountStatus, BankType, AccountType,
+    Country, Currency, AccountStatus, BankType, BankAccountType,
     SortOrder, BankingDomainEventType,
     get_all_enum_values, validate_enum_value, get_enum_display_name
 )
@@ -267,8 +267,8 @@ class TestBankTypeEnum:
             assert BankType.is_digital_native(bank_type) is False
 
 
-class TestAccountTypeEnum:
-    """Test suite for AccountType enum"""
+class TestBankAccountTypeEnum:
+    """Test suite for BankAccountType enum"""
     
     def test_account_type_values(self):
         """Test all account type enum values."""
@@ -276,20 +276,20 @@ class TestAccountTypeEnum:
             'CHECKING', 'SAVINGS', 'INVESTMENT', 'BUSINESS', 'TRUST', 'JOINT'
         ]
         
-        actual_types = [account_type.value for account_type in AccountType]
+        actual_types = [account_type.value for account_type in BankAccountType]
         assert actual_types == expected_types
     
     def test_account_type_string_representation(self):
         """Test account type string representation."""
-        account_type = AccountType.CHECKING
+        account_type = BankAccountType.CHECKING
         assert str(account_type) == 'CHECKING'
-        assert repr(account_type) == '<AccountType.CHECKING: \'CHECKING\'>'
+        assert repr(account_type) == '<BankAccountType.CHECKING: \'CHECKING\'>'
     
     def test_account_type_from_string_valid(self):
         """Test creating account type from valid string."""
         # Test all valid account types
-        for account_type in AccountType:
-            result = AccountType.from_string(account_type.value)
+        for account_type in BankAccountType:
+            result = BankAccountType.from_string(account_type.value)
             assert result == account_type
     
     def test_account_type_from_string_invalid(self):
@@ -297,38 +297,38 @@ class TestAccountTypeEnum:
         invalid_types = ['INVALID', 'UNKNOWN', '', '123', 'ACCOUNT_TYPE']
         
         for invalid_type in invalid_types:
-            with pytest.raises(ValueError, match=f"Invalid AccountType: {invalid_type}"):
-                AccountType.from_string(invalid_type)
+            with pytest.raises(ValueError, match=f"Invalid BankAccountType: {invalid_type}"):
+                BankAccountType.from_string(invalid_type)
     
     def test_account_type_interest_earning(self):
         """Test interest earning logic."""
         # Types that typically earn interest
-        interest_accounts = [AccountType.SAVINGS, AccountType.INVESTMENT]
+        interest_accounts = [BankAccountType.SAVINGS, BankAccountType.INVESTMENT]
         
         for account_type in interest_accounts:
-            assert AccountType.earns_interest(account_type) is True
+            assert BankAccountType.earns_interest(account_type) is True
         
         # Types that don't typically earn interest
         non_interest_accounts = [
-            AccountType.CHECKING, AccountType.BUSINESS, AccountType.TRUST, AccountType.JOINT
+            BankAccountType.CHECKING, BankAccountType.BUSINESS, BankAccountType.TRUST, BankAccountType.JOINT
         ]
         
         for account_type in non_interest_accounts:
-            assert AccountType.earns_interest(account_type) is False
+            assert BankAccountType.earns_interest(account_type) is False
     
     def test_account_type_kyc_requirement(self):
         """Test KYC requirement logic."""
         # Types that require KYC verification
-        kyc_required = [AccountType.BUSINESS, AccountType.TRUST, AccountType.INVESTMENT]
+        kyc_required = [BankAccountType.BUSINESS, BankAccountType.TRUST, BankAccountType.INVESTMENT]
         
         for account_type in kyc_required:
-            assert AccountType.requires_kyc(account_type) is True
+            assert BankAccountType.requires_kyc(account_type) is True
         
         # Types that don't require KYC verification
-        kyc_not_required = [AccountType.CHECKING, AccountType.SAVINGS, AccountType.JOINT]
+        kyc_not_required = [BankAccountType.CHECKING, BankAccountType.SAVINGS, BankAccountType.JOINT]
         
         for account_type in kyc_not_required:
-            assert AccountType.requires_kyc(account_type) is False
+            assert BankAccountType.requires_kyc(account_type) is False
 
 
 class TestSortOrderEnum:
@@ -441,7 +441,7 @@ class TestEnumUtilityFunctions:
         assert get_enum_display_name(Currency.AUD) == 'AUD'
         assert get_enum_display_name(AccountStatus.ACTIVE) == 'ACTIVE'
         assert get_enum_display_name(BankType.COMMERCIAL) == 'COMMERCIAL'
-        assert get_enum_display_name(AccountType.CHECKING) == 'CHECKING'
+        assert get_enum_display_name(BankAccountType.CHECKING) == 'CHECKING'
         assert get_enum_display_name(SortOrder.ASC) == 'ASC'
         assert get_enum_display_name(BankingDomainEventType.BANK_CREATED) == 'BANK_CREATED'
 
@@ -452,7 +452,7 @@ class TestEnumIntegration:
     def test_enum_value_consistency(self):
         """Test that enum values are consistent across the system."""
         # Test that all enums have string values
-        all_enums = [Country, Currency, AccountStatus, BankType, AccountType, SortOrder, BankingDomainEventType]
+        all_enums = [Country, Currency, AccountStatus, BankType, BankAccountType, SortOrder, BankingDomainEventType]
         
         for enum_class in all_enums:
             for enum_value in enum_class:
@@ -462,7 +462,7 @@ class TestEnumIntegration:
     def test_enum_method_consistency(self):
         """Test that all enums have consistent method signatures."""
         # Test that all enums have from_string method
-        all_enums = [Country, Currency, AccountStatus, BankType, AccountType, SortOrder, BankingDomainEventType]
+        all_enums = [Country, Currency, AccountStatus, BankType, BankAccountType, SortOrder, BankingDomainEventType]
         
         for enum_class in all_enums:
             assert hasattr(enum_class, 'from_string')
@@ -471,7 +471,7 @@ class TestEnumIntegration:
     def test_enum_string_conversion(self):
         """Test that all enums can be converted to and from strings."""
         # Test string conversion for all enums
-        all_enums = [Country, Currency, AccountStatus, BankType, AccountType, SortOrder, BankingDomainEventType]
+        all_enums = [Country, Currency, AccountStatus, BankType, BankAccountType, SortOrder, BankingDomainEventType]
         
         for enum_class in all_enums:
             for enum_value in enum_class:

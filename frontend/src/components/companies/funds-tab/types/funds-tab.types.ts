@@ -25,7 +25,7 @@ export interface FundsFiltersProps {
   onSearchChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onStatusFilterChange: (event: any) => void;
   onCurrencyFilterChange: (event: any) => void;
-  onFundTypeFilterChange: (event: any) => void;
+  onFundTrackingTypeFilterChange: (event: any) => void;
   onViewModeChange: (mode: 'table' | 'cards') => void;
   onClearFilters: () => void;
 }

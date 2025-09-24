@@ -6,7 +6,7 @@ from src.entity.models import Entity
 from src.investment_company.models import InvestmentCompany, Contact
 from src.investment_company.enums import CompanyType, CompanyStatus
 from src.fund.models import Fund, FundEvent, FundEventCashFlow
-from src.fund.enums import FundType, EventType, DistributionType, TaxPaymentType, CashFlowDirection, FundStatus
+from src.fund.enums import FundTrackingType, EventType, DistributionType, TaxPaymentType, CashFlowDirection, FundStatus
 from src.tax.models import TaxStatement
 from src.rates.models import RiskFreeRate
 from src.banking.models import Bank, BankAccount
@@ -123,7 +123,7 @@ class FundFactory(SessionedFactory):
     # Use a more robust naming strategy that won't hit uniqueness limits
     name = factory.Sequence(lambda n: f"Fund {n:04d}")
     fund_type = "Private Debt"
-    tracking_type = FundType.COST_BASED
+    tracking_type = FundTrackingType.COST_BASED
     status = FundStatus.ACTIVE  # Set default status
     currency = "AUD"
     description = factory.LazyAttribute(lambda _: fake.sentence())

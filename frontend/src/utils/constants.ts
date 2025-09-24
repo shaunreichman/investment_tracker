@@ -27,7 +27,7 @@ export type FundTrackingType = 'nav_based' | 'cost_based';
 /**
  * Fund types
  */
-export type FundType = 'Private Equity' | 'Venture Capital' | 'Private Debt' | 'Real Estate' | 'Infrastructure' | 'Other';
+export type FundTrackingType = 'Private Equity' | 'Venture Capital' | 'Private Debt' | 'Real Estate' | 'Infrastructure' | 'Other';
 
 /**
  * Fund status types
@@ -183,7 +183,7 @@ export const FUND_TEMPLATES = [
 /**
  * Fund type options
  */
-export const FUND_TYPES: { label: string; value: FundType }[] = [
+export const FUND_TYPES: { label: string; value: FundTrackingType }[] = [
   { label: 'Private Equity', value: 'Private Equity' },
   { label: 'Venture Capital', value: 'Venture Capital' },
   { label: 'Private Debt', value: 'Private Debt' },

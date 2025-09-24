@@ -12,13 +12,11 @@ Key responsibilities:
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, func
+from sqlalchemy.orm import Session
 
 from src.investment_company.models import InvestmentCompany
-from src.fund.models import Fund
-from src.fund.enums import FundStatus
-from src.investment_company.enums import CompanyStatus, CompanyType
+from src.investment_company.enums.company_enums import CompanyStatus, CompanyType, SortFieldCompany
+from src.shared.enums.shared_enums import SortOrder
 
 
 class CompanyRepository:
@@ -44,8 +42,76 @@ class CompanyRepository:
         """
         self._cache: Dict[str, Any] = {}
         self._cache_ttl = cache_ttl
+
+
+    ################################################################################
+    # Get companies
+    ################################################################################
+
+    def get_companies(self, session: Session,
+            company_type: Optional[CompanyType] = None,
+            status: Optional[CompanyStatus] = None,
+            name: Optional[str] = None,
+            sort_by: Optional[SortFieldCompany] = None,
+            sort_order: Optional[SortOrder] = None,
+    ) -> List[InvestmentCompany]:
+        """
+        Get all companies.
+
+        Args:
+            session: Database session
+            company_type: Type of company to filter by
+            status: Status to filter by
+            name: Name to filter by
+            sort_by: Field to sort by
+            sort_order: Order to sort by
+
+        Returns:
+            List of companies
+        """
+        cache_key = f"companies:company_type:{company_type}:status:{status}:name:{name}:sort_by:{sort_by}:sort_order:{sort_order}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Validate sort field
+        if sort_by not in SortFieldCompany:
+            raise ValueError(f"Invalid sort field: {sort_by}")
+        
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}")
+
+        # Query database
+        companies = session.query(InvestmentCompany)
+        if company_type:
+            companies = companies.filter(InvestmentCompany.company_type == company_type)
+        if status:
+            companies = companies.filter(InvestmentCompany.status == status)
+        if name:
+            companies = companies.filter(InvestmentCompany.name == name)
+            
+        # Apply sorting
+        if sort_by == SortFieldCompany.NAME:
+            companies = companies.order_by(InvestmentCompany.name.asc() if sort_order == SortOrder.ASC else InvestmentCompany.name.desc())
+        elif sort_by == SortFieldCompany.STATUS:
+            companies = companies.order_by(InvestmentCompany.status.asc() if sort_order == SortOrder.ASC else InvestmentCompany.status.desc())
+        elif sort_by == SortFieldCompany.START_DATE:
+            companies = companies.order_by(InvestmentCompany.start_date.asc() if sort_order == SortOrder.ASC else InvestmentCompany.start_date.desc())
+        elif sort_by == SortFieldCompany.CREATED_AT:
+            companies = companies.order_by(InvestmentCompany.created_at.asc() if sort_order == SortOrder.ASC else InvestmentCompany.created_at.desc())
+        elif sort_by == SortFieldCompany.UPDATED_AT:
+            companies = companies.order_by(InvestmentCompany.updated_at.asc() if sort_order == SortOrder.ASC else InvestmentCompany.updated_at.desc())
+            
+        companies = companies.all()
+
+        # Cache the result
+        self._cache[cache_key] = companies
+
+        return companies
     
-    def get_by_id(self, company_id: int, session: Session) -> Optional[InvestmentCompany]:
+    def get_company_by_id(self, company_id: int, session: Session) -> Optional[InvestmentCompany]:
         """
         Get a company by its ID.
         
@@ -56,56 +122,27 @@ class CompanyRepository:
         Returns:
             InvestmentCompany object if found, None otherwise
         """
-        # Query database with eager loading of contacts and funds to prevent lazy loading issues
-        company = session.query(InvestmentCompany).options(
-            joinedload(InvestmentCompany.contacts),
-            joinedload(InvestmentCompany.funds)
-        ).filter(InvestmentCompany.id == company_id).first()
-        
-        return company
-    
-    def get_by_name(self, name: str, session: Session) -> Optional[InvestmentCompany]:
-        """
-        Get a company by its name.
-        
-        Args:
-            name: Name of the company to retrieve
-            session: Database session
-            
-        Returns:
-            InvestmentCompany object if found, None otherwise
-        """
-        # Query database
-        company = session.query(InvestmentCompany).filter(InvestmentCompany.name == name).first()
-        
-        return company
-    
-    def get_all(self, session: Session) -> List[InvestmentCompany]:
-        """
-        Get all investment companies.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of all investment companies
-        """
-        cache_key = "companies:all"
+        cache_key = f"company:{company_id}"
         
         # Check cache first
         if cache_key in self._cache:
-            cached_companies = self._cache[cache_key]
-            return cached_companies
+            return self._cache[cache_key]
         
         # Query database
-        companies = session.query(InvestmentCompany).all()
+        company = session.query(InvestmentCompany).filter(InvestmentCompany.id == company_id).first()
         
         # Cache the result
-        self._cache[cache_key] = companies
+        if company:
+            self._cache[cache_key] = company
         
-        return companies
+        return company
+
+
+    ################################################################################
+    # Create Company
+    ################################################################################
     
-    def create(self, company_data: Dict[str, Any], session: Session) -> InvestmentCompany:
+    def create_company(self, company_data: Dict[str, Any], session: Session) -> InvestmentCompany:
         """
         Create a new investment company.
         
@@ -118,59 +155,22 @@ class CompanyRepository:
             
         Raises:
             ValueError: If required fields are missing or invalid
-        """
-        # Validate required fields
-        if 'name' not in company_data or not company_data['name']:
-            raise ValueError("Company name is required")
-        
-        # Check for existing company with same name
-        existing = self.get_by_name(company_data['name'], session)
-        if existing:
-            raise ValueError(f"Investment company with name '{company_data['name']}' already exists")
-        
-        # Create the company
+        """        
         company = InvestmentCompany(**company_data)
         session.add(company)
-        session.flush()  # Get the ID without committing
-        
-        # Clear cache
-        self._clear_cache()
-        
-        return company
-    
-    def update(self, company_id: int, company_data: Dict[str, Any], session: Session) -> Optional[InvestmentCompany]:
-        """
-        Update an existing investment company.
-        
-        Args:
-            company_id: ID of the company to update
-            company_data: Dictionary containing updated company data
-            session: Database session
-            
-        Returns:
-            Updated InvestmentCompany object if found, None otherwise
-        """
-        company = self.get_by_id(company_id, session)
-        if not company:
-            return None
-        
-        # Update fields
-        for key, value in company_data.items():
-            if hasattr(company, key):
-                setattr(company, key, value)
-        
-        # Update timestamp
-        from datetime import datetime, timezone
-        company.updated_at = datetime.now(timezone.utc)
-        
         session.flush()
         
         # Clear cache
-        self._clear_cache()
+        self._clear_company_caches()
         
         return company
     
-    def delete(self, company_id: int, session: Session) -> bool:
+    
+    ################################################################################
+    # Delete Company
+    ################################################################################
+    
+    def delete_company(self, company_id: int, session: Session) -> bool:
         """
         Delete an investment company.
         
@@ -181,7 +181,7 @@ class CompanyRepository:
         Returns:
             True if company was deleted, False if not found
         """
-        company = self.get_by_id(company_id, session)
+        company = self.get_company_by_id(company_id, session)
         if not company:
             return False
         
@@ -189,225 +189,31 @@ class CompanyRepository:
         session.flush()
         
         # Clear cache
-        self._clear_cache()
+        self._clear_company_caches()
         
         return True
-    
-    def get_companies_with_fund_counts(self, session: Session) -> List[Dict[str, Any]]:
-        """
-        Get companies with optimized fund count queries.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of companies with fund count information
-        """
-        cache_key = "companies:with_fund_counts"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with optimized JOIN
-        companies_data = session.query(
-            InvestmentCompany,
-            func.count(Fund.id).label('total_funds'),
-            func.sum(Fund.commitment_amount).label('total_commitments'),
-            func.sum(Fund.current_equity_balance).label('total_equity')
-        ).outerjoin(Fund).group_by(InvestmentCompany.id).all()
-        
-        # Format results
-        result = []
-        for company, total_funds, total_commitments, total_equity in companies_data:
-            result.append({
-                "id": company.id,
-                "name": company.name,
-                "description": company.description,
-                "website": company.website,
-                "company_type": company.company_type,
-                "business_address": company.business_address,
-                "fund_count": total_funds or 0,
-                "total_commitments": float(total_commitments) if total_commitments else 0.0,
-                "total_equity_balance": float(total_equity) if total_equity else 0.0,
-                "created_at": company.created_at.isoformat() if company.created_at else None,
-                "updated_at": company.updated_at.isoformat() if company.updated_at else None
-            })
-        
-        # Cache the result
-        self._cache[cache_key] = result
-        
-        return result
-    
-    def get_companies_with_summary(self, session: Session) -> List[Dict[str, Any]]:
-        """
-        Get all companies with summary data including fund counts and totals.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of dictionaries containing company data with summary information
-        """
-        cache_key = "companies:with_summary"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Get all companies with their relationships
-        companies = session.query(InvestmentCompany).options(
-            session.query(InvestmentCompany).load_only(
-                InvestmentCompany.id, InvestmentCompany.name, InvestmentCompany.description,
-                InvestmentCompany.website, InvestmentCompany.company_type, InvestmentCompany.status,
-                InvestmentCompany.business_address, InvestmentCompany.created_at, InvestmentCompany.updated_at
-            )
-        ).all()
-        
-        result = []
-        for company in companies:
-            # Calculate summary data
-            total_funds = len(company.funds) if company.funds else 0
-            total_commitments = sum(fund.commitment_amount or 0.0 for fund in company.funds)
-            total_equity = sum(fund.current_equity_balance or 0.0 for fund in company.funds)
-            
-            result.append({
-                "id": company.id,
-                "name": company.name,
-                "description": company.description,
-                "website": company.website,
-                "company_type": company.company_type.value if company.company_type else None,
-                "status": company.status.value if company.status else None,
-                "business_address": company.business_address,
-                "fund_count": total_funds or 0,
-                "total_commitments": float(total_commitments) if total_commitments else 0.0,
-                "total_equity_balance": float(total_equity) if total_equity else 0.0,
-                "created_at": company.created_at.isoformat() if company.created_at else None,
-                "updated_at": company.updated_at.isoformat() if company.updated_at else None
-            })
-        
-        # Cache the result
-        self._cache[cache_key] = result
-        
-        return result
-    
-    def get_companies_by_type(self, company_type: str, session: Session) -> List[InvestmentCompany]:
-        """
-        Get companies by company type.
-        
-        Args:
-            company_type: Type of company to filter by
-            session: Database session
-            
-        Returns:
-            List of companies matching the type
-        """
-        cache_key = f"companies:type:{company_type}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        companies = session.query(InvestmentCompany).filter(InvestmentCompany.company_type == company_type).all()
-        
-        # Cache the result
-        self._cache[cache_key] = companies
-        
-        return companies
-    
-    def get_companies_by_status(self, status: str, session: Session) -> List[InvestmentCompany]:
-        """
-        Get companies by status.
-        
-        Args:
-            status: Status to filter by
-            session: Database session
-            
-        Returns:
-            List of companies matching the status
-        """
-        cache_key = f"companies:status:{status}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        companies = session.query(InvestmentCompany).filter(InvestmentCompany.status == status).all()
-        
-        # Cache the result
-        self._cache[cache_key] = companies
-        
-        return companies
-    
-    def search_companies(self, search_term: str, session: Session) -> List[InvestmentCompany]:
-        """
-        Search companies by name or description.
-        
-        Args:
-            search_term: Search term to look for
-            session: Database session
-            
-        Returns:
-            List of companies matching the search term
-        """
-        cache_key = f"companies:search:{search_term}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with search
-        search_pattern = f"%{search_term}%"
-        companies = session.query(InvestmentCompany).filter(
-            or_(
-                InvestmentCompany.name.ilike(search_pattern),
-                InvestmentCompany.description.ilike(search_pattern),
-                InvestmentCompany.company_type.ilike(search_pattern)
-            )
-        ).all()
-        
-        # Cache the result
-        self._cache[cache_key] = companies
-        
-        return companies
-    
-    def get_companies_with_active_funds(self, session: Session) -> List[InvestmentCompany]:
-        """
-        Get companies that have active funds.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of companies with active funds
-        """
-        cache_key = "companies:with_active_funds"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        companies = session.query(InvestmentCompany).join(Fund).filter(Fund.status == FundStatus.ACTIVE).distinct().all()
-        
-        # Cache the result
-        self._cache[cache_key] = companies
-        
-        return companies
+
+
+    ################################################################################
+    # Clear Cache
+    ################################################################################
     
     def _clear_cache(self) -> None:
         """Clear all cached data."""
         self._cache.clear()
     
-    def _clear_company_cache(self, company_id: int) -> None:
+    def _clear_company_caches(self) -> None:
+        """Clear all company-related caches."""
+        keys_to_remove = [key for key in self._cache.keys() if key.startswith('company')]
+        for key in keys_to_remove:
+            del self._cache[key]
+
+    def _clear_company_cache(self, company_id: int, company_type: Optional[CompanyType] = None, status: Optional[CompanyStatus] = None, name: Optional[str] = None, sort_by: Optional[SortFieldCompany] = None, sort_order: Optional[SortOrder] = None) -> None:
         """Clear cache for a specific company."""
+        keys_to_remove = [key for key in self._cache.keys() if key.startswith('company')]
         cache_keys_to_remove = [
             f"company:{company_id}",
-            "companies:all",
-            "companies:with_fund_counts",
-            "companies:with_active_funds"
+            f"companies:company_type:{company_type}:status:{status}:name:{name}:sort_by:{sort_by}:sort_order:{sort_order}",
         ]
         
         for key in cache_keys_to_remove:

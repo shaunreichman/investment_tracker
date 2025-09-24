@@ -7,7 +7,7 @@ import {
   IconButton
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
-import { ExtendedFundEvent, ExtendedFund, FundType } from '../../../../types/api';
+import { ExtendedFundEvent, ExtendedFund, FundTrackingType } from '../../../../types/api';
 import { formatCurrency, formatBrokerageFee, formatDate } from '../../../../utils/formatters';
 // event type label is now rendered via EventTypeChip
 import { EventTypeChip } from '../../../ui/EventTypeChip';
@@ -37,7 +37,7 @@ const EventRowComponent: React.FC<EventRowProps> = ({
 
   onDeleteEvent
 }) => {
-  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  const isNavBased = fund.tracking_type === FundTrackingType.NAV_BASED;
   
   // CALCULATED: Event type classification for display logic
   const isEquity = event.event_type === 'UNIT_PURCHASE' || event.event_type === 'UNIT_SALE' || 
@@ -195,7 +195,7 @@ const EquityCellContent: React.FC<{ event: ExtendedFundEvent; fund: ExtendedFund
   event, 
   fund 
 }) => {
-  const isNavBased = fund.tracking_type === FundType.NAV_BASED;
+  const isNavBased = fund.tracking_type === FundTrackingType.NAV_BASED;
 
   if (isNavBased) {
     if (event.event_type === 'UNIT_PURCHASE') {

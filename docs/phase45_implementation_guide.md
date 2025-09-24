@@ -201,7 +201,7 @@ def test_complete_event_flow_capital_call_to_tax_statement(self, db_session: Ses
     fund = FundFactory(
         investment_company=company,
         entity=entity,
-        tracking_type=FundType.COST_BASED,
+        tracking_type=FundTrackingType.COST_BASED,
         status=FundStatus.ACTIVE
     )
     

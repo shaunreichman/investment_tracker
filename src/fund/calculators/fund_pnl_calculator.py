@@ -3,7 +3,7 @@ Calculator for calculating the PNL of a fund.
 """
 
 from src.fund.models import Fund
-from src.fund.enums import FundType, EventType, DistributionType
+from src.fund.enums import FundTrackingType, EventType, DistributionType
 from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator
 from src.fund.repositories import FundEventRepository
 from sqlalchemy.orm import Session
@@ -24,11 +24,11 @@ class FundPnlCalculator:
         pnl_dict['realized_pnl_interest'] = 0
         pnl_dict['realized_pnl_distribution'] = 0
 
-        events = self.fund_event_repository.get_by_fund(fund.id, session)
+        events = self.fund_event_repository.get_fund_events(session, fund.id)
 
-        if fund.tracking_type == FundType.NAV_BASED:
-            fifo_capital_gains_calculator = FifoCapitalGainsCalculator(session)
-            capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(events)
+        if fund.tracking_type == FundTrackingType.NAV_BASED:
+            fifo_capital_gains_calculator = FifoCapitalGainsCalculator()
+            capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(fund_id=fund.id, session=session)
             if capital_gains_dict.remaining_units != fund.current_units:
                 ValueError("Remaining units do not match current units")
             pnl_dict['realized_pnl_capital_gain'] = capital_gains_dict.total_capital_gains

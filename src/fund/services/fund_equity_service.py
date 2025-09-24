@@ -16,8 +16,9 @@ from sqlalchemy.orm import Session
 
 from src.fund.models import Fund, FundFieldChange
 from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
-from src.fund.repositories.fund_event_repository import FundEventRepository
-from src.shared.enums import SortOrder
+from src.fund.repositories import FundEventRepository
+from src.fund.enums.fund_event_enums import EventType
+from src.shared.enums.shared_enums import SortOrder
 
 
 class FundEquityService:
@@ -59,7 +60,7 @@ class FundEquityService:
         old_average_equity_balance = fund.average_equity_balance
         old_total_cost_basis = fund.total_cost_basis
         # SINGLE COMPUTATION: Get events and calculate balances once
-        events = FundEventRepository.get_by_fund(fund.id, session, 
+        events = FundEventRepository.get_fund_events(session, fund.id, 
                     event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
                     sort_order=SortOrder.ASC)
         event_balances = self.calculator.calculate_event_equity_balances(fund, events)

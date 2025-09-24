@@ -19,7 +19,7 @@ from typing import List
 from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
 from src.fund.models import Fund, FundFieldChange
 from src.fund.enums import EventType
-from src.shared.enums import EventOperation
+from src.shared.enums.shared_enums import EventOperation
 
 
 class TestFundEventSecondaryService:

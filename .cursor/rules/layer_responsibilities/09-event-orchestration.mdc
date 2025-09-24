@@ -53,7 +53,7 @@ class CompanyService:
 
 # ✅ Good: Fund domain with complex business logic  
 class FundEventService:
-    def add_capital_call(self, fund, amount, date, session):
+    def create_capital_call(self, fund, amount, date, session):
         # Complex business logic - use direct services
         event = self.capital_repository.create_capital_call(...)
         

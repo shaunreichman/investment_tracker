@@ -27,7 +27,7 @@ from src.investment_company.services.fund_coordination_service import FundCoordi
 from src.investment_company.services.company_calculation_service import CompanyCalculationService
 from src.investment_company.enums import CompanyType, CompanyStatus
 from src.fund.models import Fund, FundEvent
-from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.enums import FundStatus, FundTrackingType, EventType
 from src.entity.models import Entity
 from tests.factories import InvestmentCompanyFactory, ContactFactory, FundFactory, EntityFactory, FundEventFactory
 
@@ -53,8 +53,8 @@ class TestCompanyPortfolioWorkflow:
         
         fund_data = {
             'name': 'Portfolio Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value,
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value,
             'currency': 'AUD',
             'description': 'Fund for portfolio testing',
             'commitment_amount': 2500000.0,
@@ -204,8 +204,8 @@ class TestCompanyPortfolioWorkflow:
         
         fund_data = {
             'name': 'Coordination Test Fund',
-            'fund_type': FundType.COST_BASED.value,
-            'tracking_type': FundType.COST_BASED.value,
+            'fund_type': FundTrackingType.COST_BASED.value,
+            'tracking_type': FundTrackingType.COST_BASED.value,
             'currency': 'USD',
             'description': 'Fund for coordination testing',
             'commitment_amount': 5000000.0,
@@ -619,8 +619,8 @@ class TestCompanyPortfolioWorkflow:
             company=company,
             entity=entity,
             name='Cross-Domain Fund',
-            fund_type=FundType.NAV_BASED.value,
-            tracking_type=FundType.NAV_BASED.value,
+            fund_type=FundTrackingType.NAV_BASED.value,
+            tracking_type=FundTrackingType.NAV_BASED.value,
             currency='EUR',
             description='Fund for cross-domain testing',
             commitment_amount=12000000.0,

@@ -13,11 +13,11 @@
 ## Overview
 
 Currently, the Fund model has three separate methods for adding distributions:
-- `add_distribution()` - Basic distribution with amount and type
+- `create_distribution()` - Basic distribution with amount and type
 - `add_interest_distribution_with_withholding_tax()` - Interest distribution with complex withholding tax calculations
 - `add_interest_distribution_without_withholding_tax()` - Interest distribution without withholding tax
 
-This creates complexity, code duplication, and inconsistent interfaces. We need to consolidate these into a unified `add_distribution()` method that handles all distribution scenarios through optional parameters.
+This creates complexity, code duplication, and inconsistent interfaces. We need to consolidate these into a unified `create_distribution()` method that handles all distribution scenarios through optional parameters.
 
 ## Design Philosophy
 
@@ -36,7 +36,7 @@ This creates complexity, code duplication, and inconsistent interfaces. We need 
 - **Validation Inconsistency**: Different validation rules across methods
 
 ### Success Criteria
-- Single `add_distribution()` method handles all scenarios
+- Single `create_distribution()` method handles all scenarios
 - All existing functionality preserved
 - API endpoints continue to work without changes
 - Clear parameter validation and error messages
@@ -45,7 +45,7 @@ This creates complexity, code duplication, and inconsistent interfaces. We need 
 ## Implementation Strategy
 
 ### Phase 1: Unified Method Design ✅ **COMPLETED**
-**Goal**: Design the consolidated `add_distribution()` method interface
+**Goal**: Design the consolidated `create_distribution()` method interface
 **Tasks**:
 - [x] Define unified method signature with all optional parameters
 - [x] Design parameter validation rules and error messages
@@ -58,9 +58,9 @@ This creates complexity, code duplication, and inconsistent interfaces. We need 
 - Preserve all existing business logic
 
 ### Phase 2: Core Implementation ✅ **COMPLETED**
-**Goal**: Implement the unified `add_distribution()` method
+**Goal**: Implement the unified `create_distribution()` method
 **Tasks**:
-- [x] Implement unified `add_distribution()` method with all parameters
+- [x] Implement unified `create_distribution()` method with all parameters
 - [x] Add comprehensive parameter validation logic
 - [x] Implement withholding tax calculation logic
 - [x] Add proper error handling and user-friendly messages
@@ -144,7 +144,7 @@ This creates complexity, code duplication, and inconsistent interfaces. We need 
 **Tasks**:
 - [x] Remove `add_interest_distribution_with_withholding_tax()` method
 - [x] Remove `add_interest_distribution_without_withholding_tax()` method
-- [x] Update all existing code to use new unified `add_distribution()` method
+- [x] Update all existing code to use new unified `create_distribution()` method
 - [x] Update API endpoints to use unified method
 - [x] Update all tests to use new unified method
 - [x] Remove old method documentation
@@ -222,7 +222,7 @@ This creates complexity, code duplication, and inconsistent interfaces. We need 
 
 ### Method Signature
 ```python
-def add_distribution(
+def create_distribution(
     self,
     event_date,
     distribution_type,
@@ -315,9 +315,9 @@ def validate_simple_distribution_scenario(distribution_amount, gross_interest_am
         raise ValueError("distribution_amount must be a positive number")
 ```
 
-#### **Validation Flow in `add_distribution()`**
+#### **Validation Flow in `create_distribution()`**
 ```python
-def add_distribution(self, event_date, distribution_type, distribution_amount, has_withholding_tax=False, gross_interest_amount=None, net_interest_amount=None, withholding_tax_amount=None, withholding_tax_rate=None, description=None, reference_number=None, session=None):
+def create_distribution(self, event_date, distribution_type, distribution_amount, has_withholding_tax=False, gross_interest_amount=None, net_interest_amount=None, withholding_tax_amount=None, withholding_tax_rate=None, description=None, reference_number=None, session=None):
     # Group A: General validations (always run)
     validate_general_parameters(event_date, distribution_type, session)
     
@@ -333,14 +333,14 @@ def add_distribution(self, event_date, distribution_type, distribution_amount, h
 ### Detailed Validation Examples
 ```python
 # ✅ VALID: Simple dividend distribution
-fund.add_distribution(
+fund.create_distribution(
     event_date=date(2024, 1, 1),
     distribution_amount=1000,
     distribution_type=DistributionType.DIVIDEND_FRANKED
 )
 
 # ✅ VALID: Interest distribution with withholding tax (gross amount)
-fund.add_distribution(
+fund.create_distribution(
     event_date=date(2024, 1, 1),
     gross_interest_amount=1000,
     distribution_type=DistributionType.INTEREST,
@@ -349,7 +349,7 @@ fund.add_distribution(
 )
 
 # ✅ VALID: Interest distribution with withholding tax (net amount)
-fund.add_distribution(
+fund.create_distribution(
     event_date=date(2024, 1, 1),
     net_interest_amount=900,
     distribution_type=DistributionType.INTEREST,
@@ -358,17 +358,17 @@ fund.add_distribution(
 )
 
 # ❌ INVALID: Missing required parameters
-fund.add_distribution(distribution_amount=1000)  # Missing event_date and distribution_type
+fund.create_distribution(distribution_amount=1000)  # Missing event_date and distribution_type
 
 # ❌ INVALID: Invalid distribution type
-fund.add_distribution(
+fund.create_distribution(
     event_date=date(2024, 1, 1),
     distribution_amount=1000,
     distribution_type="INVALID_TYPE"
 )
 
 # ❌ INVALID: Multiple amount parameters
-fund.add_distribution(
+fund.create_distribution(
     event_date=date(2024, 1, 1),
     distribution_amount=1000,
     gross_interest_amount=1000,  # Conflict!
@@ -376,7 +376,7 @@ fund.add_distribution(
 )
 
 # ❌ INVALID: Withholding tax with non-INTEREST distribution
-fund.add_distribution(
+fund.create_distribution(
     event_date=date(2024, 1, 1),
     distribution_amount=1000,
     distribution_type=DistributionType.DIVIDEND_FRANKED,
@@ -385,7 +385,7 @@ fund.add_distribution(
 )
 
 # ❌ INVALID: Gross/net amounts without withholding tax
-fund.add_distribution(
+fund.create_distribution(
     event_date=date(2024, 1, 1),
     gross_interest_amount=1000,  # Only valid with has_withholding_tax=True
     distribution_type=DistributionType.INTEREST,
@@ -393,7 +393,7 @@ fund.add_distribution(
 )
 
 # ❌ INVALID: Negative amounts
-fund.add_distribution(
+fund.create_distribution(
     event_date=date(2024, 1, 1),
     distribution_amount=-1000,  # Must be positive
     distribution_type=DistributionType.INTEREST
@@ -482,7 +482,7 @@ fund.add_distribution(
 - [ ] Document migration strategy
 
 ### Phase 2: Implementation
-- [ ] Implement unified `add_distribution()` method
+- [ ] Implement unified `create_distribution()` method
 - [ ] Add comprehensive validation logic
 - [ ] Implement withholding tax calculations
 - [ ] Add proper error handling
@@ -518,7 +518,7 @@ fund.add_distribution(
 ### Phase 4: Legacy Method Removal
 - [ ] Remove `add_interest_distribution_with_withholding_tax()` method
 - [ ] Remove `add_interest_distribution_without_withholding_tax()` method
-- [ ] Update all existing code to use new unified `add_distribution()` method
+- [ ] Update all existing code to use new unified `create_distribution()` method
 - [ ] Update API endpoints to use unified method
 - [ ] Update all tests to use new unified method
 - [ ] Remove old method documentation

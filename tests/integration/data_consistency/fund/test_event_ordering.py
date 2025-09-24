@@ -20,7 +20,7 @@ from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 from sqlalchemy.orm import Session
 
-from src.fund.models import Fund, FundEvent, EventType, DistributionType, FundType, FundStatus
+from src.fund.models import Fund, FundEvent, EventType, DistributionType, FundTrackingType, FundStatus
 from src.fund.enums import GroupType, TaxPaymentType
 from src.fund.services.fund_event_service import FundEventService
 from src.fund.events.orchestrator import FundUpdateOrchestrator
@@ -34,7 +34,7 @@ class TestEventOrdering:
         """Test that capital calls must occur before distributions."""
         # Setup: Create fund
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )
@@ -93,7 +93,7 @@ class TestEventOrdering:
     def test_event_chronology_validation(self, db_session: Session):
         """Test that events maintain proper chronological order."""
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )
@@ -164,7 +164,7 @@ class TestEventOrdering:
     def test_nav_update_sequence_validation(self, db_session: Session):
         """Test NAV update sequence validation for NAV-based funds."""
         fund = FundFactory(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )
@@ -214,7 +214,7 @@ class TestEventOrdering:
     def test_unit_transaction_sequence_validation(self, db_session: Session):
         """Test unit transaction sequence validation."""
         fund = FundFactory(
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )
@@ -276,7 +276,7 @@ class TestEventOrdering:
     def test_tax_event_sequence_validation(self, db_session: Session):
         """Test tax event sequence validation."""
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )
@@ -327,7 +327,7 @@ class TestEventOrdering:
     def test_event_grouping_sequence_validation(self, db_session: Session):
         """Test event grouping sequence validation."""
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )
@@ -384,7 +384,7 @@ class TestEventOrdering:
     def test_fund_status_transition_sequence(self, db_session: Session):
         """Test fund status transition sequence validation."""
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0,
             status=FundStatus.ACTIVE
@@ -424,7 +424,7 @@ class TestEventOrdering:
     def test_event_sequence_error_handling(self, db_session: Session):
         """Test event sequence error handling and recovery."""
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )
@@ -453,13 +453,13 @@ class TestEventOrdering:
         """Test cross-fund event sequence validation."""
         # Create two funds
         fund1 = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )
         
         fund2 = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=500000.0,
             current_equity_balance=0.0
         )
@@ -497,7 +497,7 @@ class TestEventOrdering:
     def test_event_sequence_performance_validation(self, db_session: Session):
         """Test event sequence performance with large numbers of events."""
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=10000000.0,
             current_equity_balance=0.0
         )
@@ -531,7 +531,7 @@ class TestEventOrdering:
     def test_event_sequence_business_rule_validation(self, db_session: Session):
         """Test business rule validation across event sequences."""
         fund = FundFactory(
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             commitment_amount=1000000.0,
             current_equity_balance=0.0
         )

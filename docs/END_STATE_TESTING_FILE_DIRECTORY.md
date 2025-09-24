@@ -134,7 +134,7 @@ tests/
 │   │   ├── ✅ investment_company/          # Company data access
 │   │   │   ├── ✅ __init__.py
 │   │   │   ├── ✅ test_company_repository.py            # Company data access
-│   │   │   └── ✅ test_contact_repository.py            # Contact data access
+│   │   │   └── ✅ test_company_contact_repository.py            # Contact data access
 │   │   ├── entity/                      # Entity data access
 │   │   │   ├── __init__.py
 │   │   │   └── test_entity_repository.py             # Entity data access

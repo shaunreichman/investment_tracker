@@ -7,9 +7,9 @@ in the fund refactor.
 """
 
 from src.investment_company.repositories.company_repository import CompanyRepository
-from src.investment_company.repositories.contact_repository import ContactRepository
+from src.investment_company.repositories.company_contact_repository import CompanyContactRepository
 
 __all__ = [
     'CompanyRepository',
-    'ContactRepository',
+    'CompanyContactRepository',
 ]

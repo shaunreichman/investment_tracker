@@ -22,8 +22,8 @@ Architecture Features:
 
 # Import core components
 from src.banking.models import Bank, BankAccount
-from src.banking.enums import Country, Currency, AccountStatus, BankType, AccountType, BankingDomainEventType
-from src.shared.enums import SortOrder
+from src.banking.enums.bank_enums import BankType, SortFieldBank, BankStatus
+from src.banking.enums.bank_account_enums import BankAccountType, SortFieldBankAccount, BankAccountStatus
 
 # Export main components
 __all__ = [
@@ -32,11 +32,10 @@ __all__ = [
     'BankAccount',
     
     # Enums
-    'Country',
-    'Currency', 
-    'AccountStatus',
     'BankType',
-    'AccountType',
-    'SortOrder',
-    'BankingDomainEventType',
+    'BankStatus',
+    'BankAccountType',
+    'SortFieldBank',
+    'SortFieldBankAccount',
+    'BankAccountStatus',
 ]

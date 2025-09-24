@@ -30,7 +30,7 @@ from src.investment_company.services.company_validation_service import CompanyVa
 from src.investment_company.enums import CompanyType, CompanyStatus
 from src.investment_company.events.orchestrator import CompanyUpdateOrchestrator
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType
+from src.fund.enums import FundStatus, FundTrackingType
 from src.entity.models import Entity
 from tests.factories import InvestmentCompanyFactory, ContactFactory, FundFactory, EntityFactory
 
@@ -400,8 +400,8 @@ class TestCompanyContactWorkflow:
         
         fund_data = {
             'name': 'Test Fund',
-            'fund_type': FundType.NAV_BASED.value,
-            'tracking_type': FundType.NAV_BASED.value,
+            'fund_type': FundTrackingType.NAV_BASED.value,
+            'tracking_type': FundTrackingType.NAV_BASED.value,
             'currency': 'AUD',
             'description': 'Test fund for portfolio',
             'commitment_amount': 5000000.0,

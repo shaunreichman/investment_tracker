@@ -513,7 +513,7 @@ FundEventRepository
 - [x] **Zero Breaking Changes** - all existing functionality preserved
 
 **Enum Coverage**:
-- **Core Fund Enums**: FundStatus, FundType, EventType, DistributionType, CashFlowDirection, TaxPaymentType, GroupType, TaxJurisdiction
+- **Core Fund Enums**: FundStatus, FundTrackingType, EventType, DistributionType, CashFlowDirection, TaxPaymentType, GroupType, TaxJurisdiction
 - **System Enums**: SortOrder, SortField, Environment, Currency
 - **Total**: 12 enums with enterprise-grade features
 

@@ -163,7 +163,7 @@ This guide provides a step-by-step approach to implement professional-grade cent
 ### Key Success Patterns
 1. **Type Coercion Strategy**: 
    - Form data comes as strings but API expects enums
-   - Use explicit casting: `formData.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED`
+   - Use explicit casting: `formData.tracking_type === 'nav_based' ? FundTrackingType.NAV_BASED : FundTrackingType.COST_BASED`
    - Handle optional fields: `null` → `undefined` for TypeScript compatibility
 
 2. **State Management Migration**:
@@ -193,7 +193,7 @@ This guide provides a step-by-step approach to implement professional-grade cent
    // import { Entity } from './local-types';
    
    // Add centralized imports
-   import { Entity, FundType } from '../types/api';
+   import { Entity, FundTrackingType } from '../types/api';
    import { useEntities, useCreateFund } from '../hooks/useEntities';
    ```
 
@@ -214,7 +214,7 @@ This guide provides a step-by-step approach to implement professional-grade cent
    tracking_type: formData.tracking_type
    
    // After: Enum-based with type coercion
-   tracking_type: formData.tracking_type === 'nav_based' ? FundType.NAV_BASED : FundType.COST_BASED
+   tracking_type: formData.tracking_type === 'nav_based' ? FundTrackingType.NAV_BASED : FundTrackingType.COST_BASED
    ```
 
 ### Lessons for Complex Components (like Step 8)

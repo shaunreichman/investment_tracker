@@ -5,7 +5,7 @@ Integration tests for fund deletion workflow.
 import pytest
 from src.fund.services.fund_service import FundService
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType, EventType
+from src.fund.enums import FundStatus, FundTrackingType, EventType
 from src.fund.models import FundEvent
 from src.entity.models import Entity
 from src.investment_company.models import InvestmentCompany
@@ -40,7 +40,7 @@ class TestFundDeletionWorkflow:
         fund = Fund(
             name="Test Fund",
             fund_type="Private Equity",
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             entity_id=entity.id,
             investment_company_id=company.id,
@@ -90,7 +90,7 @@ class TestFundDeletionWorkflow:
         fund = Fund(
             name="Test Fund",
             fund_type="Private Equity",
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             entity_id=entity.id,
             investment_company_id=company.id,
@@ -145,7 +145,7 @@ class TestFundDeletionWorkflow:
         fund = Fund(
             name="Test Fund",
             fund_type="Private Equity",
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             entity_id=entity.id,
             investment_company_id=company.id,
@@ -195,7 +195,7 @@ class TestFundDeletionWorkflow:
         fund = Fund(
             name="Test Fund",
             fund_type="Private Equity",
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             status=FundStatus.ACTIVE,
             entity_id=entity.id,
             investment_company_id=company.id,

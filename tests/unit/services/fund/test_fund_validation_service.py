@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 from datetime import date
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType, DistributionType
+from src.fund.enums import FundStatus, FundTrackingType, DistributionType
 
 
 class TestFundValidationService:
@@ -203,7 +203,7 @@ class TestFundValidationService:
         """Test successful capital call validation."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         fund.commitment_amount = 100000.0
@@ -224,7 +224,7 @@ class TestFundValidationService:
         """Test capital call validation with zero amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = 0.0
@@ -243,7 +243,7 @@ class TestFundValidationService:
         """Test capital call validation with negative amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = -1000.0
@@ -262,7 +262,7 @@ class TestFundValidationService:
         """Test capital call validation with missing date."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = 50000.0
@@ -281,7 +281,7 @@ class TestFundValidationService:
         """Test capital call validation with NAV-based fund."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = 50000.0
@@ -300,7 +300,7 @@ class TestFundValidationService:
         """Test capital call validation with multiple errors."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED  # Wrong fund type
+        fund.tracking_type = FundTrackingType.NAV_BASED  # Wrong fund type
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = -1000.0  # Negative amount
@@ -324,7 +324,7 @@ class TestFundValidationService:
         """Test capital call validation when amount exceeds remaining commitment."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=25000.0)  # Only 25k remaining
         amount = 50000.0  # Trying to call 50k
@@ -345,7 +345,7 @@ class TestFundValidationService:
         """Test successful return of capital validation."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = 25000.0
@@ -364,7 +364,7 @@ class TestFundValidationService:
         """Test return of capital validation with zero amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = 0.0
@@ -383,7 +383,7 @@ class TestFundValidationService:
         """Test return of capital validation with negative amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = -5000.0
@@ -402,7 +402,7 @@ class TestFundValidationService:
         """Test return of capital validation with missing date."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = 25000.0
@@ -421,7 +421,7 @@ class TestFundValidationService:
         """Test return of capital validation with NAV-based fund."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         amount = 25000.0
         return_date = date(2024, 9, 30)
         
@@ -438,7 +438,7 @@ class TestFundValidationService:
         """Test return of capital validation with multiple errors."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED  # Wrong fund type
+        fund.tracking_type = FundTrackingType.NAV_BASED  # Wrong fund type
         amount = -5000.0  # Negative amount
         return_date = None  # Missing date
         
@@ -460,7 +460,7 @@ class TestFundValidationService:
         """Test capital call validation handles None session gracefully."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = 50000.0
@@ -478,7 +478,7 @@ class TestFundValidationService:
         """Test return of capital validation handles None session gracefully."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         amount = 25000.0
@@ -498,7 +498,7 @@ class TestFundValidationService:
         """Test successful unit purchase validation."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         units = 100.0
         price = 25.50
         purchase_date = date(2024, 3, 15)
@@ -515,7 +515,7 @@ class TestFundValidationService:
         """Test unit purchase validation with invalid units."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         units = 0.0  # Invalid units
         price = 25.50
         purchase_date = date(2024, 3, 15)
@@ -533,7 +533,7 @@ class TestFundValidationService:
         """Test unit purchase validation with invalid price."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         units = 100.0
         price = -25.50  # Invalid price
         purchase_date = date(2024, 3, 15)
@@ -551,7 +551,7 @@ class TestFundValidationService:
         """Test unit purchase validation with missing date."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         units = 100.0
         price = 25.50
         purchase_date = None
@@ -569,7 +569,7 @@ class TestFundValidationService:
         """Test unit purchase validation with cost-based fund."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         units = 100.0
@@ -591,7 +591,7 @@ class TestFundValidationService:
         """Test successful unit sale validation."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.current_units = 1000.0
         units = 100.0
         price = 25.50
@@ -609,7 +609,7 @@ class TestFundValidationService:
         """Test unit sale validation with insufficient units."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.current_units = 50.0  # Less than sale amount
         units = 100.0
         price = 25.50
@@ -628,7 +628,7 @@ class TestFundValidationService:
         """Test unit sale validation with cost-based fund."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         fund.current_units = 1000.0
@@ -649,7 +649,7 @@ class TestFundValidationService:
         """Test unit sale when fund has 0 available units."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.current_units = 0.0  # No units available
         units = 100.0
         price = 25.50
@@ -668,7 +668,7 @@ class TestFundValidationService:
         """Test unit sale validation with negative price."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.current_units = 1000.0
         units = 100.0
         price = -25.50  # Negative price
@@ -687,7 +687,7 @@ class TestFundValidationService:
         """Test unit sale validation with zero price."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.current_units = 1000.0
         units = 100.0
         price = 0.0  # Zero price
@@ -706,7 +706,7 @@ class TestFundValidationService:
         """Test unit sale validation with zero units."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.current_units = 1000.0
         units = 0.0  # Zero units
         price = 25.50
@@ -725,7 +725,7 @@ class TestFundValidationService:
         """Test unit sale validation with negative units."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.current_units = 1000.0
         units = -100.0  # Negative units
         price = 25.50
@@ -744,7 +744,7 @@ class TestFundValidationService:
         """Test unit sale validation with missing date."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.current_units = 1000.0
         units = 100.0
         price = 25.50
@@ -765,7 +765,7 @@ class TestFundValidationService:
         """Test successful NAV update validation."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.id = 1
         nav_per_share = 25.50
         update_date = date(2024, 3, 15)
@@ -784,7 +784,7 @@ class TestFundValidationService:
         """Test NAV update validation with invalid NAV."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         nav_per_share = 0.0  # Invalid NAV
         update_date = date(2024, 3, 15)
         
@@ -803,7 +803,7 @@ class TestFundValidationService:
         """Test NAV update validation with missing date."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         nav_per_share = 25.50
         update_date = None
         
@@ -822,7 +822,7 @@ class TestFundValidationService:
         """Test NAV update validation with cost-based fund."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.COST_BASED
+        fund.tracking_type = FundTrackingType.COST_BASED
         fund.commitment_amount = 100000.0
         fund.get_remaining_commitment = Mock(return_value=75000.0)
         nav_per_share = 25.50
@@ -843,7 +843,7 @@ class TestFundValidationService:
         """Test NAV update validation with duplicate date."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.id = 1
         nav_per_share = 25.50
         update_date = date(2024, 3, 15)
@@ -866,7 +866,7 @@ class TestFundValidationService:
         """Test NAV update validation with negative NAV value."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.id = 1
         nav_per_share = -25.50  # Negative NAV
         update_date = date(2024, 3, 15)
@@ -886,7 +886,7 @@ class TestFundValidationService:
         """Test NAV update validation with zero NAV value."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.id = 1
         nav_per_share = 0.0  # Zero NAV
         update_date = date(2024, 3, 15)
@@ -906,7 +906,7 @@ class TestFundValidationService:
         """Test NAV update validation with missing date."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         fund.id = 1
         nav_per_share = 25.50
         update_date = None  # Missing date
@@ -928,7 +928,7 @@ class TestFundValidationService:
         """Test successful simple distribution validation."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INCOME
         distribution_amount = 1000.0
@@ -946,7 +946,7 @@ class TestFundValidationService:
         """Test successful withholding tax distribution validation."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         gross_interest_amount = 1000.0
@@ -965,7 +965,7 @@ class TestFundValidationService:
         """Test distribution validation with missing date."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = None
         distribution_type = DistributionType.INCOME
         distribution_amount = 1000.0
@@ -984,7 +984,7 @@ class TestFundValidationService:
         """Test distribution validation with missing type."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = None
         distribution_amount = 1000.0
@@ -1003,7 +1003,7 @@ class TestFundValidationService:
         """Test withholding tax distribution with wrong distribution type."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INCOME  # Wrong type for withholding tax
         gross_interest_amount = 1000.0
@@ -1023,7 +1023,7 @@ class TestFundValidationService:
         """Test withholding tax distribution with no amount fields."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         
@@ -1041,7 +1041,7 @@ class TestFundValidationService:
         """Test withholding tax distribution with both amount fields."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         gross_interest_amount = 1000.0
@@ -1061,7 +1061,7 @@ class TestFundValidationService:
         """Test simple distribution with withholding tax fields provided."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INCOME
         distribution_amount = 1000.0
@@ -1081,7 +1081,7 @@ class TestFundValidationService:
         """Test simple distribution with invalid amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INCOME
         distribution_amount = -1000.0  # Negative amount
@@ -1100,7 +1100,7 @@ class TestFundValidationService:
         """Test simple distribution with zero amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INCOME
         distribution_amount = 0.0  # Zero amount (falsy value)
@@ -1119,7 +1119,7 @@ class TestFundValidationService:
         """Test simple distribution with missing amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INCOME
         distribution_amount = None  # Missing amount
@@ -1138,7 +1138,7 @@ class TestFundValidationService:
         """Test withholding tax distribution with invalid tax rate."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         gross_interest_amount = 1000.0
@@ -1158,7 +1158,7 @@ class TestFundValidationService:
         """Test withholding tax distribution with negative tax rate."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         gross_interest_amount = 1000.0
@@ -1178,7 +1178,7 @@ class TestFundValidationService:
         """Test withholding tax distribution with invalid tax amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         gross_interest_amount = 1000.0
@@ -1198,7 +1198,7 @@ class TestFundValidationService:
         """Test withholding tax distribution with zero tax amount."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         gross_interest_amount = 1000.0
@@ -1218,7 +1218,7 @@ class TestFundValidationService:
         """Test withholding tax distribution with invalid numeric field values."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         gross_interest_amount = "invalid"  # Invalid string value
@@ -1237,7 +1237,7 @@ class TestFundValidationService:
         """Test withholding tax distribution logical consistency check."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = DistributionType.INTEREST
         gross_interest_amount = 1000.0
@@ -1257,7 +1257,7 @@ class TestFundValidationService:
         """Test distribution with invalid type string."""
         # Arrange
         fund = Mock(spec=Fund)
-        fund.tracking_type = FundType.NAV_BASED
+        fund.tracking_type = FundTrackingType.NAV_BASED
         event_date = date(2024, 6, 30)
         distribution_type = "INVALID_TYPE"  # Invalid string
         distribution_amount = 1000.0

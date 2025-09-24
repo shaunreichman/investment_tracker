@@ -17,7 +17,7 @@ from typing import Optional, List, Tuple
 from sqlalchemy.orm import Session
 
 from src.fund.models import Fund, FundEvent
-from src.fund.enums import EventType, FundType
+from src.fund.enums import EventType, FundTrackingType
 
 
 class FundEquityCalculator:
@@ -49,9 +49,9 @@ class FundEquityCalculator:
         Returns:
             List of (balance, has_changed) tuples for each event
         """
-        if fund.tracking_type == FundType.COST_BASED:
+        if fund.tracking_type == FundTrackingType.COST_BASED:
             return FundEquityCalculator._process_cost_based_events(events)
-        elif fund.tracking_type == FundType.NAV_BASED:
+        elif fund.tracking_type == FundTrackingType.NAV_BASED:
             return FundEquityCalculator._process_nav_based_events(events)
         else:
             raise ValueError(f"Unsupported fund type: {fund.tracking_type}")
@@ -146,7 +146,7 @@ class FundEquityCalculator:
         Returns:
             Total cost basis (investment value for NAV-based funds)
         """
-        if fund.tracking_type == FundType.COST_BASED:
+        if fund.tracking_type == FundTrackingType.COST_BASED:
             # For cost-based funds, sum all capital calls regardless of returns
             total_calls = sum(
                 float(event.amount) if event.amount is not None else 0.0
@@ -154,7 +154,7 @@ class FundEquityCalculator:
                 if event.event_type == EventType.CAPITAL_CALL
             )
             return total_calls
-        elif fund.tracking_type == FundType.NAV_BASED:
+        elif fund.tracking_type == FundTrackingType.NAV_BASED:
             # For NAV-based funds, this is the investment value of remaining units
             # (without brokerage, as brokerage is a transaction cost, not investment value)
             return FundEquityCalculator.calculate_current_equity_from_balances(event_balances)
