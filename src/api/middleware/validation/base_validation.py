@@ -336,6 +336,7 @@ def validate_request(
     non_negative_numbers: Optional[List[str]] = None,
     enum_fields: Optional[Dict[str, type]] = None,
     json_schema: Optional[Dict[str, Any]] = None,
+    custom_validation: Optional[Callable[[Dict[str, Any]], None]] = None,
     sanitize: bool = True
 ) -> Callable:
     """
@@ -352,6 +353,7 @@ def validate_request(
         non_negative_numbers: List of fields that must be non-negative numbers
         enum_fields: Dictionary mapping field names to enum classes
         json_schema: JSON schema for validation
+        custom_validation: Custom validation function that takes data dict and raises ValidationError
         sanitize: Whether to sanitize string inputs
         
     Returns:
@@ -402,6 +404,9 @@ def validate_request(
                 
                 if json_schema:
                     validator.validate_json_schema(data, json_schema)
+                
+                if custom_validation:
+                    custom_validation(data)
                 
                 if sanitize:
                     data = validator.sanitize_strings(data)
