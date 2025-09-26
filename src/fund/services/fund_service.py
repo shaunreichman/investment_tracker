@@ -1,50 +1,39 @@
 """
-Fund API Service.
-
-This service provides the business logic layer for fund operations,
-coordinating between the API controllers and the domain models.
-
-Key responsibilities:
-- Fund CRUD operations
-- Fund event processing
-- Fund calculations and updates
-- Business rule enforcement
+Fund Service.
 """
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-import logging
 
-from src.fund.repositories import FundRepository, FundEventRepository
-from src.fund.enums.fund_enums import FundStatus, FundTrackingType, FundInvestmentType, SortFieldFund, FundTaxStatementFinancialYearType
-from src.shared.enums.shared_enums import SortOrder, Country, Currency
+from src.fund.repositories.fund_repository import FundRepository
+from src.fund.enums.fund_enums import FundStatus, FundTrackingType, SortFieldFund, FundTaxStatementFinancialYearType
+from src.shared.enums.shared_enums import SortOrder
 from src.fund.services.fund_validation_service import FundValidationService
-from src.fund.services.fund_event_service import FundEventService
 from src.fund.models import Fund
 
 class FundService:
     """
     Service layer for fund operations.
-    
-    This service coordinates between the API layer, business logic services,
-    and data access layer. It provides a clean interface for handling
-    fund-related business operations.
-    
-    Attributes:
-        fund_repository (FundRepository): Repository for fund data access
-        fund_event_repository (FundEventRepository): Repository for fund event data access
-        fund_event_service (FundEventService): Service for fund event operations
-        validation_service (FundValidationService): Service for fund validation operations
-        logger (Logger): Logger for logging operations
+
+    This module provides the FundService class, which handles fund operations and business logic.
+    The service provides clean separation of concerns for:
+    - Fund retrieval
+    - Fund creation
+    - Fund deletion with dependency checking
+
+    The service uses the FundRepository to perform CRUD operations and the FundValidationService to validate funds.
+    The service is used by the FundController to handle fund operations.
     """
     
     def __init__(self):
-        """Initialize the fund service with all required components."""
+        """Initialize the fund service with all required components.
+
+        Args:
+            fund_repository: Fund repository to use. If None, creates a new one.
+            fund_validation_service: Fund validation service to use. If None, creates a new one.
+        """
         self.fund_repository = FundRepository()
-        self.fund_event_repository = FundEventRepository()
-        self.fund_event_service = FundEventService()
-        self.validation_service = FundValidationService()
-        self.logger = logging.getLogger(__name__)
+        self.fund_validation_service = FundValidationService()
 
 
     ################################################################################
@@ -151,7 +140,7 @@ class FundService:
             raise ValueError(f"Fund not found")
         
         # ENTERPRISE VALIDATION: Validate deletion
-        validation_errors = self.validation_service.validate_fund_deletion(fund, session)
+        validation_errors = self.fund_validation_service.validate_fund_deletion(fund, session)
         if validation_errors:
             raise ValueError(f"Deletion validation failed: {validation_errors}")
         

@@ -1,8 +1,10 @@
 """
 Risk Free Rate Models.
 
-This module provides the risk free rate-related model classes,
-representing risk free rates in the system.
+This module provides the RiskFreeRate model class, representing risk free rates in the system.
+These rates are used to calculate IRRs for funds
+The model handles only data persistence, with business logic
+delegated to services for clean separation of concerns.
 """
 
 from datetime import datetime, timezone

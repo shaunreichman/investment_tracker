@@ -10,10 +10,31 @@ from sqlalchemy.orm import Session
 
 
 class FundPnlCalculator:
-    def __init__(self, session: Session):
-        self.fund_event_repository = FundEventRepository(session)
+    """
+    Fund PNL Calculator.
+
+    This module provides the FundPnlCalculator class, which calculates the PNL of a fund.
+    """
+    def __init__(self):
+        """
+        Initialize the FundPnlCalculator.
+        
+        Args:
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+        """
+        self.fund_event_repository = FundEventRepository()
 
     def calculate_pnl(self, fund: Fund, session: Session):
+        """
+        Calculate the PNL of a fund.
+        
+        Args:
+            fund: The fund object
+            session: Database session
+
+        Returns:
+            Dictionary with the PNL values
+        """
         pnl_dict = {}
         pnl_dict['pnl'] = 0
         pnl_dict['realized_pnl'] = 0

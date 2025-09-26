@@ -10,6 +10,7 @@ The package follows enterprise best practices with:
 - Clean separation of concerns
 - Comprehensive enum coverage for all business domains
 """
+
 from src.fund.services.fund_date_service import FundDateService
 from src.fund.services.fund_equity_service import FundEquityService
 from src.fund.services.fund_event_cash_flow_service import FundEventCashFlowService

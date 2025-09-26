@@ -1,8 +1,9 @@
 """
 Fund Tax Statement Model.
 
-This module provides the tax statement model class,
-representing tax statements from funds for specific financial years.
+This module provides the tax statement model class, representing tax statements from funds for specific financial years.
+The model handles only data persistence and basic validation, with business logic
+delegated to services for clean separation of concerns.
 """
 
 from datetime import datetime, timezone

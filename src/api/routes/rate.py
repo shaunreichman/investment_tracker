@@ -4,6 +4,7 @@ Rate API Routes.
 This module provides enterprise-grade REST API endpoints for rate operations,
 with standardized response formats, comprehensive error handling, and performance optimization.
 
+All endpoints use middleware validation for input data.
 All endpoints use the rate controller with DTO responses.
 """
 

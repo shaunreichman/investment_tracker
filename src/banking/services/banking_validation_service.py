@@ -1,8 +1,5 @@
 """
 Banking Validation Service.
-
-This service extracts business rule validation logic from the banking models
-to provide clean separation of concerns and improved testability.
 """
 
 from sqlalchemy.orm import Session
@@ -13,6 +10,13 @@ from src.fund.repositories.fund_event_cash_flow_repository import FundEventCashF
 class BankingValidationService:
     """
     Service for handling banking business rule validation.
+
+    This module provides the BankingValidationService class, which handles banking business rule validation.
+    The service provides clean separation of concerns for:
+    - Bank deletion with dependency checking
+    - Bank account deletion with dependency checking
+
+    The service uses the BankAccountRepository and FundEventCashFlowRepository to perform CRUD operations.
     """
     
     def __init__(self):
@@ -21,7 +25,6 @@ class BankingValidationService:
         
         Args:
             bank_account_repository: Bank account repository to use. If None, creates a new one.
-            entity_repository: Entity repository to use. If None, creates a new one.
             fund_event_cash_flow_repository: Fund event cash flow repository to use. If None, creates a new one.
         """
         self.bank_account_repository = BankAccountRepository()

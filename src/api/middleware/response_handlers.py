@@ -11,7 +11,6 @@ Key Functions:
 
 from flask import jsonify
 from src.api.dto.api_response import ApiResponse
-from src.api.dto.controller_response_dto import ControllerResponseDTO
 
 
 def handle_controller_response(dto):

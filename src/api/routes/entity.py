@@ -5,6 +5,7 @@ This module contains all entity-related API endpoints including
 entity management and CRUD operations.
 
 All endpoints use middleware validation for input data.
+All endpoints use the entity controller with DTO responses.
 """
 
 from flask import Blueprint, jsonify

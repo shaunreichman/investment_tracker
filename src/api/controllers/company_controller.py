@@ -1,17 +1,5 @@
 """
 Company API Controller.
-
-This controller handles HTTP requests for investment company operations,
-providing RESTful endpoints for company management.
-
-Key responsibilities:
-- Investment company CRUD endpoints
-- Company overview and performance data
-- Company fund management
-- Input validation and error handling
-
-This controller now uses services directly instead of model methods,
-maintaining clean separation of concerns.
 """
 
 from flask import request, current_app
@@ -27,11 +15,7 @@ from src.api.controllers.formatters.company_formatter import format_contact, for
 class CompanyController:
     """
     Controller for company operations.
-    
-    This controller handles HTTP requests and provides REST API endpoints
-    for company operations. It now uses services directly for
-    all business logic, maintaining clean separation of concerns.
-    
+
     Attributes:
         company_service (CompanyService): Service for company operations
         company_contact_service (CompanyContactService): Service for company contact operations

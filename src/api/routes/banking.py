@@ -4,6 +4,7 @@ Banking API Routes.
 This module provides enterprise-grade REST API endpoints for banking operations,
 with standardized response formats, comprehensive error handling, and performance optimization.
 
+All endpoints use middleware validation for input data.
 All endpoints use the banking controller with DTO responses.
 """
 

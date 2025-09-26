@@ -7,88 +7,49 @@ alwaysApply: true
 # Layer Relationships Rules
 
 ## Flow Direction
-**API → Controllers → Services → Repositories/Calculators/Event Orchestrators → Event Handlers**
+**Routes → Controllers → Services → Repositories/Calculators**
 
 ## Allowed Interactions
 
+### Models
+- ✅ **Used by all layers**
+- ✅ **Pure data containers** with no business logic
+- ✅ **Define relationships** and database constraints
+- ❌ **Never** call other layers
+- ❌ **Never** contain business logic or validation methods
+
+### Routes
+- ✅ **Call Controllers** only
+- ✅ **Apply validation middleware** for input validation
+- ✅ **Use response handlers** for standardized responses
+- ✅ **Handle HTTP** concerns only
+- ❌ **Never** call Services or Repositories directly
+- ❌ **Never** contain business logic
+
 ### Controllers
 - ✅ **Call Services** (never Repositories directly)
-- ✅ **Handle HTTP** concerns only
+- ✅ **Use formatters** for response data transformation
+- ✅ **Handle DTO responses** with proper error mapping
+- ✅ **Access validated data** from middleware
 - ❌ **Never** contain business logic
+- ❌ **Never** handle HTTP response formatting
 
 ### Services  
 - ✅ **Call Repositories** for data access
 - ✅ **Call Calculators** for mathematical operations
-- ✅ **Call Event Orchestrators** for event processing
 - ✅ **Call other Services** for complex workflows
 - ❌ **Never** call Event Handlers directly
 - ❌ **Never** handle HTTP concerns
 
 ### Repositories
+- ✅ **Handle CRUD operations** for all datbase operations
 - ✅ **Interact with Models** and database only
 - ✅ **Call other Repositories** for related data
 - ❌ **Never** call Services or contain business logic
 
-### Event Orchestrators
-- ✅ **Called by Services** for event processing
-- ✅ **Route events** to appropriate handlers
-- ✅ **Manage event failures** and rollback
-- ❌ **Never** contain business logic
-- ❌ **Never** handle HTTP concerns
-
-### Event Handlers
-- ✅ **Called by Event Orchestrators**
-- ✅ **Call Repositories** for data access
-- ✅ **Call Calculators** for calculations
-- ✅ **Publish Domain Events**
-- ❌ **Never** handle HTTP concerns
-
 ### Calculators
-- ✅ **Pure functions** with no dependencies
-- ✅ **Called by Services, Handlers, other Calculators**
+- ✅ **Pure static methods** with no dependencies
+- ✅ **Called by Services, other Calculators**
+- ✅ **Validate inputs** and raise `ValueError` for invalid parameters
 - ❌ **Never** call other layers
-
-### Models
-- ✅ **Used by all layers**
-- ✅ **Basic domain methods** only
-- ❌ **Never** call other layers
-
-### Domain Events
-- ✅ **Published by Services/Handlers**
-- ✅ **Consumed by Event Handlers**
-- ❌ **Never** contain business logic
-
-## Examples
-
-```python
-# ✅ Good: Proper layer interaction
-class FundController:
-    def create_fund(self):
-        # Controller calls Service
-        fund = self.fund_service.create_fund(data, session)
-        return jsonify(fund)
-
-class FundService:
-    def create_fund(self, data, session):
-        # Service calls Repository
-        fund = self.fund_repository.create(data, session)
-        # Service calls Calculator
-        equity = FundEquityCalculator.calculate_current_equity(fund, session)
-        # Service calls Event Orchestrator
-        event_data = {'event_type': 'fund_created', 'fund_id': fund.id}
-        self.event_orchestrator.process_fund_event(event_data, session, fund)
-        return fund
-
-# ❌ Bad: Controller calling Repository directly
-class FundController:
-    def create_fund(self):
-        # Violation: Controller calling Repository
-        fund = self.fund_repository.create(data, session)
-        return jsonify(fund)
-```
-
-## Key Principles
-- **Unidirectional flow**: Dependencies flow down, never up
-- **Single responsibility**: Each layer has one clear purpose
-- **Loose coupling**: Use events for cross-cutting concerns
-- **Testability**: Each layer can be tested in isolation
+- ❌ **Never** access database or external services

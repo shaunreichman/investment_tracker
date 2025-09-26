@@ -1,21 +1,12 @@
 """
-Entity API Service.
-
-This service provides the business logic layer for entity operations,
-coordinating between the API controllers and the domain models.
-
-Key responsibilities:
-- Entity CRUD operations
-- Entity business rule enforcement
-- Entity validation and coordination
-- Business logic orchestration
+Entity Service
 """
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 import logging
 
-from src.entity.repositories import EntityRepository
+from src.entity.repositories.entity_repository import EntityRepository
 from src.entity.services.entity_validation_service import EntityValidationService
 from src.entity.models import Entity
 from src.entity.enums.entity_enums import SortFieldEntity, EntityType
@@ -24,21 +15,27 @@ from src.shared.enums.shared_enums import SortOrder, Country
 class EntityService:
     """
     Service layer for entity operations.
-    
-    This service coordinates between the API layer, business logic services,
-    and data access layer. It provides a clean interface for handling
-    entity-related business operations.
-    
-    Attributes:
-        entity_repository (EntityRepository): Repository for entity data access
-        logger (Logger): Logger for logging operations
+
+    This module provides the EntityService class, which handles entity operations and business logic.
+    The service provides clean separation of concerns for:
+    - Entity retrieval
+    - Entity creation
+    - Entity deletion with dependency checking
+
+    The service uses the EntityRepository to perform CRUD operations and the EntityValidationService to validate entities.
+    The service is used by the EntityController to handle entity operations.
     """
     
     def __init__(self):
-        """Initialize the entity service with all required components."""
+        """
+        Initialize the entity service with all required components.
+
+        Args:
+            entity_repository: Entity repository to use. If None, creates a new one.
+            entity_validation_service: Entity validation service to use. If None, creates a new one.
+        """
         self.entity_repository = EntityRepository()
         self.entity_validation_service = EntityValidationService()
-        self.logger = logging.getLogger(__name__)
 
 
     ################################################################################
@@ -47,11 +44,11 @@ class EntityService:
 
     def get_entities(self, session: Session, 
                     entity_type: Optional[EntityType] = None,
-                    tax_jurisdiction: Optional[str] = None,
+                    tax_jurisdiction: Optional[Country] = None,
                     name: Optional[str] = None,
                     sort_by: SortFieldEntity = SortFieldEntity.NAME,
                     sort_order: SortOrder = SortOrder.ASC
-    ) -> List['Entity']:
+    ) -> List[Entity]:
         """
         Get entities with filtering.
         
@@ -67,7 +64,7 @@ class EntityService:
         """
         return self.entity_repository.get_entities(session, entity_type, tax_jurisdiction, name, sort_by, sort_order)
         
-    def get_entity_by_id(self, entity_id: int, session: Session) -> Optional['Entity']:
+    def get_entity_by_id(self, entity_id: int, session: Session) -> Optional[Entity]:
         """
         Get an entity by its ID.
         
@@ -85,7 +82,7 @@ class EntityService:
     # Create Entity
     ################################################################################
 
-    def create_entity(self, entity_data: Dict[str, Any], session: Session) -> 'Entity':
+    def create_entity(self, entity_data: Dict[str, Any], session: Session) -> Entity:
         """
         Create a new entity.
         

@@ -10,12 +10,12 @@ from src.fund.repositories.fund_repository import FundRepository
 from src.fund.repositories.fund_event_repository import FundEventRepository
 from src.fund.repositories.fund_event_cash_flow_repository import FundEventCashFlowRepository
 from src.fund.repositories.fund_tax_statement_repository import FundTaxStatementRepository
-from src.fund.repositories.domain_event_repository import DomainEventRepository
+from src.fund.repositories.domain_fund_event_repository import DomainFundEventRepository
 
 __all__ = [
     'FundRepository',
     'FundEventRepository',
     'FundEventCashFlowRepository',
     'FundTaxStatementRepository',
-    'DomainEventRepository',
+    'DomainFundEventRepository',
 ]

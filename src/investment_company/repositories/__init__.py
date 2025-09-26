@@ -1,9 +1,9 @@
 """
 Investment Company Repositories.
 
-This package provides repository classes for clean data access abstraction
-in the investment company domain, following the repository pattern established
-in the fund refactor.
+This module provides the data access layer abstraction for the investment company system.
+Repositories handle all database operations and provide a clean interface
+for business logic components to interact with data.
 """
 
 from src.investment_company.repositories.company_repository import CompanyRepository

@@ -2,7 +2,10 @@
 Company API Routes.
 
 This module contains all company-related API endpoints including
-investment company management and company-specific fund operations.
+investment company management and company-specific contact operations.
+
+All endpoints use middleware validation for input data.
+All endpoints use the company controller with DTO responses.
 """
 
 from flask import Blueprint, jsonify, request

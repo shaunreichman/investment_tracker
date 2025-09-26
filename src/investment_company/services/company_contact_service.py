@@ -1,33 +1,37 @@
 """
-Company contact service.
-
-This service provides the main business logic layer for company contact operations,
-coordinating between the API controllers and the domain services.
-
-Key responsibilities:
-- Company contact CRUD operations coordination
-- Service orchestration
-- Business logic coordination
-- API layer integration
+Company Contact service.
 """
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
-from src.investment_company.repositories import CompanyContactRepository
+from src.investment_company.repositories.company_contact_repository import CompanyContactRepository
 from src.investment_company.models import Contact
-from src.investment_company.services import CompanyValidationService
 from src.investment_company.enums.company_contact_enums import SortFieldContact
 from src.shared.enums.shared_enums import SortOrder
 
 class CompanyContactService:
     """
     Main service layer for company contact operations.
+
+    This module provides the CompanyContactService class, which handles company contact operations and business logic.
+    The service provides clean separation of concerns for:
+    - Company contact retrieval
+    - Company contact creation
+    - Company contact deletion
+
+    The service uses the CompanyContactRepository to perform CRUD operations.
+    The service is used by the CompanyController to handle company contact operations.
     """
 
     def __init__(self):
+        """
+        Initialize the CompanyContactService.
+
+        Args:
+            company_contact_repository: Company contact repository to use. If None, creates a new one.
+        """
         self.company_contact_repository = CompanyContactRepository()
-        self.validation_service = CompanyValidationService()
 
     ################################################################################
     # GET CONTACTS

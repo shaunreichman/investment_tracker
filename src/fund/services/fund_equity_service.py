@@ -1,14 +1,5 @@
 """
 Fund Equity Service.
-
-This service handles database operations for fund equity calculations,
-using the pure FundEquityCalculator for all calculation logic.
-
-Key principles:
-- Service layer handles database operations
-- Calculator layer handles pure calculations
-- Clean separation of concerns
-- Single computation approach for performance
 """
 
 from typing import Optional, List
@@ -23,22 +14,26 @@ from src.shared.enums.shared_enums import SortOrder
 
 class FundEquityService:
     """
-    Service layer for fund equity operations with database updates.
-    
-    This service handles database operations while using the pure
-    FundEquityCalculator for all calculation logic. Provides efficient
-    single computation approach with change detection for database updates.
+    Fund Equity Service.
+
+    This module provides the FundEquityService class, which handles fund equity operations and business logic.
+    The service provides clean separation of concerns for:
+    - Update the equity fields of a fund
+
+    The service uses the FundEventRepository and FundEquityCalculator to perform operations.
+    The service is used by the FundEventSecondaryService to update the equity fields of a fund.
     """
     
-    def __init__(self, session: Session):
+    def __init__(self):
         """
-        Initialize service with database session.
+        Initialize the FundEquityService.
         
         Args:
-            session: Database session for operations
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+            fund_equity_calculator: Fund equity calculator to use. If None, creates a new one.
         """
-        self.session = session
-        self.calculator = FundEquityCalculator()
+        self.fund_event_repository = FundEventRepository()
+        self.fund_equity_calculator = FundEquityCalculator()
     
     def update_fund_equity_fields(self, fund: Fund, session: Session,
                                   current_equity_flag: bool = True,
@@ -52,28 +47,35 @@ class FundEquityService:
         
         Args:
             fund: The fund to update
-            
+            session: Database session
+            current_equity_flag: Flag to update the current equity balance
+            average_equity_flag: Flag to update the average equity balance
+            total_cost_basis_flag: Flag to update the total cost basis
+
         Returns:
-            Dictionary with updated values and metadata
+            List[FundFieldChange] with updated values and metadata
+            
+        Raises:
+            ValueError: If the fund is not found
         """
         old_current_equity_balance = fund.current_equity_balance
         old_average_equity_balance = fund.average_equity_balance
         old_total_cost_basis = fund.total_cost_basis
         # SINGLE COMPUTATION: Get events and calculate balances once
-        events = FundEventRepository.get_fund_events(session, fund.id, 
+        events = self.fund_event_repository.get_fund_events(session, fund.id, 
                     event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
                     sort_order=SortOrder.ASC)
-        event_balances = self.calculator.calculate_event_equity_balances(fund, events)
+        event_balances = self.fund_equity_calculator.calculate_event_equity_balances(fund, events)
         
         # DERIVED CALCULATIONS: All other values calculated from pre-computed balances
         if current_equity_flag:
-            current_equity = self.calculator.calculate_current_equity_from_balances(event_balances)
+            current_equity = self.fund_equity_calculator.calculate_current_equity_from_balances(event_balances)
             fund.current_equity_balance = current_equity
         if average_equity_flag:
-            average_equity = self.calculator.calculate_average_equity_from_balances(events, event_balances)
+            average_equity = self.fund_equity_calculator.calculate_average_equity_from_balances(events, event_balances)
             fund.average_equity_balance = average_equity
         if total_cost_basis_flag:
-            total_cost_basis = self.calculator.calculate_total_cost_basis_from_balances(event_balances, fund, events)
+            total_cost_basis = self.fund_equity_calculator.calculate_total_cost_basis_from_balances(event_balances, fund, events)
             fund.total_cost_basis = total_cost_basis
         
         # Update only changed events for efficiency

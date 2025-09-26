@@ -1,8 +1,5 @@
 """
-Enhanced Banking API Controller.
-
-This controller provides enterprise-grade REST API endpoints for banking operations,
-with standardized response formats, comprehensive error handling, and performance optimization.
+Banking API Controller.
 """
 
 from flask import request, current_app
@@ -15,7 +12,13 @@ from src.banking.services.bank_service import BankService
 from src.banking.services.bank_account_service import BankAccountService
 
 class BankingController:
-    """Enterprise-grade controller for banking operations with comprehensive features."""
+    """
+    Controller for banking operations.
+
+    Attributes:
+        bank_service (BankService): Service for bank operations
+        bank_account_service (BankAccountService): Service for bank account operations
+    """
     
     def __init__(self):
         """Initialize the enhanced banking controller."""

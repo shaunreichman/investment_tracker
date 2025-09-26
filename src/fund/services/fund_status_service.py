@@ -1,36 +1,28 @@
 """
 Fund Status Service.
-
-This service handles all fund status transitions and calculations,
-extracting complex status logic from the Fund model.
-
-Key responsibilities:
-- Status transition validation
-- End date calculations
-- Status-based IRR calculations
-- Tax statement status checks
 """
 
-import logging
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from src.fund.enums import FundStatus
 from src.fund.models import Fund, FundFieldChange
-
-# Configure logger for this module
-logger = logging.getLogger(__name__)
+from src.fund.repositories import FundTaxStatementRepository
 
 class FundStatusService:
     """
-    Service for handling fund status management extracted from the Fund model.
-    
-    This service provides clean separation of concerns for:
+    Fund Status Service.
+
+    This module provides the FundStatusService class, which handles fund status operations and business logic.
+    The service provides clean separation of concerns for:
     - Status transition logic and business rules
     - Status updates triggered by equity events
     - Status updates triggered by tax statements
     - Status determination logic
     - End date calculation logic
+
+    The service uses the FundRepository to perform operations.
+    The service is used by the FundEventSecondaryService to update the status of a fund.
     """
     
     def __init__(self):
@@ -46,37 +38,31 @@ class FundStatusService:
     # STATUS TRANSITION LOGIC AND BUSINESS RULES
     # ============================================================================
     
-    def update_status_after_equity_event(self, fund: Fund, session: Optional[Session] = None) -> bool:
+    def update_status_after_equity_event(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
         """
         Update the fund status based on current equity balance and tax statement status.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
         
         Args:
             fund: The fund object
             session: Database session (optional)
 
         Returns:
-            bool: True if status updated, False otherwise
+            Optional[List[FundFieldChange]]: List of field changes if status updated, None otherwise
         """
         old_status = fund.status
-        # Trust the fund's current state - event handlers should maintain current_equity_balance
+        
         if fund.current_equity_balance > 0 and fund.status != FundStatus.ACTIVE:
             fund.status = FundStatus.ACTIVE
-            logger.info(f"Fund {fund.name} status updated to ACTIVE")
         elif fund.current_equity_balance <= 0 and fund.status == FundStatus.ACTIVE:
             fund.status = FundStatus.REALIZED
             if self._is_final_tax_statement_received(fund, session):
                 fund.status = FundStatus.COMPLETED
-                logger.info(f"Fund {fund.name} status updated to COMPLETED")
-            else:
-                logger.info(f"Fund {fund.name} status updated to REALIZED")
         status_changes = []
         if old_status != fund.status:
             status_changes.append(FundFieldChange(field_name='status', old_value=old_status, new_value=fund.status))
         return status_changes if status_changes else None
     
-    def update_status_after_tax_statement(self, fund: Fund, session: Optional[Session] = None) -> bool:
+    def update_status_after_tax_statement(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
         """
         Update fund status after a tax statement event.
                 
@@ -85,21 +71,18 @@ class FundStatusService:
             session: Database session (optional)
 
         Returns:
-            bool: True if status updated, False otherwise
+            Optional[List[FundFieldChange]]: List of field changes if status updated, None otherwise
         """
         old_status = fund.status
         if fund.status != FundStatus.ACTIVE:
             # Check if this tax statement makes the fund completed
             if self._is_final_tax_statement_received(fund, session):
                 if fund.status != FundStatus.COMPLETED:
-                    fund.status = FundStatus.COMPLETED
-                    logger.info(f"Fund {fund.name} status updated to COMPLETED")
-                    
+                    fund.status = FundStatus.COMPLETED                    
             else:
                 # Tax statement removed, revert to realized if was completed
                 if fund.status == FundStatus.COMPLETED:
                     fund.status = FundStatus.REALIZED
-                    logger.info(f"Fund {fund.name} status reverted to REALIZED")
                     
         status_changes = []
         if old_status != fund.status:
@@ -135,7 +118,6 @@ class FundStatusService:
             return False
         
         # Use repository for data access instead of direct model access
-        from src.fund.repositories import FundTaxStatementRepository
         fund_tax_statement_repository = FundTaxStatementRepository()
         tax_statements = fund_tax_statement_repository.get_fund_tax_statements(fund_id=fund.id, start_tax_payment_date=end_date, session=session)
         

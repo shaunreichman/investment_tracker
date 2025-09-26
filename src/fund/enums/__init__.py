@@ -8,6 +8,7 @@ from src.fund.enums.fund_enums import FundStatus, FundTrackingType, FundTaxState
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType, SortFieldFundEvent
 from src.fund.enums.fund_event_cash_flow_enums import CashFlowDirection, SortFieldFundEventCashFlow
 from src.fund.enums.fund_tax_statement_enums import SortFieldFundTaxStatement
+from src.fund.enums.domain_fund_event_enums import SortFieldDomainFundEvent
 
 __all__ = [
     'FundStatus',
@@ -23,4 +24,5 @@ __all__ = [
     'GroupType',
     'CashFlowDirection',
     'SortFieldFundTaxStatement',
+    'SortFieldDomainFundEvent',
 ]

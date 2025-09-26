@@ -1,14 +1,6 @@
 """
 Company Repository.
 
-This repository provides data access operations for InvestmentCompany entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- Investment company CRUD operations
-- Company querying and filtering
-- Company relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
@@ -21,16 +13,12 @@ from src.shared.enums.shared_enums import SortOrder
 
 class CompanyRepository:
     """
-    Repository for investment company data access operations.
-    
-    This repository handles all database operations for investment companies including
+    Company Repository.
+
+    This repository handles all database operations for companies including
     CRUD operations, complex queries, and caching strategies. It provides
     a clean interface for business logic components to interact with
     company data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
     
     def __init__(self, cache_ttl: int = 300):

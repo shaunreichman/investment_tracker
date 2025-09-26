@@ -1,18 +1,7 @@
 """
 Fund IRR Service.
-
-This service handles IRR calculations for funds, providing a clean interface
-between the pure calculation logic and business operations.
-
-Key principles:
-- Stateless service with no session management
-- Uses shared IRRCalculator for pure calculation math
-- Provides orchestration for complex IRR workflows
-- Manages risk-free rate charges and tax calculations
-- Delegates database operations to repositories
 """
 
-import logging
 from typing import Optional, List, Tuple
 from datetime import date
 from sqlalchemy.orm import Session
@@ -23,25 +12,35 @@ from src.fund.enums.fund_event_enums import EventType
 from src.fund.enums.fund_enums import FundStatus
 from src.fund.repositories import FundEventRepository
 
-logger = logging.getLogger(__name__)
-
 
 class FundIrRService:
     """
-    Service for handling IRR calculations.
-    
-    This service provides a clean interface for IRR calculations,
-    delegating database operations to repositories and maintaining
-    stateless operation for better testability and composability.
+    Fund IRR Service.
+
+    This module provides the FundIrRService class, which handles fund IRR operations and business logic.
+    The service provides clean separation of concerns for:
+    - Update the IRRs of a fund
+        - Update the completed IRRs of a fund
+        - Update the completed after-tax IRRs of a fund
+        - Update the completed real IRRs of a fund
+    - Calculate the completed IRRs of a fund
+    - Calculate the completed after-tax IRRs of a fund
+    - Calculate the completed real IRRs of a fund
+
+    The service uses the FundEventRepository and IRRCalculator to perform operations.
+    The service is used by the FundEventSecondaryService to update the IRRs of a fund.
     """
     
     def __init__(self):
         """
         Initialize the FundIrRService.
         
-        This service is stateless and does not store database sessions.
+        Args:
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+            irr_calculator: IRR calculator to use. If None, creates a new one.
         """
         self.fund_event_repository = FundEventRepository()
+        self.irr_calculator = IRRCalculator()
 
     def update_irrs(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
         """
@@ -60,21 +59,18 @@ class FundIrRService:
             fund.completed_irr_gross = None
             fund.completed_irr_after_tax = None
             fund.completed_irr_real = None
-            logger.info(f"IRRs reset to None for active fund {fund.name}")
             
         elif fund.status == FundStatus.REALIZED:
             # REALIZED: Only gross IRR is meaningful (all capital returned)
             fund.completed_irr_gross = self.calculate_completed_irr(fund, session)
             fund.completed_irr_after_tax = None  # Not meaningful until completed
             fund.completed_irr_real = None       # Not meaningful until completed
-            logger.info(f"IRR Gross calculated and stored for realized fund {fund.name}")
 
         elif fund.status == FundStatus.COMPLETED:
             # COMPLETED: All IRRs are meaningful (tax obligations complete)
             fund.completed_irr_gross = self.calculate_completed_irr(fund, session)
             fund.completed_irr_after_tax = self.calculate_completed_after_tax_irr(fund, session)
             fund.completed_irr_real = self.calculate_completed_real_irr(fund, session)
-            logger.info(f"All IRRs calculated and stored for completed fund {fund.name}")
 
         irr_changes = []
         if old_completed_irr_gross != fund.completed_irr_gross:
@@ -139,7 +135,7 @@ class FundIrRService:
             include_eofy_debt_cost=False
         )
     
-    def calculate_completed_real_irr(self, fund: Fund, session: Session, risk_free_rate_currency: Optional[str] = None) -> Optional[float]:
+    def calculate_completed_real_irr(self, fund: Fund, session: Session) -> Optional[float]:
         """
         Calculate the completed real IRR for the fund.
         
@@ -148,7 +144,6 @@ class FundIrRService:
         Args:
             fund: The fund object
             session: Database session for data access
-            risk_free_rate_currency: Currency for risk-free rate calculations
             
         Returns:
             float or None: The completed real IRR as a decimal, or None if not computable
@@ -206,17 +201,16 @@ class FundIrRService:
             cash_flows, days_from_start = self._prepare_cash_flows(filtered_events, start_date)
             
             # Validate cash flows
-            is_valid = IRRCalculator.validate_cash_flows(cash_flows, days_from_start)
+            is_valid = self.irr_calculator.validate_cash_flows(cash_flows, days_from_start)
             
             if not is_valid:
                 return None
             
             # Calculate IRR using shared calculator
-            return IRRCalculator.calculate_irr(cash_flows, days_from_start)
+            return self.irr_calculator.calculate_irr(cash_flows, days_from_start)
             
         except Exception as e:
-            logger.error(f"Error calculating IRR: {e}")
-            return None
+            raise ValueError(f"Error calculating IRR: {e}")
     
     def _filter_events_for_irr(
         self,

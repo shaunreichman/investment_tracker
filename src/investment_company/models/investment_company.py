@@ -1,9 +1,9 @@
 """
 Investment Company Model.
 
-This module provides the InvestmentCompany model class.
-InvestmentCompany is a pure data container with no business logic.
-All business logic has been moved to dedicated services.
+This module provides the InvestmentCompany model class representing investment companies which manage funds.
+The model handles only data persistence, with business logic
+delegated to services for clean separation of concerns.
 """
 
 from datetime import datetime, timezone

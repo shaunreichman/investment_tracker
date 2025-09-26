@@ -1,19 +1,51 @@
 """
-Service for handling fund PNL calculations.
+Fund PNL Service.
 """
 
 from sqlalchemy.orm import Session
 from src.fund.models import Fund, FundFieldChange
-import logging
+from src.fund.calculators.fund_pnl_calculator import FundPnlCalculator
+from src.fund.repositories import FundEventRepository
 
 class FundPnlService:
-    def __init__(self, session: Session):
-        self.session = session
-        self.logger = logging.getLogger(__name__)
+    """
+    Fund PNL Service.
+
+    This module provides the FundPnlService class, which handles fund PNL operations and business logic.
+    The service provides clean separation of concerns for:
+    - Update the PNL of a fund
+        - Update the PNL of a fund
+        - Update the Realized PNL of a fund
+        - Update the Unrealized PNL of a fund
+        - Update the Realized PNL Capital Gain of a fund
+        - Update the Unrealized PNL Capital Gain of a fund
+        - Update the Realized PNL Dividend of a fund
+        - Update the Realized PNL Interest of a fund
+        - Update the Realized PNL Distribution of a fund
+
+    The service uses the FundEventRepository and FundPnlCalculator to perform operations.
+    The service is used by the FundEventSecondaryService to update the PNL of a fund.
+    """
+    def __init__(self):
+        """
+        Initialize the FundPnlService.
+        
+        Args:
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+        """
+        self.fund_event_repository = FundEventRepository()
+        self.fund_pnl_calculator = FundPnlCalculator()
 
     def update_fund_pnl(self, fund: Fund, session: Session):
         """
         Update the PNL of a fund.
+
+        Args:
+            fund: The fund object
+            session: Database session
+
+        Returns:
+            List[FundFieldChange] with updated values and metadata
         """
         old_pnl = fund.pnl
         old_realized_pnl = fund.realized_pnl
@@ -26,8 +58,7 @@ class FundPnlService:
 
         all_changes = []
 
-        from src.fund.calculators.fund_pnl_calculator import FundPnlCalculator
-        pnl_dict = FundPnlCalculator.calculate_pnl(fund, session)
+        pnl_dict = self.fund_pnl_calculator.calculate_pnl(fund, session)
         
         if pnl_dict['pnl'] != old_pnl:
             fund.pnl = pnl_dict['pnl']

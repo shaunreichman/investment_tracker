@@ -1,20 +1,11 @@
 """
 Company Service.
-
-This service provides the main business logic layer for investment company operations,
-coordinating between the API controllers and the domain services.
-
-Key responsibilities:
-- Company CRUD operations coordination
-- Service orchestration
-- Business logic coordination
-- API layer integration
 """
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
-from src.investment_company.repositories import CompanyRepository, CompanyContactRepository
+from src.investment_company.repositories.company_repository import CompanyRepository
 from src.investment_company.models import InvestmentCompany
 from src.investment_company.services.company_validation_service import CompanyValidationService
 from src.investment_company.enums.company_enums import CompanyType, CompanyStatus, SortFieldCompany
@@ -24,21 +15,26 @@ from src.shared.enums.shared_enums import SortOrder
 class CompanyService:
     """
     Main service layer for company operations.
-    
-    This service coordinates between the API layer, business logic services,
-    and data access layer. It provides a clean interface for handling
-    company-related business operations.
-    
-    Attributes:
-        company_repository (CompanyRepository): Repository for company data access
-        company_contact_repository (CompanyContactRepository): Repository for contact data access
-        company_validation_service (CompanyValidationService): Service for validation
+
+    This module provides the CompanyService class, which handles company operations and business logic.
+    The service provides clean separation of concerns for:
+    - Company retrieval
+    - Company creation
+    - Company deletion with dependency checking
+
+    The service uses the CompanyRepository to perform CRUD operations and the CompanyValidationService to validate companies.
+    The service is used by the CompanyController to handle company operations.
     """
     
     def __init__(self):
-        """Initialize the company service with all required components."""
+        """
+        Initialize the company service with all required components.
+
+        Args:
+            company_repository: Company repository to use. If None, creates a new one.
+            company_validation_service: Company validation service to use. If None, creates a new one.
+        """
         self.company_repository = CompanyRepository()
-        self.company_contact_repository = CompanyContactRepository()
         self.company_validation_service = CompanyValidationService()
 
     ################################################################################
@@ -97,25 +93,15 @@ class CompanyService:
         Returns:
             InvestmentCompany: The created company object
         """
-        required_fields = ['name']
-        for field in required_fields:
-            if field not in company_data:
-                raise ValueError(f"Required field '{field}' is missing")
-
         processed_data = company_data.copy()
-        if 'company_type' in processed_data and isinstance(processed_data['company_type'], str):
-            try:
-                processed_data['company_type'] = CompanyType(processed_data['company_type'])
-            except ValueError:
-                raise ValueError(f"Invalid company type: {processed_data['company_type']}. Must be one of: {[c.value for c in CompanyType]}")
-        
+
+        # Set the company status to INACTIVE on creation
+        processed_data['status'] = CompanyStatus.INACTIVE
+
         company = self.company_repository.create_company(processed_data, session)
         if not company:
             raise ValueError(f"Failed to create company")
         
-        # Set the company status to INACTIVE on creation
-        company.status = CompanyStatus.INACTIVE
-
         return company
 
 

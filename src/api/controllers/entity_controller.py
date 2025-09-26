@@ -1,15 +1,5 @@
 """
 Entity API Controller.
-
-This controller handles HTTP requests for entity operations,
-providing RESTful endpoints for entity management.
-
-Key responsibilities:
-- Entity CRUD endpoints
-- Business logic delegation to service layer
-- Response formatting and error handling
-
-Note: All input validation is handled by middleware validation decorators.
 """
 
 from flask import request, current_app
@@ -24,12 +14,6 @@ from src.api.dto.response_codes import ApiResponseCode
 class EntityController:
     """
     Controller for entity operations.
-    
-    This controller handles HTTP requests and provides REST API endpoints
-    for entity operations. It delegates business logic to the service
-    layer and handles request/response formatting.
-    
-    All input validation is handled by middleware validation decorators.
     
     Attributes:
         entity_service (EntityService): Service for entity business logic

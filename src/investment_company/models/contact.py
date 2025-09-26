@@ -1,9 +1,9 @@
 """
 Contact Model.
 
-This module provides the Contact model class for investment company contacts.
-Contact is a pure data container with no business logic.
-All business logic has been moved to dedicated services.
+This module provides the Contact model class representing contacts at investment companies.
+The model handles only data persistence, with business logic
+delegated to services for clean separation of concerns.
 """
 
 from datetime import datetime, timezone

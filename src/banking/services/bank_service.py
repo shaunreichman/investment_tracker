@@ -1,13 +1,5 @@
 """
 Bank Service.
-
-This service extracts bank operations and business logic from the Bank model
-to provide clean separation of concerns and improved testability.
-
-Extracted functionality:
-- Bank creation with validation
-- Bank deletion with validation
-- Bank business rule enforcement
 """
 
 from typing import Optional, Dict, Any, List
@@ -23,24 +15,26 @@ from src.shared.enums.shared_enums import Country, SortOrder
 class BankService:
     """
     Service for handling bank operations and business logic.
-    
-    This service provides clean separation of concerns for:
-    - Bank creation with comprehensive validation
-    - Bank updates with validation and business rules
+    This module provides the BankService class, which handles bank operations and business logic.
+    The service provides clean separation of concerns for:
+    - Bank retrieval
+    - Bank creation
     - Bank deletion with dependency checking
-    - Bank business rule enforcement
+
+    The service uses the BankingValidationService to validate banks and the BankRepository to perform CRUD operations.
+    The service is used by the BankingController to handle bank operations.
     """
     
-    def __init__(self, banking_validation_service: Optional[BankingValidationService] = None, bank_repository: Optional[BankRepository] = None):
+    def __init__(self):
         """
         Initialize the BankService.
         
         Args:
-            banking_validation_service: Validation service to use. If None, creates a new one.
+            banking_validation_service: Banking validation service to use. If None, creates a new one.
             bank_repository: Bank repository to use. If None, creates a new one.
         """
-        self.banking_validation_service = banking_validation_service or BankingValidationService()
-        self.bank_repository = bank_repository or BankRepository()
+        self.banking_validation_service = BankingValidationService()
+        self.bank_repository = BankRepository()
 
 
     ################################################################################
@@ -87,7 +81,7 @@ class BankService:
     
     def create_bank(self, bank_data: Dict[str, Any], session: Session) -> Bank:
         """
-        Create a new bank with comprehensive validation.
+        Create a new bank.
         
         Args:
             bank_data: Dictionary containing bank data

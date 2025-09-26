@@ -1,8 +1,9 @@
 """
 Fund Event Cash Flow Model.
 
-This module provides the FundEventCashFlow model class,
-representing actual cash transfers linked to fund events.
+This module provides the FundEventCashFlow model class, representing actual cash transfers linked to fund events.
+The model handles only data persistence and basic validation, with business logic
+delegated to services for clean separation of concerns.
 """
 
 from datetime import datetime, timezone

@@ -1,7 +1,7 @@
 """
 Fund Event Validation Functions.
 
-This module provides custom validation functions for fund event creation,
+This module provides custom validation functions for fund event distribution creation,
 handling event-type-specific validation rules.
 """
 

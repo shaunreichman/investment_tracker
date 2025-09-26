@@ -1,5 +1,5 @@
 """
-Service for handling fund NAV calculations.
+Fund NAV Service.
 """
 
 from sqlalchemy.orm import Session
@@ -7,22 +7,42 @@ from src.fund.repositories import FundEventRepository
 from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import SortOrder
 from src.fund.models import Fund, FundFieldChange, FundEvent
-import logging
 from typing import List
 
 class FundNavService:
-    def __init__(self, session: Session):
-        self.session = session
-        self.logger = logging.getLogger(__name__)
+    """
+    Fund NAV Service.
+
+    This module provides the FundNavService class, which handles fund NAV operations and business logic.
+    The service provides clean separation of concerns for:
+    - Update the NAV of a fund
+    - Update the NAV of a fund event
+    """
+    def __init__(self):
+        """
+        Initialize the FundNavService.
+        
+        Args:
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+        """
+        self.fund_event_repository = FundEventRepository()
+
 
     def update_nav_fund_fields(self, fund: Fund, session: Session) -> List[FundFieldChange]:
         """
         Update the NAV of a fund.
+
+        Args:
+            fund: The fund object
+            session: Database session
+
+        Returns:
+            List[FundFieldChange] with updated values and metadata
         """
         old_current_unit_price = fund.current_unit_price
         old_current_nav_total = fund.current_nav_total
 
-        events = FundEventRepository.get_fund_events(session, fund.id, 
+        events = self.fund_event_repository.get_fund_events(session, fund.id, 
                     event_types=[EventType.NAV_UPDATE],
                     sort_order=SortOrder.ASC)
         if events:
@@ -42,6 +62,12 @@ class FundNavService:
     def update_nav_fund_event_fields(self, events: List[FundEvent]) -> None:
         """
         Update the NAV fields of the nav update fund events.
+
+        Args:
+            events: List of FundEvent objects
+
+        Returns:
+            None
         """
         previous_nav_per_share = None
         for event in events:

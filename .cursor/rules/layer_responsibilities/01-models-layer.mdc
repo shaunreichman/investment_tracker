@@ -1,0 +1,115 @@
+---
+description: Models Layer: Data representation and basic domain logic
+globs: **/models/*.py
+alwaysApply: false
+---
+
+# Models Layer Rules
+
+## Role
+Models represent data entities, define relationships, and serve as pure data containers. All business logic has been moved to dedicated services for clean separation of concerns.
+
+## Should Do
+- **Data structure**: Define table structure with proper column types and constraints
+- **Relationships**: Define entity relationships and foreign keys using SQLAlchemy relationships
+- **Database constraints**: Use unique constraints, indexes, and foreign key constraints
+- **Data representation**: Provide `__repr__` methods for debugging and logging
+- **Column documentation**: Document field purposes with comments (SYSTEM, MANUAL, CALCULATED)
+
+## Shouldn't Do
+- **Business logic**: Delegate all business logic to services
+- **Validation methods**: Delegate validation to validation services
+- **Calculations**: Delegate calculations to calculator classes
+- **External service calls**: Keep models focused on data only
+- **HTTP concerns**: Handle request/response formatting (controllers)
+- **Database operations**: Delegate all database operations to repositories
+
+## Examples
+
+```python
+# ✅ Good: Pure data container with proper structure
+class Bank(Base):
+    """Model representing a banking institution."""
+    
+    __tablename__ = "banks"
+    
+    # Primary key and basic fields
+    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
+    name = Column(String(255), nullable=False)  # (MANUAL) bank name
+    country = Column(Enum(Country), nullable=False)  # (MANUAL) ISO 3166-1 alpha-2 country code
+    bank_type = Column(Enum(BankType), nullable=True)  # (MANUAL) bank type
+    swift_bic = Column(String(11), nullable=True)  # (MANUAL) optional SWIFT/BIC identifier
+    
+    # System timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) creation timestamp
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) last update timestamp
+    
+    # Calculated fields (updated by services)
+    status = Column(Enum(BankStatus), nullable=True)  # (CALCULATED) bank status
+    current_number_of_bank_accounts = Column(Integer, default=0)  # (CALCULATED) total number of bank accounts
+    current_balance_in_bank_accounts = Column(Float, default=0.0)  # (CALCULATED) total balance of all bank accounts
+    
+    # Relationships
+    accounts = relationship("BankAccount", back_populates="bank", cascade="all, delete-orphan")
+    
+    def __repr__(self) -> str:
+        return f"<Bank(id={self.id}, name='{self.name}', country='{self.country}', bank_type='{self.bank_type}')>"
+
+# ✅ Good: Model with constraints and indexes
+class BankAccount(Base):
+    """Model representing an investor-owned bank account."""
+    
+    __tablename__ = "bank_accounts"
+    
+    # Primary key and foreign keys
+    id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False, index=True)  # (MANUAL) owner entity
+    bank_id = Column(Integer, ForeignKey("banks.id"), nullable=False, index=True)  # (MANUAL) linked bank
+    
+    # Account details
+    account_name = Column(String(255), nullable=False)  # (MANUAL) human-readable account name/label
+    account_number = Column(String(64), nullable=False)  # (MANUAL) account number stored as provided
+    currency = Column(Enum(Currency), nullable=False)  # (MANUAL) ISO-4217 currency code
+    account_type = Column(Enum(BankAccountType), nullable=False)  # (MANUAL) account type
+    
+    # System timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) creation timestamp
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) last update timestamp
+    
+    # Calculated fields
+    status = Column(Enum(BankAccountStatus), nullable=True)  # (CALCULATED) account status
+    current_balance = Column(Float, default=0.0)  # (CALCULATED) current balance of the account
+    
+    # Database constraints
+    __table_args__ = (
+        UniqueConstraint("entity_id", "bank_id", "account_number", name="uq_bank_account_unique"),
+        UniqueConstraint("bank_id", "account_number", name="uq_bank_account_number_unique"),
+    )
+    
+    # Relationships
+    bank = relationship("Bank", back_populates="accounts")
+    entity = relationship("Entity", back_populates="bank_accounts")
+    
+    def __repr__(self) -> str:
+        return (
+            f"<BankAccount(id={self.id}, entity_id={self.entity_id}, bank_id={self.bank_id}, "
+            f"name='{self.account_name}', number='{self.account_number}', currency='{self.currency}')>"
+        )
+
+# ❌ Bad: Business logic in model
+class Bank(Base):
+    def validate_bank_data(self) -> bool:
+        if not self.name:
+            raise ValueError("Bank name is required")  # Business logic - should be in validation service
+        return True
+    
+    def calculate_total_balance(self, session: Session) -> float:
+        # Complex calculation - should be in calculator class
+        return sum(account.balance for account in self.accounts)
+
+# ❌ Bad: External service calls in model
+class Bank(Base):
+    def send_notification(self):
+        # External service call - should be in service layer
+        notification_service.send_bank_created_notification(self)
+```

@@ -1,14 +1,5 @@
 """
 Fund API Controller.
-
-This controller handles HTTP requests for fund operations,
-providing RESTful endpoints for fund management.
-
-Key responsibilities:
-- Fund CRUD endpoints
-- Fund event endpoints
-- Fund calculation endpoints
-- Input validation and error handling
 """
 
 from flask import request, current_app
@@ -27,12 +18,11 @@ class FundController:
     """
     Controller for fund operations.
     
-    This controller handles HTTP requests and provides REST API endpoints
-    for fund operations. It delegates business logic to the FundService
-    and handles request/response formatting.
-    
     Attributes:
         fund_service (FundService): Service layer for fund operations
+        fund_event_service (FundEventService): Service layer for fund event operations
+        fund_event_cash_flow_service (FundEventCashFlowService): Service layer for fund event cash flow operations
+        fund_tax_statement_service (FundTaxStatementService): Service layer for fund tax statement operations
     """
     
     def __init__(self):

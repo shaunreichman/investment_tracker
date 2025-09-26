@@ -1,14 +1,5 @@
 """
 Entity Repository.
-
-This repository provides data access operations for Entity entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- Entity CRUD operations
-- Entity querying and filtering
-- Entity relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
@@ -16,22 +7,18 @@ from sqlalchemy.orm import Session
 
 from src.entity.models import Entity
 from src.entity.enums.entity_enums import SortFieldEntity
-from src.shared.enums.shared_enums import SortOrder
+from src.shared.enums.shared_enums import SortOrder, Country
 from src.entity.enums.entity_enums import EntityType
 
 
 class EntityRepository:
     """
-    Repository for entity data access operations.
+    Entity Repository.
     
     This repository handles all database operations for entities including
     CRUD operations, complex queries, and caching strategies. It provides
     a clean interface for business logic components to interact with
     entity data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
     
     def __init__(self, cache_ttl: int = 300):
@@ -51,7 +38,7 @@ class EntityRepository:
 
     def get_entities(self, session: Session, 
                     entity_type: Optional[EntityType] = None,
-                    tax_jurisdiction: Optional[str] = None,
+                    tax_jurisdiction: Optional[Country] = None,
                     name: Optional[str] = None,
                     sort_by: SortFieldEntity = SortFieldEntity.NAME,
                     sort_order: SortOrder = SortOrder.ASC
@@ -61,13 +48,13 @@ class EntityRepository:
         
         Args:
             session: Database session
-            entity_type: Optional entity type filter
-            tax_jurisdiction: Optional tax jurisdiction filter
-            name: Optional name filter
-            sort_by: Optional sort field
-            sort_order: Optional sort order
+            entity_type: Optional entity type filter (optional)
+            tax_jurisdiction: Optional tax jurisdiction filter (optional)
+            name: Optional name filter (optional)
+            sort_by: Optional sort field (optional)
+            sort_order: Optional sort order (optional)
         Returns:
-            List of Entity objects
+            List of entities
         """
         cache_key = f"entities:entity_type:{entity_type}:tax_jurisdiction:{tax_jurisdiction}:name:{name}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
 

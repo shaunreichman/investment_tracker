@@ -1,23 +1,37 @@
 """
 Entity Validation Service.
-
-This module provides the EntityValidationService class,
-which contains the validation logic for the entity system.
 """
 
 from typing import List
 from sqlalchemy.orm import Session
 import logging
+from src.banking.repositories.bank_account_repository import BankAccountRepository
+from src.fund.repositories.fund_repository import FundRepository
+from src.fund.repositories.fund_tax_statement_repository import FundTaxStatementRepository
 
 class EntityValidationService:
     """
     Entity Validation Service.
 
-    This class contains the validation logic for the entity system.
+    This module provides the EntityValidationService class, which handles entity business rule validation.
+    The service provides clean separation of concerns for:
+    - Entity deletion with dependency checking
+
+    The service uses the BankAccountRepository, FundTaxStatementRepository, and FundRepository to perform CRUD operations.
     """
 
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
+        """
+        Initialize the EntityValidationService.
+
+        Args:
+            bank_account_repository: Bank account repository to use. If None, creates a new one.
+            fund_tax_statement_repository: Fund tax statement repository to use. If None, creates a new one.
+            fund_repository: Fund repository to use. If None, creates a new one.
+        """
+        self.bank_account_repository = BankAccountRepository()
+        self.fund_tax_statement_repository = FundTaxStatementRepository()
+        self.fund_repository = FundRepository()
         
     ################################################################################
     # Validate Entity
@@ -42,7 +56,7 @@ class EntityValidationService:
             errors['bank_accounts'] = ["Cannot delete entity with dependent bank accounts"]
         
         # Cannot delete entity with dependent tax statements
-        tax_statements = self.tax_statement_repository.get_tax_statements(session, entity_id=entity_id)
+        tax_statements = self.fund_tax_statement_repository.get_fund_tax_statements(session, entity_id=entity_id)
         if tax_statements:
             errors['tax_statements'] = ["Cannot delete entity with dependent tax statements"]
         

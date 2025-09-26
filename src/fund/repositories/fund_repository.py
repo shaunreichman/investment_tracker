@@ -1,14 +1,5 @@
 """
 Fund Repository.
-
-This repository provides data access operations for Fund entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- Fund CRUD operations
-- Fund querying and filtering
-- Fund relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
@@ -21,16 +12,12 @@ from src.shared.enums.shared_enums import SortOrder
 
 class FundRepository:
     """
-    Repository for fund data access operations.
-    
+    Fund Repository.
+
     This repository handles all database operations for funds including
     CRUD operations, complex queries, and caching strategies. It provides
     a clean interface for business logic components to interact with
     fund data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
     
     def __init__(self, cache_ttl: int = 300):
@@ -60,12 +47,12 @@ class FundRepository:
 
         Args:
             session: Database session
-            company_id: ID of the company to filter by
-            entity_id: ID of the entity to filter by
-            fund_status: Fund status to filter by
-            fund_tracking_type: Fund tracking type to filter by
-            sort_by: Field to sort by
-            sort_order: Sort order (ascending or descending)
+            company_id: ID of the company to filter by (optional)
+            entity_id: ID of the entity to filter by (optional)
+            fund_status: Fund status to filter by (optional)
+            fund_tracking_type: Fund tracking type to filter by (optional)
+            sort_by: Field to sort by (optional)
+            sort_order: Sort order (ascending or descending) (optional)
             
         Returns:
             List of funds

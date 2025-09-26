@@ -1,14 +1,5 @@
 """
 Fund Tax Statement Repository.
-
-This repository provides data access operations for FundTaxStatement entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- FundTaxStatement CRUD operations
-- FundTaxStatement querying and filtering
-- FundTaxStatement relationship management
-- Data persistence operations
 """
 
 from typing import Dict, Any, List, Optional
@@ -57,13 +48,13 @@ class FundTaxStatementRepository:
 
         Args:
             session: Database session
-            fund_id: ID of the fund to filter by
-            entity_id: ID of the entity to filter by
-            financial_year: Financial year to filter by
-            start_tax_payment_date: Start tax payment date to filter by
-            end_tax_payment_date: End tax payment date to filter by
-            sort_by: Field to sort by
-            sort_order: Order to sort by
+            fund_id: ID of the fund to filter by (optional)
+            entity_id: ID of the entity to filter by (optional)
+            financial_year: Financial year to filter by (optional)
+            start_tax_payment_date: Start tax payment date to filter by (optional)
+            end_tax_payment_date: End tax payment date to filter by (optional)
+            sort_by: Field to sort by (optional)
+            sort_order: Order to sort by (optional)
 
         Returns:
             List[FundTaxStatement]: List of fund tax statements

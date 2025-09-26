@@ -1,25 +1,45 @@
 """
 Fund Validation Service.
-
-Provides comprehensive validation for fund operations including deletion validation.
-Follows enterprise patterns established in company validation service.
 """
 
 from typing import Dict, List, Any
 from sqlalchemy.orm import Session
 from src.fund.models import Fund
 from src.fund.enums.fund_enums import FundTrackingType
-from src.fund.enums.fund_event_enums import EventType, DistributionType
-from src.fund.repositories import FundEventRepository, FundTaxStatementRepository
+from src.fund.enums.fund_event_enums import EventType
+from src.fund.repositories import FundEventRepository, FundTaxStatementRepository, FundRepository
 
 
 class FundValidationService:
-    """Enterprise-grade validation service for fund operations."""
+    """
+    Fund Validation Service.
+
+    This module provides the FundValidationService class, which handles fund business rule validation.
+    The service provides clean separation of concerns for:
+    - Fund deletion validation
+    - Fund event creation validation
+        - Capital call validation
+        - Return of capital validation
+        - Unit purchase validation
+        - Unit sale validation
+        - NAV update validation
+        - Distribution validation
+    - Fund tax statement deletion validation
+
+    The service uses the FundEventRepository and FundTaxStatementRepository to perform CRUD operations.
+    """
     
     def __init__(self):
-        """Initialize the validation service with required repositories."""
+        """
+        Initialize the validation service with required repositories.
+
+        Args:
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+            fund_tax_statement_repository: Fund tax statement repository to use. If None, creates a new one.
+        """
         self.fund_event_repository = FundEventRepository()
         self.fund_tax_statement_repository = FundTaxStatementRepository()
+        self.fund_repository = FundRepository()
     
     def validate_fund_deletion(self, fund: Fund, session: Session) -> Dict[str, List[str]]:
         """
@@ -94,6 +114,8 @@ class FundValidationService:
         
         # BUSINESS RULE: Cannot call more than remaining commitment
         fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
+        if not fund:
+            raise ValueError(f"Fund not found")
         if fund.commitment_amount and event_data['amount'] > fund.commitment_amount:
             errors['amount'] = ["Cannot call more capital than remaining commitment"]
         
@@ -118,6 +140,8 @@ class FundValidationService:
 
         # BUSINESS RULE: Cannot return more capital than remaining equity
         fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
+        if not fund:
+            raise ValueError(f"Fund not found")
         if fund.current_equity_balance and event_data['amount'] > fund.current_equity_balance:
             errors['amount'] = ["Cannot return more capital than remaining equity"]
         
@@ -161,6 +185,8 @@ class FundValidationService:
         
         # BUSINESS RULE: Cannot sell more units than available
         fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
+        if not fund:
+            raise ValueError(f"Fund not found")
         if event_data['units'] > fund.current_units:
             errors['units'] = [f"Insufficient units: trying to sell {event_data['units']} but only {fund.current_units} available"]
         

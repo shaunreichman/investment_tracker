@@ -1,8 +1,5 @@
 """
 Risk Free Rate Repository.
-
-This module provides the risk free rate repository,
-representing risk free rates in the system.
 """
 
 from typing import List, Optional, Dict, Any
@@ -14,7 +11,14 @@ from src.shared.enums.shared_enums import Currency, SortOrder
 from src.rates.enums.risk_free_rate_enums import RiskFreeRateType, SortFieldRiskFreeRate
 
 class RiskFreeRateRepository:
-    """Risk Free Rate Repository."""
+    """
+    Risk Free Rate Repository.
+
+    This repository handles all database operations for risk free rates including
+    CRUD operations, complex queries, and caching strategies. It provides
+    a clean interface for business logic components to interact with
+    risk free rate data without direct database access.
+    """
     def __init__(self, cache_ttl: int = 300):
         """
         Initialize the Risk Free Rate Repository.

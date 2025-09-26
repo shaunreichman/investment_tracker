@@ -1,5 +1,5 @@
 """
-Service for handling fund date calculations.
+Fund Date Service.
 """
 
 from src.fund.models import Fund, FundFieldChange
@@ -7,22 +7,47 @@ from src.shared.enums.shared_enums import SortOrder, EventOperation
 from src.fund.enums.fund_event_enums import EventType
 from src.fund.enums.fund_enums import FundStatus, FundTaxStatementFinancialYearType
 from src.fund.repositories import FundEventRepository, FundRepository
-from src.entity.repositories import EntityRepository
 from typing import Optional, List
 from sqlalchemy.orm import Session
-import logging
 from datetime import date
 
 class FundDateService:
-    def __init__(self, session: Session):
+    """
+    Fund Date Service.
+
+    This module provides the FundDateService class, which handles fund date operations and business logic.
+    The service provides clean separation of concerns for:
+    - Update the start date of a fund
+    - Update the end date of a fund
+    - Update the duration of a fund
+    - Get the financial years of a fund
+    """
+    def __init__(self):
+        """
+        Initialize the FundDateService.
+
+        Args:
+            fund_repository: Fund repository to use. If None, creates a new one.
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+        """
         self.fund_repository = FundRepository()
         self.fund_event_repository = FundEventRepository()
-        self.entity_repository = EntityRepository()
-        self.logger = logging.getLogger(__name__)
     
     def update_fund_start_date(self, fund_id: int, session: Session, event_id: Optional[int] = None, fund_event_operation: EventOperation = None) -> Optional[FundFieldChange]:
         """
         Update the start date of a fund.
+
+        Args:
+            fund_id: ID of the fund to update
+            session: Database session
+            event_id: ID of the event to update the start date from
+            fund_event_operation: Operation of the fund event
+            
+        Returns:
+            FundFieldChange object if the start date was updated, None otherwise
+            
+        Raises:
+            ValueError: If the fund is not found
         """
         fund = self.fund_repository.get_fund_by_id(fund_id, session)
         if not fund:
@@ -38,7 +63,6 @@ class FundDateService:
             if event.event_type == EventType.CAPITAL_CALL or event.event_type == EventType.UNIT_PURCHASE:
                 if not fund.start_date or event.event_date < fund.start_date:
                     fund.start_date = event.event_date
-                    self.logger.info(f"Updated fund {fund.id} start_date to {event.event_date}")
         else:
             # Update the start date of the fund by looking at all the fund events
             events = self.fund_event_repository.get_fund_events(session=session, fund_id=fund_id,
@@ -47,7 +71,6 @@ class FundDateService:
             if events:
                 if not fund.start_date or fund.start_date > events[0].event_date:
                     fund.start_date = events[0].event_date
-                    self.logger.info(f"Updated fund {fund.id} start_date to {events[0].event_date}")
         if old_start_date != fund.start_date:
             return FundFieldChange(field_name='start_date', old_value=old_start_date, new_value=fund.start_date)
         return None
@@ -55,6 +78,16 @@ class FundDateService:
     def update_fund_end_date(self, fund_id: int, session: Session) -> Optional[FundFieldChange]:
         """
         Update the end date of a fund.
+        
+        Args:
+            fund_id: ID of the fund to update
+            session: Database session
+            
+        Returns:
+            FundFieldChange object if the end date was updated, None otherwise
+            
+        Raises:
+            ValueError: If the fund is not found
         """
         fund = self.fund_repository.get_fund_by_id(fund_id, session)
         if not fund:
@@ -69,7 +102,6 @@ class FundDateService:
             if events:
                 if not fund.end_date or events[0].event_date > fund.end_date:
                     fund.end_date = events[0].event_date
-                    self.logger.info(f"Updated fund {fund.id} end_date to {events[0].event_date}")
 
         if old_end_date != fund.end_date:
             return FundFieldChange(field_name='end_date', old_value=old_end_date, new_value=fund.end_date)
@@ -78,6 +110,17 @@ class FundDateService:
     def update_fund_duration(self, fund: Fund, session: Session) -> Optional[FundFieldChange]:
         """
         Update the duration of a fund.
+
+        Args:
+            fund: The fund object
+            session: Database session
+            
+        Returns:
+            FundFieldChange object if the duration was updated, None otherwise
+            
+        Raises:
+            ValueError: If the fund is not found
+            ValueError: If the fund start date is not set
         """
         if not fund.start_date:
             raise ValueError ("Fund.start_date not set - can't set the current_duration") 
@@ -90,7 +133,6 @@ class FundDateService:
 
         from src.fund.calculators.fund_duration_calculator import FundDurationCalculator
         fund.current_duration = FundDurationCalculator.calculate_duration_months(fund.start_date, end)
-        self.logger.info(f"Updated fund {fund.id} duration to {fund.current_duration}")
         if old_duration != fund.current_duration:
             return FundFieldChange(field_name='current_duration', old_value=old_duration, new_value=fund.current_duration)
         return None
@@ -105,6 +147,10 @@ class FundDateService:
             
         Returns:
             List[str]: List of financial years in descending order (most recent first)
+            
+        Raises:
+            ValueError: If the fund start date is not set
+            ValueError: If the financial year type is invalid
         """
         # Get fund start date (use events if available, otherwise creation date)
         start_date = fund.start_date

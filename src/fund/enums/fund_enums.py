@@ -155,14 +155,3 @@ class SortFieldFund(Enum):
             return cls(value)
         except ValueError:
             raise ValueError(f"Invalid SortFieldFund: {value}. Must be one of: {[f.value for f in cls]}")
-    
-    @classmethod
-    def is_numeric_field(cls, field: 'SortFieldFund') -> bool:
-        """Check if sort field contains numeric values."""
-        numeric_fields = {
-            cls.COMMITMENT_AMOUNT,
-            cls.CURRENT_EQUITY_BALANCE,
-            cls.CREATED_AT,
-            cls.UPDATED_AT
-        }
-        return field in numeric_fields

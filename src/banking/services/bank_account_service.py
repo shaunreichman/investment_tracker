@@ -1,14 +1,5 @@
 """
 Bank Account Service.
-
-This service extracts bank account operations and business logic from the BankAccount model
-to provide clean separation of concerns and improved testability.
-
-Extracted functionality:
-- Bank account creation with validation
-- Bank account updates with validation
-- Bank account deletion with validation
-- Bank account business rule enforcement
 """
 
 from typing import Optional, Dict, Any, List
@@ -24,24 +15,28 @@ from src.shared.enums.shared_enums import SortOrder, Currency
 class BankAccountService:
     """
     Service for handling bank account operations and business logic.
-    
-    This service provides clean separation of concerns for:
-    - Bank account creation with comprehensive validation
-    - Bank account updates with validation and business rules
+    This module provides the BankAccountService class, which handles bank account operations and business logic.
+    The service provides clean separation of concerns for:
+    - Bank account retrieval
+    - Bank account creation
     - Bank account deletion with dependency checking
-    - Bank account business rule enforcement
+
+    The service uses the BankingValidationService to validate bank accounts and the BankAccountRepository to perform CRUD operations.
+    The service also uses the BankAccountBalanceService to update the balance of a bank account.
+
+    The service is used by the BankingController to handle bank account operations.
     """
     
-    def __init__(self, validation_service: Optional[BankingValidationService] = None, bank_account_repository: Optional[BankAccountRepository] = None):
+    def __init__(self):
         """
         Initialize the BankAccountService.
         
         Args:
-            validation_service: Validation service to use. If None, creates a new one.
+            banking_validation_service: Banking validation service to use. If None, creates a new one.
             bank_account_repository: Bank account repository to use. If None, creates a new one.
         """
-        self.validation_service = validation_service or BankingValidationService()
-        self.bank_account_repository = bank_account_repository or BankAccountRepository()
+        self.banking_validation_service = BankingValidationService()
+        self.bank_account_repository = BankAccountRepository()
 
 
     ################################################################################
@@ -153,7 +148,7 @@ class BankAccountService:
             raise ValueError(f"Bank account not found")
 
         # Check for dependent fund event cash flows
-        validation_errors = self.validation_service.validate_bank_account_deletion(bank_account_id, session)
+        validation_errors = self.banking_validation_service.validate_bank_account_deletion(bank_account_id, session)
         if validation_errors:
             raise ValueError(f"Deletion validation failed: {validation_errors}")
 

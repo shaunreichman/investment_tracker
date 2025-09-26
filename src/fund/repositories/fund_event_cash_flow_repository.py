@@ -1,14 +1,5 @@
 """
 Fund Event Cash Flow Repository.
-
-This repository provides data access operations for FundEventCashFlow entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- FundEventCashFlow CRUD operations
-- Cash flow querying and filtering
-- Bank account relationship queries
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
@@ -21,16 +12,12 @@ from src.shared.enums.shared_enums import SortOrder
 
 class FundEventCashFlowRepository:
     """
-    Repository for fund event cash flow data access operations.
+    Fund Event Cash Flow Repository.
     
     This repository handles all database operations for fund event cash flows including
     CRUD operations, complex queries, and caching strategies. It provides
     a clean interface for business logic components to interact with
     cash flow data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
     
     def __init__(self, cache_ttl: int = 300):
@@ -55,7 +42,18 @@ class FundEventCashFlowRepository:
                                     sort_by: SortFieldFundEventCashFlow = SortFieldFundEventCashFlow.TRANSFER_DATE,
                                     sort_order: SortOrder = SortOrder.ASC) -> List[FundEventCashFlow]:
         """
-        Get all fund event cash flows for a specific fund.
+        Get all fund event cash flows.
+
+        Args:
+            session: Database session
+            fund_id: ID of the fund to filter by (optional)
+            fund_event_id: ID of the event to filter by (optional)
+            bank_account_id: ID of the bank account to filter by (optional)
+            sort_by: Field to sort by (optional)
+            sort_order: Sort order (ascending or descending) (optional)
+
+        Returns:
+            List of fund event cash flows
         """
         cache_key = f"fund_event_cash_flows:fund:{fund_id}:event:{fund_event_id}"
 

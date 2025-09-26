@@ -11,59 +11,105 @@ Calculators provide pure, stateless mathematical operations and data transformat
 
 ## Should Do
 - **Pure functions**: No side effects, same input = same output
+- **Static methods**: Use `@staticmethod` for all calculation methods
 - **Mathematical operations**: Complex calculations and formulas
 - **Data transformations**: Convert data between formats
-- **Performance optimization**: Efficient calculation algorithms
+- **Performance optimization**: Efficient calculation algorithms with single computation approaches
 - **Reusability**: Use across multiple services and handlers
+- **Input validation**: Validate parameters and raise `ValueError` for invalid inputs
+- **Comprehensive documentation**: Include business context and calculation details
 
 ## Shouldn't Do
-- **Database operations**: No direct data access
+- **Database operations**: No direct data access (use repositories for database operations)
 - **Business logic**: Delegate to services
-- **State management**: No instance variables
+- **State management**: No instance variables or class state
 - **HTTP concerns**: Handle request/response formatting
 
 ## Examples
 
 ```python
-# ✅ Good: Pure mathematical calculations
-@staticmethod
-def calculate_irr(cash_flows: List[float], periods: List[int]) -> float:
-    """Calculate Internal Rate of Return using Newton-Raphson method."""
-    if not cash_flows or len(cash_flows) < 2:
-        return 0.0
+# ✅ Good: Pure mathematical calculations with comprehensive validation
+class IRRCalculator:
+    """Pure IRR calculation utility - shared across fund and company calculations."""
     
-    # Newton-Raphson iteration for IRR
-    rate = 0.1  # Initial guess
-    for _ in range(100):  # Max iterations
-        npv = sum(cf / (1 + rate) ** period for cf, period in zip(cash_flows, periods))
-        npv_derivative = sum(-period * cf / (1 + rate) ** (period + 1) 
-                           for cf, period in zip(cash_flows, periods))
+    @staticmethod
+    def calculate_irr(cash_flows: List[float], days_from_start: List[int], 
+                     tolerance: float = 1e-6, max_iterations: int = 200) -> Optional[float]:
+        """
+        Calculate annual IRR using monthly compounding with the Newton-Raphson method.
         
-        if abs(npv_derivative) < 1e-10:
-            break
-        rate = rate - npv / npv_derivative
-    
-    return rate
+        Args:
+            cash_flows: List of cash flow amounts (negative for outflows, positive for inflows)
+            days_from_start: List of days from the start date for each cash flow
+            tolerance: Convergence tolerance for the root-finding algorithm
+            max_iterations: Maximum number of iterations to attempt
+        
+        Returns:
+            float or None: The annual IRR as a decimal, or None if not computable
+        """
+        # Initial guess: simple rate of return
+        total_investment = abs(cash_flows[0]) if cash_flows[0] < 0 else 0
+        total_return = sum(cf for cf in cash_flows[1:] if cf > 0)
+        if total_investment == 0:
+            return None
+        simple_return = (total_return - total_investment) / total_investment
+        monthly_guess = (1 + simple_return) ** (1/12) - 1
+        monthly_guess = max(-0.99, min(monthly_guess, 2.0))
+        
+        for iteration in range(max_iterations):
+            npv = 0
+            derivative = 0
+            for i, (cf, days) in enumerate(zip(cash_flows, days_from_start)):
+                # Use monthly compounding for investment fund accuracy
+                months = days / 30.44  # Average days per month
+                discount_factor = (1 + monthly_guess) ** months
+                npv += cf / discount_factor
+                if months > 0:
+                    derivative -= cf * months / (discount_factor * (1 + monthly_guess))
+            if abs(npv) < tolerance:
+                # Convert monthly IRR to annual IRR
+                annual_irr = (1 + monthly_guess) ** 12 - 1
+                return annual_irr
+            if abs(derivative) < 1e-12:
+                break
+            monthly_guess = monthly_guess - npv / derivative
+            if monthly_guess < -0.99 or monthly_guess > 2.0:
+                return None
+        return None
 
-@staticmethod
-def calculate_time_weighted_average(balances: List[float], days: List[int]) -> float:
-    """Calculate time-weighted average balance."""
-    if not balances or not days or len(balances) != len(days):
-        return 0.0
+# ✅ Good: Complex business calculations with single computation approach
+class FundEquityCalculator:
+    """Pure calculation logic for fund equity operations."""
     
-    total_weighted_balance = sum(balance * day for balance, day in zip(balances, days))
-    total_days = sum(days)
+    @staticmethod
+    def calculate_event_equity_balances(fund: Fund, events: List[FundEvent]) -> List[Tuple[float, bool]]:
+        """
+        Calculate equity balance for each event - SINGLE COMPUTATION.
+        
+        This is the core method that processes all events once and returns
+        both the calculated balance and whether it changed for each event.
+        This eliminates the O(4n) complexity of the old approach.
+        """
+        if fund.tracking_type == FundTrackingType.COST_BASED:
+            return FundEquityCalculator._process_cost_based_events(events)
+        elif fund.tracking_type == FundTrackingType.NAV_BASED:
+            return FundEquityCalculator._process_nav_based_events(events)
+        else:
+            raise ValueError(f"Unsupported fund type: {fund.tracking_type}")
     
-    return total_weighted_balance / total_days if total_days > 0 else 0.0
-
 # ❌ Bad: Database operations in calculator
-def calculate_equity(self, fund_id: int):
-    fund = session.query(Fund).filter(Fund.id == fund_id).first()  # Database access
-    # ... calculation
-```
+class BadCalculator:
+    def calculate_equity(self, fund_id: int, session: Session):
+        fund = session.query(Fund).filter(Fund.id == fund_id).first()  # Database access
+        # ... calculation
 
-## Key Principles
-- **Stateless**: No instance variables or side effects
-- **Testable**: Easy to unit test with mock data
-- **Reusable**: Can be used across different contexts
-- **Performance**: Optimized for calculation efficiency
+# ❌ Bad: Instance variables and state management
+class BadCalculator:
+    def __init__(self):
+        self.cache = {}  # State management - not allowed
+    
+    def calculate_something(self, data):
+        if data in self.cache:  # Using instance state
+            return self.cache[data]
+        # ... calculation
+```

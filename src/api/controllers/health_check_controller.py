@@ -1,11 +1,5 @@
 """
 Health Check API Controller.
-
-This controller handles HTTP requests for health check operations,
-providing RESTful endpoints for portfolio summary, funds list, and performance data.
-
-Key responsibilities:
-- Health check endpoints
 """
 
 from flask import jsonify, current_app
@@ -14,10 +8,6 @@ from flask import jsonify, current_app
 class HealthCheckController:
     """
     Controller for health check operations.
-    
-    This controller handles HTTP requests and provides REST API endpoints
-    for health check operations. It delegates business logic to the domain
-    models and handles request/response formatting.
     """
     
     def __init__(self):

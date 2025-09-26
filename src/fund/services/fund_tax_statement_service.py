@@ -1,8 +1,5 @@
 """
 Fund Tax Statement Service.
-
-This module provides the fund tax statement service class,
-responsible for creating and updating fund tax statements.
 """
 
 from typing import List, Optional, Dict, Any
@@ -21,13 +18,37 @@ class FundTaxStatementService:
     """
     Fund Tax Statement Service.
 
-    This class provides the business logic for creating and updating fund tax statements.
+    This module provides the FundTaxStatementService class, which handles fund tax statement operations and business logic.
+    The service provides clean separation of concerns for:
+    - Fund tax statement retrieval
+    - Fund tax statement creation
+        - Creation of daily debt cost events
+        - Creation of tax payment events
+        - Handling of secondary impact of events
+    - Fund tax statement deletion
+
+    The service uses the FundTaxStatementRepository to perform CRUD operations.
+    The service is used by the FundTaxStatementController to handle fund tax statement operations.
+    The service also uses the FundEventRepository to perform CRUD operations.
+    The service also uses the FinancialYearCalculator to calculate the financial year start and end dates.
+    The service also uses the FifoCapitalGainsCalculator to calculate the capital gains.
+    The service also uses the DebtCostCalculator to calculate the debt cost.
+    The service also uses the RiskFreeRateRepository to perform CRUD operations.
+    The service also uses the FundValidationService to validate fund tax statements.
     """
 
     def __init__(self):
+        """
+        Initialize the FundTaxStatementService.
+
+        Args:
+            fund_tax_statement_repository: Fund tax statement repository to use. If None, creates a new one.
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+            fund_validation_service: Fund validation service to use. If None, creates a new one.
+        """
         self.fund_tax_statement_repository = FundTaxStatementRepository()
         self.fund_event_repository = FundEventRepository()
-        self.validation_service = FundValidationService()
+        self.fund_validation_service = FundValidationService()
 
 
     ################################################################################
@@ -161,7 +182,7 @@ class FundTaxStatementService:
         if not fund_tax_statement:
             raise ValueError(f"Fund tax statement not found")
 
-        validation_errors = self.validation_service.validate_fund_tax_statement_deletion(fund_tax_statement_id, session)
+        validation_errors = self.fund_validation_service.validate_fund_tax_statement_deletion(fund_tax_statement_id, session)
         if validation_errors:
             raise ValueError(f"Deletion validation failed: {validation_errors}")
         

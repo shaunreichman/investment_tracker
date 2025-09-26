@@ -5,6 +5,7 @@ This module contains all fund-related API endpoints including
 fund management, fund events, tax statements, and cash flows.
 
 All endpoints use middleware validation for input data.
+All endpoints use the fund controller with DTO responses.
 """
 
 from flask import Blueprint, jsonify, request

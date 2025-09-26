@@ -10,50 +10,108 @@ alwaysApply: false
 API layer handles HTTP routing, middleware, and request/response processing.
 
 ## Should Do
-- **Route definitions**: Define RESTful endpoints
-- **Middleware application**: Apply validation, logging, error handling
-- **Request processing**: Parse and validate HTTP requests
-- **Response formatting**: Format data for HTTP responses
-- **Error handling**: Handle HTTP-specific errors
+- **Route definitions**: Define RESTful endpoints with clear documentation
+- **Validation middleware**: Use `@validate_request` decorator with field types, enums, and constraints
+- **Controller delegation**: Routes only call controllers and handle DTO responses, never call services or repositories directly
+- **Response formatting**: Use `handle_controller_response()` and `handle_delete_response()` for standardized responses
+- **Error handling**: Wrap controller calls in try/catch with proper error responses
+- **Blueprint organization**: Use Flask blueprints for domain-specific route grouping
+- **Request data access**: Let middleware handle validation and provide `request.validated_data`
 
 ## Shouldn't Do
-- **Business logic**: Delegate to services
-- **Data access**: Use repositories through services
-- **Complex calculations**: Delegate to calculator classes
-- **Database operations**: Use repositories
+- **Direct data access**: Never call repositories or services directly
+- **Manual validation**: Use the standardized validation middleware instead
+- **Custom error formatting**: Use `ApiResponse` and response handlers
+- **Database operations, business logic or calculations**: Delegate to everything to controllers
 
 ## Examples
 
 ```python
-# ✅ Good: Route definition with middleware
-@fund_bp.route('/funds', methods=['POST'])
-@validate_fund_creation
-def create_fund():
-    return fund_controller.create_fund()
+# ✅ Good: Route definition with standardized validation middleware
+@banking_bp.route('/api/banks', methods=['GET'])
+@validate_request(
+    field_types={
+        'name': 'string',
+        'country': 'string',
+        'bank_type': 'string',
+        'include_bank_accounts': 'bool'
+    },
+    field_lengths={'name': {'max': 255}},
+    enum_fields={
+        'country': Country,
+        'bank_type': BankType
+    },
+    sanitize=True
+)
+def get_banks():
+    """Get all banks with optional search filters and bank accounts."""
+    try:
+        dto = banking_controller.get_banks()
+        return handle_controller_response(dto)
+    except Exception as e:
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error getting banks: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
-# ✅ Good: Middleware for validation
-def validate_fund_creation(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        data = request.get_json()
-        errors = FundValidationService.validate_creation_data(data)
-        if errors:
-            return jsonify({'errors': errors}), 400
-        request.validated_data = data
-        return f(*args, **kwargs)
-    return decorated_function
+# ✅ Good: POST route with required fields and validation
+@company_bp.route('/api/companies', methods=['POST'])
+@validate_request(
+    required_fields=['name'],
+    field_types={
+        'name': 'string',
+        'description': 'string',
+        'company_type': 'string',
+        'website': 'string',
+        'business_address': 'string'
+    },
+    enum_fields={'company_type': CompanyType},
+    field_lengths={'name': {'min': 1, 'max': 255}},
+    sanitize=True
+)
+def create_company():
+    """Create a new investment company."""
+    try:
+        dto = company_controller.create_company()
+        return handle_controller_response(dto)
+    except Exception as e:
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error creating company: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
+
+# ✅ Good: Response handler usage
+def handle_controller_response(dto):
+    """Standardized handler for controller DTO responses."""
+    status_code = dto.response_code.get_http_status_code()
+    
+    if dto.error:
+        response = ApiResponse(
+            response_code=dto.response_code,
+            message=dto.error,
+            data=dto.data
+        )
+    else:
+        response = ApiResponse(
+            response_code=dto.response_code,
+            data=dto.data
+        )
+    
+    return jsonify(response.to_dict()), status_code
 
 # ❌ Bad: Business logic in routes
-@fund_bp.route('/funds', methods=['POST'])
-def create_fund():
+@banking_bp.route('/api/banks', methods=['POST'])
+def create_bank():
     data = request.get_json()
-    if data['amount'] > 1000000:  # Business rule
-        return jsonify({'error': 'Amount too large'}), 400
+    if data['name'] == '':  # Business rule
+        return jsonify({'error': 'Bank name required'}), 400
     # ... business logic
-```
 
-## Key Principles
-- **Separation of concerns**: Routes, middleware, and controllers
-- **Consistent patterns**: Use standard routing and middleware patterns
-- **Error handling**: Proper HTTP status codes and error responses
-- **Validation**: Input validation at the API boundary
+# ❌ Bad: Direct controller calls without error handling
+@company_bp.route('/api/companies', methods=['GET'])
+def get_companies():
+    dto = company_controller.get_companies()  # No try/catch
+    return jsonify(dto.data)
+```

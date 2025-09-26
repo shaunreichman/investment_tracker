@@ -96,7 +96,6 @@ def engine(test_database_name):
     # Import order matters - import dependencies first
     import src.banking.models  # noqa: F401
     import src.entity.models  # noqa: F401
-    import src.tax.models  # noqa: F401
     import src.rates.models  # noqa: F401
     import src.investment_company.models  # noqa: F401
     import src.fund.models  # noqa: F401
@@ -166,12 +165,11 @@ def clean_database(SessionFactory):
         # Clear all tables except risk_free_rates (reference data)
         # Include ALL tables that might contain test data
         tables_to_clear = [
-            'tax_statements', 
             'fund_events', 
             'funds', 
             'entities', 
             'investment_companies',
-            'bank_accounts',  # Add banking tables
+            'bank_accounts',
             'banks',
             'fund_event_cash_flows'  # Add cash flow tables
         ]

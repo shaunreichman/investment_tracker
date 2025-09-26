@@ -1,8 +1,9 @@
 """
 Entity Model.
 
-This module provides the Entity model class,
-representing investing entities (people or companies) in the system.
+This module provides the Entity model class, representing investing entities (people or companies) in the system.
+The model handles only data persistence and basic validation, with business logic
+delegated to services for clean separation of concerns.
 """
 
 from datetime import datetime, timezone

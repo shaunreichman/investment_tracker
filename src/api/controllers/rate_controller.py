@@ -1,8 +1,5 @@
 """
 Rate API Controller.
-
-This controller handles HTTP requests for rate operations,
-providing RESTful endpoints for rate management.
 """
 
 from flask import request, current_app
@@ -15,7 +12,12 @@ from src.api.controllers.formatters.rate_formatter import format_risk_free_rate
 from src.rates.services.risk_free_rate_service import RiskFreeRateService
 
 class RateController:
-    """Rate Controller."""
+    """
+    Rate Controller.
+    
+    Attributes:
+        risk_free_rate_service (RiskFreeRateService): Service layer for risk free rate operations
+    """
 
     def __init__(self):
         """Initialize the rate controller."""

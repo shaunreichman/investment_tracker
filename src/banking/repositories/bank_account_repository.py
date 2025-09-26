@@ -1,14 +1,5 @@
 """
 Bank Account Repository.
-
-This repository provides data access operations for BankAccount entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- Bank account CRUD operations
-- Bank account querying and filtering
-- Bank account relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
@@ -21,16 +12,12 @@ from src.shared.enums.shared_enums import Currency, SortOrder
 
 class BankAccountRepository:
     """
-    Repository for bank account data access operations.
+    Bank Account Repository.
     
     This repository handles all database operations for bank accounts including
     CRUD operations, complex queries, and caching strategies. It provides
     a clean interface for business logic components to interact with
     bank account data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
     
     def __init__(self, cache_ttl: int = 300):
@@ -63,12 +50,15 @@ class BankAccountRepository:
         
         Args:
             session: Database session
-            bank_id: ID of the bank to retrieve
-            entity_id: ID of the entity to retrieve
-            account_name: Name of the bank accounts to retrieve
-            currency: Currency of the bank accounts to retrieve
-            status: Status of the bank accounts to retrieve
-            account_type: Type of the bank accounts to retrieve
+            bank_id: ID of the bank to retrieve (optional)
+            entity_id: ID of the entity to retrieve (optional)
+            account_name: Name of the bank accounts to retrieve (optional)
+            currency: Currency of the bank accounts to retrieve (optional)
+            status: Status of the bank accounts to retrieve (optional)
+            account_type: Type of the bank accounts to retrieve (optional)
+            sort_by: Sort field (optional)
+            sort_order: Sort order (optional)
+
         Returns:
             List of bank accounts
         """

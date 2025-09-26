@@ -1,31 +1,36 @@
 """
-Service layer for fund event cash flow operations.
-
-This service coordinates between the API layer, business logic services,
-and data access layer. It provides a clean interface for handling
-fund event cash flow-related business operations.
+Fund Event Cash Flow Service.
 """
 
 from src.fund.repositories import FundEventCashFlowRepository
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from src.fund.models import FundEventCashFlow
-from src.fund.enums import SortFieldFundEventCashFlow, CashFlowDirection
+from src.fund.enums.fund_event_cash_flow_enums import SortFieldFundEventCashFlow
 from src.shared.enums.shared_enums import SortOrder
-
-import logging
 
 class FundEventCashFlowService:
     """
-    Service layer for fund event cash flow operations.
+    Fund Event Cash Flow Service.
+
+    This module provides the FundEventCashFlowService class, which handles fund event cash flow operations and business logic.
+    The service provides clean separation of concerns for:
+    - Fund event cash flow retrieval
+    - Fund event cash flow creation
+    - Fund event cash flow deletion
+
+    The service uses the FundEventCashFlowRepository to perform CRUD operations.
+    The service is used by the FundEventCashFlowController to handle fund event cash flow operations.
     """
 
     def __init__(self):
         """
         Initialize the fund event cash flow service with all required components.
+
+        Args:
+            fund_event_cash_flow_repository: Fund event cash flow repository to use. If None, creates a new one.
         """
         self.fund_event_cash_flow_repository = FundEventCashFlowRepository()
-        self.logger = logging.getLogger(__name__)
 
 
     ################################################################################
@@ -91,12 +96,16 @@ class FundEventCashFlowService:
             FundEventCashFlow object
         """
         # Validate Bank Account exists
-        bank_account = self.bank_account_repository.get_bank_account_by_id(fund_event_cash_flow_data['bank_account_id'], session)
+        from src.banking.repositories.bank_account_repository import BankAccountRepository
+        bank_account_repository = BankAccountRepository()
+        bank_account = bank_account_repository.get_bank_account_by_id(fund_event_cash_flow_data['bank_account_id'], session)
         if not bank_account:
             raise ValueError(f"Bank account not found")
 
         # Validate Fund Event exists
-        fund_event = self.fund_event_repository.get_fund_event_by_id(fund_event_id, session)
+        from src.fund.repositories.fund_event_repository import FundEventRepository
+        fund_event_repository = FundEventRepository()
+        fund_event = fund_event_repository.get_fund_event_by_id(fund_event_id, session)
         if not fund_event:
             raise ValueError(f"Fund event not found")
         

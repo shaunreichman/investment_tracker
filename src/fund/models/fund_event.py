@@ -1,8 +1,9 @@
 """
 Fund Event Model.
 
-This module provides the FundEvent model class,
-representing events that occur within funds.
+This module provides the FundEvent model class, representing events that occur within funds.
+The model handles only data persistence and basic validation, with business logic
+delegated to services for clean separation of concerns.
 """
 
 from typing import List

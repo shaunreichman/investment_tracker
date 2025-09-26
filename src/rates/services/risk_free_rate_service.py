@@ -1,8 +1,5 @@
 """
 Risk Free Rate Service.
-
-This module provides the risk free rate service,
-representing risk free rates in the system.
 """
 
 from sqlalchemy.orm import Session
@@ -12,13 +9,29 @@ from src.shared.enums.shared_enums import Currency
 from src.rates.enums.risk_free_rate_enums import RiskFreeRateType, SortFieldRiskFreeRate
 from src.shared.enums.shared_enums import SortOrder
 from src.rates.models import RiskFreeRate
-from src.rates.repositories import RiskFreeRateRepository
+from src.rates.repositories.risk_free_rate_repository import RiskFreeRateRepository
 
 class RiskFreeRateService:
-    """Risk Free Rate Service."""
+    """
+    Risk Free Rate Service.
+
+    This module provides the RiskFreeRateService class, which handles risk free rate operations and business logic.
+    The service provides clean separation of concerns for:
+    - Risk free rate retrieval
+    - Risk free rate creation
+    - Risk free rate deletion
+
+    The service uses the RiskFreeRateRepository to perform CRUD operations.
+    The service is used by the RiskFreeRateController to handle risk free rate operations.
+    """
 
     def __init__(self):
-        """Initialize the Risk Free Rate Service."""
+        """
+        Initialize the Risk Free Rate Service.
+
+        Args:
+            risk_free_rate_repository: Risk free rate repository to use. If None, creates a new one.
+        """
         self.risk_free_rate_repository = RiskFreeRateRepository()
 
 

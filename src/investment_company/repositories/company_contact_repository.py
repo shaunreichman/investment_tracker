@@ -1,14 +1,5 @@
 """
 Company Contact Repository.
-
-This repository provides data access operations for Contact entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- Company Contact CRUD operations
-- Contact querying and filtering
-- Contact relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
@@ -21,21 +12,17 @@ from src.shared.enums.shared_enums import SortOrder
 
 class CompanyContactRepository:
     """
-    Repository for company contact data access operations.
-    
-    This repository handles all database operations for contacts including
+    Company Contact Repository.
+
+    This repository handles all database operations for company contacts including
     CRUD operations, complex queries, and caching strategies. It provides
     a clean interface for business logic components to interact with
     company contact data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
     
     def __init__(self, cache_ttl: int = 300):
         """
-        Initialize the contact repository.
+        Initialize the company contact repository.
         
         Args:
             cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
@@ -45,7 +32,7 @@ class CompanyContactRepository:
 
 
     ################################################################################
-    # Get Contact
+    # Get Company Contacts
     ################################################################################
 
     def get_contacts(self, session: Session,
@@ -54,16 +41,16 @@ class CompanyContactRepository:
             sort_order: SortOrder = SortOrder.ASC
     ) -> List[Contact]:
         """
-        Get all contacts for a specific investment company.
+        Get all company contacts.
         
         Args:
             session: Database session
-            company_id: ID of the investment company
+            company_id: ID of the investment company (optional)
             sort_by: Sort field
             sort_order: Sort order
             
         Returns:
-            List of contacts associated with the company
+            List of company contacts
         """
         cache_key = f"contacts:company:{company_id}"
         
@@ -101,7 +88,7 @@ class CompanyContactRepository:
     
     def get_contact_by_id(self, contact_id: int, session: Session) -> Optional[Contact]:
         """
-        Get a contact by its ID.
+        Get a company contact by its ID.
         
         Args:
             session: Database session

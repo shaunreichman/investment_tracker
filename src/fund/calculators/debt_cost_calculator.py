@@ -7,27 +7,9 @@ Follows calculator layer rules: stateless, pure functions, no dependencies.
 
 from typing import List, Dict, Any, Optional
 from datetime import date, timedelta
-from dataclasses import dataclass
 
 from src.fund.models.fund_event import FundEvent
 from src.rates.models.risk_free_rate import RiskFreeRate
-
-
-# @dataclass
-# class DebtCostResult:
-#     """
-#     Result of debt cost calculation.
-    
-#     Contains all the calculated values from the debt cost calculation
-#     to provide comprehensive information about the opportunity cost.
-#     """
-#     total_debt_cost: float
-#     average_risk_free_rate: float
-#     debt_cost_percentage: float
-#     investment_duration_years: float
-#     average_equity: float
-#     total_days: int
-
 
 class DailyDebtCostCalculator:
     """
@@ -137,7 +119,6 @@ class DailyDebtCostCalculator:
         return equity_periods
 
 
-
     @staticmethod
     def _calculate_daily_debt_costs(equity_periods: List[Dict[str, Any]], rate_periods: List[Dict[str, Any]]) -> Dict[date, Dict[str, Any]]:
         """
@@ -161,88 +142,3 @@ class DailyDebtCostCalculator:
                         daily_debt_costs[d] = {'debt_cost':debt_cost, 'equity': eq['equity_amount'], 'rate': rp['rate']}
                         d += timedelta(days=1)
         return daily_debt_costs
-
-
-
-    
-    # @staticmethod
-    # def _calculate_period_debt_costs(
-    #     equity_periods: List[Tuple[date, date, float]], 
-    #     rate_periods: List[Tuple[date, date, float]], 
-    #     start_date: date, 
-    #     end_date: date
-    # ) -> DebtCostResult:
-    #     """
-    #     Calculate debt cost for each equity period.
-        
-    #     Args:
-    #         equity_periods: List of equity periods (start_date, end_date, amount)
-    #         rate_periods: List of rate periods (start_date, end_date, rate)
-    #         start_date: Start date for the calculation period
-    #         end_date: End date for the calculation period
-            
-    #     Returns:
-    #         DebtCostResult: Comprehensive debt cost calculation results
-    #     """
-    #     total_debt_cost = 0
-    #     total_weighted_rate = 0
-    #     total_days = 0
-    #     total_weighted_equity = 0
-        
-    #     # Calculate debt cost for each equity period
-    #     for equity_start_date, equity_end_date, equity_amount in equity_periods:
-    #         period_days = (equity_end_date - equity_start_date).days
-    #         if period_days <= 0:
-    #             continue
-            
-    #         # Find applicable risk-free rate for this period
-    #         applicable_rate = DebtCostCalculator._find_applicable_rate(
-    #             equity_start_date, equity_end_date, rate_periods
-    #         )
-            
-    #         if applicable_rate is None:
-    #             continue
-            
-    #         # Calculate debt cost for this period
-    #         period_debt_cost = equity_amount * (applicable_rate / 100) * (period_days / 365.25)
-    #         total_debt_cost += period_debt_cost
-    #         total_weighted_rate += applicable_rate * period_days
-    #         total_days += period_days
-    #         total_weighted_equity += equity_amount * period_days
-        
-    #     # Calculate summary statistics
-    #     # Handle single day periods - ensure at least 1 day
-    #     if start_date == end_date:
-    #         total_days = max(total_days, 1)
-        
-    #     average_risk_free_rate = total_weighted_rate / total_days if total_days > 0 else 0
-    #     average_equity = total_weighted_equity / total_days if total_days > 0 else 0
-    #     debt_cost_percentage = (total_debt_cost / average_equity * 100) if average_equity > 0 else 0
-    #     investment_duration_years = total_days / 365.25
-        
-    #     return DebtCostResult(
-    #         total_debt_cost=total_debt_cost,
-    #         average_risk_free_rate=average_risk_free_rate,
-    #         debt_cost_percentage=debt_cost_percentage,
-    #         investment_duration_years=investment_duration_years,
-    #         average_equity=average_equity,
-    #         total_days=total_days
-    #     )
-    
-    # @staticmethod
-    # def _find_applicable_rate(equity_start_date: date, equity_end_date: date, rate_periods: List[Tuple[date, date, float]]) -> float:
-    #     """
-    #     Find the applicable risk-free rate for a given equity period.
-        
-    #     Args:
-    #         equity_start_date: Start date of the equity period
-    #         equity_end_date: End date of the equity period
-    #         rate_periods: List of rate periods (start, end, rate)
-            
-    #     Returns:
-    #         float or None: Applicable rate, or None if not found
-    #     """
-    #     for rate_start, rate_end, rate_value in rate_periods:
-    #         if rate_start <= equity_start_date and equity_end_date <= rate_end:
-    #             return rate_value
-    #     return None

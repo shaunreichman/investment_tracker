@@ -1,8 +1,9 @@
 """
 Fund Model.
 
-This module provides the Fund model class,
-representing investment funds in the system.
+This module provides the Fund model class, representing investment funds in the system.
+The model handles only data persistence and basic validation, with business logic
+delegated to services for clean separation of concerns.
 """
 
 from datetime import date, datetime, timezone

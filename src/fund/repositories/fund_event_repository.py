@@ -1,14 +1,5 @@
 """
 Fund Event Repository.
-
-This repository provides data access operations for FundEvent entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- FundEvent CRUD operations
-- Event querying and filtering
-- Event relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
@@ -22,18 +13,13 @@ from src.shared.enums.shared_enums import SortOrder
 
 class FundEventRepository:
     """
-    Repository for fund event data access operations.
-    
+    Fund Event Repository.
+
     This repository handles all database operations for fund events including
-    CRUD operations, bulk operations, and optimized queries for event processing.
-    It provides a clean interface for business logic components to interact with
+    CRUD operations, complex queries, and caching strategies. It provides
+    a clean interface for business logic components to interact with
     fund event data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
-    
     def __init__(self, cache_ttl: int = 300):
         """
         Initialize the fund event repository.
@@ -61,22 +47,22 @@ class FundEventRepository:
                         sort_order: SortOrder = SortOrder.ASC
     ) -> List[FundEvent]:
         """
-        Get all events for a specific fund.
+        Get all fund events.
 
         Args:
             session: Database session
-            fund_id: ID of the fund
-            event_types: Optional list of event types to filter by
-            distribution_types: Optional list of distribution types to filter by
-            tax_payment_types: Optional list of tax payment types to filter by
-            group_types: Optional list of group types to filter by
-            start_event_date: Optional start event date to filter by
-            end_event_date: Optional end event date to filter by
-            sort_by: Optional sort field to sort by
-            sort_order: Optional sort order to sort by
+            fund_id: ID of the fund (optional)
+            event_types: Optional list of event types to filter by (optional)
+            distribution_types: Optional list of distribution types to filter by (optional)
+            tax_payment_types: Optional list of tax payment types to filter by (optional)
+            group_types: Optional list of group types to filter by (optional)
+            start_event_date: Optional start event date to filter by (optional)
+            end_event_date: Optional end event date to filter by (optional)
+            sort_by: Optional sort field to sort by (optional)
+            sort_order: Optional sort order to sort by (optional)
 
         Returns:
-            List of fund events for the specified fund
+            List of fund events
         """
         cache_key = f"events:fund:{fund_id}:types:{event_types}:distribution_types:{distribution_types}:tax_payment_types:{tax_payment_types}:group_types:{group_types}:start_event_date:{start_event_date}:end_event_date:{end_event_date}:sort_field:{sort_field}:sort_order:{sort_order}"
 
