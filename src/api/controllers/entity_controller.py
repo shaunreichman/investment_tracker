@@ -49,15 +49,35 @@ class EntityController:
     
     def get_entities(self) -> ControllerResponseDTO:
         """
-        Get all entities with summary data.
+        Get all entities with optional search filters.
+        
+        Search parameters (all optional):
+        - name: Filter by entity name
+        - entity_type: Filter by entity type
+        - tax_jurisdiction: Filter by tax jurisdiction
                     
         Returns:
             ControllerResponseDTO
         """
         try:
+            # Get search parameters from middleware (all optional)
+            search_data = getattr(request, 'validated_data', {})
+            
+            # Extract search parameters (None if not provided)
+            entity_type = search_data.get('entity_type')
+            tax_jurisdiction = search_data.get('tax_jurisdiction')
+            name = search_data.get('name')
+            
             session = self._get_session()
             try:
-                entities = self.entity_service.get_entities(session=session)
+                # Pass search parameters to service (all are optional)
+                entities = self.entity_service.get_entities(
+                    session=session, 
+                    entity_type=entity_type, 
+                    tax_jurisdiction=tax_jurisdiction, 
+                    name=name
+                )
+                
                 if entities is None:
                     return ControllerResponseDTO(error="Entities not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 

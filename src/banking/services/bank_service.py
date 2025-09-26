@@ -99,22 +99,7 @@ class BankService:
         Raises:
             ValueError: If validation fails
         """
-        required_fields = ['name', 'country']
-        for field in required_fields:
-            if field not in bank_data:
-                raise ValueError(f"Required field '{field}' is missing")
-
         processed_data = bank_data.copy()
-        if 'country' in processed_data and isinstance(processed_data['country'], str):
-            try:
-                processed_data['country'] = Country(processed_data['country'])
-            except ValueError:
-                raise ValueError(f"Invalid country: {processed_data['country']}. Must be one of: {[c.value for c in Country]}")
-        if 'bank_type' in processed_data and isinstance(processed_data['bank_type'], str):
-            try:
-                processed_data['bank_type'] = BankType(processed_data['bank_type'])
-            except ValueError:
-                raise ValueError(f"Invalid bank_type: {processed_data['bank_type']}. Must be one of: {[t.value for t in BankType]}")
 
         # Set the bank status to INACTIVE on creation
         processed_data['status'] = BankStatus.INACTIVE
@@ -139,15 +124,15 @@ class BankService:
             session: Database session
             
         Returns:
-            bool: True if deleted successfully
+            bool: True if bank was deleted, False otherwise
             
         Raises:
-            RuntimeError: If bank not found or has dependencies
+            ValueError: If bank not found or has dependencies
         """
         # Get existing bank
         bank = self.get_bank_by_id(bank_id, session)
         if not bank:
-            raise RuntimeError("Bank not found")
+            raise ValueError(f"Bank not found")
         
         # Check for dependent bank accounts
         validation_errors = self.banking_validation_service.validate_bank_deletion(bank_id, session)
@@ -159,4 +144,4 @@ class BankService:
         if not success:
             raise ValueError(f"Failed to delete bank")
         
-        return True
+        return success

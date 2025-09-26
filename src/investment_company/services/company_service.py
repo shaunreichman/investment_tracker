@@ -140,7 +140,7 @@ class CompanyService:
         # Get existing company for validation
         company = self.company_repository.get_company_by_id(company_id, session)
         if not company:
-            return False
+            raise ValueError(f"Company not found")
         
         # Validate deletion
         validation_errors = self.company_validation_service.validate_company_deletion(company, session)

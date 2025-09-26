@@ -18,9 +18,9 @@ from flask import request, jsonify, current_app
 from datetime import datetime, date
 
 from src.shared.enums.shared_enums import Country, Currency
-from src.fund.enums.fund_event_enums import GroupType, EventType, TaxPaymentType
-from src.fund.enums.fund_event_cash_flow_enums import CashFlowDirection
-from src.fund.enums.fund_enums import FundStatus, FundTrackingType, DistributionType
+from src.fund.enums.fund_event_enums import EventType, TaxPaymentType
+from src.fund.enums.fund_enums import FundTrackingType
+from src.fund.enums.fund_event_enums import DistributionType
 
 
 class ValidationError(Exception):
@@ -353,26 +353,6 @@ def validate_request(
         return wrapper
     return decorator
 
-
-# Convenience decorators for common validation patterns
-def validate_bank_data(func: Callable) -> Callable:
-    """Validate bank creation/update data."""
-    return validate_request(
-        required_fields=['name', 'country'],
-        field_patterns={'country': 'country_code'},  # Use 2-letter country code pattern
-        sanitize=True
-    )(func)
-
-
-def validate_bank_account_data(func: Callable) -> Callable:
-    """Validate bank account creation/update data."""
-    return validate_request(
-        required_fields=['entity_id', 'bank_id', 'account_name', 'account_number', 'currency'],
-        enum_fields={'currency': Currency},  # Use enum validation instead of pattern
-        sanitize=True
-    )(func)
-
-
 def validate_fund_data(func: Callable) -> Callable:
     """
     Validate fund data for POST/PUT requests.
@@ -499,7 +479,7 @@ def validate_fund_data(func: Callable) -> Callable:
     return decorated_function
 
 
-def validate_entity_data(func: Callable) -> Callable:
+def validate_entity_creation(func: Callable) -> Callable:
     """
     Validate entity data for POST/PUT requests.
     
@@ -517,8 +497,8 @@ def validate_entity_data(func: Callable) -> Callable:
             if not data:
                 raise ValidationError("No data provided")
             
-            # Validate required fields - CORRECTED: only name is required
-            required_fields = ['name']
+            # Validate required fields
+            required_fields = ['name', 'tax_jurisdiction']
             for field in required_fields:
                 if field not in data or not data[field]:
                     raise ValidationError(f"Missing required field: {field}", field)
@@ -533,7 +513,7 @@ def validate_entity_data(func: Callable) -> Callable:
             if 'tax_jurisdiction' in data and data['tax_jurisdiction'] is not None:
                 try:
                     tax_jurisdiction = Country(data['tax_jurisdiction'].upper())
-                    data['tax_jurisdiction'] = tax_jurisdiction.value
+                    data['tax_jurisdiction'] = tax_jurisdiction
                 except ValueError:
                     valid_jurisdictions = [j.value for j in Country]
                     raise ValidationError(f"Invalid tax_jurisdiction. Must be one of: {', '.join(valid_jurisdictions)}", 'tax_jurisdiction')

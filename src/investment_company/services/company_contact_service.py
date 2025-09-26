@@ -70,31 +70,30 @@ class CompanyContactService:
     # Create Contact
     ################################################################################
 
-    def create_contact(self, contact_data: Dict[str, Any], session: Session) -> Contact:
+    def create_contact(self, company_id: int, contact_data: Dict[str, Any], session: Session) -> Contact:
         """
         Create a new contact.
 
         Args:
+            company_id: ID of the company to add contact to
             contact_data: Dictionary containing contact data
             session: Database session
 
         Returns:
             Contact: The created contact instance
         """
-        required_fields = ['company_id', 'name']
-        for field in required_fields:
-            if field not in contact_data:
-                raise ValueError(f"Required field '{field}' is missing")
-
         # Validate Company exists
         from src.investment_company.repositories.company_repository import CompanyRepository
         company_repository = CompanyRepository()
-        company = company_repository.get_company_by_id(contact_data['company_id'], session)
+        company = company_repository.get_company_by_id(company_id, session)
         if not company:
             raise ValueError(f"Company not found")
 
-        processed_data = contact_data.copy()
-
+        processed_data = {
+            **contact_data,
+            'company_id': company_id
+        }
+        
         # Create the contact
         contact = self.company_contact_repository.create_contact(processed_data, session)
         if not contact:
@@ -128,4 +127,4 @@ class CompanyContactService:
         if not success:
             raise ValueError(f"Failed to delete contact")
 
-        return True
+        return success

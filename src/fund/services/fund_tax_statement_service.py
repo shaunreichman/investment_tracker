@@ -7,13 +7,15 @@ responsible for creating and updating fund tax statements.
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
+from datetime import date
 
 from src.fund.repositories import FundTaxStatementRepository, FundEventRepository
-from src.fund.models import FundTaxStatement
+from src.fund.models import FundTaxStatement, FundEvent
 from src.fund.enums.fund_tax_statement_enums import SortFieldFundTaxStatement
 from src.shared.enums.shared_enums import SortOrder, EventOperation
 from src.fund.enums.fund_enums import FundTrackingType
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType
+from src.fund.services.fund_validation_service import FundValidationService
 
 class FundTaxStatementService:
     """
@@ -25,6 +27,8 @@ class FundTaxStatementService:
     def __init__(self):
         self.fund_tax_statement_repository = FundTaxStatementRepository()
         self.fund_event_repository = FundEventRepository()
+        self.validation_service = FundValidationService()
+
 
     ################################################################################
     # Create Fund Tax Statement
@@ -34,8 +38,8 @@ class FundTaxStatementService:
         fund_id: Optional[int] = None,
         entity_id: Optional[int] = None,
         financial_year: Optional[str] = None,
-        start_tax_payment_date: Optional[date] = None,
-        end_tax_payment_date: Optional[date] = None,
+        start_tax_payment_date: Optional['date'] = None,
+        end_tax_payment_date: Optional['date'] = None,
         sort_by: SortFieldFundTaxStatement = SortFieldFundTaxStatement.FINANCIAL_YEAR,
         sort_order: SortOrder = SortOrder.ASC
     )-> List[FundTaxStatement]:
@@ -76,29 +80,29 @@ class FundTaxStatementService:
     # Create Fund Tax Statement
     ################################################################################
 
-    def create_fund_tax_statement(self, fund_tax_statement_data: Dict[str, Any], session: Session) -> FundTaxStatement:
+    def create_fund_tax_statement(self, fund_id: int, fund_tax_statement_data: Dict[str, Any], session: Session) -> FundTaxStatement:
         """
         Create a new fund tax statement.
 
         Args:
+            fund_id: ID of the fund
             fund_tax_statement_data: Dictionary containing fund tax statement data
             session: Database session
 
         Returns:
             FundTaxStatement: The created fund tax statement
         """
-        required_fields = ['fund_id', 'entity_id', 'financial_year']
-        for field in required_fields:
-            if field not in fund_tax_statement_data:
-                raise ValueError(f"Required field '{field}' is missing")
 
-        # Convert string enum values to enum objects
         processed_data = fund_tax_statement_data.copy()
-        # Validate financial year is between 2010 and 2050
-        if 'financial_year' in processed_data and isinstance(processed_data['financial_year'], str):
-            if not 2010 <= int(processed_data['financial_year'].split('-')[0]) <= 2050:
-                raise ValueError(f"Financial year must be between 2010 and 2050. Got: {processed_data['financial_year']}")
-        
+        processed_data['fund_id'] = fund_id
+
+        # Validate Entity exists
+        from src.entity.repositories.entity_repository import EntityRepository
+        entity_repository = EntityRepository()
+        entity = entity_repository.get_entity_by_id(processed_data['entity_id'], session)
+        if not entity:
+            raise ValueError(f"Entity not found")
+ 
         # Calculate the financial year start and end dates
         from src.fund.calculators.financial_year_calculator import FinancialYearCalculator
         fy_start_date, fy_end_date = FinancialYearCalculator.calculate_financial_year_dates(processed_data['financial_year'])
@@ -155,9 +159,20 @@ class FundTaxStatementService:
         """
         fund_tax_statement = self.fund_tax_statement_repository.get_fund_tax_statement_by_id(fund_tax_statement_id, session)
         if not fund_tax_statement:
-            return False
+            raise ValueError(f"Fund tax statement not found")
+
+        validation_errors = self.validation_service.validate_fund_tax_statement_deletion(fund_tax_statement_id, session)
+        if validation_errors:
+            raise ValueError(f"Deletion validation failed: {validation_errors}")
         
-        return self.fund_tax_statement_repository.delete_fund_tax_statement(fund_tax_statement_id, session)
+        success = self.fund_tax_statement_repository.delete_fund_tax_statement(fund_tax_statement_id, session)
+        if not success:
+            raise ValueError(f"Failed to delete fund tax statement")
+
+        # Delete the fund_events associated with the fund tax statement
+        # Need to build the logic to get this from the fund_event repository
+
+        return success
 
 
     ################################################################################

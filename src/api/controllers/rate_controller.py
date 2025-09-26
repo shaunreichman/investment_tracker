@@ -33,11 +33,25 @@ class RateController:
     def get_risk_free_rates(self) -> ControllerResponseDTO:
         """
         Get risk free rates.
+
+        Search parameters (all optional):
+            currency: Currency of the risk free rates to retrieve
+            rate_type: Type of the risk free rates to retrieve
+
+        Returns:
+            ControllerResponseDTO
         """
         try:
+            search_data = getattr(request, 'validated_data', {})
+            currency = search_data.get('currency')
+            rate_type = search_data.get('rate_type')
             session = self._get_session()
             try:
-                risk_free_rates = self.risk_free_rate_service.get_risk_free_rates(session)
+                risk_free_rates = self.risk_free_rate_service.get_risk_free_rates(
+                    session=session,
+                    currency=currency,
+                    rate_type=rate_type
+                )
                 if risk_free_rates is None:
                     return ControllerResponseDTO(error="Risk free rates not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 

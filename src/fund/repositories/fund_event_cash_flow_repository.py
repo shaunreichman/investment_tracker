@@ -50,14 +50,14 @@ class FundEventCashFlowRepository:
 
     def get_fund_event_cash_flows(self, session: Session,
                                     fund_id: int = None,
-                                    event_id: int = None,
+                                    fund_event_id: int = None,
                                     bank_account_id: int = None,
                                     sort_by: SortFieldFundEventCashFlow = SortFieldFundEventCashFlow.TRANSFER_DATE,
                                     sort_order: SortOrder = SortOrder.ASC) -> List[FundEventCashFlow]:
         """
         Get all fund event cash flows for a specific fund.
         """
-        cache_key = f"fund_event_cash_flows:fund:{fund_id}:event:{event_id}"
+        cache_key = f"fund_event_cash_flows:fund:{fund_id}:event:{fund_event_id}"
 
         # Check cache first
         if cache_key in self._cache:
@@ -67,8 +67,8 @@ class FundEventCashFlowRepository:
 
         if fund_id:
             query = query.filter(FundEventCashFlow.fund_id == fund_id)
-        if event_id:
-            query = query.filter(FundEventCashFlow.event_id == event_id)
+        if fund_event_id:
+            query = query.filter(FundEventCashFlow.fund_event_id == fund_event_id)
         if bank_account_id:
             query = query.filter(FundEventCashFlow.bank_account_id == bank_account_id)
         
@@ -89,25 +89,25 @@ class FundEventCashFlowRepository:
         
         return cash_flows
     
-    def get_fund_event_cash_flow_by_id(self, cash_flow_event_id: int, session: Session) -> Optional[FundEventCashFlow]:
+    def get_fund_event_cash_flow_by_id(self, fund_event_cash_flow_id: int, session: Session) -> Optional[FundEventCashFlow]:
         """
         Get a fund event cash flow by its ID.
         
         Args:
-            cash_flow_event_id: ID of the cash flow to retrieve
+            fund_event_cash_flow_id: ID of the cash flow to retrieve
             session: Database session
             
         Returns:
             FundEventCashFlow object if found, None otherwise
         """
-        cache_key = f"fund_event_cash_flow:{cash_flow_event_id}"
+        cache_key = f"fund_event_cash_flow:{fund_event_cash_flow_id}"
         
         # Check cache first
         if cache_key in self._cache:
             return self._cache[cache_key]
         
         # Query database
-        cash_flow = session.query(FundEventCashFlow).filter(FundEventCashFlow.id == cash_flow_event_id).first()
+        cash_flow = session.query(FundEventCashFlow).filter(FundEventCashFlow.id == fund_event_cash_flow_id).first()
         
         # Cache the result (including None to prevent race conditions)
         self._cache[cache_key] = cash_flow
@@ -145,18 +145,18 @@ class FundEventCashFlowRepository:
     # Delete Fund Event Cash Flow
     ################################################################################
 
-    def delete_fund_event_cash_flow(self, cash_flow_event_id: int, session: Session) -> None:
+    def delete_fund_event_cash_flow(self, fund_event_cash_flow_id: int, session: Session) -> None:
         """
         Delete a fund event cash flow.
         
         Args:
-            cash_flow_event_id: ID of the cash flow to delete
+            fund_event_cash_flow_id: ID of the cash flow to delete
             session: Database session
 
         Returns:
             True if cash flow event was deleted, False if not found
         """
-        cash_flow = self.get_fund_event_cash_flow_by_id(cash_flow_event_id, session)
+        cash_flow = self.get_fund_event_cash_flow_by_id(fund_event_cash_flow_id, session)
         if not cash_flow:
             return False
         

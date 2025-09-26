@@ -51,6 +51,7 @@ class BankAccountService:
     def get_bank_accounts(self, session: Session,
             bank_id: Optional[int] = None,
             entity_id: Optional[int] = None,
+            account_name: Optional[str] = None,
             currency: Optional[Currency] = None,
             status: Optional[BankAccountStatus] = None,
             account_type: Optional[BankAccountType] = None,
@@ -64,6 +65,7 @@ class BankAccountService:
             session: Database session
             bank_id: ID of the bank to retrieve
             entity_id: ID of the entity to retrieve
+            account_name: Name of the bank accounts to retrieve
             currency: Currency of the bank accounts to retrieve
             status: Status of the bank accounts to retrieve
             account_type: Type of the bank accounts to retrieve
@@ -73,7 +75,7 @@ class BankAccountService:
         Returns:
             List of bank accounts
         """
-        return self.bank_account_repository.get_bank_accounts(session, bank_id, entity_id, currency, status, account_type, sort_by, sort_order)
+        return self.bank_account_repository.get_bank_accounts(session, bank_id, entity_id, account_name, currency, status, account_type, sort_by, sort_order)
 
     def get_bank_account_by_id(self, account_id: int, session: Session) -> Optional[BankAccount]:
         """
@@ -93,23 +95,19 @@ class BankAccountService:
     # Create Bank Account
     ################################################################################
 
-    def create_bank_account(self, bank_account_data: Dict[str, Any], session: Session) -> BankAccount:
+    def create_bank_account(self, bank_id: int, bank_account_data: Dict[str, Any], session: Session) -> BankAccount:
         """
         Create a new bank account.
         
         Args:
+            bank_id: ID of the bank to add bank account to
             bank_account_data: Dictionary containing bank account data
             session: Database session
         """
-        required_fields = ['entity_id', 'bank_id', 'account_name', 'account_number', 'currency']
-        for field in required_fields:
-            if field not in bank_account_data:
-                raise ValueError(f"Required field '{field}' is missing")
-
         # Validate Bank exists
         from src.banking.repositories.bank_repository import BankRepository
         bank_repository = BankRepository()
-        bank = bank_repository.get_bank_by_id(bank_account_data['bank_id'], session)
+        bank = bank_repository.get_bank_by_id(bank_id, session)
         if not bank:
             raise ValueError(f"Bank not found")
 
@@ -120,22 +118,15 @@ class BankAccountService:
         if not entity:
             raise ValueError(f"Entity not found")
 
-        processed_data = bank_account_data.copy()
-        if 'currency' in processed_data and isinstance(processed_data['currency'], str):
-            try:
-                processed_data['currency'] = Currency(processed_data['currency'])
-            except ValueError:
-                raise ValueError(f"Invalid currency: {processed_data['currency']}. Must be one of: {[c.value for c in Currency]}")
-        if 'account_type' in processed_data and isinstance(processed_data['account_type'], str):
-            try:
-                processed_data['account_type'] = BankAccountType(processed_data['account_type'])
-            except ValueError:
-                raise ValueError(f"Invalid account type: {processed_data['account_type']}. Must be one of: {[t.value for t in BankAccountType]}")
+        processed_data = {
+            **bank_account_data,
+            'bank_id': bank_id
+        }
 
         # Set the bank account status to INACTIVE on creation
         processed_data['status'] = BankAccountStatus.INACTIVE
 
-        bank_account = self.bank_account_repository.create_bank_account(bank_account_data, session)
+        bank_account = self.bank_account_repository.create_bank_account(processed_data, session)
         if not bank_account:
             raise ValueError(f"Failed to create bank account")
 
@@ -171,4 +162,4 @@ class BankAccountService:
         if not success:
             raise ValueError(f"Failed to delete bank account")
 
-        return True
+        return success

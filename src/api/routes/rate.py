@@ -13,6 +13,8 @@ from src.api.middleware.response_handlers import handle_controller_response, han
 from src.api.middleware.validation import validate_request
 from src.api.dto.api_response import ApiResponse
 from src.api.dto.response_codes import ApiResponseCode
+from src.shared.enums.shared_enums import Currency
+from src.rates.enums.risk_free_rate_enums import RiskFreeRateType
 
 
 # Create blueprint for enhanced rate routes
@@ -31,6 +33,17 @@ rate_controller = RateController()
 ###############################################
 
 @rate_bp.route('/api/risk-free-rates', methods=['GET'])
+@validate_request(
+    field_types={
+        'currency': 'string',
+        'rate_type': 'string'
+    },
+    enum_fields={
+        'currency': Currency,
+        'rate_type': RiskFreeRateType
+    },
+    sanitize=True
+)
 def get_risk_free_rates():
     """
     Get risk free rates.
@@ -75,6 +88,22 @@ def get_risk_free_rate_by_id(risk_free_rate_id):
 ###############################################
 
 @rate_bp.route('/api/risk-free-rates', methods=['POST'])
+@validate_request(
+    required_fields=['currency', 'date', 'rate'],
+    field_types={
+        'currency': 'string',
+        'date': 'date',
+        'rate': 'float',
+        'rate_type': 'string',
+        'source': 'string'
+    },
+    field_lengths={'date': {'min': 10, 'max': 10}},
+    enum_fields={
+        'currency': Currency,
+        'rate_type': RiskFreeRateType
+    },
+    sanitize=True
+)
 def create_risk_free_rate():
     """
     Create a risk free rate.
@@ -110,7 +139,7 @@ def delete_risk_free_rate(risk_free_rate_id):
     """
     try:
         dto = rate_controller.delete_risk_free_rate(risk_free_rate_id)
-        return handle_controller_response(dto)
+        return handle_delete_response(dto)
     except Exception as e:
         response = ApiResponse(
             response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,

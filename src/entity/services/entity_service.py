@@ -99,20 +99,7 @@ class EntityService:
         Raises:
             ValueError: If required fields are missing or invalid
         """
-        # Validate required fields
-        required_fields = ['name', 'tax_jurisdiction']
-        for field in required_fields:
-            if field not in entity_data:
-                raise ValueError(f"Required field '{field}' is missing")
-
-        processed_data = entity_data.copy()
-        if 'tax_jurisdiction' in processed_data and isinstance(processed_data['tax_jurisdiction'], str):
-            try:
-                processed_data['tax_jurisdiction'] = Country(processed_data['tax_jurisdiction'])
-            except ValueError:
-                raise ValueError(f"Invalid tax jurisdiction: {processed_data['tax_jurisdiction']}. Must be one of: {[c.value for c in Country]}")
-        
-        entity = self.entity_repository.create_entity(processed_data, session)
+        entity = self.entity_repository.create_entity(entity_data, session)
         if not entity:
             raise ValueError(f"Failed to create entity")
         
@@ -140,7 +127,7 @@ class EntityService:
         # Get existing entity
         entity = self.entity_repository.get_entity_by_id(entity_id, session)
         if not entity:
-            return False
+            raise ValueError(f"Entity not found")
         
         # ENTERPRISE VALIDATION: Validate deletion
         validation_errors = self.entity_validation_service.validate_entity_deletion(entity_id, session)
@@ -152,4 +139,4 @@ class EntityService:
         if not success:
             raise ValueError(f"Failed to delete entity")
         
-        return True
+        return success

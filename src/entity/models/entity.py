@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, Enum, Text
 from sqlalchemy.orm import relationship
 from src.shared.enums.shared_enums import Country
-
+from src.entity.enums.entity_enums import EntityType
 from src.shared.base import Base
 
 class Entity(Base):
@@ -18,6 +18,7 @@ class Entity(Base):
     
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
     name = Column(String(255), nullable=False, unique=True)  # (MANUAL) entity name
+    entity_type = Column(Enum(EntityType), nullable=False)  # (MANUAL) entity type
     description = Column(Text)  # (MANUAL) entity description
     tax_jurisdiction = Column(Enum(Country), default="AU")  # (MANUAL) tax jurisdiction (e.g., 'AU' for Australia, 'US' for United States)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created

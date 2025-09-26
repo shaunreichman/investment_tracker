@@ -16,7 +16,8 @@ Key principles:
 from typing import List, Tuple
 
 from src.fund.models import Fund, FundEvent
-from src.fund.enums.fund_enums import EventType, FundTrackingType
+from src.fund.enums.fund_enums import FundTrackingType
+from src.fund.enums.fund_event_enums import EventType
 
 
 class FundEquityCalculator:

@@ -31,24 +31,47 @@ class BankingController:
     # Get bank
     ###############################################
 
-    def get_banks(self, include_bank_accounts: bool = False) -> ControllerResponseDTO:
+    def get_banks(self) -> ControllerResponseDTO:
         """
-        Get all banks.
+        Get all banks with optional search filters and bank accounts.
         
+        Search parameters (all optional):
+        - name: Filter by bank name
+        - country: Filter by country code
+        - bank_type: Filter by bank type
+        - include_bank_accounts: Whether to include bank accounts
+                    
         Returns:
-            ControllerResponseDTO: DTO containing banks data and status
+            ControllerResponseDTO
         """
         try:
+            # Get search parameters from middleware (all optional)
+            search_data = getattr(request, 'validated_data', {})
+            
+            # Extract search parameters (None if not provided)
+            name = search_data.get('name')
+            country = search_data.get('country')
+            bank_type = search_data.get('bank_type')
+            include_bank_accounts = search_data.get('include_bank_accounts', False)
+            
             session = self._get_session()
             try:
-                banks = self.bank_service.get_banks(session)
+                # Pass search parameters to service (all are optional)
+                banks = self.bank_service.get_banks(
+                    session=session,
+                    name=name, 
+                    country=country, 
+                    bank_type=bank_type
+                )
+                
                 if banks is None:
                     return ControllerResponseDTO(error="Banks not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
                 if include_bank_accounts:
                     for bank in banks:
-                        bank.accounts = self.bank_account_service.get_bank_accounts(bank.id, session)
+                        bank.accounts = self.bank_account_service.get_bank_accounts(session, bank_id=bank.id)
 
-                formatted_banks = [format_bank_comprehensive(bank, include_bank_accounts=include_bank_accounts) for bank in banks]
+                formatted_banks = [format_bank_comprehensive(bank, include_bank_accounts=include_bank_accounts) for bank in banks]        
                 return ControllerResponseDTO(data=formatted_banks, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
@@ -65,27 +88,30 @@ class BankingController:
             current_app.logger.error(f"Error getting banks: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def get_bank_by_id(self, bank_id: int, include_bank_accounts: bool = False) -> ControllerResponseDTO:
+    def get_bank_by_id(self, bank_id: int) -> ControllerResponseDTO:
         """
-        Get a bank by ID.
+        Get a bank by ID with optional bank accounts.
         
         Args:
             bank_id: ID of the bank to retrieve
-            include_bank_accounts: Whether to include bank accounts
 
         Returns:
             ControllerResponseDTO: DTO containing bank data and status
         """
         try:
+            # Get include_bank_accounts flag from middleware
+            include_data = getattr(request, 'validated_data', {})
+            include_bank_accounts = include_data.get('include_bank_accounts', False)
+            
             session = self._get_session()
             
             try:
                 bank = self.bank_service.get_bank_by_id(bank_id, session)
-                if not bank:
+                if bank is None:
                     return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 if include_bank_accounts:
-                    bank.accounts = self.bank_account_service.get_bank_accounts(bank_id, session)
+                    bank.accounts = self.bank_account_service.get_bank_accounts(session, bank_id=bank_id)
 
                 formatted_bank = format_bank_comprehensive(bank, include_bank_accounts=include_bank_accounts)
                 return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.SUCCESS)
@@ -118,7 +144,6 @@ class BankingController:
             ControllerResponseDTO: DTO containing bank data and status
         """
         try:
-            # Get pre-validated data from middleware
             bank_data = getattr(request, 'validated_data', {})
             if not bank_data:
                 return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
@@ -199,22 +224,40 @@ class BankingController:
     # Get bank accounts
     ###############################################
 
-    def get_bank_accounts(self, bank_id: int) -> ControllerResponseDTO:
+    def get_bank_accounts(self, bank_id: int = None) -> ControllerResponseDTO:
         """
-        Get all bank accounts with enhanced validation and response.
+        Get all bank accounts with optional search filters.
 
         Args:
-            bank_id: ID of the bank to get bank accounts for
-            
+            bank_id: ID of the bank to get bank accounts for (optional)
+
+        Search parameters (all optional):
+        - bank_id: Filter by bank ID
+        - account_name: Filter by account name
+        - currency: Filter by currency code
+                    
         Returns:
-            ControllerResponseDTO: DTO containing bank accounts data and status
+            ControllerResponseDTO
         """
         try:
+            search_data = getattr(request, 'validated_data', {})
+            if bank_id is None:
+                bank_id = search_data.get('bank_id')
+            
+            # Extract search parameters (None if not provided)
+            account_name = search_data.get('account_name')
+            currency = search_data.get('currency')
+            
             session = self._get_session()
-
             try:
-                bank_accounts = self.bank_account_service.get_bank_accounts(session, bank_id)
-                if not bank_accounts:
+                # Pass search parameters to service (all are optional)
+                bank_accounts = self.bank_account_service.get_bank_accounts(
+                    session=session, 
+                    bank_id=bank_id, 
+                    account_name=account_name, 
+                    currency=currency
+                )
+                if bank_accounts is None:
                     return ControllerResponseDTO(error="Bank accounts not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 formatted_bank_accounts = [format_bank_account(bank_account) for bank_account in bank_accounts]
@@ -247,10 +290,9 @@ class BankingController:
         """
         try:
             session = self._get_session()
-
             try:
                 bank_account = self.bank_account_service.get_bank_account_by_id(bank_account_id, session)
-                if not bank_account:
+                if bank_account is None:
                     return ControllerResponseDTO(error="Bank account not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_bank_account = format_bank_account(bank_account)
@@ -276,15 +318,17 @@ class BankingController:
     # Create bank account
     ###############################################
 
-    def create_bank_account(self) -> ControllerResponseDTO:
+    def create_bank_account(self, bank_id: int) -> ControllerResponseDTO:
         """
         Create a new bank account with enhanced validation and response.
         
+        Args:
+            bank_id: ID of the bank to add bank account to
+            
         Returns:
             ControllerResponseDTO: DTO containing bank account data and status
         """
         try:
-            # Get pre-validated data from middleware
             bank_account_data = getattr(request, 'validated_data', {})
             if not bank_account_data:
                 return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
@@ -292,7 +336,7 @@ class BankingController:
             session = self._get_session()
         
             try:
-                bank_account = self.bank_account_service.create_bank_account(bank_account_data, session)
+                bank_account = self.bank_account_service.create_bank_account(bank_id, bank_account_data, session)
                 
                 session.commit()
                 

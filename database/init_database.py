@@ -19,7 +19,6 @@ from src.investment_company.models import InvestmentCompany
 from src.rates.models import RiskFreeRate
 from src.entity.models import Entity
 from src.fund.models import Fund, FundEvent, FundTrackingType, EventType, DomainEvent
-from src.tax.models import TaxStatement
 from src.shared.base import Base
 from src.fund.models import DistributionType
 from datetime import date, timedelta

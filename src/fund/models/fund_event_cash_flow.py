@@ -5,13 +5,12 @@ This module provides the FundEventCashFlow model class,
 representing actual cash transfers linked to fund events.
 """
 
-from typing import Optional, List
-from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Enum, Index
+from datetime import datetime, timezone
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Enum, Index, DateTime
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.enums import CashFlowDirection
+from src.fund.enums.fund_event_cash_flow_enums import CashFlowDirection
 
 
 class FundEventCashFlow(Base):
@@ -40,6 +39,10 @@ class FundEventCashFlow(Base):
     amount = Column(Float, nullable=False)  # (MANUAL) transfer amount in currency
     reference = Column(String(255))  # (MANUAL) free-text bank reference
     description = Column(Text)  # (MANUAL) additional notes/description
+    
+    # Metadata
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated
     
     # Relationships
     fund_event = relationship("FundEvent", back_populates="cash_flows")

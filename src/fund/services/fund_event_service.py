@@ -19,7 +19,8 @@ from src.fund.models import FundEvent
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType, SortFieldFundEvent
 from src.shared.enums.shared_enums import EventOperation, SortOrder
 from src.fund.repositories import DomainEventRepository, FundEventRepository
-from src.fund.services import FundValidationService, FundEventSecondaryService
+from src.fund.services.fund_validation_service import FundValidationService
+from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)
@@ -96,37 +97,26 @@ class FundEventService:
         return event
 
 
-    # ============================================================================
-    # CAPITAL CALL AND RETURN OF CAPITAL EVENTS
-    # ============================================================================
+    ################################################################################
+    # Create Fund Event
+    ################################################################################
 
-    def create_fund_event(self, event_data: Dict[str, Any], session: Session) -> FundEvent:
+    def create_fund_event(self, fund_id: int, event_data: Dict[str, Any], session: Session) -> FundEvent:
         """
         Add a fund event.
+
+        Args:
+            fund_id: ID of the fund
+            event_data: Dictionary containing event data
+            session: Database session
+
+        Returns:
+            FundEvent object
         """
         processed_data = event_data.copy()
 
-        # 1. Process the event data to convert string enum values to enum objects
-        if 'event_type' in processed_data and isinstance(processed_data['event_type'], str):
-            try:
-                processed_data['event_type'] = EventType(processed_data['event_type'])
-            except ValueError:
-                raise ValueError(f"Invalid event type: {processed_data['event_type']}. Must be one of: {[t.value for t in EventType]}")
-        if 'event_date' in processed_data and isinstance(processed_data['event_date'], str):
-            try:
-                processed_data['event_date'] = date.fromisoformat(processed_data['event_date'])
-            except ValueError:
-                raise ValueError(f"Invalid event date: {processed_data['event_date']}. Must be a valid date.")
-        if 'distribution_type' in processed_data and isinstance(processed_data['distribution_type'], str):
-            try:
-                processed_data['distribution_type'] = DistributionType(processed_data['distribution_type'])
-            except ValueError:
-                raise ValueError(f"Invalid distribution type: {processed_data['distribution_type']}. Must be one of: {[t.value for t in DistributionType]}")
-        if 'tax_payment_type' in processed_data and isinstance(processed_data['tax_payment_type'], str):
-            try:
-                processed_data['tax_payment_type'] = TaxPaymentType(processed_data['tax_payment_type'])
-            except ValueError:
-                raise ValueError(f"Invalid tax payment type: {processed_data['tax_payment_type']}. Must be one of: {[t.value for t in TaxPaymentType]}")
+        # 1. Add the fund id to the event data
+        processed_data['fund_id'] = fund_id
 
         # 2. Business validation using validation service
         errors = self.validation_service.validate_fund_event_creation(processed_data, session)
@@ -593,7 +583,7 @@ class FundEventService:
         if processed_data['has_withholding_tax']:
             # Complex withholding tax distribution
             from src.fund.calculators.withholding_tax_calculator import WithholdingTaxCalculator
-            gross_amount, net_amount, tax_amount = WithholdingTaxCalculator.calculate_withholding_tax_amounts(
+            gross_amount, tax_amount = WithholdingTaxCalculator.calculate_withholding_tax_amounts(
                 processed_data['gross_interest_amount'], processed_data['net_interest_amount'], processed_data['withholding_tax_amount'], processed_data['withholding_tax_rate']
             )
             
@@ -609,12 +599,7 @@ class FundEventService:
             processed_data['is_grouped'] = True
             processed_data['group_position'] = 0
         else:
-            # Simple distribution
-            if not processed_data['distribution_amount']:
-                raise ValueError("distribution_amount is required for simple distributions")
-            
             processed_data.update({
-                'amount': processed_data['distribution_amount'],
                 'tax_withholding': 0.0,
                 'has_withholding_tax': False
             })
@@ -692,5 +677,7 @@ class FundEventService:
                     event_data={"changes": [change.to_dict() for change in all_changes]},
                     session=session
                 )
+        else:
+            raise ValueError(f"Failed to delete event")
 
         return success

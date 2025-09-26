@@ -51,6 +51,7 @@ class BankAccountRepository:
     def get_bank_accounts(self, session: Session,
             bank_id: Optional[int] = None,
             entity_id: Optional[int] = None,
+            account_name: Optional[str] = None,
             currency: Optional[Currency] = None,
             status: Optional[BankAccountStatus] = None,
             account_type: Optional[BankAccountType] = None,
@@ -64,13 +65,14 @@ class BankAccountRepository:
             session: Database session
             bank_id: ID of the bank to retrieve
             entity_id: ID of the entity to retrieve
+            account_name: Name of the bank accounts to retrieve
             currency: Currency of the bank accounts to retrieve
             status: Status of the bank accounts to retrieve
             account_type: Type of the bank accounts to retrieve
         Returns:
             List of bank accounts
         """
-        cache_key = f"bank_accounts:bank_id:{bank_id}:entity_id:{entity_id}:currency:{currency}:status:{status}:account_type:{account_type}"
+        cache_key = f"bank_accounts:bank_id:{bank_id}:entity_id:{entity_id}:account_name:{account_name}:currency:{currency}:status:{status}:account_type:{account_type}"
         
         # Check cache first
         if cache_key in self._cache:
@@ -90,6 +92,8 @@ class BankAccountRepository:
             bank_accounts = bank_accounts.filter(BankAccount.bank_id == bank_id)
         if entity_id:
             bank_accounts = bank_accounts.filter(BankAccount.entity_id == entity_id)
+        if account_name:
+            bank_accounts = bank_accounts.filter(BankAccount.account_name.ilike(f"%{account_name}%"))
         if currency:
             bank_accounts = bank_accounts.filter(BankAccount.currency == currency.value)
         if status:

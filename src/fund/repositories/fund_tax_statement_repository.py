@@ -12,6 +12,7 @@ Key responsibilities:
 """
 
 from typing import Dict, Any, List, Optional
+from datetime import date
 from sqlalchemy.orm import Session
 
 from src.fund.models import FundTaxStatement

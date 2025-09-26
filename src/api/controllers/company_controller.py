@@ -51,26 +51,39 @@ class CompanyController:
     # Get companies
     ###############################################
 
-    def get_companies(self, include_contacts: bool = False) -> tuple:
+    def get_companies(self) -> tuple:
         """
         Get list of all companies with summary data.
         
-        Args:
+        Search parameters (all optional):
             include_contacts: Whether to include contacts in the response
+            company_type: Company type to filter by
+            status: Company status to filter by
+            name: Company name to filter by
             
         Returns:
             ControllerResponseDTO
         """
         try:
+            search_data = getattr(request, 'validated_data', {})
+            include_contacts = search_data.get('include_contacts', False)
+            company_type = search_data.get('company_type')
+            status = search_data.get('status')
+            name = search_data.get('name')
             session = self._get_session()
             try:
-                companies = self.company_service.get_companies(session)
-                if not companies:
+                companies = self.company_service.get_companies(
+                    session=session,
+                    company_type=company_type,
+                    status=status,
+                    name=name
+                )
+                if companies is None:
                     return ControllerResponseDTO(error="Investment companies not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 if include_contacts:
                     for company in companies:
-                        company.contacts = self.company_contact_service.get_contacts(session, company.id)
-                formatted_companies = [format_company_comprehensive(company, include_contacts) for company in companies]
+                        company.contacts = self.company_contact_service.get_contacts(session=session, company_id=company.id)
+                formatted_companies = [format_company_comprehensive(company, include_contacts=include_contacts) for company in companies]
                 return ControllerResponseDTO(data=formatted_companies, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
@@ -88,27 +101,31 @@ class CompanyController:
             current_app.logger.error(f"Error getting companies: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def get_company_by_id(self, company_id: int, include_contacts: bool = False) -> ControllerResponseDTO:
+    def get_company_by_id(self, company_id: int) -> ControllerResponseDTO:
         """
         Get a specific company by ID.
         
         Args:
             company_id: ID of the company to retrieve
+
+        Search parameters (all optional):
             include_contacts: Whether to include contacts in the response
             
         Returns:
             ControllerResponseDTO
         """
         try:
+            include_data = getattr(request, 'validated_data', {})
+            include_contacts = include_data.get('include_contacts', False)
             session = self._get_session()
             try:
                 company = self.company_service.get_company_by_id(company_id, session)
                 if not company:
                     return ControllerResponseDTO(error="Company not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 if include_contacts:
-                    company.contacts = self.company_contact_service.get_contacts(session, company.id)
+                    company.contacts = self.company_contact_service.get_contacts(session=session, company_id=company.id)
                 
-                formatted_company = format_company_comprehensive(company, include_contacts)
+                formatted_company = format_company_comprehensive(company, include_contacts=include_contacts)
                 return ControllerResponseDTO(data=formatted_company, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
@@ -140,7 +157,6 @@ class CompanyController:
         """
 
         try:
-            # Get pre-validated data from middleware
             company_data = getattr(request, 'validated_data', {})
             if not company_data:
                 return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
@@ -220,20 +236,24 @@ class CompanyController:
     # Get contacts
     ###############################################
 
-    def get_contacts(self, company_id: int) -> ControllerResponseDTO:
+    def get_contacts(self, company_id: int = None) -> ControllerResponseDTO:
         """
-        Get list of all contacts for a specific company
+        Get list of contacts with optional company filter
 
         Args:
-            company_id: ID of the company to get contacts for
+            company_id: ID of the company to get contacts for (optional)
             
         Returns:
             ControllerResponseDTO
         """
         try:
+            search_data = getattr(request, 'validated_data', {})
+            if company_id is None:
+                company_id = search_data.get('company_id')
+            
             session = self._get_session()
             try:
-                contacts = self.company_contact_service.get_contacts(session, company_id)
+                contacts = self.company_contact_service.get_contacts(session=session, company_id=company_id)
                 if not contacts:
                     return ControllerResponseDTO(error="Contacts not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
@@ -295,15 +315,17 @@ class CompanyController:
     # Create contact
     ###############################################
     
-    def create_contact(self) -> ControllerResponseDTO:
+    def create_contact(self, company_id: int) -> ControllerResponseDTO:
         """
-        Create a new contact
+        Create a new contact for the specified company
+            
+        Args:
+            company_id: ID of the company to add contact to
             
         Returns:
             ControllerResponseDTO: DTO containing contact data and status
         """
         try:
-            # Get pre-validated data from middleware
             contact_data = getattr(request, 'validated_data', {})
             if not contact_data:
                 return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
@@ -311,7 +333,7 @@ class CompanyController:
             session = self._get_session()
 
             try:
-                contact = self.company_contact_service.create_contact(contact_data, session)
+                contact = self.company_contact_service.create_contact(company_id, contact_data, session)
                 
                 session.commit()
                 

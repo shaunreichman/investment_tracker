@@ -6,12 +6,13 @@ representing risk free rates in the system.
 """
 
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from src.shared.enums.shared_enums import Currency
 from src.rates.enums.risk_free_rate_enums import RiskFreeRateType, SortFieldRiskFreeRate
 from src.shared.enums.shared_enums import SortOrder
 from src.rates.models import RiskFreeRate
+from src.rates.repositories import RiskFreeRateRepository
 
 class RiskFreeRateService:
     """Risk Free Rate Service."""
@@ -38,6 +39,8 @@ class RiskFreeRateService:
             session: Database session
             currency: Currency of the risk free rates to retrieve
             rate_type: Type of the risk free rates to retrieve
+            sort_by: Field to sort by
+            sort_order: Order to sort by
 
         Returns:
             List of risk free rates
@@ -63,35 +66,15 @@ class RiskFreeRateService:
     def create_risk_free_rate(self, risk_free_rate_data: Dict[str, Any], session: Session) -> RiskFreeRate:
         """
         Create a new risk free rate.
+
+        Args:
+            risk_free_rate_data: Data to create a risk free rate
+            session: Database session
+
+        Returns:
+            Risk free rate if created, None otherwise
         """
-        required_fields = ['currency', 'date', 'rate']
-        for field in required_fields:
-            if field not in risk_free_rate_data:
-                raise ValueError(f"Required field '{field}' is missing")
-
-        processed_data = risk_free_rate_data.copy()
-        if 'currency' in processed_data and isinstance(processed_data['currency'], str):
-            try:
-                processed_data['currency'] = Currency(processed_data['currency'])
-            except ValueError:
-                raise ValueError(f"Invalid currency: {processed_data['currency']}. Must be one of: {[c.value for c in Currency]}")
-        if 'date' in processed_data and isinstance(processed_data['date'], str):
-            try:
-                processed_data['date'] = date.fromisoformat(processed_data['date'])
-            except ValueError:
-                raise ValueError(f"Invalid date: {processed_data['date']}. Must be in ISO format (YYYY-MM-DD)")
-        if 'rate' in processed_data and isinstance(processed_data['rate'], str):
-            try:
-                processed_data['rate'] = float(processed_data['rate'])
-            except ValueError:
-                raise ValueError(f"Invalid rate: {processed_data['rate']}. Must be a number")
-        if 'rate_type' in processed_data and isinstance(processed_data['rate_type'], str):
-            try:
-                processed_data['rate_type'] = RiskFreeRateType(processed_data['rate_type'])
-            except ValueError:
-                raise ValueError(f"Invalid rate type: {processed_data['rate_type']}. Must be one of: {[t.value for t in RiskFreeRateType]}")
-
-        risk_free_rate = self.risk_free_rate_repository.create_risk_free_rate(processed_data, session)
+        risk_free_rate = self.risk_free_rate_repository.create_risk_free_rate(risk_free_rate_data, session)
         if not risk_free_rate:
             raise ValueError(f"Failed to create risk free rate")
 

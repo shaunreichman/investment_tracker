@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from src.banking.enums.bank_enums import BankType, SortFieldBank
 from src.shared.enums.shared_enums import SortOrder
 from src.banking.models import Bank
+from src.shared.enums.shared_enums import Country
 
 
 class BankRepository:
@@ -49,7 +50,7 @@ class BankRepository:
 
     def get_banks(self, session: Session,
                     name: Optional[str] = None,
-                    country: Optional[str] = None,
+                    country: Optional[Country] = None,
                     bank_type: Optional[BankType] = None,
                     sort_by: SortFieldBank = SortFieldBank.NAME,
                     sort_order: SortOrder = SortOrder.ASC

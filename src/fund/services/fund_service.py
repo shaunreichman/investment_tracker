@@ -111,38 +111,7 @@ class FundService:
         Raises:
             ValueError: If required fields are missing or invalid
         """
-        # Validate required fields
-        required_fields = ['name', 'entity_id', 'investment_company_id', 'tracking_type', 'tax_jurisdiction', 'currency']
-        for field in required_fields:
-            if field not in fund_data:
-                raise ValueError(f"Required field '{field}' is missing")
-        
-        # Convert string enum values to enum objects
         processed_data = fund_data.copy()
-        if 'fund_investment_type' in processed_data and isinstance(processed_data['fund_investment_type'], str):
-            # fund_type should be a valid FundTrackingType enum
-            try:
-                processed_data['fund_investment_type'] = FundInvestmentType(processed_data['fund_investment_type'])
-            except ValueError:
-                raise ValueError(f"Invalid fund_investment_type: {processed_data['fund_investment_type']}. Must be one of: {[t.value for t in FundInvestmentType]}")
-        if 'tracking_type' in processed_data and isinstance(processed_data['tracking_type'], str):
-            # tracking_type should be a valid FundTrackingType enum
-            try:
-                processed_data['tracking_type'] = FundTrackingType(processed_data['tracking_type'])
-            except ValueError:
-                raise ValueError(f"Invalid tracking_type: {processed_data['tracking_type']}. Must be one of: {[t.value for t in FundTrackingType]}")
-        if 'tax_jurisdiction' in processed_data and isinstance(processed_data['tax_jurisdiction'], str):
-            # tax_jurisdiction should be a valid Country enum
-            try:
-                processed_data['tax_jurisdiction'] = Country(processed_data['tax_jurisdiction'])
-            except ValueError:
-                raise ValueError(f"Invalid tax_jurisdiction: {processed_data['tax_jurisdiction']}. Must be one of: {[t.value for t in Country]}")
-        if 'currency' in processed_data and isinstance(processed_data['currency'], str):
-            # currency should be a valid Currency enum
-            try:
-                processed_data['currency'] = Currency(processed_data['currency'])
-            except ValueError:
-                raise ValueError(f"Invalid currency: {processed_data['currency']}. Must be one of: {[t.value for t in Currency]}")
 
         # Set the tax statement financial year type based on the tax jurisdiction
         processed_data['tax_statement_financial_year_type'] = FundTaxStatementFinancialYearType.TAX_JURISDICTION_TO_FINANCIAL_YEAR_TYPE_MAP[processed_data['tax_jurisdiction']]
@@ -179,7 +148,7 @@ class FundService:
         # Get existing fund
         fund = self.fund_repository.get_fund_by_id(fund_id, session)
         if not fund:
-            return False
+            raise ValueError(f"Fund not found")
         
         # ENTERPRISE VALIDATION: Validate deletion
         validation_errors = self.validation_service.validate_fund_deletion(fund, session)
@@ -187,4 +156,8 @@ class FundService:
             raise ValueError(f"Deletion validation failed: {validation_errors}")
         
         # Delete the fund
-        return self.fund_repository.delete_fund(fund_id, session)
+        success = self.fund_repository.delete_fund(fund_id, session)
+        if not success:
+            raise ValueError(f"Failed to delete fund")
+
+        return success

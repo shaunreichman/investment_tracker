@@ -10,7 +10,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Enum, For
 from sqlalchemy.orm import relationship
 
 from src.shared.base import Base
-from src.fund.enums.fund_enums import FundTrackingType, FundStatus, FundTaxStatementFinancialYearType
+from src.fund.enums.fund_enums import FundTrackingType, FundStatus, FundTaxStatementFinancialYearType, FundInvestmentType
 from src.shared.enums.shared_enums import Currency, Country
 
 
@@ -28,7 +28,7 @@ class Fund(Base):
     
     # Basic fund information
     name = Column(String(255), nullable=False)  # (MANUAL) fund name
-    fund_type = Column(String(100))  # (MANUAL) type of fund (e.g., 'Private Equity', 'Venture Capital')
+    fund_investment_type = Column(Enum(FundInvestmentType), nullable=False, default=FundInvestmentType.PRIVATE_EQUITY)  # (MANUAL) type of fund (e.g., 'Private Equity', 'Venture Capital')
     tracking_type = Column(Enum(FundTrackingType), nullable=False, default=FundTrackingType.NAV_BASED)  # (MANUAL) NAV_BASED or COST_BASED
     description = Column(Text, nullable=True)  # (MANUAL) fund description
     currency = Column(Enum(Currency), nullable=False, default=Currency.AUD)  # (MANUAL) currency code for the fund

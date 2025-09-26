@@ -18,10 +18,11 @@ from src.fund.services.fund_service import FundService
 from src.fund.services.fund_event_service import FundEventService
 from src.fund.services.fund_event_cash_flow_service import FundEventCashFlowService
 from src.fund.services.fund_tax_statement_service import FundTaxStatementService
-from src.api.controllers.formatters.fund_formatter import format_fund_comprehensive, format_fund, format_event, format_fund_event_cash_flow, format_fund_tax_statement
+from src.api.controllers.formatters.fund_formatter import format_fund_comprehensive, format_fund, format_fund_event, format_fund_event_cash_flow, format_fund_tax_statement
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.dto.response_codes import ApiResponseCode
-from typing import Optional
+from typing import Optional, Dict, Any
+from src.fund.enums.fund_event_enums import EventType
 class FundController:
     """
     Controller for fund operations.
@@ -49,15 +50,30 @@ class FundController:
     # Get fund
     ###############################################
 
-    def get_funds(self, include_events: bool = False, include_cash_flows: bool = False, include_tax_statements: bool = False) -> ControllerResponseDTO:
+    def get_funds(self) -> ControllerResponseDTO:
         """
         Get all funds.
         """
         try:
+            search_data = getattr(request, 'validated_data', {})
+            company_id = search_data.get('company_id')
+            entity_id = search_data.get('entity_id')
+            fund_status = search_data.get('fund_status')
+            fund_tracking_type = search_data.get('fund_tracking_type')
+            include_events = search_data.get('include_events', False)
+            include_cash_flows = search_data.get('include_cash_flows', False)
+            include_tax_statements = search_data.get('include_tax_statements', False)
+
             session = self._get_session()
 
             try:
-                funds = self.fund_service.get_funds(session)
+                funds = self.fund_service.get_funds(
+                    session=session,
+                    company_id=company_id,
+                    entity_id=entity_id,
+                    fund_status=fund_status,
+                    fund_tracking_type=fund_tracking_type
+                )
 
                 if funds is None:
                     return ControllerResponseDTO(error="Funds not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
@@ -73,6 +89,7 @@ class FundController:
 
                 formatted_funds = [format_fund_comprehensive(fund, include_events=include_events, include_cash_flows=include_cash_flows, include_tax_statements=include_tax_statements) for fund in funds]
                 return ControllerResponseDTO(data=formatted_funds, response_code=ApiResponseCode.SUCCESS)
+            
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting funds: {str(e)}")
                 session.rollback()
@@ -83,31 +100,32 @@ class FundController:
                 return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
+
         except Exception as e:
             current_app.logger.error(f"Error in get_funds: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def get_fund_by_id(self, fund_id: int, include_events: bool = False, include_cash_flows: bool = False, include_tax_statements: bool = False) -> ControllerResponseDTO:
+    def get_fund_by_id(self, fund_id: int) -> ControllerResponseDTO:
         """
         Get a fund by ID with optional detailed information.
         
         Args:
             fund_id: ID of the fund to retrieve
-            include_events: Whether to include fund events in the response
-            include_cash_flows: Whether to include cash flows for each event
-            include_tax_statements: Whether to include tax statements for the fund
             
         Returns:
             ControllerResponseDTO: DTO containing fund data and status
         """
         try:
-            # Get database session
+            # Get include_events, include_cash_flows, include_tax_statements flags from middleware
+            search_data = getattr(request, 'validated_data', {})
+            include_events = search_data.get('include_events', False)
+            include_cash_flows = search_data.get('include_cash_flows', False)
+            include_tax_statements = search_data.get('include_tax_statements', False)
+
             session = self._get_session()
             
             try:
-                # Get the fund (now returns domain object)
                 fund = self.fund_service.get_fund_by_id(fund_id, session)
-
                 if not fund:
                     return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
@@ -118,7 +136,6 @@ class FundController:
                 if include_tax_statements:
                     fund.tax_statements = self.fund_tax_statement_service.get_fund_tax_statements(fund_id, session)
                 
-                # Format the response using comprehensive formatter with specified options
                 formatted_fund = format_fund_comprehensive(
                     fund, 
                     include_events=include_events, 
@@ -258,7 +275,10 @@ class FundController:
             ControllerResponseDTO: DTO containing events and status
         """
         try:
-            # Get database session
+            search_data = getattr(request, 'validated_data', {})
+            if fund_id is None:
+                fund_id = search_data.get('fund_id')
+
             session = self._get_session()
 
             try:
@@ -268,7 +288,7 @@ class FundController:
                 if events is None:
                     return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
-                formatted_events = [format_event(event) for event in events]
+                formatted_events = [format_fund_event(event) for event in events]
                 return ControllerResponseDTO(data=formatted_events, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
@@ -303,7 +323,7 @@ class FundController:
                 if fund_event is None:
                     return ControllerResponseDTO(error="Fund event not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
-                formatted_fund_event = format_event(fund_event)
+                formatted_fund_event = format_fund_event(fund_event)
                 return ControllerResponseDTO(data=formatted_fund_event, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
@@ -326,16 +346,28 @@ class FundController:
     # Create fund event
     ###############################################
 
-    def create_fund_event(self, event_data: dict) -> ControllerResponseDTO:
+    def create_fund_event(self, fund_id: int, event_type: EventType) -> ControllerResponseDTO:
         """
         Add a fund event.
+
+        Args:
+            fund_id: ID of the fund
+            event_type: Type of event
+            
+        Returns:
+            ControllerResponseDTO: DTO containing event data or error
         """
-        pass
+        event_data = getattr(request, 'validated_data', {})
+        if not event_data:
+            return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
+        
+        event_data['event_type'] = event_type
+        
         try:
             session = self._get_session()
             try:
-                event = self.fund_event_service.create_fund_event(event_data, session)
-                return ControllerResponseDTO(data=format_event(event), response_code=ApiResponseCode.CREATED)
+                event = self.fund_event_service.create_fund_event(fund_id, event_data, session)
+                return ControllerResponseDTO(data=format_fund_event(event), response_code=ApiResponseCode.CREATED)
             except Exception as e:
                 current_app.logger.error(f"Error in create_fund_event: {str(e)}")
                 session.rollback()
@@ -809,25 +841,39 @@ class FundController:
     # Get fund event cash flows
     ###############################################
     
-    def get_fund_event_cash_flows(self, fund_id: int, event_id: int, bank_account_id: int) -> ControllerResponseDTO:
+    def get_fund_event_cash_flows(self, fund_id: int = None, fund_event_id: int = None) -> ControllerResponseDTO:
         """
         Get all cash flows for a specific fund event.
         
         Args:
             fund_id: ID of the fund
-            event_id: ID of the event
-            bank_account_id: ID of the bank account
-            
+            fund_event_id: ID of the event
+
+        Search parameters (all optional):
+            fund_id: ID of the fund
+            fund_event_id: ID of the event
+
         Returns:
             ControllerResponseDTO: DTO containing cash flow data or error
         """
         try:
+            search_data = getattr(request, 'validated_data', {})
+            if fund_id is None:
+                fund_id = search_data.get('fund_id')
+            if fund_event_id is None:
+                fund_event_id = search_data.get('fund_event_id')
+            bank_account_id = search_data.get('bank_account_id')
             session = self._get_session()
             try:
-                cash_flows = self.fund_event_cash_flow_service.get_fund_event_cash_flows(session, fund_id=fund_id, event_id=event_id, bank_account_id=bank_account_id)
-                if cash_flows is None:
+                fund_event_cash_flows = self.fund_event_cash_flow_service.get_fund_event_cash_flows(
+                    session=session,
+                    fund_id=fund_id,
+                    fund_event_id=fund_event_id,
+                    bank_account_id=bank_account_id
+                )
+                if fund_event_cash_flows is None:
                     return ControllerResponseDTO(error="Cash flows not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-                formatted_cash_flows = [format_fund_event_cash_flow(cash_flow) for cash_flow in cash_flows]
+                formatted_cash_flows = [format_fund_event_cash_flow(cash_flow) for cash_flow in fund_event_cash_flows]
                 return ControllerResponseDTO(data=formatted_cash_flows, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
@@ -845,18 +891,17 @@ class FundController:
             current_app.logger.error(f"Error getting fund event cash flows: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-
-    def get_fund_event_cash_flow_by_id(self, cash_flow_event_id: int) -> ControllerResponseDTO:
+    def get_fund_event_cash_flow_by_id(self, fund_event_cash_flow_id: int) -> ControllerResponseDTO:
         """
         Get a cash flow by ID.
         """
         try:
             session = self._get_session()
             try:
-                cash_flow = self.fund_event_cash_flow_service.get_fund_event_cash_flow_by_id(cash_flow_event_id, session)
-                if cash_flow is None:
+                fund_event_cash_flow = self.fund_event_cash_flow_service.get_fund_event_cash_flow_by_id(fund_event_cash_flow_id, session)
+                if fund_event_cash_flow is None:
                     return ControllerResponseDTO(error="Cash flow not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-                formatted_cash_flow = format_fund_event_cash_flow(cash_flow)
+                formatted_cash_flow = format_fund_event_cash_flow(fund_event_cash_flow)
                 return ControllerResponseDTO(data=formatted_cash_flow, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
@@ -876,32 +921,31 @@ class FundController:
 
 
     ###############################################
-    # Add fund event cash flow
+    # Create fund event cash flow
     ###############################################
     
-    def create_fund_event_cash_flow(self, cash_flow_data: dict) -> ControllerResponseDTO:
+    def create_fund_event_cash_flow(self, fund_event_id: int) -> ControllerResponseDTO:
         """
         Add a cash flow to a fund event with pre-validated data.
         
         Args:
-            cash_flow_data: Pre-validated cash flow data
+            fund_event_id: ID of the fund event
             
         Returns:
             ControllerResponseDTO: DTO containing cash flow data or error
         """
         try:
-            cash_flow_data = getattr(request, 'validated_data', {})
-            if not cash_flow_data:
+            fund_event_cash_flow_data = getattr(request, 'validated_data', {})
+            if not fund_event_cash_flow_data:
                 return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
             
-            # Get database session
             session = self._get_session()
             
             try:
-                cash_flow = self.fund_event_cash_flow_service.create_fund_event_cash_flow(cash_flow_data, session)
-                if cash_flow is None:
+                fund_event_cash_flow = self.fund_event_cash_flow_service.create_fund_event_cash_flow(fund_event_id, fund_event_cash_flow_data, session)
+                if fund_event_cash_flow is None:
                     return ControllerResponseDTO(error="Cash flow not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-                formatted_cash_flow = format_fund_event_cash_flow(cash_flow)
+                formatted_cash_flow = format_fund_event_cash_flow(fund_event_cash_flow)
                 return ControllerResponseDTO(data=formatted_cash_flow, response_code=ApiResponseCode.CREATED)
 
             except ValueError as e:
@@ -969,22 +1013,41 @@ class FundController:
     # Get fund tax statements
     ###############################################
 
-    def get_fund_tax_statements(self, fund_id: Optional[int] = None, entity_id: Optional[int] = None, financial_year: Optional[str] = None) -> ControllerResponseDTO:
+    def get_fund_tax_statements(self, fund_id: Optional[int] = None) -> ControllerResponseDTO:
         """
         Get all tax statements for a specific fund.
 
         Args:
             fund_id: ID of the fund
+
+        Search parameters (all optional):
+            fund_id: ID of the fund
             entity_id: ID of the entity
             financial_year: Financial year
-            
+            start_tax_payment_date: Start tax payment date
+            end_tax_payment_date: End tax payment date
+
         Returns:
             ControllerResponseDTO: DTO containing tax statement data or error
         """
         try:
+            search_data = getattr(request, 'validated_data', {})
+            if fund_id is None:
+                fund_id = search_data.get('fund_id')
+            entity_id = search_data.get('entity_id')
+            financial_year = search_data.get('financial_year')
+            start_tax_payment_date = search_data.get('start_tax_payment_date')
+            end_tax_payment_date = search_data.get('end_tax_payment_date')
             session = self._get_session()
             try:
-                fund_tax_statements = self.fund_tax_statement_service.get_fund_tax_statements(fund_id, entity_id, financial_year, session)
+                fund_tax_statements = self.fund_tax_statement_service.get_fund_tax_statements(
+                    session=session,
+                    fund_id=fund_id,
+                    entity_id=entity_id,
+                    financial_year=financial_year,
+                    start_tax_payment_date=start_tax_payment_date,
+                    end_tax_payment_date=end_tax_payment_date
+                )
                 if fund_tax_statements is None:
                     return ControllerResponseDTO(error="Tax statements not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
@@ -1046,9 +1109,12 @@ class FundController:
     # Create fund tax statement
     ###############################################
     
-    def create_fund_tax_statement(self) -> ControllerResponseDTO:
+    def create_fund_tax_statement(self, fund_id: int) -> ControllerResponseDTO:
         """
         Create a tax statement.
+
+        Args:
+            fund_id: ID of the fund
 
         Returns:
             ControllerResponseDTO: DTO containing tax statement data or error
@@ -1060,7 +1126,7 @@ class FundController:
             
             session = self._get_session()
             try:
-                fund_tax_statement = self.fund_tax_statement_service.create_fund_tax_statement(fund_tax_statement_data, session)
+                fund_tax_statement = self.fund_tax_statement_service.create_fund_tax_statement(fund_id, fund_tax_statement_data, session)
                 
                 session.commit()
                 
