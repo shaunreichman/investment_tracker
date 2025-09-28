@@ -22,7 +22,7 @@ from decimal import Decimal
 from unittest.mock import Mock, patch, MagicMock
 
 # SHARED CALCULATOR IMPORTS
-from src.shared.calculations.irr_calculator import IRRCalculator
+from src.shared.calculators.irr_calculator import IRRCalculator
 
 
 class TestIRRBasicCalculations:

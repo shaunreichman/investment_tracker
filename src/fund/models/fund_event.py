@@ -10,6 +10,7 @@ from typing import List
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
+from typing import Dict
 
 from src.shared.base import Base
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType
@@ -33,7 +34,7 @@ class FundEvent(Base):
     
     # Primary key and relationships
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (SYSTEM) link to fund
+    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (RELATIONSHIP) link to fund
     
     # Event details
     event_type = Column(Enum(EventType), nullable=False, index=True)  # (SYSTEM) type of fund event
@@ -57,7 +58,7 @@ class FundEvent(Base):
     
     # Tax-specific fields
     tax_payment_type = Column(Enum(TaxPaymentType), nullable=True)  # (MANUAL) type of tax payment (INTEREST, CAPITAL_GAINS, etc.)
-    tax_statement_id = Column(Integer, ForeignKey('fund_tax_statements.id'), nullable=True, index=True)  # (MANUAL) foreign key to tax statement for TAX_PAYMENT events
+    tax_statement_id = Column(Integer, ForeignKey('fund_tax_statements.id'), nullable=True, index=True)  # (CALCULATED) foreign key to tax statement for TAX_PAYMENT events
     
     # Unit transaction fields
     units_purchased = Column(Float, nullable=True)  # (MANUAL) units purchased in this event
@@ -107,27 +108,56 @@ class FundEvent(Base):
         Index('idx_fund_events_tax_statement_id', 'tax_statement_id'),
     )
     
-    def __init__(self, **kwargs):
-        """Initialize FundEvent with default values for grouping fields."""
-        # Set default values for grouping fields
-        self.is_grouped = False
-        self.group_id = None
-        self.group_type = None
-        self.group_position = None
-        
-        # Set default values for system flags
-        self.is_cash_flow_complete = False
-        self.has_withholding_tax = False
-        
-        # Call parent constructor with remaining kwargs
-        super().__init__(**kwargs)
-    
     def __repr__(self) -> str:
         return (
             f"<FundEvent(id={self.id}, fund_id={self.fund_id}, "
             f"type={self.event_type.value}, date={self.event_date}, "
             f"amount={self.amount})>"
         )
+    
+    
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the fund event model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the fund event model
+        """
+        return {
+            'id': 'SYSTEM',
+            'fund_id': 'RELATIONSHIP',
+            'event_type': 'MANUAL',
+            'event_date': 'MANUAL',
+            'amount': 'MANUAL',
+            'description': 'MANUAL',
+            'reference_number': 'MANUAL',
+            'nav_per_share': 'MANUAL',
+            'previous_nav_per_share': 'CALCULATED',
+            'nav_change_absolute': 'CALCULATED',
+            'nav_change_percentage': 'CALCULATED',
+            'units_owned': 'CALCULATED',
+            'distribution_type': 'MANUAL',
+            'tax_withholding': 'MANUAL',
+            'has_withholding_tax': 'MANUAL',
+            'tax_payment_type': 'MANUAL',
+            'tax_statement_id': 'CALCULATED',
+            'units_purchased': 'MANUAL',
+            'units_sold': 'MANUAL',
+            'unit_price': 'MANUAL',
+            'brokerage_fee': 'MANUAL',
+            'current_equity_balance': 'CALCULATED',
+            'dc_current_equity_balance': 'CALCULATED',
+            'dc_risk_free_rate': 'CALCULATED',
+            'is_cash_flow_complete': 'SYSTEM',
+            'cash_flow_balance_amount': 'CALCULATED',
+            'is_grouped': 'CALCULATED',
+            'group_id': 'CALCULATED',
+            'group_type': 'CALCULATED',
+            'group_position': 'CALCULATED',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+        }
+    
     
     def validate_basic_constraints(self) -> bool:
         """Basic data validation only.

@@ -9,6 +9,7 @@ delegated to services for clean separation of concerns.
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, ForeignKey, Text, Index, UniqueConstraint, Enum
 from sqlalchemy.orm import relationship
+from typing import Dict
 
 from src.shared.base import Base
 # from src.fund.enums.fund_tax_statement_enums import FundTaxStatementFinancialYearType
@@ -20,8 +21,8 @@ class FundTaxStatement(Base):
     __tablename__ = 'fund_tax_statements'
 
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (MANUAL) foreign key to fund
-    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False, index=True)  # (MANUAL) foreign key to entity
+    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (RELATIONSHIP) foreign key to fund
+    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False, index=True)  # (RELATIONSHIP) foreign key to entity
     financial_year = Column(String(4), nullable=False, index=True)  # (MANUAL) financial year (e.g., "2023-24")
     financial_year_start_date = Column(Date, nullable=False)  # (CALCULATED) start date of the financial year
     financial_year_end_date = Column(Date, nullable=False)  # (CALCULATED) end date of the financial year
@@ -63,9 +64,6 @@ class FundTaxStatement(Base):
     eofy_debt_interest_deduction_rate = Column(Float, default=0.0)  # (MANUAL) tax deduction rate for interest (e.g., 30.0 for 30%)
     eofy_debt_interest_deduction_total_deduction = Column(Float, default=0.0)  # (CALCULATED) calculated tax benefit from interest deduction
     
-    # Tax status
-    non_resident = Column(Boolean, default=False)  # (MANUAL) whether entity was non-resident for tax purposes in this FY
-    
     # Additional fields
     accountant = Column(String(255))  # (MANUAL) name of fund's accountant who prepared the tax statement
     notes = Column(Text)  # (MANUAL) additional notes
@@ -89,3 +87,50 @@ class FundTaxStatement(Base):
     def __repr__(self):
         """Return a string representation of the FundTaxStatement instance for debugging/logging."""
         return f"<FundTaxStatement(id={self.id}, fund_id={self.fund_id}, entity_id={self.entity_id}, fy={self.financial_year})>"
+
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the fund tax statement model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the fund tax statement model
+        """
+        return {
+            'id': 'SYSTEM',
+            'fund_id': 'RELATIONSHIP',
+            'entity_id': 'RELATIONSHIP',
+            'financial_year': 'MANUAL',
+            'financial_year_start_date': 'CALCULATED',
+            'financial_year_end_date': 'CALCULATED',
+            'tax_payment_date': 'HYBRID',
+            'statement_date': 'MANUAL',
+            'interest_income_amount': 'CALCULATED',
+            'interest_income_tax_rate': 'MANUAL',
+            'interest_tax_amount': 'CALCULATED',
+            'interest_received_in_cash': 'MANUAL',
+            'interest_receivable_this_fy': 'MANUAL',
+            'interest_receivable_prev_fy': 'MANUAL',
+            'interest_non_resident_withholding_tax_from_statement': 'MANUAL',
+            'interest_non_resident_withholding_tax_already_withheld': 'CALCULATED',
+            'dividend_franked_income_amount': 'HYBRID',
+            'dividend_unfranked_income_amount': 'HYBRID',
+            'dividend_franked_income_tax_rate': 'MANUAL',
+            'dividend_unfranked_income_tax_rate': 'MANUAL',
+            'dividend_franked_tax_amount': 'CALCULATED',
+            'dividend_unfranked_tax_amount': 'CALCULATED',
+            'dividend_franked_income_amount_from_tax_statement_flag': 'CALCULATED',
+            'dividend_unfranked_income_amount_from_tax_statement_flag': 'CALCULATED',
+            'capital_gain_income_amount': 'HYBRID',
+            'capital_gain_income_tax_rate': 'MANUAL',
+            'capital_gain_tax_amount': 'CALCULATED',
+            'capital_gain_discount_amount': 'CALCULATED',
+            'capital_gain_income_amount_from_tax_statement_flag': 'CALCULATED',
+            'eofy_debt_interest_deduction_sum_of_daily_interest': 'CALCULATED',
+            'eofy_debt_interest_deduction_rate': 'MANUAL',
+            'eofy_debt_interest_deduction_total_deduction': 'CALCULATED',
+            'accountant': 'MANUAL',
+            'notes': 'MANUAL',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+        }

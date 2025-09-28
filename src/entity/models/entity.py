@@ -12,6 +12,7 @@ from sqlalchemy.orm import relationship
 from src.shared.enums.shared_enums import Country
 from src.entity.enums.entity_enums import EntityType
 from src.shared.base import Base
+from typing import Dict
 
 class Entity(Base):
     """Model representing an investing entity (person or company)."""
@@ -32,3 +33,21 @@ class Entity(Base):
     
     def __repr__(self):
         return f"<Entity(id={self.id}, name='{self.name}')>"
+
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the entity model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the entity model
+        """
+        return {
+            'id': 'SYSTEM',
+            'name': 'MANUAL',
+            'entity_type': 'MANUAL',
+            'description': 'MANUAL',
+            'tax_jurisdiction': 'MANUAL',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+        }

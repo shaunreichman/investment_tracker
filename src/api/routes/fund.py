@@ -941,7 +941,6 @@ def get_fund_tax_statement_by_id(fund_id, fund_tax_statement_id):
         'capital_gain_income_amount': 'float',
         'capital_gain_income_tax_rate': 'float',
         'eofy_debt_interest_deduction_rate': 'float',
-        'non_resident': 'bool',
         'accountant': 'string',
         'notes': 'string',
     },

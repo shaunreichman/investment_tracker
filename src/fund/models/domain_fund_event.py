@@ -6,7 +6,7 @@ The model handles only data persistence and basic validation, with business logi
 delegated to services for clean separation of concerns.
 """
 
-from typing import Any
+from typing import Any, Dict
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, DateTime, Enum, ForeignKey, JSON
 from sqlalchemy.orm import relationship
@@ -33,6 +33,23 @@ class DomainFundEvent(Base):
     
     # Relationships
     fund = relationship("Fund", back_populates="domain_fund_events")
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the domain fund event model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the domain fund event model
+        """
+        return {
+            'id': 'SYSTEM',
+            'fund_id': 'SYSTEM',
+            'event_type': 'SYSTEM',
+            'event_operation': 'SYSTEM',
+            'fund_event_id': 'SYSTEM',
+            'event_data': 'SYSTEM',
+            'timestamp': 'SYSTEM',
+        }
 
 
 class FundFieldChange:

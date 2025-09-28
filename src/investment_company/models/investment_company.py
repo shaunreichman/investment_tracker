@@ -9,6 +9,7 @@ delegated to services for clean separation of concerns.
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Text, DateTime, Enum, Index, Float, Date
 from sqlalchemy.orm import relationship
+from typing import Dict
 
 from src.shared.base import Base
 from src.investment_company.enums.company_enums import CompanyType, CompanyStatus
@@ -78,3 +79,44 @@ class InvestmentCompany(Base):
     
     def __repr__(self):
         return f"<InvestmentCompany(id={self.id}, name='{self.name}', company_type={self.company_type.value if self.company_type else None}, status={self.status.value})>"
+
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the investment company model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the investment company model
+        """
+        return {
+            'id': 'SYSTEM',
+            'name': 'MANUAL',
+            'description': 'MANUAL',
+            'company_type': 'MANUAL',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+            'business_address': 'MANUAL',
+            'website': 'MANUAL',
+            'total_funds': 'CALCULATED',
+            'total_funds_active': 'CALCULATED',
+            'total_funds_completed': 'CALCULATED',
+            'total_funds_realized': 'CALCULATED',
+            'total_commitment_amount': 'CALCULATED',
+            'current_equity_balance': 'CALCULATED',
+            'average_equity_balance': 'CALCULATED',
+            'completed_irr_gross': 'CALCULATED',
+            'completed_irr_after_tax': 'CALCULATED',
+            'completed_irr_real': 'CALCULATED',
+            'pnl': 'CALCULATED',
+            'realized_pnl': 'CALCULATED',
+            'unrealized_pnl': 'CALCULATED',
+            'realized_pnl_capital_gain': 'CALCULATED',
+            'unrealized_pnl_capital_gain': 'CALCULATED',
+            'realized_pnl_dividend': 'CALCULATED',
+            'realized_pnl_interest': 'CALCULATED',
+            'realized_pnl_distribution': 'CALCULATED',
+            'status': 'CALCULATED',
+            'start_date': 'CALCULATED',
+            'end_date': 'CALCULATED',
+            'current_duration': 'CALCULATED',
+        }

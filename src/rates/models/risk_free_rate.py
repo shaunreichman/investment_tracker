@@ -9,6 +9,7 @@ delegated to services for clean separation of concerns.
 
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Enum, UniqueConstraint
+from typing import Dict
 
 from src.shared.enums.shared_enums import Currency
 from src.rates.enums.risk_free_rate_enums import RiskFreeRateType
@@ -37,3 +38,21 @@ class RiskFreeRate(Base):
     def __repr__(self):
         return f"<RiskFreeRate(id={self.id}, currency='{self.currency}', date={self.date}, rate={self.rate}%)>"
     
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the risk free rate model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the risk free rate model
+        """
+        return {
+            'id': 'SYSTEM',
+            'currency': 'MANUAL',
+            'date': 'MANUAL',
+            'rate': 'MANUAL',
+            'rate_type': 'MANUAL',
+            'source': 'MANUAL',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+        }

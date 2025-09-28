@@ -9,6 +9,7 @@ delegated to services for clean separation of concerns.
 from datetime import date, datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
+from typing import Dict
 
 from src.shared.base import Base
 from src.fund.enums.fund_enums import FundTrackingType, FundStatus, FundTaxStatementFinancialYearType, FundInvestmentType
@@ -24,8 +25,8 @@ class Fund(Base):
     
     # Primary key and relationships
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    investment_company_id = Column(Integer, ForeignKey('investment_companies.id'), nullable=False)  # (MANUAL) foreign key to investment company
-    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)  # (MANUAL) foreign key to entity
+    investment_company_id = Column(Integer, ForeignKey('investment_companies.id'), nullable=False)  # (RELATIONSHIP) foreign key to investment company
+    entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)  # (RELATIONSHIP) foreign key to entity
     
     # Basic fund information
     name = Column(String(255), nullable=False)  # (MANUAL) fund name
@@ -102,6 +103,54 @@ class Fund(Base):
             f"<Fund(id={self.id}, name='{self.name}', "
             f"tracking_type={self.tracking_type.value}, status={self.status.value})>"
         )
+
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the fund model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the fund model
+        """
+        return {
+            'id': 'SYSTEM',
+            'investment_company_id': 'RELATIONSHIP',
+            'entity_id': 'RELATIONSHIP',
+            'name': 'MANUAL',
+            'fund_investment_type': 'MANUAL',
+            'tracking_type': 'MANUAL',
+            'description': 'MANUAL',
+            'currency': 'MANUAL',
+            'tax_jurisdiction': 'MANUAL',
+            'tax_statement_financial_year_type': 'CALCULATED',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+            'expected_irr': 'MANUAL',
+            'expected_duration_months': 'MANUAL',
+            'commitment_amount': 'MANUAL',
+            'current_equity_balance': 'CALCULATED',
+            'average_equity_balance': 'CALCULATED',
+            'completed_irr_gross': 'CALCULATED',
+            'completed_irr_after_tax': 'CALCULATED',
+            'completed_irr_real': 'CALCULATED',
+            'pnl': 'CALCULATED',
+            'realized_pnl': 'CALCULATED',
+            'unrealized_pnl': 'CALCULATED',
+            'realized_pnl_capital_gain': 'CALCULATED',
+            'unrealized_pnl_capital_gain': 'CALCULATED',
+            'realized_pnl_dividend': 'CALCULATED',
+            'realized_pnl_interest': 'CALCULATED',
+            'realized_pnl_distribution': 'CALCULATED',
+            'current_units': 'CALCULATED',
+            'current_unit_price': 'CALCULATED',
+            'current_nav_total': 'CALCULATED',
+            'total_cost_basis': 'CALCULATED',
+            'status': 'CALCULATED',
+            'start_date': 'CALCULATED',
+            'end_date': 'CALCULATED',
+            'current_duration': 'CALCULATED',
+        }
+        
     
     def validate_basic_constraints(self) -> bool:
         """Basic data validation only.

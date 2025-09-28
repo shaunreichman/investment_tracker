@@ -9,6 +9,7 @@ delegated to services for clean separation of concerns.
 from sqlalchemy import Column, Integer, String, DateTime, Enum, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from typing import Dict
 
 from src.shared.base import Base
 from src.banking.enums.bank_enums import BankType, BankStatus
@@ -38,3 +39,24 @@ class Bank(Base):
 
     def __repr__(self) -> str:
         return f"<Bank(id={self.id}, name='{self.name}', country='{self.country}', bank_type='{self.bank_type}')>"
+
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the bank model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the bank model
+        """
+        return {
+            'id': 'SYSTEM',
+            'name': 'MANUAL',
+            'country': 'MANUAL',
+            'bank_type': 'MANUAL',
+            'swift_bic': 'MANUAL',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+            'status': 'CALCULATED',
+            'current_number_of_bank_accounts': 'CALCULATED',
+            'current_balance_in_bank_accounts': 'CALCULATED',
+        }

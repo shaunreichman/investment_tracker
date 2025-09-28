@@ -9,6 +9,7 @@ delegated to services for clean separation of concerns.
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Enum, Index, DateTime
 from sqlalchemy.orm import relationship
+from typing import Dict
 
 from src.shared.base import Base
 from src.fund.enums.fund_event_cash_flow_enums import CashFlowDirection
@@ -30,11 +31,11 @@ class FundEventCashFlow(Base):
     
     # Primary key and relationships
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    fund_event_id = Column(Integer, ForeignKey('fund_events.id'), nullable=False, index=True)  # (SYSTEM) link to parent event
-    bank_account_id = Column(Integer, ForeignKey('bank_accounts.id'), nullable=False, index=True)  # (MANUAL) account where the transfer occurred
+    fund_event_id = Column(Integer, ForeignKey('fund_events.id'), nullable=False, index=True)  # (RELATIONSHIP) link to parent event
+    bank_account_id = Column(Integer, ForeignKey('bank_accounts.id'), nullable=False, index=True)  # (RELATIONSHIP) account where the transfer occurred
     
     # Cash flow details
-    direction = Column(Enum(CashFlowDirection), nullable=False)  # (SYSTEM) inflow/outflow from investor perspective
+    direction = Column(Enum(CashFlowDirection), nullable=False)  # (MANUAL) inflow/outflow from investor perspective
     transfer_date = Column(Date, nullable=False, index=True)  # (MANUAL) date of transaction on bank statement
     currency = Column(String(3), nullable=False)  # (MANUAL) ISO-4217; must equal BankAccount.currency
     amount = Column(Float, nullable=False)  # (MANUAL) transfer amount in currency
@@ -63,6 +64,28 @@ class FundEventCashFlow(Base):
             f"acct_id={self.bank_account_id}, dir={self.direction.value}, "
             f"date={self.transfer_date}, {self.currency} {self.amount})>"
         )
+
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the fund event cash flow model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the fund event cash flow model
+        """
+        return {
+            'id': 'SYSTEM',
+            'fund_event_id': 'RELATIONSHIP',
+            'bank_account_id': 'RELATIONSHIP',
+            'direction': 'MANUAL',
+            'transfer_date': 'MANUAL',
+            'currency': 'MANUAL',
+            'amount': 'MANUAL',
+            'reference': 'MANUAL',
+            'description': 'MANUAL',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+        }
     
     def validate_basic_constraints(self) -> bool:
         """Basic data validation only.

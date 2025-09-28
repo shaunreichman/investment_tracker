@@ -9,6 +9,7 @@ delegated to services for clean separation of concerns.
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, Enum, DateTime, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from typing import Dict
 
 from src.shared.base import Base
 from src.banking.enums.bank_account_enums import BankAccountType, BankAccountStatus
@@ -21,8 +22,8 @@ class BankAccount(Base):
     __tablename__ = "bank_accounts"
 
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False, index=True)  # (MANUAL) owner entity
-    bank_id = Column(Integer, ForeignKey("banks.id"), nullable=False, index=True)  # (MANUAL) linked bank
+    entity_id = Column(Integer, ForeignKey("entities.id"), nullable=False, index=True)  # (RELATIONSHIP) owner entity
+    bank_id = Column(Integer, ForeignKey("banks.id"), nullable=False, index=True)  # (RELATIONSHIP) linked bank
     account_name = Column(String(255), nullable=False)  # (MANUAL) human-readable account name/label
     account_number = Column(String(64), nullable=False)  # (MANUAL) account number stored as provided
     currency = Column(Enum(Currency), nullable=False)  # (MANUAL) ISO-4217 currency code
@@ -47,3 +48,25 @@ class BankAccount(Base):
             f"<BankAccount(id={self.id}, entity_id={self.entity_id}, bank_id={self.bank_id}, "
             f"name='{self.account_name}', number='{self.account_number}', currency='{self.currency}', type='{self.account_type}')>"
         )
+
+
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the bank account model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the bank account model
+        """
+        return {
+            'id': 'SYSTEM',
+            'entity_id': 'RELATIONSHIP',
+            'bank_id': 'RELATIONSHIP',
+            'account_name': 'MANUAL',
+            'account_number': 'MANUAL',
+            'currency': 'MANUAL',
+            'account_type': 'MANUAL',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+            'status': 'CALCULATED',
+            'current_balance': 'CALCULATED',
+        }
