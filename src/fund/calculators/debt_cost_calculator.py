@@ -43,8 +43,9 @@ class DailyDebtCostCalculator:
             DebtCostResult: Comprehensive debt cost calculation results
         """
         # Filter events to the relevant period
+        filtered_events = events
         if start_date is not None:
-            filtered_events = [e for e in events if e.event_date >= start_date]
+            filtered_events = [e for e in filtered_events if e.event_date >= start_date]
         if end_date is not None:
             filtered_events = [e for e in filtered_events if e.event_date <= end_date]
         filtered_events.sort(key=lambda e: e.event_date)
@@ -71,9 +72,10 @@ class DailyDebtCostCalculator:
         """
         rate_periods = []
         for i, rate in enumerate(risk_free_rates):
-            rate_start_date = rate.rate_date
-            if i <= len(risk_free_rates) - 1:
-                rate_end_date = risk_free_rates[i + 1].rate_date
+            rate_start_date = rate.date
+            if i < len(risk_free_rates) - 1:
+                next_rate = risk_free_rates[i + 1]
+                rate_end_date = next_rate.date
             else:
                 rate_end_date = date.today()
             
@@ -103,7 +105,7 @@ class DailyDebtCostCalculator:
             if event.current_equity_balance == 0:
                 continue
             equity_start_date = event.event_date
-            if i <= len(events) - 1:
+            if i < len(events) - 1:
                 equity_end_date = events[i + 1].event_date
             else:
                 equity_end_date = date.today()
@@ -124,7 +126,7 @@ class DailyDebtCostCalculator:
         """
         Calculate daily debt cost for each equity period.
         """
-        daily_debt_costs = Dict[date, Dict[str, Any]]
+        daily_debt_costs = {}
         for eq in equity_periods:
             for rp in rate_periods:
                 if rp['start_date'] > eq['end_date']:

@@ -48,7 +48,7 @@ class FundPnlCalculator:
             fifo_capital_gains_calculator = FifoCapitalGainsCalculator()
             capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(fund_events)
             if capital_gains_dict.remaining_units != fund.current_units:
-                ValueError("Remaining units do not match current units")
+                raise ValueError("Remaining units do not match current units")
             pnl_dict['realized_pnl_capital_gain'] = capital_gains_dict.total_capital_gains
             pnl_dict['unrealized_pnl_capital_gain'] = capital_gains_dict.remaining_units * (fund.current_unit_price - capital_gains_dict.average_cost_per_unit)
 
@@ -61,8 +61,13 @@ class FundPnlCalculator:
                 elif event.distribution_type == DistributionType.INTEREST:
                     pnl_dict['realized_pnl_interest'] += event.amount
         pnl_dict['realized_pnl_distribution'] = pnl_dict['realized_pnl_dividend'] + pnl_dict['realized_pnl_interest']
-        pnl_dict['realized_pnl'] = pnl_dict['realized_pnl_capital_gain'] + pnl_dict['realized_pnl_distribution']
-        pnl_dict['unrealized_pnl'] = pnl_dict['unrealized_pnl_capital_gain']
+        
+        # Handle None values for capital gains in cost-based funds
+        realized_capital_gain = pnl_dict['realized_pnl_capital_gain'] or 0
+        unrealized_capital_gain = pnl_dict['unrealized_pnl_capital_gain'] or 0
+        
+        pnl_dict['realized_pnl'] = realized_capital_gain + pnl_dict['realized_pnl_distribution']
+        pnl_dict['unrealized_pnl'] = unrealized_capital_gain
         pnl_dict['pnl'] = pnl_dict['realized_pnl'] + pnl_dict['unrealized_pnl']
         return pnl_dict
 

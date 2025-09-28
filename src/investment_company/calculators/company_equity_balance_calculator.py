@@ -24,12 +24,12 @@ class CompanyEquityBalanceCalculator:
             Average equity balance, current equity balance, last event date
         """
         if not fund_events:
-            return 0
+            return 0.0, 0.0, None
 
         today = date.today()
         fund_balances = {}
-        company_balance = 0
-        total_weighted_balance = 0
+        company_balance = 0.0
+        total_weighted_balance = 0.0
         last_event_date = None
 
         # Process each event in order
@@ -40,8 +40,8 @@ class CompanyEquityBalanceCalculator:
 
             # Update balances for this event
             fund_id = event.fund_id
-            new_balance = event.current_equity_balance
-            old_balance = fund_balances.get(fund_id, 0)
+            new_balance = event.current_equity_balance or 0.0  # Handle None values
+            old_balance = fund_balances.get(fund_id, 0.0)
             company_balance += new_balance - old_balance
             fund_balances[fund_id] = new_balance
 
@@ -53,12 +53,13 @@ class CompanyEquityBalanceCalculator:
         last_event = fund_events[-1]
         last_event_date = last_event.event_date
         fund_id = last_event.fund_id
-        new_balance = last_event.current_equity_balance
-        old_balance = fund_balances.get(fund_id, 0)
+        new_balance = last_event.current_equity_balance or 0.0  # Handle None values
+        old_balance = fund_balances.get(fund_id, 0.0)
         company_balance += new_balance - old_balance
         fund_balances[fund_id] = new_balance
 
-        if company_balance != 0:
+        # Only extend to today if the last event is not in the future and balance is not zero
+        if company_balance != 0 and last_event.event_date <= today:
             days = (today - last_event.event_date).days
             if days > 0:
                 total_weighted_balance += company_balance * days
@@ -66,6 +67,6 @@ class CompanyEquityBalanceCalculator:
 
         # Total days = first_event → last_event_date (either today or last event date if balance is 0)
         total_days = (last_event_date - fund_events[0].event_date).days
-        average_equity_balance = total_weighted_balance / total_days if total_days > 0 else 0
+        average_equity_balance = total_weighted_balance / total_days if total_days > 0 else 0.0
 
         return average_equity_balance, company_balance, last_event_date
