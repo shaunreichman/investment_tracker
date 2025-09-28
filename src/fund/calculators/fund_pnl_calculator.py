@@ -2,12 +2,12 @@
 Calculator for calculating the PNL of a fund.
 """
 
-from src.fund.models import Fund
+from src.fund.models import FundEvent, Fund
 from src.fund.enums import FundTrackingType, EventType, DistributionType
+from src.shared.enums.shared_enums import SortOrder
 from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator
 from src.fund.repositories import FundEventRepository
-from sqlalchemy.orm import Session
-
+from typing import List
 
 class FundPnlCalculator:
     """
@@ -24,13 +24,12 @@ class FundPnlCalculator:
         """
         self.fund_event_repository = FundEventRepository()
 
-    def calculate_pnl(self, fund: Fund, session: Session):
+    def calculate_pnl(self, fund_events: List[FundEvent], fund: Fund):
         """
         Calculate the PNL of a fund.
         
         Args:
-            fund: The fund object
-            session: Database session
+            fund_events: The list of fund events
 
         Returns:
             Dictionary with the PNL values
@@ -45,18 +44,16 @@ class FundPnlCalculator:
         pnl_dict['realized_pnl_interest'] = 0
         pnl_dict['realized_pnl_distribution'] = 0
 
-        events = self.fund_event_repository.get_fund_events(session, fund_ids=[fund.id])
-
         if fund.tracking_type == FundTrackingType.NAV_BASED:
             fifo_capital_gains_calculator = FifoCapitalGainsCalculator()
-            capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(fund_id=fund.id, session=session)
+            capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(fund_events)
             if capital_gains_dict.remaining_units != fund.current_units:
                 ValueError("Remaining units do not match current units")
             pnl_dict['realized_pnl_capital_gain'] = capital_gains_dict.total_capital_gains
             pnl_dict['unrealized_pnl_capital_gain'] = capital_gains_dict.remaining_units * (fund.current_unit_price - capital_gains_dict.average_cost_per_unit)
 
         # Sum up the Distribution PNL
-        for event in events:
+        for event in fund_events:
             if event.event_type == EventType.DISTRIBUTION:
                 if event.distribution_type == DistributionType.DIVIDEND_FRANKED or \
                         event.distribution_type == DistributionType.DIVIDEND_UNFRANKED:

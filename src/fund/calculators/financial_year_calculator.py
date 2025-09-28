@@ -11,6 +11,7 @@ class FinancialYearCalculator:
     """
     Financial year calculator class.
     """
+    @staticmethod
     def calculate_financial_year_dates(financial_year: str, tax_statement_financial_year_type: FundTaxStatementFinancialYearType) -> tuple[date, date]:
         """
         Calculate the start and end dates for a financial year based on tax jurisdiction.

@@ -484,6 +484,223 @@ class TestFifoCapitalGainsCalculator:
         assert result.total_capital_gains > 0
         assert result.remaining_units == 100.0  # 150 - 50
 
+    def test_calculate_capital_gains_with_cg_start_date_filtering(self):
+        """Test capital gains calculation with cg_start_date filtering."""
+        # Setup - Multiple purchases and sales across different dates
+        events = [
+            MockFundEvent(
+                event_date=date(2023, 1, 1),
+                event_type=EventType.UNIT_PURCHASE,
+                units_purchased=100.0,
+                unit_price=10.0,
+                brokerage_fee=5.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 2, 1),
+                event_type=EventType.UNIT_SALE,
+                units_sold=50.0,
+                unit_price=12.0,
+                brokerage_fee=2.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 3, 1),
+                event_type=EventType.UNIT_PURCHASE,
+                units_purchased=50.0,
+                unit_price=15.0,
+                brokerage_fee=3.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 4, 1),
+                event_type=EventType.UNIT_SALE,
+                units_sold=25.0,
+                unit_price=18.0,
+                brokerage_fee=1.0
+            )
+        ]
+        
+        # Execute with start date filter (should exclude the first sale on 2023-02-01)
+        cg_start_date = date(2023, 3, 1)
+        result = FifoCapitalGainsCalculator.calculate_capital_gains(events, cg_start_date=cg_start_date)
+        
+        # Verify - Only the sale on 2023-04-01 should be included
+        assert result.units_sold == 25.0  # Only the second sale
+        assert result.brokerage_fees_paid == 1.0  # Only the second sale's brokerage
+        assert result.total_capital_gains > 0  # Should have positive gains from the second sale
+        assert result.remaining_units == 75.0  # 100 - 50 (first sale) + 50 - 25 (second sale) = 75 (FIFO processes all sales)
+
+    def test_calculate_capital_gains_with_cg_end_date_filtering(self):
+        """Test capital gains calculation with cg_end_date filtering."""
+        # Setup - Multiple purchases and sales across different dates
+        events = [
+            MockFundEvent(
+                event_date=date(2023, 1, 1),
+                event_type=EventType.UNIT_PURCHASE,
+                units_purchased=100.0,
+                unit_price=10.0,
+                brokerage_fee=5.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 2, 1),
+                event_type=EventType.UNIT_SALE,
+                units_sold=50.0,
+                unit_price=12.0,
+                brokerage_fee=2.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 3, 1),
+                event_type=EventType.UNIT_PURCHASE,
+                units_purchased=50.0,
+                unit_price=15.0,
+                brokerage_fee=3.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 4, 1),
+                event_type=EventType.UNIT_SALE,
+                units_sold=25.0,
+                unit_price=18.0,
+                brokerage_fee=1.0
+            )
+        ]
+        
+        # Execute with end date filter (should exclude the sale on 2023-04-01)
+        cg_end_date = date(2023, 2, 28)
+        result = FifoCapitalGainsCalculator.calculate_capital_gains(events, cg_end_date=cg_end_date)
+        
+        # Verify - Only the sale on 2023-02-01 should be included
+        assert result.units_sold == 50.0  # Only the first sale
+        assert result.brokerage_fees_paid == 2.0  # Only the first sale's brokerage
+        assert result.total_capital_gains > 0  # Should have positive gains from the first sale
+        assert result.remaining_units == 75.0  # 100 - 50 (first sale) + 50 - 25 (second sale) = 75 (FIFO processes all sales)
+
+    def test_calculate_capital_gains_with_date_range_filtering(self):
+        """Test capital gains calculation with both start and end date filtering."""
+        # Setup - Multiple purchases and sales across different dates
+        events = [
+            MockFundEvent(
+                event_date=date(2023, 1, 1),
+                event_type=EventType.UNIT_PURCHASE,
+                units_purchased=100.0,
+                unit_price=10.0,
+                brokerage_fee=5.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 2, 1),
+                event_type=EventType.UNIT_SALE,
+                units_sold=30.0,
+                unit_price=12.0,
+                brokerage_fee=2.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 3, 15),
+                event_type=EventType.UNIT_SALE,
+                units_sold=20.0,
+                unit_price=15.0,
+                brokerage_fee=3.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 4, 1),
+                event_type=EventType.UNIT_PURCHASE,
+                units_purchased=50.0,
+                unit_price=18.0,
+                brokerage_fee=4.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 5, 1),
+                event_type=EventType.UNIT_SALE,
+                units_sold=25.0,
+                unit_price=20.0,
+                brokerage_fee=1.0
+            )
+        ]
+        
+        # Execute with date range filter (only March 2023 sales should be included)
+        cg_start_date = date(2023, 3, 1)
+        cg_end_date = date(2023, 3, 31)
+        result = FifoCapitalGainsCalculator.calculate_capital_gains(events, cg_start_date=cg_start_date, cg_end_date=cg_end_date)
+        
+        # Verify - Only the sale on 2023-03-15 should be included
+        assert result.units_sold == 20.0  # Only the March sale
+        assert result.brokerage_fees_paid == 3.0  # Only the March sale's brokerage
+        assert result.total_capital_gains > 0  # Should have positive gains from the March sale
+        # Remaining units account for all purchases and all sales (FIFO processes all events)
+        assert result.remaining_units == 75.0  # 100 - 30 - 20 + 50 - 25 = 75
+
+    def test_calculate_capital_gains_date_filtering_edge_cases(self):
+        """Test date filtering edge cases - exact boundary dates."""
+        # Setup - Events on specific dates
+        events = [
+            MockFundEvent(
+                event_date=date(2023, 1, 1),
+                event_type=EventType.UNIT_PURCHASE,
+                units_purchased=100.0,
+                unit_price=10.0,
+                brokerage_fee=5.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 2, 15),  # Exact start date
+                event_type=EventType.UNIT_SALE,
+                units_sold=50.0,
+                unit_price=12.0,
+                brokerage_fee=2.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 3, 15),  # Exact end date
+                event_type=EventType.UNIT_SALE,
+                units_sold=25.0,
+                unit_price=15.0,
+                brokerage_fee=3.0
+            )
+        ]
+        
+        # Execute with exact boundary dates
+        cg_start_date = date(2023, 2, 15)
+        cg_end_date = date(2023, 3, 15)
+        result = FifoCapitalGainsCalculator.calculate_capital_gains(events, cg_start_date=cg_start_date, cg_end_date=cg_end_date)
+        
+        # Verify - Both boundary sales should be included (inclusive boundaries)
+        assert result.units_sold == 75.0  # 50 + 25
+        assert result.brokerage_fees_paid == 5.0  # 2 + 3
+        assert result.total_capital_gains > 0  # Should have positive gains
+        assert result.remaining_units == 25.0  # 100 - 50 - 25
+
+    def test_calculate_capital_gains_date_filtering_no_matching_sales(self):
+        """Test date filtering when no sales fall within the date range."""
+        # Setup - Events with sales outside the filter range
+        events = [
+            MockFundEvent(
+                event_date=date(2023, 1, 1),
+                event_type=EventType.UNIT_PURCHASE,
+                units_purchased=100.0,
+                unit_price=10.0,
+                brokerage_fee=5.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 2, 1),
+                event_type=EventType.UNIT_SALE,
+                units_sold=50.0,
+                unit_price=12.0,
+                brokerage_fee=2.0
+            ),
+            MockFundEvent(
+                event_date=date(2023, 4, 1),
+                event_type=EventType.UNIT_SALE,
+                units_sold=25.0,
+                unit_price=15.0,
+                brokerage_fee=3.0
+            )
+        ]
+        
+        # Execute with date range that excludes all sales
+        cg_start_date = date(2023, 3, 1)
+        cg_end_date = date(2023, 3, 31)
+        result = FifoCapitalGainsCalculator.calculate_capital_gains(events, cg_start_date=cg_start_date, cg_end_date=cg_end_date)
+        
+        # Verify - No sales should be included
+        assert result.units_sold == 0.0  # No sales in date range
+        assert result.brokerage_fees_paid == 0.0  # No sales in date range
+        assert result.total_capital_gains == 0.0  # No sales in date range
+        assert result.remaining_units == 25.0  # 100 - 50 - 25 = 25 (FIFO processes all sales)
+
 
 class TestFifoUnit:
     """Test cases for FifoUnit dataclass."""

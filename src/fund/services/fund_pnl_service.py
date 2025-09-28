@@ -4,6 +4,7 @@ Fund PNL Service.
 
 from sqlalchemy.orm import Session
 from src.fund.models import Fund, FundFieldChange
+from src.shared.enums.shared_enums import SortOrder
 from src.fund.calculators.fund_pnl_calculator import FundPnlCalculator
 from src.fund.repositories import FundEventRepository
 
@@ -58,7 +59,9 @@ class FundPnlService:
 
         all_changes = []
 
-        pnl_dict = self.fund_pnl_calculator.calculate_pnl(fund, session)
+        fund_events = self.fund_event_repository.get_fund_events(session, fund_ids=[fund.id], sort_order=SortOrder.ASC)
+
+        pnl_dict = self.fund_pnl_calculator.calculate_pnl(fund_events=fund_events, fund=fund)
         
         if pnl_dict['pnl'] != old_pnl:
             fund.pnl = pnl_dict['pnl']

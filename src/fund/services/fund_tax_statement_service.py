@@ -349,12 +349,14 @@ class FundTaxStatementService:
             fund_repository = FundRepository()
             fund = fund_repository.get_fund_by_id(fund_tax_statement.fund_id, session=session)
             if fund.tracking_type == FundTrackingType.NAV_BASED:
+                fund_events = self.fund_event_repository.get_fund_events(fund_ids=[fund.id], sort_order=SortOrder.ASC, session=session)
+                
                 from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator
                 fifo_capital_gains_calculator = FifoCapitalGainsCalculator()
-                capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(fund_id=fund.id,
+                capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(fund_events=fund_events,
                     cg_start_date=fund_tax_statement.financial_year_start_date,
                     cg_end_date=fund_tax_statement.financial_year_end_date,
-                    session=session)
+)
                 capital_gains = capital_gains_dict.total_capital_gains
                 fund_tax_statement.capital_gain_income_amount = capital_gains
                 fund_tax_statement.capital_gain_income_amount_from_tax_statement_flag = False
