@@ -25,7 +25,6 @@ import src.fund.models
 import src.investment_company.models
 import src.entity.models
 import src.banking.models
-import src.tax.models
 import src.rates.models
 
 # Set target metadata for autogenerate

@@ -28,16 +28,7 @@ class Entity(Base):
     # Relationships
     funds = relationship("Fund", back_populates="entity", cascade="all, delete-orphan")
     bank_accounts = relationship("BankAccount", back_populates="entity", cascade="all, delete-orphan")
-    tax_statements = relationship("TaxStatement", back_populates="entity", cascade="all, delete-orphan")
+    tax_statements = relationship("FundTaxStatement", back_populates="entity", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Entity(id={self.id}, name='{self.name}')>"
-    
-    def validate_basic_constraints(self):
-        """Validate basic constraints for the entity."""
-        if not self.name:
-            raise ValueError("Entity name is required")
-        if not self.tax_jurisdiction:
-            raise ValueError("Entity tax jurisdiction is required")
-        if self.tax_jurisdiction not in ["AU", "US", "SG", "NZ", "UK", "CA"]:
-            raise ValueError("Entity tax jurisdiction must be AU, US, SG, NZ, UK, or CA")

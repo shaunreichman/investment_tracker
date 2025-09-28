@@ -95,7 +95,7 @@ class FifoCapitalGainsCalculator:
         """
         from src.fund.repositories import FundEventRepository
         fund_event_repository = FundEventRepository()
-        unit_events = fund_event_repository.get_fund_events(fund_id=fund_id,
+        unit_events = fund_event_repository.get_fund_events(fund_ids=[fund_id],
             event_types=[EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
             session=session)
 

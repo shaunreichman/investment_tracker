@@ -62,7 +62,7 @@ class FundEquityService:
         old_average_equity_balance = fund.average_equity_balance
         old_total_cost_basis = fund.total_cost_basis
         # SINGLE COMPUTATION: Get events and calculate balances once
-        events = self.fund_event_repository.get_fund_events(session, fund.id, 
+        events = self.fund_event_repository.get_fund_events(session, fund_ids=[fund.id], 
                     event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
                     sort_order=SortOrder.ASC)
         event_balances = self.fund_equity_calculator.calculate_event_equity_balances(fund, events)
@@ -85,10 +85,10 @@ class FundEquityService:
 
         equity_changes = []
         if old_current_equity_balance != fund.current_equity_balance:
-            equity_changes.append(FundFieldChange(field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=fund.current_equity_balance))
+            equity_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=fund.current_equity_balance))
         if old_average_equity_balance != fund.average_equity_balance:
-            equity_changes.append(FundFieldChange(field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=fund.average_equity_balance))
+            equity_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=fund.average_equity_balance))
         if old_total_cost_basis != fund.total_cost_basis:
-            equity_changes.append(FundFieldChange(field_name='total_cost_basis', old_value=old_total_cost_basis, new_value=fund.total_cost_basis))
+            equity_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='total_cost_basis', old_value=old_total_cost_basis, new_value=fund.total_cost_basis))
         
         return equity_changes if equity_changes else None

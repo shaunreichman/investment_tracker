@@ -1,5 +1,5 @@
 """
-Fund Duration Calculator.
+Duration Months Calculator.
 
 Pure mathematical calculation logic for fund duration operations.
 """
@@ -7,8 +7,8 @@ Pure mathematical calculation logic for fund duration operations.
 from datetime import date
 
 
-class FundDurationCalculator:
-    """Pure mathematical calculation logic for fund duration operations."""
+class DurationMonthsCalculator:
+    """Pure mathematical calculation logic for duration months operations."""
     
     @staticmethod
     def calculate_duration_months(start_date: date, end_date: date) -> int:

@@ -55,7 +55,7 @@ class FundValidationService:
         errors = {}
         
         # BUSINESS RULE: Only allow deletion if fund has 0 fund events
-        fund_events = self.fund_event_repository.get_fund_events(session, fund.id)
+        fund_events = self.fund_event_repository.get_fund_events(session, fund_ids=[fund.id])
         if len(fund_events) > 0:
             errors['fund_events'] = [
                 f'Cannot delete fund with {len(fund_events)} fund events. '

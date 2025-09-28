@@ -36,7 +36,7 @@ class FundEventRepository:
     ################################################################################
     
     def get_fund_events(self, session: Session,
-                        fund_id: Optional[int] = None,
+                        fund_ids: Optional[List[int]] = None,
                         event_types: Optional[List[EventType]] = None,
                         distribution_types: Optional[List[DistributionType]] = None,
                         tax_payment_types: Optional[List[TaxPaymentType]] = None,
@@ -51,7 +51,7 @@ class FundEventRepository:
 
         Args:
             session: Database session
-            fund_id: ID of the fund (optional)
+            fund_ids: Optional list of fund IDs (optional)
             event_types: Optional list of event types to filter by (optional)
             distribution_types: Optional list of distribution types to filter by (optional)
             tax_payment_types: Optional list of tax payment types to filter by (optional)
@@ -64,7 +64,7 @@ class FundEventRepository:
         Returns:
             List of fund events
         """
-        cache_key = f"events:fund:{fund_id}:types:{event_types}:distribution_types:{distribution_types}:tax_payment_types:{tax_payment_types}:group_types:{group_types}:start_event_date:{start_event_date}:end_event_date:{end_event_date}:sort_field:{sort_field}:sort_order:{sort_order}"
+        cache_key = f"events:fund:{fund_ids}:types:{event_types}:distribution_types:{distribution_types}:tax_payment_types:{tax_payment_types}:group_types:{group_types}:start_event_date:{start_event_date}:end_event_date:{end_event_date}:sort_field:{sort_field}:sort_order:{sort_order}"
 
         # Check cache first
         if cache_key in self._cache:
@@ -79,8 +79,10 @@ class FundEventRepository:
             raise ValueError(f"Invalid sort order: {sort_order}. Must be one of: {[s.value for s in SortOrder]}")
         
         # Query database
-        query = session.query(FundEvent).filter(FundEvent.fund_id == fund_id)
+        query = session.query(FundEvent)
         
+        if fund_ids:
+            query = query.filter(FundEvent.fund_id.in_(fund_ids))
         if event_types:
             query = query.filter(FundEvent.event_type.in_([et.value for et in event_types]))
         if distribution_types:

@@ -69,6 +69,7 @@ class CompanyStatus(Enum):
     """
     ACTIVE = 'ACTIVE'
     INACTIVE = 'INACTIVE'
+    COMPLETED = 'COMPLETED'
     SUSPENDED = 'SUSPENDED'
     CLOSED = 'CLOSED'
     

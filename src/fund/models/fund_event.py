@@ -57,7 +57,7 @@ class FundEvent(Base):
     
     # Tax-specific fields
     tax_payment_type = Column(Enum(TaxPaymentType), nullable=True)  # (MANUAL) type of tax payment (INTEREST, CAPITAL_GAINS, etc.)
-    tax_statement_id = Column(Integer, ForeignKey('tax_statements.id'), nullable=True, index=True)  # (MANUAL) foreign key to tax statement for TAX_PAYMENT events
+    tax_statement_id = Column(Integer, ForeignKey('fund_tax_statements.id'), nullable=True, index=True)  # (MANUAL) foreign key to tax statement for TAX_PAYMENT events
     
     # Unit transaction fields
     units_purchased = Column(Float, nullable=True)  # (MANUAL) units purchased in this event
@@ -72,9 +72,10 @@ class FundEvent(Base):
     dc_current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) current equity balance used for this daily debt cost event
     dc_risk_free_rate = Column(Float, nullable=True)  # (CALCULATED) risk free rate used for this daily debt cost event
 
-    # System flags
+    # Cash flow fields
     is_cash_flow_complete = Column(Boolean, default=False)  # (SYSTEM) auto-managed flag set by reconciliation logic
-    
+    cash_flow_balance_amount = Column(Float, nullable=False, default=0.0)  # (CALCULATED) balance of cash flows for this event
+
     # Grouping fields (CALCULATED: Grouping flags set by backend when creating events)
     is_grouped = Column(Boolean, default=False, nullable=False)  # (CALCULATED) whether this event is part of a group
     group_id = Column(Integer, nullable=True, index=True)  # (CALCULATED) unique identifier for the group (auto-generated)

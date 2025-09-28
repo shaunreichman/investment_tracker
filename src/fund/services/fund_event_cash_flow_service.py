@@ -108,6 +108,14 @@ class FundEventCashFlowService:
         fund_event = fund_event_repository.get_fund_event_by_id(fund_event_id, session)
         if not fund_event:
             raise ValueError(f"Fund event not found")
+
+        # Validate Fund Event Cash Flow Balance
+        if fund_event.cash_flow_balance_amount + fund_event_cash_flow_data['amount'] > fund_event.amount:
+            raise ValueError(f"Cash flow is too large. It will take the balance amount above the event amount")
+        elif fund_event.cash_flow_balance_amount + fund_event_cash_flow_data['amount'] <= fund_event.amount:
+            fund_event.cash_flow_balance_amount += fund_event_cash_flow_data['amount']
+            if fund_event.cash_flow_balance_amount == fund_event.amount:
+                fund_event.is_cash_flow_complete = True
         
         processed_data = {
             **fund_event_cash_flow_data,
@@ -143,5 +151,15 @@ class FundEventCashFlowService:
         success = self.fund_event_cash_flow_repository.delete_fund_event_cash_flow(fund_event_cash_flow_id, session)
         if not success:
             raise ValueError(f"Failed to delete fund event cash flow")
+
+        # Update the fund event
+        from src.fund.services.fund_event_service import FundEventService
+        fund_event_service = FundEventService()
+        fund_event = fund_event_service.get_fund_event_by_id(fund_event_cash_flow.fund_event_id, session)
+        if not fund_event:
+            raise ValueError(f"Fund event not found")
+        if fund_event.is_cash_flow_complete:
+            fund_event.is_cash_flow_complete = False
+        fund_event.cash_flow_balance_amount -= fund_event_cash_flow.amount
 
         return True

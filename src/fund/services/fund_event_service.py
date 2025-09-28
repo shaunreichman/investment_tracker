@@ -45,7 +45,7 @@ class FundEventService:
     
 
     def get_fund_events(self, session: Session,
-                       fund_id: Optional[int] = None,
+                       fund_ids: Optional[List[int]] = None,
                        event_types: Optional[List[EventType]] = None,
                        distribution_types: Optional[List[DistributionType]] = None,
                        tax_payment_types: Optional[List[TaxPaymentType]] = None,
@@ -55,11 +55,11 @@ class FundEventService:
                        sort_by: Optional[SortFieldFundEvent] = SortFieldFundEvent.EVENT_DATE,
                        sort_order: SortOrder = SortOrder.ASC) -> List['FundEvent']:
         """
-        Get events for a specific fund.
+        Get events for a specific fund or list of funds.
         
         Args:
             session: Database session
-            fund_id: Optional ID of the fund
+            fund_ids: Optional list of fund IDs
             event_types: Optional list of event types to filter by
             distribution_types: Optional list of distribution types to filter by
             tax_payment_types: Optional list of tax payment types to filter by
@@ -73,7 +73,7 @@ class FundEventService:
             List of FundEvent objects
         """
         return self.fund_event_repository.get_fund_events(
-            session, fund_id, event_types, distribution_types, tax_payment_types, group_types, start_event_date, end_event_date, sort_by, sort_order
+            session, fund_ids, event_types, distribution_types, tax_payment_types, group_types, start_event_date, end_event_date, sort_by, sort_order
         )
     
     def get_fund_event_by_id(self, event_id: int, session: Session) -> Optional['FundEvent']:

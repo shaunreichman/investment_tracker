@@ -30,6 +30,12 @@ class InvestmentCompany(Base):
     business_address = Column(Text, nullable=True)  # (MANUAL) business address
     website = Column(String(255), nullable=True)  # (MANUAL) company website URL
 
+    # Fund Information
+    total_funds = Column(Integer, default=0)  # (CALCULATED) total number of funds
+    total_funds_active = Column(Integer, default=0)  # (CALCULATED) total number of active funds
+    total_funds_completed = Column(Integer, default=0)  # (CALCULATED) total number of completed funds
+    total_funds_realized = Column(Integer, default=0)  # (CALCULATED) total number of realized funds
+    
     # Equity storage fields (CALCULATED)
     total_commitment_amount = Column(Float, default=0.0)  # (CALCULATED) total commitment amount from funds
     current_equity_balance = Column(Float, default=0.0)  # (CALCULATED) current equity balance from capital movements

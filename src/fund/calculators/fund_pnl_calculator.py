@@ -45,7 +45,7 @@ class FundPnlCalculator:
         pnl_dict['realized_pnl_interest'] = 0
         pnl_dict['realized_pnl_distribution'] = 0
 
-        events = self.fund_event_repository.get_fund_events(session, fund.id)
+        events = self.fund_event_repository.get_fund_events(session, fund_ids=[fund.id])
 
         if fund.tracking_type == FundTrackingType.NAV_BASED:
             fifo_capital_gains_calculator = FifoCapitalGainsCalculator()

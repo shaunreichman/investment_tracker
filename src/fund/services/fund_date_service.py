@@ -65,14 +65,14 @@ class FundDateService:
                     fund.start_date = event.event_date
         else:
             # Update the start date of the fund by looking at all the fund events
-            events = self.fund_event_repository.get_fund_events(session=session, fund_id=fund_id,
+            events = self.fund_event_repository.get_fund_events(session=session, fund_ids=[fund_id],
                                             event_types=[EventType.CAPITAL_CALL, EventType.UNIT_PURCHASE],
                                             sort_order=SortOrder.ASC)
             if events:
                 if not fund.start_date or fund.start_date > events[0].event_date:
                     fund.start_date = events[0].event_date
         if old_start_date != fund.start_date:
-            return FundFieldChange(field_name='start_date', old_value=old_start_date, new_value=fund.start_date)
+            return FundFieldChange(fund_or_company='FUND', object_id=fund_id, field_name='start_date', old_value=old_start_date, new_value=fund.start_date)
         return None
 
     def update_fund_end_date(self, fund_id: int, session: Session) -> Optional[FundFieldChange]:
@@ -96,7 +96,7 @@ class FundDateService:
         old_end_date = fund.end_date
         
         if fund.status == FundStatus.REALIZED or fund.status == FundStatus.COMPLETED:
-            events = self.fund_event_repository.get_fund_events(session=session, fund_id=fund_id,
+            events = self.fund_event_repository.get_fund_events(session=session, fund_ids=[fund_id],
                                             event_types=[EventType.RETURN_OF_CAPITAL, EventType.UNIT_SALE],
                                             sort_order=SortOrder.DESC)
             if events:
@@ -104,7 +104,7 @@ class FundDateService:
                     fund.end_date = events[0].event_date
 
         if old_end_date != fund.end_date:
-            return FundFieldChange(field_name='end_date', old_value=old_end_date, new_value=fund.end_date)
+            return FundFieldChange(fund_or_company='FUND', object_id=fund_id, field_name='end_date', old_value=old_end_date, new_value=fund.end_date)
         return None
 
     def update_fund_duration(self, fund: Fund, session: Session) -> Optional[FundFieldChange]:
@@ -131,10 +131,10 @@ class FundDateService:
         else:
             end = date.today()
 
-        from src.fund.calculators.fund_duration_calculator import FundDurationCalculator
-        fund.current_duration = FundDurationCalculator.calculate_duration_months(fund.start_date, end)
+        from src.shared.calculators.duration_months_calculator import DurationMonthsCalculator
+        fund.current_duration = DurationMonthsCalculator.calculate_duration_months(fund.start_date, end)
         if old_duration != fund.current_duration:
-            return FundFieldChange(field_name='current_duration', old_value=old_duration, new_value=fund.current_duration)
+            return FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='current_duration', old_value=old_duration, new_value=fund.current_duration)
         return None
 
     def get_fund_financial_years(self, fund: Fund, session: Session) -> List[str]:

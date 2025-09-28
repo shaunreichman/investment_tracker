@@ -41,18 +41,24 @@ class FundFieldChange:
     This will not be stored in the database, but will be used to create the domain event.
 
     Attributes:
+        fund_or_company: Whether the event is related to a fund or a company (FUND/COMPANY)
+        object_id: The ID of the object that changed
         field_name: The name of the field that changed
         old_value: The old value of the field
         new_value: The new value of the field
     """
     
-    def __init__(self, field_name: str, old_value: Any, new_value: Any):
+    def __init__(self, fund_or_company: str, object_id: int, field_name: str, old_value: Any, new_value: Any):
+        self.fund_or_company = fund_or_company
+        self.object_id = object_id
         self.field_name = field_name
         self.old_value = old_value
         self.new_value = new_value
 
     def to_dict(self) -> dict:
         return {
+            'fund_or_company': self.fund_or_company,
+            'object_id': self.object_id,
             'field_name': self.field_name,
             'old_value': self.old_value,
             'new_value': self.new_value

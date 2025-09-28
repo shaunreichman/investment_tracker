@@ -112,6 +112,18 @@ class FundService:
         fund = self.fund_repository.create_fund(processed_data, session)
         if not fund:
             raise ValueError(f"Failed to create fund")
+
+        # Update the company
+        from src.investment_company.services.company_service import CompanyService
+        company_service = CompanyService()
+        company = company_service.get_company_by_id(company_id=fund.investment_company_id, session=session)
+        if not company:
+            raise ValueError(f"Company not found")
+        
+        # Update the company
+        company.total_funds += 1
+        company.total_funds_active += 1
+        company.total_commitment_amount += fund.commitment_amount
         
         return fund
     
@@ -148,5 +160,15 @@ class FundService:
         success = self.fund_repository.delete_fund(fund_id, session)
         if not success:
             raise ValueError(f"Failed to delete fund")
+
+        # Update the company
+        from src.investment_company.services.company_service import CompanyService
+        company_service = CompanyService()
+        company = company_service.get_company_by_id(company_id=fund.investment_company_id, session=session)
+        if not company:
+            raise ValueError(f"Company not found")
+        company.total_funds -= 1
+        company.total_funds_active -= 1
+        company.total_commitment_amount -= fund.commitment_amount
 
         return success

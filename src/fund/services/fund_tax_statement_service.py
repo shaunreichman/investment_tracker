@@ -270,7 +270,7 @@ class FundTaxStatementService:
         """
         # 1. Calculate Franked Dividend received this FY
         if fund_tax_statement.dividend_franked_income_amount is None or fund_tax_statement.dividend_franked_income_amount == 0.0:
-            franked_div_events = self.fund_event_repository.get_fund_events(fund_id=fund_tax_statement.fund_id,
+            franked_div_events = self.fund_event_repository.get_fund_events(fund_ids=[fund_tax_statement.fund_id],
                 distribution_types=[DistributionType.DIVIDEND_FRANKED],
                 start_event_date=fund_tax_statement.financial_year_start_date,
                 end_event_date=fund_tax_statement.financial_year_end_date,
@@ -307,7 +307,7 @@ class FundTaxStatementService:
         """
         # 1. Calculate Unfranked Dividend received this FY
         if fund_tax_statement.dividend_unfranked_income_amount is None or fund_tax_statement.dividend_unfranked_income_amount == 0.0:
-            unfranked_div_events = self.fund_event_repository.get_fund_events(fund_id=fund_tax_statement.fund_id,
+            unfranked_div_events = self.fund_event_repository.get_fund_events(fund_ids=[fund_tax_statement.fund_id],
                 distribution_types=[DistributionType.DIVIDEND_UNFRANKED],
                 start_event_date=fund_tax_statement.financial_year_start_date,
                 end_event_date=fund_tax_statement.financial_year_end_date,
@@ -386,7 +386,7 @@ class FundTaxStatementService:
         Create a FY debt cost event for the given fund tax statement.
         """
         # 1. Get all the daily debt cost events for the given fund tax statement
-        daily_debt_cost_events = self.fund_event_repository.get_fund_events(fund_id=fund_tax_statement.fund_id,
+        daily_debt_cost_events = self.fund_event_repository.get_fund_events(fund_ids=[fund_tax_statement.fund_id],
             event_types=[EventType.DAILY_RISK_FREE_INTEREST_CHARGE],
             start_event_date=fund_tax_statement.financial_year_start_date,
             end_event_date=fund_tax_statement.financial_year_end_date,
@@ -428,7 +428,7 @@ class FundTaxStatementService:
         Create a FY debt cost event for the given fund tax statement.
         """
         fund = self.fund_repository.get_fund_by_id(fund_tax_statement.fund_id, session=session)
-        capital_events = self.fund_event_repository.get_fund_events(fund_id=fund_tax_statement.fund_id,
+        capital_events = self.fund_event_repository.get_fund_events(fund_ids=[fund_tax_statement.fund_id],
             event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
             session=session)
         risk_free_rates = self.risk_free_rate_repository.get_risk_free_rates(currency=fund.currency, session=session)
@@ -440,7 +440,7 @@ class FundTaxStatementService:
 
         # 2. Check if these Debt Costs already exist and if they're incorrect, update them
         dates_checked = []
-        existing_debt_cost_events = self.fund_event_repository.get_fund_events(fund_id=fund_tax_statement.fund_id,
+        existing_debt_cost_events = self.fund_event_repository.get_fund_events(fund_ids=[fund_tax_statement.fund_id],
             event_types=[EventType.DAILY_RISK_FREE_INTEREST_CHARGE],
             start_event_date=fund_tax_statement.financial_year_start_date,
             end_event_date=fund_tax_statement.financial_year_end_date,

@@ -1,5 +1,5 @@
 """
-Shared IRR Calculation Utilities.
+Shared IRR Calculators Utilities.
 
 This module contains pure IRR calculation logic that can be reused
 across different domains (fund, company, etc.).
@@ -9,7 +9,8 @@ from typing import List, Optional
 
 
 class IRRCalculator:
-    """Pure IRR calculation utility - shared across fund and company calculations."""
+    """Pure IRR calculator utility - shared across fund and company calculations."""
+    
     
     @staticmethod
     def calculate_irr(cash_flows: List[float], days_from_start: List[int], tolerance: float = 1e-6, max_iterations: int = 200) -> Optional[float]:

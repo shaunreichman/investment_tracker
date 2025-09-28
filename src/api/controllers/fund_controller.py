@@ -71,7 +71,7 @@ class FundController:
                 if include_events or include_cash_flows or include_tax_statements:
                     for fund in funds:
                         if include_events:
-                            fund.events = self.fund_event_service.get_fund_events(fund.id, session)
+                            fund.events = self.fund_event_service.get_fund_events(fund_ids=[fund.id], session=session)
                         if include_cash_flows:
                             fund.cash_flows = self.fund_event_cash_flow_service.get_fund_event_cash_flows(fund.id, session)
                         if include_tax_statements:
@@ -273,7 +273,7 @@ class FundController:
 
             try:
                 # Get fund events - service returns a list directly
-                events = self.fund_event_service.get_fund_events(fund_id, session)
+                events = self.fund_event_service.get_fund_events(fund_ids=[fund_id], session=session)
 
                 if events is None:
                     return ControllerResponseDTO(error="Fund not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)

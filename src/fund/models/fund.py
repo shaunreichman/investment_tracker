@@ -83,7 +83,7 @@ class Fund(Base):
     entity = relationship("Entity", back_populates="funds", lazy='selectin')
     fund_events = relationship("FundEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     tax_statements = relationship("FundTaxStatement", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
-    domain_events = relationship("DomainEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
+    domain_fund_events = relationship("DomainFundEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     
     # Critical indexes for production performance
     __table_args__ = (
