@@ -52,12 +52,6 @@ class CompanyContactRepository:
         Returns:
             List of company contacts
         """
-        cache_key = f"contacts:company:{company_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Validate sort field
         if sort_by not in SortFieldContact:
             raise ValueError(f"Invalid sort field: {sort_by}")
@@ -65,6 +59,12 @@ class CompanyContactRepository:
         # Validate sort order
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
+        
+        cache_key = f"contacts:company:{company_id}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         
         # Query database
         contacts = session.query(Contact)

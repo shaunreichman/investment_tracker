@@ -40,8 +40,8 @@ class CompanyRepository:
             company_type: Optional[CompanyType] = None,
             status: Optional[CompanyStatus] = None,
             name: Optional[str] = None,
-            sort_by: Optional[SortFieldCompany] = None,
-            sort_order: Optional[SortOrder] = None,
+            sort_by: Optional[SortFieldCompany] = SortFieldCompany.NAME,
+            sort_order: Optional[SortOrder] = SortOrder.ASC,
     ) -> List[InvestmentCompany]:
         """
         Get all companies.
@@ -57,12 +57,6 @@ class CompanyRepository:
         Returns:
             List of companies
         """
-        cache_key = f"companies:company_type:{company_type}:status:{status}:name:{name}:sort_by:{sort_by}:sort_order:{sort_order}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Validate sort field
         if sort_by not in SortFieldCompany:
             raise ValueError(f"Invalid sort field: {sort_by}")
@@ -71,6 +65,12 @@ class CompanyRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
+        cache_key = f"companies:company_type:{company_type}:status:{status}:name:{name}:sort_by:{sort_by}:sort_order:{sort_order}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
         # Query database
         companies = session.query(InvestmentCompany)
         if company_type:

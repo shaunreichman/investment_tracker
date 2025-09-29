@@ -64,12 +64,6 @@ class FundEventRepository:
         Returns:
             List of fund events
         """
-        cache_key = f"events:fund:{fund_ids}:types:{event_types}:distribution_types:{distribution_types}:tax_payment_types:{tax_payment_types}:group_types:{group_types}:start_event_date:{start_event_date}:end_event_date:{end_event_date}:sort_field:{sort_field}:sort_order:{sort_order}"
-
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Validate sort field
         if sort_by not in SortFieldFundEvent:
             raise ValueError(f"Invalid sort field: {sort_by}. Must be one of: {[s.value for s in SortFieldFundEvent]}")
@@ -78,6 +72,12 @@ class FundEventRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}. Must be one of: {[s.value for s in SortOrder]}")
         
+        cache_key = f"events:fund:{fund_ids}:types:{event_types}:distribution_types:{distribution_types}:tax_payment_types:{tax_payment_types}:group_types:{group_types}:start_event_date:{start_event_date}:end_event_date:{end_event_date}:sort_field:{sort_by}:sort_order:{sort_order}"
+
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
         # Query database
         query = session.query(FundEvent)
         

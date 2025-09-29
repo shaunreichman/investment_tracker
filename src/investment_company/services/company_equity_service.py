@@ -63,20 +63,20 @@ class CompanyEquityService:
         average_equity_balance, current_equity_balance, last_event_date = self.company_equity_calculator.calculate_company_equity_balance(fund_events)
 
         if old_average_equity_balance != average_equity_balance:
-            changes.append(FundFieldChange(company_or_company='COMPANY', object_id=company_id, field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=average_equity_balance))
+            changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=average_equity_balance))
             company.average_equity_balance = average_equity_balance
         if old_current_equity_balance != current_equity_balance:
-            changes.append(FundFieldChange(company_or_company='COMPANY', object_id=company_id, field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=current_equity_balance))
+            changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=current_equity_balance))
             company.current_equity_balance = current_equity_balance
         if old_end_date != last_event_date:
-            changes.append(FundFieldChange(company_or_company='COMPANY', object_id=company_id, field_name='end_date', old_value=old_end_date, new_value=last_event_date))
+            changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='end_date', old_value=old_end_date, new_value=last_event_date))
             company.end_date = last_event_date
 
             # If the end Date changes we need to update the duration
             old_duration = company.current_duration
             new_duration = DurationMonthsCalculator.calculate_duration_months(company.start_date, last_event_date)
             if old_duration != new_duration:
-                changes.append(FundFieldChange(company_or_company='COMPANY', object_id=company_id, field_name='current_duration', old_value=old_duration, new_value=new_duration))
+                changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='current_duration', old_value=old_duration, new_value=new_duration))
                 company.current_duration = new_duration
 
         return changes if changes else None

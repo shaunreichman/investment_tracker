@@ -57,12 +57,6 @@ class FundRepository:
         Returns:
             List of funds
         """
-        cache_key = f"funds:company:{company_id}:entity:{entity_id}:status:{fund_status.value}:type:{fund_tracking_type.value}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Validate sort field
         if sort_by not in SortFieldFund:
             raise ValueError(f"Invalid sort field: {sort_by}")
@@ -70,6 +64,12 @@ class FundRepository:
         # Validate sort order
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
+
+        cache_key = f"funds:company:{company_id}:entity:{entity_id}:status:{fund_status.value if fund_status else None}:type:{fund_tracking_type.value if fund_tracking_type else None}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         
         # Query database
         query = session.query(Fund)
@@ -81,7 +81,7 @@ class FundRepository:
         if fund_status:
             query = query.filter(Fund.status == fund_status)
         if fund_tracking_type:
-            query = query.filter(Fund.fund_tracking_type == fund_tracking_type)
+            query = query.filter(Fund.tracking_type == fund_tracking_type)
         
         # Apply sorting
         if sort_by == SortFieldFund.NAME:
@@ -120,9 +120,8 @@ class FundRepository:
         # Query database
         fund = session.query(Fund).filter(Fund.id == fund_id).first()
         
-        # Cache the result
-        if fund:
-            self._cache[cache_key] = fund
+        # Cache the result (including None results)
+        self._cache[cache_key] = fund
         
         return fund
 

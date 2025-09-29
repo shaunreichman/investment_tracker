@@ -46,7 +46,7 @@ class FundEventCashFlowRepository:
 
         Args:
             session: Database session
-            fund_id: ID of the fund to filter by (optional)
+            fund_id: ID of the fund to filter by (optional) - filters through fund_event relationship
             fund_event_id: ID of the event to filter by (optional)
             bank_account_id: ID of the bank account to filter by (optional)
             sort_by: Field to sort by (optional)
@@ -55,7 +55,15 @@ class FundEventCashFlowRepository:
         Returns:
             List of fund event cash flows
         """
-        cache_key = f"fund_event_cash_flows:fund:{fund_id}:event:{fund_event_id}"
+        # Validate sort field
+        if sort_by not in SortFieldFundEventCashFlow:
+            raise ValueError(f"Invalid sort field: {sort_by}")
+
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}")
+
+        cache_key = f"fund_event_cash_flows:fund:{fund_id}:event:{fund_event_id}:bank:{bank_account_id}"
 
         # Check cache first
         if cache_key in self._cache:
@@ -64,7 +72,8 @@ class FundEventCashFlowRepository:
         query = session.query(FundEventCashFlow)
 
         if fund_id:
-            query = query.filter(FundEventCashFlow.fund_id == fund_id)
+            # Filter by fund_id through the fund_event relationship
+            query = query.join(FundEventCashFlow.fund_event).filter(FundEventCashFlow.fund_event.has(fund_id=fund_id))
         if fund_event_id:
             query = query.filter(FundEventCashFlow.fund_event_id == fund_event_id)
         if bank_account_id:
@@ -182,10 +191,10 @@ class FundEventCashFlowRepository:
         for key in self._cache.keys():
             if key.startswith('fund_event_cash_flow'):
                 # Clear specific cash flow
-                if fund_event_id and f":{fund_event_id}" in key:
+                if fund_event_id and f":event:{fund_event_id}" in key:
                     keys_to_remove.append(key)
                 # Clear bank account related caches
-                if bank_account_id and f":bank_account:{bank_account_id}" in key:
+                if bank_account_id and f":bank:{bank_account_id}" in key:
                     keys_to_remove.append(key)
                 # Clear general caches
                 if key in ['fund_event_cash_flows:total_count']:

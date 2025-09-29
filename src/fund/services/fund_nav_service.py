@@ -46,8 +46,8 @@ class FundNavService:
                     event_types=[EventType.NAV_UPDATE],
                     sort_order=SortOrder.ASC)
         if events:
-            fund.current_unit_price = events[0].event_data['nav_per_share']
-            fund.current_nav_total = events[0].event_data['nav_per_share'] * events[0].event_data['units_owned']
+            fund.current_unit_price = events[0].nav_per_share
+            fund.current_nav_total = events[0].nav_per_share * events[0].units_owned
 
         self.update_nav_fund_event_fields(events)
 
@@ -69,10 +69,17 @@ class FundNavService:
         Returns:
             None
         """
+        if events is None:
+            return
+            
         previous_nav_per_share = None
         for event in events:
             if previous_nav_per_share is not None:
                 event.previous_nav_per_share = previous_nav_per_share
-                event.nav_change_absolute = event.event_data['nav_per_share'] - previous_nav_per_share
-                event.nav_change_percentage = (event.event_data['nav_per_share'] - previous_nav_per_share) / previous_nav_per_share
-            previous_nav_per_share = event.event_data['nav_per_share']
+                event.nav_change_absolute = event.nav_per_share - previous_nav_per_share
+                # Handle division by zero for percentage calculation
+                if previous_nav_per_share != 0:
+                    event.nav_change_percentage = (event.nav_per_share - previous_nav_per_share) / previous_nav_per_share
+                else:
+                    event.nav_change_percentage = None  # Cannot calculate percentage from zero
+            previous_nav_per_share = event.nav_per_share

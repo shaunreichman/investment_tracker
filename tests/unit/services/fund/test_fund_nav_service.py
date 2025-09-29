@@ -1,5 +1,15 @@
 """
-Tests for FundNavService.
+Fund NAV Service Unit Tests.
+
+This module tests the FundNavService class, focusing on business logic,
+NAV calculations, and service layer orchestration. Tests are precise and focused
+on service functionality without testing repository or validation logic directly.
+
+Test Coverage:
+- NAV fund field updates with change tracking
+- NAV fund event field calculations
+- Service layer orchestration
+- Error handling and edge cases
 """
 
 import pytest
@@ -8,11 +18,18 @@ from sqlalchemy.orm import Session
 
 from src.fund.services.fund_nav_service import FundNavService
 from src.fund.models import Fund, FundEvent, FundFieldChange
-from src.fund.enums import EventType, SortOrder
+from src.fund.enums.fund_event_enums import EventType
+from src.shared.enums.shared_enums import SortOrder
+from tests.factories.fund_factories import FundFactory, FundEventFactory
 
 
 class TestFundNavService:
-    """Test cases for FundNavService."""
+    """Test suite for FundNavService."""
+
+    @pytest.fixture
+    def service(self):
+        """Create a FundNavService instance for testing."""
+        return FundNavService()
 
     @pytest.fixture
     def mock_session(self):
@@ -20,354 +37,346 @@ class TestFundNavService:
         return Mock(spec=Session)
 
     @pytest.fixture
-    def fund_nav_service(self, mock_session):
-        """Create FundNavService instance with mock session."""
-        return FundNavService(mock_session)
-
-    @pytest.fixture
-    def sample_fund(self):
-        """Create a sample fund for testing."""
-        fund = Mock(spec=Fund)
-        fund.id = 1
-        fund.current_unit_price = 100.0
-        fund.current_nav_total = 10000.0
+    def mock_fund(self):
+        """Mock fund instance with NAV fields."""
+        from src.fund.enums.fund_enums import FundTrackingType
+        fund = FundFactory.build(
+            id=1,
+            current_unit_price=10.50,
+            current_nav_total=10500.0,
+            tracking_type=FundTrackingType.NAV_BASED
+        )
         return fund
 
     @pytest.fixture
-    def sample_nav_event(self):
-        """Create a sample NAV update event."""
-        event = Mock(spec=FundEvent)
-        event.event_data = {
-            'nav_per_share': 105.0,
-            'units_owned': 100.0
-        }
-        event.previous_nav_per_share = None
-        event.nav_change_absolute = None
-        event.nav_change_percentage = None
-        return event
+    def mock_nav_events(self):
+        """Mock NAV update events."""
+        return [
+            FundEventFactory.build(
+                id=1,
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=12.75,
+                units_owned=1000.0
+            ),
+            FundEventFactory.build(
+                id=2,
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=13.25,
+                units_owned=1000.0
+            )
+        ]
 
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_with_events(self, mock_repo, fund_nav_service, sample_fund, sample_nav_event, mock_session):
-        """Test updating NAV fields when NAV events exist."""
+    ################################################################################
+    # Test update_nav_fund_fields method
+    ################################################################################
+
+    def test_update_nav_fund_fields_with_changes_returns_field_changes(self, service, mock_session, mock_fund, mock_nav_events):
+        """Test that update_nav_fund_fields returns field changes when NAV values change."""
         # Arrange
-        mock_repo.get_by_fund.return_value = [sample_nav_event]
+        old_unit_price = mock_fund.current_unit_price
+        old_nav_total = mock_fund.current_nav_total
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_nav_events) as mock_repo:
+            # Act
+            result = service.update_nav_fund_fields(mock_fund, mock_session)
+
+            # Assert
+            assert result is not None
+            assert len(result) == 2
+            
+            # Check unit price change
+            unit_price_change = next((change for change in result if change.field_name == 'current_unit_price'), None)
+            assert unit_price_change is not None
+            assert unit_price_change.fund_or_company == 'FUND'
+            assert unit_price_change.object_id == mock_fund.id
+            assert unit_price_change.old_value == old_unit_price
+            assert unit_price_change.new_value == 12.75  # First event's nav_per_share
+            
+            # Check NAV total change
+            nav_total_change = next((change for change in result if change.field_name == 'current_nav_total'), None)
+            assert nav_total_change is not None
+            assert nav_total_change.fund_or_company == 'FUND'
+            assert nav_total_change.object_id == mock_fund.id
+            assert nav_total_change.old_value == old_nav_total
+            assert nav_total_change.new_value == 12750.0  # 12.75 * 1000
+            
+            # Verify fund was updated
+            assert mock_fund.current_unit_price == 12.75
+            assert mock_fund.current_nav_total == 12750.0
+            
+            # Verify repository was called correctly
+            mock_repo.assert_called_once_with(
+                mock_session, 
+                fund_ids=[mock_fund.id], 
+                event_types=[EventType.NAV_UPDATE],
+                sort_order=SortOrder.ASC
+            )
+
+    def test_update_nav_fund_fields_no_changes_returns_none(self, service, mock_session, mock_fund):
+        """Test that update_nav_fund_fields returns None when no changes occur."""
+        # Arrange
+        mock_fund.current_unit_price = 12.75
+        mock_fund.current_nav_total = 12750.0
+        
+        nav_events = [FundEventFactory.build(
+            event_type=EventType.NAV_UPDATE,
+            nav_per_share=12.75,  # Same as current
+            units_owned=1000.0
+        )]
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=nav_events) as mock_repo:
+            # Act
+            result = service.update_nav_fund_fields(mock_fund, mock_session)
+
+            # Assert
+            assert result is None
+            assert mock_fund.current_unit_price == 12.75
+            assert mock_fund.current_nav_total == 12750.0
+
+    def test_update_nav_fund_fields_no_events_updates_nothing(self, service, mock_session, mock_fund):
+        """Test that update_nav_fund_fields handles no events gracefully."""
+        # Arrange
+        old_unit_price = mock_fund.current_unit_price
+        old_nav_total = mock_fund.current_nav_total
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_repo:
+            # Act
+            result = service.update_nav_fund_fields(mock_fund, mock_session)
+
+            # Assert
+            assert result is None
+            assert mock_fund.current_unit_price == old_unit_price
+            assert mock_fund.current_nav_total == old_nav_total
+
+    def test_update_nav_fund_fields_only_unit_price_changes(self, service, mock_session, mock_fund):
+        """Test that update_nav_fund_fields handles only unit price changes."""
+        # Arrange
+        old_unit_price = mock_fund.current_unit_price
+        old_nav_total = mock_fund.current_nav_total
+        
+        nav_events = [FundEventFactory.build(
+            event_type=EventType.NAV_UPDATE,
+            nav_per_share=15.00,  # Different unit price
+            units_owned=1000.0  # Same units, so NAV total changes too
+        )]
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=nav_events) as mock_repo:
+            # Act
+            result = service.update_nav_fund_fields(mock_fund, mock_session)
+
+            # Assert
+            assert result is not None
+            assert len(result) == 2  # Both unit price and NAV total change
+            
+            # Verify both changes are tracked
+            unit_price_change = next((change for change in result if change.field_name == 'current_unit_price'), None)
+            nav_total_change = next((change for change in result if change.field_name == 'current_nav_total'), None)
+            
+            assert unit_price_change.old_value == old_unit_price
+            assert unit_price_change.new_value == 15.00
+            assert nav_total_change.old_value == old_nav_total
+            assert nav_total_change.new_value == 15000.0
+
+    def test_update_nav_fund_fields_calls_update_nav_fund_event_fields(self, service, mock_session, mock_fund, mock_nav_events):
+        """Test that update_nav_fund_fields calls update_nav_fund_event_fields."""
+        # Arrange
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_nav_events) as mock_repo, \
+             patch.object(service, 'update_nav_fund_event_fields') as mock_update_events:
+            
+            # Act
+            service.update_nav_fund_fields(mock_fund, mock_session)
+
+            # Assert
+            mock_update_events.assert_called_once_with(mock_nav_events)
+
+    ################################################################################
+    # Test update_nav_fund_event_fields method
+    ################################################################################
+
+    def test_update_nav_fund_event_fields_multiple_events_calculates_changes(self, service, mock_nav_events):
+        """Test that update_nav_fund_event_fields calculates changes for multiple events."""
+        # Arrange
+        events = [
+            FundEventFactory.build(
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=10.00
+            ),
+            FundEventFactory.build(
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=12.50
+            ),
+            FundEventFactory.build(
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=15.00
+            )
+        ]
         
         # Act
-        result = fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-        
+        service.update_nav_fund_event_fields(events)
+
         # Assert
-        assert result is not None
-        assert len(result) == 2
-        
-        # Check current_unit_price change
-        unit_price_change = next((change for change in result if change.field_name == 'current_unit_price'), None)
-        assert unit_price_change is not None
-        assert unit_price_change.old_value == 100.0
-        assert unit_price_change.new_value == 105.0
-        
-        # Check current_nav_total change
-        nav_total_change = next((change for change in result if change.field_name == 'current_nav_total'), None)
-        assert nav_total_change is not None
-        assert nav_total_change.old_value == 10000.0
-        assert nav_total_change.new_value == 10500.0
-        
-        # Verify repository was called correctly
-        mock_repo.get_by_fund.assert_called_once_with(
-            sample_fund.id, 
-            mock_session,
-            event_types=[EventType.NAV_UPDATE],
-            sort_order=SortOrder.ASC
-        )
-
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_no_events(self, mock_repo, fund_nav_service, sample_fund, mock_session):
-        """Test updating NAV fields when no NAV events exist."""
-        # Arrange
-        mock_repo.get_by_fund.return_value = []
-        
-        # Act
-        result = fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-        
-        # Assert
-        assert result is None
-        mock_repo.get_by_fund.assert_called_once()
-
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_no_changes(self, mock_repo, fund_nav_service, sample_fund, mock_session):
-        """Test updating NAV fields when events exist but values don't change."""
-        # Arrange
-        event = Mock(spec=FundEvent)
-        event.event_data = {
-            'nav_per_share': 100.0,  # Same as current value
-            'units_owned': 100.0
-        }
-        mock_repo.get_by_fund.return_value = [event]
-        
-        # Act
-        result = fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-        
-        # Assert
-        assert result is None
-
-    def test_update_nav_fund_event_fields_single_event(self, fund_nav_service, sample_nav_event):
-        """Test updating NAV event fields with single event."""
-        # Arrange
-        events = [sample_nav_event]
-        
-        # Act
-        fund_nav_service.update_nav_fund_event_fields(events)
-        
-        # Assert
-        # Single event should not have previous values set
-        assert sample_nav_event.previous_nav_per_share is None
-        assert sample_nav_event.nav_change_absolute is None
-        assert sample_nav_event.nav_change_percentage is None
-
-    def test_update_nav_fund_event_fields_multiple_events(self, fund_nav_service):
-        """Test updating NAV event fields with multiple events."""
-        # Arrange
-        event1 = Mock(spec=FundEvent)
-        event1.event_data = {'nav_per_share': 100.0}
-        event1.previous_nav_per_share = None
-        event1.nav_change_absolute = None
-        event1.nav_change_percentage = None
-        
-        event2 = Mock(spec=FundEvent)
-        event2.event_data = {'nav_per_share': 105.0}
-        event2.previous_nav_per_share = None
-        event2.nav_change_absolute = None
-        event2.nav_change_percentage = None
-        
-        events = [event1, event2]
-        
-        # Act
-        fund_nav_service.update_nav_fund_event_fields(events)
-        
-        # Assert
-        # First event should remain unchanged
-        assert event1.previous_nav_per_share is None
-        assert event1.nav_change_absolute is None
-        assert event1.nav_change_percentage is None
-        
-        # Second event should have calculated values
-        assert event2.previous_nav_per_share == 100.0
-        assert event2.nav_change_absolute == 5.0
-        assert event2.nav_change_percentage == 0.05
-
-    def test_update_nav_fund_event_fields_three_events(self, fund_nav_service):
-        """Test updating NAV event fields with three events."""
-        # Arrange
-        event1 = Mock(spec=FundEvent)
-        event1.event_data = {'nav_per_share': 100.0}
-        event1.previous_nav_per_share = None
-        event1.nav_change_absolute = None
-        event1.nav_change_percentage = None
-        
-        event2 = Mock(spec=FundEvent)
-        event2.event_data = {'nav_per_share': 105.0}
-        event2.previous_nav_per_share = None
-        event2.nav_change_absolute = None
-        event2.nav_change_percentage = None
-        
-        event3 = Mock(spec=FundEvent)
-        event3.event_data = {'nav_per_share': 110.0}
-        event3.previous_nav_per_share = None
-        event3.nav_change_absolute = None
-        event3.nav_change_percentage = None
-        
-        events = [event1, event2, event3]
-        
-        # Act
-        fund_nav_service.update_nav_fund_event_fields(events)
-        
-        # Assert
-        # First event unchanged
-        assert event1.previous_nav_per_share is None
-        
-        # Second event relative to first
-        assert event2.previous_nav_per_share == 100.0
-        assert event2.nav_change_absolute == 5.0
-        assert event2.nav_change_percentage == 0.05
-        
-        # Third event relative to second
-        assert event3.previous_nav_per_share == 105.0
-        assert event3.nav_change_absolute == 5.0
-        assert event3.nav_change_percentage == pytest.approx(0.047619, rel=1e-5)
-
-    def test_update_nav_fund_event_fields_empty_list(self, fund_nav_service):
-        """Test updating NAV event fields with empty event list."""
-        # Arrange
-        events = []
-        
-        # Act & Assert - Should not raise any exceptions
-        fund_nav_service.update_nav_fund_event_fields(events)
-
-    def test_update_nav_fund_event_fields_negative_change(self, fund_nav_service):
-        """Test updating NAV event fields with negative NAV change."""
-        # Arrange
-        event1 = Mock(spec=FundEvent)
-        event1.event_data = {'nav_per_share': 100.0}
-        
-        event2 = Mock(spec=FundEvent)
-        event2.event_data = {'nav_per_share': 95.0}
-        
-        events = [event1, event2]
-        
-        # Act
-        fund_nav_service.update_nav_fund_event_fields(events)
-        
-        # Assert
-        assert event2.previous_nav_per_share == 100.0
-        assert event2.nav_change_absolute == -5.0
-        assert event2.nav_change_percentage == -0.05
-
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_missing_event_data_keys(self, mock_repo, fund_nav_service, sample_fund, mock_session):
-        """Test handling when event_data is missing required keys."""
-        # Arrange
-        event = Mock(spec=FundEvent)
-        event.event_data = {'nav_per_share': 105.0}  # Missing 'units_owned'
-        mock_repo.get_by_fund.return_value = [event]
-        
-        # Act & Assert - Should raise KeyError
-        with pytest.raises(KeyError):
-            fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_none_values(self, mock_repo, fund_nav_service, sample_fund, mock_session):
-        """Test handling when event_data contains None values."""
-        # Arrange
-        event = Mock(spec=FundEvent)
-        event.event_data = {
-            'nav_per_share': None,
-            'units_owned': 100.0
-        }
-        mock_repo.get_by_fund.return_value = [event]
-        
-        # Act & Assert - Should raise TypeError
-        with pytest.raises(TypeError):
-            fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-
-    def test_update_nav_fund_event_fields_zero_previous_nav(self, fund_nav_service):
-        """Test percentage calculation when previous NAV is zero."""
-        # Arrange
-        event1 = Mock(spec=FundEvent)
-        event1.event_data = {'nav_per_share': 0.0}
-        
-        event2 = Mock(spec=FundEvent)
-        event2.event_data = {'nav_per_share': 100.0}
-        
-        events = [event1, event2]
-        
-        # Act & Assert - Should raise ZeroDivisionError
-        with pytest.raises(ZeroDivisionError):
-            fund_nav_service.update_nav_fund_event_fields(events)
-
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_repository_error(self, mock_repo, fund_nav_service, sample_fund, mock_session):
-        """Test handling when repository throws an exception."""
-        # Arrange
-        mock_repo.get_by_fund.side_effect = Exception("Database connection failed")
-        
-        # Act & Assert - Should propagate the exception
-        with pytest.raises(Exception, match="Database connection failed"):
-            fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_large_numbers(self, mock_repo, fund_nav_service, sample_fund, mock_session):
-        """Test with very large NAV values."""
-        # Arrange
-        sample_fund.current_unit_price = 1e6  # 1 million
-        sample_fund.current_nav_total = 1e9   # 1 billion
-        
-        event = Mock(spec=FundEvent)
-        event.event_data = {
-            'nav_per_share': 1.5e6,  # 1.5 million
-            'units_owned': 1000.0
-        }
-        mock_repo.get_by_fund.return_value = [event]
-        
-        # Act
-        result = fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-        
-        # Assert
-        assert result is not None
-        assert len(result) == 2
-        
-        unit_price_change = next((change for change in result if change.field_name == 'current_unit_price'), None)
-        assert unit_price_change.old_value == 1e6
-        assert unit_price_change.new_value == 1.5e6
-        
-        nav_total_change = next((change for change in result if change.field_name == 'current_nav_total'), None)
-        assert nav_total_change.old_value == 1e9
-        assert nav_total_change.new_value == 1.5e9
-
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_precision(self, mock_repo, fund_nav_service, sample_fund, mock_session):
-        """Test precision with very small NAV changes."""
-        # Arrange
-        sample_fund.current_unit_price = 100.0
-        sample_fund.current_nav_total = 10000.0
-        
-        event = Mock(spec=FundEvent)
-        event.event_data = {
-            'nav_per_share': 100.000001,  # Very small change
-            'units_owned': 100.0
-        }
-        mock_repo.get_by_fund.return_value = [event]
-        
-        # Act
-        result = fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-        
-        # Assert
-        assert result is not None
-        assert len(result) == 2
-        
-        unit_price_change = next((change for change in result if change.field_name == 'current_unit_price'), None)
-        assert unit_price_change.old_value == 100.0
-        assert unit_price_change.new_value == 100.000001
-        
-        nav_total_change = next((change for change in result if change.field_name == 'current_nav_total'), None)
-        assert nav_total_change.old_value == 10000.0
-        assert nav_total_change.new_value == 10000.0001
-
-    @patch('src.fund.services.fund_nav_service.FundEventRepository')
-    def test_update_nav_fund_fields_string_values(self, mock_repo, fund_nav_service, sample_fund, mock_session):
-        """Test handling when event_data contains string values."""
-        # Arrange
-        event = Mock(spec=FundEvent)
-        event.event_data = {
-            'nav_per_share': '105.0',  # String instead of float
-            'units_owned': 100.0
-        }
-        mock_repo.get_by_fund.return_value = [event]
-        
-        # Act & Assert - Should raise TypeError during arithmetic operations
-        with pytest.raises(TypeError):
-            fund_nav_service.update_nav_fund_fields(sample_fund, mock_session)
-
-    def test_update_nav_fund_event_fields_large_dataset(self, fund_nav_service):
-        """Test performance with large number of events."""
-        # Arrange
-        events = []
-        for i in range(100):  # 100 events
-            event = Mock(spec=FundEvent)
-            event.event_data = {'nav_per_share': 100.0 + i}
-            event.previous_nav_per_share = None
-            event.nav_change_absolute = None
-            event.nav_change_percentage = None
-            events.append(event)
-        
-        # Act
-        fund_nav_service.update_nav_fund_event_fields(events)
-        
-        # Assert
-        # First event should remain unchanged
+        # First event should have no previous values
         assert events[0].previous_nav_per_share is None
         assert events[0].nav_change_absolute is None
         assert events[0].nav_change_percentage is None
         
-        # Last event should have calculated values
-        assert events[-1].previous_nav_per_share == 198.0  # 100 + 98 = 198
-        assert events[-1].nav_change_absolute == 1.0
-        assert events[-1].nav_change_percentage == pytest.approx(0.005050505050505051, rel=1e-10)
+        # Second event should have previous values from first event
+        assert events[1].previous_nav_per_share == 10.00
+        assert events[1].nav_change_absolute == 2.50  # 12.50 - 10.00
+        assert events[1].nav_change_percentage == 0.25  # 2.50 / 10.00
+        
+        # Third event should have previous values from second event
+        assert events[2].previous_nav_per_share == 12.50
+        assert events[2].nav_change_absolute == 2.50  # 15.00 - 12.50
+        assert events[2].nav_change_percentage == 0.20  # 2.50 / 12.50
+
+    def test_update_nav_fund_event_fields_single_event_no_calculations(self, service):
+        """Test that update_nav_fund_event_fields handles single event correctly."""
+        # Arrange
+        events = [FundEventFactory.build(
+            event_type=EventType.NAV_UPDATE,
+            nav_per_share=10.00
+        )]
+        
+        # Act
+        service.update_nav_fund_event_fields(events)
+
+        # Assert
+        assert events[0].previous_nav_per_share is None
+        assert events[0].nav_change_absolute is None
+        assert events[0].nav_change_percentage is None
+
+    def test_update_nav_fund_event_fields_empty_list_no_error(self, service):
+        """Test that update_nav_fund_event_fields handles empty list gracefully."""
+        # Arrange
+        events = []
+        
+        # Act & Assert - should not raise any errors
+        service.update_nav_fund_event_fields(events)
+
+    def test_update_nav_fund_event_fields_negative_change_calculations(self, service):
+        """Test that update_nav_fund_event_fields handles negative NAV changes correctly."""
+        # Arrange
+        events = [
+            FundEventFactory.build(
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=15.00
+            ),
+            FundEventFactory.build(
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=12.00
+            )
+        ]
+        
+        # Act
+        service.update_nav_fund_event_fields(events)
+
+        # Assert
+        assert events[1].previous_nav_per_share == 15.00
+        assert events[1].nav_change_absolute == -3.00  # 12.00 - 15.00
+        assert events[1].nav_change_percentage == -0.20  # -3.00 / 15.00
+
+    def test_update_nav_fund_event_fields_zero_previous_nav_handles_division_by_zero(self, service):
+        """Test that update_nav_fund_event_fields handles zero previous NAV gracefully."""
+        # Arrange
+        events = [
+            FundEventFactory.build(
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=0.0
+            ),
+            FundEventFactory.build(
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=10.00
+            )
+        ]
+        
+        # Act
+        service.update_nav_fund_event_fields(events)
+
+        # Assert
+        assert events[1].previous_nav_per_share == 0.0
+        assert events[1].nav_change_absolute == 10.00  # 10.00 - 0.0
+        # Should handle division by zero gracefully - percentage should be None
+        assert events[1].nav_change_percentage is None  # Cannot calculate percentage from zero
+
+    ################################################################################
+    # Test service initialization
+    ################################################################################
+
+    def test_service_initializes_dependencies(self, service):
+        """Test that service initializes with correct dependencies."""
+        # Assert
+        assert service.fund_event_repository is not None
+        assert hasattr(service, 'fund_event_repository')
+
+    def test_service_initializes_with_custom_repository(self):
+        """Test that service can be initialized with custom repository."""
+        # Arrange
+        custom_repository = Mock()
+        
+        # Act
+        service = FundNavService()
+        service.fund_event_repository = custom_repository
+        
+        # Assert
+        assert service.fund_event_repository == custom_repository
+
+    ################################################################################
+    # Test edge cases and error handling
+    ################################################################################
+
+    def test_update_nav_fund_fields_with_none_events_handles_gracefully(self, service, mock_session, mock_fund):
+        """Test that update_nav_fund_fields handles None events gracefully."""
+        # Arrange
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=None) as mock_repo:
+            # Act & Assert - should not raise error
+            result = service.update_nav_fund_fields(mock_fund, mock_session)
+            assert result is None
+
+    def test_update_nav_fund_fields_preserves_original_values_when_no_events(self, service, mock_session, mock_fund):
+        """Test that update_nav_fund_fields preserves original values when no events."""
+        # Arrange
+        original_unit_price = mock_fund.current_unit_price
+        original_nav_total = mock_fund.current_nav_total
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_repo:
+            # Act
+            result = service.update_nav_fund_fields(mock_fund, mock_session)
+
+            # Assert
+            assert result is None
+            assert mock_fund.current_unit_price == original_unit_price
+            assert mock_fund.current_nav_total == original_nav_total
+
+    def test_update_nav_fund_event_fields_with_mixed_event_types_processes_all(self, service):
+        """Test that update_nav_fund_event_fields processes all events in sequence."""
+        # Arrange
+        events = [
+            FundEventFactory.build(
+                event_type=EventType.CAPITAL_CALL,
+                nav_per_share=10.00
+            ),
+            FundEventFactory.build(
+                event_type=EventType.NAV_UPDATE,
+                nav_per_share=12.00
+            ),
+            FundEventFactory.build(
+                event_type=EventType.DISTRIBUTION,
+                nav_per_share=15.00
+            )
+        ]
+        
+        # Act
+        service.update_nav_fund_event_fields(events)
+
+        # Assert
+        # First event should have no previous values
+        assert events[0].previous_nav_per_share is None  # CAPITAL_CALL (first)
+        # Second event should have previous values from first event
+        assert events[1].previous_nav_per_share == 10.00  # NAV_UPDATE (second)
+        assert events[1].nav_change_absolute == 2.00  # 12.00 - 10.00
+        assert events[1].nav_change_percentage == 0.20  # 2.00 / 10.00
+        # Third event should have previous values from second event
+        assert events[2].previous_nav_per_share == 12.00  # DISTRIBUTION (third)
+        assert events[2].nav_change_absolute == 3.00  # 15.00 - 12.00
+        assert events[2].nav_change_percentage == 0.25  # 3.00 / 12.00

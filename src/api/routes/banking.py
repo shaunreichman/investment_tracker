@@ -283,7 +283,7 @@ def get_bank_account_by_id(bank_id, bank_account_id):
         'bank_id': {'min': 1}
     },
     enum_fields={
-        'currency': Country,
+        'currency': Currency,
         'account_type': BankAccountType
     },
     sanitize=True

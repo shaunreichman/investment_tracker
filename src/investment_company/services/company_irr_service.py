@@ -46,10 +46,10 @@ class CompanyIrRService:
 
         irr_changes = []
         if old_completed_irr_gross != company.completed_irr_gross:
-            irr_changes.append(FundFieldChange(company_or_company='COMPANY', object_id=company.id, field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=company.completed_irr_gross))
+            irr_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company.id, field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=company.completed_irr_gross))
         if old_completed_irr_after_tax != company.completed_irr_after_tax:
-            irr_changes.append(FundFieldChange(company_or_company='COMPANY', object_id=company.id, field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=company.completed_irr_after_tax))
+            irr_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company.id, field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=company.completed_irr_after_tax))
         if old_completed_irr_real != company.completed_irr_real:
-            irr_changes.append(FundFieldChange(company_or_company='COMPANY', object_id=company.id, field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=company.completed_irr_real))
+            irr_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company.id, field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=company.completed_irr_real))
         
         return irr_changes if irr_changes else None

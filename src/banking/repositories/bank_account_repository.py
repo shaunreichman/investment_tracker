@@ -62,12 +62,6 @@ class BankAccountRepository:
         Returns:
             List of bank accounts
         """
-        cache_key = f"bank_accounts:bank_id:{bank_id}:entity_id:{entity_id}:account_name:{account_name}:currency:{currency}:status:{status}:account_type:{account_type}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Validate sort field
         if sort_by not in SortFieldBankAccount:
             raise ValueError(f"Invalid sort field: {sort_by}")
@@ -75,7 +69,13 @@ class BankAccountRepository:
         # Validate sort order
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
+
+        cache_key = f"bank_accounts:bank_id:{bank_id}:entity_id:{entity_id}:account_name:{account_name}:currency:{currency}:status:{status}:account_type:{account_type}"
         
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
         # Get all bank accounts
         bank_accounts = session.query(BankAccount)
         if bank_id:

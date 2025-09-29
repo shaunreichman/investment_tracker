@@ -59,12 +59,6 @@ class FundTaxStatementRepository:
         Returns:
             List[FundTaxStatement]: List of fund tax statements
         """
-        cache_key = f"fund_tax_statements:fund_id:{fund_id}:entity_id:{entity_id}:financial_year:{financial_year}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Validate sort field
         if sort_by not in SortFieldFundTaxStatement:
             raise ValueError(f"Invalid sort field: {sort_by}")
@@ -72,6 +66,12 @@ class FundTaxStatementRepository:
         # Validate sort order
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
+        
+        cache_key = f"fund_tax_statements:fund_id:{fund_id}:entity_id:{entity_id}:financial_year:{financial_year}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         
         # Query database
         query = session.query(FundTaxStatement)

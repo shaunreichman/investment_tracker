@@ -9,9 +9,9 @@ import factory
 from faker import Faker
 
 from tests.factories.base import SessionedFactory
-from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement
+from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement, DomainFundEvent
 from src.fund.enums import FundTrackingType, EventType, DistributionType, TaxPaymentType, CashFlowDirection, FundInvestmentType
-from src.shared.enums.shared_enums import Currency, Country
+from src.shared.enums.shared_enums import Currency, Country, EventOperation
 
 
 fake = Faker()
@@ -67,7 +67,8 @@ class FundEventFactory(SessionedFactory):
     event_type = factory.LazyAttribute(lambda _: fake.random_element(elements=[
         EventType.CAPITAL_CALL, EventType.DISTRIBUTION, EventType.NAV_UPDATE,
         EventType.UNIT_PURCHASE, EventType.UNIT_SALE, EventType.TAX_PAYMENT,
-        EventType.DEBT_COST, EventType.INTEREST_WITHHOLDING
+        EventType.RETURN_OF_CAPITAL, EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
+        EventType.EOFY_DEBT_COST
     ]))
     event_date = factory.LazyAttribute(lambda _: fake.date_between(start_date='-2y', end_date='today'))
     amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=1000, max_value=50000, right_digits=2))
@@ -79,16 +80,17 @@ class FundEventFactory(SessionedFactory):
     
     # Distribution-specific fields (manual)
     distribution_type = factory.LazyAttribute(lambda _: fake.random_element(elements=[
-        DistributionType.DIVIDEND, DistributionType.CAPITAL_GAINS, DistributionType.INTEREST,
-        DistributionType.RETURN_OF_CAPITAL, DistributionType.OTHER
+        DistributionType.INCOME, DistributionType.DIVIDEND_FRANKED, DistributionType.DIVIDEND_UNFRANKED,
+        DistributionType.INTEREST, DistributionType.RENT, DistributionType.CAPITAL_GAIN
     ]))
     tax_withholding = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=0, max_value=1000, right_digits=2))
     has_withholding_tax = factory.LazyAttribute(lambda _: fake.boolean())
     
     # Tax-specific fields (manual)
     tax_payment_type = factory.LazyAttribute(lambda _: fake.random_element(elements=[
-        TaxPaymentType.INTEREST, TaxPaymentType.CAPITAL_GAINS, TaxPaymentType.DIVIDEND,
-        TaxPaymentType.OTHER
+        TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING, TaxPaymentType.CAPITAL_GAINS_TAX,
+        TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE, TaxPaymentType.DIVIDENDS_FRANKED_TAX,
+        TaxPaymentType.DIVIDENDS_UNFRANKED_TAX
     ]))
     
     # Unit transaction fields (manual)
@@ -152,3 +154,38 @@ class FundTaxStatementFactory(SessionedFactory):
     # Other fields
     accountant = factory.LazyAttribute(lambda _: fake.name())
     notes = factory.LazyAttribute(lambda _: fake.sentence())
+
+
+class DomainFundEventFactory(SessionedFactory):
+    """Factory for creating DomainFundEvent test data."""
+    
+    class Meta:
+        model = DomainFundEvent
+
+    # Create required relationships automatically
+    fund = factory.SubFactory('tests.factories.fund_factories.FundFactory')
+    
+    # Basic domain fund event information (manual fields)
+    event_type = factory.LazyAttribute(lambda _: fake.random_element(elements=[
+        EventType.CAPITAL_CALL,
+        EventType.RETURN_OF_CAPITAL,
+        EventType.DISTRIBUTION,
+        EventType.UNIT_PURCHASE,
+        EventType.UNIT_SALE,
+        EventType.NAV_UPDATE,
+        EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
+        EventType.EOFY_DEBT_COST,
+        EventType.TAX_PAYMENT
+    ]))
+    event_operation = factory.LazyAttribute(lambda _: fake.random_element(elements=[
+        EventOperation.CREATE,
+        EventOperation.UPDATE,
+        EventOperation.DELETE
+    ]))
+    fund_event_id = factory.LazyAttribute(lambda _: fake.random_int(min=1, max=1000))
+    event_data = factory.LazyAttribute(lambda _: {
+        'field_name': fake.word(),
+        'old_value': fake.word(),
+        'new_value': fake.word(),
+        'timestamp': fake.iso8601()
+    })

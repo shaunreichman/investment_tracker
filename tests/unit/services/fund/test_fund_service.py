@@ -1,36 +1,40 @@
 """
-Tests for FundService.
+Fund Service Unit Tests.
 
-This test file focuses on testing the orchestration logic in FundService,
-not the delegated functionality which is tested in specialized service tests.
+This module tests the FundService class, focusing on business logic,
+validation, and service layer orchestration. Tests are precise and focused
+on service functionality without testing repository or validation logic directly.
+
+Test Coverage:
+- Fund retrieval operations
+- Fund creation with business rules and company updates
+- Fund deletion with dependency validation and company updates
+- Service layer orchestration
+- Error handling and validation integration
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
-from datetime import date
 
 from src.fund.services.fund_service import FundService
-from src.fund.enums import FundStatus, FundTrackingType, EventType
-from src.fund.models import Fund, FundEvent
+from src.fund.models import Fund
+from src.fund.enums.fund_enums import FundStatus, FundTrackingType, SortFieldFund, FundTaxStatementFinancialYearType
+from src.shared.enums.shared_enums import Country, SortOrder
+from tests.factories.fund_factories import FundFactory
 
 
 class TestFundService:
-    """Test cases for FundService orchestration logic."""
+    """Test suite for FundService."""
 
     @pytest.fixture
-    def fund_service(self):
-        """Create FundService instance with mocked dependencies."""
-        with patch('src.fund.services.fund_service.FundRepository'), \
-             patch('src.fund.services.fund_service.FundEventRepository'), \
-             patch('src.fund.services.fund_service.TaxStatementRepository'), \
-             patch('src.fund.services.fund_service.FundEventService'), \
-             patch('src.fund.services.fund_service.FundValidationService'):
-            return FundService()
+    def service(self):
+        """Create a FundService instance for testing."""
+        return FundService()
 
     @pytest.fixture
     def mock_session(self):
-        """Create mock database session."""
+        """Create a mock database session."""
         return Mock(spec=Session)
 
     @pytest.fixture
@@ -38,624 +42,312 @@ class TestFundService:
         """Sample fund data for testing."""
         return {
             'name': 'Test Fund',
-            'entity_id': 1,
+            'fund_investment_type': 'PRIVATE_EQUITY',
+            'tracking_type': 'COST_BASED',
+            'description': 'Test fund description',
+            'currency': 'AUD',
+            'tax_jurisdiction': Country.AU,
+            'expected_irr': 15.5,
+            'expected_duration_months': 60,
+            'commitment_amount': 100000.0,
             'investment_company_id': 1,
-            'fund_type': 'Private Equity',
-            'tracking_type': 'COST_BASED'
+            'entity_id': 1
         }
 
-    def test_create_fund_success(self, fund_service, mock_session, sample_fund_data):
-        """Test successful fund creation."""
+    @pytest.fixture
+    def mock_fund(self):
+        """Mock fund instance."""
+        return FundFactory.build(id=1, name='Test Fund', investment_company_id=1)
+
+    @pytest.fixture
+    def mock_company(self):
+        """Mock company instance."""
+        company = Mock()
+        company.id = 1
+        company.total_funds = 5
+        company.total_funds_active = 3
+        company.total_commitment_amount = 500000.0
+        return company
+
+    ################################################################################
+    # Test get_funds method
+    ################################################################################
+
+    def test_get_funds_calls_repository_with_correct_parameters(self, service, mock_session):
+        """Test that get_funds calls repository with correct parameters."""
         # Arrange
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.create.return_value = mock_fund
-
-        # Act
-        result = fund_service.create_fund(sample_fund_data, mock_session)
-
-        # Assert
-        assert result == mock_fund
-        fund_service.fund_repository.create.assert_called_once()
-        call_args = fund_service.fund_repository.create.call_args[0]
-        assert call_args[1] == mock_session  # session parameter
-
-    def test_create_fund_missing_required_fields(self, fund_service, mock_session):
-        """Test fund creation with missing required fields."""
-        # Test missing name
-        with pytest.raises(ValueError, match="Required field 'name' is missing"):
-            fund_service.create_fund({'entity_id': 1, 'investment_company_id': 1}, mock_session)
-
-        # Test missing entity_id
-        with pytest.raises(ValueError, match="Required field 'entity_id' is missing"):
-            fund_service.create_fund({'name': 'Test', 'investment_company_id': 1}, mock_session)
-
-        # Test missing investment_company_id
-        with pytest.raises(ValueError, match="Required field 'investment_company_id' is missing"):
-            fund_service.create_fund({'name': 'Test', 'entity_id': 1}, mock_session)
-
-    def test_create_fund_invalid_tracking_type(self, fund_service, mock_session):
-        """Test fund creation with invalid tracking_type."""
-        fund_data = {
-            'name': 'Test Fund',
-            'entity_id': 1,
-            'investment_company_id': 1,
-            'tracking_type': 'INVALID_TYPE'
-        }
-
-        with pytest.raises(ValueError, match="Invalid tracking_type"):
-            fund_service.create_fund(fund_data, mock_session)
-
-    def test_create_fund_tracking_type_conversion(self, fund_service, mock_session):
-        """Test that tracking_type string is converted to enum."""
-        fund_data = {
-            'name': 'Test Fund',
-            'entity_id': 1,
-            'investment_company_id': 1,
-            'tracking_type': 'COST_BASED'
-        }
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.create.return_value = mock_fund
-
-        # Act
-        fund_service.create_fund(fund_data, mock_session)
-
-        # Assert
-        call_args = fund_service.fund_repository.create.call_args[0]
-        processed_data = call_args[0]
-        assert processed_data['tracking_type'] == FundTrackingType.COST_BASED
-
-    def test_update_fund_success(self, fund_service, mock_session):
-        """Test successful fund update."""
-        # Arrange
-        fund_id = 1
-        update_data = {'name': 'Updated Fund'}
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.update.return_value = mock_fund
-
-        # Act
-        result = fund_service.update_fund(fund_id, update_data, mock_session)
-
-        # Assert
-        assert result == mock_fund
-        fund_service.fund_repository.update.assert_called_once_with(fund_id, update_data, mock_session)
-
-    def test_update_fund_not_found(self, fund_service, mock_session):
-        """Test fund update when fund is not found."""
-        # Arrange
-        fund_id = 999
-        update_data = {'name': 'Updated Fund'}
-        fund_service.fund_repository.update.return_value = None
-
-        # Act
-        result = fund_service.update_fund(fund_id, update_data, mock_session)
-
-        # Assert
-        assert result is None
-
-    def test_delete_fund_success(self, fund_service, mock_session):
-        """Test successful fund deletion."""
-        # Arrange
-        fund_id = 1
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        fund_service.validation_service.validate_fund_deletion.return_value = []
-        fund_service.fund_repository.delete.return_value = True
-
-        # Act
-        result = fund_service.delete_fund(fund_id, mock_session)
-
-        # Assert
-        assert result is True
-        fund_service.validation_service.validate_fund_deletion.assert_called_once_with(mock_fund, mock_session)
-        fund_service.fund_repository.delete.assert_called_once_with(fund_id, mock_session)
-
-    def test_delete_fund_not_found(self, fund_service, mock_session):
-        """Test fund deletion when fund is not found."""
-        # Arrange
-        fund_id = 999
-        fund_service.fund_repository.get_by_id.return_value = None
-
-        # Act
-        result = fund_service.delete_fund(fund_id, mock_session)
-
-        # Assert
-        assert result is False
-        fund_service.fund_repository.delete.assert_not_called()
-
-    def test_delete_fund_validation_failure(self, fund_service, mock_session):
-        """Test fund deletion with validation failure."""
-        # Arrange
-        fund_id = 1
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        validation_errors = ["Fund has active investments"]
-        fund_service.validation_service.validate_fund_deletion.return_value = validation_errors
-
-        # Act & Assert
-        with pytest.raises(ValueError, match="Deletion validation failed"):
-            fund_service.delete_fund(fund_id, mock_session)
-
-        fund_service.fund_repository.delete.assert_not_called()
-
-    def test_get_fund_success(self, fund_service, mock_session):
-        """Test successful fund retrieval with events."""
-        # Arrange
-        fund_id = 1
-        mock_fund = Mock(spec=Fund)
-        mock_events = [Mock(spec=FundEvent), Mock(spec=FundEvent)]
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        fund_service.fund_event_repository.get_by_fund.return_value = mock_events
-
-        # Act
-        result = fund_service.get_fund(fund_id, mock_session)
-
-        # Assert
-        assert result == mock_fund
-        assert result.events == mock_events
-        fund_service.fund_repository.get_by_id.assert_called_once_with(fund_id, mock_session)
-        fund_service.fund_event_repository.get_by_fund.assert_called_once_with(fund_id, mock_session)
-
-    def test_get_fund_not_found(self, fund_service, mock_session):
-        """Test fund retrieval when fund is not found."""
-        # Arrange
-        fund_id = 999
-        fund_service.fund_repository.get_by_id.return_value = None
-
-        # Act
-        result = fund_service.get_fund(fund_id, mock_session)
-
-        # Assert
-        assert result is None
-        fund_service.fund_event_repository.get_by_fund.assert_not_called()
-
-    def test_get_funds_by_status(self, fund_service, mock_session):
-        """Test getting funds filtered by status."""
-        # Arrange
-        status = FundStatus.ACTIVE
-        mock_funds = [Mock(spec=Fund), Mock(spec=Fund)]
-        fund_service.fund_repository.get_funds_by_status.return_value = mock_funds
-
-        # Act
-        result = fund_service.get_funds(mock_session, status=status)
-
-        # Assert
-        assert result == mock_funds
-        fund_service.fund_repository.get_funds_by_status.assert_called_once_with(status, mock_session)
-
-    def test_get_funds_by_type(self, fund_service, mock_session):
-        """Test getting funds filtered by type."""
-        # Arrange
-        fund_type = FundTrackingType.COST_BASED
-        mock_funds = [Mock(spec=Fund)]
-        fund_service.fund_repository.get_funds_by_type.return_value = mock_funds
-
-        # Act
-        result = fund_service.get_funds(mock_session, fund_type=fund_type)
-
-        # Assert
-        assert result == mock_funds
-        fund_service.fund_repository.get_funds_by_type.assert_called_once_with(fund_type, mock_session)
-
-    def test_get_funds_all(self, fund_service, mock_session):
-        """Test getting all funds."""
-        # Arrange
-        mock_funds = [Mock(spec=Fund), Mock(spec=Fund), Mock(spec=Fund)]
-        fund_service.fund_repository.get_all_funds.return_value = mock_funds
-
-        # Act
-        result = fund_service.get_funds(mock_session)
-
-        # Assert
-        assert result == mock_funds
-        fund_service.fund_repository.get_all_funds.assert_called_once_with(mock_session)
-
-    def test_get_fund_events_success(self, fund_service, mock_session):
-        """Test successful fund events retrieval."""
-        # Arrange
-        fund_id = 1
-        event_types = [EventType.CAPITAL_CALL, EventType.DISTRIBUTION]
-        mock_events = [Mock(spec=FundEvent), Mock(spec=FundEvent)]
-        fund_service.fund_event_repository.get_by_fund.return_value = mock_events
-
-        # Act
-        result = fund_service.get_fund_events(fund_id, mock_session, event_types)
-
-        # Assert
-        assert result == mock_events
-        fund_service.fund_event_repository.get_by_fund.assert_called_once_with(fund_id, mock_session, event_types)
-
-    def test_get_fund_events_no_filter(self, fund_service, mock_session):
-        """Test fund events retrieval without type filter."""
-        # Arrange
-        fund_id = 1
-        mock_events = [Mock(spec=FundEvent)]
-        fund_service.fund_event_repository.get_by_fund.return_value = mock_events
-
-        # Act
-        result = fund_service.get_fund_events(fund_id, mock_session)
-
-        # Assert
-        assert result == mock_events
-        fund_service.fund_event_repository.get_by_fund.assert_called_once_with(fund_id, mock_session, None)
-
-    def test_get_fund_event_success(self, fund_service, mock_session):
-        """Test successful single fund event retrieval."""
-        # Arrange
-        fund_id = 1
-        event_id = 1
-        mock_fund = Mock(spec=Fund)
-        mock_event = Mock(spec=FundEvent)
-        mock_event.fund_id = fund_id
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        fund_service.fund_event_repository.get_by_id.return_value = mock_event
-
-        # Act
-        result = fund_service.get_fund_event(fund_id, event_id, mock_session)
-
-        # Assert
-        assert result == mock_event
-        fund_service.fund_repository.get_by_id.assert_called_once_with(fund_id, mock_session)
-        fund_service.fund_event_repository.get_by_id.assert_called_once_with(event_id, mock_session)
-
-    def test_get_fund_event_fund_not_found(self, fund_service, mock_session):
-        """Test fund event retrieval when fund is not found."""
-        # Arrange
-        fund_id = 999
-        event_id = 1
-        fund_service.fund_repository.get_by_id.return_value = None
-
-        # Act
-        result = fund_service.get_fund_event(fund_id, event_id, mock_session)
-
-        # Assert
-        assert result is None
-        fund_service.fund_event_repository.get_by_id.assert_not_called()
-
-    def test_get_fund_event_event_not_found(self, fund_service, mock_session):
-        """Test fund event retrieval when event is not found."""
-        # Arrange
-        fund_id = 1
-        event_id = 999
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        fund_service.fund_event_repository.get_by_id.return_value = None
-
-        # Act
-        result = fund_service.get_fund_event(fund_id, event_id, mock_session)
-
-        # Assert
-        assert result is None
-
-    def test_get_fund_event_wrong_fund(self, fund_service, mock_session):
-        """Test fund event retrieval when event belongs to different fund."""
-        # Arrange
-        fund_id = 1
-        event_id = 1
-        mock_fund = Mock(spec=Fund)
-        mock_event = Mock(spec=FundEvent)
-        mock_event.fund_id = 2  # Different fund ID
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        fund_service.fund_event_repository.get_by_id.return_value = mock_event
-
-        # Act
-        result = fund_service.get_fund_event(fund_id, event_id, mock_session)
-
-        # Assert
-        assert result is None
-
-    # ============================================================================
-    # EDGE CASE TESTS - Additional test cases for comprehensive coverage
-    # ============================================================================
-
-    def test_create_fund_with_empty_string_fields(self, fund_service, mock_session):
-        """Test fund creation with empty string values for required fields."""
-        # Note: The service only checks if fields exist in the dictionary, not if they have valid values
-        # Empty strings and None values are passed through to the repository layer
-        
-        # Test empty name - should pass through to repository
-        fund_data = {'name': '', 'entity_id': 1, 'investment_company_id': 1}
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.create.return_value = mock_fund
-        
-        result = fund_service.create_fund(fund_data, mock_session)
-        assert result == mock_fund
-        
-        # Test None name - should pass through to repository
-        fund_data = {'name': None, 'entity_id': 1, 'investment_company_id': 1}
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.create.return_value = mock_fund
-        
-        result = fund_service.create_fund(fund_data, mock_session)
-        assert result == mock_fund
-
-    def test_create_fund_with_none_entity_id(self, fund_service, mock_session):
-        """Test fund creation with None entity_id."""
-        # Note: The service only checks if fields exist in the dictionary, not if they have valid values
-        # None values are passed through to the repository layer
-        fund_data = {'name': 'Test Fund', 'entity_id': None, 'investment_company_id': 1}
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.create.return_value = mock_fund
-        
-        result = fund_service.create_fund(fund_data, mock_session)
-        assert result == mock_fund
-
-    def test_create_fund_with_none_investment_company_id(self, fund_service, mock_session):
-        """Test fund creation with None investment_company_id."""
-        # Note: The service only checks if fields exist in the dictionary, not if they have valid values
-        # None values are passed through to the repository layer
-        fund_data = {'name': 'Test Fund', 'entity_id': 1, 'investment_company_id': None}
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.create.return_value = mock_fund
-        
-        result = fund_service.create_fund(fund_data, mock_session)
-        assert result == mock_fund
-
-    def test_create_fund_with_all_tracking_types(self, fund_service, mock_session):
-        """Test fund creation with all valid tracking types."""
-        valid_tracking_types = ['COST_BASED', 'NAV_BASED']
-        
-        for tracking_type in valid_tracking_types:
-            fund_data = {
-                'name': f'Test Fund {tracking_type}',
-                'entity_id': 1,
-                'investment_company_id': 1,
-                'tracking_type': tracking_type
-            }
-            mock_fund = Mock(spec=Fund)
-            fund_service.fund_repository.create.return_value = mock_fund
-
+        expected_funds = [FundFactory.build() for _ in range(2)]
+        with patch.object(service.fund_repository, 'get_funds', return_value=expected_funds) as mock_repo:
             # Act
-            result = fund_service.create_fund(fund_data, mock_session)
+            result = service.get_funds(mock_session)
+
+            # Assert
+            assert result == expected_funds
+            mock_repo.assert_called_once_with(
+                mock_session, 
+                None, 
+                None, 
+                None, 
+                None,
+                SortFieldFund.START_DATE,
+                SortOrder.ASC
+            )
+
+    def test_get_funds_passes_filters_to_repository(self, service, mock_session):
+        """Test that get_funds passes all filters to repository."""
+        # Arrange
+        company_id = 1
+        entity_id = 2
+        fund_status = FundStatus.ACTIVE
+        fund_tracking_type = FundTrackingType.COST_BASED
+        sort_by = SortFieldFund.NAME
+        sort_order = SortOrder.DESC
+        expected_funds = [FundFactory.build()]
+        
+        with patch.object(service.fund_repository, 'get_funds', return_value=expected_funds) as mock_repo:
+            # Act
+            result = service.get_funds(
+                mock_session, 
+                company_id=company_id,
+                entity_id=entity_id,
+                fund_status=fund_status,
+                fund_tracking_type=fund_tracking_type,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
+
+            # Assert
+            assert result == expected_funds
+            mock_repo.assert_called_once_with(
+                mock_session, 
+                company_id, 
+                entity_id, 
+                fund_status, 
+                fund_tracking_type,
+                sort_by,
+                sort_order
+            )
+
+    ################################################################################
+    # Test get_fund_by_id method
+    ################################################################################
+
+    def test_get_fund_by_id_calls_repository_with_correct_id(self, service, mock_session, mock_fund):
+        """Test that get_fund_by_id calls repository with correct ID."""
+        # Arrange
+        fund_id = 1
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_repo:
+            # Act
+            result = service.get_fund_by_id(fund_id, mock_session)
 
             # Assert
             assert result == mock_fund
-            call_args = fund_service.fund_repository.create.call_args[0]
-            processed_data = call_args[0]
-            assert processed_data['tracking_type'] == FundTrackingType(tracking_type)
+            mock_repo.assert_called_once_with(fund_id, mock_session)
 
-    def test_create_fund_with_fund_type_string_preserved(self, fund_service, mock_session):
-        """Test that fund_type string values are preserved as-is for backward compatibility."""
+    def test_get_fund_by_id_returns_none_when_not_found(self, service, mock_session):
+        """Test that get_fund_by_id returns None when fund not found."""
+        # Arrange
+        fund_id = 999
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=None) as mock_repo:
+            # Act
+            result = service.get_fund_by_id(fund_id, mock_session)
+
+            # Assert
+            assert result is None
+            mock_repo.assert_called_once_with(fund_id, mock_session)
+
+    ################################################################################
+    # Test create_fund method
+    ################################################################################
+
+    def test_create_fund_sets_tax_statement_financial_year_type_and_status(self, service, mock_session, sample_fund_data, mock_fund, mock_company):
+        """Test that create_fund sets tax statement financial year type and status."""
+        # Arrange
+        with patch.object(service.fund_repository, 'create_fund', return_value=mock_fund) as mock_repo, \
+             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=mock_company) as mock_get_company:
+            
+            # Act
+            result = service.create_fund(sample_fund_data, mock_session)
+
+            # Assert
+            assert result == mock_fund
+            # Verify that tax statement financial year type and status were set
+            expected_data = sample_fund_data.copy()
+            expected_data['tax_statement_financial_year_type'] = FundTaxStatementFinancialYearType.HALF_YEAR  # AU maps to HALF_YEAR
+            expected_data['status'] = FundStatus.ACTIVE
+            mock_repo.assert_called_once_with(expected_data, mock_session)
+
+    def test_create_fund_raises_error_when_repository_fails(self, service, mock_session, sample_fund_data):
+        """Test that create_fund raises ValueError when repository fails."""
+        # Arrange
+        with patch.object(service.fund_repository, 'create_fund', return_value=None) as mock_repo:
+            # Act & Assert
+            with pytest.raises(ValueError, match="Failed to create fund"):
+                service.create_fund(sample_fund_data, mock_session)
+
+    def test_create_fund_updates_company_totals(self, service, mock_session, sample_fund_data, mock_fund, mock_company):
+        """Test that create_fund updates company totals correctly."""
+        # Arrange
+        mock_fund.investment_company_id = 1
+        mock_fund.commitment_amount = 100000.0
+        
+        with patch.object(service.fund_repository, 'create_fund', return_value=mock_fund) as mock_repo, \
+             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=mock_company) as mock_get_company:
+            
+            # Act
+            result = service.create_fund(sample_fund_data, mock_session)
+
+            # Assert
+            assert result == mock_fund
+            # Verify company totals were updated
+            assert mock_company.total_funds == 6  # 5 + 1
+            assert mock_company.total_funds_active == 4  # 3 + 1
+            assert mock_company.total_commitment_amount == 600000.0  # 500000 + 100000
+
+    def test_create_fund_raises_error_when_company_not_found(self, service, mock_session, sample_fund_data, mock_fund):
+        """Test that create_fund raises ValueError when company not found."""
+        # Arrange
+        mock_fund.investment_company_id = 1
+        
+        with patch.object(service.fund_repository, 'create_fund', return_value=mock_fund) as mock_repo, \
+             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=None) as mock_get_company:
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Company not found"):
+                service.create_fund(sample_fund_data, mock_session)
+
+    def test_create_fund_preserves_original_data(self, service, mock_session, mock_fund, mock_company):
+        """Test that create_fund preserves original data while adding required fields."""
+        # Arrange
         fund_data = {
             'name': 'Test Fund',
-            'entity_id': 1,
+            'fund_investment_type': 'PRIVATE_EQUITY',
+            'tracking_type': 'COST_BASED',
+            'description': 'Test fund description',
+            'currency': 'AUD',
+            'tax_jurisdiction': Country.AU,
+            'expected_irr': 15.5,
+            'expected_duration_months': 60,
+            'commitment_amount': 100000.0,
             'investment_company_id': 1,
-            'fund_type': 'Custom Fund Type String',
-            'tracking_type': 'COST_BASED'
+            'entity_id': 1,
+            'custom_field': 'custom_value'
         }
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.create.return_value = mock_fund
+        
+        with patch.object(service.fund_repository, 'create_fund', return_value=mock_fund) as mock_repo, \
+             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=mock_company) as mock_get_company:
+            
+            # Act
+            result = service.create_fund(fund_data, mock_session)
 
-        # Act
-        fund_service.create_fund(fund_data, mock_session)
+            # Assert
+            assert result == mock_fund
+            expected_data = fund_data.copy()
+            expected_data['tax_statement_financial_year_type'] = FundTaxStatementFinancialYearType.HALF_YEAR
+            expected_data['status'] = FundStatus.ACTIVE
+            mock_repo.assert_called_once_with(expected_data, mock_session)
 
+    ################################################################################
+    # Test delete_fund method
+    ################################################################################
+
+    def test_delete_fund_successfully_deletes_fund_and_updates_company(self, service, mock_session, mock_fund, mock_company):
+        """Test successful fund deletion with company updates."""
+        # Arrange
+        fund_id = 1
+        mock_fund.investment_company_id = 1
+        mock_fund.commitment_amount = 100000.0
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund, \
+             patch.object(service.fund_validation_service, 'validate_fund_deletion', return_value={}) as mock_validate, \
+             patch.object(service.fund_repository, 'delete_fund', return_value=True) as mock_delete, \
+             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=mock_company) as mock_get_company:
+            
+            # Act
+            result = service.delete_fund(fund_id, mock_session)
+
+            # Assert
+            assert result is True
+            mock_get_fund.assert_called_once_with(fund_id, mock_session)
+            mock_validate.assert_called_once_with(mock_fund, mock_session)
+            mock_delete.assert_called_once_with(fund_id, mock_session)
+            # Verify company totals were updated
+            assert mock_company.total_funds == 4  # 5 - 1
+            assert mock_company.total_funds_active == 2  # 3 - 1
+            assert mock_company.total_commitment_amount == 400000.0  # 500000 - 100000
+
+    def test_delete_fund_raises_error_when_fund_not_found(self, service, mock_session):
+        """Test that delete_fund raises ValueError when fund not found."""
+        # Arrange
+        fund_id = 999
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=None) as mock_get_fund:
+            # Act & Assert
+            with pytest.raises(ValueError, match="Fund not found"):
+                service.delete_fund(fund_id, mock_session)
+            
+            mock_get_fund.assert_called_once_with(fund_id, mock_session)
+
+    def test_delete_fund_raises_error_when_validation_fails(self, service, mock_session, mock_fund):
+        """Test that delete_fund raises ValueError when validation fails."""
+        # Arrange
+        fund_id = 1
+        validation_errors = {'fund_events': ['Cannot delete fund with dependent events']}
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund, \
+             patch.object(service.fund_validation_service, 'validate_fund_deletion', return_value=validation_errors) as mock_validate:
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Deletion validation failed"):
+                service.delete_fund(fund_id, mock_session)
+            
+            mock_get_fund.assert_called_once_with(fund_id, mock_session)
+            mock_validate.assert_called_once_with(mock_fund, mock_session)
+
+    def test_delete_fund_raises_error_when_repository_fails(self, service, mock_session, mock_fund):
+        """Test that delete_fund raises ValueError when repository deletion fails."""
+        # Arrange
+        fund_id = 1
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund, \
+             patch.object(service.fund_validation_service, 'validate_fund_deletion', return_value={}) as mock_validate, \
+             patch.object(service.fund_repository, 'delete_fund', return_value=False) as mock_delete:
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Failed to delete fund"):
+                service.delete_fund(fund_id, mock_session)
+            
+            mock_get_fund.assert_called_once_with(fund_id, mock_session)
+            mock_validate.assert_called_once_with(mock_fund, mock_session)
+            mock_delete.assert_called_once_with(fund_id, mock_session)
+
+    def test_delete_fund_raises_error_when_company_not_found(self, service, mock_session, mock_fund):
+        """Test that delete_fund raises ValueError when company not found."""
+        # Arrange
+        fund_id = 1
+        mock_fund.investment_company_id = 1
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund, \
+             patch.object(service.fund_validation_service, 'validate_fund_deletion', return_value={}) as mock_validate, \
+             patch.object(service.fund_repository, 'delete_fund', return_value=True) as mock_delete, \
+             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=None) as mock_get_company:
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Company not found"):
+                service.delete_fund(fund_id, mock_session)
+
+    ################################################################################
+    # Test service initialization
+    ################################################################################
+
+    def test_service_initializes_dependencies(self, service):
+        """Test that service initializes with correct dependencies."""
         # Assert
-        call_args = fund_service.fund_repository.create.call_args[0]
-        processed_data = call_args[0]
-        assert processed_data['fund_type'] == 'Custom Fund Type String'  # Preserved as string
-
-    def test_update_fund_with_empty_data(self, fund_service, mock_session):
-        """Test fund update with empty update data."""
-        # Arrange
-        fund_id = 1
-        update_data = {}
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.update.return_value = mock_fund
-
-        # Act
-        result = fund_service.update_fund(fund_id, update_data, mock_session)
-
-        # Assert
-        assert result == mock_fund
-        fund_service.fund_repository.update.assert_called_once_with(fund_id, update_data, mock_session)
-
-    def test_update_fund_with_none_data(self, fund_service, mock_session):
-        """Test fund update with None update data."""
-        # Arrange
-        fund_id = 1
-        update_data = None
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.update.return_value = mock_fund
-
-        # Act
-        result = fund_service.update_fund(fund_id, update_data, mock_session)
-
-        # Assert
-        assert result == mock_fund
-        fund_service.fund_repository.update.assert_called_once_with(fund_id, update_data, mock_session)
-
-    def test_delete_fund_with_invalid_fund_id(self, fund_service, mock_session):
-        """Test fund deletion with invalid fund ID types."""
-        # Note: The service doesn't validate ID types - it passes them through to the repository
-        # The repository layer will handle the validation and may raise exceptions
-        
-        # Test with string ID - repository will handle this
-        fund_service.fund_repository.get_by_id.return_value = None
-        result = fund_service.delete_fund("invalid_id", mock_session)
-        assert result is False  # Fund not found
-        
-        # Test with None ID - repository will handle this
-        fund_service.fund_repository.get_by_id.return_value = None
-        result = fund_service.delete_fund(None, mock_session)
-        assert result is False  # Fund not found
-
-    def test_get_funds_with_multiple_filters(self, fund_service, mock_session):
-        """Test getting funds with both status and type filters (should prioritize status)."""
-        # Arrange
-        status = FundStatus.ACTIVE
-        fund_type = FundTrackingType.COST_BASED
-        mock_funds = [Mock(spec=Fund)]
-        fund_service.fund_repository.get_funds_by_status.return_value = mock_funds
-
-        # Act
-        result = fund_service.get_funds(mock_session, status=status, fund_type=fund_type)
-
-        # Assert
-        assert result == mock_funds
-        # Should call status filter (prioritized) and not type filter
-        fund_service.fund_repository.get_funds_by_status.assert_called_once_with(status, mock_session)
-        fund_service.fund_repository.get_funds_by_type.assert_not_called()
-
-    def test_get_fund_events_with_empty_event_types_list(self, fund_service, mock_session):
-        """Test fund events retrieval with empty event types list."""
-        # Arrange
-        fund_id = 1
-        event_types = []
-        mock_events = []
-        fund_service.fund_event_repository.get_by_fund.return_value = mock_events
-
-        # Act
-        result = fund_service.get_fund_events(fund_id, mock_session, event_types)
-
-        # Assert
-        assert result == mock_events
-        fund_service.fund_event_repository.get_by_fund.assert_called_once_with(fund_id, mock_session, event_types)
-
-    def test_get_fund_events_with_none_event_types(self, fund_service, mock_session):
-        """Test fund events retrieval with None event types."""
-        # Arrange
-        fund_id = 1
-        event_types = None
-        mock_events = [Mock(spec=FundEvent)]
-        fund_service.fund_event_repository.get_by_fund.return_value = mock_events
-
-        # Act
-        result = fund_service.get_fund_events(fund_id, mock_session, event_types)
-
-        # Assert
-        assert result == mock_events
-        fund_service.fund_event_repository.get_by_fund.assert_called_once_with(fund_id, mock_session, None)
-
-    def test_get_fund_event_with_invalid_ids(self, fund_service, mock_session):
-        """Test fund event retrieval with invalid ID types."""
-        # Note: The service doesn't validate ID types - it passes them through to the repository
-        # The repository layer will handle the validation
-        
-        # Test with string fund_id - repository will handle this
-        fund_service.fund_repository.get_by_id.return_value = None
-        result = fund_service.get_fund_event("invalid_fund_id", 1, mock_session)
-        assert result is None  # Fund not found
-        
-        # Test with string event_id - repository will handle this
-        fund_service.fund_repository.get_by_id.return_value = Mock(spec=Fund)
-        fund_service.fund_event_repository.get_by_id.return_value = None
-        result = fund_service.get_fund_event(1, "invalid_event_id", mock_session)
-        assert result is None  # Event not found
-        
-        # Test with None fund_id - repository will handle this
-        fund_service.fund_repository.get_by_id.return_value = None
-        result = fund_service.get_fund_event(None, 1, mock_session)
-        assert result is None  # Fund not found
-
-    def test_get_fund_event_security_check(self, fund_service, mock_session):
-        """Test security: event belongs to different fund returns None."""
-        # Arrange
-        fund_id = 1
-        event_id = 1
-        mock_fund = Mock(spec=Fund)
-        mock_event = Mock(spec=FundEvent)
-        mock_event.fund_id = 999  # Completely different fund ID
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        fund_service.fund_event_repository.get_by_id.return_value = mock_event
-
-        # Act
-        result = fund_service.get_fund_event(fund_id, event_id, mock_session)
-
-        # Assert
-        assert result is None
-        # Verify both repository methods were called
-        fund_service.fund_repository.get_by_id.assert_called_once_with(fund_id, mock_session)
-        fund_service.fund_event_repository.get_by_id.assert_called_once_with(event_id, mock_session)
-
-    def test_get_fund_with_no_events(self, fund_service, mock_session):
-        """Test fund retrieval when fund exists but has no events."""
-        # Arrange
-        fund_id = 1
-        mock_fund = Mock(spec=Fund)
-        mock_events = []  # Empty events list
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        fund_service.fund_event_repository.get_by_fund.return_value = mock_events
-
-        # Act
-        result = fund_service.get_fund(fund_id, mock_session)
-
-        # Assert
-        assert result == mock_fund
-        assert result.events == []
-        fund_service.fund_repository.get_by_id.assert_called_once_with(fund_id, mock_session)
-        fund_service.fund_event_repository.get_by_fund.assert_called_once_with(fund_id, mock_session)
-
-    def test_delete_fund_validation_errors_formatting(self, fund_service, mock_session):
-        """Test fund deletion validation error message formatting."""
-        # Arrange
-        fund_id = 1
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        validation_errors = ["Error 1", "Error 2", "Error 3"]
-        fund_service.validation_service.validate_fund_deletion.return_value = validation_errors
-
-        # Act & Assert
-        with pytest.raises(ValueError) as exc_info:
-            fund_service.delete_fund(fund_id, mock_session)
-
-        # Assert error message contains all validation errors
-        error_message = str(exc_info.value)
-        assert "Deletion validation failed" in error_message
-        assert "Error 1" in error_message
-        assert "Error 2" in error_message
-        assert "Error 3" in error_message
-
-    def test_get_funds_with_invalid_status_enum(self, fund_service, mock_session):
-        """Test getting funds with invalid status enum value."""
-        # This test ensures the service doesn't crash with invalid enum values
-        # The repository layer should handle the validation
-        invalid_status = "INVALID_STATUS"
-        
-        # Act - Should not crash, repository will handle validation
-        result = fund_service.get_funds(mock_session, status=invalid_status)
-        
-        # Assert - Repository was called with the invalid status
-        fund_service.fund_repository.get_funds_by_status.assert_called_once_with(invalid_status, mock_session)
-
-    def test_get_funds_with_invalid_fund_type_enum(self, fund_service, mock_session):
-        """Test getting funds with invalid fund type enum value."""
-        # This test ensures the service doesn't crash with invalid enum values
-        invalid_fund_type = "INVALID_TYPE"
-        
-        # Act - Should not crash, repository will handle validation
-        result = fund_service.get_funds(mock_session, fund_type=invalid_fund_type)
-        
-        # Assert - Repository was called with the invalid type
-        fund_service.fund_repository.get_funds_by_type.assert_called_once_with(invalid_fund_type, mock_session)
-
-    def test_create_fund_repository_error_propagation(self, fund_service, mock_session, sample_fund_data):
-        """Test that repository errors are properly propagated."""
-        # Arrange
-        fund_service.fund_repository.create.side_effect = Exception("Database connection failed")
-
-        # Act & Assert
-        with pytest.raises(Exception, match="Database connection failed"):
-            fund_service.create_fund(sample_fund_data, mock_session)
-
-    def test_update_fund_repository_error_propagation(self, fund_service, mock_session):
-        """Test that repository errors are properly propagated during update."""
-        # Arrange
-        fund_id = 1
-        update_data = {'name': 'Updated Fund'}
-        fund_service.fund_repository.update.side_effect = Exception("Database connection failed")
-
-        # Act & Assert
-        with pytest.raises(Exception, match="Database connection failed"):
-            fund_service.update_fund(fund_id, update_data, mock_session)
-
-    def test_delete_fund_repository_error_propagation(self, fund_service, mock_session):
-        """Test that repository errors are properly propagated during deletion."""
-        # Arrange
-        fund_id = 1
-        mock_fund = Mock(spec=Fund)
-        fund_service.fund_repository.get_by_id.return_value = mock_fund
-        fund_service.validation_service.validate_fund_deletion.return_value = []
-        fund_service.fund_repository.delete.side_effect = Exception("Database connection failed")
-
-        # Act & Assert
-        with pytest.raises(Exception, match="Database connection failed"):
-            fund_service.delete_fund(fund_id, mock_session)
+        assert service.fund_validation_service is not None
+        assert service.fund_repository is not None
+        assert hasattr(service, 'fund_validation_service')
+        assert hasattr(service, 'fund_repository')

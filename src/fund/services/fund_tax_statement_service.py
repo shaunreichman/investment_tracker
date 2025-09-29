@@ -6,7 +6,8 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from datetime import date
 
-from src.fund.repositories import FundTaxStatementRepository, FundEventRepository
+from src.fund.repositories import FundTaxStatementRepository, FundEventRepository, FundRepository
+from src.rates.repositories import RiskFreeRateRepository
 from src.fund.models import FundTaxStatement, FundEvent
 from src.fund.enums.fund_tax_statement_enums import SortFieldFundTaxStatement
 from src.shared.enums.shared_enums import SortOrder, EventOperation
@@ -49,6 +50,8 @@ class FundTaxStatementService:
         self.fund_tax_statement_repository = FundTaxStatementRepository()
         self.fund_event_repository = FundEventRepository()
         self.fund_validation_service = FundValidationService()
+        self.fund_repository = FundRepository()
+        self.risk_free_rate_repository = RiskFreeRateRepository()
 
 
     ################################################################################
@@ -343,11 +346,12 @@ class FundTaxStatementService:
         """
         Create a capital gain tax payment event for the given fund tax statement.
         """
+        # Initialize capital_gains to ensure it's always defined
+        capital_gains = 0.0
+        
         if fund_tax_statement.capital_gain_income_amount is None or fund_tax_statement.capital_gain_income_amount == 0.0:
             # Capital gain income amount has not been added on the Tax Statement
-            from src.fund.repositories import FundRepository
-            fund_repository = FundRepository()
-            fund = fund_repository.get_fund_by_id(fund_tax_statement.fund_id, session=session)
+            fund = self.fund_repository.get_fund_by_id(fund_tax_statement.fund_id, session=session)
             if fund.tracking_type == FundTrackingType.NAV_BASED:
                 fund_events = self.fund_event_repository.get_fund_events(fund_ids=[fund.id], sort_order=SortOrder.ASC, session=session)
                 
@@ -362,7 +366,7 @@ class FundTaxStatementService:
                 fund_tax_statement.capital_gain_income_amount_from_tax_statement_flag = False
             elif fund.tracking_type == FundTrackingType.COST_BASED:
                 # No Capital Gains for Cost Based funds for now
-                return None
+                capital_gains = 0.0
         else:
             # Capital gain income amount has been added on the Tax Statement
             capital_gains = fund_tax_statement.capital_gain_income_amount
@@ -436,8 +440,8 @@ class FundTaxStatementService:
         risk_free_rates = self.risk_free_rate_repository.get_risk_free_rates(currency=fund.currency, session=session)
 
         # 1. Generate Daily Debt Cost
-        from src.fund.calculators.debt_cost_calculator import DebtCostCalculator
-        debt_cost_calculator = DebtCostCalculator()
+        from src.fund.calculators.debt_cost_calculator import DailyDebtCostCalculator
+        debt_cost_calculator = DailyDebtCostCalculator()
         daily_debt_cost_dict = debt_cost_calculator.calculate_debt_cost(capital_events, risk_free_rates, fund_tax_statement.financial_year_start_date, fund_tax_statement.financial_year_end_date)
 
         # 2. Check if these Debt Costs already exist and if they're incorrect, update them

@@ -207,7 +207,7 @@ class BaseValidator:
                 try:
                     # Convert string to enum if needed
                     if isinstance(value, str):
-                        converted_data[field] = enum_class(value.upper())
+                        converted_data[field] = enum_class(value)
                     else:
                         converted_data[field] = enum_class(value)
                 except ValueError:

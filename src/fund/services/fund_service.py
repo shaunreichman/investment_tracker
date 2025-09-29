@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
 from src.fund.repositories.fund_repository import FundRepository
-from src.fund.enums.fund_enums import FundStatus, FundTrackingType, SortFieldFund, FundTaxStatementFinancialYearType
+from src.fund.enums.fund_enums import FundStatus, FundTrackingType, SortFieldFund, FundTaxStatementFinancialYearType, TAX_JURISDICTION_TO_FINANCIAL_YEAR_TYPE_MAP
 from src.shared.enums.shared_enums import SortOrder
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.models import Fund
@@ -103,7 +103,7 @@ class FundService:
         processed_data = fund_data.copy()
 
         # Set the tax statement financial year type based on the tax jurisdiction
-        processed_data['tax_statement_financial_year_type'] = FundTaxStatementFinancialYearType.TAX_JURISDICTION_TO_FINANCIAL_YEAR_TYPE_MAP[processed_data['tax_jurisdiction']]
+        processed_data['tax_statement_financial_year_type'] = TAX_JURISDICTION_TO_FINANCIAL_YEAR_TYPE_MAP[processed_data['tax_jurisdiction']]
         
         # Set the fund status to ACTIVE on creation
         processed_data['status'] = FundStatus.ACTIVE

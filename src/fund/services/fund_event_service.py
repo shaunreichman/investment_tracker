@@ -138,12 +138,12 @@ class FundEventService:
 
         # 5. Store the domain fund event containing the changes
         if all_changes:
-            domain_fund_event_repository = DomainFundEventRepository(session)
+            domain_fund_event_repository = DomainFundEventRepository()
             domain_fund_event = domain_fund_event_repository.create_domain_fund_event(
                 fund_id=fund_event.fund_id,
                 event_type=processed_data['event_type'],
                 event_operation=EventOperation.CREATE,
-                event_id=fund_event.id,
+                fund_event_id=fund_event.id,
                 event_data={"changes": [change.to_dict() for change in all_changes]},
                 session=session
             )

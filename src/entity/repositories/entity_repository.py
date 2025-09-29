@@ -56,12 +56,6 @@ class EntityRepository:
         Returns:
             List of entities
         """
-        cache_key = f"entities:entity_type:{entity_type}:tax_jurisdiction:{tax_jurisdiction}:name:{name}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Validate sort field
         if sort_by not in SortFieldEntity:
             raise ValueError(f"Invalid sort field: {sort_by}")
@@ -69,6 +63,12 @@ class EntityRepository:
         # Validate sort order
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
+
+        cache_key = f"entities:entity_type:{entity_type}:tax_jurisdiction:{tax_jurisdiction}:name:{name}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
+
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         
         # Query database
         entities = session.query(Entity)
@@ -83,7 +83,9 @@ class EntityRepository:
         if sort_by == SortFieldEntity.NAME:
             entities = entities.order_by(Entity.name.asc() if sort_order == SortOrder.ASC else Entity.name.desc())
         elif sort_by == SortFieldEntity.TYPE:
-            entities = entities.order_by(Entity.type.asc() if sort_order == SortOrder.ASC else Entity.type.desc())
+            entities = entities.order_by(Entity.entity_type.asc() if sort_order == SortOrder.ASC else Entity.entity_type.desc())
+        elif sort_by == SortFieldEntity.TAX_JURISDICTION:
+            entities = entities.order_by(Entity.tax_jurisdiction.asc() if sort_order == SortOrder.ASC else Entity.tax_jurisdiction.desc())
         elif sort_by == SortFieldEntity.CREATED_AT:
             entities = entities.order_by(Entity.created_at.asc() if sort_order == SortOrder.ASC else Entity.created_at.desc())
         elif sort_by == SortFieldEntity.UPDATED_AT:
@@ -175,7 +177,7 @@ class EntityRepository:
     
     def _clear_entity_caches(self) -> None:
         """Clear all entity-related caches."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('entity')]
+        keys_to_remove = [key for key in self._cache.keys() if key.startswith('entity') or key.startswith('entities')]
         for key in keys_to_remove:
             del self._cache[key]
     

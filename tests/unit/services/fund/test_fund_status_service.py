@@ -1,314 +1,341 @@
 """
-Fund Status Service Tests
+Fund Status Service Unit Tests.
 
-This module tests the FundStatusService's core functionality for managing fund status transitions.
+This module tests the FundStatusService class, focusing on business logic,
+status transitions, and service layer orchestration. Tests are precise and focused
+on service functionality without testing repository or validation logic directly.
 
-What we test here:
-- Status transition logic after equity events
-- Status transition logic after tax statement events
-- Final tax statement determination logic
-- Business rule enforcement for status changes
-
-What we DON'T test here (tested elsewhere):
-- Repository data access (test_fund_repository.py)
-- Model validation (test_fund_model.py)
-- Event processing (test_fund_event_service.py)
+Test Coverage:
+- Status transitions after equity events (ACTIVE/REALIZED/COMPLETED)
+- Status transitions after tax statement events
+- Final tax statement detection logic
+- Service layer orchestration
+- Error handling and edge cases
 """
 
 import pytest
-from datetime import date
 from unittest.mock import Mock, patch
+from sqlalchemy.orm import Session
+from datetime import date
 
 from src.fund.services.fund_status_service import FundStatusService
-from src.fund.enums import FundStatus
-from src.fund.models.fund import Fund
-from src.fund.models.domain_event import FundFieldChange
+from src.fund.models import Fund, FundFieldChange, FundTaxStatement
+from src.fund.enums.fund_enums import FundStatus
+from tests.factories.fund_factories import FundFactory, FundTaxStatementFactory
 
 
 class TestFundStatusService:
-    """Test suite for FundStatusService core functionality"""
-    
+    """Test suite for FundStatusService."""
+
     @pytest.fixture
     def service(self):
         """Create a FundStatusService instance for testing."""
         return FundStatusService()
-    
+
     @pytest.fixture
     def mock_session(self):
         """Create a mock database session."""
-        return Mock()
-    
-    @pytest.fixture
-    def active_fund(self):
-        """Create a fund in ACTIVE status with equity balance."""
-        fund = Mock(spec=Fund)
-        fund.id = 1
-        fund.name = "Test Fund"
-        fund.status = FundStatus.ACTIVE
-        fund.current_equity_balance = 1000.0
-        fund.end_date = None
-        return fund
-    
-    @pytest.fixture
-    def realized_fund(self):
-        """Create a fund in REALIZED status with zero equity balance."""
-        fund = Mock(spec=Fund)
-        fund.id = 2
-        fund.name = "Realized Fund"
-        fund.status = FundStatus.REALIZED
-        fund.current_equity_balance = 0.0
-        fund.end_date = date(2020, 12, 31)
-        return fund
-    
-    @pytest.fixture
-    def completed_fund(self):
-        """Create a fund in COMPLETED status."""
-        fund = Mock(spec=Fund)
-        fund.id = 3
-        fund.name = "Completed Fund"
-        fund.status = FundStatus.COMPLETED
-        fund.current_equity_balance = 0.0
-        fund.end_date = date(2020, 12, 31)
-        return fund
+        return Mock(spec=Session)
 
-    # ============================================================================
-    # TESTS FOR update_status_after_equity_event
-    # ============================================================================
-    
-    def test_update_status_after_equity_event_active_to_realized(self, service, active_fund, mock_session):
-        """Test status transition from ACTIVE to REALIZED when equity balance becomes zero."""
-        # Arrange
-        active_fund.current_equity_balance = 0.0
-        
-        # Mock the final tax statement check to return False (no final tax statement)
-        with patch.object(service, '_is_final_tax_statement_received', return_value=False):
-            # Act
-            result = service.update_status_after_equity_event(active_fund, mock_session)
-            
-            # Assert
-            assert active_fund.status == FundStatus.REALIZED
-            assert isinstance(result, list)
-            assert len(result) == 1
-            assert isinstance(result[0], FundFieldChange)
-            assert result[0].field_name == 'status'
-            assert result[0].old_value == FundStatus.ACTIVE
-            assert result[0].new_value == FundStatus.REALIZED
-    
-    def test_update_status_after_equity_event_active_to_completed(self, service, active_fund, mock_session):
-        """Test status transition from ACTIVE to COMPLETED when equity balance becomes zero and final tax statement exists."""
-        # Arrange
-        active_fund.current_equity_balance = 0.0
-        
-        # Mock the final tax statement check to return True (final tax statement exists)
-        with patch.object(service, '_is_final_tax_statement_received', return_value=True):
-            # Act
-            result = service.update_status_after_equity_event(active_fund, mock_session)
-            
-            # Assert
-            assert active_fund.status == FundStatus.COMPLETED
-            assert isinstance(result, list)
-            assert len(result) == 1
-            assert isinstance(result[0], FundFieldChange)
-            assert result[0].field_name == 'status'
-            assert result[0].old_value == FundStatus.ACTIVE
-            assert result[0].new_value == FundStatus.COMPLETED
-    
-    def test_update_status_after_equity_event_realized_to_active(self, service, realized_fund, mock_session):
-        """Test status transition from REALIZED to ACTIVE when equity balance becomes positive."""
-        # Arrange
-        realized_fund.current_equity_balance = 1000.0
-        
+    @pytest.fixture
+    def mock_fund_active(self):
+        """Mock fund with ACTIVE status and positive equity balance."""
+        return FundFactory.build(
+            id=1,
+            status=FundStatus.ACTIVE,
+            current_equity_balance=1000.0,
+            end_date=date(2023, 12, 31)
+        )
+
+    @pytest.fixture
+    def mock_fund_realized(self):
+        """Mock fund with REALIZED status and zero equity balance."""
+        return FundFactory.build(
+            id=2,
+            status=FundStatus.REALIZED,
+            current_equity_balance=0.0,
+            end_date=date(2023, 12, 31)
+        )
+
+    @pytest.fixture
+    def mock_fund_completed(self):
+        """Mock fund with COMPLETED status and zero equity balance."""
+        return FundFactory.build(
+            id=3,
+            status=FundStatus.COMPLETED,
+            current_equity_balance=0.0,
+            end_date=date(2023, 12, 31)
+        )
+
+    @pytest.fixture
+    def mock_fund_suspended(self):
+        """Mock fund with SUSPENDED status and positive equity balance."""
+        return FundFactory.build(
+            id=4,
+            status=FundStatus.SUSPENDED,
+            current_equity_balance=500.0,
+            end_date=date(2023, 12, 31)
+        )
+
+    ################################################################################
+    # Test update_status_after_equity_event method
+    ################################################################################
+
+    def test_update_status_after_equity_event_positive_balance_suspended_to_active(self, service, mock_session, mock_fund_suspended):
+        """Test that fund transitions from SUSPENDED to ACTIVE when equity balance > 0."""
         # Act
-        result = service.update_status_after_equity_event(realized_fund, mock_session)
-        
+        result = service.update_status_after_equity_event(mock_fund_suspended, mock_session)
+
         # Assert
-        assert realized_fund.status == FundStatus.ACTIVE
-        assert isinstance(result, list)
+        assert result is not None
         assert len(result) == 1
-        assert isinstance(result[0], FundFieldChange)
-        assert result[0].field_name == 'status'
-        assert result[0].old_value == FundStatus.REALIZED
-        assert result[0].new_value == FundStatus.ACTIVE
-    
-    def test_update_status_after_equity_event_no_change_needed(self, service, active_fund, mock_session):
-        """Test that no status change occurs when fund should remain ACTIVE."""
-        # Arrange
-        active_fund.current_equity_balance = 500.0  # Positive balance, should stay ACTIVE
+        assert mock_fund_suspended.status == FundStatus.ACTIVE
         
+        change = result[0]
+        assert change.fund_or_company == 'FUND'
+        assert change.object_id == mock_fund_suspended.id
+        assert change.field_name == 'status'
+        assert change.old_value == FundStatus.SUSPENDED
+        assert change.new_value == FundStatus.ACTIVE
+
+    def test_update_status_after_equity_event_positive_balance_already_active_no_change(self, service, mock_session, mock_fund_active):
+        """Test that fund remains ACTIVE when equity balance > 0 and already ACTIVE."""
         # Act
-        result = service.update_status_after_equity_event(active_fund, mock_session)
-        
+        result = service.update_status_after_equity_event(mock_fund_active, mock_session)
+
         # Assert
-        assert active_fund.status == FundStatus.ACTIVE
         assert result is None
-    
-    def test_update_status_after_equity_event_realized_remains_realized(self, service, realized_fund, mock_session):
-        """Test that REALIZED fund remains REALIZED when equity balance is zero."""
+        assert mock_fund_active.status == FundStatus.ACTIVE
+
+    def test_update_status_after_equity_event_zero_balance_active_to_realized(self, service, mock_session, mock_fund_active):
+        """Test that fund transitions from ACTIVE to REALIZED when equity balance <= 0."""
         # Arrange
-        realized_fund.current_equity_balance = 0.0
+        mock_fund_active.current_equity_balance = 0.0
         
-        # Mock the final tax statement check to return False
         with patch.object(service, '_is_final_tax_statement_received', return_value=False):
             # Act
-            result = service.update_status_after_equity_event(realized_fund, mock_session)
-            
-            # Assert
-            assert realized_fund.status == FundStatus.REALIZED
-            assert result is None
+            result = service.update_status_after_equity_event(mock_fund_active, mock_session)
 
-    # ============================================================================
-    # TESTS FOR update_status_after_tax_statement
-    # ============================================================================
-    
-    def test_update_status_after_tax_statement_realized_to_completed(self, service, realized_fund, mock_session):
-        """Test status transition from REALIZED to COMPLETED when final tax statement is received."""
+            # Assert
+            assert result is not None
+            assert len(result) == 1
+            assert mock_fund_active.status == FundStatus.REALIZED
+            
+            change = result[0]
+            assert change.fund_or_company == 'FUND'
+            assert change.object_id == mock_fund_active.id
+            assert change.field_name == 'status'
+            assert change.old_value == FundStatus.ACTIVE
+            assert change.new_value == FundStatus.REALIZED
+
+    def test_update_status_after_equity_event_zero_balance_with_final_tax_statement_active_to_completed(self, service, mock_session, mock_fund_active):
+        """Test that fund transitions from ACTIVE to COMPLETED when equity balance <= 0 and final tax statement received."""
         # Arrange
-        realized_fund.status = FundStatus.REALIZED
+        mock_fund_active.current_equity_balance = 0.0
         
-        # Mock the final tax statement check to return True
         with patch.object(service, '_is_final_tax_statement_received', return_value=True):
             # Act
-            result = service.update_status_after_tax_statement(realized_fund, mock_session)
-            
-            # Assert
-            assert realized_fund.status == FundStatus.COMPLETED
-            assert isinstance(result, list)
-            assert len(result) == 1
-            assert isinstance(result[0], FundFieldChange)
-            assert result[0].field_name == 'status'
-            assert result[0].old_value == FundStatus.REALIZED
-            assert result[0].new_value == FundStatus.COMPLETED
-    
-    def test_update_status_after_tax_statement_completed_reverts_to_realized(self, service, completed_fund, mock_session):
-        """Test status reversion from COMPLETED to REALIZED when final tax statement is removed."""
-        # Arrange
-        completed_fund.status = FundStatus.COMPLETED
-        
-        # Mock the final tax statement check to return False (tax statement removed)
-        with patch.object(service, '_is_final_tax_statement_received', return_value=False):
-            # Act
-            result = service.update_status_after_tax_statement(completed_fund, mock_session)
-            
-            # Assert
-            assert completed_fund.status == FundStatus.REALIZED
-            assert isinstance(result, list)
-            assert len(result) == 1
-            assert isinstance(result[0], FundFieldChange)
-            assert result[0].field_name == 'status'
-            assert result[0].old_value == FundStatus.COMPLETED
-            assert result[0].new_value == FundStatus.REALIZED
-    
-    def test_update_status_after_tax_statement_active_fund_no_change(self, service, active_fund, mock_session):
-        """Test that ACTIVE fund status is not affected by tax statement events."""
-        # Arrange
-        active_fund.status = FundStatus.ACTIVE
-        
-        # Act
-        result = service.update_status_after_tax_statement(active_fund, mock_session)
-        
-        # Assert
-        assert active_fund.status == FundStatus.ACTIVE
-        assert result is None
-    
-    def test_update_status_after_tax_statement_realized_remains_realized(self, service, realized_fund, mock_session):
-        """Test that REALIZED fund remains REALIZED when no final tax statement exists."""
-        # Arrange
-        realized_fund.status = FundStatus.REALIZED
-        
-        # Mock the final tax statement check to return False
-        with patch.object(service, '_is_final_tax_statement_received', return_value=False):
-            # Act
-            result = service.update_status_after_tax_statement(realized_fund, mock_session)
-            
-            # Assert
-            assert realized_fund.status == FundStatus.REALIZED
-            assert result is None
+            result = service.update_status_after_equity_event(mock_fund_active, mock_session)
 
-    # ============================================================================
-    # TESTS FOR _is_final_tax_statement_received
-    # ============================================================================
-    
-    def test_is_final_tax_statement_received_active_fund_returns_false(self, service, active_fund, mock_session):
-        """Test that ACTIVE funds always return False for final tax statement check."""
-        # Arrange
-        active_fund.status = FundStatus.ACTIVE
-        
-        # Act
-        result = service._is_final_tax_statement_received(active_fund, mock_session)
-        
-        # Assert
-        assert result is False
-    
-    def test_is_final_tax_statement_received_no_end_date_returns_false(self, service, realized_fund, mock_session):
-        """Test that funds without end date return False for final tax statement check."""
-        # Arrange
-        realized_fund.status = FundStatus.REALIZED
-        realized_fund.end_date = None
-        
-        # Act
-        result = service._is_final_tax_statement_received(realized_fund, mock_session)
-        
-        # Assert
-        assert result is False
-    
-    def test_is_final_tax_statement_received_with_tax_statements_after_end_date(self, service, realized_fund, mock_session):
-        """Test that funds with tax statements after end date return True."""
-        # Arrange
-        realized_fund.status = FundStatus.REALIZED
-        realized_fund.end_date = date(2020, 12, 31)
-        
-        # Mock tax statements after end date
-        mock_tax_statement = Mock()
-        mock_tax_statement.tax_payment_date = date(2021, 5, 15)  # After end date
-        
-        with patch('src.fund.repositories.TaxStatementRepository') as mock_repo_class:
-            mock_repo = Mock()
-            mock_repo_class.return_value = mock_repo
-            mock_repo.get_by_fund_after_date.return_value = [mock_tax_statement]
+            # Assert
+            assert result is not None
+            assert len(result) == 1
+            assert mock_fund_active.status == FundStatus.COMPLETED
             
+            change = result[0]
+            assert change.fund_or_company == 'FUND'
+            assert change.object_id == mock_fund_active.id
+            assert change.field_name == 'status'
+            assert change.old_value == FundStatus.ACTIVE
+            assert change.new_value == FundStatus.COMPLETED
+
+    def test_update_status_after_equity_event_non_active_status_no_change(self, service, mock_session, mock_fund_realized):
+        """Test that non-ACTIVE funds don't change status based on equity balance."""
+        # Act
+        result = service.update_status_after_equity_event(mock_fund_realized, mock_session)
+
+        # Assert
+        assert result is None
+        assert mock_fund_realized.status == FundStatus.REALIZED
+
+    ################################################################################
+    # Test update_status_after_tax_statement method
+    ################################################################################
+
+    def test_update_status_after_tax_statement_realized_to_completed(self, service, mock_session, mock_fund_realized):
+        """Test that fund transitions from REALIZED to COMPLETED when final tax statement received."""
+        with patch.object(service, '_is_final_tax_statement_received', return_value=True):
             # Act
-            result = service._is_final_tax_statement_received(realized_fund, mock_session)
+            result = service.update_status_after_tax_statement(mock_fund_realized, mock_session)
+
+            # Assert
+            assert result is not None
+            assert len(result) == 1
+            assert mock_fund_realized.status == FundStatus.COMPLETED
             
+            change = result[0]
+            assert change.fund_or_company == 'FUND'
+            assert change.object_id == mock_fund_realized.id
+            assert change.field_name == 'status'
+            assert change.old_value == FundStatus.REALIZED
+            assert change.new_value == FundStatus.COMPLETED
+
+    def test_update_status_after_tax_statement_completed_to_realized_when_tax_statement_removed(self, service, mock_session, mock_fund_completed):
+        """Test that fund transitions from COMPLETED to REALIZED when tax statement removed."""
+        with patch.object(service, '_is_final_tax_statement_received', return_value=False):
+            # Act
+            result = service.update_status_after_tax_statement(mock_fund_completed, mock_session)
+
+            # Assert
+            assert result is not None
+            assert len(result) == 1
+            assert mock_fund_completed.status == FundStatus.REALIZED
+            
+            change = result[0]
+            assert change.fund_or_company == 'FUND'
+            assert change.object_id == mock_fund_completed.id
+            assert change.field_name == 'status'
+            assert change.old_value == FundStatus.COMPLETED
+            assert change.new_value == FundStatus.REALIZED
+
+    def test_update_status_after_tax_statement_active_status_no_change(self, service, mock_session, mock_fund_active):
+        """Test that ACTIVE funds don't change status based on tax statements."""
+        # Act
+        result = service.update_status_after_tax_statement(mock_fund_active, mock_session)
+
+        # Assert
+        assert result is None
+        assert mock_fund_active.status == FundStatus.ACTIVE
+
+    def test_update_status_after_tax_statement_no_final_tax_statement_no_change(self, service, mock_session, mock_fund_realized):
+        """Test that fund remains REALIZED when no final tax statement received."""
+        with patch.object(service, '_is_final_tax_statement_received', return_value=False):
+            # Act
+            result = service.update_status_after_tax_statement(mock_fund_realized, mock_session)
+
+            # Assert
+            assert result is None
+            assert mock_fund_realized.status == FundStatus.REALIZED
+
+    ################################################################################
+    # Test _is_final_tax_statement_received method
+    ################################################################################
+
+    def test_is_final_tax_statement_received_active_fund_returns_false(self, service, mock_session, mock_fund_active):
+        """Test that ACTIVE funds always return False for final tax statement check."""
+        # Act
+        result = service._is_final_tax_statement_received(mock_fund_active, mock_session)
+
+        # Assert
+        assert result is False
+
+    def test_is_final_tax_statement_received_no_end_date_returns_false(self, service, mock_session, mock_fund_realized):
+        """Test that funds without end_date return False for final tax statement check."""
+        # Arrange
+        mock_fund_realized.end_date = None
+
+        # Act
+        result = service._is_final_tax_statement_received(mock_fund_realized, mock_session)
+
+        # Assert
+        assert result is False
+
+    def test_is_final_tax_statement_received_with_tax_statements_after_end_date_returns_true(self, service, mock_session, mock_fund_realized):
+        """Test that funds with tax statements after end_date return True."""
+        # Arrange
+        mock_tax_statements = [
+            FundTaxStatementFactory.build(
+                fund_id=mock_fund_realized.id,
+                tax_payment_date=date(2024, 1, 15)  # After end_date of 2023-12-31
+            )
+        ]
+        
+        with patch('src.fund.services.fund_status_service.FundTaxStatementRepository') as mock_repo_class:
+            mock_repo = mock_repo_class.return_value
+            mock_repo.get_fund_tax_statements.return_value = mock_tax_statements
+
+            # Act
+            result = service._is_final_tax_statement_received(mock_fund_realized, mock_session)
+
             # Assert
             assert result is True
-            mock_repo.get_by_fund_after_date.assert_called_once_with(realized_fund.id, realized_fund.end_date, mock_session)
-    
-    def test_is_final_tax_statement_received_with_no_tax_statements_after_end_date(self, service, realized_fund, mock_session):
-        """Test that funds with no tax statements after end date return False."""
+            mock_repo.get_fund_tax_statements.assert_called_once_with(
+                fund_id=mock_fund_realized.id,
+                start_tax_payment_date=mock_fund_realized.end_date,
+                session=mock_session
+            )
+
+    def test_is_final_tax_statement_received_without_tax_statements_after_end_date_returns_false(self, service, mock_session, mock_fund_realized):
+        """Test that funds without tax statements after end_date return False."""
         # Arrange
-        realized_fund.status = FundStatus.REALIZED
-        realized_fund.end_date = date(2020, 12, 31)
-        
-        with patch('src.fund.repositories.TaxStatementRepository') as mock_repo_class:
-            mock_repo = Mock()
-            mock_repo_class.return_value = mock_repo
-            mock_repo.get_by_fund_after_date.return_value = []  # No tax statements after end date
-            
+        with patch('src.fund.services.fund_status_service.FundTaxStatementRepository') as mock_repo_class:
+            mock_repo = mock_repo_class.return_value
+            mock_repo.get_fund_tax_statements.return_value = []
+
             # Act
-            result = service._is_final_tax_statement_received(realized_fund, mock_session)
-            
+            result = service._is_final_tax_statement_received(mock_fund_realized, mock_session)
+
             # Assert
             assert result is False
-            mock_repo.get_by_fund_after_date.assert_called_once_with(realized_fund.id, realized_fund.end_date, mock_session)
-    
-    def test_is_final_tax_statement_received_with_tax_statements_before_end_date(self, service, realized_fund, mock_session):
-        """Test that funds with tax statements before end date return False."""
+            mock_repo.get_fund_tax_statements.assert_called_once_with(
+                fund_id=mock_fund_realized.id,
+                start_tax_payment_date=mock_fund_realized.end_date,
+                session=mock_session
+            )
+
+    def test_is_final_tax_statement_received_with_tax_statements_before_end_date_returns_false(self, service, mock_session, mock_fund_realized):
+        """Test that funds with tax statements before end_date return False."""
         # Arrange
-        realized_fund.status = FundStatus.REALIZED
-        realized_fund.end_date = date(2020, 12, 31)
-        
-        # Mock tax statements before end date
-        mock_tax_statement = Mock()
-        mock_tax_statement.tax_payment_date = date(2020, 5, 15)  # Before end date
-        
-        with patch('src.fund.repositories.TaxStatementRepository') as mock_repo_class:
-            mock_repo = Mock()
-            mock_repo_class.return_value = mock_repo
-            mock_repo.get_by_fund_after_date.return_value = []  # Repository filters correctly, returns empty
-            
+        # The repository should return empty list when no tax statements match the criteria
+        with patch('src.fund.services.fund_status_service.FundTaxStatementRepository') as mock_repo_class:
+            mock_repo = mock_repo_class.return_value
+            mock_repo.get_fund_tax_statements.return_value = []  # No tax statements after end_date
+
             # Act
-            result = service._is_final_tax_statement_received(realized_fund, mock_session)
-            
+            result = service._is_final_tax_statement_received(mock_fund_realized, mock_session)
+
             # Assert
             assert result is False
-            mock_repo.get_by_fund_after_date.assert_called_once_with(realized_fund.id, realized_fund.end_date, mock_session)
+
+    ################################################################################
+    # Test edge cases and error handling
+    ################################################################################
+
+    def test_update_status_after_equity_event_negative_equity_balance(self, service, mock_session, mock_fund_active):
+        """Test that fund transitions from ACTIVE to REALIZED when equity balance < 0."""
+        # Arrange
+        mock_fund_active.current_equity_balance = -100.0
+        
+        with patch.object(service, '_is_final_tax_statement_received', return_value=False):
+            # Act
+            result = service.update_status_after_equity_event(mock_fund_active, mock_session)
+
+            # Assert
+            assert result is not None
+            assert len(result) == 1
+            assert mock_fund_active.status == FundStatus.REALIZED
+
+    def test_update_status_after_equity_event_without_session(self, service, mock_fund_active):
+        """Test that methods work without session parameter."""
+        # Arrange
+        mock_fund_active.current_equity_balance = 0.0
+        
+        with patch.object(service, '_is_final_tax_statement_received', return_value=False):
+            # Act
+            result = service.update_status_after_equity_event(mock_fund_active)
+
+            # Assert
+            assert result is not None
+            assert len(result) == 1
+            assert mock_fund_active.status == FundStatus.REALIZED
+
+    def test_update_status_after_tax_statement_without_session(self, service, mock_fund_realized):
+        """Test that tax statement method works without session parameter."""
+        with patch.object(service, '_is_final_tax_statement_received', return_value=True):
+            # Act
+            result = service.update_status_after_tax_statement(mock_fund_realized)
+
+            # Assert
+            assert result is not None
+            assert len(result) == 1
+            assert mock_fund_realized.status == FundStatus.COMPLETED

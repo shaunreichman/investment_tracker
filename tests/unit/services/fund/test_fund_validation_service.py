@@ -1,1273 +1,578 @@
 """
-Targeted tests for fund validation service.
-Tests focus on the current validation logic in the service.
+Fund Validation Service Unit Tests.
+
+This module tests the FundValidationService class, focusing on business rule validation
+and error handling. Tests are precise and focused on validation logic without testing
+repository or model functionality directly.
+
+Test Coverage:
+- Fund deletion validation with dependency checking
+- Fund event creation validation routing and business rules
+- Capital call validation (fund type, commitment amount)
+- Return of capital validation (fund type, equity balance)
+- Unit purchase validation (fund type)
+- Unit sale validation (fund type, available units)
+- NAV update validation (fund type)
+- Distribution validation (no business rules)
+- Tax statement deletion validation (no business rules)
+- Error handling and edge cases
 """
 
 import pytest
 from unittest.mock import Mock, patch
-from datetime import date
+from sqlalchemy.orm import Session
+
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundTrackingType, DistributionType
+from src.fund.enums.fund_enums import FundTrackingType
+from src.fund.enums.fund_event_enums import EventType
+from tests.factories.fund_factories import FundFactory, FundEventFactory, FundTaxStatementFactory
 
 
 class TestFundValidationService:
-    """Test fund validation service validation logic."""
-    
-    def setup_method(self):
-        """Set up test fixtures."""
-        # Mock repositories with minimal setup
-        with patch('src.fund.services.fund_validation_service.FundEventRepository') as mock_fund_event_repo, \
-             patch('src.fund.services.fund_validation_service.TaxStatementRepository') as mock_tax_statement_repo, \
-             patch('src.fund.services.fund_validation_service.CapitalEventRepository') as mock_capital_event_repo, \
-             patch('src.fund.services.fund_validation_service.DomainEventRepository') as mock_domain_event_repo:
+    """Test suite for FundValidationService."""
+
+    @pytest.fixture
+    def service(self):
+        """Create a FundValidationService instance for testing."""
+        return FundValidationService()
+
+    @pytest.fixture
+    def mock_session(self):
+        """Create a mock database session."""
+        return Mock(spec=Session)
+
+    @pytest.fixture
+    def mock_fund(self):
+        """Mock fund instance."""
+        return FundFactory.build(
+            id=1, 
+            name='Test Fund',
+            tracking_type=FundTrackingType.COST_BASED,
+            commitment_amount=100000.0,
+            current_equity_balance=50000.0,
+            current_units=1000.0
+        )
+
+    @pytest.fixture
+    def mock_fund_events(self):
+        """Mock fund events list."""
+        return [FundEventFactory.build() for _ in range(2)]
+
+    @pytest.fixture
+    def mock_tax_statements(self):
+        """Mock tax statements list."""
+        return [FundTaxStatementFactory.build() for _ in range(1)]
+
+    ################################################################################
+    # Test validate_fund_deletion method
+    ################################################################################
+
+    def test_validate_fund_deletion_success_when_no_dependencies(self, service, mock_session, mock_fund):
+        """Test successful fund deletion validation when no dependencies exist."""
+        # Arrange
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_events, \
+             patch.object(service.fund_tax_statement_repository, 'get_fund_tax_statements', return_value=[]) as mock_tax:
             
-            self.mock_fund_event_repo = mock_fund_event_repo.return_value
-            self.mock_tax_statement_repo = mock_tax_statement_repo.return_value
-            self.mock_capital_event_repo = mock_capital_event_repo.return_value
-            self.mock_domain_event_repo = mock_domain_event_repo.return_value
+            # Act
+            result = service.validate_fund_deletion(mock_fund, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_events.assert_called_once_with(mock_session, fund_ids=[mock_fund.id])
+            mock_tax.assert_called_once_with(fund_id=mock_fund.id, session=mock_session)
+
+    def test_validate_fund_deletion_fails_when_fund_events_exist(self, service, mock_session, mock_fund, mock_fund_events):
+        """Test fund deletion validation fails when fund events exist."""
+        # Arrange
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_fund_events) as mock_events, \
+             patch.object(service.fund_tax_statement_repository, 'get_fund_tax_statements', return_value=[]) as mock_tax:
             
-            self.validation_service = FundValidationService()
-            self.mock_session = Mock()
-    
-    def test_validate_fund_deletion_success_no_events(self):
-        """Test successful validation when fund has no events."""
+            # Act
+            result = service.validate_fund_deletion(mock_fund, mock_session)
+
+            # Assert
+            assert 'fund_events' in result
+            assert len(result['fund_events']) == 1
+            assert "Cannot delete fund with 2 fund events" in result['fund_events'][0]
+            assert "Fund must have 0 events to be deleted" in result['fund_events'][0]
+
+    def test_validate_fund_deletion_fails_when_tax_statements_exist(self, service, mock_session, mock_fund, mock_tax_statements):
+        """Test fund deletion validation fails when tax statements exist."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.id = 1
-        
-        # Mock repository responses
-        self.mock_fund_event_repo.get_event_count_by_fund.return_value = 0
-        self.mock_tax_statement_repo.get_statement_count_by_fund.return_value = 0
-        self.mock_domain_event_repo.get_event_count_by_fund.return_value = 0
-        
-        # Act
-        with patch('src.fund.services.fund_validation_service.DomainEventRepository') as mock_domain_event_repo_class:
-            mock_domain_event_repo_class.return_value = self.mock_domain_event_repo
-            errors = self.validation_service.validate_fund_deletion(fund, self.mock_session)
-        
-        # Assert
-        assert errors == {}
-        
-        # Verify repository calls
-        self.mock_fund_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
-        self.mock_tax_statement_repo.get_statement_count_by_fund.assert_called_once_with(1, self.mock_session)
-        self.mock_domain_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
-    
-    def test_validate_fund_deletion_fails_with_events(self):
-        """Test validation fails when fund has events."""
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_events, \
+             patch.object(service.fund_tax_statement_repository, 'get_fund_tax_statements', return_value=mock_tax_statements) as mock_tax:
+            
+            # Act
+            result = service.validate_fund_deletion(mock_fund, mock_session)
+
+            # Assert
+            assert 'tax_statements' in result
+            assert len(result['tax_statements']) == 1
+            assert "Cannot delete fund with 1 tax statements" in result['tax_statements'][0]
+            assert "Fund must have 0 tax statements to be deleted" in result['tax_statements'][0]
+
+    def test_validate_fund_deletion_fails_when_both_dependencies_exist(self, service, mock_session, mock_fund, mock_fund_events, mock_tax_statements):
+        """Test fund deletion validation fails when both fund events and tax statements exist."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.id = 1
-        
-        # Mock repository responses
-        self.mock_fund_event_repo.get_event_count_by_fund.return_value = 2
-        self.mock_tax_statement_repo.get_statement_count_by_fund.return_value = 0
-        self.mock_domain_event_repo.get_event_count_by_fund.return_value = 0
-        
-        # Act
-        with patch('src.fund.services.fund_validation_service.DomainEventRepository') as mock_domain_event_repo_class:
-            mock_domain_event_repo_class.return_value = self.mock_domain_event_repo
-            errors = self.validation_service.validate_fund_deletion(fund, self.mock_session)
-        
-        # Assert
-        assert 'fund_events' in errors
-        assert 'Cannot delete fund with 2 fund events' in errors['fund_events'][0]
-        
-        # Verify repository calls
-        self.mock_fund_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
-    
-    def test_validate_fund_deletion_fails_with_tax_statements(self):
-        """Test validation fails when fund has tax statements."""
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_fund_events) as mock_events, \
+             patch.object(service.fund_tax_statement_repository, 'get_fund_tax_statements', return_value=mock_tax_statements) as mock_tax:
+            
+            # Act
+            result = service.validate_fund_deletion(mock_fund, mock_session)
+
+            # Assert
+            assert 'fund_events' in result
+            assert 'tax_statements' in result
+            assert len(result['fund_events']) == 1
+            assert len(result['tax_statements']) == 1
+
+    ################################################################################
+    # Test validate_fund_event_creation method
+    ################################################################################
+
+    def test_validate_fund_event_creation_routes_to_capital_call_validation(self, service, mock_session):
+        """Test that fund event creation routes to capital call validation."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.id = 1
+        event_data = {'event_type': EventType.CAPITAL_CALL, 'tracking_type': FundTrackingType.COST_BASED}
         
-        # Mock repository responses
-        self.mock_fund_event_repo.get_event_count_by_fund.return_value = 0
-        self.mock_tax_statement_repo.get_statement_count_by_fund.return_value = 1
-        self.mock_domain_event_repo.get_event_count_by_fund.return_value = 0
-        
-        # Act
-        with patch('src.fund.services.fund_validation_service.DomainEventRepository') as mock_domain_event_repo_class:
-            mock_domain_event_repo_class.return_value = self.mock_domain_event_repo
-            errors = self.validation_service.validate_fund_deletion(fund, self.mock_session)
-        
-        # Assert
-        assert 'tax_statements' in errors
-        assert 'Cannot delete fund with 1 tax statements' in errors['tax_statements'][0]
-        
-        # Verify repository calls
-        self.mock_tax_statement_repo.get_statement_count_by_fund.assert_called_once_with(1, self.mock_session)
-    
-    def test_validate_fund_deletion_fails_with_domain_events(self):
-        """Test validation fails when fund has domain events."""
+        with patch.object(service, 'validate_capital_call', return_value={}) as mock_validate:
+            # Act
+            result = service.validate_fund_event_creation(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_validate.assert_called_once_with(event_data, mock_session)
+
+    def test_validate_fund_event_creation_routes_to_return_of_capital_validation(self, service, mock_session):
+        """Test that fund event creation routes to return of capital validation."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.id = 1
+        event_data = {'event_type': EventType.RETURN_OF_CAPITAL, 'tracking_type': FundTrackingType.COST_BASED}
         
-        # Mock repository responses
-        self.mock_fund_event_repo.get_event_count_by_fund.return_value = 0
-        self.mock_tax_statement_repo.get_statement_count_by_fund.return_value = 0
-        self.mock_domain_event_repo.get_event_count_by_fund.return_value = 3
-        
-        # Act
-        with patch('src.fund.services.fund_validation_service.DomainEventRepository') as mock_domain_event_repo_class:
-            mock_domain_event_repo_class.return_value = self.mock_domain_event_repo
-            errors = self.validation_service.validate_fund_deletion(fund, self.mock_session)
-        
-        # Assert
-        assert 'domain_events' in errors
-        assert 'Cannot delete fund with 3 domain events' in errors['domain_events'][0]
-        
-        # Verify repository calls
-        self.mock_domain_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
-    
-    def test_validate_fund_deletion_fails_with_multiple_constraints(self):
-        """Test validation fails with multiple constraint violations."""
+        with patch.object(service, 'validate_return_of_capital', return_value={}) as mock_validate:
+            # Act
+            result = service.validate_fund_event_creation(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_validate.assert_called_once_with(event_data, mock_session)
+
+    def test_validate_fund_event_creation_routes_to_unit_purchase_validation(self, service, mock_session):
+        """Test that fund event creation routes to unit purchase validation."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.id = 1
+        event_data = {'event_type': EventType.UNIT_PURCHASE, 'tracking_type': FundTrackingType.NAV_BASED}
         
-        # Mock repository responses
-        self.mock_fund_event_repo.get_event_count_by_fund.return_value = 2
-        self.mock_tax_statement_repo.get_statement_count_by_fund.return_value = 1
-        self.mock_domain_event_repo.get_event_count_by_fund.return_value = 1
-        
-        # Act
-        with patch('src.fund.services.fund_validation_service.DomainEventRepository') as mock_domain_event_repo_class:
-            mock_domain_event_repo_class.return_value = self.mock_domain_event_repo
-            errors = self.validation_service.validate_fund_deletion(fund, self.mock_session)
-        
-        # Assert
-        assert len(errors) == 3
-        assert 'fund_events' in errors
-        assert 'tax_statements' in errors
-        assert 'domain_events' in errors
-        assert 'Cannot delete fund with 2 fund events' in errors['fund_events'][0]
-        assert 'Cannot delete fund with 1 tax statements' in errors['tax_statements'][0]
-        assert 'Cannot delete fund with 1 domain events' in errors['domain_events'][0]
-        
-        # Verify all repository calls
-        self.mock_fund_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
-        self.mock_tax_statement_repo.get_statement_count_by_fund.assert_called_once_with(1, self.mock_session)
-        self.mock_domain_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
-    
-    def test_get_deletion_rules(self):
-        """Test deletion rules are properly defined."""
-        # Act
-        rules = self.validation_service.get_deletion_rules()
-        
-        # Assert
-        assert len(rules) == 3
-        assert "Fund must have 0 fund events to be deleted" in rules
-        assert "Fund must have 0 tax statements to be deleted" in rules
-        assert "Fund must have 0 domain events to be deleted" in rules
-    
-    def test_validate_fund_deletion_with_none_values(self):
-        """Test validation handles None values gracefully."""
+        with patch.object(service, 'validate_unit_purchase', return_value={}) as mock_validate:
+            # Act
+            result = service.validate_fund_event_creation(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_validate.assert_called_once_with(event_data, mock_session)
+
+    def test_validate_fund_event_creation_routes_to_unit_sale_validation(self, service, mock_session):
+        """Test that fund event creation routes to unit sale validation."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.id = None  # Invalid fund ID
+        event_data = {'event_type': EventType.UNIT_SALE, 'tracking_type': FundTrackingType.NAV_BASED}
+        
+        with patch.object(service, 'validate_unit_sale', return_value={}) as mock_validate:
+            # Act
+            result = service.validate_fund_event_creation(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_validate.assert_called_once_with(event_data, mock_session)
+
+    def test_validate_fund_event_creation_routes_to_nav_update_validation(self, service, mock_session):
+        """Test that fund event creation routes to NAV update validation."""
+        # Arrange
+        event_data = {'event_type': EventType.NAV_UPDATE, 'tracking_type': FundTrackingType.NAV_BASED}
+        
+        with patch.object(service, 'validate_nav_update', return_value={}) as mock_validate:
+            # Act
+            result = service.validate_fund_event_creation(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_validate.assert_called_once_with(event_data, mock_session)
+
+    def test_validate_fund_event_creation_routes_to_distribution_validation(self, service, mock_session):
+        """Test that fund event creation routes to distribution validation."""
+        # Arrange
+        event_data = {'event_type': EventType.DISTRIBUTION, 'tracking_type': FundTrackingType.COST_BASED}
+        
+        with patch.object(service, 'validate_distribution', return_value={}) as mock_validate:
+            # Act
+            result = service.validate_fund_event_creation(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_validate.assert_called_once_with(event_data, mock_session)
+
+    def test_validate_fund_event_creation_raises_error_for_invalid_event_type(self, service, mock_session):
+        """Test that fund event creation raises ValueError for invalid event type."""
+        # Arrange
+        event_data = {'event_type': 'INVALID_TYPE', 'tracking_type': FundTrackingType.COST_BASED}
         
         # Act & Assert
-        with pytest.raises((TypeError, AttributeError)):
-            self.validation_service.validate_fund_deletion(fund, self.mock_session)
-    
-    def test_validate_fund_deletion_with_empty_lists(self):
-        """Test validation succeeds with empty lists."""
+        with pytest.raises(ValueError, match="Invalid event type: INVALID_TYPE"):
+            service.validate_fund_event_creation(event_data, mock_session)
+
+    ################################################################################
+    # Test validate_capital_call method
+    ################################################################################
+
+    def test_validate_capital_call_success_for_cost_based_fund(self, service, mock_session, mock_fund):
+        """Test successful capital call validation for cost-based fund."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.id = 1
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'amount': 50000.0
+        }
         
-        # Mock repository responses for empty counts
-        self.mock_fund_event_repo.get_event_count_by_fund.return_value = 0
-        self.mock_tax_statement_repo.get_statement_count_by_fund.return_value = 0
-        self.mock_domain_event_repo.get_event_count_by_fund.return_value = 0
-        
-        # Act
-        with patch('src.fund.services.fund_validation_service.DomainEventRepository') as mock_domain_event_repo_class:
-            mock_domain_event_repo_class.return_value = self.mock_domain_event_repo
-            errors = self.validation_service.validate_fund_deletion(fund, self.mock_session)
-        
-        # Assert
-        assert errors == {}
-        
-        # Verify repository calls
-        self.mock_fund_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
-        self.mock_tax_statement_repo.get_statement_count_by_fund.assert_called_once_with(1, self.mock_session)
-        self.mock_domain_event_repo.get_event_count_by_fund.assert_called_once_with(1, self.mock_session)
-    # ==================== CAPITAL CALL VALIDATION TESTS ====================
-    
-    def test_validate_capital_call_success(self):
-        """Test successful capital call validation."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 50000.0
-        call_date = date(2024, 3, 15)
-        reference_number = "CC_001"
-        
-        # Act
-        errors = self.validation_service.validate_capital_call(
-            fund, amount, call_date, reference_number, self.mock_session
-        )
-        
-        # Assert
-        assert errors == {}
-    
-    def test_validate_capital_call_invalid_amount_zero(self):
-        """Test capital call validation with zero amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 0.0
-        call_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_capital_call(
-            fund, amount, call_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'amount' in errors
-        assert "Capital call amount must be a positive number" in errors['amount'][0]
-    
-    def test_validate_capital_call_invalid_amount_negative(self):
-        """Test capital call validation with negative amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = -1000.0
-        call_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_capital_call(
-            fund, amount, call_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'amount' in errors
-        assert "Capital call amount must be a positive number" in errors['amount'][0]
-    
-    def test_validate_capital_call_missing_date(self):
-        """Test capital call validation with missing date."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 50000.0
-        call_date = None
-        
-        # Act
-        errors = self.validation_service.validate_capital_call(
-            fund, amount, call_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'call_date' in errors
-        assert "Capital call date is required" in errors['call_date'][0]
-    
-    def test_validate_capital_call_wrong_fund_type(self):
-        """Test capital call validation with NAV-based fund."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 50000.0
-        call_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_capital_call(
-            fund, amount, call_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'fund_type' in errors
-        assert "Capital calls are only applicable for cost-based funds" in errors['fund_type'][0]
-    
-    def test_validate_capital_call_multiple_errors(self):
-        """Test capital call validation with multiple errors."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED  # Wrong fund type
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = -1000.0  # Negative amount
-        call_date = None  # Missing date
-        
-        # Act
-        errors = self.validation_service.validate_capital_call(
-            fund, amount, call_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert len(errors) == 3
-        assert 'amount' in errors
-        assert 'call_date' in errors
-        assert 'fund_type' in errors
-        assert "Capital call amount must be a positive number" in errors['amount'][0]
-        assert "Capital call date is required" in errors['call_date'][0]
-        assert "Capital calls are only applicable for cost-based funds" in errors['fund_type'][0]
-    
-    def test_validate_capital_call_exceeds_commitment(self):
-        """Test capital call validation when amount exceeds remaining commitment."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=25000.0)  # Only 25k remaining
-        amount = 50000.0  # Trying to call 50k
-        call_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_capital_call(
-            fund, amount, call_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'amount' in errors
-        assert "Cannot call more capital than remaining commitment" in errors['amount'][0]
-    
-    # ==================== RETURN OF CAPITAL VALIDATION TESTS ====================
-    
-    def test_validate_return_of_capital_success(self):
-        """Test successful return of capital validation."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 25000.0
-        return_date = date(2024, 9, 30)
-        reference_number = "ROC_001"
-        
-        # Act
-        errors = self.validation_service.validate_return_of_capital(
-            fund, amount, return_date, reference_number, self.mock_session
-        )
-        
-        # Assert
-        assert errors == {}
-    
-    def test_validate_return_of_capital_invalid_amount_zero(self):
-        """Test return of capital validation with zero amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 0.0
-        return_date = date(2024, 9, 30)
-        
-        # Act
-        errors = self.validation_service.validate_return_of_capital(
-            fund, amount, return_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'amount' in errors
-        assert "Return amount must be a positive number" in errors['amount'][0]
-    
-    def test_validate_return_of_capital_invalid_amount_negative(self):
-        """Test return of capital validation with negative amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = -5000.0
-        return_date = date(2024, 9, 30)
-        
-        # Act
-        errors = self.validation_service.validate_return_of_capital(
-            fund, amount, return_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'amount' in errors
-        assert "Return amount must be a positive number" in errors['amount'][0]
-    
-    def test_validate_return_of_capital_missing_date(self):
-        """Test return of capital validation with missing date."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 25000.0
-        return_date = None
-        
-        # Act
-        errors = self.validation_service.validate_return_of_capital(
-            fund, amount, return_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'return_date' in errors
-        assert "Return date is required" in errors['return_date'][0]
-    
-    def test_validate_return_of_capital_wrong_fund_type(self):
-        """Test return of capital validation with NAV-based fund."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        amount = 25000.0
-        return_date = date(2024, 9, 30)
-        
-        # Act
-        errors = self.validation_service.validate_return_of_capital(
-            fund, amount, return_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'fund_type' in errors
-        assert "Returns of capital are only applicable for cost-based funds" in errors['fund_type'][0]
-    
-    def test_validate_return_of_capital_multiple_errors(self):
-        """Test return of capital validation with multiple errors."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED  # Wrong fund type
-        amount = -5000.0  # Negative amount
-        return_date = None  # Missing date
-        
-        # Act
-        errors = self.validation_service.validate_return_of_capital(
-            fund, amount, return_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert len(errors) == 3
-        assert 'amount' in errors
-        assert 'return_date' in errors
-        assert 'fund_type' in errors
-        assert "Return amount must be a positive number" in errors['amount'][0]
-        assert "Return date is required" in errors['return_date'][0]
-        assert "Returns of capital are only applicable for cost-based funds" in errors['fund_type'][0]
-    
-    def test_validate_capital_call_with_none_session(self):
-        """Test capital call validation handles None session gracefully."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 50000.0
-        call_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_capital_call(
-            fund, amount, call_date, None, None
-        )
-        
-        # Assert
-        assert errors == {}
-    
-    def test_validate_return_of_capital_with_none_session(self):
-        """Test return of capital validation handles None session gracefully."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        amount = 25000.0
-        return_date = date(2024, 9, 30)
-        
-        # Act
-        errors = self.validation_service.validate_return_of_capital(
-            fund, amount, return_date, None, None
-        )
-        
-        # Assert
-        assert errors == {}
-    
-    # ==================== UNIT PURCHASE VALIDATION TESTS ====================
-    
-    def test_validate_unit_purchase_success(self):
-        """Test successful unit purchase validation."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        units = 100.0
-        price = 25.50
-        purchase_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_purchase(
-            fund, units, price, purchase_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert errors == {}
-    
-    def test_validate_unit_purchase_invalid_units(self):
-        """Test unit purchase validation with invalid units."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        units = 0.0  # Invalid units
-        price = 25.50
-        purchase_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_purchase(
-            fund, units, price, purchase_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'units' in errors
-        assert "Units must be a positive number" in errors['units'][0]
-    
-    def test_validate_unit_purchase_invalid_price(self):
-        """Test unit purchase validation with invalid price."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        units = 100.0
-        price = -25.50  # Invalid price
-        purchase_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_purchase(
-            fund, units, price, purchase_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'price' in errors
-        assert "Unit price must be a positive number" in errors['price'][0]
-    
-    def test_validate_unit_purchase_missing_date(self):
-        """Test unit purchase validation with missing date."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        units = 100.0
-        price = 25.50
-        purchase_date = None
-        
-        # Act
-        errors = self.validation_service.validate_unit_purchase(
-            fund, units, price, purchase_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'purchase_date' in errors
-        assert "Purchase date is required" in errors['purchase_date'][0]
-    
-    def test_validate_unit_purchase_wrong_fund_type(self):
-        """Test unit purchase validation with cost-based fund."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        units = 100.0
-        price = 25.50
-        purchase_date = date(2024, 3, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_purchase(
-            fund, units, price, purchase_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'fund_type' in errors
-        assert "Unit purchases are only applicable for NAV-based funds" in errors['fund_type'][0]
-    
-    # ==================== UNIT SALE VALIDATION TESTS ====================
-    
-    def test_validate_unit_sale_success(self):
-        """Test successful unit sale validation."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.current_units = 1000.0
-        units = 100.0
-        price = 25.50
-        sale_date = date(2024, 6, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert errors == {}
-    
-    def test_validate_unit_sale_insufficient_units(self):
-        """Test unit sale validation with insufficient units."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.current_units = 50.0  # Less than sale amount
-        units = 100.0
-        price = 25.50
-        sale_date = date(2024, 6, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'units' in errors
-        assert "Insufficient units: trying to sell 100.0 but only 50.0 available" in errors['units'][0]
-    
-    def test_validate_unit_sale_wrong_fund_type(self):
-        """Test unit sale validation with cost-based fund."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        fund.current_units = 1000.0
-        units = 100.0
-        price = 25.50
-        sale_date = date(2024, 6, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'fund_type' in errors
-        assert "Unit sales are only applicable for NAV-based funds" in errors['fund_type'][0]
-    
-    def test_validate_unit_sale_zero_available_units(self):
-        """Test unit sale when fund has 0 available units."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.current_units = 0.0  # No units available
-        units = 100.0
-        price = 25.50
-        sale_date = date(2024, 6, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'units' in errors
-        assert "Insufficient units: trying to sell 100.0 but only 0.0 available" in errors['units'][0]
-    
-    def test_validate_unit_sale_invalid_price(self):
-        """Test unit sale validation with negative price."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.current_units = 1000.0
-        units = 100.0
-        price = -25.50  # Negative price
-        sale_date = date(2024, 6, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'price' in errors
-        assert "Unit price must be a positive number" in errors['price'][0]
-    
-    def test_validate_unit_sale_zero_price(self):
-        """Test unit sale validation with zero price."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.current_units = 1000.0
-        units = 100.0
-        price = 0.0  # Zero price
-        sale_date = date(2024, 6, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'price' in errors
-        assert "Unit price must be a positive number" in errors['price'][0]
-    
-    def test_validate_unit_sale_zero_units(self):
-        """Test unit sale validation with zero units."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.current_units = 1000.0
-        units = 0.0  # Zero units
-        price = 25.50
-        sale_date = date(2024, 6, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'units' in errors
-        assert "Units must be a positive number" in errors['units'][0]
-    
-    def test_validate_unit_sale_negative_units(self):
-        """Test unit sale validation with negative units."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.current_units = 1000.0
-        units = -100.0  # Negative units
-        price = 25.50
-        sale_date = date(2024, 6, 15)
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'units' in errors
-        assert "Units must be a positive number" in errors['units'][0]
-    
-    def test_validate_unit_sale_missing_date(self):
-        """Test unit sale validation with missing date."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.current_units = 1000.0
-        units = 100.0
-        price = 25.50
-        sale_date = None  # Missing date
-        
-        # Act
-        errors = self.validation_service.validate_unit_sale(
-            fund, units, price, sale_date, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'sale_date' in errors
-        assert "Sale date is required" in errors['sale_date'][0]
-    
-    # ==================== NAV UPDATE VALIDATION TESTS ====================
-    
-    def test_validate_nav_update_success(self):
-        """Test successful NAV update validation."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.id = 1
-        nav_per_share = 25.50
-        update_date = date(2024, 3, 15)
-        
-        # Mock no duplicate events
-        with patch.object(self.validation_service, '_check_duplicate_nav_event', return_value=None):
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
             # Act
-            errors = self.validation_service.validate_nav_update(
-                fund, nav_per_share, update_date, None, self.mock_session
-            )
-        
-        # Assert
-        assert errors == {}
-    
-    def test_validate_nav_update_invalid_nav(self):
-        """Test NAV update validation with invalid NAV."""
+            result = service.validate_capital_call(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_get_fund.assert_called_once_with(1, mock_session)
+
+    def test_validate_capital_call_fails_for_nav_based_fund(self, service, mock_session, mock_fund):
+        """Test capital call validation fails for NAV-based fund."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        nav_per_share = 0.0  # Invalid NAV
-        update_date = date(2024, 3, 15)
+        event_data = {
+            'tracking_type': FundTrackingType.NAV_BASED,
+            'fund_id': 1,
+            'amount': 50000.0
+        }
         
-        # Mock no duplicate events
-        with patch.object(self.validation_service, '_check_duplicate_nav_event', return_value=None):
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
             # Act
-            errors = self.validation_service.validate_nav_update(
-                fund, nav_per_share, update_date, None, self.mock_session
-            )
-        
-        # Assert
-        assert 'nav_per_share' in errors
-        assert "NAV per share must be a positive number" in errors['nav_per_share'][0]
-    
-    def test_validate_nav_update_missing_date(self):
-        """Test NAV update validation with missing date."""
+            result = service.validate_capital_call(event_data, mock_session)
+
+            # Assert
+            assert 'fund_type' in result
+            assert "Capital calls are only applicable for cost-based funds" in result['fund_type']
+
+    def test_validate_capital_call_fails_when_amount_exceeds_commitment(self, service, mock_session, mock_fund):
+        """Test capital call validation fails when amount exceeds commitment."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        nav_per_share = 25.50
-        update_date = None
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'amount': 150000.0  # Exceeds commitment_amount of 100000.0
+        }
         
-        # Mock no duplicate events
-        with patch.object(self.validation_service, '_check_duplicate_nav_event', return_value=None):
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
             # Act
-            errors = self.validation_service.validate_nav_update(
-                fund, nav_per_share, update_date, None, self.mock_session
-            )
-        
-        # Assert
-        assert 'update_date' in errors
-        assert "Update date is required" in errors['update_date'][0]
-    
-    def test_validate_nav_update_wrong_fund_type(self):
-        """Test NAV update validation with cost-based fund."""
+            result = service.validate_capital_call(event_data, mock_session)
+
+            # Assert
+            assert 'amount' in result
+            assert "Cannot call more capital than remaining commitment" in result['amount']
+
+    def test_validate_capital_call_raises_error_when_fund_not_found(self, service, mock_session):
+        """Test capital call validation raises error when fund not found."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.COST_BASED
-        fund.commitment_amount = 100000.0
-        fund.get_remaining_commitment = Mock(return_value=75000.0)
-        nav_per_share = 25.50
-        update_date = date(2024, 3, 15)
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 999,
+            'amount': 50000.0
+        }
         
-        # Mock no duplicate events
-        with patch.object(self.validation_service, '_check_duplicate_nav_event', return_value=None):
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=None) as mock_get_fund:
+            # Act & Assert
+            with pytest.raises(ValueError, match="Fund not found"):
+                service.validate_capital_call(event_data, mock_session)
+
+    def test_validate_capital_call_success_when_commitment_amount_is_none(self, service, mock_session):
+        """Test capital call validation succeeds when commitment amount is None."""
+        # Arrange
+        mock_fund_no_commitment = FundFactory.build(commitment_amount=None)
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'amount': 50000.0
+        }
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund_no_commitment) as mock_get_fund:
             # Act
-            errors = self.validation_service.validate_nav_update(
-                fund, nav_per_share, update_date, None, self.mock_session
-            )
-        
-        # Assert
-        assert 'fund_type' in errors
-        assert "NAV updates are only applicable for NAV-based funds" in errors['fund_type'][0]
-    
-    def test_validate_nav_update_duplicate_date(self):
-        """Test NAV update validation with duplicate date."""
+            result = service.validate_capital_call(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+
+    ################################################################################
+    # Test validate_return_of_capital method
+    ################################################################################
+
+    def test_validate_return_of_capital_success_for_cost_based_fund(self, service, mock_session, mock_fund):
+        """Test successful return of capital validation for cost-based fund."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.id = 1
-        nav_per_share = 25.50
-        update_date = date(2024, 3, 15)
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'amount': 25000.0
+        }
         
-        # Mock duplicate event
-        duplicate_event = Mock()
-        duplicate_event.event_date = update_date
-        
-        with patch.object(self.validation_service, '_check_duplicate_nav_event', return_value=duplicate_event):
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
             # Act
-            errors = self.validation_service.validate_nav_update(
-                fund, nav_per_share, update_date, None, self.mock_session
-            )
-        
-        # Assert
-        assert 'duplicate' in errors
-        assert "NAV update already exists for 2024-03-15" in errors['duplicate'][0]
-    
-    def test_validate_nav_update_negative_nav(self):
-        """Test NAV update validation with negative NAV value."""
+            result = service.validate_return_of_capital(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_get_fund.assert_called_once_with(1, mock_session)
+
+    def test_validate_return_of_capital_fails_for_nav_based_fund(self, service, mock_session, mock_fund):
+        """Test return of capital validation fails for NAV-based fund."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.id = 1
-        nav_per_share = -25.50  # Negative NAV
-        update_date = date(2024, 3, 15)
+        event_data = {
+            'tracking_type': FundTrackingType.NAV_BASED,
+            'fund_id': 1,
+            'amount': 25000.0
+        }
         
-        # Mock no duplicate events
-        with patch.object(self.validation_service, '_check_duplicate_nav_event', return_value=None):
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
             # Act
-            errors = self.validation_service.validate_nav_update(
-                fund, nav_per_share, update_date, None, self.mock_session
-            )
-        
-        # Assert
-        assert 'nav_per_share' in errors
-        assert "NAV per share must be a positive number" in errors['nav_per_share'][0]
-    
-    def test_validate_nav_update_zero_nav(self):
-        """Test NAV update validation with zero NAV value."""
+            result = service.validate_return_of_capital(event_data, mock_session)
+
+            # Assert
+            assert 'fund_type' in result
+            assert "Returns of capital are only applicable for cost-based funds" in result['fund_type']
+
+    def test_validate_return_of_capital_fails_when_amount_exceeds_equity(self, service, mock_session, mock_fund):
+        """Test return of capital validation fails when amount exceeds equity balance."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.id = 1
-        nav_per_share = 0.0  # Zero NAV
-        update_date = date(2024, 3, 15)
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'amount': 75000.0  # Exceeds current_equity_balance of 50000.0
+        }
         
-        # Mock no duplicate events
-        with patch.object(self.validation_service, '_check_duplicate_nav_event', return_value=None):
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
             # Act
-            errors = self.validation_service.validate_nav_update(
-                fund, nav_per_share, update_date, None, self.mock_session
-            )
-        
-        # Assert
-        assert 'nav_per_share' in errors
-        assert "NAV per share must be a positive number" in errors['nav_per_share'][0]
-    
-    def test_validate_nav_update_missing_date(self):
-        """Test NAV update validation with missing date."""
+            result = service.validate_return_of_capital(event_data, mock_session)
+
+            # Assert
+            assert 'amount' in result
+            assert "Cannot return more capital than remaining equity" in result['amount']
+
+    def test_validate_return_of_capital_raises_error_when_fund_not_found(self, service, mock_session):
+        """Test return of capital validation raises error when fund not found."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        fund.id = 1
-        nav_per_share = 25.50
-        update_date = None  # Missing date
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 999,
+            'amount': 25000.0
+        }
         
-        # Mock no duplicate events
-        with patch.object(self.validation_service, '_check_duplicate_nav_event', return_value=None):
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=None) as mock_get_fund:
+            # Act & Assert
+            with pytest.raises(ValueError, match="Fund not found"):
+                service.validate_return_of_capital(event_data, mock_session)
+
+    def test_validate_return_of_capital_success_when_equity_balance_is_none(self, service, mock_session):
+        """Test return of capital validation succeeds when equity balance is None."""
+        # Arrange
+        mock_fund_no_equity = FundFactory.build(current_equity_balance=None)
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'amount': 25000.0
+        }
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund_no_equity) as mock_get_fund:
             # Act
-            errors = self.validation_service.validate_nav_update(
-                fund, nav_per_share, update_date, None, self.mock_session
-            )
-        
-        # Assert
-        assert 'update_date' in errors
-        assert "Update date is required" in errors['update_date'][0]
-    
-    # ==================== DISTRIBUTION VALIDATION TESTS ====================
-    
-    def test_validate_distribution_simple_success(self):
-        """Test successful simple distribution validation."""
+            result = service.validate_return_of_capital(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+
+    ################################################################################
+    # Test validate_unit_purchase method
+    ################################################################################
+
+    def test_validate_unit_purchase_success_for_nav_based_fund(self, service, mock_session):
+        """Test successful unit purchase validation for NAV-based fund."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INCOME
-        distribution_amount = 1000.0
+        event_data = {
+            'tracking_type': FundTrackingType.NAV_BASED,
+            'fund_id': 1,
+            'units': 100.0
+        }
         
         # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, distribution_amount, False,
-            None, None, None, None, None, self.mock_session
-        )
-        
+        result = service.validate_unit_purchase(event_data, mock_session)
+
         # Assert
-        assert errors == {}
-    
-    def test_validate_distribution_withholding_tax_success(self):
-        """Test successful withholding tax distribution validation."""
+        assert result == {}
+
+    def test_validate_unit_purchase_fails_for_cost_based_fund(self, service, mock_session):
+        """Test unit purchase validation fails for cost-based fund."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
-        gross_interest_amount = 1000.0
-        withholding_tax_amount = 150.0
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'units': 100.0
+        }
         
         # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, None, withholding_tax_amount, None, None, self.mock_session
-        )
-        
+        result = service.validate_unit_purchase(event_data, mock_session)
+
         # Assert
-        assert errors == {}
-    
-    def test_validate_distribution_missing_date(self):
-        """Test distribution validation with missing date."""
+        assert 'fund_type' in result
+        assert "Unit purchases are only applicable for NAV-based funds" in result['fund_type']
+
+    ################################################################################
+    # Test validate_unit_sale method
+    ################################################################################
+
+    def test_validate_unit_sale_success_for_nav_based_fund(self, service, mock_session, mock_fund):
+        """Test successful unit sale validation for NAV-based fund."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = None
-        distribution_type = DistributionType.INCOME
-        distribution_amount = 1000.0
+        event_data = {
+            'tracking_type': FundTrackingType.NAV_BASED,
+            'fund_id': 1,
+            'units': 100.0
+        }
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
+            # Act
+            result = service.validate_unit_sale(event_data, mock_session)
+
+            # Assert
+            assert result == {}
+            mock_get_fund.assert_called_once_with(1, mock_session)
+
+    def test_validate_unit_sale_fails_for_cost_based_fund(self, service, mock_session, mock_fund):
+        """Test unit sale validation fails for cost-based fund."""
+        # Arrange
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'units': 100.0
+        }
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
+            # Act
+            result = service.validate_unit_sale(event_data, mock_session)
+
+            # Assert
+            assert 'fund_type' in result
+            assert "Unit sales are only applicable for NAV-based funds" in result['fund_type']
+
+    def test_validate_unit_sale_fails_when_units_exceed_available(self, service, mock_session, mock_fund):
+        """Test unit sale validation fails when trying to sell more units than available."""
+        # Arrange
+        event_data = {
+            'tracking_type': FundTrackingType.NAV_BASED,
+            'fund_id': 1,
+            'units': 1500.0  # Exceeds current_units of 1000.0
+        }
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund:
+            # Act
+            result = service.validate_unit_sale(event_data, mock_session)
+
+            # Assert
+            assert 'units' in result
+            assert "Insufficient units: trying to sell 1500.0 but only 1000.0 available" in result['units']
+
+    def test_validate_unit_sale_raises_error_when_fund_not_found(self, service, mock_session):
+        """Test unit sale validation raises error when fund not found."""
+        # Arrange
+        event_data = {
+            'tracking_type': FundTrackingType.NAV_BASED,
+            'fund_id': 999,
+            'units': 100.0
+        }
+        
+        with patch.object(service.fund_repository, 'get_fund_by_id', return_value=None) as mock_get_fund:
+            # Act & Assert
+            with pytest.raises(ValueError, match="Fund not found"):
+                service.validate_unit_sale(event_data, mock_session)
+
+    ################################################################################
+    # Test validate_nav_update method
+    ################################################################################
+
+    def test_validate_nav_update_success_for_nav_based_fund(self, service, mock_session):
+        """Test successful NAV update validation for NAV-based fund."""
+        # Arrange
+        event_data = {
+            'tracking_type': FundTrackingType.NAV_BASED,
+            'fund_id': 1,
+            'nav_per_share': 1.25
+        }
         
         # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, distribution_amount, False,
-            None, None, None, None, None, self.mock_session
-        )
-        
+        result = service.validate_nav_update(event_data, mock_session)
+
         # Assert
-        assert 'event_date' in errors
-        assert "Event date is required" in errors['event_date'][0]
-    
-    def test_validate_distribution_missing_type(self):
-        """Test distribution validation with missing type."""
+        assert result == {}
+
+    def test_validate_nav_update_fails_for_cost_based_fund(self, service, mock_session):
+        """Test NAV update validation fails for cost-based fund."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = None
-        distribution_amount = 1000.0
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'nav_per_share': 1.25
+        }
         
         # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, distribution_amount, False,
-            None, None, None, None, None, self.mock_session
-        )
-        
+        result = service.validate_nav_update(event_data, mock_session)
+
         # Assert
-        assert 'distribution_type' in errors
-        assert "Distribution type is required" in errors['distribution_type'][0]
-    
-    def test_validate_distribution_withholding_tax_wrong_type(self):
-        """Test withholding tax distribution with wrong distribution type."""
+        assert 'fund_type' in result
+        assert "NAV updates are only applicable for NAV-based funds" in result['fund_type']
+
+    ################################################################################
+    # Test validate_distribution method
+    ################################################################################
+
+    def test_validate_distribution_always_succeeds(self, service, mock_session):
+        """Test distribution validation always succeeds (no business rules)."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INCOME  # Wrong type for withholding tax
-        gross_interest_amount = 1000.0
-        withholding_tax_amount = 150.0
+        event_data = {
+            'tracking_type': FundTrackingType.COST_BASED,
+            'fund_id': 1,
+            'amount': 10000.0
+        }
         
         # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, None, withholding_tax_amount, None, None, self.mock_session
-        )
-        
+        result = service.validate_distribution(event_data, mock_session)
+
         # Assert
-        assert 'distribution_type' in errors
-        assert "Withholding tax is only valid for INTEREST distributions" in errors['distribution_type'][0]
-    
-    def test_validate_distribution_withholding_tax_no_amounts(self):
-        """Test withholding tax distribution with no amount fields."""
+        assert result == {}
+
+    ################################################################################
+    # Test validate_fund_tax_statement_deletion method
+    ################################################################################
+
+    def test_validate_fund_tax_statement_deletion_always_succeeds(self, service, mock_session):
+        """Test fund tax statement deletion validation always succeeds (no business rules)."""
         # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
+        fund_tax_statement_id = 1
         
         # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            None, None, None, None, None, self.mock_session
-        )
-        
+        result = service.validate_fund_tax_statement_deletion(fund_tax_statement_id, mock_session)
+
         # Assert
-        assert 'amount' in errors
-        assert "For withholding tax distributions, exactly one of gross_interest_amount OR net_interest_amount must be provided" in errors['amount'][0]
-    
-    def test_validate_distribution_withholding_tax_both_amounts(self):
-        """Test withholding tax distribution with both amount fields."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
-        gross_interest_amount = 1000.0
-        net_interest_amount = 850.0
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, net_interest_amount, None, None, None, self.mock_session
-        )
-        
+        assert result == {}
+
+    ################################################################################
+    # Test service initialization
+    ################################################################################
+
+    def test_service_initializes_dependencies(self, service):
+        """Test that service initializes with correct dependencies."""
         # Assert
-        assert 'amount' in errors
-        assert "For withholding tax distributions, only one of gross_interest_amount OR net_interest_amount can be provided (not both)" in errors['amount'][0]
-    
-    def test_validate_distribution_simple_with_withholding_fields(self):
-        """Test simple distribution with withholding tax fields provided."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INCOME
-        distribution_amount = 1000.0
-        gross_interest_amount = 1000.0  # Should not be provided for simple distribution
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, distribution_amount, False,
-            gross_interest_amount, None, None, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'withholding_tax' in errors
-        assert "Withholding tax fields should not be provided for simple distributions" in errors['withholding_tax'][0]
-    
-    def test_validate_distribution_simple_invalid_amount(self):
-        """Test simple distribution with invalid amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INCOME
-        distribution_amount = -1000.0  # Negative amount
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, distribution_amount, False,
-            None, None, None, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'distribution_amount' in errors
-        assert "Distribution amount must be positive" in errors['distribution_amount'][0]
-    
-    def test_validate_distribution_simple_zero_amount(self):
-        """Test simple distribution with zero amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INCOME
-        distribution_amount = 0.0  # Zero amount (falsy value)
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, distribution_amount, False,
-            None, None, None, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'distribution_amount' in errors
-        assert "Distribution amount is required for simple distributions" in errors['distribution_amount'][0]
-    
-    def test_validate_distribution_simple_missing_amount(self):
-        """Test simple distribution with missing amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INCOME
-        distribution_amount = None  # Missing amount
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, distribution_amount, False,
-            None, None, None, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'distribution_amount' in errors
-        assert "Distribution amount is required for simple distributions" in errors['distribution_amount'][0]
-    
-    def test_validate_distribution_withholding_tax_invalid_rate(self):
-        """Test withholding tax distribution with invalid tax rate."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
-        gross_interest_amount = 1000.0
-        withholding_tax_rate = 150.0  # Invalid rate > 100%
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, None, None, withholding_tax_rate, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'withholding_tax_rate' in errors
-        assert "withholding_tax_rate must be between 0% and 100%" in errors['withholding_tax_rate'][0]
-    
-    def test_validate_distribution_withholding_tax_negative_rate(self):
-        """Test withholding tax distribution with negative tax rate."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
-        gross_interest_amount = 1000.0
-        withholding_tax_rate = -10.0  # Negative rate
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, None, None, withholding_tax_rate, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'withholding_tax_rate' in errors
-        assert "withholding_tax_rate must be between 0% and 100%" in errors['withholding_tax_rate'][0]
-    
-    def test_validate_distribution_withholding_tax_invalid_amount(self):
-        """Test withholding tax distribution with invalid tax amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
-        gross_interest_amount = 1000.0
-        withholding_tax_amount = -150.0  # Negative tax amount
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, None, withholding_tax_amount, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'withholding_tax_amount' in errors
-        assert "withholding_tax_amount must be positive" in errors['withholding_tax_amount'][0]
-    
-    def test_validate_distribution_withholding_tax_zero_amount(self):
-        """Test withholding tax distribution with zero tax amount."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
-        gross_interest_amount = 1000.0
-        withholding_tax_amount = 0.0  # Zero tax amount
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, None, withholding_tax_amount, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'withholding_tax_amount' in errors
-        assert "withholding_tax_amount must be positive" in errors['withholding_tax_amount'][0]
-    
-    def test_validate_distribution_withholding_tax_invalid_numeric_fields(self):
-        """Test withholding tax distribution with invalid numeric field values."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
-        gross_interest_amount = "invalid"  # Invalid string value
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, None, None, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'gross_interest_amount' in errors
-        assert "gross_interest_amount must be a valid number" in errors['gross_interest_amount'][0]
-    
-    def test_validate_distribution_withholding_tax_logical_consistency(self):
-        """Test withholding tax distribution logical consistency check."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = DistributionType.INTEREST
-        gross_interest_amount = 1000.0
-        net_interest_amount = 1000.0  # Same as gross (should be less)
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, None, True,
-            gross_interest_amount, net_interest_amount, None, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'amount' in errors
-        assert "Gross amount must be greater than net amount for withholding tax distributions" in errors['amount'][0]
-    
-    def test_validate_distribution_invalid_type_string(self):
-        """Test distribution with invalid type string."""
-        # Arrange
-        fund = Mock(spec=Fund)
-        fund.tracking_type = FundTrackingType.NAV_BASED
-        event_date = date(2024, 6, 30)
-        distribution_type = "INVALID_TYPE"  # Invalid string
-        distribution_amount = 1000.0
-        
-        # Act
-        errors = self.validation_service.validate_distribution(
-            fund, event_date, distribution_type, distribution_amount, False,
-            None, None, None, None, None, self.mock_session
-        )
-        
-        # Assert
-        assert 'distribution_type' in errors
-        assert "Invalid distribution_type" in errors['distribution_type'][0]
+        assert service.fund_event_repository is not None
+        assert service.fund_tax_statement_repository is not None
+        assert service.fund_repository is not None
+        assert hasattr(service, 'fund_event_repository')
+        assert hasattr(service, 'fund_tax_statement_repository')
+        assert hasattr(service, 'fund_repository')

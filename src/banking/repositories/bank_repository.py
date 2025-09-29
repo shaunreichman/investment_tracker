@@ -59,12 +59,6 @@ class BankRepository:
         Raises:
             ValueError: If sort field is invalid
         """
-        cache_key = f"banks:name:{name}:country:{country}:bank_type:{bank_type}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Validate sort field
         if sort_by not in SortFieldBank:
             raise ValueError(f"Invalid sort field: {sort_by}")
@@ -72,6 +66,12 @@ class BankRepository:
         # Validate sort order
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
+
+        cache_key = f"banks:name:{name}:country:{country}:bank_type:{bank_type}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
+
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
 
         # Get all banks
         banks = session.query(Bank)
