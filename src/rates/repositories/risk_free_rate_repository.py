@@ -15,19 +15,18 @@ class RiskFreeRateRepository:
     Risk Free Rate Repository.
 
     This repository handles all database operations for risk free rates including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     risk free rate data without direct database access.
     """
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the Risk Free Rate Repository.
 
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
 
     ################################################################################
@@ -57,12 +56,6 @@ class RiskFreeRateRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
         
-        cache_key = f"risk_free_rates:currency:{currency}:rate_type:{rate_type}:sort_by:{sort_by}:sort_order:{sort_order}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Get all risk free rates
         risk_free_rates = session.query(RiskFreeRate)
         if currency:
@@ -78,9 +71,6 @@ class RiskFreeRateRepository:
 
         risk_free_rates = risk_free_rates.all()
 
-        # Cache the result
-        self._cache[cache_key] = risk_free_rates
-
         return risk_free_rates
 
     def get_risk_free_rate_by_id(self, risk_free_rate_id: int, session: Session) -> Optional[RiskFreeRate]:
@@ -94,18 +84,8 @@ class RiskFreeRateRepository:
         Returns:
             Risk free rate if found, None otherwise
         """
-        cache_key = f"risk_free_rate:{risk_free_rate_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Query database
         risk_free_rate = session.query(RiskFreeRate).filter(RiskFreeRate.id == risk_free_rate_id).first()
-        
-        # Cache the result
-        if risk_free_rate:
-            self._cache[cache_key] = risk_free_rate
         
         return risk_free_rate
 
@@ -128,9 +108,6 @@ class RiskFreeRateRepository:
         risk_free_rate = RiskFreeRate(**risk_free_rate_data)
         session.add(risk_free_rate)
         session.flush()
-
-        # Clear relevant caches
-        self._clear_risk_free_rate_caches()
 
         return risk_free_rate
 
@@ -157,28 +134,4 @@ class RiskFreeRateRepository:
         session.delete(risk_free_rate)
         session.flush()
 
-        # Clear relevant caches
-        self._clear_risk_free_rate_caches()
-
         return True
-
-
-    ################################################################################
-    # Clear Cache
-    ################################################################################
-
-    def _clear_risk_free_rate_caches(self) -> None:
-        """Clear all risk free rate-related caches."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('risk_free_rate')]
-        for key in keys_to_remove:
-            del self._cache[key]
-    
-    def clear_uniqueness_cache(self, currency: Currency, date: date, rate_type: RiskFreeRateType) -> None:
-        """Clear cache for specific uniqueness check to prevent race conditions."""
-        cache_key = f"risk_free_rate:unique:{currency}:date:{date}:rate_type:{rate_type}"
-        if cache_key in self._cache:
-            del self._cache[cache_key]
-    
-    def clear_cache(self) -> None:
-        """Clear all caches."""
-        self._cache.clear()

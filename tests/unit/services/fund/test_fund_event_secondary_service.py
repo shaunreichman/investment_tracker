@@ -50,7 +50,7 @@ class TestFundEventSecondaryService:
     def mock_field_change(self):
         """Mock FundFieldChange instance."""
         return FundFieldChange(
-            fund_or_company='FUND',
+            object='FUND',
             object_id=1,
             field_name='current_equity_balance',
             old_value=10000.0,
@@ -114,7 +114,7 @@ class TestFundEventSecondaryService:
         
         # Verify date service calls
         service.fund_date_service.update_fund_start_date.assert_called_once_with(
-            fund_id=1, event_id=1, fund_event_operation=EventOperation.CREATE, session=mock_session
+            fund=mock_fund, event_id=1, fund_event_operation=EventOperation.CREATE, session=mock_session
         )
         service.fund_date_service.update_fund_duration.assert_called_once_with(mock_fund, mock_session)
         
@@ -158,7 +158,7 @@ class TestFundEventSecondaryService:
         
         # Verify date service call for delete (no event_id parameter)
         service.fund_date_service.update_fund_start_date.assert_called_once_with(
-            fund_id=1, fund_event_operation=EventOperation.DELETE, session=mock_session
+            fund=mock_fund, fund_event_operation=EventOperation.DELETE, session=mock_session
         )
 
     def test_handle_event_secondary_impact_return_of_capital(self, service, mock_session, mock_fund, mock_field_change):
@@ -188,7 +188,7 @@ class TestFundEventSecondaryService:
         assert len(result) == 7  # Should have 7 changes for return of capital
         
         # Verify end date update was called
-        service.fund_date_service.update_fund_end_date.assert_called_once_with(1, mock_session)
+        service.fund_date_service.update_fund_end_date.assert_called_once_with(fund=mock_fund, session=mock_session)
         
         # Verify equity service calls
         assert service.fund_equity_service.update_fund_equity_fields.call_count == 2
@@ -313,7 +313,7 @@ class TestFundEventSecondaryService:
         
         # Verify start date update was called for equity call event
         service.fund_date_service.update_fund_start_date.assert_called_once_with(
-            fund_id=1, event_id=1, fund_event_operation=EventOperation.CREATE, session=mock_session
+            fund=mock_fund, event_id=1, fund_event_operation=EventOperation.CREATE, session=mock_session
         )
 
     def test_handle_event_secondary_impact_unit_sale(self, service, mock_session, mock_fund, mock_field_change):
@@ -343,7 +343,7 @@ class TestFundEventSecondaryService:
         assert len(result) == 7  # Should have 7 changes for unit sale
         
         # Verify end date update was called for equity return event
-        service.fund_date_service.update_fund_end_date.assert_called_once_with(1, mock_session)
+        service.fund_date_service.update_fund_end_date.assert_called_once_with(fund=mock_fund, session=mock_session)
 
     def test_handle_event_secondary_impact_no_changes_returned(self, service, mock_session, mock_fund):
         """Test that service handles cases where services return None (no changes)."""
@@ -365,8 +365,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 2  # Should have 2 None values for distribution (IRR + PNL)
-        assert all(change is None for change in result)
+        assert len(result) == 0  # Should have 0 changes for distribution when services return None
 
     def test_handle_event_secondary_impact_mixed_changes(self, service, mock_session, mock_fund, mock_field_change):
         """Test that service handles mix of changes and None values correctly."""
@@ -388,6 +387,5 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 2  # Should have 2 items
+        assert len(result) == 1  # Should have 1 change (IRR) and 0 None values (PNL returns None but not added)
         assert result[0] == mock_field_change  # First item should be the field change
-        assert result[1] is None  # Second item should be None

@@ -10,6 +10,7 @@ from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
 from src.fund.repositories import FundEventRepository
 from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import SortOrder
+from src.fund.enums.fund_enums import FundTrackingType
 
 
 class FundEquityService:
@@ -61,6 +62,7 @@ class FundEquityService:
         old_current_equity_balance = fund.current_equity_balance
         old_average_equity_balance = fund.average_equity_balance
         old_total_cost_basis = fund.total_cost_basis
+        
         # SINGLE COMPUTATION: Get events and calculate balances once
         events = self.fund_event_repository.get_fund_events(session, fund_ids=[fund.id], 
                     event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
@@ -78,17 +80,36 @@ class FundEquityService:
             total_cost_basis = self.fund_equity_calculator.calculate_total_cost_basis_from_balances(event_balances, fund, events)
             fund.total_cost_basis = total_cost_basis
         
-        # Update only changed events for efficiency
-        for event, (balance, has_changed) in zip(events, event_balances):
-            if has_changed:
-                event.current_equity_balance = balance
-
         equity_changes = []
+
+        units_owned = 0
+        for event, (balance, has_changed) in zip(events, event_balances):
+            # Update only changed equity balances for efficiency
+            if has_changed:
+                old_equity_balance = event.current_equity_balance
+                event.current_equity_balance = balance
+                equity_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='current_equity_balance', old_value=old_equity_balance, new_value=event.current_equity_balance))
+            
+            # Update units owned for NAV-based funds
+            if fund.tracking_type == FundTrackingType.NAV_BASED:
+                units_owned += event.units_purchased or 0.0
+                units_owned -= event.units_sold or 0.0
+                old_units_owned = event.units_owned
+                if units_owned != old_units_owned:
+                    equity_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='units_owned', old_value=old_units_owned, new_value=units_owned))
+                    event.units_owned = units_owned
+
+        # Update units owned for fund
+        if fund.tracking_type == FundTrackingType.NAV_BASED:
+            if units_owned != fund.current_units:
+                equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_units', old_value=fund.current_units, new_value=units_owned))
+                fund.current_units = units_owned
+           
         if old_current_equity_balance != fund.current_equity_balance:
-            equity_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=fund.current_equity_balance))
+            equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=fund.current_equity_balance))
         if old_average_equity_balance != fund.average_equity_balance:
-            equity_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=fund.average_equity_balance))
+            equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=fund.average_equity_balance))
         if old_total_cost_basis != fund.total_cost_basis:
-            equity_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='total_cost_basis', old_value=old_total_cost_basis, new_value=fund.total_cost_basis))
+            equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='total_cost_basis', old_value=old_total_cost_basis, new_value=fund.total_cost_basis))
         
         return equity_changes if equity_changes else None

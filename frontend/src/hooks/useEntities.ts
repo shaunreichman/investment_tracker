@@ -6,6 +6,8 @@ import { useApiCall, useMutation } from './useApiCall';
 import {
   Entity,
   CreateEntityData,
+  EntityType,
+  Country,
 } from '../types/api';
 import { useCallback } from 'react';
 

@@ -211,23 +211,23 @@ class TestCompanyEquityService:
             duration_change = next((change for change in result if change.field_name == 'current_duration'), None)
             
             # Verify field change properties
-            assert average_change.fund_or_company == 'COMPANY'
+            assert average_change.object == 'COMPANY'
             assert average_change.object_id == company_id
             assert average_change.old_value == original_average_balance
             assert average_change.new_value == new_average_balance
             
-            assert current_change.fund_or_company == 'COMPANY'
+            assert current_change.object == 'COMPANY'
             assert current_change.object_id == company_id
             assert current_change.old_value == original_current_balance
             assert current_change.new_value == new_current_balance
             
-            assert end_date_change.fund_or_company == 'COMPANY'
+            assert end_date_change.object == 'COMPANY'
             assert end_date_change.object_id == company_id
             assert end_date_change.old_value == original_end_date
             assert end_date_change.new_value == new_end_date
             
             if duration_change:  # duration change may or may not exist
-                assert duration_change.fund_or_company == 'COMPANY'
+                assert duration_change.object == 'COMPANY'
                 assert duration_change.object_id == company_id
                 assert duration_change.old_value == original_duration
                 assert duration_change.new_value == new_duration

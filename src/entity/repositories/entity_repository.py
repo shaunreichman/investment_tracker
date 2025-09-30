@@ -16,20 +16,19 @@ class EntityRepository:
     Entity Repository.
     
     This repository handles all database operations for entities including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     entity data without direct database access.
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the entity repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
 
     ################################################################################
@@ -64,12 +63,6 @@ class EntityRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
-        cache_key = f"entities:entity_type:{entity_type}:tax_jurisdiction:{tax_jurisdiction}:name:{name}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         entities = session.query(Entity)
         if entity_type:
@@ -93,8 +86,6 @@ class EntityRepository:
         
         entities = entities.all()
         
-        # Cache the result
-        self._cache[cache_key] = entities
         return entities
 
     def get_entity_by_id(self, entity_id: int, session: Session) -> Optional[Entity]:
@@ -108,18 +99,8 @@ class EntityRepository:
         Returns:
             Entity object if found, None otherwise
         """
-        cache_key = f"entity:id:{entity_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         entity = session.query(Entity).filter(Entity.id == entity_id).first()
-        
-        # Cache the result
-        if entity:
-            self._cache[cache_key] = entity
         
         return entity
 
@@ -144,9 +125,6 @@ class EntityRepository:
         session.add(entity)
         session.flush()
         
-        # Clear relevant caches
-        self._clear_entity_caches()
-        
         return entity
 
 
@@ -168,19 +146,5 @@ class EntityRepository:
         
         session.delete(entity)
         session.flush()
-        
-        # Clear relevant caches
-        self._clear_entity_caches()
 
         return True
-        
-    
-    def _clear_entity_caches(self) -> None:
-        """Clear all entity-related caches."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('entity') or key.startswith('entities')]
-        for key in keys_to_remove:
-            del self._cache[key]
-    
-    def clear_cache(self) -> None:
-        """Clear all caches."""
-        self._cache.clear()

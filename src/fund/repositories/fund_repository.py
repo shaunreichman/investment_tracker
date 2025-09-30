@@ -15,20 +15,19 @@ class FundRepository:
     Fund Repository.
 
     This repository handles all database operations for funds including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     fund data without direct database access.
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the fund repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
     ################################################################################
     # Get Fund
@@ -65,12 +64,6 @@ class FundRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
-        cache_key = f"funds:company:{company_id}:entity:{entity_id}:status:{fund_status.value if fund_status else None}:type:{fund_tracking_type.value if fund_tracking_type else None}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         query = session.query(Fund)
 
@@ -95,9 +88,6 @@ class FundRepository:
 
         funds = query.all()
 
-        # Cache the result
-        self._cache[cache_key] = funds
-        
         return funds
     
     def get_fund_by_id(self, fund_id: int, session: Session) -> Optional[Fund]:
@@ -111,17 +101,8 @@ class FundRepository:
         Returns:
             Fund object if found, None otherwise
         """
-        cache_key = f"fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         fund = session.query(Fund).filter(Fund.id == fund_id).first()
-        
-        # Cache the result (including None results)
-        self._cache[cache_key] = fund
         
         return fund
 
@@ -149,9 +130,6 @@ class FundRepository:
         session.add(fund)
         session.flush()  # Get the ID without committing
         
-        # Clear relevant caches
-        self._clear_fund_cache(fund.id)
-        
         return fund
 
 
@@ -177,17 +155,4 @@ class FundRepository:
         # Delete the fund
         session.delete(fund)
         
-        # Clear relevant caches
-        self._clear_fund_cache(fund_id)
-        
         return True
-    
-
-    ################################################################################
-    # Clear Cache
-    ################################################################################
-    
-    def _clear_fund_cache(self, fund_id: int) -> None:
-        """Clear cache for a specific fund."""
-        cache_key = f"fund:{fund_id}"
-        self._cache.pop(cache_key, None)

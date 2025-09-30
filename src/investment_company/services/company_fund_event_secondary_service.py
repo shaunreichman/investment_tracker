@@ -49,40 +49,40 @@ class CompanyFundEventSecondaryService:
                     old_start_date = company.start_date
                     new_start_date = fund_change_dict['new_value']
                     company.start_date = new_start_date
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='start_date', old_value=old_start_date, new_value=new_start_date))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='start_date', old_value=old_start_date, new_value=new_start_date))
 
                     # If the start date changes we need to update the duration
                     old_duration = company.current_duration
                     from src.shared.calculators.duration_months_calculator import DurationMonthsCalculator
                     new_duration = DurationMonthsCalculator.calculate_duration_months(company.start_date, new_start_date)
                     if old_duration != new_duration:
-                        all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='current_duration', old_value=old_duration, new_value=new_duration))
+                        all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='current_duration', old_value=old_duration, new_value=new_duration))
                         company.current_duration = new_duration
 
             # 2. Check the pnl of the fund
             elif fund_change_dict['field_name'] == 'pnl':
-                all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='pnl', old_value=company.pnl, new_value=company.pnl+fund_change_dict['new_value']))
+                all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='pnl', old_value=company.pnl, new_value=company.pnl+fund_change_dict['new_value']))
                 company.pnl += fund_change_dict['new_value']
             elif fund_change_dict['field_name'] == 'realized_pnl':
-                all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='realized_pnl', old_value=company.realized_pnl, new_value=company.realized_pnl+fund_change_dict['new_value']))
+                all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='realized_pnl', old_value=company.realized_pnl, new_value=company.realized_pnl+fund_change_dict['new_value']))
                 company.realized_pnl += fund_change_dict['new_value']
             elif fund_change_dict['field_name'] == 'unrealized_pnl':
-                all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='unrealized_pnl', old_value=company.unrealized_pnl, new_value=company.unrealized_pnl+fund_change_dict['new_value']))
+                all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='unrealized_pnl', old_value=company.unrealized_pnl, new_value=company.unrealized_pnl+fund_change_dict['new_value']))
                 company.unrealized_pnl += fund_change_dict['new_value']
             elif fund_change_dict['field_name'] == 'realized_pnl_capital_gain':
-                all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='realized_pnl_capital_gain', old_value=company.realized_pnl_capital_gain, new_value=company.realized_pnl_capital_gain+fund_change_dict['new_value']))
+                all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='realized_pnl_capital_gain', old_value=company.realized_pnl_capital_gain, new_value=company.realized_pnl_capital_gain+fund_change_dict['new_value']))
                 company.realized_pnl_capital_gain += fund_change_dict['new_value']
             elif fund_change_dict['field_name'] == 'unrealized_pnl_capital_gain':
-                all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='unrealized_pnl_capital_gain', old_value=company.unrealized_pnl_capital_gain, new_value=company.unrealized_pnl_capital_gain+fund_change_dict['new_value']))
+                all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='unrealized_pnl_capital_gain', old_value=company.unrealized_pnl_capital_gain, new_value=company.unrealized_pnl_capital_gain+fund_change_dict['new_value']))
                 company.unrealized_pnl_capital_gain += fund_change_dict['new_value']
             elif fund_change_dict['field_name'] == 'realized_pnl_dividend':
-                all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='realized_pnl_dividend', old_value=company.realized_pnl_dividend, new_value=company.realized_pnl_dividend+fund_change_dict['new_value']))
+                all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='realized_pnl_dividend', old_value=company.realized_pnl_dividend, new_value=company.realized_pnl_dividend+fund_change_dict['new_value']))
                 company.realized_pnl_dividend += fund_change_dict['new_value']
             elif fund_change_dict['field_name'] == 'realized_pnl_interest':
-                all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='realized_pnl_interest', old_value=company.realized_pnl_interest, new_value=company.realized_pnl_interest+fund_change_dict['new_value']))
+                all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='realized_pnl_interest', old_value=company.realized_pnl_interest, new_value=company.realized_pnl_interest+fund_change_dict['new_value']))
                 company.realized_pnl_interest += fund_change_dict['new_value']
             elif fund_change_dict['field_name'] == 'realized_pnl_distribution':
-                all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='realized_pnl_distribution', old_value=company.realized_pnl_distribution, new_value=company.realized_pnl_distribution+fund_change_dict['new_value']))
+                all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='realized_pnl_distribution', old_value=company.realized_pnl_distribution, new_value=company.realized_pnl_distribution+fund_change_dict['new_value']))
                 company.realized_pnl_distribution += fund_change_dict['new_value']
 
 
@@ -91,30 +91,30 @@ class CompanyFundEventSecondaryService:
                 old_fund_status = fund_change_dict['old_value']
                 new_fund_status = fund_change_dict['new_value']
                 if old_fund_status == FundStatus.ACTIVE:
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='total_funds_active', old_value=company.total_funds_active, new_value=company.total_funds_active-1))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_active', old_value=company.total_funds_active, new_value=company.total_funds_active-1))
                     company.total_funds_active -= 1
                 elif old_fund_status == FundStatus.REALIZED:
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='total_funds_realized', old_value=company.total_funds_realized, new_value=company.total_funds_realized-1))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_realized', old_value=company.total_funds_realized, new_value=company.total_funds_realized-1))
                     company.total_funds_realized -= 1
                 elif old_fund_status == FundStatus.COMPLETED:
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='total_funds_completed', old_value=company.total_funds_completed, new_value=company.total_funds_completed-1))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_completed', old_value=company.total_funds_completed, new_value=company.total_funds_completed-1))
                     company.total_funds_completed -= 1
                 if new_fund_status == FundStatus.ACTIVE:
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='total_funds_active', old_value=company.total_funds_active, new_value=company.total_funds_active+1))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_active', old_value=company.total_funds_active, new_value=company.total_funds_active+1))
                     company.total_funds_active += 1
                 elif new_fund_status == FundStatus.REALIZED:
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='total_funds_realized', old_value=company.total_funds_realized, new_value=company.total_funds_realized+1))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_realized', old_value=company.total_funds_realized, new_value=company.total_funds_realized+1))
                     company.total_funds_realized += 1
                 elif new_fund_status == FundStatus.COMPLETED:
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='total_funds_completed', old_value=company.total_funds_completed, new_value=company.total_funds_completed+1))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_completed', old_value=company.total_funds_completed, new_value=company.total_funds_completed+1))
                     company.total_funds_completed += 1
 
                 if company.total_funds_active == 0 and old_fund_status == FundStatus.ACTIVE:
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='status', old_value=company.status, new_value=CompanyStatus.INACTIVE))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='status', old_value=company.status, new_value=CompanyStatus.INACTIVE))
                     company.status = CompanyStatus.COMPLETED
                     all_company_changes.append(self.company_irr_service.update_irrs(company, fund_ids, session))
                 elif company.total_funds_active == 1 and old_fund_status != FundStatus.ACTIVE:
-                    all_company_changes.append(FundFieldChange(fund_or_company='COMPANY', object_id=company_id, field_name='status', old_value=company.status, new_value=CompanyStatus.ACTIVE))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='status', old_value=company.status, new_value=CompanyStatus.ACTIVE))
                     company.status = CompanyStatus.ACTIVE
                     all_company_changes.append(self.company_irr_service.update_irrs(company, fund_ids, session))
 

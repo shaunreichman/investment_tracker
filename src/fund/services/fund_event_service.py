@@ -131,6 +131,9 @@ class FundEventService:
 
         # 3. Create the fund event
         fund_event = self.fund_event_repository.create_fund_event(processed_data, session)
+        
+        # 3a. Flush the event to database so it's available for secondary service
+        session.flush()
 
         # 4. Handle the secondary impacts
         all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund_id=fund_event.fund_id, event_id=fund_event.id, 
@@ -138,15 +141,18 @@ class FundEventService:
 
         # 5. Store the domain fund event containing the changes
         if all_changes:
-            domain_fund_event_repository = DomainFundEventRepository()
-            domain_fund_event = domain_fund_event_repository.create_domain_fund_event(
-                fund_id=fund_event.fund_id,
-                event_type=processed_data['event_type'],
-                event_operation=EventOperation.CREATE,
-                fund_event_id=fund_event.id,
-                event_data={"changes": [change.to_dict() for change in all_changes]},
-                session=session
-            )
+            # Filter out None values and convert to dict
+            valid_changes = [change.to_dict() for change in all_changes if change is not None]
+            if valid_changes:
+                domain_fund_event_repository = DomainFundEventRepository()
+                domain_fund_event = domain_fund_event_repository.create_domain_fund_event(
+                    fund_id=fund_event.fund_id,
+                    event_type=processed_data['event_type'],
+                    event_operation=EventOperation.CREATE,
+                    fund_event_id=fund_event.id,
+                    event_data={"changes": valid_changes},
+                    session=session
+                )
         
         return fund_event
     
@@ -240,9 +246,16 @@ class FundEventService:
 
         event_type = event.event_type
 
+        errors = self.fund_validation_service.validate_fund_event_deletion(event, session)
+        if errors:
+            raise ValueError(f"Validation errors: {errors}")
+
         success = fund_event_repository.delete_fund_event(event_id, session)
         
         if success:
+            # 2a. Flush the fund to database so it's available for secondary service
+            session.flush()
+            session.refresh(fund)
             # 2. Process the secondary operations
             all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
                             fund_event_type=event_type, fund_event_operation=EventOperation.DELETE, session=session)

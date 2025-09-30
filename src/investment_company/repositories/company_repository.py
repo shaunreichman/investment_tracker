@@ -16,20 +16,19 @@ class CompanyRepository:
     Company Repository.
 
     This repository handles all database operations for companies including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     company data without direct database access.
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the company repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
 
     ################################################################################
@@ -65,12 +64,6 @@ class CompanyRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
-        cache_key = f"companies:company_type:{company_type}:status:{status}:name:{name}:sort_by:{sort_by}:sort_order:{sort_order}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         companies = session.query(InvestmentCompany)
         if company_type:
@@ -94,9 +87,6 @@ class CompanyRepository:
             
         companies = companies.all()
 
-        # Cache the result
-        self._cache[cache_key] = companies
-
         return companies
     
     def get_company_by_id(self, company_id: int, session: Session) -> Optional[InvestmentCompany]:
@@ -110,18 +100,8 @@ class CompanyRepository:
         Returns:
             InvestmentCompany object if found, None otherwise
         """
-        cache_key = f"company:{company_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         company = session.query(InvestmentCompany).filter(InvestmentCompany.id == company_id).first()
-        
-        # Cache the result
-        if company:
-            self._cache[cache_key] = company
         
         return company
 
@@ -148,9 +128,6 @@ class CompanyRepository:
         session.add(company)
         session.flush()
         
-        # Clear cache
-        self._clear_company_caches()
-        
         return company
     
     
@@ -176,34 +153,4 @@ class CompanyRepository:
         session.delete(company)
         session.flush()
         
-        # Clear cache
-        self._clear_company_caches()
-        
         return True
-
-
-    ################################################################################
-    # Clear Cache
-    ################################################################################
-    
-    def _clear_cache(self) -> None:
-        """Clear all cached data."""
-        self._cache.clear()
-    
-    def _clear_company_caches(self) -> None:
-        """Clear all company-related caches."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('company')]
-        for key in keys_to_remove:
-            del self._cache[key]
-
-    def _clear_company_cache(self, company_id: int, company_type: Optional[CompanyType] = None, status: Optional[CompanyStatus] = None, name: Optional[str] = None, sort_by: Optional[SortFieldCompany] = None, sort_order: Optional[SortOrder] = None) -> None:
-        """Clear cache for a specific company."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('company')]
-        cache_keys_to_remove = [
-            f"company:{company_id}",
-            f"companies:company_type:{company_type}:status:{status}:name:{name}:sort_by:{sort_by}:sort_order:{sort_order}",
-        ]
-        
-        for key in cache_keys_to_remove:
-            if key in self._cache:
-                del self._cache[key]

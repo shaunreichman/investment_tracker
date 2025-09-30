@@ -97,7 +97,7 @@ def get_entity(entity_id):
 
 @entity_bp.route('/api/entities', methods=['POST'])
 @validate_request(
-    required_fields=['name', 'tax_jurisdiction'],
+    required_fields=['name', 'entity_type', 'tax_jurisdiction'],
     field_types={
         'name': 'string',
         'entity_type': 'string',

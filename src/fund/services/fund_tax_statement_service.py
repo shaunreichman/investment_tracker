@@ -158,6 +158,8 @@ class FundTaxStatementService:
                 group_position += 1
                 self.fund_event_repository.create_fund_event(event_data=event_data, session=session)
 
+        session.flush()
+
         # Call the Fund Event Secondary Service to handle the secondary impact of the events
         from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
         fund_event_secondary_service = FundEventSecondaryService()
@@ -463,7 +465,7 @@ class FundTaxStatementService:
                     event.dc_current_equity_balance = daily_debt_cost_dict[event.event_date]['equity']
                     event.dc_risk_free_rate = daily_debt_cost_dict[event.event_date]['rate']
                     return event
-        
+
         # 3. Create the Debt Cost event_data for the dates that haven't been set
         events_to_create = []
         if daily_debt_cost_dict:

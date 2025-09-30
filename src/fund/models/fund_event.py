@@ -49,8 +49,6 @@ class FundEvent(Base):
     nav_change_absolute = Column(Float, nullable=True)  # (CALCULATED) absolute change in NAV for NAV_UPDATE events
     nav_change_percentage = Column(Float, nullable=True)  # (CALCULATED) percentage change in NAV for NAV_UPDATE events
 
-    units_owned = Column(Float, nullable=True)  # (CALCULATED) cumulative units owned after this event
-    
     # Distribution-specific fields
     distribution_type = Column(Enum(DistributionType), nullable=True)  # (MANUAL) type of distribution if applicable
     tax_withholding = Column(Float, nullable=True)  # (MANUAL) tax withholding amount if applicable
@@ -65,7 +63,8 @@ class FundEvent(Base):
     units_sold = Column(Float, nullable=True)  # (MANUAL) units sold in this event
     unit_price = Column(Float, nullable=True)  # (MANUAL) unit price for this transaction
     brokerage_fee = Column(Float, default=0.0, nullable=True)  # (MANUAL) brokerage fee for unit transactions (must be non-negative)
-    
+    units_owned = Column(Float, nullable=True)  # (CALCULATED) cumulative units owned after this event
+
     # Calculated fields
     current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event. For cost-based funds: net capital after this event
     

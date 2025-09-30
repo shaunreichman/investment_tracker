@@ -323,7 +323,7 @@ class ApiClient {
   // ENTITIES API
   // ============================================================================
 
-  async getEntities(): Promise<EntityListResponse> {
+  async getEntities(): Promise<Entity[]> {
     const response = await this.request<Entity[]>('/api/entities');
     return response;
   }

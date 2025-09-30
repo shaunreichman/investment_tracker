@@ -57,9 +57,10 @@ class FundStatusService:
             fund.status = FundStatus.REALIZED
             if self._is_final_tax_statement_received(fund, session):
                 fund.status = FundStatus.COMPLETED
+
         status_changes = []
         if old_status != fund.status:
-            status_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='status', old_value=old_status, new_value=fund.status))
+            status_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='status', old_value=old_status, new_value=fund.status))
         return status_changes if status_changes else None
     
     def update_status_after_tax_statement(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
@@ -86,7 +87,7 @@ class FundStatusService:
                     
         status_changes = []
         if old_status != fund.status:
-            status_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='status', old_value=old_status, new_value=fund.status))
+            status_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='status', old_value=old_status, new_value=fund.status))
         return status_changes if status_changes else None
     
     def _is_final_tax_statement_received(self, fund: Fund, session: Optional[Session] = None) -> bool:

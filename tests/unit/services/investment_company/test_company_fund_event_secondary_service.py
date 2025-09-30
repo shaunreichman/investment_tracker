@@ -74,8 +74,8 @@ class TestCompanyFundEventSecondaryService:
     def sample_fund_changes(self):
         """Sample fund field changes."""
         return [
-            FundFieldChange(fund_or_company='FUND', object_id=1, field_name='pnl', old_value=50000, new_value=60000),
-            FundFieldChange(fund_or_company='FUND', object_id=1, field_name='start_date', old_value=date(2023, 2, 1), new_value=date(2023, 1, 15))
+            FundFieldChange(object='FUND', object_id=1, field_name='pnl', old_value=50000, new_value=60000),
+            FundFieldChange(object='FUND', object_id=1, field_name='start_date', old_value=date(2023, 2, 1), new_value=date(2023, 1, 15))
         ]
 
     ################################################################################
@@ -98,7 +98,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         start_date_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='start_date', 
             old_value=date(2023, 2, 1), 
@@ -127,7 +127,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         pnl_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='pnl', 
             old_value=50000, 
@@ -153,7 +153,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         realized_pnl_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='realized_pnl', 
             old_value=30000, 
@@ -179,7 +179,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         unrealized_pnl_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='unrealized_pnl', 
             old_value=10000, 
@@ -205,14 +205,14 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         realized_capital_gain_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='realized_pnl_capital_gain', 
             old_value=20000, 
             new_value=25000
         )
         unrealized_capital_gain_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='unrealized_pnl_capital_gain', 
             old_value=5000, 
@@ -239,7 +239,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         dividend_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='realized_pnl_dividend', 
             old_value=5000, 
@@ -265,7 +265,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         interest_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='realized_pnl_interest', 
             old_value=2000, 
@@ -291,7 +291,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         distribution_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='realized_pnl_distribution', 
             old_value=1000, 
@@ -317,7 +317,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         status_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='status', 
             old_value=FundStatus.ACTIVE, 
@@ -347,7 +347,7 @@ class TestCompanyFundEventSecondaryService:
         # Set company to have only 1 active fund
         mock_company.total_funds_active = 1
         status_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='status', 
             old_value=FundStatus.ACTIVE, 
@@ -375,7 +375,7 @@ class TestCompanyFundEventSecondaryService:
         # Arrange
         company_id = 1
         equity_change = FundFieldChange(
-            fund_or_company='FUND', 
+            object='FUND', 
             object_id=1, 
             field_name='average_equity_balance', 
             old_value=50000, 
@@ -392,7 +392,7 @@ class TestCompanyFundEventSecondaryService:
             mock_fund_service_class.return_value = mock_fund_service
             
             # Setup equity service mock
-            mock_equity_update.return_value = [FundFieldChange(fund_or_company='COMPANY', object_id=1, field_name='average_equity_balance', old_value=100000, new_value=110000)]
+            mock_equity_update.return_value = [FundFieldChange(object='COMPANY', object_id=1, field_name='average_equity_balance', old_value=100000, new_value=110000)]
             
             # Act
             service.handle_event_secondary_impact(company_id, [equity_change], mock_session)

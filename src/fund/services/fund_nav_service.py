@@ -53,9 +53,9 @@ class FundNavService:
 
         nav_changes = []
         if old_current_unit_price != fund.current_unit_price:
-            nav_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='current_unit_price', old_value=old_current_unit_price, new_value=fund.current_unit_price))
+            nav_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_unit_price', old_value=old_current_unit_price, new_value=fund.current_unit_price))
         if old_current_nav_total != fund.current_nav_total:
-            nav_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='current_nav_total', old_value=old_current_nav_total, new_value=fund.current_nav_total))
+            nav_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_nav_total', old_value=old_current_nav_total, new_value=fund.current_nav_total))
 
         return nav_changes if nav_changes else None
 

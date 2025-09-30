@@ -10,7 +10,7 @@ from faker import Faker
 
 from tests.factories.base import SessionedFactory
 from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement, DomainFundEvent
-from src.fund.enums import FundTrackingType, EventType, DistributionType, TaxPaymentType, CashFlowDirection, FundInvestmentType
+from src.fund.enums import FundTrackingType, EventType, DistributionType, TaxPaymentType, CashFlowDirection, FundInvestmentType, FundTaxStatementFinancialYearType
 from src.shared.enums.shared_enums import Currency, Country, EventOperation
 
 
@@ -47,6 +47,12 @@ class FundFactory(SessionedFactory):
     tax_jurisdiction = factory.LazyAttribute(lambda _: fake.random_element(elements=[
         Country.AU, Country.US, Country.UK, Country.SG
     ]))
+    
+    # Tax statement financial year type (calculated from tax jurisdiction)
+    tax_statement_financial_year_type = factory.LazyAttribute(lambda obj: 
+        FundTaxStatementFinancialYearType.HALF_YEAR if obj.tax_jurisdiction in [Country.AU, Country.UK]
+        else FundTaxStatementFinancialYearType.CALENDAR_YEAR
+    )
     
     # Expected information (manual fields)
     expected_irr = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=5.0, max_value=25.0, right_digits=1))

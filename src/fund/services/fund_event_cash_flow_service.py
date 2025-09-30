@@ -6,6 +6,7 @@ from src.fund.repositories import FundEventCashFlowRepository
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from src.fund.models import FundEventCashFlow
+from src.fund.enums.fund_event_enums import EventType
 from src.fund.enums.fund_event_cash_flow_enums import SortFieldFundEventCashFlow
 from src.shared.enums.shared_enums import SortOrder
 
@@ -109,12 +110,20 @@ class FundEventCashFlowService:
         if not fund_event:
             raise ValueError(f"Fund event not found")
 
+        expected_total_cash_flow_amount = fund_event.amount
+        if fund_event.event_type == EventType.UNIT_PURCHASE:
+            expected_total_cash_flow_amount += fund_event.brokerage_fee
+        elif fund_event.event_type == EventType.UNIT_SALE:
+            expected_total_cash_flow_amount -= fund_event.brokerage_fee
+        elif fund_event.event_type == EventType.DISTRIBUTION and fund_event.has_withholding_tax:
+            expected_total_cash_flow_amount -= fund_event.tax_withholding
+
         # Validate Fund Event Cash Flow Balance
-        if fund_event.cash_flow_balance_amount + fund_event_cash_flow_data['amount'] > fund_event.amount:
+        if fund_event.cash_flow_balance_amount + fund_event_cash_flow_data['amount'] > expected_total_cash_flow_amount:
             raise ValueError(f"Cash flow is too large. It will take the balance amount above the event amount")
-        elif fund_event.cash_flow_balance_amount + fund_event_cash_flow_data['amount'] <= fund_event.amount:
+        elif fund_event.cash_flow_balance_amount + fund_event_cash_flow_data['amount'] <= expected_total_cash_flow_amount:
             fund_event.cash_flow_balance_amount += fund_event_cash_flow_data['amount']
-            if fund_event.cash_flow_balance_amount == fund_event.amount:
+            if fund_event.cash_flow_balance_amount == expected_total_cash_flow_amount:
                 fund_event.is_cash_flow_complete = True
         
         processed_data = {
@@ -161,5 +170,5 @@ class FundEventCashFlowService:
         if fund_event.is_cash_flow_complete:
             fund_event.is_cash_flow_complete = False
         fund_event.cash_flow_balance_amount -= fund_event_cash_flow.amount
-
+        
         return True

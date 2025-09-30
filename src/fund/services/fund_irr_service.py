@@ -73,14 +73,14 @@ class FundIrRService:
             fund.completed_irr_gross = self.shared_irr_service.calculate_irr_base(events, include_tax_payments=False, include_risk_free_charges=False, include_eofy_debt_cost=False)
             fund.completed_irr_after_tax = self.shared_irr_service.calculate_irr_base(events, include_tax_payments=True, include_risk_free_charges=False, include_eofy_debt_cost=False)
             fund.completed_irr_real = self.shared_irr_service.calculate_irr_base(events, include_tax_payments=True, include_risk_free_charges=True, include_eofy_debt_cost=True)
-
+        
         irr_changes = []
         if old_completed_irr_gross != fund.completed_irr_gross:
-            irr_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=fund.completed_irr_gross))
+            irr_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=fund.completed_irr_gross))
         if old_completed_irr_after_tax != fund.completed_irr_after_tax:
-            irr_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=fund.completed_irr_after_tax))
+            irr_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=fund.completed_irr_after_tax))
         if old_completed_irr_real != fund.completed_irr_real:
-            irr_changes.append(FundFieldChange(fund_or_company='FUND', object_id=fund.id, field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=fund.completed_irr_real))
+            irr_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=fund.completed_irr_real))
         
         return irr_changes if irr_changes else None
     

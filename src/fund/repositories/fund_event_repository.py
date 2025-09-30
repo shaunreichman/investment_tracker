@@ -16,19 +16,18 @@ class FundEventRepository:
     Fund Event Repository.
 
     This repository handles all database operations for fund events including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     fund event data without direct database access.
     """
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the fund event repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
 
     ################################################################################
@@ -72,19 +71,14 @@ class FundEventRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}. Must be one of: {[s.value for s in SortOrder]}")
         
-        cache_key = f"events:fund:{fund_ids}:types:{event_types}:distribution_types:{distribution_types}:tax_payment_types:{tax_payment_types}:group_types:{group_types}:start_event_date:{start_event_date}:end_event_date:{end_event_date}:sort_field:{sort_by}:sort_order:{sort_order}"
-
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Query database
         query = session.query(FundEvent)
         
         if fund_ids:
             query = query.filter(FundEvent.fund_id.in_(fund_ids))
         if event_types:
-            query = query.filter(FundEvent.event_type.in_([et.value for et in event_types]))
+            event_type_values = [et.value for et in event_types]
+            query = query.filter(FundEvent.event_type.in_(event_type_values))
         if distribution_types:
             query = query.filter(FundEvent.distribution_type.in_([dt.value for dt in distribution_types]))
         if tax_payment_types:
@@ -98,14 +92,11 @@ class FundEventRepository:
         
         # Apply sorting
         if sort_by == SortFieldFundEvent.EVENT_DATE:
-            query = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
+            query = query.order_by(FundEvent.event_date.asc() if sort_order == SortOrder.ASC else FundEvent.event_date.desc())
         elif sort_by == SortFieldFundEvent.EVENT_TYPE:
-            query = query.order_by(FundEvent.event_type.asc(), FundEvent.id.asc())
+            query = query.order_by(FundEvent.event_type.asc() if sort_order == SortOrder.ASC else FundEvent.event_type.desc())
         
         events = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
         
         return events
     
@@ -120,18 +111,8 @@ class FundEventRepository:
         Returns:
             FundEvent object if found, None otherwise
         """
-        cache_key = f"event:{event_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         fund_event = session.query(FundEvent).filter(FundEvent.id == event_id).first()
-        
-        # Cache the result
-        if fund_event:
-            self._cache[cache_key] = fund_event
         
         return fund_event
 
@@ -160,11 +141,6 @@ class FundEventRepository:
         session.add(event)
         session.flush()  # Get the ID without committing
         
-        # Clear relevant caches
-        self._clear_fund_cache(event_data.get('fund_id'))
-        self._clear_date_cache(event_data.get('event_date'))
-        self._clear_type_cache(event_data.get('event_type'))
-        
         return event
 
     ################################################################################
@@ -186,11 +162,6 @@ class FundEventRepository:
         if not event:
             return False
         
-        # Store values for cache clearing
-        fund_id = event.fund_id
-        event_date = event.event_date
-        event_type = event.event_type
-        
         # If this event is grouped, delete all events in the same group
         if event.is_grouped and event.group_id:
             # Find all events in the same group
@@ -201,45 +172,11 @@ class FundEventRepository:
             # Delete all events in the group
             for group_event in group_events:
                 session.delete(group_event)
-                self._clear_event_cache(group_event.id)
         else:
             # Delete just this single event
             session.delete(event)
-            self._clear_event_cache(event_id)
-        
-        # Clear relevant caches
-        self._clear_fund_cache(fund_id)
-        self._clear_date_cache(event_date)
-        self._clear_type_cache(event_type)
         
         return True
-    
-    def _clear_event_cache(self, event_id: int) -> None:
-        """Clear cache for a specific event."""
-        cache_key = f"event:{event_id}"
-        self._cache.pop(cache_key, None)
-    
-    def _clear_fund_cache(self, fund_id: Optional[int]) -> None:
-        """Clear cache for events by fund."""
-        if fund_id:
-            # Clear all fund-related caches
-            for key in list(self._cache.keys()):
-                if f"events:fund:{fund_id}" in key or f"event_count:fund:{fund_id}" in key:
-                    self._cache.pop(key, None)
-    
-    def _clear_date_cache(self, event_date: Optional[date]) -> None:
-        """Clear cache for events by date."""
-        if event_date:
-            for key in list(self._cache.keys()):
-                if f"events:date_range" in key:
-                    self._cache.pop(key, None)
-    
-    def _clear_type_cache(self, event_type: Optional[str]) -> None:
-        """Clear cache for events by type."""
-        if event_type:
-            for key in list(self._cache.keys()):
-                if f"events:type:{event_type}" in key:
-                    self._cache.pop(key, None)
     
     
     def generate_group_id(self, session: Session) -> int:
@@ -276,7 +213,3 @@ class FundEventRepository:
             
         except Exception as e:
             raise RuntimeError(f"Failed to generate group ID: {e}") from e
-
-    def clear_all_cache(self) -> None:
-        """Clear all cached data."""
-        self._cache.clear()

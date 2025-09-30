@@ -1,14 +1,13 @@
 """
 Company Repository Unit Tests.
 
-This module tests the CompanyRepository class, focusing on data access operations,
-caching behavior, and error handling. Tests are precise and focused on repository
+This module tests the CompanyRepository class, focusing on data access operations
+and error handling. Tests are precise and focused on repository
 functionality without testing business logic or validation.
 
 Test Coverage:
 - CRUD operations (Create, Read, Delete)
 - Filtering and sorting functionality
-- Caching behavior and cache invalidation
 - Error handling for invalid parameters
 - Database session interactions
 """
@@ -241,25 +240,6 @@ class TestCompanyRepository:
         with pytest.raises(ValueError, match="Invalid sort order"):
             repository.get_companies(mock_session, sort_by=SortFieldCompany.NAME, sort_order="INVALID_ORDER")
 
-    def test_get_companies_uses_cache(self, repository, mock_session):
-        """Test that get_companies uses cache for repeated queries."""
-        # Arrange
-        expected_companies = [InvestmentCompanyFactory.build() for _ in range(2)]
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.all.return_value = expected_companies
-
-        # Act - First call
-        result1 = repository.get_companies(mock_session, sort_by=SortFieldCompany.NAME, sort_order=SortOrder.ASC)
-        # Second call with same parameters
-        result2 = repository.get_companies(mock_session, sort_by=SortFieldCompany.NAME, sort_order=SortOrder.ASC)
-
-        # Assert
-        assert result1 == expected_companies
-        assert result2 == expected_companies
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test get_company_by_id method
@@ -298,26 +278,6 @@ class TestCompanyRepository:
         # Assert
         assert result is None
 
-    def test_get_company_by_id_uses_cache(self, repository, mock_session):
-        """Test that get_company_by_id uses cache for repeated queries."""
-        # Arrange
-        company_id = 1
-        expected_company = InvestmentCompanyFactory.build(id=company_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_company
-
-        # Act - First call
-        result1 = repository.get_company_by_id(company_id, mock_session)
-        # Second call with same ID
-        result2 = repository.get_company_by_id(company_id, mock_session)
-
-        # Assert
-        assert result1 == expected_company
-        assert result2 == expected_company
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test create_company method
@@ -336,18 +296,6 @@ class TestCompanyRepository:
             mock_session.add.assert_called_once_with(expected_company)
             mock_session.flush.assert_called_once()
 
-    def test_create_company_clears_cache(self, repository, mock_session, sample_company_data):
-        """Test that create_company clears relevant caches."""
-        # Arrange
-        expected_company = InvestmentCompanyFactory.build(**sample_company_data)
-        with patch('src.investment_company.repositories.company_repository.InvestmentCompany', return_value=expected_company):
-            # Act
-            repository.create_company(sample_company_data, mock_session)
-
-            # Assert
-            # Cache should be cleared (we can't easily test the private method directly,
-            # but we can verify the method completes without error)
-            assert True  # If we get here, the method completed successfully
 
     ################################################################################
     # Test delete_company method
@@ -387,97 +335,4 @@ class TestCompanyRepository:
         assert result is False
         mock_session.delete.assert_not_called()
 
-    def test_delete_company_clears_cache(self, repository, mock_session):
-        """Test that delete_company clears relevant caches."""
-        # Arrange
-        company_id = 1
-        expected_company = InvestmentCompanyFactory.build(id=company_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_company
 
-        # Act
-        result = repository.delete_company(company_id, mock_session)
-
-        # Assert
-        assert result is True
-        # Cache should be cleared (we can't easily test the private method directly,
-        # but we can verify the method completes without error)
-
-    ################################################################################
-    # Test cache management
-    ################################################################################
-
-    def test_clear_cache_clears_all_caches(self, repository, mock_session):
-        """Test that _clear_cache clears all cached data."""
-        # Arrange
-        # Populate cache with some data
-        repository._cache = {'test_key': 'test_value', 'company:id:1': 'company_data'}
-
-        # Act
-        repository._clear_cache()
-
-        # Assert
-        assert len(repository._cache) == 0
-
-    def test_clear_company_caches_clears_company_specific_caches(self, repository):
-        """Test that _clear_company_caches clears only company-related cache entries."""
-        # Arrange
-        repository._cache = {
-            'company:id:1': 'company_data',
-            'company:list': 'company_list_data',
-            'other_key': 'other_data'
-        }
-
-        # Act
-        repository._clear_company_caches()
-
-        # Assert
-        assert 'company:id:1' not in repository._cache
-        assert 'company:list' not in repository._cache
-        assert 'other_key' in repository._cache  # Other cache entries should remain
-
-    def test_clear_company_cache_clears_specific_company_cache(self, repository):
-        """Test that _clear_company_cache clears specific company cache entries."""
-        # Arrange
-        company_id = 1
-        company_type = CompanyType.PRIVATE_EQUITY
-        status = CompanyStatus.ACTIVE
-        name = "Test Company"
-        sort_by = SortFieldCompany.NAME
-        sort_order = SortOrder.ASC
-        
-        repository._cache = {
-            f'company:{company_id}': 'company_data',
-            f'companies:company_type:{company_type}:status:{status}:name:{name}:sort_by:{sort_by}:sort_order:{sort_order}': 'companies_data',
-            'other_key': 'other_data'
-        }
-
-        # Act
-        repository._clear_company_cache(company_id, company_type, status, name, sort_by, sort_order)
-
-        # Assert
-        assert f'company:{company_id}' not in repository._cache
-        assert f'companies:company_type:{company_type}:status:{status}:name:{name}:sort_by:{sort_by}:sort_order:{sort_order}' not in repository._cache
-        assert 'other_key' in repository._cache  # Other cache entries should remain
-
-    def test_cache_ttl_initialization(self):
-        """Test that repository initializes with correct cache TTL."""
-        # Act
-        repository = CompanyRepository(cache_ttl=600)
-
-        # Assert
-        assert repository._cache_ttl == 600
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0
-
-    def test_default_cache_ttl_initialization(self):
-        """Test that repository initializes with default cache TTL."""
-        # Act
-        repository = CompanyRepository()
-
-        # Assert
-        assert repository._cache_ttl == 300  # Default value
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0

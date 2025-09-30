@@ -34,6 +34,7 @@ import { useNavigate } from 'react-router-dom';
 import CreateEntityModal from './CreateEntityModal';
 import CreateInvestmentCompanyModal from './CreateInvestmentCompanyModal';
 import { useInvestmentCompanies } from '../hooks/useInvestmentCompanies';
+import { useEntities } from '../hooks/useEntities';
 import { formatCurrency } from '../utils/formatters';
 
 
@@ -43,8 +44,9 @@ const OverallDashboard: React.FC = () => {
   const [showEntityModal, setShowEntityModal] = useState(false);
   const [showCompanyModal, setShowCompanyModal] = useState(false);
 
-  // Centralized API hook
+  // Centralized API hooks
   const { data: companies, loading, error, refetch } = useInvestmentCompanies();
+  const { data: entities, loading: entitiesLoading, error: entitiesError, refetch: refetchEntities } = useEntities();
 
 
 
@@ -53,8 +55,12 @@ const OverallDashboard: React.FC = () => {
     // Close modal - the modal will handle its own cleanup
     setShowEntityModal(false);
     
-    // TODO: Refresh entities list when entities are displayed
-    // For now, just provide immediate feedback
+    // Refresh entities list
+    if (refetchEntities) {
+      refetchEntities().catch((error) => {
+        console.error('Dashboard: refetch entities failed:', error);
+      });
+    }
   };
 
   const handleCompanyCreated = (company: { id: number; name: string }) => {
@@ -224,15 +230,81 @@ const OverallDashboard: React.FC = () => {
                 Create Entity
               </Button>
             </Box>
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                color: theme.palette.text.muted,
-                lineHeight: 1.6
-              }}
-            >
-              Create and manage investing entities (persons or companies) that can hold funds
-            </Typography>
+            {/* Entities Table */}
+            {entitiesLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <LoadingSpinner size="medium" />
+              </Box>
+            ) : entitiesError ? (
+              <ErrorDisplay 
+                error={createErrorInfo(entitiesError, 'Failed to load entities')}
+                onRetry={() => refetchEntities?.()}
+              />
+            ) : entities && entities.length > 0 ? (
+              <TableContainer component={Paper} sx={{ mt: 2, maxHeight: 300 }}>
+                <Table stickyHeader size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Tax Jurisdiction</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {entities.map((entity, index) => (
+                      <TableRow 
+                        key={entity.id}
+                        sx={{
+                          backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
+                          '&:hover': {
+                            backgroundColor: theme.palette.background.sidebarHover
+                          }
+                        }}
+                      >
+                        <TableCell sx={{ fontWeight: 500 }}>{entity.name}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={entity.entity_type || 'N/A'} 
+                            size="small" 
+                            color="primary" 
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={entity.tax_jurisdiction || 'N/A'} 
+                            size="small" 
+                            color="secondary" 
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell sx={{ 
+                          maxWidth: 200, 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {entity.description || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: theme.palette.text.muted,
+                  fontStyle: 'italic',
+                  textAlign: 'center',
+                  py: 2
+                }}
+              >
+                No entities found. Create your first entity to get started.
+              </Typography>
+            )}
           </CardContent>
         </Card>
 

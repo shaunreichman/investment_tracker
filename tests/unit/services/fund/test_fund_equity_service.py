@@ -105,25 +105,30 @@ class TestFundEquityService:
             
             # Assert
             assert result is not None
-            assert len(result) == 3  # All three fields changed
+            # Service now tracks both fund event changes (2 events with has_changed=True) and fund changes (3 fields) = 5 total
+            assert len(result) == 5
             
-            # Verify field changes
-            current_equity_change = next((change for change in result if change.field_name == 'current_equity_balance'), None)
-            assert current_equity_change is not None
-            assert current_equity_change.old_value == old_current_equity
-            assert current_equity_change.new_value == 6000.0
-            assert current_equity_change.object_id == mock_fund.id
-            assert current_equity_change.fund_or_company == 'FUND'
+            # Verify fund-level field changes
+            fund_current_equity_change = next((change for change in result if change.field_name == 'current_equity_balance' and change.object == 'FUND'), None)
+            assert fund_current_equity_change is not None
+            assert fund_current_equity_change.old_value == old_current_equity
+            assert fund_current_equity_change.new_value == 6000.0
+            assert fund_current_equity_change.object_id == mock_fund.id
+            assert fund_current_equity_change.object == 'FUND'
             
-            average_equity_change = next((change for change in result if change.field_name == 'average_equity_balance'), None)
-            assert average_equity_change is not None
-            assert average_equity_change.old_value == old_average_equity
-            assert average_equity_change.new_value == 5500.0
+            fund_average_equity_change = next((change for change in result if change.field_name == 'average_equity_balance' and change.object == 'FUND'), None)
+            assert fund_average_equity_change is not None
+            assert fund_average_equity_change.old_value == old_average_equity
+            assert fund_average_equity_change.new_value == 5500.0
             
-            cost_basis_change = next((change for change in result if change.field_name == 'total_cost_basis'), None)
-            assert cost_basis_change is not None
-            assert cost_basis_change.old_value == old_total_cost_basis
-            assert cost_basis_change.new_value == 12000.0
+            fund_cost_basis_change = next((change for change in result if change.field_name == 'total_cost_basis' and change.object == 'FUND'), None)
+            assert fund_cost_basis_change is not None
+            assert fund_cost_basis_change.old_value == old_total_cost_basis
+            assert fund_cost_basis_change.new_value == 12000.0
+            
+            # Verify fund event changes (2 events with has_changed=True)
+            event_changes = [change for change in result if change.object == 'FUND_EVENT' and change.field_name == 'current_equity_balance']
+            assert len(event_changes) == 2
             
             # Verify fund fields were updated
             assert mock_fund.current_equity_balance == 6000.0
@@ -144,9 +149,15 @@ class TestFundEquityService:
 
     def test_update_fund_equity_fields_no_changes_returns_none(self, service, mock_session, mock_fund, mock_equity_events, mock_event_balances):
         """Test that update_fund_equity_fields returns None when no equity values change."""
-        # Arrange
+        # Arrange - Create mock event balances where no events have changed
+        no_change_event_balances = [
+            (2000.0, False),   # (balance, has_changed=False)
+            (3500.0, False),
+            (3000.0, False)
+        ]
+        
         with patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_equity_events) as mock_repo, \
-             patch.object(service.fund_equity_calculator, 'calculate_event_equity_balances', return_value=mock_event_balances) as mock_calc_balances, \
+             patch.object(service.fund_equity_calculator, 'calculate_event_equity_balances', return_value=no_change_event_balances) as mock_calc_balances, \
              patch.object(service.fund_equity_calculator, 'calculate_current_equity_from_balances', return_value=mock_fund.current_equity_balance) as mock_calc_current, \
              patch.object(service.fund_equity_calculator, 'calculate_average_equity_from_balances', return_value=mock_fund.average_equity_balance) as mock_calc_average, \
              patch.object(service.fund_equity_calculator, 'calculate_total_cost_basis_from_balances', return_value=mock_fund.total_cost_basis) as mock_calc_cost_basis:
@@ -181,21 +192,26 @@ class TestFundEquityService:
             
             # Assert
             assert result is not None
-            assert len(result) == 2  # Only two fields changed
+            # Service tracks fund event changes (2 events with has_changed=True) + fund changes (2 fields: current_equity and cost_basis) = 4 total
+            assert len(result) == 4
             
-            # Verify only current equity and total cost basis changed
-            current_equity_change = next((change for change in result if change.field_name == 'current_equity_balance'), None)
-            assert current_equity_change is not None
-            assert current_equity_change.new_value == 6000.0
+            # Verify fund-level changes: only current equity and total cost basis changed
+            fund_current_equity_change = next((change for change in result if change.field_name == 'current_equity_balance' and change.object == 'FUND'), None)
+            assert fund_current_equity_change is not None
+            assert fund_current_equity_change.new_value == 6000.0
             
-            cost_basis_change = next((change for change in result if change.field_name == 'total_cost_basis'), None)
-            assert cost_basis_change is not None
-            assert cost_basis_change.new_value == 12000.0
+            fund_cost_basis_change = next((change for change in result if change.field_name == 'total_cost_basis' and change.object == 'FUND'), None)
+            assert fund_cost_basis_change is not None
+            assert fund_cost_basis_change.new_value == 12000.0
             
-            # Verify average equity was not updated
-            average_equity_change = next((change for change in result if change.field_name == 'average_equity_balance'), None)
-            assert average_equity_change is None
+            # Verify average equity was not updated at fund level
+            fund_average_equity_change = next((change for change in result if change.field_name == 'average_equity_balance' and change.object == 'FUND'), None)
+            assert fund_average_equity_change is None
             assert mock_fund.average_equity_balance == 4500.0  # Original value
+            
+            # Verify fund event changes (2 events with has_changed=True)
+            event_changes = [change for change in result if change.object == 'FUND_EVENT' and change.field_name == 'current_equity_balance']
+            assert len(event_changes) == 2
             
             # Verify only current equity and cost basis calculators were called
             mock_calc_current.assert_called_once()
@@ -204,9 +220,15 @@ class TestFundEquityService:
 
     def test_update_fund_equity_fields_all_flags_false_returns_none(self, service, mock_session, mock_fund, mock_equity_events, mock_event_balances):
         """Test that update_fund_equity_fields returns None when all flags are False."""
-        # Arrange
+        # Arrange - Create mock event balances where no events have changed
+        no_change_event_balances = [
+            (2000.0, False),   # (balance, has_changed=False)
+            (3500.0, False),
+            (3000.0, False)
+        ]
+        
         with patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_equity_events) as mock_repo, \
-             patch.object(service.fund_equity_calculator, 'calculate_event_equity_balances', return_value=mock_event_balances) as mock_calc_balances:
+             patch.object(service.fund_equity_calculator, 'calculate_event_equity_balances', return_value=no_change_event_balances) as mock_calc_balances:
             
             # Act - All flags False
             result = service.update_fund_equity_fields(
@@ -259,13 +281,18 @@ class TestFundEquityService:
             
             # Assert
             assert result is not None
-            assert len(result) == 2  # Only current equity and total cost basis changed
+            # Service tracks fund event changes (2 events with has_changed=True) + fund changes (2 fields: current_equity and cost_basis) = 4 total
+            assert len(result) == 4
             
-            # Verify only changed fields are in result
-            field_names = [change.field_name for change in result]
-            assert 'current_equity_balance' in field_names
-            assert 'total_cost_basis' in field_names
-            assert 'average_equity_balance' not in field_names
+            # Verify fund-level changes: only current equity and total cost basis changed
+            fund_field_names = [change.field_name for change in result if change.object == 'FUND']
+            assert 'current_equity_balance' in fund_field_names
+            assert 'total_cost_basis' in fund_field_names
+            assert 'average_equity_balance' not in fund_field_names
+            
+            # Verify fund event changes (2 events with has_changed=True)
+            event_changes = [change for change in result if change.object == 'FUND_EVENT' and change.field_name == 'current_equity_balance']
+            assert len(event_changes) == 2
             
             # Verify fund fields
             assert mock_fund.current_equity_balance == 6000.0
@@ -317,8 +344,15 @@ class TestFundEquityService:
         original_average = mock_fund.average_equity_balance
         original_cost_basis = mock_fund.total_cost_basis
         
+        # Create mock event balances where no events have changed
+        no_change_event_balances = [
+            (2000.0, False),   # (balance, has_changed=False)
+            (3500.0, False),
+            (3000.0, False)
+        ]
+        
         with patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_equity_events) as mock_repo, \
-             patch.object(service.fund_equity_calculator, 'calculate_event_equity_balances', return_value=mock_event_balances) as mock_calc_balances, \
+             patch.object(service.fund_equity_calculator, 'calculate_event_equity_balances', return_value=no_change_event_balances) as mock_calc_balances, \
              patch.object(service.fund_equity_calculator, 'calculate_current_equity_from_balances', return_value=original_current) as mock_calc_current, \
              patch.object(service.fund_equity_calculator, 'calculate_average_equity_from_balances', return_value=original_average) as mock_calc_average, \
              patch.object(service.fund_equity_calculator, 'calculate_total_cost_basis_from_balances', return_value=original_cost_basis) as mock_calc_cost_basis:

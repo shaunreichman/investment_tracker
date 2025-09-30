@@ -15,20 +15,19 @@ class FundEventCashFlowRepository:
     Fund Event Cash Flow Repository.
     
     This repository handles all database operations for fund event cash flows including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     cash flow data without direct database access.
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the fund event cash flow repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
 
     ################################################################################
@@ -63,12 +62,6 @@ class FundEventCashFlowRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
-        cache_key = f"fund_event_cash_flows:fund:{fund_id}:event:{fund_event_id}:bank:{bank_account_id}"
-
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         query = session.query(FundEventCashFlow)
 
         if fund_id:
@@ -90,10 +83,7 @@ class FundEventCashFlowRepository:
         
         # Query database
         cash_flows = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = cash_flows
-        
+
         return cash_flows
     
     def get_fund_event_cash_flow_by_id(self, fund_event_cash_flow_id: int, session: Session) -> Optional[FundEventCashFlow]:
@@ -107,18 +97,9 @@ class FundEventCashFlowRepository:
         Returns:
             FundEventCashFlow object if found, None otherwise
         """
-        cache_key = f"fund_event_cash_flow:{fund_event_cash_flow_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         cash_flow = session.query(FundEventCashFlow).filter(FundEventCashFlow.id == fund_event_cash_flow_id).first()
-        
-        # Cache the result (including None to prevent race conditions)
-        self._cache[cache_key] = cash_flow
-        
+
         return cash_flow
     
 
@@ -137,13 +118,9 @@ class FundEventCashFlowRepository:
         Returns:
             Created FundEventCashFlow instance
         """
-
         cash_flow = FundEventCashFlow(**cash_flow_data)
         session.add(cash_flow)
         session.flush()
-        
-        # Clear relevant caches
-        self._clear_cash_flow_caches(cash_flow.fund_event_id, cash_flow.bank_account_id)
         
         return cash_flow
     
@@ -167,43 +144,7 @@ class FundEventCashFlowRepository:
         if not cash_flow:
             return False
         
-        # Store IDs for cache clearing
-        fund_event_id = cash_flow.fund_event_id
-        bank_account_id = cash_flow.bank_account_id
-        
         session.delete(cash_flow)
         session.flush()
-        
-        # Clear relevant caches
-        self._clear_cash_flow_caches(fund_event_id, bank_account_id)
 
         return True
-    
-
-    ################################################################################
-    # Clear Cache
-    ################################################################################
-
-    def _clear_cash_flow_caches(self, fund_event_id: Optional[int] = None, bank_account_id: Optional[int] = None) -> None:
-        """Clear cash flow-related caches."""
-        keys_to_remove = []
-        
-        for key in self._cache.keys():
-            if key.startswith('fund_event_cash_flow'):
-                # Clear specific cash flow
-                if fund_event_id and f":event:{fund_event_id}" in key:
-                    keys_to_remove.append(key)
-                # Clear bank account related caches
-                if bank_account_id and f":bank:{bank_account_id}" in key:
-                    keys_to_remove.append(key)
-                # Clear general caches
-                if key in ['fund_event_cash_flows:total_count']:
-                    keys_to_remove.append(key)
-        
-        for key in keys_to_remove:
-            if key in self._cache:
-                del self._cache[key]
-    
-    def clear_cache(self) -> None:
-        """Clear all caches."""
-        self._cache.clear()

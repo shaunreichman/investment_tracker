@@ -86,6 +86,29 @@ export enum GroupType {
   TAX_STATEMENT = 'TAX_STATEMENT'
 }
 
+export enum EntityType {
+  PERSON = 'PERSON',
+  COMPANY = 'COMPANY',
+  TRUST = 'TRUST',
+  FUND = 'FUND',
+  OTHER = 'OTHER'
+}
+
+export enum Country {
+  AU = 'AU',
+  US = 'US',
+  UK = 'UK',
+  CA = 'CA',
+  NZ = 'NZ',
+  SG = 'SG',
+  HK = 'HK',
+  JP = 'JP',
+  DE = 'DE',
+  FR = 'FR',
+  CN = 'CN',
+  KR = 'KR'
+}
+
 // ============================================================================
 // CORE ENTITY INTERFACES
 // ============================================================================
@@ -110,6 +133,7 @@ export interface Entity {
   id: number;
   name: string;
   description?: string | undefined;
+  entity_type?: string | undefined;  // Added to match backend EntityType enum
   tax_jurisdiction?: string | undefined;
   created_at: string;
   updated_at: string;
@@ -273,6 +297,8 @@ export interface CreateInvestmentCompanyData {
 export interface CreateEntityData {
   name: string;
   description?: string;
+  entity_type?: EntityType;
+  tax_jurisdiction: Country;  // Required field in backend
 }
 
 export interface CreateFundData {

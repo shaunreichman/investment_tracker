@@ -107,7 +107,7 @@ class TestFundPnlService:
             # Check PNL change
             pnl_change = next((change for change in result if change.field_name == 'pnl'), None)
             assert pnl_change is not None
-            assert pnl_change.fund_or_company == 'FUND'
+            assert pnl_change.object == 'FUND'
             assert pnl_change.object_id == mock_fund_cost_based.id
             assert pnl_change.old_value == old_pnl
             assert pnl_change.new_value == 150.0
@@ -476,7 +476,7 @@ class TestFundPnlService:
             # Verify all changes are FundFieldChange objects with correct structure
             for change in result:
                 assert isinstance(change, FundFieldChange)
-                assert change.fund_or_company == 'FUND'
+                assert change.object == 'FUND'
                 assert change.object_id == mock_fund_cost_based.id
                 assert change.field_name in ['pnl', 'realized_pnl', 'unrealized_pnl', 'realized_pnl_dividend', 'realized_pnl_interest', 'realized_pnl_distribution']
                 assert change.old_value is None  # Original values are None

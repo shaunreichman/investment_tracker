@@ -55,6 +55,20 @@ class FundEventSecondaryService:
         self.fund_nav_service = FundNavService()
         self.fund_repository = FundRepository()
 
+    def _add_changes(self, all_changes: list, changes) -> None:
+        """
+        Add changes to the all_changes list, handling both single objects and lists.
+        
+        Args:
+            all_changes: List to add changes to
+            changes: Either a single FundFieldChange object, a list of FundFieldChange objects, or None
+        """
+        if changes:
+            if isinstance(changes, list):
+                all_changes.extend(changes)
+            else:
+                all_changes.append(changes)
+
     def handle_event_secondary_impact(self, fund_id: int, fund_event_type: EventType, 
                                     fund_event_operation: EventOperation,
                                     session: Session,
@@ -70,42 +84,96 @@ class FundEventSecondaryService:
         # 1. Update the Start Date of the Fund
         if EventType.is_equity_call_event(fund_event_type):
             if fund_event_operation == EventOperation.CREATE:
-                all_changes.append(self.fund_date_service.update_fund_start_date(fund_id=fund.id, event_id=event_id, fund_event_operation=fund_event_operation, session=session))
+                start_date_change = self.fund_date_service.update_fund_start_date(fund=fund, event_id=event_id, fund_event_operation=fund_event_operation, session=session)
+                if start_date_change:
+                    all_changes.append(start_date_change)
+                    # Flush changes to database to ensure start_date is persisted
+                    session.flush()
+                    session.refresh(fund)
             else:
-                all_changes.append(self.fund_date_service.update_fund_start_date(fund_id=fund.id, fund_event_operation=fund_event_operation, session=session))
+                start_date_change = self.fund_date_service.update_fund_start_date(fund=fund, fund_event_operation=fund_event_operation, session=session)
+                if start_date_change:
+                    all_changes.append(start_date_change)
+                    # Flush changes to database to ensure start_date is persisted
+                    session.flush()
+                    session.refresh(fund)
         
         # 2. Update the current equity balance of the fund
         if EventType.is_equity_event(fund_event_type):
-            all_changes.append(self.fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=True))
+            equity_changes = self.fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=True)
+            if equity_changes:
+                self._add_changes(all_changes, equity_changes)
+                # Flush changes to database to ensure equity balance is persisted
+                session.flush()
+                session.refresh(fund)
 
         # 3. Update the End Date of the Fund
         if EventType.is_equity_return_event(fund_event_type):
-            all_changes.append(self.fund_date_service.update_fund_end_date(fund.id, session))
+            end_date_change = self.fund_date_service.update_fund_end_date(fund=fund, session=session)
+            if end_date_change:
+                all_changes.append(end_date_change)
+                # Flush changes to database to ensure end_date is persisted
+                session.flush()
+                session.refresh(fund)
 
         # 4. Update the other balances of the fund
         if EventType.is_equity_event(fund_event_type):
-            all_changes.append(self.fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=False))
+            equity_changes = self.fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=False)
+            if equity_changes:
+                self._add_changes(all_changes, equity_changes)
+                # Flush changes to database to ensure equity balance is persisted
+                session.flush()
+                session.refresh(fund)
 
         # 5. Update the Fund Status
         if EventType.is_equity_event(fund_event_type):
-            all_changes.append(self.fund_status_service.update_status_after_equity_event(fund, session))
+            status_change = self.fund_status_service.update_status_after_equity_event(fund, session)
+            if status_change:
+                self._add_changes(all_changes, status_change)
+                # Flush changes to database to ensure status is persisted
+                session.flush()
+                session.refresh(fund)
+
         if EventType.is_tax_statement_event(fund_event_type):
-            all_changes.append(self.fund_status_service.update_status_after_tax_statement(fund, session))
+            status_change = self.fund_status_service.update_status_after_tax_statement(fund, session)
+            if status_change:
+                self._add_changes(all_changes, status_change)
+                # Flush changes to database to ensure status is persisted
+                session.flush()
+                session.refresh(fund)
 
         # 6. Update the Duration of the Fund
         if EventType.is_equity_event(fund_event_type):
-            all_changes.append(self.fund_date_service.update_fund_duration(fund, session))
+            duration_change = self.fund_date_service.update_fund_duration(fund, session)
+            if duration_change:
+                self._add_changes(all_changes, duration_change)
+                # Flush changes to database to ensure duration is persisted
+                session.flush()
+                session.refresh(fund)
 
         # 7. Update the IRRs of the fund
-        all_changes.append(self.fund_irr_service.update_irrs(fund, session))
-
-        ##### If deleting a capital event, we should check if a debt cost exists on this date and if so we should recalculate the debt costs for the fund
+        irr_changes = self.fund_irr_service.update_irrs(fund, session)
+        if irr_changes:
+            self._add_changes(all_changes, irr_changes)
+            # Flush changes to database to ensure IRRs are persisted
+            session.flush()
+            session.refresh(fund)
 
         # 8. Update the NAV of the Fund
         if fund_event_type == EventType.NAV_UPDATE:
-            all_changes.append(self.fund_nav_service.update_nav_fund_fields(fund, session))
+            nav_changes = self.fund_nav_service.update_nav_fund_fields(fund, session)
+            if nav_changes:
+                self._add_changes(all_changes, nav_changes)
+                # Flush changes to database to ensure NAV is persisted
+                session.flush()
+                session.refresh(fund)
 
         # 9. Update the Profitability of the Fund
-        all_changes.append(self.fund_pnl_service.update_fund_pnl(fund, session))
+        pnl_changes = self.fund_pnl_service.update_fund_pnl(fund, session)
+        if pnl_changes:
+            self._add_changes(all_changes, pnl_changes)
+            # Flush changes to database to ensure PNL is persisted
+            session.flush()
+            session.refresh(fund)
 
         return all_changes

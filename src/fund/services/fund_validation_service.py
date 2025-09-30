@@ -4,10 +4,11 @@ Fund Validation Service.
 
 from typing import Dict, List, Any
 from sqlalchemy.orm import Session
-from src.fund.models import Fund
+from src.fund.models import Fund, FundEvent
 from src.fund.enums.fund_enums import FundTrackingType
 from src.fund.enums.fund_event_enums import EventType
-from src.fund.repositories import FundEventRepository, FundTaxStatementRepository, FundRepository
+from src.fund.repositories import FundEventRepository, FundTaxStatementRepository, FundRepository, FundEventCashFlowRepository
+from src.shared.enums.shared_enums import SortOrder
 
 
 class FundValidationService:
@@ -40,6 +41,7 @@ class FundValidationService:
         self.fund_event_repository = FundEventRepository()
         self.fund_tax_statement_repository = FundTaxStatementRepository()
         self.fund_repository = FundRepository()
+        self.fund_event_cash_flow_repository = FundEventCashFlowRepository()
     
     def validate_fund_deletion(self, fund: Fund, session: Session) -> Dict[str, List[str]]:
         """
@@ -80,23 +82,28 @@ class FundValidationService:
             event_data: Event data
             session: Database session
         """
+        # Get the fund to check its tracking type
+        fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
+        if not fund:
+            raise ValueError(f"Fund not found")
+
         event_type = event_data['event_type']
         if event_type == EventType.CAPITAL_CALL:
-            return self.validate_capital_call(event_data, session)
+            return self.validate_capital_call(fund, event_data, session)
         elif event_type == EventType.RETURN_OF_CAPITAL:
-            return self.validate_return_of_capital(event_data, session)
+            return self.validate_return_of_capital(fund, event_data, session)
         elif event_type == EventType.UNIT_PURCHASE:
-            return self.validate_unit_purchase(event_data, session)
+            return self.validate_unit_purchase(fund, event_data, session)
         elif event_type == EventType.UNIT_SALE:
-            return self.validate_unit_sale(event_data, session)
+            return self.validate_unit_sale(fund, event_data, session)
         elif event_type == EventType.NAV_UPDATE:
-            return self.validate_nav_update(event_data, session)
+            return self.validate_nav_update(fund, event_data, session)
         elif event_type == EventType.DISTRIBUTION:
             return self.validate_distribution(event_data, session)
         else:
             raise ValueError(f"Invalid event type: {event_type}")
     
-    def validate_capital_call(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
+    def validate_capital_call(self, fund: Fund, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate capital call creation.
         
@@ -108,20 +115,30 @@ class FundValidationService:
             dict: Validation errors by field name
         """
         errors = {}
+        
         # BUSINESS RULE: Capital calls only for cost-based funds
-        if event_data['tracking_type'] != FundTrackingType.COST_BASED:
+        if fund.tracking_type != FundTrackingType.COST_BASED:
             errors['fund_type'] = ["Capital calls are only applicable for cost-based funds"]
         
+        prev_fund_events = self.fund_event_repository.get_fund_events(session,
+                                fund_ids=[fund.id],
+                                event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL],
+                                end_event_date=event_data['event_date'],
+                                sort_order=SortOrder.ASC)
+
         # BUSINESS RULE: Cannot call more than remaining commitment
-        fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
-        if not fund:
-            raise ValueError(f"Fund not found")
-        if fund.commitment_amount and event_data['amount'] > fund.commitment_amount:
-            errors['amount'] = ["Cannot call more capital than remaining commitment"]
-        
+        if fund.commitment_amount is not None:
+            if prev_fund_events:
+                prev_capital_call = prev_fund_events[-1]
+                if event_data['amount'] > fund.commitment_amount - prev_capital_call.current_equity_balance:
+                    errors['amount'] = ["Cannot call more capital than remaining commitment"]
+            else:
+                if event_data['amount'] > fund.commitment_amount:
+                    errors['amount'] = ["Cannot call more capital than total commitment for first capital call"]
+
         return errors
     
-    def validate_return_of_capital(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
+    def validate_return_of_capital(self, fund: Fund, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate return of capital creation.
         
@@ -135,19 +152,25 @@ class FundValidationService:
         errors = {}
         
         # BUSINESS RULE: Returns only for cost-based funds
-        if event_data['tracking_type'] != FundTrackingType.COST_BASED:
+        if fund.tracking_type != FundTrackingType.COST_BASED:
             errors['fund_type'] = ["Returns of capital are only applicable for cost-based funds"]
 
-        # BUSINESS RULE: Cannot return more capital than remaining equity
-        fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
-        if not fund:
-            raise ValueError(f"Fund not found")
-        if fund.current_equity_balance and event_data['amount'] > fund.current_equity_balance:
-            errors['amount'] = ["Cannot return more capital than remaining equity"]
-        
+        prev_fund_events = self.fund_event_repository.get_fund_events(session,
+                                fund_ids=[fund.id],
+                                event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL],
+                                end_event_date=event_data['event_date'],
+                                sort_order=SortOrder.ASC)
+
+        if prev_fund_events:
+            prev_return_of_capital = prev_fund_events[-1]
+            if event_data['amount'] > prev_return_of_capital.current_equity_balance:
+                errors['amount'] = ["Cannot return more capital than remaining equity"]
+        else:
+            errors['amount'] = ["We first need to do a capital call before we can return of capital"]
+
         return errors
     
-    def validate_unit_purchase(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
+    def validate_unit_purchase(self, fund: Fund, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate unit purchase business rules.
         
@@ -161,12 +184,12 @@ class FundValidationService:
         errors = {}
 
         # BUSINESS RULE: Unit purchases only for NAV-based funds
-        if event_data['tracking_type'] != FundTrackingType.NAV_BASED:
+        if fund.tracking_type != FundTrackingType.NAV_BASED:
             errors['fund_type'] = ["Unit purchases are only applicable for NAV-based funds"]
         
         return errors
     
-    def validate_unit_sale(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
+    def validate_unit_sale(self, fund: Fund, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate unit sale business rules.
         
@@ -180,19 +203,25 @@ class FundValidationService:
         errors = {}
 
         # BUSINESS RULE: Unit sales only for NAV-based funds
-        if event_data['tracking_type'] != FundTrackingType.NAV_BASED:
+        if fund.tracking_type != FundTrackingType.NAV_BASED:
             errors['fund_type'] = ["Unit sales are only applicable for NAV-based funds"]
-        
-        # BUSINESS RULE: Cannot sell more units than available
-        fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
-        if not fund:
-            raise ValueError(f"Fund not found")
-        if event_data['units'] > fund.current_units:
-            errors['units'] = [f"Insufficient units: trying to sell {event_data['units']} but only {fund.current_units} available"]
+
+        prev_fund_events = self.fund_event_repository.get_fund_events(session,
+                                fund_ids=[fund.id],
+                                event_types=[EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
+                                end_event_date=event_data['event_date'],
+                                sort_order=SortOrder.ASC)
+
+        if prev_fund_events:
+            prev_unit_sale = prev_fund_events[-1]
+            if event_data['units_sold'] > prev_unit_sale.units_owned:
+                errors['units_sold'] = ["Cannot sell more units than available"]
+        else:
+            errors['units_sold'] = ["We first need to do a unit purchase before we can sell units"]
         
         return errors
     
-    def validate_nav_update(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
+    def validate_nav_update(self, fund: Fund, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
         Validate NAV update business rules.
         
@@ -206,7 +235,7 @@ class FundValidationService:
         errors = {}
 
         # BUSINESS RULE: NAV updates only for NAV-based funds
-        if event_data['tracking_type'] != FundTrackingType.NAV_BASED:
+        if fund.tracking_type != FundTrackingType.NAV_BASED:
             errors['fund_type'] = ["NAV updates are only applicable for NAV-based funds"]
         
         return errors
@@ -225,6 +254,23 @@ class FundValidationService:
         errors = {}
     
         # No business logic validation for distributions. The other validation is done in the middleware.
+        
+        return errors
+
+    def validate_fund_event_deletion(self, event: FundEvent, session: Session) -> Dict[str, List[str]]:
+        """
+        Validate fund event deletion.
+        
+        Args:
+            event: Event to validate for deletion
+            session: Database session
+        """
+        errors = {}
+
+        # Validate the event doesn't have an associated fund event cash flow
+        fund_event_cash_flows = self.fund_event_cash_flow_repository.get_fund_event_cash_flows(session, fund_event_id=event.id)
+        if fund_event_cash_flows:
+            errors['fund_event_cash_flows'] = ["Cannot delete event with associated fund event cash flows"]
         
         return errors
 

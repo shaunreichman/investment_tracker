@@ -26,6 +26,7 @@ interface CreateEntityModalProps {
 interface EntityFormData {
   name: string;
   description: string;
+  entity_type: string;
   tax_jurisdiction: string;
 }
 
@@ -33,6 +34,7 @@ interface EntityFormData {
 const initialFormValues: EntityFormData = {
   name: '',
   description: '',
+  entity_type: 'PERSON',
   tax_jurisdiction: 'AU'
 };
 
@@ -55,6 +57,7 @@ const validators = {
     }
     return undefined;
   },
+  entity_type: validationRules.required('Entity type'),
   tax_jurisdiction: validationRules.required('Tax jurisdiction')
 };
 
@@ -91,6 +94,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
       const payload = {
         name: values.name.trim(),
         description: values.description.trim() || '',
+        entity_type: values.entity_type,
         tax_jurisdiction: values.tax_jurisdiction
       };
       
@@ -222,6 +226,31 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
             />
           </FormField>
 
+          {/* Entity Type */}
+          <FormField
+            label="Entity Type"
+            required
+            error={validationErrors.entity_type || undefined}
+            touched={touched.entity_type}
+            showErrorOnlyWhenTouched={true}
+          >
+            <FormControl fullWidth error={!!validationErrors.entity_type}>
+              <InputLabel>Entity Type</InputLabel>
+              <Select
+                value={formData.entity_type}
+                onChange={(e) => setFieldValue('entity_type', e.target.value)}
+                label="Entity Type"
+                disabled={isSubmitting}
+              >
+                <MenuItem value="PERSON">Person</MenuItem>
+                <MenuItem value="COMPANY">Company</MenuItem>
+                <MenuItem value="TRUST">Trust</MenuItem>
+                <MenuItem value="FUND">Fund</MenuItem>
+                <MenuItem value="OTHER">Other</MenuItem>
+              </Select>
+            </FormControl>
+          </FormField>
+
           {/* Tax Jurisdiction */}
           <FormField
             label="Tax Jurisdiction"
@@ -243,6 +272,13 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                 <MenuItem value="UK">United Kingdom</MenuItem>
                 <MenuItem value="CA">Canada</MenuItem>
                 <MenuItem value="NZ">New Zealand</MenuItem>
+                <MenuItem value="SG">Singapore</MenuItem>
+                <MenuItem value="HK">Hong Kong</MenuItem>
+                <MenuItem value="JP">Japan</MenuItem>
+                <MenuItem value="DE">Germany</MenuItem>
+                <MenuItem value="FR">France</MenuItem>
+                <MenuItem value="CN">China</MenuItem>
+                <MenuItem value="KR">Korea</MenuItem>
               </Select>
             </FormControl>
           </FormField>

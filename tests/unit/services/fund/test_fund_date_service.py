@@ -73,29 +73,27 @@ class TestFundDateService:
     def test_update_fund_start_date_fund_not_found(self, service, mock_session):
         """Test update_fund_start_date returns None when fund is not found."""
         # Arrange
-        service.fund_repository.get_fund_by_id.return_value = None
+        fund = None  # Simulate fund not found
 
         # Act
-        result = service.update_fund_start_date(999, mock_session)
+        result = service.update_fund_start_date(fund, mock_session)
 
         # Assert
         assert result is None
-        service.fund_repository.get_fund_by_id.assert_called_once_with(999, mock_session)
 
     def test_update_fund_start_date_create_operation_with_valid_event(self, service, mock_session, sample_fund, sample_event):
         """Test update_fund_start_date with CREATE operation and valid event."""
         # Arrange
         sample_fund.start_date = date(2020, 3, 1)  # Later than event date
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         service.fund_event_repository.get_fund_event_by_id.return_value = sample_event
 
         # Act
-        result = service.update_fund_start_date(1, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is not None
         assert isinstance(result, FundFieldChange)
-        assert result.fund_or_company == 'FUND'
+        assert result.object == 'FUND'
         assert result.object_id == 1
         assert result.field_name == 'start_date'
         assert result.old_value == date(2020, 3, 1)
@@ -105,11 +103,10 @@ class TestFundDateService:
     def test_update_fund_start_date_create_operation_with_invalid_event(self, service, mock_session, sample_fund):
         """Test update_fund_start_date with CREATE operation and invalid event."""
         # Arrange
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         service.fund_event_repository.get_fund_event_by_id.return_value = None
 
         # Act
-        result = service.update_fund_start_date(1, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is None
@@ -117,12 +114,11 @@ class TestFundDateService:
     def test_update_fund_start_date_create_operation_with_wrong_fund_id(self, service, mock_session, sample_fund, sample_event):
         """Test update_fund_start_date with CREATE operation and event for different fund."""
         # Arrange
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         sample_event.fund_id = 999  # Different fund ID
         service.fund_event_repository.get_fund_event_by_id.return_value = sample_event
 
         # Act
-        result = service.update_fund_start_date(1, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is None
@@ -130,7 +126,6 @@ class TestFundDateService:
     def test_update_fund_start_date_create_operation_with_non_capital_event(self, service, mock_session, sample_fund):
         """Test update_fund_start_date with CREATE operation and non-capital event."""
         # Arrange
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         non_capital_event = FundEventFactory.build(
             id=1,
             fund_id=1,
@@ -140,7 +135,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_event_by_id.return_value = non_capital_event
 
         # Act
-        result = service.update_fund_start_date(1, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is None
@@ -149,11 +144,10 @@ class TestFundDateService:
         """Test update_fund_start_date with CREATE operation and event date later than current start date."""
         # Arrange
         sample_fund.start_date = date(2020, 1, 1)  # Earlier than event date
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         service.fund_event_repository.get_fund_event_by_id.return_value = sample_event
 
         # Act
-        result = service.update_fund_start_date(1, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is None  # No change because event date is not earlier
@@ -161,7 +155,6 @@ class TestFundDateService:
     def test_update_fund_start_date_general_operation_with_events(self, service, mock_session, sample_fund):
         """Test update_fund_start_date with general operation and existing events."""
         # Arrange
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         events = [
             FundEventFactory.build(
                 id=1,
@@ -179,7 +172,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_events.return_value = events
 
         # Act
-        result = service.update_fund_start_date(1, mock_session)
+        result = service.update_fund_start_date(sample_fund, mock_session)
 
         # Assert
         assert result is not None
@@ -190,11 +183,10 @@ class TestFundDateService:
     def test_update_fund_start_date_general_operation_no_events(self, service, mock_session, sample_fund):
         """Test update_fund_start_date with general operation and no events."""
         # Arrange
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         service.fund_event_repository.get_fund_events.return_value = []
 
         # Act
-        result = service.update_fund_start_date(1, mock_session)
+        result = service.update_fund_start_date(sample_fund, mock_session)
 
         # Assert
         assert result is None
@@ -202,7 +194,6 @@ class TestFundDateService:
     def test_update_fund_start_date_no_change(self, service, mock_session, sample_fund):
         """Test update_fund_start_date when no change is needed."""
         # Arrange
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         events = [
             FundEventFactory.build(
                 id=1,
@@ -214,7 +205,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_events.return_value = events
 
         # Act
-        result = service.update_fund_start_date(1, mock_session)
+        result = service.update_fund_start_date(sample_fund, mock_session)
 
         # Assert
         assert result is None
@@ -229,7 +220,7 @@ class TestFundDateService:
         service.fund_repository.get_fund_by_id.return_value = None
 
         # Act
-        result = service.update_fund_end_date(999, mock_session)
+        result = service.update_fund_end_date(None, mock_session)
 
         # Assert
         assert result is None
@@ -254,7 +245,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_events.return_value = events
 
         # Act
-        result = service.update_fund_end_date(1, mock_session)
+        result = service.update_fund_end_date(fund, mock_session)
 
         # Assert
         assert result is not None
@@ -283,7 +274,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_events.return_value = events
 
         # Act
-        result = service.update_fund_end_date(1, mock_session)
+        result = service.update_fund_end_date(fund, mock_session)
 
         # Assert
         assert result is not None
@@ -302,7 +293,7 @@ class TestFundDateService:
         service.fund_repository.get_fund_by_id.return_value = fund
 
         # Act
-        result = service.update_fund_end_date(1, mock_session)
+        result = service.update_fund_end_date(fund, mock_session)
 
         # Assert
         assert result is None
@@ -328,7 +319,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_events.return_value = events
 
         # Act
-        result = service.update_fund_end_date(1, mock_session)
+        result = service.update_fund_end_date(fund, mock_session)
 
         # Assert
         assert result is not None
@@ -348,7 +339,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_events.return_value = []
 
         # Act
-        result = service.update_fund_end_date(1, mock_session)
+        result = service.update_fund_end_date(fund, mock_session)
 
         # Assert
         assert result is None
@@ -438,7 +429,7 @@ class TestFundDateService:
             mock_date.today.return_value = date(2022, 3, 10)
 
             # Act
-            result = service.get_fund_financial_years(sample_fund, mock_session)
+            result = service.get_fund_financial_years(sample_fund)
 
             # Assert
             assert isinstance(result, set)
@@ -457,7 +448,7 @@ class TestFundDateService:
             mock_date.today.return_value = date(2022, 3, 10)  # Before June, so end_year should be 2022
 
             # Act
-            result = service.get_fund_financial_years(sample_fund, mock_session)
+            result = service.get_fund_financial_years(sample_fund)
 
             # Assert
             assert isinstance(result, set)
@@ -476,7 +467,7 @@ class TestFundDateService:
             mock_date.today.return_value = date(2022, 3, 10)
 
             # Act
-            result = service.get_fund_financial_years(sample_fund, mock_session)
+            result = service.get_fund_financial_years(sample_fund)
 
             # Assert
             assert isinstance(result, set)
@@ -492,7 +483,7 @@ class TestFundDateService:
 
         # Act & Assert
         with pytest.raises(ValueError, match="Fund.start_date is not set"):
-            service.get_fund_financial_years(sample_fund, mock_session)
+            service.get_fund_financial_years(sample_fund)
 
     def test_get_fund_financial_years_invalid_year_type_raises_error(self, service, mock_session, sample_fund):
         """Test get_fund_financial_years raises ValueError with invalid year type."""
@@ -502,7 +493,7 @@ class TestFundDateService:
 
         # Act & Assert
         with pytest.raises(ValueError, match="Invalid financial year type: INVALID_TYPE"):
-            service.get_fund_financial_years(sample_fund, mock_session)
+            service.get_fund_financial_years(sample_fund)
 
     def test_get_fund_financial_years_single_year(self, service, mock_session, sample_fund):
         """Test get_fund_financial_years with single year range."""
@@ -514,7 +505,7 @@ class TestFundDateService:
             mock_date.today.return_value = date(2022, 8, 10)
 
             # Act
-            result = service.get_fund_financial_years(sample_fund, mock_session)
+            result = service.get_fund_financial_years(sample_fund)
 
             # Assert
             assert isinstance(result, set)
@@ -534,7 +525,6 @@ class TestFundDateService:
     def test_fund_field_change_creation(self, service, mock_session, sample_fund):
         """Test FundFieldChange object creation and properties."""
         # Arrange
-        service.fund_repository.get_fund_by_id.return_value = sample_fund
         events = [
             FundEventFactory.build(
                 id=1,
@@ -546,11 +536,11 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_events.return_value = events
 
         # Act
-        result = service.update_fund_start_date(1, mock_session)
+        result = service.update_fund_start_date(sample_fund, mock_session)
 
         # Assert
         assert result is not None
-        assert result.fund_or_company == 'FUND'
+        assert result.object == 'FUND'
         assert result.object_id == 1
         assert result.field_name == 'start_date'
         assert result.old_value == date(2020, 1, 1)

@@ -313,45 +313,99 @@ class TestFundEventService:
     # Test delete_fund_event method
     ################################################################################
 
-    def test_delete_fund_event_calls_repositories_and_handles_secondary_impacts(self, service, mock_session, mock_fund, mock_fund_event):
-        """Test that delete_fund_event orchestrates repository calls and secondary impacts."""
+    def test_delete_fund_event_successfully_deletes_when_validation_passes(self, service, mock_session, mock_fund, mock_fund_event):
+        """Test that delete_fund_event successfully deletes event when validation passes."""
         # Arrange
         fund_id = 1
         event_id = 1
         mock_change = Mock()
         mock_change.to_dict.return_value = {'field': 'value'}
         
-        with patch.object(service.fund_event_secondary_service, 'handle_event_secondary_impact', return_value=[mock_change]) as mock_secondary:
-            # Note: This test focuses on service orchestration rather than repository implementation
-            # The actual repository behavior is tested in repository layer tests
+        with patch('src.fund.repositories.FundRepository') as mock_fund_repo_class, \
+             patch('src.fund.repositories.FundEventRepository') as mock_event_repo_class, \
+             patch.object(service.fund_validation_service, 'validate_fund_event_deletion', return_value={}) as mock_validate, \
+             patch.object(service.fund_event_secondary_service, 'handle_event_secondary_impact', return_value=[mock_change]) as mock_secondary, \
+             patch('src.fund.repositories.DomainFundEventRepository') as mock_domain_repo_class:
             
-            # Act & Assert - We expect this to raise an error due to repository mocking complexity
-            # but we can verify the service calls the secondary impact handler
-            try:
-                service.delete_fund_event(fund_id, event_id, mock_session)
-            except Exception:
-                pass  # Expected due to repository mocking complexity
+            # Setup repository mocks
+            mock_fund_repo = mock_fund_repo_class.return_value
+            mock_fund_repo.get_fund_by_id.return_value = mock_fund
             
-            # The key service behavior we're testing is that it handles secondary impacts
-            # This would be called if the repository operations succeed
-            # mock_secondary.assert_called_once()
+            mock_event_repo = mock_event_repo_class.return_value
+            mock_event_repo.get_fund_event_by_id.return_value = mock_fund_event
+            mock_event_repo.delete_fund_event.return_value = True
+            
+            mock_domain_repo = mock_domain_repo_class.return_value
+            mock_domain_repo.create_domain_fund_event.return_value = Mock()
+            
+            # Act
+            result = service.delete_fund_event(fund_id, event_id, mock_session)
 
-    def test_delete_fund_event_service_orchestration(self, service, mock_session):
-        """Test that delete_fund_event follows the correct service orchestration pattern."""
+            # Assert
+            assert result is True
+            mock_validate.assert_called_once_with(mock_fund_event, mock_session)
+            mock_event_repo.delete_fund_event.assert_called_once_with(event_id, mock_session)
+            mock_secondary.assert_called_once()
+
+    def test_delete_fund_event_raises_error_when_validation_fails(self, service, mock_session, mock_fund, mock_fund_event):
+        """Test that delete_fund_event raises ValueError when validation fails."""
         # Arrange
         fund_id = 1
         event_id = 1
+        validation_errors = {'fund_event_cash_flows': ['Cannot delete event with associated fund event cash flows']}
         
-        # This test verifies the service follows the correct pattern:
-        # 1. Get fund and event
-        # 2. Delete event via repository
-        # 3. Handle secondary impacts
-        # 4. Create domain events if needed
+        with patch('src.fund.repositories.FundRepository') as mock_fund_repo_class, \
+             patch('src.fund.repositories.FundEventRepository') as mock_event_repo_class, \
+             patch.object(service.fund_validation_service, 'validate_fund_event_deletion', return_value=validation_errors) as mock_validate:
+            
+            # Setup repository mocks
+            mock_fund_repo = mock_fund_repo_class.return_value
+            mock_fund_repo.get_fund_by_id.return_value = mock_fund
+            
+            mock_event_repo = mock_event_repo_class.return_value
+            mock_event_repo.get_fund_event_by_id.return_value = mock_fund_event
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Validation errors"):
+                service.delete_fund_event(fund_id, event_id, mock_session)
+            
+            # Validation should be called
+            mock_validate.assert_called_once_with(mock_fund_event, mock_session)
+            # Delete should NOT be called when validation fails
+            mock_event_repo.delete_fund_event.assert_not_called()
+
+    def test_delete_fund_event_raises_error_when_fund_not_found(self, service, mock_session):
+        """Test that delete_fund_event raises ValueError when fund not found."""
+        # Arrange
+        fund_id = 999
+        event_id = 1
         
-        # Act & Assert - We expect this to fail due to repository complexity
-        # but the service structure is correct
-        with pytest.raises(Exception):  # Expect any exception due to repository mocking
-            service.delete_fund_event(fund_id, event_id, mock_session)
+        with patch('src.fund.repositories.FundRepository') as mock_fund_repo_class:
+            mock_fund_repo = mock_fund_repo_class.return_value
+            mock_fund_repo.get_fund_by_id.return_value = None
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Fund with id 999 not found"):
+                service.delete_fund_event(fund_id, event_id, mock_session)
+
+    def test_delete_fund_event_raises_error_when_event_not_found(self, service, mock_session, mock_fund):
+        """Test that delete_fund_event raises ValueError when event not found."""
+        # Arrange
+        fund_id = 1
+        event_id = 999
+        
+        with patch('src.fund.repositories.FundRepository') as mock_fund_repo_class, \
+             patch('src.fund.repositories.FundEventRepository') as mock_event_repo_class:
+            
+            mock_fund_repo = mock_fund_repo_class.return_value
+            mock_fund_repo.get_fund_by_id.return_value = mock_fund
+            
+            mock_event_repo = mock_event_repo_class.return_value
+            mock_event_repo.get_fund_event_by_id.return_value = None
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Event with id 999 not found"):
+                service.delete_fund_event(fund_id, event_id, mock_session)
 
     ################################################################################
     # Test service initialization

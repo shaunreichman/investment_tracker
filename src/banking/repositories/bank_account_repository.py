@@ -15,20 +15,19 @@ class BankAccountRepository:
     Bank Account Repository.
     
     This repository handles all database operations for bank accounts including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     bank account data without direct database access.
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the bank account repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
 
     ################################################################################
@@ -70,12 +69,6 @@ class BankAccountRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
-        cache_key = f"bank_accounts:bank_id:{bank_id}:entity_id:{entity_id}:account_name:{account_name}:currency:{currency}:status:{status}:account_type:{account_type}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Get all bank accounts
         bank_accounts = session.query(BankAccount)
         if bank_id:
@@ -105,9 +98,6 @@ class BankAccountRepository:
 
         bank_accounts = bank_accounts.all()
 
-        # Cache the result
-        self._cache[cache_key] = bank_accounts
-
         return bank_accounts
     
     def get_bank_account_by_id(self, bank_account_id: int, session: Session) -> Optional[BankAccount]:
@@ -121,18 +111,8 @@ class BankAccountRepository:
         Returns:
             BankAccount object if found, None otherwise
         """
-        cache_key = f"bank_account:{bank_account_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         account = session.query(BankAccount).filter(BankAccount.id == bank_account_id).first()
-        
-        # Cache the result
-        if account:
-            self._cache[cache_key] = account
         
         return account
 
@@ -152,9 +132,6 @@ class BankAccountRepository:
         bank_account = BankAccount(**bank_account_data)
         session.add(bank_account)
         session.flush()
-        
-        # Clear relevant caches
-        self._clear_bank_account_caches()
         
         return bank_account
 
@@ -178,28 +155,4 @@ class BankAccountRepository:
         session.delete(bank_account)
         session.flush()
         
-        # Clear relevant caches
-        self._clear_bank_account_caches()
-
         return True
-
-
-    ################################################################################
-    # Clear Cache
-    ################################################################################
-    
-    def _clear_bank_account_caches(self) -> None:
-        """Clear all bank account-related caches."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('bank_account')]
-        for key in keys_to_remove:
-            del self._cache[key]
-    
-    def clear_uniqueness_cache(self, entity_id: int, bank_id: int, account_number: str) -> None:
-        """Clear cache for specific uniqueness check to prevent race conditions."""
-        cache_key = f"bank_account:unique:{entity_id}:{bank_id}:{account_number}"
-        if cache_key in self._cache:
-            del self._cache[cache_key]
-    
-    def clear_cache(self) -> None:
-        """Clear all caches."""
-        self._cache.clear()

@@ -1,14 +1,13 @@
 """
 Bank Account Repository Unit Tests.
 
-This module tests the BankAccountRepository class, focusing on data access operations,
-caching behavior, and error handling. Tests are precise and focused on repository
+This module tests the BankAccountRepository class, focusing on data access operations
+and error handling. Tests are precise and focused on repository
 functionality without testing business logic or validation.
 
 Test Coverage:
 - CRUD operations (Create, Read, Delete)
 - Filtering and sorting functionality
-- Caching behavior and cache invalidation
 - Error handling for invalid parameters
 - Database session interactions
 """
@@ -292,25 +291,6 @@ class TestBankAccountRepository:
         with pytest.raises(ValueError, match="Invalid sort order"):
             repository.get_bank_accounts(mock_session, sort_order="INVALID_ORDER")
 
-    def test_get_bank_accounts_uses_cache(self, repository, mock_session):
-        """Test that get_bank_accounts uses cache for repeated queries."""
-        # Arrange
-        expected_accounts = [BankAccountFactory.build() for _ in range(2)]
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.all.return_value = expected_accounts
-
-        # Act - First call
-        result1 = repository.get_bank_accounts(mock_session)
-        # Second call with same parameters
-        result2 = repository.get_bank_accounts(mock_session)
-
-        # Assert
-        assert result1 == expected_accounts
-        assert result2 == expected_accounts
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test get_bank_account_by_id method
@@ -349,26 +329,6 @@ class TestBankAccountRepository:
         # Assert
         assert result is None
 
-    def test_get_bank_account_by_id_uses_cache(self, repository, mock_session):
-        """Test that get_bank_account_by_id uses cache for repeated queries."""
-        # Arrange
-        account_id = 1
-        expected_account = BankAccountFactory.build(id=account_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_account
-
-        # Act - First call
-        result1 = repository.get_bank_account_by_id(account_id, mock_session)
-        # Second call with same ID
-        result2 = repository.get_bank_account_by_id(account_id, mock_session)
-
-        # Assert
-        assert result1 == expected_account
-        assert result2 == expected_account
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test create_bank_account method
@@ -387,18 +347,6 @@ class TestBankAccountRepository:
             mock_session.add.assert_called_once_with(expected_account)
             mock_session.flush.assert_called_once()
 
-    def test_create_bank_account_clears_cache(self, repository, mock_session, sample_bank_account_data):
-        """Test that create_bank_account clears relevant caches."""
-        # Arrange
-        expected_account = BankAccountFactory.build(**sample_bank_account_data)
-        with patch('src.banking.repositories.bank_account_repository.BankAccount', return_value=expected_account):
-            # Act
-            repository.create_bank_account(sample_bank_account_data, mock_session)
-
-            # Assert
-            # Cache should be cleared (we can't easily test the private method directly,
-            # but we can verify the method completes without error)
-            assert True  # If we get here, the method completed successfully
 
     ################################################################################
     # Test delete_bank_account method
@@ -438,62 +386,4 @@ class TestBankAccountRepository:
         assert result is False
         mock_session.delete.assert_not_called()
 
-    def test_delete_bank_account_clears_cache(self, repository, mock_session):
-        """Test that delete_bank_account clears relevant caches."""
-        # Arrange
-        account_id = 1
-        expected_account = BankAccountFactory.build(id=account_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_account
 
-        # Act
-        result = repository.delete_bank_account(account_id, mock_session)
-
-        # Assert
-        assert result is True
-        # Cache should be cleared (we can't easily test the private method directly,
-        # but we can verify the method completes without error)
-
-    ################################################################################
-    # Test cache management
-    ################################################################################
-
-    def test_clear_cache_clears_all_caches(self, repository, mock_session):
-        """Test that clear_cache clears all cached data."""
-        # Arrange
-        # Populate cache with some data
-        repository._cache = {'test_key': 'test_value', 'bank_account:id:1': 'account_data'}
-
-        # Act
-        repository.clear_cache()
-
-        # Assert
-        assert len(repository._cache) == 0
-
-    def test_clear_uniqueness_cache_clears_specific_cache(self, repository):
-        """Test that clear_uniqueness_cache clears specific cache entry."""
-        # Arrange
-        entity_id = 1
-        bank_id = 1
-        account_number = "123456789"
-        cache_key = f"bank_account:unique:{entity_id}:{bank_id}:{account_number}"
-        repository._cache = {cache_key: 'cached_data', 'other_key': 'other_data'}
-
-        # Act
-        repository.clear_uniqueness_cache(entity_id, bank_id, account_number)
-
-        # Assert
-        assert cache_key not in repository._cache
-        assert 'other_key' in repository._cache  # Other cache entries should remain
-
-    def test_cache_ttl_initialization(self):
-        """Test that repository initializes with correct cache TTL."""
-        # Act
-        repository = BankAccountRepository(cache_ttl=600)
-
-        # Assert
-        assert repository._cache_ttl == 600
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0

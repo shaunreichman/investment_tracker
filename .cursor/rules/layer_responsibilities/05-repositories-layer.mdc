@@ -12,9 +12,7 @@ Repositories provide data access abstraction, handle persistence operations, and
 ## Should Do
 - **CRUD operations**: Create, read, update, delete data
 - **Complex queries**: Filtering, sorting, pagination, search with proper SQLAlchemy patterns
-- **Caching**: Implement in-memory caching with TTL for frequently accessed data
 - **Query validation**: Validate sort fields and sort orders before executing queries
-- **Cache management**: Clear relevant caches when data changes
 - **Data transformation**: Handle enum conversions and data formatting for database storage
 
 ## Shouldn't Do
@@ -27,22 +25,15 @@ Repositories provide data access abstraction, handle persistence operations, and
 ## Examples
 
 ```python
-# ✅ Good: Data access with caching and query validation
+# ✅ Good: Data access with query validation and filtering
 class BankRepository:
-    def __init__(self, cache_ttl: int = 300):
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+    def __init__(self):
+        pass
     
     def get_banks(self, session: Session, name: Optional[str] = None,
                   country: Optional[Country] = None, bank_type: Optional[BankType] = None,
                   sort_by: SortFieldBank = SortFieldBank.NAME,
                   sort_order: SortOrder = SortOrder.ASC) -> List[Bank]:
-        cache_key = f"banks:name:{name}:country:{country}:bank_type:{bank_type}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Validate sort field
         if sort_by not in SortFieldBank:
             raise ValueError(f"Invalid sort field: {sort_by}")
@@ -66,44 +57,18 @@ class BankRepository:
         elif sort_by == SortFieldBank.COUNTRY:
             banks = banks.order_by(Bank.country.asc() if sort_order == SortOrder.ASC else Bank.country.desc())
         
-        banks = banks.all()
-        
-        # Cache the result
-        self._cache[cache_key] = banks
-        return banks
+        return banks.all()
     
     def get_bank_by_id(self, bank_id: int, session: Session) -> Optional[Bank]:
-        cache_key = f"bank:id:{bank_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
-        bank = session.query(Bank).filter(Bank.id == bank_id).first()
-        
-        # Cache the result
-        if bank:
-            self._cache[cache_key] = bank
-        
-        return bank
+        return session.query(Bank).filter(Bank.id == bank_id).first()
     
     def create_bank(self, bank_data: Dict[str, Any], session: Session) -> Bank:
         # Create bank object
         bank = Bank(**bank_data)
         session.add(bank)
         session.flush()  # Get the ID without committing
-        
-        # Clear relevant caches
-        self._clear_bank_caches(bank_data.get('id'))
-        
         return bank
-    
-    def _clear_bank_caches(self, bank_id: int) -> None:
-        """Clear all bank-related caches."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('bank') and key != f"bank:id:{bank_id}"]
-        for key in keys_to_remove:
-            del self._cache[key]
 
 # ❌ Bad: Business logic in repository
 def create_bank(self, bank_data: Dict[str, Any], session: Session):

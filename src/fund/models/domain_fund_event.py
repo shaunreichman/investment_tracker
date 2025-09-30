@@ -58,25 +58,36 @@ class FundFieldChange:
     This will not be stored in the database, but will be used to create the domain event.
 
     Attributes:
-        fund_or_company: Whether the event is related to a fund or a company (FUND/COMPANY)
+        object: Whether the event is related to a fund or a company or a fund event (FUND/COMPANY/FUND_EVENT)
         object_id: The ID of the object that changed
         field_name: The name of the field that changed
         old_value: The old value of the field
         new_value: The new value of the field
     """
     
-    def __init__(self, fund_or_company: str, object_id: int, field_name: str, old_value: Any, new_value: Any):
-        self.fund_or_company = fund_or_company
+    def __init__(self, object: str, object_id: int, field_name: str, old_value: Any, new_value: Any):
+        self.object = object
         self.object_id = object_id
         self.field_name = field_name
         self.old_value = old_value
         self.new_value = new_value
 
     def to_dict(self) -> dict:
+        def serialize_value(value):
+            """Convert non-serializable values to strings."""
+            if value is None:
+                return None
+            elif hasattr(value, 'isoformat'):  # datetime, date objects
+                return value.isoformat()
+            elif hasattr(value, 'value'):  # enum objects
+                return value.value
+            else:
+                return value
+        
         return {
-            'fund_or_company': self.fund_or_company,
+            'object': self.object,
             'object_id': self.object_id,
             'field_name': self.field_name,
-            'old_value': self.old_value,
-            'new_value': self.new_value
+            'old_value': serialize_value(self.old_value),
+            'new_value': serialize_value(self.new_value)
         }

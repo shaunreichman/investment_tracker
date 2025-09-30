@@ -92,7 +92,7 @@ class TestFundStatusService:
         assert mock_fund_suspended.status == FundStatus.ACTIVE
         
         change = result[0]
-        assert change.fund_or_company == 'FUND'
+        assert change.object == 'FUND'
         assert change.object_id == mock_fund_suspended.id
         assert change.field_name == 'status'
         assert change.old_value == FundStatus.SUSPENDED
@@ -122,7 +122,7 @@ class TestFundStatusService:
             assert mock_fund_active.status == FundStatus.REALIZED
             
             change = result[0]
-            assert change.fund_or_company == 'FUND'
+            assert change.object == 'FUND'
             assert change.object_id == mock_fund_active.id
             assert change.field_name == 'status'
             assert change.old_value == FundStatus.ACTIVE
@@ -143,7 +143,7 @@ class TestFundStatusService:
             assert mock_fund_active.status == FundStatus.COMPLETED
             
             change = result[0]
-            assert change.fund_or_company == 'FUND'
+            assert change.object == 'FUND'
             assert change.object_id == mock_fund_active.id
             assert change.field_name == 'status'
             assert change.old_value == FundStatus.ACTIVE
@@ -174,7 +174,7 @@ class TestFundStatusService:
             assert mock_fund_realized.status == FundStatus.COMPLETED
             
             change = result[0]
-            assert change.fund_or_company == 'FUND'
+            assert change.object == 'FUND'
             assert change.object_id == mock_fund_realized.id
             assert change.field_name == 'status'
             assert change.old_value == FundStatus.REALIZED
@@ -192,7 +192,7 @@ class TestFundStatusService:
             assert mock_fund_completed.status == FundStatus.REALIZED
             
             change = result[0]
-            assert change.fund_or_company == 'FUND'
+            assert change.object == 'FUND'
             assert change.object_id == mock_fund_completed.id
             assert change.field_name == 'status'
             assert change.old_value == FundStatus.COMPLETED

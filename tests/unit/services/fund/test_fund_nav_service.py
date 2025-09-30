@@ -87,7 +87,7 @@ class TestFundNavService:
             # Check unit price change
             unit_price_change = next((change for change in result if change.field_name == 'current_unit_price'), None)
             assert unit_price_change is not None
-            assert unit_price_change.fund_or_company == 'FUND'
+            assert unit_price_change.object == 'FUND'
             assert unit_price_change.object_id == mock_fund.id
             assert unit_price_change.old_value == old_unit_price
             assert unit_price_change.new_value == 12.75  # First event's nav_per_share
@@ -95,7 +95,7 @@ class TestFundNavService:
             # Check NAV total change
             nav_total_change = next((change for change in result if change.field_name == 'current_nav_total'), None)
             assert nav_total_change is not None
-            assert nav_total_change.fund_or_company == 'FUND'
+            assert nav_total_change.object == 'FUND'
             assert nav_total_change.object_id == mock_fund.id
             assert nav_total_change.old_value == old_nav_total
             assert nav_total_change.new_value == 12750.0  # 12.75 * 1000

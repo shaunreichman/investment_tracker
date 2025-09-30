@@ -1,14 +1,13 @@
 """
 Fund Repository Unit Tests.
 
-This module tests the FundRepository class, focusing on data access operations,
-caching behavior, and error handling. Tests are precise and focused on repository
-functionality without testing business logic or validation.
+This module tests the FundRepository class, focusing on data access operations
+and error handling. Tests are precise and focused on repository functionality
+without testing business logic or validation.
 
 Test Coverage:
 - CRUD operations (Create, Read, Delete)
 - Filtering and sorting functionality
-- Caching behavior and cache invalidation
 - Error handling for invalid parameters
 - Database session interactions
 """
@@ -300,22 +299,6 @@ class TestFundRepository:
         mock_session.flush.assert_called_once()
         assert result == mock_fund_instance
 
-    def test_create_fund_clears_cache_after_creation(self, repository, mock_session, sample_fund_data):
-        """Test that create_fund clears relevant cache after creation."""
-        # Arrange
-        mock_fund_instance = Mock()
-        mock_fund_instance.id = 123
-        mock_session.flush.return_value = None
-
-        # Act
-        with patch('src.fund.repositories.fund_repository.Fund') as mock_fund_class:
-            mock_fund_class.return_value = mock_fund_instance
-            repository.create_fund(sample_fund_data, mock_session)
-
-        # Assert
-        # Cache should be cleared for the created fund
-        assert f"fund:{mock_fund_instance.id}" not in repository._cache
-
     ################################################################################
     # Test delete_fund method
     ################################################################################
@@ -349,118 +332,6 @@ class TestFundRepository:
         assert result is False
         mock_session.delete.assert_not_called()
 
-    def test_delete_fund_clears_cache_after_deletion(self, repository, mock_session):
-        """Test that delete_fund clears relevant cache after deletion."""
-        # Arrange
-        fund_id = 123
-        mock_fund = FundFactory.build(id=fund_id)
-        
-        # Mock get_fund_by_id to return the fund
-        with patch.object(repository, 'get_fund_by_id', return_value=mock_fund):
-            # Act
-            repository.delete_fund(fund_id, mock_session)
-
-        # Assert
-        # Cache should be cleared for the deleted fund
-        assert f"fund:{fund_id}" not in repository._cache
-
-    ################################################################################
-    # Test caching behavior
-    ################################################################################
-
-    def test_get_funds_caches_results(self, repository, mock_session):
-        """Test that get_funds caches results correctly."""
-        # Arrange
-        expected_funds = [FundFactory.build() for _ in range(2)]
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.all.return_value = expected_funds
-
-        # Act - First call
-        result1 = repository.get_funds(mock_session)
-        
-        # Act - Second call (should use cache)
-        result2 = repository.get_funds(mock_session)
-
-        # Assert
-        assert result1 == expected_funds
-        assert result2 == expected_funds
-        # Database should only be queried once due to caching
-        mock_session.query.assert_called_once()
-
-    def test_get_fund_by_id_caches_results(self, repository, mock_session):
-        """Test that get_fund_by_id caches results correctly."""
-        # Arrange
-        fund_id = 123
-        expected_fund = FundFactory.build(id=fund_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_fund
-
-        # Act - First call
-        result1 = repository.get_fund_by_id(fund_id, mock_session)
-        
-        # Act - Second call (should use cache)
-        result2 = repository.get_fund_by_id(fund_id, mock_session)
-
-        # Assert
-        assert result1 == expected_fund
-        assert result2 == expected_fund
-        # Database should only be queried once due to caching
-        mock_session.query.assert_called_once()
-
-    def test_get_fund_by_id_caches_none_results(self, repository, mock_session):
-        """Test that get_fund_by_id caches None results correctly."""
-        # Arrange
-        fund_id = 999
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = None
-
-        # Act - First call
-        result1 = repository.get_fund_by_id(fund_id, mock_session)
-        
-        # Act - Second call (should use cache)
-        result2 = repository.get_fund_by_id(fund_id, mock_session)
-
-        # Assert
-        assert result1 is None
-        assert result2 is None
-        # Database should only be queried once due to caching
-        mock_session.query.assert_called_once()
-
-    def test_cache_key_generation_with_filters(self, repository, mock_session):
-        """Test that cache keys are generated correctly with different filters."""
-        # Arrange
-        company_id = 123
-        entity_id = 456
-        fund_status = FundStatus.ACTIVE
-        tracking_type = FundTrackingType.NAV_BASED
-        
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.all.return_value = []
-
-        # Act
-        repository.get_funds(
-            mock_session,
-            company_id=company_id,
-            entity_id=entity_id,
-            fund_status=fund_status,
-            fund_tracking_type=tracking_type,
-            sort_by=SortFieldFund.NAME,
-            sort_order=SortOrder.ASC
-        )
-
-        # Assert
-        expected_cache_key = f"funds:company:{company_id}:entity:{entity_id}:status:{fund_status.value}:type:{tracking_type.value}:sort_by:{SortFieldFund.NAME.value}:sort_order:{SortOrder.ASC.value}"
-        assert expected_cache_key in repository._cache
-
     ################################################################################
     # Test error handling
     ################################################################################
@@ -489,27 +360,3 @@ class TestFundRepository:
         with pytest.raises(AttributeError):
             repository.delete_fund(123, None)
 
-    ################################################################################
-    # Test repository initialization
-    ################################################################################
-
-    def test_repository_initialization_with_default_cache_ttl(self):
-        """Test that repository initializes with default cache TTL."""
-        # Act
-        repository = FundRepository()
-
-        # Assert
-        assert repository._cache_ttl == 300
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0
-
-    def test_repository_initialization_with_custom_cache_ttl(self):
-        """Test that repository initializes with custom cache TTL."""
-        # Act
-        custom_ttl = 600
-        repository = FundRepository(cache_ttl=custom_ttl)
-
-        # Assert
-        assert repository._cache_ttl == custom_ttl
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0

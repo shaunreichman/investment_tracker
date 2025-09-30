@@ -1,14 +1,13 @@
 """
 Bank Repository Unit Tests.
 
-This module tests the BankRepository class, focusing on data access operations,
-caching behavior, and error handling. Tests are precise and focused on repository
+This module tests the BankRepository class, focusing on data access operations
+and error handling. Tests are precise and focused on repository
 functionality without testing business logic or validation.
 
 Test Coverage:
 - CRUD operations (Create, Read, Delete)
 - Filtering and sorting functionality
-- Caching behavior and cache invalidation
 - Error handling for invalid parameters
 - Database session interactions
 """
@@ -223,25 +222,6 @@ class TestBankRepository:
         with pytest.raises(ValueError, match="Invalid sort order"):
             repository.get_banks(mock_session, sort_order="INVALID_ORDER")
 
-    def test_get_banks_uses_cache(self, repository, mock_session):
-        """Test that get_banks uses cache for repeated queries."""
-        # Arrange
-        expected_banks = [BankFactory.build() for _ in range(2)]
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.all.return_value = expected_banks
-
-        # Act - First call
-        result1 = repository.get_banks(mock_session)
-        # Second call with same parameters
-        result2 = repository.get_banks(mock_session)
-
-        # Assert
-        assert result1 == expected_banks
-        assert result2 == expected_banks
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test get_bank_by_id method
@@ -280,26 +260,6 @@ class TestBankRepository:
         # Assert
         assert result is None
 
-    def test_get_bank_by_id_uses_cache(self, repository, mock_session):
-        """Test that get_bank_by_id uses cache for repeated queries."""
-        # Arrange
-        bank_id = 1
-        expected_bank = BankFactory.build(id=bank_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_bank
-
-        # Act - First call
-        result1 = repository.get_bank_by_id(bank_id, mock_session)
-        # Second call with same ID
-        result2 = repository.get_bank_by_id(bank_id, mock_session)
-
-        # Assert
-        assert result1 == expected_bank
-        assert result2 == expected_bank
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test create_bank method
@@ -318,18 +278,6 @@ class TestBankRepository:
             mock_session.add.assert_called_once_with(expected_bank)
             mock_session.flush.assert_called_once()
 
-    def test_create_bank_clears_cache(self, repository, mock_session, sample_bank_data):
-        """Test that create_bank clears relevant caches."""
-        # Arrange
-        expected_bank = BankFactory.build(**sample_bank_data)
-        with patch('src.banking.repositories.bank_repository.Bank', return_value=expected_bank):
-            # Act
-            repository.create_bank(sample_bank_data, mock_session)
-
-            # Assert
-            # Cache should be cleared (we can't easily test the private method directly,
-            # but we can verify the method completes without error)
-            assert True  # If we get here, the method completed successfully
 
     ################################################################################
     # Test delete_bank method
@@ -369,46 +317,4 @@ class TestBankRepository:
         assert result is False
         mock_session.delete.assert_not_called()
 
-    def test_delete_bank_clears_cache(self, repository, mock_session):
-        """Test that delete_bank clears relevant caches."""
-        # Arrange
-        bank_id = 1
-        expected_bank = BankFactory.build(id=bank_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_bank
 
-        # Act
-        result = repository.delete_bank(bank_id, mock_session)
-
-        # Assert
-        assert result is True
-        # Cache should be cleared (we can't easily test the private method directly,
-        # but we can verify the method completes without error)
-
-    ################################################################################
-    # Test cache management
-    ################################################################################
-
-    def test_clear_cache_clears_all_caches(self, repository, mock_session):
-        """Test that clear_cache clears all cached data."""
-        # Arrange
-        # Populate cache with some data
-        repository._cache = {'test_key': 'test_value', 'bank:id:1': 'bank_data'}
-
-        # Act
-        repository.clear_cache()
-
-        # Assert
-        assert len(repository._cache) == 0
-
-    def test_cache_ttl_initialization(self):
-        """Test that repository initializes with correct cache TTL."""
-        # Act
-        repository = BankRepository(cache_ttl=600)
-
-        # Assert
-        assert repository._cache_ttl == 600
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0

@@ -16,20 +16,19 @@ class BankRepository:
     Bank Repository.
     
     This repository handles all database operations for banks including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     bank data without direct database access.
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the bank repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
     ################################################################################
     # Get Banks
@@ -67,12 +66,6 @@ class BankRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
-        cache_key = f"banks:name:{name}:country:{country}:bank_type:{bank_type}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
         # Get all banks
         banks = session.query(Bank)
         if name:
@@ -94,8 +87,6 @@ class BankRepository:
 
         banks = banks.all()
 
-        # Cache the result
-        self._cache[cache_key] = banks
         return banks
     
     def get_bank_by_id(self, bank_id: int, session: Session) -> Optional[Bank]:
@@ -109,18 +100,8 @@ class BankRepository:
         Returns:
             Bank object if found, None otherwise
         """
-        cache_key = f"bank:id:{bank_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         bank = session.query(Bank).filter(Bank.id == bank_id).first()
-        
-        # Cache the result
-        if bank:
-            self._cache[cache_key] = bank
         
         return bank
 
@@ -145,9 +126,6 @@ class BankRepository:
         session.add(bank)
         session.flush()  # Get the ID without committing
         
-        # Clear relevant caches
-        self._clear_bank_caches(bank_data.get('id'))
-        
         return bank
 
 
@@ -170,18 +148,4 @@ class BankRepository:
         session.delete(bank)
         session.flush()
         
-        # Clear relevant caches
-        self._clear_bank_caches(bank_id)
-
         return True
-        
-    
-    def _clear_bank_caches(self, bank_id: int) -> None:
-        """Clear all bank-related caches."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('bank') and key != f"bank:id:{bank_id}"]
-        for key in keys_to_remove:
-            del self._cache[key]
-    
-    def clear_cache(self) -> None:
-        """Clear all caches."""
-        self._cache.clear()

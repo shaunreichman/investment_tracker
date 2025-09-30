@@ -15,20 +15,19 @@ class CompanyContactRepository:
     Company Contact Repository.
 
     This repository handles all database operations for company contacts including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     company contact data without direct database access.
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the company contact repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
 
     ################################################################################
@@ -60,12 +59,6 @@ class CompanyContactRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
         
-        cache_key = f"contacts:company:{company_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         contacts = session.query(Contact)
         if company_id:
@@ -81,9 +74,6 @@ class CompanyContactRepository:
 
         contacts = contacts.all()
         
-        # Cache the result
-        self._cache[cache_key] = contacts
-        
         return contacts
     
     def get_contact_by_id(self, contact_id: int, session: Session) -> Optional[Contact]:
@@ -97,19 +87,9 @@ class CompanyContactRepository:
         Returns:
             Contact object if found, None otherwise
         """
-        cache_key = f"contact:{contact_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         contact = session.query(Contact).filter(Contact.id == contact_id).first()
     
-        # Cache the result
-        if contact:
-            self._cache[cache_key] = contact
-        
         return contact
     
 
@@ -137,9 +117,6 @@ class CompanyContactRepository:
         session.add(contact)
         session.flush()  # Get the ID without committing
         
-        # Clear cache
-        self._clear_cache()
-        
         return contact
     
 
@@ -165,22 +142,4 @@ class CompanyContactRepository:
         session.delete(contact)
         session.flush()
         
-        # Clear specific contact cache and company contacts cache
-        self._clear_contact_cache(contact_id)
-        
         return True
-    
-    def _clear_cache(self) -> None:
-        """Clear all cached data."""
-        self._cache.clear()
-    
-    def _clear_contact_cache(self, contact_id: int) -> None:
-        """Clear cache for a specific contact."""
-        cache_keys_to_remove = [
-            f"contact:{contact_id}",
-            "contacts:all"
-        ]
-        
-        for key in cache_keys_to_remove:
-            if key in self._cache:
-                del self._cache[key]

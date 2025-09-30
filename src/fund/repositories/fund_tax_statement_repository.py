@@ -15,20 +15,19 @@ class FundTaxStatementRepository:
     Fund Tax Statement Repository.
 
     This repository handles all database operations for fund tax statements including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     fund tax statement data without direct database access.
     """
 
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the fund tax statement repository.
 
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
 
 
     ################################################################################
@@ -67,12 +66,6 @@ class FundTaxStatementRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
         
-        cache_key = f"fund_tax_statements:fund_id:{fund_id}:entity_id:{entity_id}:financial_year:{financial_year}:sort_by:{sort_by.value}:sort_order:{sort_order.value}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         query = session.query(FundTaxStatement)
 
@@ -100,9 +93,6 @@ class FundTaxStatementRepository:
         # Execute the query
         fund_tax_statements = query.all()
 
-        # Cache the result
-        self._cache[cache_key] = fund_tax_statements
-
         return fund_tax_statements
 
     def get_fund_tax_statement_by_id(self, fund_tax_statement_id: int, session: Session) -> Optional[FundTaxStatement]:
@@ -116,18 +106,8 @@ class FundTaxStatementRepository:
         Returns:
             FundTaxStatement object if found, None otherwise
         """
-        cache_key = f"fund_tax_statement:{fund_tax_statement_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
         fund_tax_statement = session.query(FundTaxStatement).filter(FundTaxStatement.id == fund_tax_statement_id).first()
-        
-        # Cache the result
-        if fund_tax_statement:
-            self._cache[cache_key] = fund_tax_statement
         
         return fund_tax_statement
 
@@ -152,9 +132,6 @@ class FundTaxStatementRepository:
         session.add(fund_tax_statement)
         session.flush()  # Get the ID without committing
         
-        # Cache the result
-        self._cache[f"fund_tax_statement:{fund_tax_statement.id}"] = fund_tax_statement
-        
         return fund_tax_statement
     
 
@@ -177,17 +154,4 @@ class FundTaxStatementRepository:
         # Delete the fund tax statement
         session.delete(fund_tax_statement)
 
-        # Clear cache
-        self._clear_fund_tax_statement_cache(fund_tax_statement_id)
-        
         return True
-
-
-    ################################################################################
-    # Clear Cache
-    ################################################################################
-    
-    def _clear_fund_tax_statement_cache(self, fund_tax_statement_id: int) -> None:
-        """Clear cache for a specific fund tax statement."""
-        cache_key = f"fund_tax_statement:{fund_tax_statement_id}"
-        self._cache.pop(cache_key, None)

@@ -1,14 +1,13 @@
 """
 Company Contact Repository Unit Tests.
 
-This module tests the CompanyContactRepository class, focusing on data access operations,
-caching behavior, and error handling. Tests are precise and focused on repository
+This module tests the CompanyContactRepository class, focusing on data access operations
+and error handling. Tests are precise and focused on repository
 functionality without testing business logic or validation.
 
 Test Coverage:
 - CRUD operations (Create, Read, Delete)
 - Filtering and sorting functionality
-- Caching behavior and cache invalidation
 - Error handling for invalid parameters
 - Database session interactions
 """
@@ -158,47 +157,7 @@ class TestCompanyContactRepository:
         with pytest.raises(ValueError, match="Invalid sort order"):
             repository.get_contacts(mock_session, sort_order="INVALID_ORDER")
 
-    def test_get_contacts_uses_cache(self, repository, mock_session):
-        """Test that get_contacts uses cache for repeated queries."""
-        # Arrange
-        expected_contacts = [ContactFactory.build() for _ in range(2)]
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.all.return_value = expected_contacts
 
-        # Act - First call
-        result1 = repository.get_contacts(mock_session)
-        # Second call with same parameters
-        result2 = repository.get_contacts(mock_session)
-
-        # Assert
-        assert result1 == expected_contacts
-        assert result2 == expected_contacts
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
-
-    def test_get_contacts_uses_cache_with_company_id(self, repository, mock_session):
-        """Test that get_contacts uses cache for repeated queries with company_id filter."""
-        # Arrange
-        company_id = 1
-        expected_contacts = [ContactFactory.build() for _ in range(2)]
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.all.return_value = expected_contacts
-
-        # Act - First call
-        result1 = repository.get_contacts(mock_session, company_id=company_id)
-        # Second call with same parameters
-        result2 = repository.get_contacts(mock_session, company_id=company_id)
-
-        # Assert
-        assert result1 == expected_contacts
-        assert result2 == expected_contacts
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test get_contact_by_id method
@@ -237,26 +196,6 @@ class TestCompanyContactRepository:
         # Assert
         assert result is None
 
-    def test_get_contact_by_id_uses_cache(self, repository, mock_session):
-        """Test that get_contact_by_id uses cache for repeated queries."""
-        # Arrange
-        contact_id = 1
-        expected_contact = ContactFactory.build(id=contact_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_contact
-
-        # Act - First call
-        result1 = repository.get_contact_by_id(contact_id, mock_session)
-        # Second call with same ID
-        result2 = repository.get_contact_by_id(contact_id, mock_session)
-
-        # Assert
-        assert result1 == expected_contact
-        assert result2 == expected_contact
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test create_contact method
@@ -275,18 +214,6 @@ class TestCompanyContactRepository:
             mock_session.add.assert_called_once_with(expected_contact)
             mock_session.flush.assert_called_once()
 
-    def test_create_contact_clears_cache(self, repository, mock_session, sample_contact_data):
-        """Test that create_contact clears relevant caches."""
-        # Arrange
-        expected_contact = ContactFactory.build(**sample_contact_data)
-        with patch('src.investment_company.repositories.company_contact_repository.Contact', return_value=expected_contact):
-            # Act
-            repository.create_contact(sample_contact_data, mock_session)
-
-            # Assert
-            # Cache should be cleared (we can't easily test the private method directly,
-            # but we can verify the method completes without error)
-            assert True  # If we get here, the method completed successfully
 
     ################################################################################
     # Test delete_contact method
@@ -326,74 +253,4 @@ class TestCompanyContactRepository:
         assert result is False
         mock_session.delete.assert_not_called()
 
-    def test_delete_contact_clears_cache(self, repository, mock_session):
-        """Test that delete_contact clears relevant caches."""
-        # Arrange
-        contact_id = 1
-        expected_contact = ContactFactory.build(id=contact_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_contact
 
-        # Act
-        result = repository.delete_contact(contact_id, mock_session)
-
-        # Assert
-        assert result is True
-        # Cache should be cleared (we can't easily test the private method directly,
-        # but we can verify the method completes without error)
-
-    ################################################################################
-    # Test cache management
-    ################################################################################
-
-    def test_clear_cache_clears_all_caches(self, repository, mock_session):
-        """Test that _clear_cache clears all cached data."""
-        # Arrange
-        # Populate cache with some data
-        repository._cache = {'test_key': 'test_value', 'contact:id:1': 'contact_data'}
-
-        # Act
-        repository._clear_cache()
-
-        # Assert
-        assert len(repository._cache) == 0
-
-    def test_clear_contact_cache_clears_contact_specific_caches(self, repository):
-        """Test that _clear_contact_cache clears only contact-related cache entries."""
-        # Arrange
-        contact_id = 1
-        repository._cache = {
-            f'contact:{contact_id}': 'contact_data',
-            'contacts:all': 'contacts_data',
-            'other_key': 'other_data'
-        }
-
-        # Act
-        repository._clear_contact_cache(contact_id)
-
-        # Assert
-        assert f'contact:{contact_id}' not in repository._cache
-        assert 'contacts:all' not in repository._cache
-        assert 'other_key' in repository._cache  # Other cache entries should remain
-
-    def test_cache_ttl_initialization(self):
-        """Test that repository initializes with correct cache TTL."""
-        # Act
-        repository = CompanyContactRepository(cache_ttl=600)
-
-        # Assert
-        assert repository._cache_ttl == 600
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0
-
-    def test_default_cache_ttl_initialization(self):
-        """Test that repository initializes with default cache TTL."""
-        # Act
-        repository = CompanyContactRepository()
-
-        # Assert
-        assert repository._cache_ttl == 300  # Default value
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0

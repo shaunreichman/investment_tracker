@@ -96,7 +96,7 @@ class TestFundIrRService:
         
         # Check field change values
         for change in result:
-            assert change.fund_or_company == 'FUND'
+            assert change.object == 'FUND'
             assert change.object_id == 1
             assert change.new_value is None
 
@@ -363,7 +363,7 @@ class TestFundIrRService:
         
         for change in result:
             assert isinstance(change, FundFieldChange)
-            assert change.fund_or_company == 'FUND'
+            assert change.object == 'FUND'
             assert change.object_id == 1
             assert change.field_name in ['completed_irr_gross', 'completed_irr_after_tax', 'completed_irr_real']
             assert change.new_value is None

@@ -357,6 +357,9 @@ class FundController:
             session = self._get_session()
             try:
                 event = self.fund_event_service.create_fund_event(fund_id, event_data, session)
+
+                session.commit()
+                
                 return ControllerResponseDTO(data=format_fund_event(event), response_code=ApiResponseCode.CREATED)
             except Exception as e:
                 current_app.logger.error(f"Error in create_fund_event: {str(e)}")

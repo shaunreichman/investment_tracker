@@ -1,14 +1,13 @@
 """
 Entity Repository Unit Tests.
 
-This module tests the EntityRepository class, focusing on data access operations,
-caching behavior, and error handling. Tests are precise and focused on repository
-functionality without testing business logic or validation.
+This module tests the EntityRepository class, focusing on data access operations
+and error handling. Tests are precise and focused on repository functionality
+without testing business logic or validation.
 
 Test Coverage:
 - CRUD operations (Create, Read, Delete)
 - Filtering and sorting functionality
-- Caching behavior and cache invalidation
 - Error handling for invalid parameters
 - Database session interactions
 """
@@ -239,25 +238,6 @@ class TestEntityRepository:
         with pytest.raises(ValueError, match="Invalid sort order"):
             repository.get_entities(mock_session, sort_order="INVALID_ORDER")
 
-    def test_get_entities_uses_cache(self, repository, mock_session):
-        """Test that get_entities uses cache for repeated queries."""
-        # Arrange
-        expected_entities = [EntityFactory.build() for _ in range(2)]
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.all.return_value = expected_entities
-
-        # Act - First call
-        result1 = repository.get_entities(mock_session)
-        # Second call with same parameters
-        result2 = repository.get_entities(mock_session)
-
-        # Assert
-        assert result1 == expected_entities
-        assert result2 == expected_entities
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test get_entity_by_id method
@@ -296,26 +276,6 @@ class TestEntityRepository:
         # Assert
         assert result is None
 
-    def test_get_entity_by_id_uses_cache(self, repository, mock_session):
-        """Test that get_entity_by_id uses cache for repeated queries."""
-        # Arrange
-        entity_id = 1
-        expected_entity = EntityFactory.build(id=entity_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_entity
-
-        # Act - First call
-        result1 = repository.get_entity_by_id(entity_id, mock_session)
-        # Second call with same ID
-        result2 = repository.get_entity_by_id(entity_id, mock_session)
-
-        # Assert
-        assert result1 == expected_entity
-        assert result2 == expected_entity
-        # Should only query database once due to caching
-        mock_session.query.assert_called_once()
 
     ################################################################################
     # Test create_entity method
@@ -334,18 +294,6 @@ class TestEntityRepository:
             mock_session.add.assert_called_once_with(expected_entity)
             mock_session.flush.assert_called_once()
 
-    def test_create_entity_clears_cache(self, repository, mock_session, sample_entity_data):
-        """Test that create_entity clears relevant caches."""
-        # Arrange
-        expected_entity = EntityFactory.build(**sample_entity_data)
-        with patch('src.entity.repositories.entity_repository.Entity', return_value=expected_entity):
-            # Act
-            repository.create_entity(sample_entity_data, mock_session)
-
-            # Assert
-            # Cache should be cleared (we can't easily test the private method directly,
-            # but we can verify the method completes without error)
-            assert True  # If we get here, the method completed successfully
 
     ################################################################################
     # Test delete_entity method
@@ -385,73 +333,4 @@ class TestEntityRepository:
         assert result is False
         mock_session.delete.assert_not_called()
 
-    def test_delete_entity_clears_cache(self, repository, mock_session):
-        """Test that delete_entity clears relevant caches."""
-        # Arrange
-        entity_id = 1
-        expected_entity = EntityFactory.build(id=entity_id)
-        mock_query = Mock()
-        mock_session.query.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = expected_entity
 
-        # Act
-        result = repository.delete_entity(entity_id, mock_session)
-
-        # Assert
-        assert result is True
-        # Cache should be cleared (we can't easily test the private method directly,
-        # but we can verify the method completes without error)
-
-    ################################################################################
-    # Test cache management
-    ################################################################################
-
-    def test_clear_cache_clears_all_caches(self, repository, mock_session):
-        """Test that clear_cache clears all cached data."""
-        # Arrange
-        # Populate cache with some data
-        repository._cache = {'test_key': 'test_value', 'entity:id:1': 'entity_data'}
-
-        # Act
-        repository.clear_cache()
-
-        # Assert
-        assert len(repository._cache) == 0
-
-    def test_clear_entity_caches_clears_entity_specific_caches(self, repository):
-        """Test that _clear_entity_caches clears only entity-related cache entries."""
-        # Arrange
-        repository._cache = {
-            'entity:id:1': 'entity_data',
-            'entities:entity_type:COMPANY': 'entities_data',
-            'other_key': 'other_data'
-        }
-
-        # Act
-        repository._clear_entity_caches()
-
-        # Assert
-        assert 'entity:id:1' not in repository._cache
-        assert 'entities:entity_type:COMPANY' not in repository._cache
-        assert 'other_key' in repository._cache  # Other cache entries should remain
-
-    def test_cache_ttl_initialization(self):
-        """Test that repository initializes with correct cache TTL."""
-        # Act
-        repository = EntityRepository(cache_ttl=600)
-
-        # Assert
-        assert repository._cache_ttl == 600
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0
-
-    def test_default_cache_ttl_initialization(self):
-        """Test that repository initializes with default cache TTL."""
-        # Act
-        repository = EntityRepository()
-
-        # Assert
-        assert repository._cache_ttl == 300  # Default value
-        assert isinstance(repository._cache, dict)
-        assert len(repository._cache) == 0
