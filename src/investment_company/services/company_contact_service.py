@@ -67,7 +67,7 @@ class CompanyContactService:
         Returns:
             Contact: The contact instance
         """
-        return self.company_contact_repository.get_contact_by_id(session, contact_id)
+        return self.company_contact_repository.get_contact_by_id(contact_id, session)
 
 
     ################################################################################
@@ -95,7 +95,7 @@ class CompanyContactService:
 
         processed_data = {
             **contact_data,
-            'company_id': company_id
+            'investment_company_id': company_id
         }
         
         # Create the contact

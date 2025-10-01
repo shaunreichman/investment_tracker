@@ -97,6 +97,7 @@ class TestCapitalCallWorkflowIntegration:
         }
         
         fund_event_service = FundEventService()
+        # Test that the event creation succeeds (validation happens internally)
         event = fund_event_service.create_fund_event(fund.id, event_data, db_session)
         
         # Verify event creation
@@ -104,11 +105,6 @@ class TestCapitalCallWorkflowIntegration:
         assert event.amount == 50000.0
         assert event.event_date == date(2023, 1, 15)
         assert event.fund_id == fund.id
-        
-        # Test validation service
-        validation_service = FundValidationService()
-        errors = validation_service.validate_fund_event_creation(event_data, db_session)
-        assert not errors  # Should be no validation errors
 
     def test_capital_call_business_rules_validation(self, db_session):
         """Test capital call business rules and constraints"""

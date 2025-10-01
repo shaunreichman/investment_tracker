@@ -119,7 +119,7 @@ class TestCompanyContactService:
 
             # Assert
             assert result == mock_contact
-            mock_repo.assert_called_once_with(mock_session, contact_id)
+            mock_repo.assert_called_once_with(contact_id, mock_session)
 
     def test_get_contact_by_id_returns_none_when_not_found(self, service, mock_session):
         """Test that get_contact_by_id returns None when contact not found."""
@@ -131,7 +131,7 @@ class TestCompanyContactService:
 
             # Assert
             assert result is None
-            mock_repo.assert_called_once_with(mock_session, contact_id)
+            mock_repo.assert_called_once_with(contact_id, mock_session)
 
     ################################################################################
     # Test create_contact method
@@ -158,7 +158,7 @@ class TestCompanyContactService:
             
             expected_data = {
                 **sample_contact_data,
-                'company_id': company_id
+                'investment_company_id': company_id
             }
             mock_repo.assert_called_once_with(expected_data, mock_session)
 
@@ -222,7 +222,7 @@ class TestCompanyContactService:
             assert result == mock_contact
             expected_data = {
                 **contact_data,
-                'company_id': company_id
+                'investment_company_id': company_id
             }
             mock_repo.assert_called_once_with(expected_data, mock_session)
 

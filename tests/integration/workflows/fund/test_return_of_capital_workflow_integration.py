@@ -129,7 +129,7 @@ class TestReturnOfCapitalWorkflowIntegration:
         
         errors = validation_service.validate_return_of_capital(fund, invalid_data, db_session)
         assert 'amount' in errors
-        assert "Cannot return more capital than remaining equity" in errors['amount']
+        assert "Cannot return more capital than remaining equity as of the event date" in errors['amount']
         
         # Test return from NAV-based fund (should be invalid)
         nav_fund = FundFactory.create(

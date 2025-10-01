@@ -102,10 +102,10 @@ class TestFundTaxStatementService:
             # Assert
             assert result == expected_statements
             mock_repo.assert_called_once_with(
+                mock_session,
                 None, None, None, None, None,
                 SortFieldFundTaxStatement.FINANCIAL_YEAR,
-                SortOrder.ASC,
-                mock_session
+                SortOrder.ASC
             )
 
     def test_get_fund_tax_statements_passes_filters_to_repository(self, service, mock_session):
@@ -136,8 +136,9 @@ class TestFundTaxStatementService:
             # Assert
             assert result == expected_statements
             mock_repo.assert_called_once_with(
+                mock_session,
                 fund_id, entity_id, financial_year, start_date, end_date,
-                sort_by, sort_order, mock_session
+                sort_by, sort_order
             )
 
     ################################################################################
@@ -172,12 +173,13 @@ class TestFundTaxStatementService:
     # Test create_fund_tax_statement method
     ################################################################################
 
-    def test_create_fund_tax_statement_successfully_creates_statement_and_events(self, service, mock_session, sample_tax_statement_data, mock_tax_statement, mock_entity):
+    def test_create_fund_tax_statement_successfully_creates_statement_and_events(self, service, mock_session, sample_tax_statement_data, mock_tax_statement, mock_entity, mock_fund):
         """Test successful tax statement creation with event generation."""
         # Arrange
         fund_id = 1
         with patch('src.entity.repositories.entity_repository.EntityRepository') as mock_entity_repo_class, \
              patch.object(mock_entity_repo_class.return_value, 'get_entity_by_id', return_value=mock_entity) as mock_get_entity, \
+             patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund, \
              patch('src.fund.calculators.financial_year_calculator.FinancialYearCalculator.calculate_financial_year_dates', return_value=(date(2023, 7, 1), date(2024, 6, 30))) as mock_fy_calc, \
              patch.object(service.fund_tax_statement_repository, 'create_fund_tax_statement', return_value=mock_tax_statement) as mock_create_repo, \
              patch.object(service, '_create_daily_debt_cost_events', return_value=[]) as mock_daily_events, \
@@ -191,7 +193,8 @@ class TestFundTaxStatementService:
             # Assert
             assert result == mock_tax_statement
             mock_get_entity.assert_called_once_with(1, mock_session)
-            mock_fy_calc.assert_called_once_with('2023-2024')
+            mock_get_fund.assert_called_once_with(fund_id, mock_session)
+            mock_fy_calc.assert_called_once_with('2023-2024', mock_fund.tax_statement_financial_year_type)
             mock_create_repo.assert_called_once()
             mock_daily_events.assert_called_once_with(mock_tax_statement, mock_session)
             mock_tax_events.assert_called_once_with(mock_tax_statement, mock_session)
@@ -255,9 +258,16 @@ class TestFundTaxStatementService:
         """Test successful tax statement deletion."""
         # Arrange
         statement_id = 1
+        mock_fund_event = Mock()
+        mock_fund_event.id = 100
+        mock_query = Mock()
+        mock_query.filter.return_value.all.return_value = [mock_fund_event]
+        mock_session.query.return_value = mock_query
+        
         with patch.object(service.fund_tax_statement_repository, 'get_fund_tax_statement_by_id', return_value=mock_tax_statement) as mock_get_statement, \
              patch.object(service.fund_validation_service, 'validate_fund_tax_statement_deletion', return_value={}) as mock_validate, \
-             patch.object(service.fund_tax_statement_repository, 'delete_fund_tax_statement', return_value=True) as mock_delete:
+             patch.object(service.fund_tax_statement_repository, 'delete_fund_tax_statement', return_value=True) as mock_delete, \
+             patch.object(service.fund_event_repository, 'delete_fund_event', return_value=True) as mock_delete_event:
             
             # Act
             result = service.delete_fund_tax_statement(statement_id, mock_session)
@@ -267,6 +277,7 @@ class TestFundTaxStatementService:
             mock_get_statement.assert_called_once_with(statement_id, mock_session)
             mock_validate.assert_called_once_with(statement_id, mock_session)
             mock_delete.assert_called_once_with(statement_id, mock_session)
+            mock_delete_event.assert_called_once_with(mock_fund_event.id, mock_session)
 
     def test_delete_fund_tax_statement_raises_error_when_statement_not_found(self, service, mock_session):
         """Test that delete_fund_tax_statement raises ValueError when statement not found."""
@@ -442,6 +453,7 @@ class TestFundTaxStatementService:
         """Test that _create_capital_gain_tax_payment creates event for NAV-based fund."""
         # Arrange
         mock_tax_statement.capital_gain_income_amount = None
+        mock_tax_statement.capital_gain_income_tax_rate = 30.0
         mock_tax_statement.financial_year_start_date = date(2023, 7, 1)
         mock_tax_statement.financial_year_end_date = date(2024, 6, 30)
         mock_tax_statement.tax_payment_date = date(2024, 6, 30)
@@ -463,8 +475,9 @@ class TestFundTaxStatementService:
             assert result is not None
             assert result['event_type'] == EventType.TAX_PAYMENT
             assert result['tax_payment_type'] == TaxPaymentType.CAPITAL_GAINS_TAX
-            assert result['amount'] == 1000.0
+            assert result['amount'] == 300.0  # 1000.0 * 30% = 300.0
             assert mock_tax_statement.capital_gain_income_amount == 1000.0
+            assert mock_tax_statement.capital_gain_tax_amount == 300.0
             assert mock_tax_statement.capital_gain_income_amount_from_tax_statement_flag is False
 
     def test_create_capital_gain_tax_payment_returns_none_for_cost_based_fund(self, service, mock_session, mock_tax_statement, mock_fund):
@@ -485,6 +498,7 @@ class TestFundTaxStatementService:
         """Test that _create_capital_gain_tax_payment uses provided amount when available."""
         # Arrange
         mock_tax_statement.capital_gain_income_amount = 2000.0
+        mock_tax_statement.capital_gain_income_tax_rate = 30.0
         mock_tax_statement.tax_payment_date = date(2024, 6, 30)
         mock_tax_statement.financial_year = '2023-2024'
         mock_tax_statement.id = 1
@@ -494,7 +508,8 @@ class TestFundTaxStatementService:
 
         # Assert
         assert result is not None
-        assert result['amount'] == 2000.0
+        assert result['amount'] == 600.0  # 2000.0 * 30% = 600.0
+        assert mock_tax_statement.capital_gain_tax_amount == 600.0
         assert mock_tax_statement.capital_gain_income_amount_from_tax_statement_flag is True
 
     ################################################################################

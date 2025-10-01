@@ -136,6 +136,30 @@ class FundValidationService:
                 if event_data['amount'] > fund.commitment_amount:
                     errors['amount'] = ["Cannot call more capital than total commitment for first capital call"]
 
+        # BUSINESS RULE: We must validate that the future equity balance never goes above the commitment amount as a result of this capital call
+        future_fund_events = self.fund_event_repository.get_fund_events(session,
+                                fund_ids=[fund.id],
+                                event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL],
+                                start_event_date=event_data['event_date'],
+                                sort_order=SortOrder.ASC)
+            
+        if future_fund_events:
+            # Calculate starting equity balance for future validation
+            if prev_fund_events:
+                updated_equity_balance = prev_fund_events[-1].current_equity_balance + event_data['amount']
+            else:
+                updated_equity_balance = event_data['amount']
+                
+            updated_equity_balance = prev_fund_events[-1].current_equity_balance + event_data['amount']
+            for event in future_fund_events:
+                if event.event_type == EventType.CAPITAL_CALL:
+                    updated_equity_balance += event.amount
+                elif event.event_type == EventType.RETURN_OF_CAPITAL:
+                    updated_equity_balance -= event.amount
+                if updated_equity_balance > fund.commitment_amount:
+                    errors['future_amount'] = ["As a result of this capital call, the future equity balance would go above the commitment amount"]
+                    break
+
         return errors
     
     def validate_return_of_capital(self, fund: Fund, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
@@ -164,10 +188,33 @@ class FundValidationService:
         if prev_fund_events:
             prev_return_of_capital = prev_fund_events[-1]
             if event_data['amount'] > prev_return_of_capital.current_equity_balance:
-                errors['amount'] = ["Cannot return more capital than remaining equity"]
+                errors['amount'] = ["Cannot return more capital than remaining equity as of the event date"]
         else:
             errors['amount'] = ["We first need to do a capital call before we can return of capital"]
-
+        
+        # BUSINESS RULE: We must validate that the future equity balance never goes below 0 as a result of this return of capital
+        future_fund_events = self.fund_event_repository.get_fund_events(session,
+                                fund_ids=[fund.id],
+                                event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL],
+                                start_event_date=event_data['event_date'],
+                                sort_order=SortOrder.ASC)
+        
+        if future_fund_events:
+            # Calculate starting equity balance for future validation
+            if prev_fund_events:
+                updated_equity_balance = prev_fund_events[-1].current_equity_balance - event_data['amount']
+            else:
+                updated_equity_balance = -event_data['amount']  # No previous events, so negative
+                
+            for event in future_fund_events:
+                if event.event_type == EventType.CAPITAL_CALL:
+                    updated_equity_balance += event.amount
+                elif event.event_type == EventType.RETURN_OF_CAPITAL:
+                    updated_equity_balance -= event.amount
+                if updated_equity_balance < 0:
+                    errors['future_amount'] = ["As a result of this return of capital, the future equity balance would go below 0"]
+                    break
+        
         return errors
     
     def validate_unit_purchase(self, fund: Fund, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
@@ -212,12 +259,36 @@ class FundValidationService:
                                 end_event_date=event_data['event_date'],
                                 sort_order=SortOrder.ASC)
 
+        # BUSINESS RULE: We must validate that the units sold is less than the units owned
         if prev_fund_events:
             prev_unit_sale = prev_fund_events[-1]
             if event_data['units_sold'] > prev_unit_sale.units_owned:
-                errors['units_sold'] = ["Cannot sell more units than available"]
+                errors['units_sold'] = ["Cannot sell more units than available units owned as of the event date"]
         else:
             errors['units_sold'] = ["We first need to do a unit purchase before we can sell units"]
+
+        future_fund_events = self.fund_event_repository.get_fund_events(session,
+                                fund_ids=[fund.id],
+                                event_types=[EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
+                                start_event_date=event_data['event_date'],
+                                sort_order=SortOrder.ASC)
+
+        # BUSINESS RULE: We must validate that the future units owned never goes below 0 as a result of this sale
+        if future_fund_events:
+            # Calculate starting units owned for future validation
+            if prev_fund_events:
+                updated_units_owned = prev_fund_events[-1].units_owned - event_data['units_sold']
+            else:
+                updated_units_owned = -event_data['units_sold']  # No previous events, so negative
+                
+            for event in future_fund_events:
+                if event.event_type == EventType.UNIT_PURCHASE:
+                    updated_units_owned += event.units_purchased
+                elif event.event_type == EventType.UNIT_SALE:
+                    updated_units_owned -= event.units_sold
+                if updated_units_owned < 0:
+                    errors['future_units_sold'] = ["As a result of this sale, the future units owned would go below 0"]
+                    break
         
         return errors
     
@@ -237,6 +308,21 @@ class FundValidationService:
         # BUSINESS RULE: NAV updates only for NAV-based funds
         if fund.tracking_type != FundTrackingType.NAV_BASED:
             errors['fund_type'] = ["NAV updates are only applicable for NAV-based funds"]
+
+        prev_fund_events = self.fund_event_repository.get_fund_events(session,
+                                fund_ids=[fund.id],
+                                event_types=[EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
+                                end_event_date=event_data['event_date'],
+                                sort_order=SortOrder.ASC)
+
+        # BUSINESS RULE: We need to own units before we can update the NAV
+        if prev_fund_events:
+            prev_unit_event = prev_fund_events[-1]
+            if prev_unit_event.units_owned == 0:
+                errors['units_owned'] = ["We first need to do own units before we can update the NAV"]
+        else:
+            errors['units_owned'] = ["We first need to do a unit purchase before we can update the NAV"]
+
         
         return errors
     

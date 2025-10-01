@@ -45,9 +45,11 @@ class CompanyFundEventSecondaryService:
 
             # 1. Check the start date of the fund
             if fund_change_dict['field_name'] == 'start_date':
-                if company.start_date is None or company.start_date > fund_change_dict['new_value']:
+                # Convert serialized date string back to date object for comparison
+                from datetime import date
+                new_start_date = date.fromisoformat(fund_change_dict['new_value']) if isinstance(fund_change_dict['new_value'], str) else fund_change_dict['new_value']
+                if company.start_date is None or company.start_date > new_start_date:
                     old_start_date = company.start_date
-                    new_start_date = fund_change_dict['new_value']
                     company.start_date = new_start_date
                     all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='start_date', old_value=old_start_date, new_value=new_start_date))
 
@@ -88,8 +90,15 @@ class CompanyFundEventSecondaryService:
 
             # 3. Check the status of the fund
             elif fund_change_dict['field_name'] == 'status':
-                old_fund_status = fund_change_dict['old_value']
-                new_fund_status = fund_change_dict['new_value']
+                # Convert serialized enum values back to enum objects for comparison
+                old_fund_status_str = fund_change_dict['old_value']
+                new_fund_status_str = fund_change_dict['new_value']
+                
+                # Convert string values back to enum objects
+                old_fund_status = FundStatus(old_fund_status_str) if isinstance(old_fund_status_str, str) else old_fund_status_str
+                new_fund_status = FundStatus(new_fund_status_str) if isinstance(new_fund_status_str, str) else new_fund_status_str
+                
+                # Decrease count for old status
                 if old_fund_status == FundStatus.ACTIVE:
                     all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_active', old_value=company.total_funds_active, new_value=company.total_funds_active-1))
                     company.total_funds_active -= 1
@@ -99,6 +108,8 @@ class CompanyFundEventSecondaryService:
                 elif old_fund_status == FundStatus.COMPLETED:
                     all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_completed', old_value=company.total_funds_completed, new_value=company.total_funds_completed-1))
                     company.total_funds_completed -= 1
+                
+                # Increase count for new status
                 if new_fund_status == FundStatus.ACTIVE:
                     all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_active', old_value=company.total_funds_active, new_value=company.total_funds_active+1))
                     company.total_funds_active += 1
@@ -109,8 +120,9 @@ class CompanyFundEventSecondaryService:
                     all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='total_funds_completed', old_value=company.total_funds_completed, new_value=company.total_funds_completed+1))
                     company.total_funds_completed += 1
 
+                # Update company status based on active funds count
                 if company.total_funds_active == 0 and old_fund_status == FundStatus.ACTIVE:
-                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='status', old_value=company.status, new_value=CompanyStatus.INACTIVE))
+                    all_company_changes.append(FundFieldChange(object='COMPANY', object_id=company_id, field_name='status', old_value=company.status, new_value=CompanyStatus.COMPLETED))
                     company.status = CompanyStatus.COMPLETED
                     all_company_changes.append(self.company_irr_service.update_irrs(company, fund_ids, session))
                 elif company.total_funds_active == 1 and old_fund_status != FundStatus.ACTIVE:

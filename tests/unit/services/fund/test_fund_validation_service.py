@@ -418,7 +418,7 @@ class TestFundValidationService:
 
             # Assert
             assert 'amount' in result
-            assert "Cannot return more capital than remaining equity" in result['amount']
+            assert "Cannot return more capital than remaining equity as of the event date" in result['amount']
 
     def test_validate_return_of_capital_raises_error_when_fund_not_found(self, service, mock_session):
         """Test return of capital validation raises error when fund not found."""
@@ -559,7 +559,7 @@ class TestFundValidationService:
 
             # Assert
             assert 'units_sold' in result
-            assert "Cannot sell more units than available" in result['units_sold']
+            assert "Cannot sell more units than available units owned as of the event date" in result['units_sold']
 
     def test_validate_unit_sale_raises_error_when_fund_not_found(self, service, mock_session):
         """Test unit sale validation raises error when fund not found."""
@@ -584,29 +584,37 @@ class TestFundValidationService:
         # Arrange
         event_data = {
             'fund_id': 1,
-            'nav_per_share': 1.25
+            'nav_per_share': 1.25,
+            'event_date': '2024-01-15'
         }
         
-        # Act
-        result = service.validate_nav_update(mock_nav_fund, event_data, mock_session)
+        # Mock a previous unit purchase with units owned
+        mock_prev_event = Mock()
+        mock_prev_event.units_owned = 1000.0
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[mock_prev_event]) as mock_get_events:
+            # Act
+            result = service.validate_nav_update(mock_nav_fund, event_data, mock_session)
 
-        # Assert
-        assert result == {}
+            # Assert
+            assert result == {}
 
     def test_validate_nav_update_fails_for_cost_based_fund(self, service, mock_session, mock_fund):
         """Test NAV update validation fails for cost-based fund."""
         # Arrange
         event_data = {
             'fund_id': 1,
-            'nav_per_share': 1.25
+            'nav_per_share': 1.25,
+            'event_date': '2024-01-15'
         }
         
-        # Act
-        result = service.validate_nav_update(mock_fund, event_data, mock_session)
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_get_events:
+            # Act
+            result = service.validate_nav_update(mock_fund, event_data, mock_session)
 
-        # Assert
-        assert 'fund_type' in result
-        assert "NAV updates are only applicable for NAV-based funds" in result['fund_type']
+            # Assert
+            assert 'fund_type' in result
+            assert "NAV updates are only applicable for NAV-based funds" in result['fund_type']
 
     ################################################################################
     # Test validate_distribution method
@@ -704,3 +712,175 @@ class TestFundValidationService:
         assert hasattr(service, 'fund_tax_statement_repository')
         assert hasattr(service, 'fund_repository')
         assert hasattr(service, 'fund_event_cash_flow_repository')
+
+    ################################################################################
+    # Test Future Event Validation Logic
+    ################################################################################
+
+    def test_validate_capital_call_fails_when_future_equity_exceeds_commitment(self, service, mock_session, mock_fund):
+        """Test capital call validation fails when future equity would exceed commitment."""
+        # Arrange
+        event_data = {
+            'fund_id': 1,
+            'amount': 30000.0,
+            'event_date': '2024-01-15'
+        }
+        
+        # Mock a previous capital call with current_equity_balance
+        mock_prev_event = Mock()
+        mock_prev_event.current_equity_balance = 40000.0
+        
+        # Mock a future capital call that would exceed commitment
+        mock_future_event = Mock()
+        mock_future_event.event_type = EventType.CAPITAL_CALL
+        mock_future_event.amount = 50000.0  # This would make total equity 120000 > 100000 commitment
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events') as mock_get_events:
+            # Configure the mock to return different values for different calls
+            mock_get_events.side_effect = [
+                [mock_prev_event],  # Previous events
+                [mock_future_event]  # Future events
+            ]
+            
+            # Act
+            result = service.validate_capital_call(mock_fund, event_data, mock_session)
+
+            # Assert
+            assert 'future_amount' in result
+            assert "As a result of this capital call, the future equity balance would go above the commitment amount" in result['future_amount']
+
+    def test_validate_return_of_capital_fails_when_future_equity_goes_below_zero(self, service, mock_session, mock_fund):
+        """Test return of capital validation fails when future equity would go below zero."""
+        # Arrange
+        event_data = {
+            'fund_id': 1,
+            'amount': 30000.0,
+            'event_date': '2024-01-15'
+        }
+        
+        # Mock a previous capital call with current_equity_balance
+        mock_prev_event = Mock()
+        mock_prev_event.current_equity_balance = 50000.0
+        
+        # Mock a future return of capital that would make equity negative
+        mock_future_event = Mock()
+        mock_future_event.event_type = EventType.RETURN_OF_CAPITAL
+        mock_future_event.amount = 25000.0  # This would make equity negative (50000 - 30000 - 25000 = -5000)
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events') as mock_get_events:
+            # Configure the mock to return different values for different calls
+            mock_get_events.side_effect = [
+                [mock_prev_event],  # Previous events
+                [mock_future_event]  # Future events
+            ]
+            
+            # Act
+            result = service.validate_return_of_capital(mock_fund, event_data, mock_session)
+
+            # Assert
+            assert 'future_amount' in result
+            assert "As a result of this return of capital, the future equity balance would go below 0" in result['future_amount']
+
+    def test_validate_unit_sale_fails_when_future_units_go_below_zero(self, service, mock_session, mock_nav_fund):
+        """Test unit sale validation fails when future units would go below zero."""
+        # Arrange
+        event_data = {
+            'fund_id': 1,
+            'units_sold': 600.0,
+            'event_date': '2024-01-15'
+        }
+        
+        # Mock a previous unit purchase with units owned
+        mock_prev_event = Mock()
+        mock_prev_event.units_owned = 1000.0
+        
+        # Mock a future unit sale that would make units negative
+        mock_future_event = Mock()
+        mock_future_event.event_type = EventType.UNIT_SALE
+        mock_future_event.units_sold = 500.0  # This would make units negative (1000 - 600 - 500 = -100)
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events') as mock_get_events:
+            # Configure the mock to return different values for different calls
+            mock_get_events.side_effect = [
+                [mock_prev_event],  # Previous events
+                [mock_future_event]  # Future events
+            ]
+            
+            # Act
+            result = service.validate_unit_sale(mock_nav_fund, event_data, mock_session)
+
+            # Assert
+            assert 'future_units_sold' in result
+            assert "As a result of this sale, the future units owned would go below 0" in result['future_units_sold']
+
+    def test_validate_nav_update_fails_when_no_units_owned(self, service, mock_session, mock_nav_fund):
+        """Test NAV update validation fails when no units are owned."""
+        # Arrange
+        event_data = {
+            'fund_id': 1,
+            'nav_per_share': 1.25,
+            'event_date': '2024-01-15'
+        }
+        
+        # Mock a previous unit purchase with 0 units owned
+        mock_prev_event = Mock()
+        mock_prev_event.units_owned = 0.0
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[mock_prev_event]) as mock_get_events:
+            # Act
+            result = service.validate_nav_update(mock_nav_fund, event_data, mock_session)
+
+            # Assert
+            assert 'units_owned' in result
+            assert "We first need to do own units before we can update the NAV" in result['units_owned']
+
+    def test_validate_nav_update_fails_when_no_previous_events(self, service, mock_session, mock_nav_fund):
+        """Test NAV update validation fails when no previous events exist."""
+        # Arrange
+        event_data = {
+            'fund_id': 1,
+            'nav_per_share': 1.25,
+            'event_date': '2024-01-15'
+        }
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_get_events:
+            # Act
+            result = service.validate_nav_update(mock_nav_fund, event_data, mock_session)
+
+            # Assert
+            assert 'units_owned' in result
+            assert "We first need to do a unit purchase before we can update the NAV" in result['units_owned']
+
+    def test_validate_return_of_capital_fails_when_no_previous_events(self, service, mock_session, mock_fund):
+        """Test return of capital validation fails when no previous events exist."""
+        # Arrange
+        event_data = {
+            'fund_id': 1,
+            'amount': 25000.0,
+            'event_date': '2024-01-15'
+        }
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_get_events:
+            # Act
+            result = service.validate_return_of_capital(mock_fund, event_data, mock_session)
+
+            # Assert
+            assert 'amount' in result
+            assert "We first need to do a capital call before we can return of capital" in result['amount']
+
+    def test_validate_unit_sale_fails_when_no_previous_events(self, service, mock_session, mock_nav_fund):
+        """Test unit sale validation fails when no previous events exist."""
+        # Arrange
+        event_data = {
+            'fund_id': 1,
+            'units_sold': 100.0,
+            'event_date': '2024-01-15'
+        }
+        
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_get_events:
+            # Act
+            result = service.validate_unit_sale(mock_nav_fund, event_data, mock_session)
+
+            # Assert
+            assert 'units_sold' in result
+            assert "We first need to do a unit purchase before we can sell units" in result['units_sold']

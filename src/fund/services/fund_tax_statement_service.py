@@ -83,7 +83,7 @@ class FundTaxStatementService:
         Returns:
             List[FundTaxStatement]: List of fund tax statements
         """
-        return self.fund_tax_statement_repository.get_fund_tax_statements(fund_id, entity_id, financial_year, start_tax_payment_date, end_tax_payment_date, sort_by, sort_order, session)
+        return self.fund_tax_statement_repository.get_fund_tax_statements(session, fund_id, entity_id, financial_year, start_tax_payment_date, end_tax_payment_date, sort_by, sort_order)
         
     
     def get_fund_tax_statement_by_id(self, fund_tax_statement_id: int, session: Session) -> Optional[FundTaxStatement]:
@@ -129,7 +129,14 @@ class FundTaxStatementService:
  
         # Calculate the financial year start and end dates
         from src.fund.calculators.financial_year_calculator import FinancialYearCalculator
-        fy_start_date, fy_end_date = FinancialYearCalculator.calculate_financial_year_dates(processed_data['financial_year'])
+        fund = self.fund_repository.get_fund_by_id(fund_id, session)
+        if not fund:
+            raise ValueError(f"Fund not found")
+        
+        # financial_year is already in 4-digit format representing the end year
+        fy_start_date, fy_end_date = FinancialYearCalculator.calculate_financial_year_dates(
+            processed_data['financial_year'], fund.tax_statement_financial_year_type
+        )
         processed_data['financial_year_start_date'] = fy_start_date
         processed_data['financial_year_end_date'] = fy_end_date
 
@@ -195,8 +202,18 @@ class FundTaxStatementService:
         if not success:
             raise ValueError(f"Failed to delete fund tax statement")
 
-        # Delete the fund_events associated with the fund tax statement
-        # Need to build the logic to get this from the fund_event repository
+        # Delete the fund_events associated with the fund tax statement first
+        # Query fund events that reference this tax statement
+        fund_events = session.query(FundEvent).filter(
+            FundEvent.tax_statement_id == fund_tax_statement_id
+        ).all()
+        
+        for event in fund_events:
+            # Delete each associated fund event
+            self.fund_event_repository.delete_fund_event(event.id, session)
+
+        # Flush the session to ensure the deletions are processed
+        session.flush()
 
         return success
 
@@ -218,7 +235,7 @@ class FundTaxStatementService:
         """
         events = []
         # Interest tax payment
-        interest_event = self._create_interest_tax_payment(fund_tax_statement, session=session)
+        interest_event = self._create_interest_tax_payment(fund_tax_statement)
         if interest_event:
             events.append(interest_event)
         # Franked dividend tax payment
@@ -374,19 +391,24 @@ class FundTaxStatementService:
             capital_gains = fund_tax_statement.capital_gain_income_amount
             fund_tax_statement.capital_gain_income_amount_from_tax_statement_flag = True
 
-        if capital_gains > 0:
+        if capital_gains > 0 and fund_tax_statement.capital_gain_income_tax_rate > 0:
+            # Calculate the actual tax amount
+            tax_amount = capital_gains * (fund_tax_statement.capital_gain_income_tax_rate / 100)
+            fund_tax_statement.capital_gain_tax_amount = tax_amount
+            
             event_data = {
                 'fund_id': fund_tax_statement.fund_id,
                 'event_type': EventType.TAX_PAYMENT,
                 'tax_payment_type': TaxPaymentType.CAPITAL_GAINS_TAX,
                 'event_date': fund_tax_statement.tax_payment_date,
-                'amount': capital_gains,
+                'amount': tax_amount,
                 'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
                 'reference_number': f"TAX-{fund_tax_statement.financial_year}",
                 'tax_statement_id': fund_tax_statement.id
             }
             return event_data
         else:
+            fund_tax_statement.capital_gain_tax_amount = 0.0
             return None
 
     def _create_eofy_debt_cost_event(self, fund_tax_statement: FundTaxStatement, session: Session) -> Dict[str, Any]:
