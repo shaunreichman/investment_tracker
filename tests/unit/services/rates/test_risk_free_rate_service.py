@@ -69,7 +69,7 @@ class TestRiskFreeRateService:
         # Assert
         assert result == expected_rates
         service.risk_free_rate_repository.get_risk_free_rates.assert_called_once_with(
-            mock_session, None, None, SortFieldRiskFreeRate.DATE, SortOrder.ASC
+            mock_session, None, None, None, None, SortFieldRiskFreeRate.DATE, SortOrder.ASC
         )
 
     def test_get_risk_free_rates_with_filters(self, service, mock_session):
@@ -85,13 +85,13 @@ class TestRiskFreeRateService:
         
         # Act
         result = service.get_risk_free_rates(
-            mock_session, currency, rate_type, sort_by, sort_order
+            mock_session, currency=currency, rate_type=rate_type, sort_by=sort_by, sort_order=sort_order
         )
         
         # Assert
         assert result == expected_rates
         service.risk_free_rate_repository.get_risk_free_rates.assert_called_once_with(
-            mock_session, currency, rate_type, sort_by, sort_order
+            mock_session, currency, rate_type, None, None, sort_by, sort_order
         )
 
     def test_get_risk_free_rate_by_id_success(self, service, mock_session, sample_risk_free_rate):

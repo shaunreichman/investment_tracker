@@ -8,7 +8,7 @@ delegated to services for clean separation of concerns.
 """
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, Float, DateTime, Date, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, Float, DateTime, Date, Enum, UniqueConstraint, String
 from typing import Dict
 
 from src.shared.enums.shared_enums import Currency
@@ -23,7 +23,7 @@ class FxRate(Base):
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
     from_currency = Column(Enum(Currency), nullable=False)  # (MANUAL) currency code (e.g., 'AUD', 'USD', 'EUR')
     to_currency = Column(Enum(Currency), nullable=False)  # (MANUAL) currency code (e.g., 'AUD', 'USD', 'EUR')
-    date = Column(Date, nullable=False)  # (MANUAL) date of the rate
+    date = Column(Date, nullable=False)  # (MANUAL) date of the rate - must be last day of the month
     fx_rate = Column(Float, nullable=False)  # (MANUAL) FX rate from_currency to to_currency
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated

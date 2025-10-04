@@ -44,7 +44,7 @@ class TestFxRateService:
         return {
             'from_currency': Currency.AUD,
             'to_currency': Currency.USD,
-            'date': date(2024, 1, 15),
+            'date': date(2024, 1, 31),  # Valid last day of month
             'fx_rate': 0.6523
         }
 
@@ -176,8 +176,8 @@ class TestFxRateService:
             sample_fx_rate_data, mock_session
         )
 
-    def test_create_fx_rate_failure(self, service, mock_session, sample_fx_rate_data):
-        """Test creation failure raises ValueError."""
+    def test_create_fx_rate_repository_failure(self, service, mock_session, sample_fx_rate_data):
+        """Test repository creation failure raises ValueError."""
         # Arrange
         service.fx_rate_repository.create_fx_rate = Mock(return_value=None)
         
@@ -191,7 +191,7 @@ class TestFxRateService:
         fx_rate_data = {
             'from_currency': Currency.EUR,
             'to_currency': Currency.JPY,
-            'date': date(2024, 2, 1),
+            'date': date(2024, 2, 29),  # Valid last day of month (leap year)
             'fx_rate': 160.25
         }
         created_rate = FxRateFactory.build(**fx_rate_data)
@@ -339,26 +339,150 @@ class TestFxRateService:
         assert service.fx_rate_repository.get_fx_rates.call_count == len(sort_orders)
 
     ################################################################################
+    # Validation Integration Tests
+    ################################################################################
+
+    def test_create_fx_rate_validation_invalid_date_not_last_day(self, service, mock_session):
+        """Test validation fails for dates that are not last day of month."""
+        # Arrange
+        fx_rate_data = {
+            'from_currency': Currency.AUD,
+            'to_currency': Currency.USD,
+            'date': date(2024, 1, 30),  # Invalid: not last day of month
+            'fx_rate': 0.6523
+        }
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="Validation errors"):
+            service.create_fx_rate(fx_rate_data, mock_session)
+
+    def test_create_fx_rate_validation_invalid_rate_zero(self, service, mock_session):
+        """Test validation fails for zero rate."""
+        # Arrange
+        fx_rate_data = {
+            'from_currency': Currency.AUD,
+            'to_currency': Currency.USD,
+            'date': date(2024, 1, 31),  # Valid last day of month
+            'fx_rate': 0  # Invalid: zero rate
+        }
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="Validation errors"):
+            service.create_fx_rate(fx_rate_data, mock_session)
+
+    def test_create_fx_rate_validation_invalid_rate_negative(self, service, mock_session):
+        """Test validation fails for negative rate."""
+        # Arrange
+        fx_rate_data = {
+            'from_currency': Currency.AUD,
+            'to_currency': Currency.USD,
+            'date': date(2024, 1, 31),  # Valid last day of month
+            'fx_rate': -1.5  # Invalid: negative rate
+        }
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="Validation errors"):
+            service.create_fx_rate(fx_rate_data, mock_session)
+
+    def test_create_fx_rate_validation_missing_date(self, service, mock_session):
+        """Test validation fails when date is missing."""
+        # Arrange
+        fx_rate_data = {
+            'from_currency': Currency.AUD,
+            'to_currency': Currency.USD,
+            # Missing 'date' field
+            'fx_rate': 0.6523
+        }
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="Validation errors"):
+            service.create_fx_rate(fx_rate_data, mock_session)
+
+    def test_create_fx_rate_validation_missing_rate(self, service, mock_session):
+        """Test validation fails when rate is missing."""
+        # Arrange
+        fx_rate_data = {
+            'from_currency': Currency.AUD,
+            'to_currency': Currency.USD,
+            'date': date(2024, 1, 31),  # Valid last day of month
+            # Missing 'fx_rate' field
+        }
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="Validation errors"):
+            service.create_fx_rate(fx_rate_data, mock_session)
+
+    def test_create_fx_rate_validation_leap_year_valid(self, service, mock_session):
+        """Test validation passes for leap year February 29th."""
+        # Arrange
+        fx_rate_data = {
+            'from_currency': Currency.AUD,
+            'to_currency': Currency.USD,
+            'date': date(2024, 2, 29),  # Valid last day of month in leap year
+            'fx_rate': 0.6523
+        }
+        service.fx_rate_repository.create_fx_rate = Mock(return_value=FxRateFactory.build(**fx_rate_data))
+        
+        # Act
+        result = service.create_fx_rate(fx_rate_data, mock_session)
+        
+        # Assert
+        assert result is not None
+        service.fx_rate_repository.create_fx_rate.assert_called_once_with(fx_rate_data, mock_session)
+
+    def test_create_fx_rate_validation_non_leap_year_valid(self, service, mock_session):
+        """Test validation passes for non-leap year February 28th."""
+        # Arrange
+        fx_rate_data = {
+            'from_currency': Currency.AUD,
+            'to_currency': Currency.USD,
+            'date': date(2023, 2, 28),  # Valid last day of month in non-leap year
+            'fx_rate': 0.6523
+        }
+        service.fx_rate_repository.create_fx_rate = Mock(return_value=FxRateFactory.build(**fx_rate_data))
+        
+        # Act
+        result = service.create_fx_rate(fx_rate_data, mock_session)
+        
+        # Assert
+        assert result is not None
+        service.fx_rate_repository.create_fx_rate.assert_called_once_with(fx_rate_data, mock_session)
+
+    def test_create_fx_rate_validation_string_date_valid(self, service, mock_session):
+        """Test validation passes for string date format."""
+        # Arrange
+        fx_rate_data = {
+            'from_currency': Currency.AUD,
+            'to_currency': Currency.USD,
+            'date': '2024-01-31',  # Valid last day of month as string
+            'fx_rate': 0.6523
+        }
+        service.fx_rate_repository.create_fx_rate = Mock(return_value=FxRateFactory.build(**fx_rate_data))
+        
+        # Act
+        result = service.create_fx_rate(fx_rate_data, mock_session)
+        
+        # Assert
+        assert result is not None
+        service.fx_rate_repository.create_fx_rate.assert_called_once_with(fx_rate_data, mock_session)
+
+    ################################################################################
     # Error Handling Tests
     ################################################################################
 
     def test_create_fx_rate_with_empty_data(self, service, mock_session):
-        """Test creation with empty data raises appropriate error."""
+        """Test creation with empty data raises validation error."""
         # Arrange
         empty_data = {}
-        service.fx_rate_repository.create_fx_rate = Mock(return_value=None)
         
         # Act & Assert
-        with pytest.raises(ValueError, match="Failed to create FX rate"):
+        with pytest.raises(ValueError, match="Validation errors"):
             service.create_fx_rate(empty_data, mock_session)
 
     def test_create_fx_rate_with_none_data(self, service, mock_session):
-        """Test creation with None data raises appropriate error."""
-        # Arrange
-        service.fx_rate_repository.create_fx_rate = Mock(return_value=None)
-        
+        """Test creation with None data raises validation error."""
         # Act & Assert
-        with pytest.raises(ValueError, match="Failed to create FX rate"):
+        with pytest.raises(ValueError, match="Validation errors"):
             service.create_fx_rate(None, mock_session)
 
     def test_delete_fx_rate_with_invalid_id(self, service, mock_session):

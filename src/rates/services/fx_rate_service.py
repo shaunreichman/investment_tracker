@@ -11,6 +11,7 @@ from src.rates.enums.fx_rate_enums import SortFieldFxRate
 from src.shared.enums.shared_enums import SortOrder
 from src.rates.models import FxRate
 from src.rates.repositories.fx_rate_repository import FxRateRepository
+from src.rates.services.rate_validation_service import RateValidationService
 
 
 class FxRateService:
@@ -35,7 +36,7 @@ class FxRateService:
             fx_rate_repository: FX rate repository to use. If None, creates a new one.
         """
         self.fx_rate_repository = FxRateRepository()
-
+        self.rate_validation_service = RateValidationService()
 
     ################################################################################
     # Get FX Rates
@@ -94,6 +95,12 @@ class FxRateService:
         Returns:
             Created FX rate
         """
+        # Validate the FX rate data
+        errors = self.rate_validation_service.validate_fx_rate_creation(fx_rate_data, session)
+        if errors:
+            raise ValueError(f"Validation errors: {errors}")
+
+        # Create the FX rate
         fx_rate = self.fx_rate_repository.create_fx_rate(fx_rate_data, session)
         if not fx_rate:
             raise ValueError(f"Failed to create FX rate")
