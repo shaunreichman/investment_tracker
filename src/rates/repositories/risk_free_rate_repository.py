@@ -36,6 +36,8 @@ class RiskFreeRateRepository:
     def get_risk_free_rates(self, session: Session,
                             currency: Optional[Currency] = None,
                             rate_type: Optional[RiskFreeRateType] = None,
+                            start_date: Optional[date] = None,
+                            end_date: Optional[date] = None,
                             sort_by: Optional[SortFieldRiskFreeRate] = SortFieldRiskFreeRate.DATE,
                             sort_order: Optional[SortOrder] = SortOrder.ASC) -> List[RiskFreeRate]:
         """
@@ -45,6 +47,11 @@ class RiskFreeRateRepository:
             session: Database session
             currency: Currency of the risk free rates to retrieve
             rate_type: Type of the risk free rates to retrieve
+            start_date: Start date of the risk free rates to retrieve
+            end_date: End date of the risk free rates to retrieve
+            sort_by: Field to sort by
+            sort_order: Order to sort by
+
         Returns:
             List of risk free rates
         """
@@ -62,6 +69,10 @@ class RiskFreeRateRepository:
             risk_free_rates = risk_free_rates.filter(RiskFreeRate.currency == currency.value)
         if rate_type:
             risk_free_rates = risk_free_rates.filter(RiskFreeRate.rate_type == rate_type.value)
+        if start_date:
+            risk_free_rates = risk_free_rates.filter(RiskFreeRate.date >= start_date)
+        if end_date:
+            risk_free_rates = risk_free_rates.filter(RiskFreeRate.date <= end_date)
 
         # Apply sorting
         if sort_by == SortFieldRiskFreeRate.DATE:

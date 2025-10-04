@@ -4,6 +4,7 @@ Risk Free Rate Service.
 
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
+from datetime import date
 
 from src.shared.enums.shared_enums import Currency
 from src.rates.enums.risk_free_rate_enums import RiskFreeRateType, SortFieldRiskFreeRate
@@ -42,6 +43,8 @@ class RiskFreeRateService:
     def get_risk_free_rates(self, session: Session,
         currency: Optional[Currency] = None,
         rate_type: Optional[RiskFreeRateType] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
         sort_by: Optional[SortFieldRiskFreeRate] = SortFieldRiskFreeRate.DATE,
         sort_order: Optional[SortOrder] = SortOrder.ASC
     ) -> List[RiskFreeRate]:
@@ -52,13 +55,15 @@ class RiskFreeRateService:
             session: Database session
             currency: Currency of the risk free rates to retrieve
             rate_type: Type of the risk free rates to retrieve
+            start_date: Start date of the risk free rates to retrieve
+            end_date: End date of the risk free rates to retrieve
             sort_by: Field to sort by
             sort_order: Order to sort by
 
         Returns:
             List of risk free rates
         """
-        return self.risk_free_rate_repository.get_risk_free_rates(session, currency, rate_type, sort_by, sort_order)
+        return self.risk_free_rate_repository.get_risk_free_rates(session, currency, rate_type, start_date, end_date, sort_by, sort_order)
 
     def get_risk_free_rate_by_id(self, risk_free_rate_id: int, session: Session) -> Optional[RiskFreeRate]:
         """

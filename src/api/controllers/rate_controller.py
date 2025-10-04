@@ -7,9 +7,10 @@ from sqlalchemy.orm import Session
 
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.dto.response_codes import ApiResponseCode
-from src.api.controllers.formatters.rate_formatter import format_risk_free_rate
+from src.api.controllers.formatters.rate_formatter import format_risk_free_rate, format_fx_rate
 
 from src.rates.services.risk_free_rate_service import RiskFreeRateService
+from src.rates.services.fx_rate_service import FxRateService
 
 class RateController:
     """
@@ -17,11 +18,13 @@ class RateController:
     
     Attributes:
         risk_free_rate_service (RiskFreeRateService): Service layer for risk free rate operations
+        fx_rate_service (FxRateService): Service layer for FX rate operations
     """
 
     def __init__(self):
         """Initialize the rate controller."""
         self.risk_free_rate_service = RiskFreeRateService()
+        self.fx_rate_service = FxRateService()
 
 
     ################################################################################
@@ -181,6 +184,174 @@ class RateController:
 
         except Exception as e:
             current_app.logger.error(f"Error deleting risk free rate: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+
+
+    ###############################################################################
+    # FX RATE ENDPOINTS
+    ###############################################################################
+
+    ###############################################
+    # Get FX Rates
+    ###############################################
+
+    def get_fx_rates(self) -> ControllerResponseDTO:
+        """
+        Get FX rates with optional search filters.
+
+        Search parameters (all optional):
+            from_currency: Currency of the FX rates to retrieve
+            to_currency: Currency of the FX rates to retrieve
+            start_date: Start date of the FX rates to retrieve
+            end_date: End date of the FX rates to retrieve
+
+        Returns:
+            ControllerResponseDTO
+        """
+        try:
+            # Get search parameters from middleware (all optional)
+            search_data = getattr(request, 'validated_data', {})
+
+            # Extract search parameters (None if not provided)
+            from_currency = search_data.get('from_currency')
+            to_currency = search_data.get('to_currency')
+            start_date = search_data.get('start_date')
+            end_date = search_data.get('end_date')
+
+            session = self._get_session()
+            try:
+                # Pass search parameters to service (all are optional)
+                fx_rates = self.fx_rate_service.get_fx_rates(
+                    session=session,
+                    from_currency=from_currency,
+                    to_currency=to_currency,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                if fx_rates is None:
+                    return ControllerResponseDTO(error="FX rates not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+
+                formatted_fx_rates = [format_fx_rate(fx_rate) for fx_rate in fx_rates]
+                return ControllerResponseDTO(data=formatted_fx_rates, response_code=ApiResponseCode.SUCCESS)
+            
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error getting FX rates: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting FX rates: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+        except Exception as e:
+            current_app.logger.error(f"Error getting FX rates: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+    def get_fx_rate_by_id(self, fx_rate_id: int) -> ControllerResponseDTO:
+        """
+        Get an FX rate by its ID.
+        """
+        try:
+            session = self._get_session()
+            try:
+                fx_rate = self.fx_rate_service.get_fx_rate_by_id(fx_rate_id, session)
+                if fx_rate is None:
+                    return ControllerResponseDTO(error="FX rate not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+
+                formatted_fx_rate = format_fx_rate(fx_rate)
+                return ControllerResponseDTO(data=formatted_fx_rate, response_code=ApiResponseCode.SUCCESS)
+            
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error getting FX rate: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting FX rate: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+        except Exception as e:
+            current_app.logger.error(f"Error getting FX rate: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+
+    ###############################################
+    # Create FX Rate
+    ###############################################
+    def create_fx_rate(self) -> ControllerResponseDTO:
+        """
+        Create an FX rate.
+
+        Returns:
+            ControllerResponseDTO: DTO containing FX rate data or error
+        """
+        try:
+            fx_rate_data = getattr(request, 'validated_data', {})
+            if not fx_rate_data:
+                return ControllerResponseDTO(error='No validated data available', response_code=ApiResponseCode.VALIDATION_ERROR)
+            session = self._get_session()
+            try:
+                fx_rate = self.fx_rate_service.create_fx_rate(fx_rate_data, session)
+                session.commit()
+                formatted_fx_rate = format_fx_rate(fx_rate)
+                return ControllerResponseDTO(data=formatted_fx_rate, response_code=ApiResponseCode.CREATED)
+
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error creating FX rate: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error creating FX rate: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error creating FX rate: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+
+    ###############################################
+    # Delete FX Rate
+    ###############################################
+    def delete_fx_rate(self, fx_rate_id: int) -> ControllerResponseDTO:
+        """
+        Delete an FX rate.
+
+        Args:
+            fx_rate_id: ID of the FX rate
+
+        Returns:
+            ControllerResponseDTO: DTO containing FX rate data or error
+        """
+        try:
+            session = self._get_session()
+            try:
+                success = self.fx_rate_service.delete_fx_rate(fx_rate_id, session)
+                if not success:
+                    return ControllerResponseDTO(error="FX rate not deleted", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+
+                session.commit()
+
+                return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
+
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error deleting FX rate: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error deleting FX rate: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+
+        except Exception as e:
+            current_app.logger.error(f"Error deleting FX rate: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
 

@@ -8,7 +8,7 @@ from src.banking.models import Bank, BankAccount
 from src.entity.models import Entity
 from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement
 from src.investment_company.models import InvestmentCompany, Contact
-from src.rates.models import RiskFreeRate
+from src.rates.models import RiskFreeRate, FxRate
 
 
 __version__ = "1.0.0"
@@ -25,4 +25,5 @@ __all__ = [
     'InvestmentCompany',
     'Contact',
     'RiskFreeRate',
+    'FxRate',
 ] 

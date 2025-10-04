@@ -7,7 +7,9 @@ for business logic components to interact with data.
 """
 
 from src.rates.repositories.risk_free_rate_repository import RiskFreeRateRepository
+from src.rates.repositories.fx_rate_repository import FxRateRepository
 
 __all__ = [
     'RiskFreeRateRepository',
+    'FxRateRepository',
 ]
