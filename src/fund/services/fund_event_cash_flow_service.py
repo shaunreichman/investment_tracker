@@ -111,11 +111,7 @@ class FundEventCashFlowService:
             raise ValueError(f"Fund event not found")
 
         expected_total_cash_flow_amount = fund_event.amount
-        if fund_event.event_type == EventType.UNIT_PURCHASE:
-            expected_total_cash_flow_amount += fund_event.brokerage_fee
-        elif fund_event.event_type == EventType.UNIT_SALE:
-            expected_total_cash_flow_amount -= fund_event.brokerage_fee
-        elif fund_event.event_type == EventType.DISTRIBUTION and fund_event.has_withholding_tax:
+        if fund_event.event_type == EventType.DISTRIBUTION and fund_event.has_withholding_tax:
             expected_total_cash_flow_amount -= fund_event.tax_withholding
 
         # Validate Fund Event Cash Flow Balance

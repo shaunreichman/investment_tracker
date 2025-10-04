@@ -62,9 +62,8 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 1
-        balance, has_changed = result[0]
+        balance = result[0]
         assert balance == 100000.0
-        assert has_changed is True
     
     def test_calculate_event_equity_balances_cost_based_multiple_calls(self):
         """Test cost-based equity balance calculation with multiple capital calls."""
@@ -90,13 +89,11 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 2
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
+        balance1 = result[0]
+        balance2 = result[1]
         
         assert balance1 == 100000.0
-        assert has_changed1 is True
         assert balance2 == 150000.0
-        assert has_changed2 is True
     
     def test_calculate_event_equity_balances_cost_based_with_returns(self):
         """Test cost-based equity balance calculation with capital calls and returns."""
@@ -128,16 +125,13 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 3
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
-        balance3, has_changed3 = result[2]
+        balance1 = result[0]
+        balance2 = result[1]
+        balance3 = result[2]
         
         assert balance1 == 100000.0
-        assert has_changed1 is True
         assert balance2 == 70000.0  # 100000 - 30000
-        assert has_changed2 is True
         assert balance3 == 90000.0  # 70000 + 20000
-        assert has_changed3 is True
     
     def test_calculate_event_equity_balances_cost_based_non_equity_events(self):
         """Test cost-based equity balance calculation with non-equity events."""
@@ -169,16 +163,13 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 3
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
-        balance3, has_changed3 = result[2]
+        balance1 = result[0]
+        balance2 = result[1]
+        balance3 = result[2]
         
         assert balance1 == 100000.0
-        assert has_changed1 is True
         assert balance2 == 100000.0  # Unchanged for non-equity event
-        assert has_changed2 is False
         assert balance3 == 120000.0  # 100000 + 20000
-        assert has_changed3 is True
     
     def test_calculate_event_equity_balances_nav_based_single_purchase(self):
         """Test NAV-based equity balance calculation with single unit purchase."""
@@ -199,9 +190,8 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 1
-        balance, has_changed = result[0]
+        balance = result[0]
         assert balance == 100000.0  # 1000 * 100
-        assert has_changed is True
     
     def test_calculate_event_equity_balances_nav_based_multiple_purchases(self):
         """Test NAV-based equity balance calculation with multiple unit purchases."""
@@ -229,13 +219,11 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 2
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
+        balance1 = result[0]
+        balance2 = result[1]
         
         assert balance1 == 100000.0  # 1000 * 100
-        assert has_changed1 is True
         assert balance2 == 155000.0  # 100000 + (500 * 110)
-        assert has_changed2 is True
     
     def test_calculate_event_equity_balances_nav_based_with_sales(self):
         """Test NAV-based equity balance calculation with unit purchases and sales using FIFO."""
@@ -269,16 +257,13 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 3
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
-        balance3, has_changed3 = result[2]
+        balance1 = result[0]
+        balance2 = result[1]
+        balance3 = result[2]
         
         assert balance1 == 100000.0  # 1000 * 100
-        assert has_changed1 is True
         assert balance2 == 155000.0  # 100000 + (500 * 110)
-        assert has_changed2 is True
         assert balance3 == 125000.0  # 155000 - (300 * 100) - FIFO from first purchase
-        assert has_changed3 is True
     
     def test_calculate_event_equity_balances_nav_based_fifo_complex(self):
         """Test NAV-based equity balance calculation with complex FIFO scenario."""
@@ -319,19 +304,15 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 4
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
-        balance3, has_changed3 = result[2]
-        balance4, has_changed4 = result[3]
+        balance1 = result[0]
+        balance2 = result[1]
+        balance3 = result[2]
+        balance4 = result[3]
         
         assert balance1 == 100000.0  # 1000 * 100
-        assert has_changed1 is True
         assert balance2 == 155000.0  # 100000 + (500 * 110)
-        assert has_changed2 is True
         assert balance3 == 33000.0   # 155000 - (1000 * 100) - (200 * 110) = 155000 - 100000 - 22000
-        assert has_changed3 is True
         assert balance4 == 69000.0   # 33000 + (300 * 120)
-        assert has_changed4 is True
     
     def test_calculate_event_equity_balances_nav_based_invalid_units(self):
         """Test NAV-based equity balance calculation with invalid unit values."""
@@ -366,16 +347,13 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 3
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
-        balance3, has_changed3 = result[2]
+        balance1 = result[0]
+        balance2 = result[1]
+        balance3 = result[2]
         
         assert balance1 == 100000.0
-        assert has_changed1 is True
         assert balance2 == 100000.0  # Unchanged due to invalid units
-        assert has_changed2 is False
         assert balance3 == 100000.0  # Unchanged due to invalid price
-        assert has_changed3 is False
     
     def test_calculate_event_equity_balances_unsupported_fund_type(self):
         """Test equity balance calculation with unsupported fund type."""
@@ -408,7 +386,7 @@ class TestFundEquityCalculator:
     def test_calculate_current_equity_from_balances_single(self):
         """Test current equity calculation with single balance."""
         # Setup
-        event_balances = [(100000.0, True)]
+        event_balances = [100000.0]
         
         # Execute
         result = FundEquityCalculator.calculate_current_equity_from_balances(event_balances)
@@ -420,9 +398,9 @@ class TestFundEquityCalculator:
         """Test current equity calculation with multiple balances."""
         # Setup
         event_balances = [
-            (100000.0, True),
-            (150000.0, True),
-            (120000.0, True)
+            100000.0,
+            150000.0,
+            120000.0
         ]
         
         # Execute
@@ -451,7 +429,7 @@ class TestFundEquityCalculator:
             MockFundEvent(event_date=date(2023, 1, 1), fund=fund),
             MockFundEvent(event_date=date(2023, 2, 1), fund=fund)
         ]
-        event_balances = [(100000.0, True)]  # Only one balance for two events
+        event_balances = [100000.0]  # Only one balance for two events
         
         # Execute
         result = FundEquityCalculator.calculate_average_equity_from_balances(events, event_balances)
@@ -466,7 +444,7 @@ class TestFundEquityCalculator:
         events = [
             MockFundEvent(event_date=date(2023, 1, 1), fund=fund)
         ]
-        event_balances = [(100000.0, True)]
+        event_balances = [100000.0]
         
         # Execute
         result = FundEquityCalculator.calculate_average_equity_from_balances(events, event_balances)
@@ -487,9 +465,9 @@ class TestFundEquityCalculator:
             MockFundEvent(event_date=date(2023, 2, 28), fund=fund)   # 28 days later
         ]
         event_balances = [
-            (100000.0, True),   # 30 days
-            (150000.0, True),   # 28 days
-            (120000.0, True)    # Remaining days to today
+            100000.0,   # 30 days
+            150000.0,   # 28 days
+            120000.0    # Remaining days to today
         ]
         
         # Execute
@@ -512,8 +490,8 @@ class TestFundEquityCalculator:
             MockFundEvent(event_date=date(2023, 2, 1), fund=fund)  # 31 days later
         ]
         event_balances = [
-            (100000.0, True),   # 31 days
-            (150000.0, True)    # 58 days to end date
+            100000.0,   # 31 days
+            150000.0    # 58 days to end date
         ]
         
         # Execute
@@ -549,7 +527,7 @@ class TestFundEquityCalculator:
                 fund=fund
             )
         ]
-        event_balances = [(100000.0, True), (150000.0, True), (120000.0, True)]
+        event_balances = [100000.0, 150000.0, 120000.0]
         
         # Execute
         result = FundEquityCalculator.calculate_total_cost_basis_from_balances(
@@ -564,7 +542,7 @@ class TestFundEquityCalculator:
         # Setup
         fund = MockFund(tracking_type=FundTrackingType.NAV_BASED)
         events = []  # Not used for NAV-based
-        event_balances = [(100000.0, True), (150000.0, True)]
+        event_balances = [100000.0, 150000.0]
         
         # Execute
         result = FundEquityCalculator.calculate_total_cost_basis_from_balances(
@@ -579,7 +557,7 @@ class TestFundEquityCalculator:
         # Setup
         fund = MockFund(tracking_type="INVALID_TYPE")
         events = []
-        event_balances = [(100000.0, True)]
+        event_balances = [100000.0]
         
         # Execute & Verify
         with pytest.raises(ValueError, match="Unsupported fund type"):
@@ -605,7 +583,7 @@ class TestFundEquityCalculator:
                 fund=fund
             )
         ]
-        event_balances = [(100000.0, True), (100000.0, False)]
+        event_balances = [100000.0, 100000.0]
         
         # Execute
         result = FundEquityCalculator.calculate_total_cost_basis_from_balances(
@@ -647,13 +625,11 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 2
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
+        balance1 = result[0]
+        balance2 = result[1]
         
         assert balance1 == 0.0  # None amount treated as 0
-        assert has_changed1 is True
         assert balance2 == 0.0  # None amount treated as 0
-        assert has_changed2 is True
     
     def test_process_nav_based_events_empty(self):
         """Test NAV-based event processing with empty events."""
@@ -694,16 +670,13 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 3
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
-        balance3, has_changed3 = result[2]
+        balance1 = result[0]
+        balance2 = result[1]
+        balance3 = result[2]
         
         assert balance1 == 0.0  # None values treated as 0
-        assert has_changed1 is False
         assert balance2 == 0.0  # None values treated as 0
-        assert has_changed2 is False
         assert balance3 == 0.0  # None values treated as 0
-        assert has_changed3 is False
     
     def test_process_nav_based_events_fifo_edge_cases(self):
         """Test NAV-based event processing with FIFO edge cases."""
@@ -732,16 +705,13 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(result) == 3
-        balance1, has_changed1 = result[0]
-        balance2, has_changed2 = result[1]
-        balance3, has_changed3 = result[2]
+        balance1 = result[0]
+        balance2 = result[1]
+        balance3 = result[2]
         
         assert balance1 == 100000.0  # 1000 * 100
-        assert has_changed1 is True
         assert balance2 == 0.0  # All units sold
-        assert has_changed2 is True
         assert balance3 == 0.0  # No units left to sell
-        assert has_changed3 is True  # Sale event is recorded even if no units available
     
     def test_integration_cost_based_complete_workflow(self):
         """Test complete workflow for cost-based fund equity calculations."""
@@ -782,9 +752,9 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(event_balances) == 3
-        assert event_balances[0] == (100000.0, True)
-        assert event_balances[1] == (150000.0, True)
-        assert event_balances[2] == (120000.0, True)
+        assert event_balances[0] == 100000.0
+        assert event_balances[1] == 150000.0
+        assert event_balances[2] == 120000.0
         
         assert current_equity == 120000.0
         assert cost_basis == 150000.0  # Sum of capital calls
@@ -831,9 +801,9 @@ class TestFundEquityCalculator:
         
         # Verify
         assert len(event_balances) == 3
-        assert event_balances[0] == (100000.0, True)  # 1000 * 100
-        assert event_balances[1] == (155000.0, True)  # 100000 + (500 * 110)
-        assert event_balances[2] == (125000.0, True)  # 155000 - (300 * 100) - FIFO
+        assert event_balances[0] == 100000.0  # 1000 * 100
+        assert event_balances[1] == 155000.0  # 100000 + (500 * 110)
+        assert event_balances[2] == 125000.0  # 155000 - (300 * 100) - FIFO
         
         assert current_equity == 125000.0
         assert cost_basis == 125000.0  # Same as current equity for NAV-based

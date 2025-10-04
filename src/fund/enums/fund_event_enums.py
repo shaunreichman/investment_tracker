@@ -156,14 +156,12 @@ class TaxPaymentType(Enum):
     
     Values:
         NON_RESIDENT_INTEREST_WITHHOLDING: Non-resident interest withholding tax
-        NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE: Adjustment for withholding tax differences
         CAPITAL_GAINS_TAX: Capital gains tax payments
         EOFY_INTEREST_TAX: End of financial year interest tax
         DIVIDENDS_FRANKED_TAX: Tax on franked dividends
         DIVIDENDS_UNFRANKED_TAX: Tax on unfranked dividends
     """
     NON_RESIDENT_INTEREST_WITHHOLDING = 'NON_RESIDENT_INTEREST_WITHHOLDING'
-    NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE = 'NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE'
     CAPITAL_GAINS_TAX = 'CAPITAL_GAINS_TAX'
     EOFY_INTEREST_TAX = 'EOFY_INTEREST_TAX'
     DIVIDENDS_FRANKED_TAX = 'DIVIDENDS_FRANKED_TAX'
@@ -186,7 +184,6 @@ class TaxPaymentType(Enum):
         """Check if tax payment type is a withholding tax."""
         withholding_types = {
             cls.NON_RESIDENT_INTEREST_WITHHOLDING,
-            cls.NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE
         }
         return tax_type in withholding_types
     

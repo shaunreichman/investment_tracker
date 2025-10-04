@@ -128,6 +128,10 @@ class FundEventService:
                 # Create the tax event
                 tax_data = self._calculate_tax_event_data(processed_data)
                 tax_event = self.fund_event_repository.create_fund_event(tax_data, session)
+        
+        # 2b. Calculate the unit transaction event data
+        elif processed_data['event_type'] in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
+            processed_data = self._calculate_unit_transaction_event_data(processed_data)
 
         # 3. Create the fund event
         fund_event = self.fund_event_repository.create_fund_event(processed_data, session)
@@ -169,14 +173,18 @@ class FundEventService:
             # Complex withholding tax distribution
             from src.fund.calculators.withholding_tax_calculator import WithholdingTaxCalculator
             gross_amount, tax_amount = WithholdingTaxCalculator.calculate_withholding_tax_amounts(
-                processed_data['gross_interest_amount'], processed_data['net_interest_amount'], processed_data['withholding_tax_amount'], processed_data['withholding_tax_rate']
-            )
+                processed_data.get('gross_interest_amount'), processed_data.get('net_interest_amount'), processed_data.get('withholding_tax_amount'), processed_data.get('withholding_tax_rate'))
             
             processed_data.update({
                 'amount': gross_amount,  # Store gross amount for IRR calculations
                 'tax_withholding': tax_amount,  # Tax amount withheld
                 'has_withholding_tax': True
             })
+
+            # Clean up temporary calculation fields
+            temp_fields = ['gross_interest_amount', 'net_interest_amount', 'withholding_tax_amount', 'withholding_tax_rate']
+            for field in temp_fields:
+                processed_data.pop(field, None)
 
             group_id = self.fund_event_repository.generate_group_id(session)
             processed_data['group_id'] = group_id
@@ -273,3 +281,38 @@ class FundEventService:
             raise ValueError(f"Failed to delete event")
 
         return success
+    
+    def _calculate_unit_transaction_event_data(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calculate unit transaction event data based on parameters.
+        
+        This method calculates the amount field for unit purchase and sale events
+        based on the units, unit price, and brokerage fee.
+        
+        Args:
+            event_data: Dictionary containing event data
+            
+        Returns:
+            Dictionary with calculated amount field
+        """
+        processed_data = event_data.copy()
+        
+        if processed_data['event_type'] == EventType.UNIT_PURCHASE:
+            units = processed_data.get('units_purchased', 0.0)
+        elif processed_data['event_type'] == EventType.UNIT_SALE:
+            units = processed_data.get('units_sold', 0.0)
+        else:
+            return processed_data
+            
+        unit_price = processed_data.get('unit_price', 0.0)
+        brokerage_fee = processed_data.get('brokerage_fee', 0.0)
+        
+        # Calculate total amount: (units * unit_price) + brokerage_fee
+        if processed_data['event_type'] == EventType.UNIT_PURCHASE:
+            total_amount = (units * unit_price) + brokerage_fee
+        elif processed_data['event_type'] == EventType.UNIT_SALE:
+            total_amount = (units * unit_price) - brokerage_fee
+        
+        processed_data['amount'] = total_amount
+        
+        return processed_data

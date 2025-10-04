@@ -81,7 +81,7 @@ class TestFundPnlCalculator:
         with patch('src.fund.calculators.fund_pnl_calculator.FifoCapitalGainsCalculator') as mock_calc:
             mock_result = Mock()
             mock_result.remaining_units = 1000.0  # Match fund.current_units
-            mock_result.total_capital_gains = 40.0  # 200 units * (1.20 - 1.01) = 38, plus some rounding
+            mock_result.capital_gains_total = 40.0  # 200 units * (1.20 - 1.01) = 38, plus some rounding
             mock_result.average_cost_per_unit = 1.01
             mock_calc.return_value.calculate_capital_gains.return_value = mock_result
             
@@ -136,7 +136,7 @@ class TestFundPnlCalculator:
         with patch('src.fund.calculators.fund_pnl_calculator.FifoCapitalGainsCalculator') as mock_calc:
             mock_result = Mock()
             mock_result.remaining_units = 1000.0
-            mock_result.total_capital_gains = 0.0
+            mock_result.capital_gains_total = 0.0
             mock_result.average_cost_per_unit = 1.00
             mock_calc.return_value.calculate_capital_gains.return_value = mock_result
             
@@ -269,7 +269,7 @@ class TestFundPnlCalculator:
         with patch('src.fund.calculators.fund_pnl_calculator.FifoCapitalGainsCalculator') as mock_calc:
             mock_result = Mock()
             mock_result.remaining_units = 800.0  # Different from fund.current_units
-            mock_result.total_capital_gains = 0.0
+            mock_result.capital_gains_total = 0.0
             mock_result.average_cost_per_unit = 1.00
             mock_calc.return_value.calculate_capital_gains.return_value = mock_result
             
@@ -322,7 +322,7 @@ class TestFundPnlCalculator:
         with patch('src.fund.calculators.fund_pnl_calculator.FifoCapitalGainsCalculator') as mock_calc:
             mock_result = Mock()
             mock_result.remaining_units = 500.0  # Matches fund.current_units
-            mock_result.total_capital_gains = 200.0  # Total from both sales
+            mock_result.capital_gains_total = 200.0  # Total from both sales
             mock_result.average_cost_per_unit = 1.01  # Average cost per unit
             mock_calc.return_value.calculate_capital_gains.return_value = mock_result
             
@@ -427,7 +427,7 @@ class TestFundPnlCalculator:
         with patch('src.fund.calculators.fund_pnl_calculator.FifoCapitalGainsCalculator') as mock_calc:
             mock_result = Mock()
             mock_result.remaining_units = 1000.0
-            mock_result.total_capital_gains = 0.0
+            mock_result.capital_gains_total = 0.0
             mock_result.average_cost_per_unit = 1.00
             mock_calc.return_value.calculate_capital_gains.return_value = mock_result
             
@@ -463,7 +463,7 @@ class TestFundPnlCalculator:
         with patch('src.fund.calculators.fund_pnl_calculator.FifoCapitalGainsCalculator') as mock_calc:
             mock_result = Mock()
             mock_result.remaining_units = 1000.0
-            mock_result.total_capital_gains = 0.0
+            mock_result.capital_gains_total = 0.0
             mock_result.average_cost_per_unit = 1.00
             mock_calc.return_value.calculate_capital_gains.return_value = mock_result
             

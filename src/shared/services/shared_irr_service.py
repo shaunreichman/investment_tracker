@@ -60,12 +60,6 @@ class SharedIrRService:
             # Prepare cash flows and days from start
             cash_flows, days_from_start = self._prepare_cash_flows(filtered_events)
             
-            # Validate cash flows
-            is_valid = self.irr_calculator.validate_cash_flows(cash_flows, days_from_start)
-            
-            if not is_valid:
-                return None
-            
             # Calculate IRR using shared calculator
             return self.irr_calculator.calculate_irr(cash_flows, days_from_start)
             

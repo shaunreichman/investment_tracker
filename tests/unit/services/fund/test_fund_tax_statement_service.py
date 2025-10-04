@@ -317,18 +317,20 @@ class TestFundTaxStatementService:
     # Test _create_interest_tax_payment method
     ################################################################################
 
-    def test_create_interest_tax_payment_creates_event_when_conditions_met(self, service, mock_tax_statement):
+    def test_create_interest_tax_payment_creates_event_when_conditions_met(self, service, mock_tax_statement, mock_session):
         """Test that _create_interest_tax_payment creates event when conditions are met."""
         # Arrange
         mock_tax_statement.interest_income_tax_rate = 30.0
-        mock_tax_statement.interest_income_amount = 10000.0
+        mock_tax_statement.interest_received_in_cash = 10000.0  # This is what the method actually checks
         mock_tax_statement.interest_non_resident_withholding_tax_from_statement = 1000.0
         mock_tax_statement.tax_payment_date = date(2024, 6, 30)
         mock_tax_statement.financial_year = '2023-2024'
         mock_tax_statement.id = 1
+        mock_tax_statement.interest_receivable_this_fy = 0.0
+        mock_tax_statement.interest_receivable_prev_fy = 0.0
 
         # Act
-        result = service._create_interest_tax_payment(mock_tax_statement)
+        result = service._create_interest_tax_payment(mock_tax_statement, mock_session)
 
         # Assert
         assert result is not None
@@ -338,27 +340,31 @@ class TestFundTaxStatementService:
         assert result['fund_id'] == mock_tax_statement.fund_id
         assert result['tax_statement_id'] == 1
 
-    def test_create_interest_tax_payment_returns_none_when_no_income(self, service, mock_tax_statement):
+    def test_create_interest_tax_payment_returns_none_when_no_income(self, service, mock_tax_statement, mock_session):
         """Test that _create_interest_tax_payment returns None when no income."""
         # Arrange
         mock_tax_statement.interest_income_tax_rate = 30.0
-        mock_tax_statement.interest_income_amount = 0.0
+        mock_tax_statement.interest_received_in_cash = 0.0  # No income received
+        mock_tax_statement.interest_receivable_this_fy = 0.0
+        mock_tax_statement.interest_receivable_prev_fy = 0.0
 
-        # Act
-        result = service._create_interest_tax_payment(mock_tax_statement)
+        # Mock the repository call to return empty list (no interest events)
+        with patch.object(service.fund_event_repository, 'get_fund_events', return_value=[]) as mock_get_events:
+            # Act
+            result = service._create_interest_tax_payment(mock_tax_statement, mock_session)
 
         # Assert
         assert result is None
         assert mock_tax_statement.interest_tax_amount == 0.0
 
-    def test_create_interest_tax_payment_returns_none_when_no_tax_rate(self, service, mock_tax_statement):
+    def test_create_interest_tax_payment_returns_none_when_no_tax_rate(self, service, mock_tax_statement, mock_session):
         """Test that _create_interest_tax_payment returns None when no tax rate."""
         # Arrange
         mock_tax_statement.interest_income_tax_rate = 0.0
         mock_tax_statement.interest_income_amount = 10000.0
 
         # Act
-        result = service._create_interest_tax_payment(mock_tax_statement)
+        result = service._create_interest_tax_payment(mock_tax_statement, mock_session)
 
         # Assert
         assert result is None
@@ -466,7 +472,7 @@ class TestFundTaxStatementService:
         with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund), \
              patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_events), \
              patch('src.fund.calculators.fifo_capital_gains_calculator.FifoCapitalGainsCalculator') as mock_calc_class, \
-             patch.object(mock_calc_class.return_value, 'calculate_capital_gains', return_value=Mock(total_capital_gains=1000.0)):
+             patch.object(mock_calc_class.return_value, 'calculate_capital_gains', return_value=Mock(capital_gains_total=1000.0, capital_gains_taxable_total=800.0, capital_gains_discounting_total=200.0)):
             
             # Act
             result = service._create_capital_gain_tax_payment(mock_tax_statement, mock_session)
@@ -475,9 +481,9 @@ class TestFundTaxStatementService:
             assert result is not None
             assert result['event_type'] == EventType.TAX_PAYMENT
             assert result['tax_payment_type'] == TaxPaymentType.CAPITAL_GAINS_TAX
-            assert result['amount'] == 300.0  # 1000.0 * 30% = 300.0
+            assert result['amount'] == 240.0  # 800.0 * 30% = 240.0 (tax on taxable amount)
             assert mock_tax_statement.capital_gain_income_amount == 1000.0
-            assert mock_tax_statement.capital_gain_tax_amount == 300.0
+            assert mock_tax_statement.capital_gain_tax_amount == 240.0
             assert mock_tax_statement.capital_gain_income_amount_from_tax_statement_flag is False
 
     def test_create_capital_gain_tax_payment_returns_none_for_cost_based_fund(self, service, mock_session, mock_tax_statement, mock_fund):
@@ -537,8 +543,7 @@ class TestFundTaxStatementService:
 
             # Assert
             assert result is not None
-            assert result['event_type'] == EventType.TAX_PAYMENT
-            assert result['tax_payment_type'] == TaxPaymentType.EOFY_INTEREST_TAX
+            assert result['event_type'] == EventType.EOFY_DEBT_COST
             assert result['amount'] == 900.0  # (1000 + 2000) * 0.30
             assert mock_tax_statement.eofy_debt_interest_deduction_sum_of_daily_interest == 3000.0
             assert mock_tax_statement.eofy_debt_interest_deduction_total_deduction == 900.0

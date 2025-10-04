@@ -21,6 +21,7 @@ from src.fund.services.fund_nav_service import FundNavService
 from src.fund.services.fund_pnl_service import FundPnlService
 from src.fund.services.fund_service import FundService
 from src.fund.services.fund_status_service import FundStatusService
+from src.fund.services.fund_units_service import FundUnitsService
 from src.fund.services.fund_tax_statement_service import FundTaxStatementService
 from src.fund.services.fund_validation_service import FundValidationService
 
@@ -35,6 +36,7 @@ __all__ = [
     'FundPnlService',
     'FundService',
     'FundStatusService',
+    'FundUnitsService',
     'FundTaxStatementService',
     'FundValidationService',
 ]

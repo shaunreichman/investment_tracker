@@ -82,8 +82,8 @@ class TestDailyDebtCostCalculator:
             assert 'equity' in daily_data
             assert 'rate' in daily_data
             
-            # Verify the calculation: equity * (rate / 365.25)
-            expected_daily_cost = 100000.0 * (5.0 / 365.25)
+            # Verify the calculation: equity * (rate / 100 / 365.25)
+            expected_daily_cost = 100000.0 * (5.0 / 100 / 365.25)
             assert daily_data['debt_cost'] == pytest.approx(expected_daily_cost, rel=1e-6)
             assert daily_data['equity'] == 100000.0
             assert daily_data['rate'] == 5.0
@@ -124,7 +124,7 @@ class TestDailyDebtCostCalculator:
         jan_15 = date(2023, 1, 15)
         if jan_15 in result:
             jan_data = result[jan_15]
-            expected_cost = 100000.0 * (5.0 / 365.25)
+            expected_cost = 100000.0 * (5.0 / 100 / 365.25)
             assert jan_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert jan_data['equity'] == 100000.0
         
@@ -132,7 +132,7 @@ class TestDailyDebtCostCalculator:
         feb_15 = date(2023, 2, 15)
         if feb_15 in result:
             feb_data = result[feb_15]
-            expected_cost = 200000.0 * (5.0 / 365.25)
+            expected_cost = 200000.0 * (5.0 / 100 / 365.25)
             assert feb_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert feb_data['equity'] == 200000.0
     
@@ -170,7 +170,7 @@ class TestDailyDebtCostCalculator:
         jan_15 = date(2023, 1, 15)
         if jan_15 in result:
             jan_data = result[jan_15]
-            expected_cost = 100000.0 * (5.0 / 365.25)
+            expected_cost = 100000.0 * (5.0 / 100 / 365.25)
             assert jan_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert jan_data['rate'] == 5.0
         
@@ -178,7 +178,7 @@ class TestDailyDebtCostCalculator:
         feb_15 = date(2023, 2, 15)
         if feb_15 in result:
             feb_data = result[feb_15]
-            expected_cost = 100000.0 * (6.0 / 365.25)
+            expected_cost = 100000.0 * (6.0 / 100 / 365.25)
             assert feb_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert feb_data['rate'] == 6.0
     
@@ -225,7 +225,7 @@ class TestDailyDebtCostCalculator:
         feb_15 = date(2023, 2, 15)
         if feb_15 in result:
             feb_data = result[feb_15]
-            expected_cost = 100000.0 * (5.0 / 365.25)
+            expected_cost = 100000.0 * (5.0 / 100 / 365.25)
             assert feb_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert feb_data['equity'] == 100000.0
     
@@ -439,7 +439,7 @@ class TestDailyDebtCostCalculator:
         assert len(equity_periods) == 1  # Only the non-zero balance event
         
         assert equity_periods[0]['start_date'] == date(2023, 2, 1)
-        assert equity_periods[0]['end_date'] == date(2023, 3, 1)  # Next event date, not today
+        assert equity_periods[0]['end_date'] == date(2023, 2, 28)  # Day before next event with zero equity
         assert equity_periods[0]['equity_amount'] == 100000.0
     
     def test_calculate_daily_debt_costs_basic(self):
@@ -471,7 +471,7 @@ class TestDailyDebtCostCalculator:
         assert len(daily_debt_costs) == 3  # 3 days of equity period
         
         # Check each day
-        expected_daily_cost = 100000.0 * (5.0 / 365.25)
+        expected_daily_cost = 100000.0 * (5.0 / 100 / 365.25)
         
         for i in range(3):
             calc_date = date(2023, 1, 1) + timedelta(days=i)
@@ -519,7 +519,7 @@ class TestDailyDebtCostCalculator:
         day1 = date(2023, 1, 2)
         assert day1 in daily_debt_costs
         day1_data = daily_debt_costs[day1]
-        expected_cost_5pct = 100000.0 * (5.0 / 365.25)
+        expected_cost_5pct = 100000.0 * (5.0 / 100 / 365.25)
         assert day1_data['debt_cost'] == pytest.approx(expected_cost_5pct, rel=1e-6)
         assert day1_data['rate'] == 5.0
         
@@ -527,7 +527,7 @@ class TestDailyDebtCostCalculator:
         day2 = date(2023, 1, 3)
         assert day2 in daily_debt_costs
         day2_data = daily_debt_costs[day2]
-        expected_cost_6pct = 100000.0 * (6.0 / 365.25)
+        expected_cost_6pct = 100000.0 * (6.0 / 100 / 365.25)
         assert day2_data['debt_cost'] == pytest.approx(expected_cost_6pct, rel=1e-6)
         assert day2_data['rate'] == 6.0
         
@@ -535,7 +535,7 @@ class TestDailyDebtCostCalculator:
         day3 = date(2023, 1, 4)
         assert day3 in daily_debt_costs
         day3_data = daily_debt_costs[day3]
-        expected_cost_6pct = 100000.0 * (6.0 / 365.25)
+        expected_cost_6pct = 100000.0 * (6.0 / 100 / 365.25)
         assert day3_data['debt_cost'] == pytest.approx(expected_cost_6pct, rel=1e-6)
         assert day3_data['rate'] == 6.0
     
@@ -609,7 +609,7 @@ class TestDailyDebtCostCalculator:
         jan_15 = date(2023, 1, 15)
         if jan_15 in result:
             jan_data = result[jan_15]
-            expected_cost = 100000.0 * (5.0 / 365.25)
+            expected_cost = 100000.0 * (5.0 / 100 / 365.25)
             assert jan_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert jan_data['equity'] == 100000.0
             assert jan_data['rate'] == 5.0
@@ -618,7 +618,7 @@ class TestDailyDebtCostCalculator:
         feb_15 = date(2023, 2, 15)
         if feb_15 in result:
             feb_data = result[feb_15]
-            expected_cost = 200000.0 * (6.0 / 365.25)
+            expected_cost = 200000.0 * (6.0 / 100 / 365.25)
             assert feb_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert feb_data['equity'] == 200000.0
             assert feb_data['rate'] == 6.0
@@ -627,7 +627,7 @@ class TestDailyDebtCostCalculator:
         mar_15 = date(2023, 3, 15)
         if mar_15 in result:
             mar_data = result[mar_15]
-            expected_cost = 150000.0 * (4.0 / 365.25)
+            expected_cost = 150000.0 * (4.0 / 100 / 365.25)
             assert mar_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert mar_data['equity'] == 150000.0
             assert mar_data['rate'] == 4.0
@@ -663,7 +663,7 @@ class TestDailyDebtCostCalculator:
         test_date = date(2023, 1, 15)
         if test_date in result:
             daily_data = result[test_date]
-            expected_cost = 100000.0 * (5.0 / 365.25)
+            expected_cost = 100000.0 * (5.0 / 100 / 365.25)
             assert daily_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert daily_data['equity'] == 100000.0
             assert daily_data['rate'] == 5.0
@@ -701,7 +701,7 @@ class TestDailyDebtCostCalculator:
         test_date = date(2023, 1, 15)
         if test_date in result:
             daily_data = result[test_date]
-            expected_cost = 200000.0 * (5.0 / 365.25)
+            expected_cost = 200000.0 * (5.0 / 100 / 365.25)
             assert daily_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert daily_data['equity'] == 200000.0
     
@@ -732,7 +732,7 @@ class TestDailyDebtCostCalculator:
         test_date = date(2023, 1, 15)
         if test_date in result:
             daily_data = result[test_date]
-            expected_cost = 100000.0 * (-1.0 / 365.25)  # Negative cost
+            expected_cost = 100000.0 * (-1.0 / 100 / 365.25)  # Negative cost
             assert daily_data['debt_cost'] == pytest.approx(expected_cost, rel=1e-6)
             assert daily_data['equity'] == 100000.0
             assert daily_data['rate'] == -1.0

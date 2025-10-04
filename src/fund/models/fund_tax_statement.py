@@ -58,6 +58,7 @@ class FundTaxStatement(Base):
     capital_gain_tax_amount = Column(Float, default=0.0)  # (CALCULATED) calculated capital gain tax amount
     capital_gain_discount_amount = Column(Float, default=0.0)  # (CALCULATED) calculated capital gain discount (50% for AU holdings > 12 months)
     capital_gain_income_amount_from_tax_statement_flag = Column(Boolean, default=False)  # (CALCULATED) true if amount comes from tax statement
+    capital_gain_discount_applicable_flag = Column(Boolean, default=True)  # (MANUAL) Set to false by user to disable discount (eg if non resident and no discount available)
 
     # Debt cost tracking for real IRR calculations
     eofy_debt_interest_deduction_sum_of_daily_interest = Column(Float, default=0.0)  # (CALCULATED) total interest expense for the EOFY
@@ -126,6 +127,7 @@ class FundTaxStatement(Base):
             'capital_gain_tax_amount': 'CALCULATED',
             'capital_gain_discount_amount': 'CALCULATED',
             'capital_gain_income_amount_from_tax_statement_flag': 'CALCULATED',
+            'capital_gain_discount_applicable_flag': 'MANUAL',
             'eofy_debt_interest_deduction_sum_of_daily_interest': 'CALCULATED',
             'eofy_debt_interest_deduction_rate': 'MANUAL',
             'eofy_debt_interest_deduction_total_deduction': 'CALCULATED',

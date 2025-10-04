@@ -26,15 +26,15 @@ class IRRCalculator:
         Returns:
             float or None: The annual IRR as a decimal, or None if not computable
         """
-        # Initial guess: simple rate of return
-        total_investment = abs(cash_flows[0]) if cash_flows[0] < 0 else 0
-        total_return = sum(cf for cf in cash_flows[1:] if cf > 0)
-        if total_investment == 0:
+
+        is_valid = IRRCalculator._validate_cash_flows(cash_flows, days_from_start)
+        if not is_valid:
             return None
-        simple_return = (total_return - total_investment) / total_investment
-        monthly_guess = (1 + simple_return) ** (1/12) - 1
-        monthly_guess = max(-0.99, min(monthly_guess, 2.0))
-        
+
+        # Initial guess: 10% return
+        monthly_guess = 0.01
+
+        # Calculate IRR using Newton-Raphson method
         for iteration in range(max_iterations):
             npv = 0
             derivative = 0
@@ -57,7 +57,7 @@ class IRRCalculator:
         return None
     
     @staticmethod
-    def validate_cash_flows(cash_flows: List[float], days_from_start: List[int]) -> bool:
+    def _validate_cash_flows(cash_flows: List[float], days_from_start: List[int]) -> bool:
         """
         Validate cash flows for IRR calculation.
         

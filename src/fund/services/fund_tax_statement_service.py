@@ -140,6 +140,10 @@ class FundTaxStatementService:
         processed_data['financial_year_start_date'] = fy_start_date
         processed_data['financial_year_end_date'] = fy_end_date
 
+        # Set the tax payment date to the end date of the financial year by default
+        if 'tax_payment_date' not in processed_data:
+            processed_data['tax_payment_date'] = fy_end_date
+
         # Create the fund tax statement
         fund_tax_statement = self.fund_tax_statement_repository.create_fund_tax_statement(processed_data, session)
         if not fund_tax_statement:
@@ -235,17 +239,15 @@ class FundTaxStatementService:
         """
         events = []
         # Interest tax payment
-        interest_event = self._create_interest_tax_payment(fund_tax_statement)
+        interest_event = self._create_interest_tax_payment(fund_tax_statement, session=session)
         if interest_event:
             events.append(interest_event)
         # Franked dividend tax payment
-        franked_event = self._create_franked_dividend_tax_payment(
-            fund_tax_statement, session=session)
+        franked_event = self._create_franked_dividend_tax_payment(fund_tax_statement, session=session)
         if franked_event:
             events.append(franked_event)
         # Unfranked dividend tax payment
-        unfranked_event = self._create_unfranked_dividend_tax_payment(
-            fund_tax_statement, session=session)
+        unfranked_event = self._create_unfranked_dividend_tax_payment(fund_tax_statement, session=session)
         if unfranked_event:
             events.append(unfranked_event)
         # Capital gain tax payment
@@ -258,7 +260,7 @@ class FundTaxStatementService:
             events.append(eofy_debt_cost_event)
         return events
 
-    def _create_interest_tax_payment(self, fund_tax_statement: FundTaxStatement) -> Dict[str, Any]:
+    def _create_interest_tax_payment(self, fund_tax_statement: FundTaxStatement, session: Session) -> Dict[str, Any]:
         """
         Create an interest tax payment event for the given fund tax statement.
 
@@ -268,20 +270,39 @@ class FundTaxStatementService:
         Returns:
             Dict[str, Any]: Interest tax payment event data
         """
-        if fund_tax_statement.interest_income_tax_rate and fund_tax_statement.interest_income_amount and fund_tax_statement.interest_income_tax_rate != 0 and fund_tax_statement.interest_income_amount > 0:
+        interest_taxable_received_this_fy = 0.0
+        if hasattr(fund_tax_statement, 'interest_received_in_cash') and fund_tax_statement.interest_received_in_cash and fund_tax_statement.interest_received_in_cash != 0.0:
+            interest_taxable_received_this_fy = fund_tax_statement.interest_received_in_cash
+        else:
+            interest_events = self.fund_event_repository.get_fund_events(fund_ids=[fund_tax_statement.fund_id],
+                    distribution_types=[DistributionType.INTEREST],
+                    start_event_date=fund_tax_statement.financial_year_start_date,
+                    end_event_date=fund_tax_statement.financial_year_end_date,
+                    session=session)
+            for event in interest_events:
+                if event.has_withholding_tax == False:
+                    interest_taxable_received_this_fy += event.amount or 0.0
+
+        if interest_taxable_received_this_fy > 0 and fund_tax_statement.interest_income_tax_rate and fund_tax_statement.interest_income_tax_rate != 0:
+            fund_tax_statement.interest_income_amount = interest_taxable_received_this_fy + fund_tax_statement.interest_receivable_this_fy - fund_tax_statement.interest_receivable_prev_fy
             total_tax_liability = fund_tax_statement.interest_income_amount * (fund_tax_statement.interest_income_tax_rate / 100)
             fund_tax_statement.interest_tax_amount = max(0, total_tax_liability - (fund_tax_statement.interest_non_resident_withholding_tax_from_statement or 0.0))
-            event_data = {
-                'fund_id': fund_tax_statement.fund_id,
-                'event_type': EventType.TAX_PAYMENT,
-                'tax_payment_type': TaxPaymentType.EOFY_INTEREST_TAX,
-                'event_date': fund_tax_statement.tax_payment_date,
-                'amount': fund_tax_statement.interest_tax_amount,
-                'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
-                'reference_number': f"TAX-{fund_tax_statement.financial_year}",
-                'tax_statement_id': fund_tax_statement.id
-            }
-            return event_data
+            
+            # Only create tax payment event if the amount is greater than 0
+            if fund_tax_statement.interest_tax_amount > 0:
+                event_data = {
+                    'fund_id': fund_tax_statement.fund_id,
+                    'event_type': EventType.TAX_PAYMENT,
+                    'tax_payment_type': TaxPaymentType.EOFY_INTEREST_TAX,
+                    'event_date': fund_tax_statement.tax_payment_date,
+                    'amount': fund_tax_statement.interest_tax_amount,
+                    'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
+                    'reference_number': f"TAX-{fund_tax_statement.financial_year}",
+                    'tax_statement_id': fund_tax_statement.id
+                }
+                return event_data
+            else:
+                return None
         else:
             fund_tax_statement.interest_tax_amount = 0.0
             return None
@@ -308,17 +329,22 @@ class FundTaxStatementService:
         # 2. Calculate Franked Dividend Tax Amount
         if fund_tax_statement.dividend_franked_income_tax_rate and fund_tax_statement.dividend_franked_income_amount and fund_tax_statement.dividend_franked_income_tax_rate != 0 and fund_tax_statement.dividend_franked_income_amount > 0:
             fund_tax_statement.dividend_franked_tax_amount = fund_tax_statement.dividend_franked_income_amount * (fund_tax_statement.dividend_franked_income_tax_rate / 100)
-            event_data = {
-                'fund_id': fund_tax_statement.fund_id,
-                'event_type': EventType.TAX_PAYMENT,
-                'tax_payment_type': TaxPaymentType.DIVIDENDS_FRANKED_TAX,
-                'event_date': fund_tax_statement.tax_payment_date,
-                'amount': fund_tax_statement.dividend_franked_tax_amount,
-                'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
-                'reference_number': f"TAX-{fund_tax_statement.financial_year}",
-                'tax_statement_id': fund_tax_statement.id
-            }
-            return event_data
+            
+            # Only create tax payment event if the amount is greater than 0
+            if fund_tax_statement.dividend_franked_tax_amount > 0:
+                event_data = {
+                    'fund_id': fund_tax_statement.fund_id,
+                    'event_type': EventType.TAX_PAYMENT,
+                    'tax_payment_type': TaxPaymentType.DIVIDENDS_FRANKED_TAX,
+                    'event_date': fund_tax_statement.tax_payment_date,
+                    'amount': fund_tax_statement.dividend_franked_tax_amount,
+                    'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
+                    'reference_number': f"TAX-{fund_tax_statement.financial_year}",
+                    'tax_statement_id': fund_tax_statement.id
+                }
+                return event_data
+            else:
+                return None
         else:
             fund_tax_statement.dividend_franked_tax_amount = 0.0
             return None
@@ -345,17 +371,22 @@ class FundTaxStatementService:
         # 2. Calculate Unfranked Dividend Tax Amount
         if fund_tax_statement.dividend_unfranked_income_tax_rate and fund_tax_statement.dividend_unfranked_income_amount and fund_tax_statement.dividend_unfranked_income_tax_rate != 0 and fund_tax_statement.dividend_unfranked_income_amount > 0:
             fund_tax_statement.dividend_unfranked_tax_amount = fund_tax_statement.dividend_unfranked_income_amount * (fund_tax_statement.dividend_unfranked_income_tax_rate / 100)
-            event_data = {
-                'fund_id': fund_tax_statement.fund_id,
-                'event_type': EventType.TAX_PAYMENT,
-                'tax_payment_type': TaxPaymentType.DIVIDENDS_UNFRANKED_TAX,
-                'event_date': fund_tax_statement.tax_payment_date,
-                'amount': fund_tax_statement.dividend_unfranked_tax_amount,
-                'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
-                'reference_number': f"TAX-{fund_tax_statement.financial_year}",
-                'tax_statement_id': fund_tax_statement.id
-            }
-            return event_data
+            
+            # Only create tax payment event if the amount is greater than 0
+            if fund_tax_statement.dividend_unfranked_tax_amount > 0:
+                event_data = {
+                    'fund_id': fund_tax_statement.fund_id,
+                    'event_type': EventType.TAX_PAYMENT,
+                    'tax_payment_type': TaxPaymentType.DIVIDENDS_UNFRANKED_TAX,
+                    'event_date': fund_tax_statement.tax_payment_date,
+                    'amount': fund_tax_statement.dividend_unfranked_tax_amount,
+                    'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
+                    'reference_number': f"TAX-{fund_tax_statement.financial_year}",
+                    'tax_statement_id': fund_tax_statement.id
+                }
+                return event_data
+            else:
+                return None
         else:
             fund_tax_statement.dividend_unfranked_tax_amount = 0.0
             return None
@@ -379,9 +410,12 @@ class FundTaxStatementService:
                 capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(fund_events=fund_events,
                     cg_start_date=fund_tax_statement.financial_year_start_date,
                     cg_end_date=fund_tax_statement.financial_year_end_date,
+                    tax_jurisdiction=fund.tax_jurisdiction,
+                    capital_gain_discount_applicable=fund_tax_statement.capital_gain_discount_applicable_flag
 )
-                capital_gains = capital_gains_dict.total_capital_gains
-                fund_tax_statement.capital_gain_income_amount = capital_gains
+                capital_gains = capital_gains_dict.capital_gains_taxable_total  # Use taxable amount for tax calculations
+                fund_tax_statement.capital_gain_discount_amount = capital_gains_dict.capital_gains_discounting_total
+                fund_tax_statement.capital_gain_income_amount = capital_gains_dict.capital_gains_total  # Store total for reporting
                 fund_tax_statement.capital_gain_income_amount_from_tax_statement_flag = False
             elif fund.tracking_type == FundTrackingType.COST_BASED:
                 # No Capital Gains for Cost Based funds for now
@@ -396,17 +430,21 @@ class FundTaxStatementService:
             tax_amount = capital_gains * (fund_tax_statement.capital_gain_income_tax_rate / 100)
             fund_tax_statement.capital_gain_tax_amount = tax_amount
             
-            event_data = {
-                'fund_id': fund_tax_statement.fund_id,
-                'event_type': EventType.TAX_PAYMENT,
-                'tax_payment_type': TaxPaymentType.CAPITAL_GAINS_TAX,
-                'event_date': fund_tax_statement.tax_payment_date,
-                'amount': tax_amount,
-                'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
-                'reference_number': f"TAX-{fund_tax_statement.financial_year}",
-                'tax_statement_id': fund_tax_statement.id
-            }
-            return event_data
+            # Only create tax payment event if the amount is greater than 0
+            if tax_amount > 0:
+                event_data = {
+                    'fund_id': fund_tax_statement.fund_id,
+                    'event_type': EventType.TAX_PAYMENT,
+                    'tax_payment_type': TaxPaymentType.CAPITAL_GAINS_TAX,
+                    'event_date': fund_tax_statement.tax_payment_date,
+                    'amount': tax_amount,
+                    'description': f"Tax payment for FY {fund_tax_statement.financial_year}",
+                    'reference_number': f"TAX-{fund_tax_statement.financial_year}",
+                    'tax_statement_id': fund_tax_statement.id
+                }
+                return event_data
+            else:
+                return None
         else:
             fund_tax_statement.capital_gain_tax_amount = 0.0
             return None
@@ -436,12 +474,11 @@ class FundTaxStatementService:
         if tax_benefit > 0:
             event_data = {
             'fund_id': fund_tax_statement.fund_id,
-            'event_type': EventType.TAX_PAYMENT,
-            'tax_payment_type': TaxPaymentType.EOFY_INTEREST_TAX,
+            'event_type': EventType.EOFY_DEBT_COST,
             'event_date': fund_tax_statement.tax_payment_date,
             'amount': tax_benefit,
-            'description': f"FY {fund_tax_statement.financial_year} Interest Tax Benefit (${tax_benefit:,.2f})",
-            'reference_number': f"EOFY_INTEREST_TAX benefit-{fund_tax_statement.financial_year}",
+            'description': f"FY {fund_tax_statement.financial_year} EOFY Debt Cost (${tax_benefit:,.2f})",
+            'reference_number': f"EOFY_DEBT_COST-{fund_tax_statement.financial_year}",
             'tax_statement_id': fund_tax_statement.id
             }
             return event_data
@@ -486,7 +523,7 @@ class FundTaxStatementService:
                     event.tax_statement_id = fund_tax_statement.id
                     event.dc_current_equity_balance = daily_debt_cost_dict[event.event_date]['equity']
                     event.dc_risk_free_rate = daily_debt_cost_dict[event.event_date]['rate']
-                    return event
+                    # Continue processing - don't return early
 
         # 3. Create the Debt Cost event_data for the dates that haven't been set
         events_to_create = []

@@ -49,7 +49,7 @@ class FundPnlCalculator:
             capital_gains_dict = fifo_capital_gains_calculator.calculate_capital_gains(fund_events)
             if capital_gains_dict.remaining_units != fund.current_units:
                 raise ValueError("Remaining units do not match current units")
-            pnl_dict['realized_pnl_capital_gain'] = capital_gains_dict.total_capital_gains
+            pnl_dict['realized_pnl_capital_gain'] = capital_gains_dict.capital_gains_total
             pnl_dict['unrealized_pnl_capital_gain'] = capital_gains_dict.remaining_units * (fund.current_unit_price - capital_gains_dict.average_cost_per_unit)
 
         # Sum up the Distribution PNL

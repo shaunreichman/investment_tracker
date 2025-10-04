@@ -58,7 +58,6 @@ class TestUnitSaleWorkflowIntegration:
         purchase_data = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 15),
-            'amount': 50000.0,
             'description': 'Initial unit purchase',
             'fund_id': fund.id,
             'units_purchased': 1000.0,
@@ -72,7 +71,6 @@ class TestUnitSaleWorkflowIntegration:
         sale_data = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 6, 15),
-            'amount': 27500.0,
             'description': 'Partial unit sale',
             'reference_number': 'US-001',
             'fund_id': fund.id,
@@ -87,7 +85,7 @@ class TestUnitSaleWorkflowIntegration:
         
         # Verify event creation
         assert event.event_type == EventType.UNIT_SALE
-        assert event.amount == 27500.0
+        assert event.amount == 27500.0 - 150.0
         assert event.event_date == date(2023, 6, 15)
         assert event.description == 'Partial unit sale'
         assert event.reference_number == 'US-001'
@@ -115,7 +113,6 @@ class TestUnitSaleWorkflowIntegration:
         purchase_data = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 15),
-            'amount': 25000.0,
             'description': 'Initial purchase for sale test',
             'fund_id': fund.id,
             'units_purchased': 500.0,
@@ -129,7 +126,6 @@ class TestUnitSaleWorkflowIntegration:
         sale_data = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 7, 15),
-            'amount': 13750.0,
             'description': 'Valid unit sale',
             'fund_id': fund.id,
             'units_sold': 250.0,
@@ -142,7 +138,7 @@ class TestUnitSaleWorkflowIntegration:
         
         # Verify event creation
         assert event.event_type == EventType.UNIT_SALE
-        assert event.amount == 13750.0
+        assert event.amount == 250.0 * 55.0 - 75.0
         assert event.event_date == date(2023, 7, 15)
         assert event.fund_id == fund.id
         assert event.units_sold == 250.0
@@ -173,7 +169,6 @@ class TestUnitSaleWorkflowIntegration:
         purchase_data = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 15),
-            'amount': 25000.0,
             'fund_id': nav_fund.id,
             'units_purchased': 500.0,
             'unit_price': 50.0
@@ -187,7 +182,6 @@ class TestUnitSaleWorkflowIntegration:
         valid_sale_data = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 6, 15),
-            'amount': 13750.0,
             'fund_id': nav_fund.id,
             'units_sold': 250.0,
             'unit_price': 55.0
@@ -199,7 +193,6 @@ class TestUnitSaleWorkflowIntegration:
         invalid_sale_data = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 6, 15),
-            'amount': 13750.0,
             'fund_id': cost_fund.id,
             'units_sold': 250.0,
             'unit_price': 55.0
@@ -230,7 +223,6 @@ class TestUnitSaleWorkflowIntegration:
         purchase_data = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 15),
-            'amount': 75000.0,
             'description': 'Initial purchase',
             'fund_id': fund.id,
             'units_purchased': 1500.0,
@@ -247,7 +239,6 @@ class TestUnitSaleWorkflowIntegration:
         sale_data = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 7, 15),
-            'amount': 44000.0,
             'description': 'Partial sale',
             'fund_id': fund.id,
             'units_sold': 800.0,
@@ -288,7 +279,6 @@ class TestUnitSaleWorkflowIntegration:
         purchase_data_1 = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 15),
-            'amount': 50000.0,
             'description': 'First purchase',
             'fund_id': fund.id,
             'units_purchased': 1000.0,
@@ -305,7 +295,6 @@ class TestUnitSaleWorkflowIntegration:
         purchase_data_2 = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 3, 15),
-            'amount': 60000.0,
             'description': 'Second purchase',
             'fund_id': fund.id,
             'units_purchased': 1200.0,
@@ -322,7 +311,6 @@ class TestUnitSaleWorkflowIntegration:
         sale_data_1 = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 6, 15),
-            'amount': 33000.0,
             'description': 'First sale',
             'fund_id': fund.id,
             'units_sold': 600.0,
@@ -341,7 +329,6 @@ class TestUnitSaleWorkflowIntegration:
         sale_data_2 = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 9, 15),
-            'amount': 27500.0,
             'description': 'Second sale',
             'fund_id': fund.id,
             'units_sold': 500.0,
@@ -390,7 +377,6 @@ class TestUnitSaleWorkflowIntegration:
         purchase_data = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 15),
-            'amount': 25000.0,
             'description': 'Purchase for sale',
             'fund_id': fund.id,
             'units_purchased': 500.0,
@@ -404,7 +390,6 @@ class TestUnitSaleWorkflowIntegration:
         sale_data = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 7, 15),
-            'amount': 13750.0,
             'description': 'Unit sale with cash flow',
             'fund_id': fund.id,
             'units_sold': 250.0,
@@ -437,8 +422,8 @@ class TestUnitSaleWorkflowIntegration:
         assert cash_flow.transfer_date == date(2023, 7, 16)
         assert cash_flow.fund_event_id == event.id
 
-    def test_unit_sale_repository_persistence(self, db_session):
-        """Test unit sale data persistence through repository layer"""
+    def test_unit_sale_service_layer_persistence(self, db_session):
+        """Test unit sale data persistence through service layer"""
         # Setup factories with session
         for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
             factory._meta.sqlalchemy_session = db_session
@@ -449,54 +434,51 @@ class TestUnitSaleWorkflowIntegration:
         )
         db_session.commit()
         
-        # Test repository layer directly
-        fund_event_repository = FundEventRepository()
+        # Test service layer (proper architecture)
+        fund_event_service = FundEventService()
         
-        # First create purchase
+        # First create purchase through service
         purchase_data = {
-            'fund_id': fund.id,
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 15),
-            'amount': 30000.0,
             'description': 'Initial purchase',
             'units_purchased': 600.0,
             'unit_price': 50.0,
             'brokerage_fee': 60.0
         }
-        fund_event_repository.create_fund_event(purchase_data, db_session)
+        fund_event_service.create_fund_event(fund.id, purchase_data, db_session)
         db_session.commit()
         
-        # Now test sale
+        # Now test sale through service
         sale_data = {
-            'fund_id': fund.id,
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 7, 15),
-            'amount': 16500.0,
-            'description': 'Repository test sale',
-            'reference_number': 'REPO-US-001',
+            'description': 'Service layer test sale',
+            'reference_number': 'SERVICE-US-001',
             'units_sold': 300.0,
             'unit_price': 55.0,
             'brokerage_fee': 90.0
         }
         
-        # Create event through repository
-        event = fund_event_repository.create_fund_event(sale_data, db_session)
+        # Create event through service layer (includes business logic)
+        event = fund_event_service.create_fund_event(fund.id, sale_data, db_session)
         db_session.commit()
         
-        # Verify persistence
+        # Verify persistence and business logic calculation
         assert event.id is not None
         assert event.fund_id == fund.id
         assert event.event_type == EventType.UNIT_SALE
-        assert event.amount == 16500.0
+        assert event.amount == 300.0 * 55.0 - 90.0  # units * price - brokerage
         assert event.units_sold == 300.0
         assert event.unit_price == 55.0
         assert event.brokerage_fee == 90.0
         
-        # Test retrieval
-        retrieved_event = fund_event_repository.get_fund_event_by_id(event.id, db_session)
+        # Test retrieval through service layer
+        retrieved_event = fund_event_service.get_fund_event_by_id(event.id, db_session)
         assert retrieved_event is not None
         assert retrieved_event.id == event.id
-        assert retrieved_event.description == 'Repository test sale'
+        assert retrieved_event.description == 'Service layer test sale'
+        assert retrieved_event.amount == 300.0 * 55.0 - 90.0
 
     def test_unit_sale_error_handling_across_layers(self, db_session):
         """Test error handling across all layers"""
@@ -518,7 +500,6 @@ class TestUnitSaleWorkflowIntegration:
             invalid_sale_data = {
                 'event_type': EventType.UNIT_SALE,
                 'event_date': date(2023, 7, 15),
-                'amount': 13750.0,
                 'fund_id': 99999,  # Non-existent fund
                 'units_sold': 250.0,
                 'unit_price': 55.0
@@ -530,7 +511,6 @@ class TestUnitSaleWorkflowIntegration:
             invalid_sale_data = {
                 'event_type': 'INVALID_TYPE',
                 'event_date': date(2023, 7, 15),
-                'amount': 13750.0,
                 'fund_id': fund.id,
                 'units_sold': 250.0,
                 'unit_price': 55.0
@@ -556,7 +536,6 @@ class TestUnitSaleWorkflowIntegration:
         purchase_data = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 15),
-            'amount': 25000.0,
             'description': 'Purchase for integrity test',
             'fund_id': fund.id,
             'units_purchased': 500.0,
@@ -576,7 +555,6 @@ class TestUnitSaleWorkflowIntegration:
         sale_data = {
             'event_type': EventType.UNIT_SALE,
             'event_date': date(2023, 7, 15),
-            'amount': 13750.0,
             'description': 'Transaction integrity test',
             'fund_id': fund.id,
             'units_sold': 250.0,
@@ -622,7 +600,6 @@ class TestUnitSaleWorkflowIntegration:
         large_purchase = {
             'event_type': EventType.UNIT_PURCHASE,
             'event_date': date(2023, 1, 1),
-            'amount': 500000.0,
             'description': 'Large initial purchase',
             'fund_id': fund.id,
             'units_purchased': 10000.0,
@@ -652,7 +629,6 @@ class TestUnitSaleWorkflowIntegration:
             sale_event_data = {
                 'event_type': EventType.UNIT_SALE,
                 'event_date': sale_date,
-                'amount': data['units'] * data['price'],
                 'description': f'Unit sale {i+1}',
                 'fund_id': fund.id,
                 'units_sold': data['units'],

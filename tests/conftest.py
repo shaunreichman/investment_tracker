@@ -81,6 +81,91 @@ def drop_test_database(database_name: str):
         default_engine.dispose()
 
 
+def seed_risk_free_rates(session):
+    """Seed risk-free rates from CSV file for testing."""
+    try:
+        from src.rates.services.risk_free_rate_service import RiskFreeRateService
+        from src.shared.enums.shared_enums import Currency
+        from src.rates.enums.risk_free_rate_enums import RiskFreeRateType
+        import csv
+        from datetime import datetime
+        
+        risk_free_rate_service = RiskFreeRateService()
+        csv_file = PROJECT_ROOT / 'scripts' / 'rfr.csv'
+        
+        if not csv_file.exists():
+            print(f"Warning: Risk-free rates CSV file not found at {csv_file}")
+            return
+        
+        print("Seeding risk-free rates for testing...")
+        
+        with open(csv_file, 'r', encoding='utf-8-sig') as file:
+            reader = csv.DictReader(file)
+            
+            # Normalize fieldnames to remove BOM and strip whitespace
+            fieldnames = [fn.strip().replace('\ufeff', '') for fn in reader.fieldnames]
+            reader.fieldnames = fieldnames
+            
+            imported_count = 0
+            
+            for row_num, row in enumerate(reader, 1):
+                # Normalize row keys
+                row = {k.strip().replace('\ufeff', ''): v for k, v in row.items()}
+                
+                # Skip empty rows
+                if not row.get('currency') or not row.get('rate_date') or not row.get('rate'):
+                    continue
+                
+                try:
+                    # Parse the data
+                    currency_str = row['currency'].strip()
+                    rate_date_str = row['rate_date'].strip()
+                    rate = float(row['rate'].strip())
+                    rate_type_str = row.get('rate_type', 'cash_rate').strip()
+                    source = row.get('source', 'test_data').strip()
+                    
+                    # Convert currency string to enum
+                    currency = Currency.from_string(currency_str)
+                    
+                    # Parse date
+                    rate_date = datetime.strptime(rate_date_str, '%Y-%m-%d').date()
+                    
+                    # Map rate_type from CSV to enum
+                    rate_type_mapping = {
+                        'cash_rate': RiskFreeRateType.GOVERNMENT_BOND,
+                        'government_bond': RiskFreeRateType.GOVERNMENT_BOND,
+                        'libor': RiskFreeRateType.LIBOR,
+                        'sofr': RiskFreeRateType.SOFR
+                    }
+                    
+                    rate_type = rate_type_mapping.get(rate_type_str.lower(), RiskFreeRateType.GOVERNMENT_BOND)
+                    
+                    # Create new record using the service
+                    risk_free_rate_data = {
+                        'currency': currency,
+                        'date': rate_date,
+                        'rate': rate,
+                        'rate_type': rate_type,
+                        'source': source
+                    }
+                    
+                    risk_free_rate_service.create_risk_free_rate(
+                        risk_free_rate_data, session
+                    )
+                    imported_count += 1
+                    
+                except (ValueError, KeyError) as e:
+                    print(f"Error processing row {row_num}: {e}")
+                    continue
+        
+        session.commit()
+        print(f"Successfully seeded {imported_count} risk-free rates for testing")
+        
+    except Exception as e:
+        print(f"Error seeding risk-free rates: {e}")
+        session.rollback()
+
+
 @pytest.fixture(scope="session")
 def test_database_name() -> str:
     """Generate a unique test database name for this test session."""
@@ -240,6 +325,20 @@ def cleanup_event_bus():
         print(f"⚠️ Warning: Could not clear event system: {e}")
 
 
+@pytest.fixture(scope="session")
+def seeded_test_data(engine):
+    """Seed reference data (risk-free rates) once per test session."""
+    Session = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    session = Session()
+    
+    try:
+        # Seed risk-free rates from CSV
+        seed_risk_free_rates(session)
+        yield
+    finally:
+        session.close()
+
+
 class BaseTestCase:
     """Base test class that provides database session access"""
     
@@ -248,5 +347,3 @@ class BaseTestCase:
         """Automatically inject database session into test methods"""
         self.db_session = db_session
         yield
-
-

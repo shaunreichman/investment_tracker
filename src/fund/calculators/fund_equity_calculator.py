@@ -34,12 +34,12 @@ class FundEquityCalculator:
     # ============================================================================
     
     @staticmethod
-    def calculate_event_equity_balances(fund: Fund, events: List[FundEvent]) -> List[Tuple[float, bool]]:
+    def calculate_event_equity_balances(fund: Fund, events: List[FundEvent]) -> List[float]:
         """
         Calculate equity balance for each event - SINGLE COMPUTATION.
         
         This is the core method that processes all events once and returns
-        both the calculated balance and whether it changed for each event.
+        the calculated balance.
         This eliminates the O(4n) complexity of the old approach.
         
         Args:
@@ -47,7 +47,7 @@ class FundEquityCalculator:
             events: List of fund events to process (should be pre-filtered and ordered)
             
         Returns:
-            List of (balance, has_changed) tuples for each event
+            List of balances for each event
         """
         if fund.tracking_type == FundTrackingType.COST_BASED:
             return FundEquityCalculator._process_cost_based_events(events)
@@ -57,28 +57,28 @@ class FundEquityCalculator:
             raise ValueError(f"Unsupported fund type: {fund.tracking_type}")
     
     @staticmethod
-    def calculate_current_equity_from_balances(event_balances: List[Tuple[float, bool]]) -> float:
+    def calculate_current_equity_from_balances(event_balances: List[float]) -> float:
         """
         Calculate current equity from pre-computed balances - DERIVED.
         
         Args:
-            event_balances: List of (balance, has_changed) tuples from calculate_event_equity_balances
+            event_balances: List of balances from calculate_event_equity_balances
             
         Returns:
             Final balance (last event's balance)
         """
         if not event_balances:
             return 0.0
-        return event_balances[-1][0]  # Return the balance from the last event
+        return event_balances[-1]  # Return the balance from the last event
     
     @staticmethod
-    def calculate_average_equity_from_balances(events: List[FundEvent], event_balances: List[Tuple[float, bool]]) -> float:
+    def calculate_average_equity_from_balances(events: List[FundEvent], event_balances: List[float]) -> float:
         """
         Calculate time-weighted average from pre-computed balances - DERIVED.
         
         Args:
             events: List of fund events (for dates)
-            event_balances: List of (balance, has_changed) tuples from calculate_event_equity_balances
+            event_balances: List of balances from calculate_event_equity_balances
             
         Returns:
             Time-weighted average equity balance
@@ -101,7 +101,7 @@ class FundEquityCalculator:
             current_date = events[i].event_date
             next_date = events[i + 1].event_date
             days = (next_date - current_date).days
-            balance = event_balances[i][0]  # Get balance from pre-computed results
+            balance = event_balances[i]  # Get balance from pre-computed results
             
             total_weighted_equity += balance * days
             total_days += days
@@ -109,7 +109,7 @@ class FundEquityCalculator:
         # Handle the last period
         if events:
             last_event = events[-1]
-            last_balance = event_balances[-1][0]
+            last_balance = event_balances[-1]
             
             # Determine period end
             if fund.end_date is not None:
@@ -121,14 +121,14 @@ class FundEquityCalculator:
             
             if period_end and period_end >= last_event.event_date:
                 days = (period_end - last_event.event_date).days
-                if days >= 0:
+                if days > 0:
                     total_weighted_equity += last_balance * days
                     total_days += days
         
         return total_weighted_equity / total_days if total_days > 0 else 0.0
     
     @staticmethod
-    def calculate_total_cost_basis_from_balances(event_balances: List[Tuple[float, bool]], fund: Fund, events: List[FundEvent]) -> float:
+    def calculate_total_cost_basis_from_balances(event_balances: List[float], fund: Fund, events: List[FundEvent]) -> float:
         """
         Calculate total cost basis from pre-computed balances - DERIVED.
         
@@ -139,7 +139,7 @@ class FundEquityCalculator:
         not the tax cost base (which would include brokerage for capital gains calculations).
         
         Args:
-            event_balances: List of (balance, has_changed) tuples from calculate_event_equity_balances
+            event_balances: List of balances from calculate_event_equity_balances
             fund: The fund to calculate cost basis for
             events: List of fund events (for cost-based calculation)
             
@@ -166,7 +166,7 @@ class FundEquityCalculator:
     # ============================================================================
     
     @staticmethod
-    def _process_cost_based_events(events: List[FundEvent]) -> List[Tuple[float, bool]]:
+    def _process_cost_based_events(events: List[FundEvent]) -> List[float]:
         """
         Process cost-based fund events (capital calls and returns).
         
@@ -174,7 +174,7 @@ class FundEquityCalculator:
             events: List of fund events to process
             
         Returns:
-            List of (balance, has_changed) tuples for each event
+            List of balances for each event
         """
         result = []
         balance = 0.0  # MANUAL: Running balance for cost-based calculations
@@ -184,20 +184,20 @@ class FundEquityCalculator:
                 # SYSTEM: Convert Decimal to float for consistent type handling
                 amount = float(event.amount) if event.amount is not None else 0.0
                 balance += amount
-                result.append((balance, True))  # CALCULATED: Balance changed
+                result.append(balance)  # CALCULATED: Balance changed
             elif event.event_type == EventType.RETURN_OF_CAPITAL:
                 # SYSTEM: Convert Decimal to float for consistent type handling
                 amount = float(event.amount) if event.amount is not None else 0.0
                 balance -= amount
-                result.append((balance, True))  # CALCULATED: Balance changed
+                result.append(balance)  # CALCULATED: Balance changed
             else:
                 # Not a capital event we care about for cost-based
-                result.append((balance, False))  # CALCULATED: Balance unchanged
+                result.append(balance)  # CALCULATED: Balance unchanged
         
         return result
     
     @staticmethod
-    def _process_nav_based_events(events: List[FundEvent]) -> List[Tuple[float, bool]]:
+    def _process_nav_based_events(events: List[FundEvent]) -> List[float]:
         """
         Process NAV-based fund events (unit purchases and sales) using FIFO.
         
@@ -208,7 +208,7 @@ class FundEquityCalculator:
             events: List of fund events to process
             
         Returns:
-            List of (balance, has_changed) tuples for each event
+            List of balances for each event
         """
         from collections import deque
         
@@ -225,9 +225,9 @@ class FundEquityCalculator:
                     # CALCULATED: Track investment value only (no brokerage for equity balance)
                     fifo.append((units, unit_price))
                     current_equity_balance += units * unit_price
-                    result.append((current_equity_balance, True))  # CALCULATED: Balance changed
+                    result.append(current_equity_balance)  # CALCULATED: Balance changed
                 else:
-                    result.append((current_equity_balance, False))  # CALCULATED: Balance unchanged
+                    result.append(current_equity_balance)  # CALCULATED: Balance unchanged
                     
             elif event.event_type == EventType.UNIT_SALE:
                 units_sold = event.units_sold or 0.0
@@ -248,11 +248,11 @@ class FundEquityCalculator:
                         else:
                             fifo[0] = (available_units_count - units_from_this_purchase, unit_price)
                     
-                    result.append((current_equity_balance, True))  # CALCULATED: Balance changed
+                    result.append(current_equity_balance)  # CALCULATED: Balance changed
                 else:
-                    result.append((current_equity_balance, False))  # CALCULATED: Balance unchanged
+                    result.append(current_equity_balance)  # CALCULATED: Balance unchanged
             else:
                 # Not a unit event we care about for NAV-based
-                result.append((current_equity_balance, False))  # CALCULATED: Balance unchanged
+                result.append(current_equity_balance)  # CALCULATED: Balance unchanged
         
         return result

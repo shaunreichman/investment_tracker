@@ -435,7 +435,6 @@ class TestFundRoutes:
         # Arrange
         unit_purchase_data = {
             "event_date": "2024-01-15",
-            "amount": 100000.0,
             "units_purchased": 1000.0,
             "unit_price": 100.0,
             "brokerage_fee": 100.0,
@@ -461,7 +460,6 @@ class TestFundRoutes:
         # Arrange
         unit_sale_data = {
             "event_date": "2024-01-15",
-            "amount": 100000.0,
             "units_sold": 1000.0,
             "unit_price": 100.0,
             "brokerage_fee": 100.0,

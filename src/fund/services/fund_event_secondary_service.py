@@ -13,6 +13,8 @@ from src.fund.services.fund_irr_service import FundIrRService
 from src.fund.services.fund_pnl_service import FundPnlService
 from src.fund.services.fund_nav_service import FundNavService
 from src.fund.repositories import FundRepository
+from src.fund.services.fund_units_service import FundUnitsService
+from src.fund.enums.fund_enums import FundTrackingType
 
 class FundEventSecondaryService:
     """
@@ -46,6 +48,7 @@ class FundEventSecondaryService:
             fund_pnl_service: Fund pnl service to use. If None, creates a new one.
             fund_nav_service: Fund nav service to use. If None, creates a new one.
             fund_repository: Fund repository to use. If None, creates a new one.
+            fund_units_service: Fund units service to use. If None, creates a new one.
         """
         self.fund_equity_service = FundEquityService()
         self.fund_status_service = FundStatusService()
@@ -54,6 +57,7 @@ class FundEventSecondaryService:
         self.fund_pnl_service = FundPnlService()
         self.fund_nav_service = FundNavService()
         self.fund_repository = FundRepository()
+        self.fund_units_service = FundUnitsService()
 
     def _add_changes(self, all_changes: list, changes) -> None:
         """
@@ -107,30 +111,30 @@ class FundEventSecondaryService:
                 session.flush()
                 session.refresh(fund)
 
-        # 3. Update the End Date of the Fund
-        if EventType.is_equity_return_event(fund_event_type):
-            end_date_change = self.fund_date_service.update_fund_end_date(fund=fund, session=session)
-            if end_date_change:
-                all_changes.append(end_date_change)
-                # Flush changes to database to ensure end_date is persisted
+        # 3. Update the units owned of the fund
+        if fund.tracking_type == FundTrackingType.NAV_BASED:
+            unit_changes = self.fund_units_service.update_fund_units(fund, session)
+            if unit_changes:
+                self._add_changes(all_changes, unit_changes)
+                # Flush changes to database to ensure units are persisted
                 session.flush()
                 session.refresh(fund)
 
-        # 4. Update the other balances of the fund
-        if EventType.is_equity_event(fund_event_type):
-            equity_changes = self.fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=False)
-            if equity_changes:
-                self._add_changes(all_changes, equity_changes)
-                # Flush changes to database to ensure equity balance is persisted
-                session.flush()
-                session.refresh(fund)
-
-        # 5. Update the Fund Status
+        # 4. Update the Fund Status (must be done before end date update)
         if EventType.is_equity_event(fund_event_type):
             status_change = self.fund_status_service.update_status_after_equity_event(fund, session)
             if status_change:
                 self._add_changes(all_changes, status_change)
                 # Flush changes to database to ensure status is persisted
+                session.flush()
+                session.refresh(fund)
+
+        # 5. Update the End Date of the Fund (after status update)
+        if EventType.is_equity_return_event(fund_event_type):
+            end_date_change = self.fund_date_service.update_fund_end_date(fund=fund, session=session)
+            if end_date_change:
+                all_changes.append(end_date_change)
+                # Flush changes to database to ensure end_date is persisted
                 session.flush()
                 session.refresh(fund)
 
@@ -142,7 +146,16 @@ class FundEventSecondaryService:
                 session.flush()
                 session.refresh(fund)
 
-        # 6. Update the Duration of the Fund
+        # 6. Update the other balances of the fund
+        if EventType.is_equity_event(fund_event_type):
+            equity_changes = self.fund_equity_service.update_fund_equity_fields(fund, session, current_equity_flag=False)
+            if equity_changes:
+                self._add_changes(all_changes, equity_changes)
+                # Flush changes to database to ensure equity balance is persisted
+                session.flush()
+                session.refresh(fund)
+
+        # 7. Update the Duration of the Fund
         if EventType.is_equity_event(fund_event_type):
             duration_change = self.fund_date_service.update_fund_duration(fund, session)
             if duration_change:
@@ -151,7 +164,7 @@ class FundEventSecondaryService:
                 session.flush()
                 session.refresh(fund)
 
-        # 7. Update the IRRs of the fund
+        # 8. Update the IRRs of the fund
         irr_changes = self.fund_irr_service.update_irrs(fund, session)
         if irr_changes:
             self._add_changes(all_changes, irr_changes)
@@ -159,7 +172,7 @@ class FundEventSecondaryService:
             session.flush()
             session.refresh(fund)
 
-        # 8. Update the NAV of the Fund
+        # 9. Update the NAV of the Fund
         if fund_event_type == EventType.NAV_UPDATE:
             nav_changes = self.fund_nav_service.update_nav_fund_fields(fund, session)
             if nav_changes:
@@ -168,7 +181,7 @@ class FundEventSecondaryService:
                 session.flush()
                 session.refresh(fund)
 
-        # 9. Update the Profitability of the Fund
+        # 10. Update the Profitability of the Fund
         pnl_changes = self.fund_pnl_service.update_fund_pnl(fund, session)
         if pnl_changes:
             self._add_changes(all_changes, pnl_changes)

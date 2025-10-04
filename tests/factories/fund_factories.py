@@ -95,7 +95,7 @@ class FundEventFactory(SessionedFactory):
     # Tax-specific fields (manual)
     tax_payment_type = factory.LazyAttribute(lambda _: fake.random_element(elements=[
         TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING, TaxPaymentType.CAPITAL_GAINS_TAX,
-        TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING_DIFFERENCE, TaxPaymentType.DIVIDENDS_FRANKED_TAX,
+        TaxPaymentType.DIVIDENDS_FRANKED_TAX,
         TaxPaymentType.DIVIDENDS_UNFRANKED_TAX
     ]))
     

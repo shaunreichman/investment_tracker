@@ -64,7 +64,7 @@ class TestTaxStatementWorkflowIntegration:
             'tax_payment_date': date(2024, 7, 31),
             
             # Interest income data
-            'interest_income_amount': 5000.0,
+            'interest_received_in_cash': 5000.0,
             'interest_income_tax_rate': 30.0,
             'interest_non_resident_withholding_tax_from_statement': 1000.0,
             
@@ -343,7 +343,7 @@ class TestTaxStatementWorkflowIntegration:
             'financial_year': 'invalid-year',  # Invalid format
             'statement_date': date(2024, 7, 15),
             'tax_payment_date': date(2024, 7, 31),
-            'interest_income_amount': 5000.0,
+            'interest_received_in_cash': 5000.0,
             'interest_income_tax_rate': 30.0,
             'dividend_franked_income_amount': 0.0,
             'dividend_franked_income_tax_rate': 0.0,
@@ -383,7 +383,7 @@ class TestTaxStatementWorkflowIntegration:
             'financial_year': '2023',
             'statement_date': date(2024, 7, 15),
             'tax_payment_date': date(2024, 7, 31),
-            'interest_income_amount': 5000.0,
+            'interest_received_in_cash': 5000.0,
             'interest_income_tax_rate': 30.0,
             'dividend_franked_income_amount': 0.0,
             'dividend_franked_income_tax_rate': 0.0,
@@ -500,7 +500,7 @@ class TestTaxStatementWorkflowIntegration:
             'financial_year': '2023',
             'statement_date': date(2024, 7, 15),
             'tax_payment_date': date(2024, 7, 31),
-            'interest_income_amount': 7000.0,
+            'interest_received_in_cash': 7000.0,
             'interest_income_tax_rate': 30.0,
             'dividend_franked_income_amount': 0.0,
             'dividend_franked_income_tax_rate': 0.0,
@@ -565,7 +565,7 @@ class TestTaxStatementWorkflowIntegration:
             'financial_year': '2023',
             'statement_date': date(2024, 7, 15),
             'tax_payment_date': date(2024, 7, 31),
-            'interest_income_amount': 5000.0,
+            'interest_received_in_cash': 5000.0,
             'interest_income_tax_rate': 30.0,
             'dividend_franked_income_amount': 0.0,
             'dividend_franked_income_tax_rate': 0.0,
@@ -614,7 +614,7 @@ class TestTaxStatementWorkflowIntegration:
             'tax_payment_date': date(2024, 7, 31),
             
             # Interest income data
-            'interest_income_amount': 5000.0,
+            'interest_received_in_cash': 5000.0,
             'interest_income_tax_rate': 30.0,
             'interest_non_resident_withholding_tax_from_statement': 1000.0,
             
@@ -689,7 +689,7 @@ class TestTaxStatementWorkflowIntegration:
             'tax_payment_date': date(2024, 7, 31),
             
             # Income data with zero tax rates
-            'interest_income_amount': 5000.0,
+            'interest_received_in_cash': 5000.0,
             'interest_income_tax_rate': 0.0,  # Zero tax rate
             
             'dividend_franked_income_amount': 3000.0,

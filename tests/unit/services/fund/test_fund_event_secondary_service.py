@@ -40,10 +40,12 @@ class TestFundEventSecondaryService:
     @pytest.fixture
     def mock_fund(self):
         """Mock fund instance."""
+        from src.fund.enums.fund_enums import FundTrackingType
         return FundFactory.build(
             id=1,
             name='Test Fund',
-            current_equity_balance=10000.0
+            current_equity_balance=10000.0,
+            tracking_type=FundTrackingType.NAV_BASED
         )
 
     @pytest.fixture
@@ -67,6 +69,7 @@ class TestFundEventSecondaryService:
         assert service.fund_pnl_service is not None
         assert service.fund_nav_service is not None
         assert service.fund_repository is not None
+        assert service.fund_units_service is not None
 
     def test_handle_event_secondary_impact_fund_not_found(self, service, mock_session):
         """Test that ValueError is raised when fund is not found."""
@@ -95,6 +98,7 @@ class TestFundEventSecondaryService:
         service.fund_status_service.update_status_after_equity_event = Mock(return_value=mock_field_change)
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=mock_field_change)
+        service.fund_units_service.update_fund_units = Mock(return_value=mock_field_change)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -107,7 +111,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 7  # Should have 7 changes for capital call create
+        assert len(result) == 8  # Should have 8 changes for capital call create (including units)
         
         # Verify fund repository was called
         service.fund_repository.get_fund_by_id.assert_called_once_with(1, mock_session)
@@ -129,6 +133,9 @@ class TestFundEventSecondaryService:
         
         # Verify PNL service call
         service.fund_pnl_service.update_fund_pnl.assert_called_once_with(mock_fund, mock_session)
+        
+        # Verify units service call
+        service.fund_units_service.update_fund_units.assert_called_once_with(mock_fund, mock_session)
 
     def test_handle_event_secondary_impact_capital_call_delete(self, service, mock_session, mock_fund, mock_field_change):
         """Test secondary impact handling for capital call deletion."""
@@ -142,6 +149,7 @@ class TestFundEventSecondaryService:
         service.fund_status_service.update_status_after_equity_event = Mock(return_value=mock_field_change)
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=mock_field_change)
+        service.fund_units_service.update_fund_units = Mock(return_value=mock_field_change)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -154,7 +162,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 7  # Should have 7 changes for capital call delete
+        assert len(result) == 8  # Should have 8 changes for capital call delete (including units)
         
         # Verify date service call for delete (no event_id parameter)
         service.fund_date_service.update_fund_start_date.assert_called_once_with(
@@ -173,6 +181,7 @@ class TestFundEventSecondaryService:
         service.fund_status_service.update_status_after_equity_event = Mock(return_value=mock_field_change)
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=mock_field_change)
+        service.fund_units_service.update_fund_units = Mock(return_value=mock_field_change)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -185,7 +194,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 7  # Should have 7 changes for return of capital
+        assert len(result) == 8  # Should have 8 changes for return of capital (including units)
         
         # Verify end date update was called
         service.fund_date_service.update_fund_end_date.assert_called_once_with(fund=mock_fund, session=mock_session)
@@ -202,6 +211,7 @@ class TestFundEventSecondaryService:
         service.fund_nav_service.update_nav_fund_fields = Mock(return_value=mock_field_change)
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=mock_field_change)
+        service.fund_units_service.update_fund_units = Mock(return_value=mock_field_change)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -214,7 +224,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 3  # Should have 3 changes for NAV update
+        assert len(result) == 4  # Should have 4 changes for NAV update (including units)
         
         # Verify NAV service call
         service.fund_nav_service.update_nav_fund_fields.assert_called_once_with(mock_fund, mock_session)
@@ -234,6 +244,7 @@ class TestFundEventSecondaryService:
         service.fund_status_service.update_status_after_tax_statement = Mock(return_value=mock_field_change)
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=mock_field_change)
+        service.fund_units_service.update_fund_units = Mock(return_value=mock_field_change)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -246,7 +257,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 3  # Should have 3 changes for tax payment
+        assert len(result) == 4  # Should have 4 changes for tax payment (including units)
         
         # Verify tax statement status update
         service.fund_status_service.update_status_after_tax_statement.assert_called_once_with(mock_fund, mock_session)
@@ -265,6 +276,7 @@ class TestFundEventSecondaryService:
         # Mock all service methods to return field changes
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=mock_field_change)
+        service.fund_units_service.update_fund_units = Mock(return_value=mock_field_change)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -277,7 +289,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 2  # Should have 2 changes for distribution (IRR + PNL)
+        assert len(result) == 3  # Should have 3 changes for distribution (IRR + PNL + units)
         
         # Verify IRR service call
         service.fund_irr_service.update_irrs.assert_called_once_with(mock_fund, mock_session)
@@ -297,6 +309,7 @@ class TestFundEventSecondaryService:
         service.fund_status_service.update_status_after_equity_event = Mock(return_value=mock_field_change)
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=mock_field_change)
+        service.fund_units_service.update_fund_units = Mock(return_value=mock_field_change)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -309,7 +322,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 7  # Should have 7 changes for unit purchase
+        assert len(result) == 8  # Should have 8 changes for unit purchase (including units)
         
         # Verify start date update was called for equity call event
         service.fund_date_service.update_fund_start_date.assert_called_once_with(
@@ -328,6 +341,7 @@ class TestFundEventSecondaryService:
         service.fund_status_service.update_status_after_equity_event = Mock(return_value=mock_field_change)
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=mock_field_change)
+        service.fund_units_service.update_fund_units = Mock(return_value=mock_field_change)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -340,7 +354,7 @@ class TestFundEventSecondaryService:
         
         # Assert
         assert isinstance(result, list)
-        assert len(result) == 7  # Should have 7 changes for unit sale
+        assert len(result) == 8  # Should have 8 changes for unit sale (including units)
         
         # Verify end date update was called for equity return event
         service.fund_date_service.update_fund_end_date.assert_called_once_with(fund=mock_fund, session=mock_session)
@@ -353,6 +367,7 @@ class TestFundEventSecondaryService:
         # Mock all service methods to return None (no changes)
         service.fund_irr_service.update_irrs = Mock(return_value=None)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=None)
+        service.fund_units_service.update_fund_units = Mock(return_value=None)
         
         # Act
         result = service.handle_event_secondary_impact(
@@ -375,6 +390,7 @@ class TestFundEventSecondaryService:
         # Mock services to return mix of changes and None
         service.fund_irr_service.update_irrs = Mock(return_value=mock_field_change)
         service.fund_pnl_service.update_fund_pnl = Mock(return_value=None)
+        service.fund_units_service.update_fund_units = Mock(return_value=None)
         
         # Act
         result = service.handle_event_secondary_impact(

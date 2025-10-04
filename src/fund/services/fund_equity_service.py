@@ -82,29 +82,13 @@ class FundEquityService:
         
         equity_changes = []
 
-        units_owned = 0
-        for event, (balance, has_changed) in zip(events, event_balances):
-            # Update only changed equity balances for efficiency
-            if has_changed:
+        # Update event balances and track changes
+        for event, balance in zip(events, event_balances):
+            if event.current_equity_balance != balance:
                 old_equity_balance = event.current_equity_balance
                 event.current_equity_balance = balance
                 equity_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='current_equity_balance', old_value=old_equity_balance, new_value=event.current_equity_balance))
             
-            # Update units owned for NAV-based funds
-            if fund.tracking_type == FundTrackingType.NAV_BASED:
-                units_owned += event.units_purchased or 0.0
-                units_owned -= event.units_sold or 0.0
-                old_units_owned = event.units_owned
-                if units_owned != old_units_owned:
-                    equity_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='units_owned', old_value=old_units_owned, new_value=units_owned))
-                    event.units_owned = units_owned
-
-        # Update units owned for fund
-        if fund.tracking_type == FundTrackingType.NAV_BASED:
-            if units_owned != fund.current_units:
-                equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_units', old_value=fund.current_units, new_value=units_owned))
-                fund.current_units = units_owned
-           
         if old_current_equity_balance != fund.current_equity_balance:
             equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=fund.current_equity_balance))
         if old_average_equity_balance != fund.average_equity_balance:

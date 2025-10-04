@@ -120,6 +120,60 @@ TAX_JURISDICTION_TO_FINANCIAL_YEAR_TYPE_MAP = {
     Country.CN: FundTaxStatementFinancialYearType.CALENDAR_YEAR,
 }
 
+# Capital gains discounting is enabled for Australia only
+TAX_JURISDICTION_TO_CAPITAL_GAINS_DISCOUNTING = {
+    Country.AU: {
+        'enabled': True,
+        'duration_months': 12,
+        'percentage': 50,
+    },
+    Country.SG: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+    Country.NZ: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+    Country.HK: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+    Country.UK: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+    Country.US: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+    Country.CA: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+    Country.JP: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+    Country.KR: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+    Country.CN: {
+        'enabled': False,
+        'duration_months': 0,
+        'percentage': 0,
+    },
+}
+
 class SortFieldFund(Enum):
     """
     Sort field enum.

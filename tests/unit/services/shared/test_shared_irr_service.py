@@ -94,8 +94,7 @@ class TestSharedIrRService:
 
     def test_calculate_irr_base_basic_gross_irr(self, service, sample_events):
         """Test basic gross IRR calculation (no tax, no risk-free charges)."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows', return_value=True), \
-             patch.object(service.irr_calculator, 'calculate_irr', return_value=0.15):
+        with patch.object(service.irr_calculator, 'calculate_irr', return_value=0.15):
             
             result = service.calculate_irr_base(
                 sample_events,
@@ -108,8 +107,7 @@ class TestSharedIrRService:
 
     def test_calculate_irr_base_with_tax_payments(self, service, complex_events):
         """Test IRR calculation including tax payments."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows', return_value=True), \
-             patch.object(service.irr_calculator, 'calculate_irr', return_value=0.12):
+        with patch.object(service.irr_calculator, 'calculate_irr', return_value=0.12):
             
             result = service.calculate_irr_base(
                 complex_events,
@@ -122,8 +120,7 @@ class TestSharedIrRService:
 
     def test_calculate_irr_base_with_risk_free_charges(self, service, complex_events):
         """Test IRR calculation including risk-free charges."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows', return_value=True), \
-             patch.object(service.irr_calculator, 'calculate_irr', return_value=0.10):
+        with patch.object(service.irr_calculator, 'calculate_irr', return_value=0.10):
             
             result = service.calculate_irr_base(
                 complex_events,
@@ -136,8 +133,7 @@ class TestSharedIrRService:
 
     def test_calculate_irr_base_with_eofy_debt_cost(self, service, complex_events):
         """Test IRR calculation including EOFY debt cost."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows', return_value=True), \
-             patch.object(service.irr_calculator, 'calculate_irr', return_value=0.08):
+        with patch.object(service.irr_calculator, 'calculate_irr', return_value=0.08):
             
             result = service.calculate_irr_base(
                 complex_events,
@@ -150,8 +146,7 @@ class TestSharedIrRService:
 
     def test_calculate_irr_base_all_inclusive(self, service, complex_events):
         """Test IRR calculation with all options enabled."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows', return_value=True), \
-             patch.object(service.irr_calculator, 'calculate_irr', return_value=0.05):
+        with patch.object(service.irr_calculator, 'calculate_irr', return_value=0.05):
             
             result = service.calculate_irr_base(
                 complex_events,
@@ -180,14 +175,13 @@ class TestSharedIrRService:
 
     def test_calculate_irr_base_invalid_cash_flows(self, service, sample_events):
         """Test IRR calculation when cash flows are invalid."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows', return_value=False):
+        with patch.object(service.irr_calculator, 'calculate_irr', return_value=None):
             result = service.calculate_irr_base(sample_events)
             assert result is None
 
     def test_calculate_irr_base_calculator_exception(self, service, sample_events):
         """Test IRR calculation when calculator raises exception."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows', return_value=True), \
-             patch.object(service.irr_calculator, 'calculate_irr', side_effect=ValueError("Calculation failed")):
+        with patch.object(service.irr_calculator, 'calculate_irr', side_effect=ValueError("Calculation failed")):
             
             with pytest.raises(ValueError, match="Error calculating IRR: Calculation failed"):
                 service.calculate_irr_base(sample_events)
@@ -432,10 +426,8 @@ class TestSharedIrRService:
 
     def test_calculate_irr_base_integration_flow(self, service, complex_events):
         """Test complete integration flow from events to IRR result."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows') as mock_validate, \
-             patch.object(service.irr_calculator, 'calculate_irr') as mock_calculate:
+        with patch.object(service.irr_calculator, 'calculate_irr') as mock_calculate:
             
-            mock_validate.return_value = True
             mock_calculate.return_value = 0.1234
             
             result = service.calculate_irr_base(
@@ -445,23 +437,20 @@ class TestSharedIrRService:
                 include_eofy_debt_cost=True
             )
             
-            # Verify the flow: filter -> prepare -> validate -> calculate
-            mock_validate.assert_called_once()
+            # Verify the flow: filter -> prepare -> calculate
             mock_calculate.assert_called_once()
             assert result == 0.1234
             
-            # Verify validate was called with prepared cash flows
-            validate_args = mock_validate.call_args[0]
-            cash_flows, days_from_start = validate_args
+            # Verify calculate was called with prepared cash flows
+            calculate_args = mock_calculate.call_args[0]
+            cash_flows, days_from_start = calculate_args
             assert len(cash_flows) == len(days_from_start)
             assert len(cash_flows) == 7  # All events included
 
     def test_calculate_irr_base_filtering_integration(self, service, complex_events):
         """Test that filtering works correctly in integration."""
-        with patch.object(service.irr_calculator, 'validate_cash_flows') as mock_validate, \
-             patch.object(service.irr_calculator, 'calculate_irr') as mock_calculate:
+        with patch.object(service.irr_calculator, 'calculate_irr') as mock_calculate:
             
-            mock_validate.return_value = True
             mock_calculate.return_value = 0.10
             
             # Test with only basic events
@@ -472,13 +461,12 @@ class TestSharedIrRService:
                 include_eofy_debt_cost=False
             )
             
-            # Verify validate was called with filtered cash flows (4 basic events)
-            validate_args = mock_validate.call_args[0]
-            cash_flows, days_from_start = validate_args
+            # Verify calculate was called with filtered cash flows (4 basic events)
+            calculate_args = mock_calculate.call_args[0]
+            cash_flows, days_from_start = calculate_args
             assert len(cash_flows) == 4  # Only basic events
 
     def test_service_initialization(self, service):
         """Test that service initializes correctly with IRR calculator."""
         assert service.irr_calculator is not None
         assert hasattr(service.irr_calculator, 'calculate_irr')
-        assert hasattr(service.irr_calculator, 'validate_cash_flows')

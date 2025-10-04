@@ -92,6 +92,26 @@ class BaseValidator:
         if empty_fields:
             raise ValidationError(f"Required fields cannot be empty: {', '.join(empty_fields)}")
     
+    def validate_forbidden_fields(self, data: Dict[str, Any], forbidden_fields: List[str]) -> None:
+        """
+        Validate that forbidden fields are not present in the request data.
+        
+        Args:
+            data: Request data dictionary
+            forbidden_fields: List of field names that must not be present
+            
+        Raises:
+            ValidationError: If any forbidden field is present
+        """
+        present_forbidden_fields = []
+        
+        for field in forbidden_fields:
+            if field in data:
+                present_forbidden_fields.append(field)
+        
+        if present_forbidden_fields:
+            raise ValidationError(f"Forbidden fields must not be included: {', '.join(present_forbidden_fields)}")
+    
     def validate_field_types(self, data: Dict[str, Any], field_types: Dict[str, str]) -> Dict[str, Any]:
         """
         Validate and convert field types.
@@ -327,6 +347,7 @@ class BaseValidator:
 
 def validate_request(
     required_fields: Optional[List[str]] = None,
+    forbidden_fields: Optional[List[str]] = None,
     field_types: Optional[Dict[str, str]] = None,
     field_patterns: Optional[Dict[str, str]] = None,
     field_ranges: Optional[Dict[str, Dict[str, Union[int, float]]]] = None,
@@ -344,6 +365,7 @@ def validate_request(
     
     Args:
         required_fields: List of required field names
+        forbidden_fields: List of field names that must not be present
         field_types: Dictionary mapping field names to expected types
         field_patterns: Dictionary mapping field names to pattern names
         field_ranges: Dictionary mapping field names to range constraints
@@ -377,6 +399,9 @@ def validate_request(
                 # Apply validations in order
                 if required_fields:
                     validator.validate_required_fields(data, required_fields)
+                
+                if forbidden_fields:
+                    validator.validate_forbidden_fields(data, forbidden_fields)
                 
                 if field_types:
                     data = validator.validate_field_types(data, field_types)

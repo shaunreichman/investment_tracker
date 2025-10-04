@@ -379,10 +379,10 @@ def create_return_of_capital(fund_id):
 
 @fund_bp.route('/api/funds/<int:fund_id>/fund-events/unit-purchase', methods=['POST'])
 @validate_request(
-    required_fields=['event_date', 'amount', 'units_purchased', 'unit_price'],
+    required_fields=['event_date', 'units_purchased', 'unit_price'],
+    forbidden_fields=['amount', 'units_owned'],
     field_types={
         'event_date': 'date',
-        'amount': 'float',
         'description': 'string',
         'reference_number': 'string',
         'units_purchased': 'float',
@@ -395,7 +395,6 @@ def create_return_of_capital(fund_id):
         'reference_number': {'max': 255},
     },
     field_ranges={
-        'amount': {'min': 0, 'max': 9999999999},
         'units_purchased': {'min': 0, 'max': 9999999999},
         'unit_price': {'min': 0, 'max': 9999999999},
         'brokerage_fee': {'min': 0, 'max': 9999999999},
@@ -411,7 +410,6 @@ def create_unit_purchase(fund_id):
 
     Request Body:
         event_date (str): Event date in YYYY-MM-DD format (required)
-        amount (float): Event amount (required)
         description (str): Event description (optional)
         reference_number (str): Event reference number (optional)
         units_purchased (float): Units purchased (required)
@@ -431,10 +429,10 @@ def create_unit_purchase(fund_id):
 
 @fund_bp.route('/api/funds/<int:fund_id>/fund-events/unit-sale', methods=['POST'])
 @validate_request(
-    required_fields=['event_date', 'amount', 'units_sold', 'unit_price'],
+    required_fields=['event_date', 'units_sold', 'unit_price'],
+    forbidden_fields=['amount', 'units_owned'],
     field_types={
         'event_date': 'date',
-        'amount': 'float',
         'description': 'string',
         'reference_number': 'string',
         'units_sold': 'float',
@@ -447,7 +445,6 @@ def create_unit_purchase(fund_id):
         'reference_number': {'max': 255},
     },
     field_ranges={
-        'amount': {'min': 0, 'max': 9999999999},
         'units_sold': {'min': 0, 'max': 9999999999},
         'unit_price': {'min': 0, 'max': 9999999999},
         'brokerage_fee': {'min': 0, 'max': 9999999999},
@@ -463,7 +460,6 @@ def create_unit_sale(fund_id):
 
     Request Body:
         event_date (str): Event date in YYYY-MM-DD format (required)
-        amount (float): Event amount (required)
         description (str): Event description (optional)
         reference_number (str): Event reference number (optional)
         units_sold (float): Units sold (required)
@@ -484,6 +480,7 @@ def create_unit_sale(fund_id):
 @fund_bp.route('/api/funds/<int:fund_id>/fund-events/nav-update', methods=['POST'])
 @validate_request(
     required_fields=['event_date', 'nav_per_share'],
+    forbidden_fields=['amount', 'previous_nav_per_share', 'nav_change_absolute', 'nav_change_percentage', 'units_owned'],
     field_types={
         'event_date': 'date',
         'description': 'string',
@@ -592,72 +589,6 @@ def create_distribution(fund_id):
             message=f"Unexpected error creating distribution for fund {fund_id}: {str(e)}"
         )
         return jsonify(response.to_dict()), response.response_code.get_http_status_code()
-
-
-
-
-
-
-# @fund_bp.route('/api/funds/<int:fund_id>/fund-events', methods=['POST'])
-# @validate_fund_event_data
-# def create_fund_event(fund_id):
-#     """
-#     Create a new fund event.
-    
-#     Path Parameters:
-#         fund_id (int): ID of the fund
-    
-#     Request Body:
-#         event_type (str): Type of event (CAPITAL_CALL, RETURN_OF_CAPITAL, UNIT_PURCHASE, UNIT_SALE)
-#         amount (float): Event amount (required)
-#         event_date (str): Event date in YYYY-MM-DD format (required)
-#         description (str): Event description (optional)
-    
-#     Returns:
-#         Standardized response with created event data
-#     """
-#     try:
-#         # Use validated data from middleware
-#         validated_data = request.validated_data
-        
-#         # Route to specific method based on event type
-#         event_type = validated_data.get('event_type')
-#         if not event_type:
-#             response = ApiResponse(
-#                 response_code=ApiResponseCode.VALIDATION_ERROR,
-#                 message='event_type is required'
-#             )
-#             return jsonify(response.to_dict()), response.response_code.get_http_status_code()
-
-#         dto = fund_controller.create_fund_event(validated_data)
-        
-#         # if event_type == 'CAPITAL_CALL':
-#         #     dto = fund_controller.create_capital_call(fund_id, validated_data)
-#         # elif event_type == 'RETURN_OF_CAPITAL':
-#         #     dto = fund_controller.create_return_of_capital(fund_id, validated_data)
-#         # elif event_type == 'UNIT_PURCHASE':
-#         #     dto = fund_controller.create_unit_purchase(fund_id, validated_data)
-#         # elif event_type == 'UNIT_SALE':
-#         #     dto = fund_controller.create_unit_sale(fund_id, validated_data)
-#         # elif event_type == 'NAV_UPDATE':
-#         #     dto = fund_controller.create_nav_update(fund_id, validated_data)
-#         # elif event_type == 'DISTRIBUTION':
-#         #     dto = fund_controller.create_distribution(fund_id, validated_data)
-#         # else:
-#         #     response = ApiResponse(
-#         #         response_code=ApiResponseCode.VALIDATION_ERROR,
-#         #         message=f'Unsupported event type: {event_type}'
-#         #     )
-#         #     return jsonify(response.to_dict()), response.response_code.get_http_status_code()
-        
-#         return handle_controller_response(dto)
-            
-#     except Exception as e:
-#         response = ApiResponse(
-#             response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-#             message=f"Unexpected error creating fund event {fund_id}: {str(e)}"
-#         )
-#         return jsonify(response.to_dict()), response.response_code.get_http_status_code()
 
 
 ###############################################
@@ -944,6 +875,7 @@ def get_fund_tax_statement_by_id(fund_id, fund_tax_statement_id):
         'accountant': 'string',
         'notes': 'string',
     },
+    forbidden_fields=['amount', 'interest_income_amount'],
     field_lengths={
         'financial_year': {'min': 4, 'max': 4},
         'tax_payment_date': {'min': 10, 'max': 10},

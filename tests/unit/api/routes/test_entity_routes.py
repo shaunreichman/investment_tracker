@@ -311,7 +311,8 @@ class TestEntityRoutes:
         
         entity_data = {
             'name': 'Test Entity',
-            'tax_jurisdiction': 'US'
+            'tax_jurisdiction': 'US',
+            'entity_type': 'COMPANY'
         }
         
         # Act
