@@ -17,7 +17,9 @@ from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
 from src.fund.services.fund_pnl_service import FundPnlService
-from src.fund.models import Fund, FundFieldChange
+from src.fund.models import Fund
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_enums import FundTrackingType
 from src.shared.enums.shared_enums import SortOrder
 from tests.factories.fund_factories import FundFactory
@@ -107,8 +109,8 @@ class TestFundPnlService:
             # Check PNL change
             pnl_change = next((change for change in result if change.field_name == 'pnl'), None)
             assert pnl_change is not None
-            assert pnl_change.object == 'FUND'
-            assert pnl_change.object_id == mock_fund_cost_based.id
+            assert pnl_change.domain_object_type == DomainObjectType.FUND
+            assert pnl_change.domain_object_id == mock_fund_cost_based.id
             assert pnl_change.old_value == old_pnl
             assert pnl_change.new_value == 150.0
             
@@ -450,7 +452,7 @@ class TestFundPnlService:
     ################################################################################
 
     def test_update_fund_pnl_creates_correct_fund_field_changes(self, service, mock_session, mock_fund_cost_based, mock_fund_events):
-        """Test that update_fund_pnl creates correct FundFieldChange objects."""
+        """Test that update_fund_pnl creates correct DomainFieldChange objects."""
         # Arrange
         mock_pnl_dict = {
             'pnl': 100.0,
@@ -473,11 +475,11 @@ class TestFundPnlService:
             assert result is not None
             assert len(result) == 6  # All fields changed (None to values)
             
-            # Verify all changes are FundFieldChange objects with correct structure
+            # Verify all changes are DomainFieldChange objects with correct structure
             for change in result:
-                assert isinstance(change, FundFieldChange)
-                assert change.object == 'FUND'
-                assert change.object_id == mock_fund_cost_based.id
+                assert isinstance(change, DomainFieldChange)
+                assert change.domain_object_type == DomainObjectType.FUND
+                assert change.domain_object_id == mock_fund_cost_based.id
                 assert change.field_name in ['pnl', 'realized_pnl', 'unrealized_pnl', 'realized_pnl_dividend', 'realized_pnl_interest', 'realized_pnl_distribution']
                 assert change.old_value is None  # Original values are None
                 assert change.new_value in [100.0, 0.0]  # New values

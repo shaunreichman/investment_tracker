@@ -3,7 +3,7 @@ Bank Account Repository.
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from src.banking.models import BankAccount
 from src.banking.enums.bank_account_enums import BankAccountType, BankAccountStatus, SortFieldBankAccount
@@ -35,28 +35,30 @@ class BankAccountRepository:
     ################################################################################
 
     def get_bank_accounts(self, session: Session,
-            bank_id: Optional[int] = None,
-            entity_id: Optional[int] = None,
-            account_name: Optional[str] = None,
-            currency: Optional[Currency] = None,
-            status: Optional[BankAccountStatus] = None,
-            account_type: Optional[BankAccountType] = None,
+            bank_ids: Optional[List[int]] = None,
+            entity_ids: Optional[List[int]] = None,
+            account_names: Optional[List[str]] = None,
+            currencies: Optional[List[Currency]] = None,
+            statuses: Optional[List[BankAccountStatus]] = None,
+            account_types: Optional[List[BankAccountType]] = None,
             sort_by: SortFieldBankAccount = SortFieldBankAccount.CREATED_AT,
-            sort_order: SortOrder = SortOrder.ASC
+            sort_order: SortOrder = SortOrder.ASC,
+            include_bank_account_balances: Optional[bool] = False
     ) -> List[BankAccount]:
         """
         Get all bank accounts.
         
         Args:
             session: Database session
-            bank_id: ID of the bank to retrieve (optional)
-            entity_id: ID of the entity to retrieve (optional)
-            account_name: Name of the bank accounts to retrieve (optional)
-            currency: Currency of the bank accounts to retrieve (optional)
-            status: Status of the bank accounts to retrieve (optional)
-            account_type: Type of the bank accounts to retrieve (optional)
+            bank_ids: IDs of the bank to retrieve (optional)
+            entity_ids: IDs of the entity to retrieve (optional)
+            account_names: Name of the bank accounts to retrieve (optional)
+            currencies: Currency of the bank accounts to retrieve (optional)
+            statuses: Status of the bank accounts to retrieve (optional)
+            account_types: Type of the bank accounts to retrieve (optional)
             sort_by: Sort field (optional)
             sort_order: Sort order (optional)
+            include_bank_account_balances: Whether to include bank account balances (optional)
 
         Returns:
             List of bank accounts
@@ -70,49 +72,61 @@ class BankAccountRepository:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
         # Get all bank accounts
-        bank_accounts = session.query(BankAccount)
-        if bank_id:
-            bank_accounts = bank_accounts.filter(BankAccount.bank_id == bank_id)
-        if entity_id:
-            bank_accounts = bank_accounts.filter(BankAccount.entity_id == entity_id)
-        if account_name:
-            bank_accounts = bank_accounts.filter(BankAccount.account_name.ilike(f"%{account_name}%"))
-        if currency:
-            bank_accounts = bank_accounts.filter(BankAccount.currency == currency.value)
-        if status:
-            bank_accounts = bank_accounts.filter(BankAccount.status == status.value)
-        if account_type:
-            bank_accounts = bank_accounts.filter(BankAccount.account_type == account_type.value)
+        query = session.query(BankAccount)
+
+        # Add eager loading for relationships if requested
+        if include_bank_account_balances:
+            query = query.options(selectinload(BankAccount.bank_account_balances))
+
+        if bank_ids:
+            query = query.filter(BankAccount.bank_id.in_(bank_ids))
+        if entity_ids:
+            query = query.filter(BankAccount.entity_id.in_(entity_ids))
+        if account_names:
+            query = query.filter(BankAccount.account_name.in_(account_names))
+        if currencies:
+            query = query.filter(BankAccount.currency.in_([c.value for c in currencies]))
+        if statuses:
+            query = query.filter(BankAccount.status.in_([s.value for s in statuses]))
+        if account_types:
+            query = query.filter(BankAccount.account_type.in_([at.value for at in account_types]))
 
         # Apply sorting
         if sort_by == SortFieldBankAccount.NAME:
-            bank_accounts = bank_accounts.order_by(BankAccount.account_name.asc() if sort_order == SortOrder.ASC else BankAccount.account_name.desc())
+            query = query.order_by(BankAccount.account_name.asc() if sort_order == SortOrder.ASC else BankAccount.account_name.desc())
         elif sort_by == SortFieldBankAccount.ACCOUNT_NUMBER:
-            bank_accounts = bank_accounts.order_by(BankAccount.account_number.asc() if sort_order == SortOrder.ASC else BankAccount.account_number.desc())
+            query = query.order_by(BankAccount.account_number.asc() if sort_order == SortOrder.ASC else BankAccount.account_number.desc())
         elif sort_by == SortFieldBankAccount.CURRENCY:
-            bank_accounts = bank_accounts.order_by(BankAccount.currency.asc() if sort_order == SortOrder.ASC else BankAccount.currency.desc())
+            query = query.order_by(BankAccount.currency.asc() if sort_order == SortOrder.ASC else BankAccount.currency.desc())
         elif sort_by == SortFieldBankAccount.STATUS:
-            bank_accounts = bank_accounts.order_by(BankAccount.status.asc() if sort_order == SortOrder.ASC else BankAccount.status.desc())
+            query = query.order_by(BankAccount.status.asc() if sort_order == SortOrder.ASC else BankAccount.status.desc())
         elif sort_by == SortFieldBankAccount.CREATED_AT:
-            bank_accounts = bank_accounts.order_by(BankAccount.created_at.asc() if sort_order == SortOrder.ASC else BankAccount.created_at.desc())
+            query = query.order_by(BankAccount.created_at.asc() if sort_order == SortOrder.ASC else BankAccount.created_at.desc())
 
-        bank_accounts = bank_accounts.all()
+        bank_accounts = query.all()
 
         return bank_accounts
     
-    def get_bank_account_by_id(self, bank_account_id: int, session: Session) -> Optional[BankAccount]:
+    def get_bank_account_by_id(self, bank_account_id: int, session: Session, include_bank_account_balances: Optional[bool] = False) -> Optional[BankAccount]:
         """
         Get a bank account by its ID.
         
         Args:
             bank_account_id: ID of the account to retrieve
             session: Database session
+            include_bank_account_balances: Whether to include bank account balances (optional)
             
         Returns:
             BankAccount object if found, None otherwise
         """
         # Query database
-        account = session.query(BankAccount).filter(BankAccount.id == bank_account_id).first()
+        query = session.query(BankAccount).filter(BankAccount.id == bank_account_id)
+
+        # Add eager loading for relationships if requested
+        if include_bank_account_balances:
+            query = query.options(selectinload(BankAccount.bank_account_balances))
+
+        account = query.first()
         
         return account
 

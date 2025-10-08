@@ -139,26 +139,26 @@ class TestFundEventService:
     def test_get_fund_event_by_id_calls_repository_with_correct_id(self, service, mock_session, mock_fund_event):
         """Test that get_fund_event_by_id calls repository with correct ID."""
         # Arrange
-        event_id = 1
+        fund_event_id = 1
         with patch.object(service.fund_event_repository, 'get_fund_event_by_id', return_value=mock_fund_event) as mock_repo:
             # Act
-            result = service.get_fund_event_by_id(event_id, mock_session)
+            result = service.get_fund_event_by_id(fund_event_id, mock_session)
 
             # Assert
             assert result == mock_fund_event
-            mock_repo.assert_called_once_with(event_id, mock_session)
+            mock_repo.assert_called_once_with(fund_event_id, mock_session)
 
     def test_get_fund_event_by_id_returns_none_when_not_found(self, service, mock_session):
         """Test that get_fund_event_by_id returns None when event not found."""
         # Arrange
-        event_id = 999
+        fund_event_id = 999
         with patch.object(service.fund_event_repository, 'get_fund_event_by_id', return_value=None) as mock_repo:
             # Act
-            result = service.get_fund_event_by_id(event_id, mock_session)
+            result = service.get_fund_event_by_id(fund_event_id, mock_session)
 
             # Assert
             assert result is None
-            mock_repo.assert_called_once_with(event_id, mock_session)
+            mock_repo.assert_called_once_with(fund_event_id, mock_session)
 
     ################################################################################
     # Test create_fund_event method
@@ -224,10 +224,10 @@ class TestFundEventService:
         with patch.object(service.fund_validation_service, 'validate_fund_event_creation', return_value={}) as mock_validate, \
              patch.object(service.fund_event_repository, 'create_fund_event', return_value=mock_fund_event) as mock_repo, \
              patch.object(service.fund_event_secondary_service, 'handle_event_secondary_impact', return_value=[mock_change]) as mock_secondary, \
-             patch('src.fund.repositories.domain_fund_event_repository.DomainFundEventRepository') as mock_domain_repo_class:
+             patch('src.shared.services.domain_update_event_service.DomainUpdateEventService') as mock_domain_repo_class:
             
             mock_domain_repo = mock_domain_repo_class.return_value
-            mock_domain_repo.create_domain_fund_event.return_value = Mock()
+            mock_domain_repo.create_domain_update_event.return_value = Mock()
             
             # Act
             result = service.create_fund_event(fund_id, sample_event_data, mock_session)
@@ -236,14 +236,14 @@ class TestFundEventService:
             assert result == mock_fund_event
             mock_secondary.assert_called_once_with(
                 fund_id=mock_fund_event.fund_id, 
-                event_id=mock_fund_event.id, 
+                fund_event_id=mock_fund_event.id, 
                 fund_event_type=sample_event_data['event_type'], 
                 fund_event_operation=EventOperation.CREATE, 
                 session=mock_session
             )
-            # Domain fund event should be created when there are changes
+            # Domain update event should be created when there are changes
             # Note: This may not be called if all_changes is empty
-            # mock_domain_repo.create_domain_fund_event.assert_called_once()
+            # mock_domain_repo.create_domain_update_event.assert_called_once()
 
     ################################################################################
     # Test _calculate_distribution_event_data method
@@ -317,7 +317,7 @@ class TestFundEventService:
         """Test that delete_fund_event successfully deletes event when validation passes."""
         # Arrange
         fund_id = 1
-        event_id = 1
+        fund_event_id = 1
         mock_change = Mock()
         mock_change.to_dict.return_value = {'field': 'value'}
         
@@ -325,7 +325,7 @@ class TestFundEventService:
              patch('src.fund.repositories.FundEventRepository') as mock_event_repo_class, \
              patch.object(service.fund_validation_service, 'validate_fund_event_deletion', return_value={}) as mock_validate, \
              patch.object(service.fund_event_secondary_service, 'handle_event_secondary_impact', return_value=[mock_change]) as mock_secondary, \
-             patch('src.fund.repositories.DomainFundEventRepository') as mock_domain_repo_class:
+             patch('src.shared.services.domain_update_event_service.DomainUpdateEventService') as mock_domain_repo_class:
             
             # Setup repository mocks
             mock_fund_repo = mock_fund_repo_class.return_value
@@ -336,22 +336,22 @@ class TestFundEventService:
             mock_event_repo.delete_fund_event.return_value = True
             
             mock_domain_repo = mock_domain_repo_class.return_value
-            mock_domain_repo.create_domain_fund_event.return_value = Mock()
+            mock_domain_repo.create_domain_update_event.return_value = Mock()
             
             # Act
-            result = service.delete_fund_event(fund_id, event_id, mock_session)
+            result = service.delete_fund_event(fund_event_id, mock_session)
 
             # Assert
             assert result is True
             mock_validate.assert_called_once_with(mock_fund_event, mock_session)
-            mock_event_repo.delete_fund_event.assert_called_once_with(event_id, mock_session)
+            mock_event_repo.delete_fund_event.assert_called_once_with(fund_event_id, mock_session)
             mock_secondary.assert_called_once()
 
     def test_delete_fund_event_raises_error_when_validation_fails(self, service, mock_session, mock_fund, mock_fund_event):
         """Test that delete_fund_event raises ValueError when validation fails."""
         # Arrange
         fund_id = 1
-        event_id = 1
+        fund_event_id = 1
         validation_errors = {'fund_event_cash_flows': ['Cannot delete event with associated fund event cash flows']}
         
         with patch('src.fund.repositories.FundRepository') as mock_fund_repo_class, \
@@ -367,7 +367,7 @@ class TestFundEventService:
             
             # Act & Assert
             with pytest.raises(ValueError, match="Validation errors"):
-                service.delete_fund_event(fund_id, event_id, mock_session)
+                service.delete_fund_event(fund_event_id, mock_session)
             
             # Validation should be called
             mock_validate.assert_called_once_with(mock_fund_event, mock_session)
@@ -378,7 +378,7 @@ class TestFundEventService:
         """Test that delete_fund_event raises ValueError when fund not found."""
         # Arrange
         fund_id = 999
-        event_id = 1
+        fund_event_id = 1
         
         with patch('src.fund.repositories.FundRepository') as mock_fund_repo_class:
             mock_fund_repo = mock_fund_repo_class.return_value
@@ -386,13 +386,13 @@ class TestFundEventService:
             
             # Act & Assert
             with pytest.raises(ValueError, match="Fund with id 999 not found"):
-                service.delete_fund_event(fund_id, event_id, mock_session)
+                service.delete_fund_event(fund_event_id, mock_session)
 
     def test_delete_fund_event_raises_error_when_event_not_found(self, service, mock_session, mock_fund):
         """Test that delete_fund_event raises ValueError when event not found."""
         # Arrange
         fund_id = 1
-        event_id = 999
+        fund_event_id = 999
         
         with patch('src.fund.repositories.FundRepository') as mock_fund_repo_class, \
              patch('src.fund.repositories.FundEventRepository') as mock_event_repo_class:
@@ -405,7 +405,7 @@ class TestFundEventService:
             
             # Act & Assert
             with pytest.raises(ValueError, match="Event with id 999 not found"):
-                service.delete_fund_event(fund_id, event_id, mock_session)
+                service.delete_fund_event(fund_event_id, mock_session)
 
     ################################################################################
     # Test service initialization

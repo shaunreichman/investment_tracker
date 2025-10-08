@@ -124,9 +124,9 @@ class TestFundTaxStatementService:
             # Act
             result = service.get_fund_tax_statements(
                 mock_session,
-                fund_id=fund_id,
-                entity_id=entity_id,
-                financial_year=financial_year,
+                fund_ids=[fund_id],
+                entity_ids=[entity_id],
+                financial_years=[financial_year],
                 start_tax_payment_date=start_date,
                 end_tax_payment_date=end_date,
                 sort_by=sort_by,
@@ -137,7 +137,7 @@ class TestFundTaxStatementService:
             assert result == expected_statements
             mock_repo.assert_called_once_with(
                 mock_session,
-                fund_id, entity_id, financial_year, start_date, end_date,
+                [fund_id], [entity_id], [financial_year], start_date, end_date,
                 sort_by, sort_order
             )
 

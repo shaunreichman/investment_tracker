@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 from src.fund.repositories import FundEventRepository
 from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import SortOrder
-from src.fund.models import Fund, FundFieldChange, FundEvent
+from src.fund.models import Fund, FundEvent
+from src.shared.models import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from typing import List
 
 class FundNavService:
@@ -28,7 +30,7 @@ class FundNavService:
         self.fund_event_repository = FundEventRepository()
 
 
-    def update_nav_fund_fields(self, fund: Fund, session: Session) -> List[FundFieldChange]:
+    def update_nav_fund_fields(self, fund: Fund, session: Session) -> List[DomainFieldChange]:
         """
         Update the NAV of a fund.
 
@@ -37,7 +39,7 @@ class FundNavService:
             session: Database session
 
         Returns:
-            List[FundFieldChange] with updated values and metadata
+            List[DomainFieldChange] with updated values and metadata
         """
         old_current_unit_price = fund.current_unit_price
         old_current_nav_total = fund.current_nav_total
@@ -67,13 +69,13 @@ class FundNavService:
             nav_changes.extend(event_changes)
 
         if old_current_unit_price != fund.current_unit_price:
-            nav_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_unit_price', old_value=old_current_unit_price, new_value=fund.current_unit_price))
+            nav_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='current_unit_price', old_value=old_current_unit_price, new_value=fund.current_unit_price))
         if old_current_nav_total != fund.current_nav_total:
-            nav_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_nav_total', old_value=old_current_nav_total, new_value=fund.current_nav_total))
+            nav_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='current_nav_total', old_value=old_current_nav_total, new_value=fund.current_nav_total))
 
         return nav_changes if nav_changes else None
 
-    def _update_nav_fund_event_fields(self, events: List[FundEvent]) -> List[FundFieldChange]:
+    def _update_nav_fund_event_fields(self, events: List[FundEvent]) -> List[DomainFieldChange]:
         """
         Update the NAV fields of the nav update fund events.
 
@@ -81,7 +83,7 @@ class FundNavService:
             events: List of FundEvent objects
 
         Returns:
-            List[FundFieldChange] with updated values and metadata
+            List[DomainFieldChange] with updated values and metadata
         """
         if events is None:
             return
@@ -104,11 +106,11 @@ class FundNavService:
                     event.nav_change_percentage = None  # Cannot calculate percentage from zero
 
                 if old_previous_nav_per_share != event.previous_nav_per_share:
-                    nav_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='previous_nav_per_share', old_value=old_previous_nav_per_share, new_value=event.previous_nav_per_share))
+                    nav_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND_EVENT, domain_object_id=event.id, field_name='previous_nav_per_share', old_value=old_previous_nav_per_share, new_value=event.previous_nav_per_share))
                 if old_nav_change_absolute != event.nav_change_absolute:
-                    nav_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='nav_change_absolute', old_value=old_nav_change_absolute, new_value=event.nav_change_absolute))
+                    nav_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND_EVENT, domain_object_id=event.id, field_name='nav_change_absolute', old_value=old_nav_change_absolute, new_value=event.nav_change_absolute))
                 if old_nav_change_percentage != event.nav_change_percentage:
-                    nav_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='nav_change_percentage', old_value=old_nav_change_percentage, new_value=event.nav_change_percentage))
+                    nav_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND_EVENT, domain_object_id=event.id, field_name='nav_change_percentage', old_value=old_nav_change_percentage, new_value=event.nav_change_percentage))
 
             previous_nav_per_share = event.nav_per_share
 

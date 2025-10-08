@@ -307,7 +307,7 @@ class TestFundEventCashFlowWorkflowIntegration:
         # Verify we can retrieve all cash flows for the event
         all_cash_flows = cash_flow_service.get_fund_event_cash_flows(
             session=db_session,
-            fund_event_id=fund_event.id
+            fund_event_ids=[fund_event.id]
         )
         assert len(all_cash_flows) == 2
 
@@ -321,6 +321,7 @@ class TestFundEventCashFlowWorkflowIntegration:
         entity = EntityFactory.create()
         fund = FundFactory.create(
             tracking_type=FundTrackingType.COST_BASED,
+            commitment_amount=None,  # Optional commitment amount
             status=FundStatus.ACTIVE
         )
         bank = BankFactory.create()
@@ -608,7 +609,7 @@ class TestFundEventCashFlowWorkflowIntegration:
         # Create entities and funds
         entity_1 = EntityFactory.create(name="Entity 1")
         entity_2 = EntityFactory.create(name="Entity 2")
-        fund_1 = FundFactory.create(tracking_type=FundTrackingType.COST_BASED, status=FundStatus.ACTIVE)
+        fund_1 = FundFactory.create(tracking_type=FundTrackingType.COST_BASED, status=FundStatus.ACTIVE, commitment_amount=100000.0)
         fund_2 = FundFactory.create(tracking_type=FundTrackingType.NAV_BASED, status=FundStatus.ACTIVE, start_date=date(2023, 1, 1))
         db_session.commit()
         
@@ -679,17 +680,17 @@ class TestFundEventCashFlowWorkflowIntegration:
         db_session.commit()
         
         # Test retrieval by fund_id
-        fund_1_cash_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, fund_id=fund_1.id)
+        fund_1_cash_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, fund_ids=[fund_1.id])
         assert len(fund_1_cash_flows) == 1
         assert fund_1_cash_flows[0].id == cash_flow_1.id
         
         # Test retrieval by fund_event_id
-        event_1_cash_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, fund_event_id=event_1.id)
+        event_1_cash_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, fund_event_ids=[event_1.id])
         assert len(event_1_cash_flows) == 1
         assert event_1_cash_flows[0].id == cash_flow_1.id
         
         # Test retrieval by bank_account_id
-        account_2_cash_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, bank_account_id=account_2.id)
+        account_2_cash_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, bank_account_ids=[account_2.id])
         assert len(account_2_cash_flows) == 1
         assert account_2_cash_flows[0].id == cash_flow_2.id
 
@@ -737,7 +738,7 @@ class TestFundEventCashFlowWorkflowIntegration:
         cash_flow_repository = FundEventCashFlowRepository()
         initial_cash_flows = cash_flow_repository.get_fund_event_cash_flows(
             session=db_session,
-            fund_event_id=fund_event.id
+            fund_event_ids=[fund_event.id]
         )
         initial_cash_flow_count = len(initial_cash_flows)
         
@@ -765,7 +766,7 @@ class TestFundEventCashFlowWorkflowIntegration:
         
         final_cash_flows = cash_flow_repository.get_fund_event_cash_flows(
             session=db_session,
-            fund_event_id=fund_event.id
+            fund_event_ids=[fund_event.id]
         )
         assert len(final_cash_flows) == initial_cash_flow_count
 
@@ -855,20 +856,20 @@ class TestFundEventCashFlowWorkflowIntegration:
         db_session.commit()
         
         # Verify isolation - each fund only sees its own cash flows
-        fund_x_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, fund_id=fund_x.id)
+        fund_x_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, fund_ids=[fund_x.id])
         assert len(fund_x_flows) == 1
         assert fund_x_flows[0].id == cash_flow_xa.id
         
-        fund_y_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, fund_id=fund_y.id)
+        fund_y_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, fund_ids=[fund_y.id])
         assert len(fund_y_flows) == 1
         assert fund_y_flows[0].id == cash_flow_yb.id
         
         # Verify each account only sees its own cash flows
-        account_a_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, bank_account_id=accounts[0].id)
+        account_a_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, bank_account_ids=[accounts[0].id])
         assert len(account_a_flows) == 1
         assert account_a_flows[0].bank_account.entity_id == entity_a.id
         
-        account_b_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, bank_account_id=accounts[1].id)
+        account_b_flows = cash_flow_service.get_fund_event_cash_flows(session=db_session, bank_account_ids=[accounts[1].id])
         assert len(account_b_flows) == 1
         assert account_b_flows[0].bank_account.entity_id == entity_b.id
 

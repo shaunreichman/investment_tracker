@@ -26,6 +26,7 @@ import src.investment_company.models
 import src.entity.models
 import src.banking.models
 import src.rates.models
+import src.shared.models
 
 # Set target metadata for autogenerate
 target_metadata = Base.metadata

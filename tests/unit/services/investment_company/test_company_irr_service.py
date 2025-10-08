@@ -20,7 +20,8 @@ from sqlalchemy.orm import Session
 from src.investment_company.services.company_irr_service import CompanyIrRService
 from src.investment_company.models import InvestmentCompany
 from src.investment_company.enums.company_enums import CompanyStatus
-from src.fund.models.domain_fund_event import FundFieldChange
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from tests.factories.investment_company_factories import InvestmentCompanyFactory
 from tests.factories.fund_factories import FundEventFactory
 
@@ -112,7 +113,7 @@ class TestCompanyIrRService:
             assert 'completed_irr_real' in field_names
 
     def test_update_irrs_creates_correct_field_changes_for_active_company(self, service, mock_session, mock_active_company, fund_ids):
-        """Test that update_irrs creates correct FundFieldChange objects for active companies."""
+        """Test that update_irrs creates correct DomainFieldChange objects for active companies."""
         # Arrange
         old_gross = mock_active_company.completed_irr_gross
         old_after_tax = mock_active_company.completed_irr_after_tax
@@ -131,18 +132,18 @@ class TestCompanyIrRService:
             real_change = next((change for change in result if change.field_name == 'completed_irr_real'), None)
             
             # Verify field change properties
-            assert gross_change.object == 'COMPANY'
-            assert gross_change.object_id == mock_active_company.id
+            assert gross_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert gross_change.domain_object_id == mock_active_company.id
             assert gross_change.old_value == old_gross
             assert gross_change.new_value is None
             
-            assert after_tax_change.object == 'COMPANY'
-            assert after_tax_change.object_id == mock_active_company.id
+            assert after_tax_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert after_tax_change.domain_object_id == mock_active_company.id
             assert after_tax_change.old_value == old_after_tax
             assert after_tax_change.new_value is None
             
-            assert real_change.object == 'COMPANY'
-            assert real_change.object_id == mock_active_company.id
+            assert real_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert real_change.domain_object_id == mock_active_company.id
             assert real_change.old_value == old_real
             assert real_change.new_value is None
 
@@ -227,7 +228,7 @@ class TestCompanyIrRService:
             assert result is None
 
     def test_update_irrs_creates_correct_field_changes_for_completed_company(self, service, mock_session, mock_completed_company, mock_fund_events, fund_ids):
-        """Test that update_irrs creates correct FundFieldChange objects for completed companies."""
+        """Test that update_irrs creates correct DomainFieldChange objects for completed companies."""
         # Arrange
         old_gross = mock_completed_company.completed_irr_gross
         old_after_tax = mock_completed_company.completed_irr_after_tax
@@ -255,18 +256,18 @@ class TestCompanyIrRService:
             real_change = next((change for change in result if change.field_name == 'completed_irr_real'), None)
             
             # Verify field change properties
-            assert gross_change.object == 'COMPANY'
-            assert gross_change.object_id == mock_completed_company.id
+            assert gross_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert gross_change.domain_object_id == mock_completed_company.id
             assert gross_change.old_value == old_gross
             assert gross_change.new_value == expected_gross
             
-            assert after_tax_change.object == 'COMPANY'
-            assert after_tax_change.object_id == mock_completed_company.id
+            assert after_tax_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert after_tax_change.domain_object_id == mock_completed_company.id
             assert after_tax_change.old_value == old_after_tax
             assert after_tax_change.new_value == expected_after_tax
             
-            assert real_change.object == 'COMPANY'
-            assert real_change.object_id == mock_completed_company.id
+            assert real_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert real_change.domain_object_id == mock_completed_company.id
             assert real_change.old_value == old_real
             assert real_change.new_value == expected_real
 

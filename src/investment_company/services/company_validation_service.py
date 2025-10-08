@@ -45,7 +45,7 @@ class CompanyValidationService:
         errors = {}
         
         # Check if company has active funds (business constraint)
-        funds_list = self.fund_repository.get_funds(session=session, company_id=company.id, fund_status=FundStatus.ACTIVE)
+        funds_list = self.fund_repository.get_funds(session=session, company_ids=[company.id], fund_statuses=[FundStatus.ACTIVE])
         if funds_list:
             errors['funds'] = [f'Cannot delete company with {len(funds_list)} funds']
         

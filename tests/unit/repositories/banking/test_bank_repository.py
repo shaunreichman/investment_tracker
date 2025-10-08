@@ -77,7 +77,7 @@ class TestBankRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_banks(mock_session, name=bank_name)
+        repository.get_banks(mock_session, names=[bank_name])
 
         # Assert
         assert mock_query.filter.called
@@ -94,7 +94,7 @@ class TestBankRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_banks(mock_session, country=country)
+        repository.get_banks(mock_session, countries=[country])
 
         # Assert
         assert mock_query.filter.called
@@ -111,7 +111,7 @@ class TestBankRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_banks(mock_session, bank_type=bank_type)
+        repository.get_banks(mock_session, bank_types=[bank_type])
 
         # Assert
         assert mock_query.filter.called
@@ -130,7 +130,7 @@ class TestBankRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_banks(mock_session, name=bank_name, country=country, bank_type=bank_type)
+        repository.get_banks(mock_session, names=[bank_name], countries=[country], bank_types=[bank_type])
 
         # Assert
         assert mock_query.filter.call_count == 3

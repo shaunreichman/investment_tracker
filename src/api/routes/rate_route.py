@@ -15,7 +15,9 @@ from src.api.middleware.validation import validate_request
 from src.api.dto.api_response import ApiResponse
 from src.api.dto.response_codes import ApiResponseCode
 from src.shared.enums.shared_enums import Currency
-from src.rates.enums.risk_free_rate_enums import RiskFreeRateType
+from src.rates.enums.risk_free_rate_enums import RiskFreeRateType, SortFieldRiskFreeRate
+from src.rates.enums.fx_rate_enums import SortFieldFxRate
+from src.shared.enums.shared_enums import SortOrder
 
 
 # Create blueprint for enhanced rate routes
@@ -37,14 +39,28 @@ rate_controller = RateController()
 @validate_request(
     field_types={
         'currency': 'string',
+        'currencies': 'string_array',
         'rate_type': 'string',
+        'rate_types': 'string_array',
         'start_date': 'date',
-        'end_date': 'date'
+        'end_date': 'date',
+        'sort_by': 'string',
+        'sort_order': 'string'
     },
     enum_fields={
         'currency': Currency,
-        'rate_type': RiskFreeRateType
+        'rate_type': RiskFreeRateType,
+        'sort_by': SortFieldRiskFreeRate,
+        'sort_order': SortOrder
     },
+    array_element_enum_fields={
+        'currencies': Currency,
+        'rate_types': RiskFreeRateType
+    },
+    mutually_exclusive_groups=[
+        ['currency', 'currencies'],
+        ['rate_type', 'rate_types']
+    ],
     sanitize=True
 )
 def get_risk_free_rates():
@@ -52,10 +68,14 @@ def get_risk_free_rates():
     Get risk free rates.
 
     Query Parameters (all optional):
-        currency (str): Filter by currency
-        rate_type (str): Filter by rate type
+        currency (str): Filter by single currency (mutually exclusive with currencies)
+        currencies (str): Filter by multiple currencies (mutually exclusive with currency)
+        rate_type (str): Filter by single rate type (mutually exclusive with rate_types)
+        rate_types (str): Filter by multiple rate types (mutually exclusive with rate_type)
         start_date (date): Filter by start date
         end_date (date): Filter by end date
+        sort_by (str): Sort by (DATE, CURRENCY)
+        sort_order (str): Sort order (ASC, DESC)
 
     Returns:
         Standardized response with risk free rates data
@@ -106,7 +126,9 @@ def get_risk_free_rate_by_id(risk_free_rate_id):
         'rate_type': 'string',
         'source': 'string'
     },
-    field_lengths={'date': {'min': 10, 'max': 10}},
+    field_ranges={
+        'rate': {'min': -100.0, 'max': 10000.0}
+    },
     enum_fields={
         'currency': Currency,
         'rate_type': RiskFreeRateType
@@ -116,6 +138,13 @@ def get_risk_free_rate_by_id(risk_free_rate_id):
 def create_risk_free_rate():
     """
     Create a risk free rate.
+
+    Request Body:
+        currency (str): ISO-4217 currency code (required)
+        date (date): Date of the risk free rate (required)
+        rate (float): Risk-free rate as percentage (required)
+        rate_type (str): Type of rate (required)
+        source (str): Source of the rate data
 
     Returns:
         Standardized response with risk free rate data
@@ -171,11 +200,15 @@ def delete_risk_free_rate(risk_free_rate_id):
         'from_currency': 'string',
         'to_currency': 'string',
         'start_date': 'date',
-        'end_date': 'date'
+        'end_date': 'date',
+        'sort_by': 'string',
+        'sort_order': 'string'
     },
     enum_fields={
         'from_currency': Currency,
-        'to_currency': Currency
+        'to_currency': Currency,
+        'sort_by': SortFieldFxRate,
+        'sort_order': SortOrder
     },
     sanitize=True
 )
@@ -186,6 +219,10 @@ def get_fx_rates():
     Query Parameters (all optional):
         from_currency (str): Filter by from currency
         to_currency (str): Filter by to currency
+        start_date (date): Filter by start date
+        end_date (date): Filter by end date
+        sort_by (str): Sort by (DATE, FROM_CURRENCY, TO_CURRENCY)
+        sort_order (str): Sort order (ASC, DESC)
 
     Returns:
         Standardized response with FX rates data
@@ -207,6 +244,9 @@ def get_fx_rate_by_id(fx_rate_id):
 
     Path Parameters:
         fx_rate_id (int): ID of the FX rate to retrieve
+
+    Returns:
+        Standardized response with FX rate data
     """
     try:
         dto = rate_controller.get_fx_rate_by_id(fx_rate_id)
@@ -245,6 +285,12 @@ def create_fx_rate():
     """
     Create a new FX rate.
 
+    Request Body:
+        from_currency (str): ISO-4217 currency code (required)
+        to_currency (str): ISO-4217 currency code (required)
+        date (date): Date of the FX rate (required)
+        fx_rate (float): FX rate (required)
+
     Returns:
         Standardized response with FX rate data
     """
@@ -270,6 +316,9 @@ def delete_fx_rate(fx_rate_id):
 
     Path Parameters:
         fx_rate_id (int): ID of the FX rate to delete
+
+    Returns:
+        Standardized response with FX rate data
     """
     try:
         dto = rate_controller.delete_fx_rate(fx_rate_id)

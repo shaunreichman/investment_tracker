@@ -89,7 +89,7 @@ class TestFundTaxStatementRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_fund_tax_statements(mock_session, fund_id=fund_id)
+        repository.get_fund_tax_statements(mock_session, fund_ids=[fund_id])
 
         # Assert
         assert mock_query.filter.called
@@ -106,7 +106,7 @@ class TestFundTaxStatementRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_fund_tax_statements(mock_session, entity_id=entity_id)
+        repository.get_fund_tax_statements(mock_session, entity_ids=[entity_id])
 
         # Assert
         assert mock_query.filter.called
@@ -123,7 +123,7 @@ class TestFundTaxStatementRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_fund_tax_statements(mock_session, financial_year=financial_year)
+        repository.get_fund_tax_statements(mock_session, financial_years=[financial_year])
 
         # Assert
         assert mock_query.filter.called
@@ -163,9 +163,9 @@ class TestFundTaxStatementRepository:
 
         # Act
         repository.get_fund_tax_statements(mock_session, 
-                                         fund_id=fund_id,
-                                         entity_id=entity_id,
-                                         financial_year=financial_year)
+                                         fund_ids=[fund_id],
+                                         entity_ids=[entity_id],
+                                         financial_years=[financial_year])
 
         # Assert
         assert mock_query.filter.call_count == 3
@@ -373,9 +373,9 @@ class TestFundTaxStatementRepository:
 
         # Act
         repository.get_fund_tax_statements(mock_session, 
-                                         fund_id=None,
-                                         entity_id=None,
-                                         financial_year=None,
+                                         fund_ids=None,
+                                         entity_ids=None,
+                                         financial_years=None,
                                          start_tax_payment_date=None,
                                          end_tax_payment_date=None)
 

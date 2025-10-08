@@ -79,7 +79,7 @@ class TestFundRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_funds(mock_session, company_id=company_id)
+        repository.get_funds(mock_session, company_ids=[company_id])
 
         # Assert
         assert mock_query.filter.called
@@ -96,7 +96,7 @@ class TestFundRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_funds(mock_session, entity_id=entity_id)
+        repository.get_funds(mock_session, entity_ids=[entity_id])
 
         # Assert
         assert mock_query.filter.called
@@ -113,7 +113,7 @@ class TestFundRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_funds(mock_session, fund_status=fund_status)
+        repository.get_funds(mock_session, fund_statuses=[fund_status])
 
         # Assert
         assert mock_query.filter.called
@@ -130,7 +130,7 @@ class TestFundRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_funds(mock_session, fund_tracking_type=tracking_type)
+        repository.get_funds(mock_session, fund_tracking_types=[tracking_type])
 
         # Assert
         assert mock_query.filter.called
@@ -153,10 +153,10 @@ class TestFundRepository:
         # Act
         repository.get_funds(
             mock_session,
-            company_id=company_id,
-            entity_id=entity_id,
-            fund_status=fund_status,
-            fund_tracking_type=tracking_type
+            company_ids=[company_id],
+            entity_ids=[entity_id],
+            fund_statuses=[fund_status],
+            fund_tracking_types=[tracking_type]
         )
 
         # Assert

@@ -4,7 +4,7 @@ Company Repository.
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from src.investment_company.models import InvestmentCompany
 from src.investment_company.enums.company_enums import CompanyStatus, CompanyType, SortFieldCompany
@@ -36,22 +36,24 @@ class CompanyRepository:
     ################################################################################
 
     def get_companies(self, session: Session,
-            company_type: Optional[CompanyType] = None,
-            status: Optional[CompanyStatus] = None,
-            name: Optional[str] = None,
+            company_types: Optional[List[CompanyType]] = None,
+            statuses: Optional[List[CompanyStatus]] = None,
+            names: Optional[List[str]] = None,
             sort_by: Optional[SortFieldCompany] = SortFieldCompany.NAME,
             sort_order: Optional[SortOrder] = SortOrder.ASC,
+            include_contacts: Optional[bool] = False,
     ) -> List[InvestmentCompany]:
         """
         Get all companies.
 
         Args:
             session: Database session
-            company_type: Type of company to filter by
-            status: Status to filter by
-            name: Name to filter by
+            company_types: Types of company to filter by
+            statuses: Statuses to filter by
+            names: Names to filter by
             sort_by: Field to sort by
             sort_order: Order to sort by
+            include_contacts: Whether to eager load contacts relationship
 
         Returns:
             List of companies
@@ -65,43 +67,55 @@ class CompanyRepository:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
         # Query database
-        companies = session.query(InvestmentCompany)
-        if company_type:
-            companies = companies.filter(InvestmentCompany.company_type == company_type)
-        if status:
-            companies = companies.filter(InvestmentCompany.status == status)
-        if name:
-            companies = companies.filter(InvestmentCompany.name == name)
+        query = session.query(InvestmentCompany)
+        
+        # Add eager loading for relationships if requested
+        if include_contacts:
+            query = query.options(selectinload(InvestmentCompany.contacts))
+        
+        if company_types:
+            query = query.filter(InvestmentCompany.company_type.in_([c.value for c in company_types]))
+        if statuses:
+            query = query.filter(InvestmentCompany.status.in_([s.value for s in statuses]))
+        if names:
+            query = query.filter(InvestmentCompany.name.in_(names))
             
         # Apply sorting
         if sort_by == SortFieldCompany.NAME:
-            companies = companies.order_by(InvestmentCompany.name.asc() if sort_order == SortOrder.ASC else InvestmentCompany.name.desc())
+            query = query.order_by(InvestmentCompany.name.asc() if sort_order == SortOrder.ASC else InvestmentCompany.name.desc())
         elif sort_by == SortFieldCompany.STATUS:
-            companies = companies.order_by(InvestmentCompany.status.asc() if sort_order == SortOrder.ASC else InvestmentCompany.status.desc())
+            query = query.order_by(InvestmentCompany.status.asc() if sort_order == SortOrder.ASC else InvestmentCompany.status.desc())
         elif sort_by == SortFieldCompany.START_DATE:
-            companies = companies.order_by(InvestmentCompany.start_date.asc() if sort_order == SortOrder.ASC else InvestmentCompany.start_date.desc())
+            query = query.order_by(InvestmentCompany.start_date.asc() if sort_order == SortOrder.ASC else InvestmentCompany.start_date.desc())
         elif sort_by == SortFieldCompany.CREATED_AT:
-            companies = companies.order_by(InvestmentCompany.created_at.asc() if sort_order == SortOrder.ASC else InvestmentCompany.created_at.desc())
+            query = query.order_by(InvestmentCompany.created_at.asc() if sort_order == SortOrder.ASC else InvestmentCompany.created_at.desc())
         elif sort_by == SortFieldCompany.UPDATED_AT:
-            companies = companies.order_by(InvestmentCompany.updated_at.asc() if sort_order == SortOrder.ASC else InvestmentCompany.updated_at.desc())
+            query = query.order_by(InvestmentCompany.updated_at.asc() if sort_order == SortOrder.ASC else InvestmentCompany.updated_at.desc())
             
-        companies = companies.all()
+        companies = query.all()
 
         return companies
     
-    def get_company_by_id(self, company_id: int, session: Session) -> Optional[InvestmentCompany]:
+    def get_company_by_id(self, company_id: int, session: Session, include_contacts: Optional[bool] = False) -> Optional[InvestmentCompany]:
         """
         Get a company by its ID.
         
         Args:
             company_id: ID of the company to retrieve
             session: Database session
+            include_contacts: Whether to eager load contacts relationship
             
         Returns:
             InvestmentCompany object if found, None otherwise
         """
         # Query database
-        company = session.query(InvestmentCompany).filter(InvestmentCompany.id == company_id).first()
+        query = session.query(InvestmentCompany).filter(InvestmentCompany.id == company_id)
+        
+        # Add eager loading for relationships if requested
+        if include_contacts:
+            query = query.options(selectinload(InvestmentCompany.contacts))
+        
+        company = query.first()
         
         return company
 

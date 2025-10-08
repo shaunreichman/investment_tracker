@@ -106,7 +106,7 @@ class TestRiskFreeRateRepository:
         mock_query.all.return_value = [sample_risk_free_rates[0], sample_risk_free_rates[2]]
 
         # Act
-        result = repository.get_risk_free_rates(mock_session, currency=Currency.AUD)
+        result = repository.get_risk_free_rates(mock_session, currencies=[Currency.AUD])
 
         # Assert
         assert len(result) == 2
@@ -122,7 +122,7 @@ class TestRiskFreeRateRepository:
         mock_query.all.return_value = [sample_risk_free_rates[1]]
 
         # Act
-        result = repository.get_risk_free_rates(mock_session, rate_type=RiskFreeRateType.LIBOR)
+        result = repository.get_risk_free_rates(mock_session, rate_types=[RiskFreeRateType.LIBOR])
 
         # Assert
         assert len(result) == 1
@@ -140,8 +140,8 @@ class TestRiskFreeRateRepository:
         # Act
         result = repository.get_risk_free_rates(
             mock_session,
-            currency=Currency.AUD,
-            rate_type=RiskFreeRateType.GOVERNMENT_BOND
+            currencies=[Currency.AUD],
+            rate_types=[RiskFreeRateType.GOVERNMENT_BOND]
         )
 
         # Assert

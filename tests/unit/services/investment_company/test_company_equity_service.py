@@ -20,7 +20,8 @@ from datetime import date
 
 from src.investment_company.services.company_equity_service import CompanyEquityService
 from src.investment_company.models import InvestmentCompany
-from src.fund.models.domain_fund_event import FundFieldChange
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_event_enums import EventType
 from tests.factories.investment_company_factories import InvestmentCompanyFactory
 from tests.factories.fund_factories import FundEventFactory
@@ -176,7 +177,7 @@ class TestCompanyEquityService:
             mock_duration_calc.assert_called_once_with(mock_company.start_date, new_end_date)
 
     def test_update_company_equity_fields_creates_correct_field_changes(self, service, mock_session, mock_company, mock_fund_events, fund_ids):
-        """Test that update_company_equity_fields creates correct FundFieldChange objects."""
+        """Test that update_company_equity_fields creates correct DomainFieldChange objects."""
         # Arrange
         company_id = 1
         new_average_balance = 110000
@@ -211,24 +212,24 @@ class TestCompanyEquityService:
             duration_change = next((change for change in result if change.field_name == 'current_duration'), None)
             
             # Verify field change properties
-            assert average_change.object == 'COMPANY'
-            assert average_change.object_id == company_id
+            assert average_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert average_change.domain_object_id == company_id
             assert average_change.old_value == original_average_balance
             assert average_change.new_value == new_average_balance
             
-            assert current_change.object == 'COMPANY'
-            assert current_change.object_id == company_id
+            assert current_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert current_change.domain_object_id == company_id
             assert current_change.old_value == original_current_balance
             assert current_change.new_value == new_current_balance
             
-            assert end_date_change.object == 'COMPANY'
-            assert end_date_change.object_id == company_id
+            assert end_date_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert end_date_change.domain_object_id == company_id
             assert end_date_change.old_value == original_end_date
             assert end_date_change.new_value == new_end_date
             
             if duration_change:  # duration change may or may not exist
-                assert duration_change.object == 'COMPANY'
-                assert duration_change.object_id == company_id
+                assert duration_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+                assert duration_change.domain_object_id == company_id
                 assert duration_change.old_value == original_duration
                 assert duration_change.new_value == new_duration
 

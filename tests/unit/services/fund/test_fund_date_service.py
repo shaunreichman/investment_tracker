@@ -20,7 +20,9 @@ from datetime import date, datetime
 from sqlalchemy.orm import Session
 
 from src.fund.services.fund_date_service import FundDateService
-from src.fund.models import Fund, FundFieldChange
+from src.fund.models import Fund
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_enums import FundStatus, FundTaxStatementFinancialYearType
 from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import EventOperation, SortOrder
@@ -88,13 +90,13 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_event_by_id.return_value = sample_event
 
         # Act
-        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, fund_event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is not None
-        assert isinstance(result, FundFieldChange)
-        assert result.object == 'FUND'
-        assert result.object_id == 1
+        assert isinstance(result, DomainFieldChange)
+        assert result.domain_object_type == DomainObjectType.FUND
+        assert result.domain_object_id == 1
         assert result.field_name == 'start_date'
         assert result.old_value == date(2020, 3, 1)
         assert result.new_value == date(2020, 2, 1)
@@ -106,7 +108,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_event_by_id.return_value = None
 
         # Act
-        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, fund_event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is None
@@ -118,7 +120,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_event_by_id.return_value = sample_event
 
         # Act
-        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, fund_event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is None
@@ -135,7 +137,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_event_by_id.return_value = non_capital_event
 
         # Act
-        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, fund_event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is None
@@ -147,7 +149,7 @@ class TestFundDateService:
         service.fund_event_repository.get_fund_event_by_id.return_value = sample_event
 
         # Act
-        result = service.update_fund_start_date(sample_fund, mock_session, event_id=1, fund_event_operation=EventOperation.CREATE)
+        result = service.update_fund_start_date(sample_fund, mock_session, fund_event_id=1, fund_event_operation=EventOperation.CREATE)
 
         # Assert
         assert result is None  # No change because event date is not earlier
@@ -523,7 +525,7 @@ class TestFundDateService:
         assert service.fund_event_repository is not None
 
     def test_fund_field_change_creation(self, service, mock_session, sample_fund):
-        """Test FundFieldChange object creation and properties."""
+        """Test DomainFieldChange object creation and properties."""
         # Arrange
         events = [
             FundEventFactory.build(
@@ -540,8 +542,8 @@ class TestFundDateService:
 
         # Assert
         assert result is not None
-        assert result.object == 'FUND'
-        assert result.object_id == 1
+        assert result.domain_object_type == DomainObjectType.FUND
+        assert result.domain_object_id == 1
         assert result.field_name == 'start_date'
         assert result.old_value == date(2020, 1, 1)
         assert result.new_value == date(2019, 12, 1)

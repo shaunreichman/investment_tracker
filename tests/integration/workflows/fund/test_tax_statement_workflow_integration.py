@@ -518,28 +518,28 @@ class TestTaxStatementWorkflowIntegration:
         
         # Test retrieval by fund_id
         fund1_statements = tax_statement_service.get_fund_tax_statements(
-            fund_id=fund1.id, session=db_session
+            fund_ids=[fund1.id], session=db_session
         )
         assert len(fund1_statements) == 2
         assert all(stmt.fund_id == fund1.id for stmt in fund1_statements)
         
         # Test retrieval by entity_id
         entity1_statements = tax_statement_service.get_fund_tax_statements(
-            entity_id=entity1.id, session=db_session
+            entity_ids=[entity1.id], session=db_session
         )
         assert len(entity1_statements) == 2
         assert all(stmt.entity_id == entity1.id for stmt in entity1_statements)
         
         # Test retrieval by financial_year
         fy_2023_24_statements = tax_statement_service.get_fund_tax_statements(
-            financial_year='2023', session=db_session
+            financial_years=['2023'], session=db_session
         )
         assert len(fy_2023_24_statements) == 2
         assert all(stmt.financial_year == '2023' for stmt in fy_2023_24_statements)
         
         # Test retrieval by combined filters
         combined_statements = tax_statement_service.get_fund_tax_statements(
-            fund_id=fund1.id, entity_id=entity1.id, financial_year='2023', session=db_session
+            fund_ids=[fund1.id], entity_ids=[entity1.id], financial_years=['2023'], session=db_session
         )
         assert len(combined_statements) == 1
         assert combined_statements[0].id == tax_statement1.id

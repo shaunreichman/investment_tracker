@@ -4,7 +4,7 @@ Fund Event Repository.
 
 from typing import List, Optional, Dict, Any
 from datetime import date
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from src.fund.models import FundEvent
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType, SortFieldFundEvent
@@ -39,11 +39,14 @@ class FundEventRepository:
                         event_types: Optional[List[EventType]] = None,
                         distribution_types: Optional[List[DistributionType]] = None,
                         tax_payment_types: Optional[List[TaxPaymentType]] = None,
+                        group_ids: Optional[List[int]] = None,
                         group_types: Optional[List[GroupType]] = None,
+                        is_cash_flow_complete: Optional[bool] = None,
                         start_event_date: Optional[date] = None,
                         end_event_date: Optional[date] = None,
                         sort_by: Optional[SortFieldFundEvent] = SortFieldFundEvent.EVENT_DATE,
-                        sort_order: SortOrder = SortOrder.ASC
+                        sort_order: Optional[SortOrder] = SortOrder.ASC,
+                        include_fund_event_cash_flows: Optional[bool] = False,
     ) -> List[FundEvent]:
         """
         Get all fund events.
@@ -54,12 +57,15 @@ class FundEventRepository:
             event_types: Optional list of event types to filter by (optional)
             distribution_types: Optional list of distribution types to filter by (optional)
             tax_payment_types: Optional list of tax payment types to filter by (optional)
+            group_ids: Optional list of group IDs to filter by (optional)
             group_types: Optional list of group types to filter by (optional)
+            is_cash_flow_complete: Optional flag to filter by cash flow completeness (optional)
             start_event_date: Optional start event date to filter by (optional)
             end_event_date: Optional end event date to filter by (optional)
             sort_by: Optional sort field to sort by (optional)
             sort_order: Optional sort order to sort by (optional)
-
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional)
+            
         Returns:
             List of fund events
         """
@@ -74,17 +80,24 @@ class FundEventRepository:
         # Query database
         query = session.query(FundEvent)
         
+        # Add eager loading for relationships if requested
+        if include_fund_event_cash_flows:
+            query = query.options(selectinload(FundEvent.fund_event_cash_flows))
+
         if fund_ids:
             query = query.filter(FundEvent.fund_id.in_(fund_ids))
         if event_types:
-            event_type_values = [et.value for et in event_types]
-            query = query.filter(FundEvent.event_type.in_(event_type_values))
+            query = query.filter(FundEvent.event_type.in_([et.value for et in event_types]))
         if distribution_types:
             query = query.filter(FundEvent.distribution_type.in_([dt.value for dt in distribution_types]))
         if tax_payment_types:
-            query = query.filter(FundEvent.tax_payment_type.in_([ttp.value for ttp in tax_payment_types]))
+            query = query.filter(FundEvent.tax_payment_type.in_([tpt.value for tpt in tax_payment_types]))
+        if group_ids:
+            query = query.filter(FundEvent.group_id.in_(group_ids))
         if group_types:
             query = query.filter(FundEvent.group_type.in_([gt.value for gt in group_types]))
+        if is_cash_flow_complete is not None:
+            query = query.filter(FundEvent.is_cash_flow_complete == is_cash_flow_complete)
         if start_event_date:
             query = query.filter(FundEvent.event_date >= start_event_date)
         if end_event_date:
@@ -100,22 +113,28 @@ class FundEventRepository:
         
         return events
     
-    def get_fund_event_by_id(self, event_id: int, session: Session) -> Optional[FundEvent]:
+    def get_fund_event_by_id(self, event_id: int, session: Session, include_fund_event_cash_flows: Optional[bool] = False) -> Optional[FundEvent]:
         """
         Get a fund event by its ID.
         
         Args:
             event_id: ID of the event to retrieve
             session: Database session
-            
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional)
+
         Returns:
             FundEvent object if found, None otherwise
         """
         # Query database
-        fund_event = session.query(FundEvent).filter(FundEvent.id == event_id).first()
+        query = session.query(FundEvent).filter(FundEvent.id == event_id)
+        
+        # Add eager loading for relationships if requested
+        if include_fund_event_cash_flows:
+            query = query.options(selectinload(FundEvent.fund_event_cash_flows))
+
+        fund_event = query.first()
         
         return fund_event
-
 
     ################################################################################
     # Create Fund Event
@@ -147,34 +166,34 @@ class FundEventRepository:
     # Delete Fund Event
     ################################################################################
     
-    def delete_fund_event(self, event_id: int, session: Session) -> bool:
+    def delete_fund_event(self, fund_event_id: int, session: Session) -> bool:
         """
         Delete a fund event.
         
         Args:
-            event_id: ID of the event to delete
+            fund_event_id: ID of the fund event to delete
             session: Database session
             
         Returns:
-            True if event was deleted, False if not found
+            True if fund event was deleted, False if not found
         """
-        event = self.get_fund_event_by_id(event_id, session)
-        if not event:
+        fund_event = self.get_fund_event_by_id(fund_event_id, session)
+        if not fund_event:
             return False
         
-        # If this event is grouped, delete all events in the same group
-        if event.is_grouped and event.group_id:
+        # If this fund event is grouped, delete all events in the same group
+        if fund_event.is_grouped and fund_event.group_id:
             # Find all events in the same group
             group_events = session.query(FundEvent).filter(
-                FundEvent.group_id == event.group_id
+                FundEvent.group_id == fund_event.group_id
             ).all()
             
             # Delete all events in the group
             for group_event in group_events:
                 session.delete(group_event)
         else:
-            # Delete just this single event
-            session.delete(event)
+            # Delete just this single fund event
+            session.delete(fund_event)
         
         return True
     

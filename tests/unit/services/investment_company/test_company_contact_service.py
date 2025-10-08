@@ -91,7 +91,7 @@ class TestCompanyContactService:
             # Act
             result = service.get_contacts(
                 mock_session, 
-                company_id=company_id,
+                company_ids=[company_id],
                 sort_by=sort_by,
                 sort_order=sort_order
             )
@@ -100,7 +100,7 @@ class TestCompanyContactService:
             assert result == expected_contacts
             mock_repo.assert_called_once_with(
                 mock_session, 
-                company_id, 
+                [company_id], 
                 sort_by,
                 sort_order
             )

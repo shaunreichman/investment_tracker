@@ -27,7 +27,7 @@ class BankAccount(Base):
     account_name = Column(String(255), nullable=False)  # (MANUAL) human-readable account name/label
     account_number = Column(String(64), nullable=False)  # (MANUAL) account number stored as provided
     currency = Column(Enum(Currency), nullable=False)  # (MANUAL) ISO-4217 currency code
-    account_type = Column(Enum(BankAccountType), nullable=False)  # (MANUAL) account type
+    account_type = Column(Enum(BankAccountType), nullable=True)  # (MANUAL) account type
     created_at = Column(DateTime, default=datetime.utcnow)  # (SYSTEM) creation timestamp
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # (SYSTEM) last update timestamp
 
@@ -40,8 +40,9 @@ class BankAccount(Base):
     )
 
     # Relationships
-    bank = relationship("Bank", back_populates="accounts")
+    bank = relationship("Bank", back_populates="bank_accounts")
     entity = relationship("Entity", back_populates="bank_accounts")
+    bank_account_balances = relationship("BankAccountBalance", back_populates="bank_account")
 
     def __repr__(self) -> str:
         return (

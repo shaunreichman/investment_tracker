@@ -3,11 +3,11 @@ Bank Repository.
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from src.banking.enums.bank_enums import BankType, SortFieldBank
 from src.shared.enums.shared_enums import SortOrder
-from src.banking.models import Bank
+from src.banking.models import Bank, BankAccount
 from src.shared.enums.shared_enums import Country
 
 
@@ -35,22 +35,26 @@ class BankRepository:
     ################################################################################
 
     def get_banks(self, session: Session,
-                    name: Optional[str] = None,
-                    country: Optional[Country] = None,
-                    bank_type: Optional[BankType] = None,
+                    names: Optional[List[str]] = None,
+                    countries: Optional[List[Country]] = None,
+                    bank_types: Optional[List[BankType]] = None,
                     sort_by: SortFieldBank = SortFieldBank.NAME,
-                    sort_order: SortOrder = SortOrder.ASC
+                    sort_order: SortOrder = SortOrder.ASC,
+                    include_bank_accounts: Optional[bool] = False,
+                    include_bank_account_balances: Optional[bool] = False
     ) -> List[Bank]:
         """
         Get all banks.
 
         Args:
             session: Database session
-            name: Bank name (optional)
-            country: Country code (optional)
-            bank_type: Bank type (optional)
+            names: Bank names (optional)
+            countries: Country codes (optional)
+            bank_types: Bank types (optional)
             sort_by: Sort field (optional)
             sort_order: Sort order (optional)
+            include_bank_accounts: Whether to include bank accounts (optional)
+            include_bank_account_balances: Whether to include bank account balances (optional, requires include_bank_accounts=True)
 
         Returns:
             List of banks
@@ -66,43 +70,68 @@ class BankRepository:
         if sort_order not in SortOrder:
             raise ValueError(f"Invalid sort order: {sort_order}")
 
+        # Validate parameter dependencies
+        if include_bank_account_balances and not include_bank_accounts:
+            raise ValueError("include_bank_account_balances requires include_bank_accounts to be True")
+
         # Get all banks
-        banks = session.query(Bank)
-        if name:
-            banks = banks.filter(Bank.name == name)
-        if country:
-            banks = banks.filter(Bank.country == country)
-        if bank_type:
-            banks = banks.filter(Bank.bank_type == bank_type.value)
+        query = session.query(Bank)
+        
+        # Add eager loading for relationships if requested
+        if include_bank_accounts:
+            query = query.options(selectinload(Bank.bank_accounts))
+        if include_bank_account_balances:
+            query = query.options(selectinload(Bank.bank_accounts).selectinload(BankAccount.bank_account_balances))
+
+        if names:
+            query = query.filter(Bank.name.in_(names))
+        if countries:
+            query = query.filter(Bank.country.in_([c.value for c in countries]))
+        if bank_types:
+            query = query.filter(Bank.bank_type.in_([bt.value for bt in bank_types]))
 
         # Apply sorting
         if sort_by == SortFieldBank.NAME:
-            banks = banks.order_by(Bank.name.asc() if sort_order == SortOrder.ASC else Bank.name.desc())
+            query = query.order_by(Bank.name.asc() if sort_order == SortOrder.ASC else Bank.name.desc())
         elif sort_by == SortFieldBank.COUNTRY:
-            banks = banks.order_by(Bank.country.asc() if sort_order == SortOrder.ASC else Bank.country.desc())
+            query = query.order_by(Bank.country.asc() if sort_order == SortOrder.ASC else Bank.country.desc())
         elif sort_by == SortFieldBank.TYPE:
-            banks = banks.order_by(Bank.bank_type.asc() if sort_order == SortOrder.ASC else Bank.bank_type.desc())
+            query = query.order_by(Bank.bank_type.asc() if sort_order == SortOrder.ASC else Bank.bank_type.desc())
         elif sort_by == SortFieldBank.CREATED_AT:
-            banks = banks.order_by(Bank.created_at.asc() if sort_order == SortOrder.ASC else Bank.created_at.desc())
+            query = query.order_by(Bank.created_at.asc() if sort_order == SortOrder.ASC else Bank.created_at.desc())
 
-        banks = banks.all()
+        banks = query.all()
 
         return banks
     
-    def get_bank_by_id(self, bank_id: int, session: Session) -> Optional[Bank]:
+    def get_bank_by_id(self, bank_id: int, session: Session, include_bank_accounts: Optional[bool] = False, include_bank_account_balances: Optional[bool] = False) -> Optional[Bank]:
         """
         Get a bank by its ID.
         
         Args:
             bank_id: ID of the bank to retrieve
             session: Database session
-            
+            include_bank_accounts: Whether to include bank accounts (optional)
+            include_bank_account_balances: Whether to include bank account balances (optional, requires include_bank_accounts=True)
+
         Returns:
             Bank object if found, None otherwise
         """
+        # Validate parameter dependencies
+        if include_bank_account_balances and not include_bank_accounts:
+            raise ValueError("include_bank_account_balances requires include_bank_accounts to be True")
+
         # Query database
-        bank = session.query(Bank).filter(Bank.id == bank_id).first()
+        query = session.query(Bank).filter(Bank.id == bank_id)
         
+        # Add eager loading for relationships if requested
+        if include_bank_accounts:
+            query = query.options(selectinload(Bank.bank_accounts))
+        if include_bank_account_balances:
+            query = query.options(selectinload(Bank.bank_accounts).selectinload(BankAccount.bank_account_balances))
+
+        bank = query.first()
+
         return bank
 
 

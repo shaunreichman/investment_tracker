@@ -4,10 +4,8 @@ Calculator for calculating the PNL of a fund.
 
 from src.fund.models import FundEvent, Fund
 from src.fund.enums import FundTrackingType, EventType, DistributionType
-from src.shared.enums.shared_enums import SortOrder
 from src.fund.calculators.fifo_capital_gains_calculator import FifoCapitalGainsCalculator
-from src.fund.repositories import FundEventRepository
-from typing import List
+from typing import List, Dict
 
 class FundPnlCalculator:
     """
@@ -20,29 +18,32 @@ class FundPnlCalculator:
         Initialize the FundPnlCalculator.
         
         Args:
-            fund_event_repository: Fund event repository to use. If None, creates a new one.
+            None
         """
-        self.fund_event_repository = FundEventRepository()
+        pass
 
-    def calculate_pnl(self, fund_events: List[FundEvent], fund: Fund):
+    @staticmethod
+    def calculate_pnl(fund_events: List[FundEvent], fund: Fund) -> Dict[str, float]:
         """
         Calculate the PNL of a fund.
         
         Args:
             fund_events: The list of fund events
+            fund: The fund object
 
         Returns:
             Dictionary with the PNL values
         """
-        pnl_dict = {}
-        pnl_dict['pnl'] = 0
-        pnl_dict['realized_pnl'] = 0
-        pnl_dict['unrealized_pnl'] = 0
-        pnl_dict['realized_pnl_capital_gain'] = None
-        pnl_dict['unrealized_pnl_capital_gain'] = None
-        pnl_dict['realized_pnl_dividend'] = 0
-        pnl_dict['realized_pnl_interest'] = 0
-        pnl_dict['realized_pnl_distribution'] = 0
+        pnl_dict = {
+            'pnl': 0,
+            'realized_pnl': 0,
+            'unrealized_pnl': 0,
+            'realized_pnl_capital_gain': None,
+            'unrealized_pnl_capital_gain': None,
+            'realized_pnl_dividend': 0,
+            'realized_pnl_interest': 0,
+            'realized_pnl_distribution': 0
+        }
 
         if fund.tracking_type == FundTrackingType.NAV_BASED:
             fifo_capital_gains_calculator = FifoCapitalGainsCalculator()

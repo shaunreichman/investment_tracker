@@ -79,7 +79,7 @@ class TestCompanyRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_companies(mock_session, company_type=company_type, sort_by=SortFieldCompany.NAME, sort_order=SortOrder.ASC)
+        repository.get_companies(mock_session, company_types=[company_type], sort_by=SortFieldCompany.NAME, sort_order=SortOrder.ASC)
 
         # Assert
         assert mock_query.filter.called
@@ -96,7 +96,7 @@ class TestCompanyRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_companies(mock_session, status=status)
+        repository.get_companies(mock_session, statuses=[status])
 
         # Assert
         assert mock_query.filter.called
@@ -113,7 +113,7 @@ class TestCompanyRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_companies(mock_session, name=name)
+        repository.get_companies(mock_session, names=[name])
 
         # Assert
         assert mock_query.filter.called
@@ -132,8 +132,8 @@ class TestCompanyRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_companies(mock_session, company_type=company_type, 
-                               status=status, name=name, sort_by=SortFieldCompany.NAME, sort_order=SortOrder.ASC)
+        repository.get_companies(mock_session, company_types=[company_type], 
+                               statuses=[status], names=[name], sort_by=SortFieldCompany.NAME, sort_order=SortOrder.ASC)
 
         # Assert
         assert mock_query.filter.call_count == 3

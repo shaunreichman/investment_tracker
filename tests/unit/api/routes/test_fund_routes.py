@@ -156,7 +156,7 @@ class TestFundRoutes:
             mock_controller_instance.get_funds.return_value = mock_dto
             
             # Act
-            response = client.get('/api/funds?company_id=1&entity_id=2&fund_status=ACTIVE&include_events=true')
+            response = client.get('/api/funds?company_id=1&entity_id=2&fund_status=ACTIVE&include_fund_events=true')
             
             # Assert
             assert response.status_code == 200
@@ -218,7 +218,7 @@ class TestFundRoutes:
             mock_controller_instance.get_fund_by_id.return_value = mock_dto
             
             # Act
-            response = client.get('/api/funds/1?include_events=true&include_cash_flows=true')
+            response = client.get('/api/funds/1?include_fund_events=true&include_fund_event_cash_flows=true')
             
             # Assert
             assert response.status_code == 200

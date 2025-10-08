@@ -180,3 +180,156 @@ class TestLastDayOfTheMonthCalculator:
         # Test year transition from 2023 to 2024
         assert LastDayOfTheMonthCalculator.is_last_day_of_the_month(date(2023, 12, 31)) is True
         assert LastDayOfTheMonthCalculator.is_last_day_of_the_month(date(2024, 1, 1)) is False
+
+    def test_get_last_day_of_the_month_valid_dates(self):
+        """
+        Test get_last_day_of_the_month with various valid dates.
+        """
+        # Test January dates - should return January 31st
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 1, 1)) == date(2024, 1, 31)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 1, 15)) == date(2024, 1, 31)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 1, 31)) == date(2024, 1, 31)
+
+        # Test February dates - should return February 29th in leap year
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 2, 1)) == date(2024, 2, 29)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 2, 15)) == date(2024, 2, 29)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 2, 29)) == date(2024, 2, 29)
+
+        # Test February dates - should return February 28th in non-leap year
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2023, 2, 1)) == date(2023, 2, 28)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2023, 2, 15)) == date(2023, 2, 28)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2023, 2, 28)) == date(2023, 2, 28)
+
+        # Test April dates (30-day month) - should return April 30th
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 4, 1)) == date(2024, 4, 30)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 4, 15)) == date(2024, 4, 30)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 4, 30)) == date(2024, 4, 30)
+
+        # Test December dates - should return December 31st
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 12, 1)) == date(2024, 12, 31)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 12, 15)) == date(2024, 12, 31)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 12, 31)) == date(2024, 12, 31)
+
+    def test_get_last_day_of_the_month_all_months(self):
+        """
+        Test get_last_day_of_the_month for all months of the year.
+        """
+        # Test all months with first day of month
+        test_cases = [
+            (1, 31),   # January
+            (2, 29),   # February (leap year 2024)
+            (3, 31),   # March
+            (4, 30),   # April
+            (5, 31),   # May
+            (6, 30),   # June
+            (7, 31),   # July
+            (8, 31),   # August
+            (9, 30),   # September
+            (10, 31),  # October
+            (11, 30),  # November
+            (12, 31),  # December
+        ]
+        
+        for month, expected_day in test_cases:
+            result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, month, 1))
+            assert result == date(2024, month, expected_day), f"Month {month} should return day {expected_day}"
+
+    def test_get_last_day_of_the_month_leap_year_edge_cases(self):
+        """
+        Test get_last_day_of_the_month with leap year edge cases.
+        """
+        # Leap years: 2020, 2024, 2028
+        leap_years = [2020, 2024, 2028]
+        for year in leap_years:
+            result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(year, 2, 15))
+            assert result == date(year, 2, 29), f"Leap year {year} should return Feb 29"
+
+        # Non-leap years: 2021, 2022, 2023, 2025
+        non_leap_years = [2021, 2022, 2023, 2025]
+        for year in non_leap_years:
+            result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(year, 2, 15))
+            assert result == date(year, 2, 28), f"Non-leap year {year} should return Feb 28"
+
+    def test_get_last_day_of_the_month_year_boundary(self):
+        """
+        Test get_last_day_of_the_month across year boundaries.
+        """
+        # Test December to January transition
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2023, 12, 15)) == date(2023, 12, 31)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 1, 15)) == date(2024, 1, 31)
+
+        # Test year 2000 (leap year)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2000, 2, 15)) == date(2000, 2, 29)
+
+        # Test year 2100 (not a leap year - century rule)
+        assert LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2100, 2, 15)) == date(2100, 2, 28)
+
+    def test_get_last_day_of_the_month_30_vs_31_day_months(self):
+        """
+        Test get_last_day_of_the_month for months with different numbers of days.
+        """
+        # 31-day months
+        months_31_days = [1, 3, 5, 7, 8, 10, 12]
+        for month in months_31_days:
+            result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, month, 15))
+            assert result == date(2024, month, 31), f"Month {month} should return day 31"
+
+        # 30-day months
+        months_30_days = [4, 6, 9, 11]
+        for month in months_30_days:
+            result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, month, 15))
+            assert result == date(2024, month, 30), f"Month {month} should return day 30"
+
+    def test_get_last_day_of_the_month_static_method(self):
+        """
+        Test that get_last_day_of_the_month is properly defined as a static method.
+        """
+        # Should be callable without instantiating the class
+        assert callable(LastDayOfTheMonthCalculator.get_last_day_of_the_month)
+        
+        # Test that it works without creating an instance
+        result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(date(2024, 1, 15))
+        assert result == date(2024, 1, 31)
+
+    def test_get_last_day_of_the_month_consistency_with_is_last_day(self):
+        """
+        Test that get_last_day_of_the_month and is_last_day_of_the_month are consistent.
+        """
+        test_dates = [
+            date(2024, 1, 1),   # First day of month
+            date(2024, 1, 15),  # Middle of month
+            date(2024, 1, 31),  # Last day of month
+            date(2024, 2, 29),  # Leap year last day
+            date(2023, 2, 28),  # Non-leap year last day
+            date(2024, 4, 30),  # 30-day month last day
+        ]
+        
+        for test_date in test_dates:
+            # Get the last day of the month for this date
+            last_day = LastDayOfTheMonthCalculator.get_last_day_of_the_month(test_date)
+            
+            # Verify that the returned date is actually the last day of its month
+            is_last_day = LastDayOfTheMonthCalculator.is_last_day_of_the_month(last_day)
+            assert is_last_day is True, f"Date {last_day} should be the last day of its month"
+
+    def test_get_last_day_of_the_month_same_month_consistency(self):
+        """
+        Test that any date in the same month returns the same last day.
+        """
+        # Test January 2024 - all dates should return January 31st
+        january_dates = [date(2024, 1, day) for day in range(1, 32)]
+        for test_date in january_dates:
+            result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(test_date)
+            assert result == date(2024, 1, 31), f"Date {test_date} should return January 31st"
+
+        # Test April 2024 (30-day month) - all dates should return April 30th
+        april_dates = [date(2024, 4, day) for day in range(1, 31)]
+        for test_date in april_dates:
+            result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(test_date)
+            assert result == date(2024, 4, 30), f"Date {test_date} should return April 30th"
+
+        # Test February 2024 (leap year) - all dates should return February 29th
+        february_dates = [date(2024, 2, day) for day in range(1, 30)]
+        for test_date in february_dates:
+            result = LastDayOfTheMonthCalculator.get_last_day_of_the_month(test_date)
+            assert result == date(2024, 2, 29), f"Date {test_date} should return February 29th"

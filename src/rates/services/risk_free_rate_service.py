@@ -41,8 +41,8 @@ class RiskFreeRateService:
     ################################################################################
 
     def get_risk_free_rates(self, session: Session,
-        currency: Optional[Currency] = None,
-        rate_type: Optional[RiskFreeRateType] = None,
+        currencies: Optional[List[Currency]] = None,
+        rate_types: Optional[List[RiskFreeRateType]] = None,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         sort_by: Optional[SortFieldRiskFreeRate] = SortFieldRiskFreeRate.DATE,
@@ -53,8 +53,8 @@ class RiskFreeRateService:
 
         Args:
             session: Database session
-            currency: Currency of the risk free rates to retrieve
-            rate_type: Type of the risk free rates to retrieve
+            currencies: Currencies of the risk free rates to retrieve
+            rate_types: Types of the risk free rates to retrieve
             start_date: Start date of the risk free rates to retrieve
             end_date: End date of the risk free rates to retrieve
             sort_by: Field to sort by
@@ -63,7 +63,7 @@ class RiskFreeRateService:
         Returns:
             List of risk free rates
         """
-        return self.risk_free_rate_repository.get_risk_free_rates(session, currency, rate_type, start_date, end_date, sort_by, sort_order)
+        return self.risk_free_rate_repository.get_risk_free_rates(session, currencies, rate_types, start_date, end_date, sort_by, sort_order)
 
     def get_risk_free_rate_by_id(self, risk_free_rate_id: int, session: Session) -> Optional[RiskFreeRate]:
         """
@@ -94,7 +94,7 @@ class RiskFreeRateService:
         """
         risk_free_rate = self.risk_free_rate_repository.create_risk_free_rate(risk_free_rate_data, session)
         if not risk_free_rate:
-            raise ValueError(f"Failed to create risk free rate")
+            raise ValueError(f"Failed to create risk free rate for currency {risk_free_rate_data.get('currency', 'unknown')} on date {risk_free_rate_data.get('date', 'unknown')}")
 
         return risk_free_rate
 
@@ -116,10 +116,10 @@ class RiskFreeRateService:
         """
         risk_free_rate = self.get_risk_free_rate_by_id(risk_free_rate_id, session)
         if not risk_free_rate:
-            raise ValueError(f"Risk free rate not found")
+            raise ValueError(f"Risk free rate with ID {risk_free_rate_id} not found")
 
         success = self.risk_free_rate_repository.delete_risk_free_rate(risk_free_rate_id, session)
         if not success:
-            raise ValueError(f"Failed to delete risk free rate")
+            raise ValueError(f"Failed to delete risk free rate with ID {risk_free_rate_id}")
 
         return success

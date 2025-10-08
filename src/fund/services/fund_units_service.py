@@ -3,7 +3,9 @@ Fund Units Service.
 """
 
 from src.fund.repositories import FundEventRepository
-from src.fund.models import Fund, FundFieldChange
+from src.fund.models import Fund
+from src.shared.models import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import SortOrder
 from sqlalchemy.orm import Session
@@ -22,7 +24,7 @@ class FundUnitsService:
         Initialize the FundUnitsService."""
         self.fund_event_repository = FundEventRepository()
 
-    def update_fund_units(self, fund: Fund, session: Session) -> Optional[List[FundFieldChange]]:
+    def update_fund_units(self, fund: Fund, session: Session) -> Optional[List[DomainFieldChange]]:
         """
         Update the units owned of a fund.
         """
@@ -49,23 +51,23 @@ class FundUnitsService:
                 
             # Update the fund event units owned
             if units_owned != event.units_owned:
-                unit_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='units_owned', old_value=event.units_owned, new_value=units_owned))
+                unit_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND_EVENT, domain_object_id=event.id, field_name='units_owned', old_value=event.units_owned, new_value=units_owned))
                 event.units_owned = units_owned
 
         # Update the fund units owned
         if units_owned != fund.current_units:
-            unit_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_units', old_value=fund.current_units, new_value=units_owned))
+            unit_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='current_units', old_value=fund.current_units, new_value=units_owned))
             fund.current_units = units_owned
 
         # Update the fund unit price
         if latest_unit_price != fund.current_unit_price:
-            unit_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_unit_price', old_value=fund.current_unit_price, new_value=latest_unit_price))
+            unit_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='current_unit_price', old_value=fund.current_unit_price, new_value=latest_unit_price))
             fund.current_unit_price = latest_unit_price
 
         # Update the fund NAV total
         current_nav_total = units_owned * latest_unit_price
         if current_nav_total != fund.current_nav_total:
-            unit_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_nav_total', old_value=fund.current_nav_total, new_value=current_nav_total))
+            unit_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='current_nav_total', old_value=fund.current_nav_total, new_value=current_nav_total))
             fund.current_nav_total = current_nav_total
 
         return unit_changes

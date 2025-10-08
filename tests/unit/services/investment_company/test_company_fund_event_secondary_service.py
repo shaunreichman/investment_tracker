@@ -20,7 +20,8 @@ from datetime import date
 
 from src.investment_company.services.company_fund_event_secondary_service import CompanyFundEventSecondaryService
 from src.investment_company.models import InvestmentCompany
-from src.fund.models.domain_fund_event import FundFieldChange
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.investment_company.enums.company_enums import CompanyStatus
 from src.fund.enums.fund_enums import FundStatus
 from tests.factories.investment_company_factories import InvestmentCompanyFactory
@@ -74,8 +75,8 @@ class TestCompanyFundEventSecondaryService:
     def sample_fund_changes(self):
         """Sample fund field changes."""
         return [
-            FundFieldChange(object='FUND', object_id=1, field_name='pnl', old_value=50000, new_value=60000),
-            FundFieldChange(object='FUND', object_id=1, field_name='start_date', old_value=date(2023, 2, 1), new_value=date(2023, 1, 15))
+            DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=1, field_name='pnl', old_value=50000, new_value=60000),
+            DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=1, field_name='start_date', old_value=date(2023, 2, 1), new_value=date(2023, 1, 15))
         ]
 
     ################################################################################
@@ -97,9 +98,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles start date changes correctly."""
         # Arrange
         company_id = 1
-        start_date_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        start_date_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='start_date', 
             old_value=date(2023, 2, 1), 
             new_value=date(2022, 12, 15)  # Earlier than company's start date
@@ -126,9 +127,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles PnL changes correctly."""
         # Arrange
         company_id = 1
-        pnl_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        pnl_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='pnl', 
             old_value=50000, 
             new_value=60000
@@ -152,9 +153,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles realized PnL changes correctly."""
         # Arrange
         company_id = 1
-        realized_pnl_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        realized_pnl_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='realized_pnl', 
             old_value=30000, 
             new_value=40000
@@ -178,9 +179,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles unrealized PnL changes correctly."""
         # Arrange
         company_id = 1
-        unrealized_pnl_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        unrealized_pnl_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='unrealized_pnl', 
             old_value=10000, 
             new_value=15000
@@ -204,16 +205,16 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles capital gain changes correctly."""
         # Arrange
         company_id = 1
-        realized_capital_gain_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        realized_capital_gain_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='realized_pnl_capital_gain', 
             old_value=20000, 
             new_value=25000
         )
-        unrealized_capital_gain_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        unrealized_capital_gain_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='unrealized_pnl_capital_gain', 
             old_value=5000, 
             new_value=8000
@@ -238,9 +239,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles dividend changes correctly."""
         # Arrange
         company_id = 1
-        dividend_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        dividend_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='realized_pnl_dividend', 
             old_value=5000, 
             new_value=8000
@@ -264,9 +265,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles interest changes correctly."""
         # Arrange
         company_id = 1
-        interest_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        interest_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='realized_pnl_interest', 
             old_value=2000, 
             new_value=3500
@@ -290,9 +291,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles distribution changes correctly."""
         # Arrange
         company_id = 1
-        distribution_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        distribution_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='realized_pnl_distribution', 
             old_value=1000, 
             new_value=2000
@@ -316,9 +317,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact handles fund status changes correctly."""
         # Arrange
         company_id = 1
-        status_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        status_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='status', 
             old_value=FundStatus.ACTIVE, 
             new_value=FundStatus.REALIZED
@@ -346,9 +347,9 @@ class TestCompanyFundEventSecondaryService:
         company_id = 1
         # Set company to have only 1 active fund
         mock_company.total_funds_active = 1
-        status_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        status_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='status', 
             old_value=FundStatus.ACTIVE, 
             new_value=FundStatus.REALIZED
@@ -374,9 +375,9 @@ class TestCompanyFundEventSecondaryService:
         """Test that handle_event_secondary_impact calls equity service for equity-related changes."""
         # Arrange
         company_id = 1
-        equity_change = FundFieldChange(
-            object='FUND', 
-            object_id=1, 
+        equity_change = DomainFieldChange(
+            domain_object_type=DomainObjectType.FUND, 
+            domain_object_id=1, 
             field_name='average_equity_balance', 
             old_value=50000, 
             new_value=60000
@@ -392,7 +393,7 @@ class TestCompanyFundEventSecondaryService:
             mock_fund_service_class.return_value = mock_fund_service
             
             # Setup equity service mock
-            mock_equity_update.return_value = [FundFieldChange(object='COMPANY', object_id=1, field_name='average_equity_balance', old_value=100000, new_value=110000)]
+            mock_equity_update.return_value = [DomainFieldChange(domain_object_type=DomainObjectType.INVESTMENT_COMPANY, domain_object_id=1, field_name='average_equity_balance', old_value=100000, new_value=110000)]
             
             # Act
             service.handle_event_secondary_impact(company_id, [equity_change], mock_session)

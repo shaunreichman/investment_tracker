@@ -21,15 +21,17 @@ Architecture Features:
 """
 
 # Import core components
-from src.banking.models import Bank, BankAccount
+from src.banking.models import Bank, BankAccount, BankAccountBalance
 from src.banking.enums.bank_enums import BankType, SortFieldBank, BankStatus
 from src.banking.enums.bank_account_enums import BankAccountType, SortFieldBankAccount, BankAccountStatus
+from src.banking.enums.bank_account_balance_enums import SortFieldBankAccountBalance
 
 # Export main components
 __all__ = [
     # Models
     'Bank',
     'BankAccount',
+    'BankAccountBalance',
     
     # Enums
     'BankType',
@@ -38,4 +40,5 @@ __all__ = [
     'SortFieldBank',
     'SortFieldBankAccount',
     'BankAccountStatus',
+    'SortFieldBankAccountBalance',
 ]

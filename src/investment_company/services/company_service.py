@@ -42,40 +42,43 @@ class CompanyService:
     ################################################################################
 
     def get_companies(self, session: Session,
-            company_type: Optional[CompanyType] = None,
-            status: Optional[CompanyStatus] = None,
-            name: Optional[str] = None,
+            company_types: Optional[List[CompanyType]] = None,
+            statuses: Optional[List[CompanyStatus]] = None,
+            names: Optional[List[str]] = None,
             sort_by: Optional[SortFieldCompany] = None,
             sort_order: Optional[SortOrder] = None,
+            include_contacts: Optional[bool] = False,
     ) -> List[InvestmentCompany]:
         """
         Get all companies.
 
         Args:
             session: Database session
-            company_type: Type of company to filter by
-            status: Status to filter by
-            name: Name to filter by
+            company_types: Types of company to filter by
+            statuses: Statuses to filter by
+            names: Names to filter by
             sort_by: Field to sort by
             sort_order: Order to sort by
+            include_contacts: Whether to eager load contacts relationship
 
         Returns:
             List of companies
         """
-        return self.company_repository.get_companies(session, company_type, status, name, sort_by, sort_order)
+        return self.company_repository.get_companies(session, company_types, statuses, names, sort_by, sort_order, include_contacts)
     
-    def get_company_by_id(self, company_id: int, session: Session) -> Optional[InvestmentCompany]:
+    def get_company_by_id(self, company_id: int, session: Session, include_contacts: Optional[bool] = False) -> Optional[InvestmentCompany]:
         """
         Get a company by ID.
         
         Args:
             company_id: Company ID
             session: Database session
+            include_contacts: Whether to eager load contacts relationship
             
         Returns:
             InvestmentCompany if found, None otherwise
         """
-        return self.company_repository.get_company_by_id(company_id, session)
+        return self.company_repository.get_company_by_id(company_id, session, include_contacts)
 
 
     ################################################################################
@@ -100,7 +103,7 @@ class CompanyService:
 
         company = self.company_repository.create_company(processed_data, session)
         if not company:
-            raise ValueError(f"Failed to create company")
+            raise ValueError(f"Failed to create company with name '{processed_data.get('name', 'unknown')}'")
         
         return company
 
@@ -126,15 +129,15 @@ class CompanyService:
         # Get existing company for validation
         company = self.company_repository.get_company_by_id(company_id, session)
         if not company:
-            raise ValueError(f"Company not found")
+            raise ValueError(f"Company with ID {company_id} not found")
         
         # Validate deletion
         validation_errors = self.company_validation_service.validate_company_deletion(company, session)
         if validation_errors:
-            raise ValueError(f"Deletion validation failed: {validation_errors}")
+            raise ValueError(f"Deletion validation failed for company with ID {company_id}: {validation_errors}")
 
         success = self.company_repository.delete_company(company_id, session)
         if not success:
-            raise ValueError(f"Failed to delete company")
+            raise ValueError(f"Failed to delete company with ID {company_id}")
 
         return success

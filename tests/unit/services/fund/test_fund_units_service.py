@@ -18,7 +18,9 @@ from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
 from src.fund.services.fund_units_service import FundUnitsService
-from src.fund.models import Fund, FundEvent, FundFieldChange
+from src.fund.models import Fund, FundEvent
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import SortOrder
 from tests.factories.fund_factories import FundFactory, FundEventFactory
@@ -339,25 +341,25 @@ class TestFundUnitsService:
             assert len(result) == 4
             
             # Check fund field changes
-            fund_changes = [change for change in result if change.object == 'FUND']
+            fund_changes = [change for change in result if change.domain_object_type == DomainObjectType.FUND]
             assert len(fund_changes) == 3
             
             for change in fund_changes:
-                assert isinstance(change, FundFieldChange)
-                assert change.object == 'FUND'
-                assert change.object_id == 1
+                assert isinstance(change, DomainFieldChange)
+                assert change.domain_object_type == DomainObjectType.FUND
+                assert change.domain_object_id == 1
                 assert change.field_name in ['current_units', 'current_unit_price', 'current_nav_total']
                 assert change.old_value == 0.0
                 assert change.new_value in [100.0, 10.0, 1000.0]
             
             # Check fund event field change
-            event_changes = [change for change in result if change.object == 'FUND_EVENT']
+            event_changes = [change for change in result if change.domain_object_type == DomainObjectType.FUND_EVENT]
             assert len(event_changes) == 1
             
             event_change = event_changes[0]
-            assert isinstance(event_change, FundFieldChange)
-            assert event_change.object == 'FUND_EVENT'
-            assert event_change.object_id == 1
+            assert isinstance(event_change, DomainFieldChange)
+            assert event_change.domain_object_type == DomainObjectType.FUND_EVENT
+            assert event_change.domain_object_id == 1
             assert event_change.field_name == 'units_owned'
             assert event_change.old_value is None
             assert event_change.new_value == 100.0

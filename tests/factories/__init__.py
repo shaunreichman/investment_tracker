@@ -51,6 +51,9 @@ from .investment_company_factories import InvestmentCompanyFactory, ContactFacto
 # Import rates factories
 from .rates_factories import RiskFreeRateFactory
 
+# Import shared factories
+from .shared_factories import DomainUpdateEventFactory
+
 # Export all factories and utilities
 __all__ = [
     # Base classes and utilities
@@ -79,4 +82,7 @@ __all__ = [
     
     # Rates factories
     'RiskFreeRateFactory',
+    
+    # Shared factories
+    'DomainUpdateEventFactory',
 ]

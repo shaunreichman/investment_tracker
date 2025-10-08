@@ -34,8 +34,8 @@ class RiskFreeRateRepository:
     ################################################################################
 
     def get_risk_free_rates(self, session: Session,
-                            currency: Optional[Currency] = None,
-                            rate_type: Optional[RiskFreeRateType] = None,
+                            currencies: Optional[List[Currency]] = None,
+                            rate_types: Optional[List[RiskFreeRateType]] = None,
                             start_date: Optional[date] = None,
                             end_date: Optional[date] = None,
                             sort_by: Optional[SortFieldRiskFreeRate] = SortFieldRiskFreeRate.DATE,
@@ -45,8 +45,8 @@ class RiskFreeRateRepository:
 
         Args:
             session: Database session
-            currency: Currency of the risk free rates to retrieve
-            rate_type: Type of the risk free rates to retrieve
+            currencies: Currencies of the risk free rates to retrieve
+            rate_types: Types of the risk free rates to retrieve
             start_date: Start date of the risk free rates to retrieve
             end_date: End date of the risk free rates to retrieve
             sort_by: Field to sort by
@@ -65,10 +65,10 @@ class RiskFreeRateRepository:
         
         # Get all risk free rates
         risk_free_rates = session.query(RiskFreeRate)
-        if currency:
-            risk_free_rates = risk_free_rates.filter(RiskFreeRate.currency == currency.value)
-        if rate_type:
-            risk_free_rates = risk_free_rates.filter(RiskFreeRate.rate_type == rate_type.value)
+        if currencies:
+            risk_free_rates = risk_free_rates.filter(RiskFreeRate.currency.in_([c.value for c in currencies]))
+        if rate_types:
+            risk_free_rates = risk_free_rates.filter(RiskFreeRate.rate_type.in_([rt.value for rt in rate_types]))
         if start_date:
             risk_free_rates = risk_free_rates.filter(RiskFreeRate.date >= start_date)
         if end_date:

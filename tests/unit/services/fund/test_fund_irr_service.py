@@ -17,7 +17,9 @@ from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
 from src.fund.services.fund_irr_service import FundIrRService
-from src.fund.models import Fund, FundEvent, FundFieldChange
+from src.fund.models import Fund, FundEvent
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_enums import FundStatus
 from src.fund.enums.fund_event_enums import EventType
 from tests.factories.fund_factories import FundFactory, FundEventFactory
@@ -96,8 +98,8 @@ class TestFundIrRService:
         
         # Check field change values
         for change in result:
-            assert change.object == 'FUND'
-            assert change.object_id == 1
+            assert change.domain_object_type == DomainObjectType.FUND
+            assert change.domain_object_id == 1
             assert change.new_value is None
 
     def test_update_irrs_active_status_no_changes_when_already_none(self, service, mock_session, mock_fund):
@@ -362,9 +364,9 @@ class TestFundIrRService:
         assert len(result) == 3
         
         for change in result:
-            assert isinstance(change, FundFieldChange)
-            assert change.object == 'FUND'
-            assert change.object_id == 1
+            assert isinstance(change, DomainFieldChange)
+            assert change.domain_object_type == DomainObjectType.FUND
+            assert change.domain_object_id == 1
             assert change.field_name in ['completed_irr_gross', 'completed_irr_after_tax', 'completed_irr_real']
             assert change.new_value is None
             assert change.old_value in [0.15, 0.12, 0.10]

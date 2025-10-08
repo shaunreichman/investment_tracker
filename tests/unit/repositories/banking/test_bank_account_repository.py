@@ -80,7 +80,7 @@ class TestBankAccountRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_bank_accounts(mock_session, bank_id=bank_id)
+        repository.get_bank_accounts(mock_session, bank_ids=[bank_id])
 
         # Assert
         assert mock_query.filter.called
@@ -97,7 +97,7 @@ class TestBankAccountRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_bank_accounts(mock_session, entity_id=entity_id)
+        repository.get_bank_accounts(mock_session, entity_ids=[entity_id])
 
         # Assert
         assert mock_query.filter.called
@@ -114,7 +114,7 @@ class TestBankAccountRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_bank_accounts(mock_session, account_name=account_name)
+        repository.get_bank_accounts(mock_session, account_names=[account_name])
 
         # Assert
         assert mock_query.filter.called
@@ -131,7 +131,7 @@ class TestBankAccountRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_bank_accounts(mock_session, currency=currency)
+        repository.get_bank_accounts(mock_session, currencies=[currency])
 
         # Assert
         assert mock_query.filter.called
@@ -148,7 +148,7 @@ class TestBankAccountRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_bank_accounts(mock_session, status=status)
+        repository.get_bank_accounts(mock_session, statuses=[status])
 
         # Assert
         assert mock_query.filter.called
@@ -165,7 +165,7 @@ class TestBankAccountRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_bank_accounts(mock_session, account_type=account_type)
+        repository.get_bank_accounts(mock_session, account_types=[account_type])
 
         # Assert
         assert mock_query.filter.called
@@ -184,7 +184,7 @@ class TestBankAccountRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_bank_accounts(mock_session, bank_id=bank_id, entity_id=entity_id, currency=currency)
+        repository.get_bank_accounts(mock_session, bank_ids=[bank_id], entity_ids=[entity_id], currencies=[currency])
 
         # Assert
         assert mock_query.filter.call_count == 3

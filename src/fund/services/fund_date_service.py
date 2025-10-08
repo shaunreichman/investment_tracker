@@ -2,7 +2,9 @@
 Fund Date Service.
 """
 
-from src.fund.models import Fund, FundFieldChange
+from src.fund.models import Fund
+from src.shared.models import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.shared.enums.shared_enums import SortOrder, EventOperation
 from src.fund.enums.fund_event_enums import EventType
 from src.fund.enums.fund_enums import FundStatus, FundTaxStatementFinancialYearType
@@ -33,18 +35,18 @@ class FundDateService:
         self.fund_repository = FundRepository()
         self.fund_event_repository = FundEventRepository()
     
-    def update_fund_start_date(self, fund: Fund, session: Session, event_id: Optional[int] = None, fund_event_operation: EventOperation = None) -> Optional[FundFieldChange]:
+    def update_fund_start_date(self, fund: Fund, session: Session, fund_event_id: Optional[int] = None, fund_event_operation: EventOperation = None) -> Optional[DomainFieldChange]:
         """
         Update the start date of a fund.
 
         Args:
             fund: Fund object to update
             session: Database session
-            event_id: ID of the event to update the start date from
+            fund_event_id: ID of the event to update the start date from
             fund_event_operation: Operation of the fund event
             
         Returns:
-            FundFieldChange object if the start date was updated, None otherwise
+            DomainFieldChange object if the start date was updated, None otherwise
             
         Raises:
             ValueError: If the fund is not found
@@ -56,7 +58,7 @@ class FundDateService:
 
         if fund_event_operation == EventOperation.CREATE:
             # Faster to update the start date of the fund by looking at the event
-            event = self.fund_event_repository.get_fund_event_by_id(event_id, session)
+            event = self.fund_event_repository.get_fund_event_by_id(fund_event_id, session)
             if not event or event.fund_id != fund.id:
                 return None
             if event.event_type == EventType.CAPITAL_CALL or event.event_type == EventType.UNIT_PURCHASE:
@@ -73,10 +75,10 @@ class FundDateService:
                     fund.start_date = events[0].event_date
 
         if old_start_date != fund.start_date:
-            return FundFieldChange(object='FUND', object_id=fund.id, field_name='start_date', old_value=old_start_date, new_value=fund.start_date)
+            return DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='start_date', old_value=old_start_date, new_value=fund.start_date)
         return None
 
-    def update_fund_end_date(self, fund: Fund, session: Session) -> Optional[FundFieldChange]:
+    def update_fund_end_date(self, fund: Fund, session: Session) -> Optional[DomainFieldChange]:
         """
         Update the end date of a fund.
         
@@ -85,7 +87,7 @@ class FundDateService:
             session: Database session
             
         Returns:
-            FundFieldChange object if the end date was updated, None otherwise
+            DomainFieldChange object if the end date was updated, None otherwise
             
         Raises:
             ValueError: If the fund is not found
@@ -104,10 +106,10 @@ class FundDateService:
                     fund.end_date = events[0].event_date
 
         if old_end_date != fund.end_date:
-            return FundFieldChange(object='FUND', object_id=fund.id, field_name='end_date', old_value=old_end_date, new_value=fund.end_date)
+            return DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='end_date', old_value=old_end_date, new_value=fund.end_date)
         return None
 
-    def update_fund_duration(self, fund: Fund, session: Session) -> Optional[FundFieldChange]:
+    def update_fund_duration(self, fund: Fund, session: Session) -> Optional[DomainFieldChange]:
         """
         Update the duration of a fund.
 
@@ -116,7 +118,7 @@ class FundDateService:
             session: Database session
             
         Returns:
-            FundFieldChange object if the duration was updated, None otherwise
+            DomainFieldChange object if the duration was updated, None otherwise
             
         Raises:
             ValueError: If the fund is not found
@@ -134,7 +136,7 @@ class FundDateService:
         from src.shared.calculators.duration_months_calculator import DurationMonthsCalculator
         fund.current_duration = DurationMonthsCalculator.calculate_duration_months(fund.start_date, end)
         if old_duration != fund.current_duration:
-            return FundFieldChange(object='FUND', object_id=fund.id, field_name='current_duration', old_value=old_duration, new_value=fund.current_duration)
+            return DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='current_duration', old_value=old_duration, new_value=fund.current_duration)
         return None
 
     def get_fund_financial_years(self, fund: Fund) -> List[str]:

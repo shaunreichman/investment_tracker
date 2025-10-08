@@ -14,7 +14,8 @@ from src.api.controllers.company_controller import CompanyController
 from src.api.dto.api_response import ApiResponse
 from src.api.dto.response_codes import ApiResponseCode
 from src.api.middleware.response_handlers import handle_controller_response, handle_delete_response
-from src.investment_company.enums.company_enums import CompanyType, CompanyStatus
+from src.investment_company.enums.company_enums import CompanyType, CompanyStatus, SortFieldCompany
+from src.shared.enums.shared_enums import SortOrder
 
 # Create blueprint for company routes
 company_bp = Blueprint('company', __name__)
@@ -34,15 +35,37 @@ company_controller = CompanyController()
 @company_bp.route('/api/companies', methods=['GET'])
 @validate_request(
     field_types={
-        'include_contacts': 'bool',
         'company_type': 'string',
+        'company_types': 'string_array',
         'status': 'string',
-        'name': 'string'
+        'statuses': 'string_array',
+        'name': 'string',
+        'names': 'string_array',
+        'sort_by': 'string',
+        'sort_order': 'string',
+        'include_contacts': 'bool',
     },
     enum_fields={
         'company_type': CompanyType,
-        'status': CompanyStatus
+        'status': CompanyStatus,
+        'sort_by': SortFieldCompany,
+        'sort_order': SortOrder
     },
+    array_element_enum_fields={
+        'company_types': CompanyType,
+        'statuses': CompanyStatus
+    },
+    field_lengths={
+        'name': {'max': 255}
+    },
+    array_element_lengths={
+        'names': {'max': 255}
+    },
+    mutually_exclusive_groups=[
+        ['company_type', 'company_types'],
+        ['status', 'statuses'],
+        ['name', 'names']
+    ],
     sanitize=True
 )
 def get_companies():
@@ -50,13 +73,18 @@ def get_companies():
     Get list of all companies with summary data
 
     Request Body:
-        include_contacts (bool): Whether to include contacts (optional)
         company_type (str): Company type (optional)
         status (str): Company status (optional)
         name (str): Company name (optional)
+        sort_by (str): Sort by (NAME, STATUS, START_DATE, CREATED_AT, UPDATED_AT)
+        sort_order (str): Sort order (ASC, DESC)
+        include_contacts (bool): Whether to include contacts (optional)
+
+    Returns:
+        Standardized response with companies data
     """
     try:
-        dto = company_controller.get_companies(include_contacts=True)
+        dto = company_controller.get_companies()
         return handle_controller_response(dto)
     except Exception as e:
         response = ApiResponse(
@@ -68,7 +96,9 @@ def get_companies():
 
 @company_bp.route('/api/companies/<int:company_id>', methods=['GET'])
 @validate_request(
-    field_types={'include_contacts': 'bool'},
+    field_types={
+        'include_contacts': 'bool'
+    },
     sanitize=True
 )
 def get_company_by_id(company_id):
@@ -77,9 +107,12 @@ def get_company_by_id(company_id):
 
     Request Body:
         include_contacts (bool): Whether to include contacts (optional)
+
+    Returns:
+        Standardized response with company data
     """
     try:
-        dto = company_controller.get_company_by_id(company_id, include_contacts=True)
+        dto = company_controller.get_company_by_id(company_id)
         return handle_controller_response(dto)
     except Exception as e:
         response = ApiResponse(
@@ -95,7 +128,7 @@ def get_company_by_id(company_id):
 
 @company_bp.route('/api/companies', methods=['POST'])
 @validate_request(
-    required_fields=['name',],
+    required_fields=['name'],
     field_types={
         'name': 'string',
         'description': 'string',
@@ -124,6 +157,9 @@ def create_company():
         company_type (str): Investment company type (optional)
         website (str): Investment company website (optional)
         business_address (str): Investment company business address (optional)
+
+    Returns:
+        Standardized response with company data
     """
     try:
         dto = company_controller.create_company()
@@ -144,6 +180,12 @@ def create_company():
 def delete_company(company_id):
     """
     Delete a company
+
+    Path Parameters:
+        company_id (int): ID of the company to delete
+
+    Returns:
+        Standardized response confirming deletion
     """
     try:
         dto = company_controller.delete_company(company_id)
@@ -167,8 +209,19 @@ def delete_company(company_id):
 @company_bp.route('/api/contacts', methods=['GET'])
 @validate_request(
     field_types={
-        'company_id': 'int'
+        'company_id': 'int',
+        'company_ids': 'int_array'
     },
+    field_ranges={
+        'company_id': {'min': 1}
+    },
+    array_element_ranges={
+        'company_ids': {'min': 1}
+    },
+    mutually_exclusive_groups=[
+        ['company_id', 'company_ids']
+    ],
+
     sanitize=True
 )
 def get_contacts():
@@ -177,6 +230,10 @@ def get_contacts():
 
     Query Parameters:
         company_id (int): ID of the company to get contacts for
+        company_ids (int_array): IDs of the companies to get contacts for
+
+    Returns:
+        Standardized response with contacts data
     """
     try:
         dto = company_controller.get_contacts()
@@ -195,6 +252,9 @@ def get_contacts_by_company_id(company_id):
     
     Path Parameters:
         company_id (int): ID of the company to get contacts for
+
+    Returns:
+        Standardized response with contacts data
     """
     try:
         dto = company_controller.get_contacts(company_id=company_id)
@@ -212,8 +272,11 @@ def get_contact_by_id(company_id, contact_id):
     Get a specific contact for a specific company
 
     Path Parameters:
-        company_id (int): ID of the company
+        company_id (int): ID of the company (not used)
         contact_id (int): ID of the contact
+
+    Returns:
+        Standardized response with contact data
     """
     try:
         dto = company_controller.get_contact_by_id(contact_id)
@@ -259,6 +322,9 @@ def create_contact(company_id):
         email (str): Email address (optional)
         phone (str): Phone number (optional)
         title (str): Job title (optional)
+
+    Returns:
+        Standardized response with contact data
     """
     try:
         dto = company_controller.create_contact(company_id)
@@ -281,8 +347,11 @@ def delete_contact(company_id, contact_id):
     Delete a specific contact for the specified company
 
     Path Parameters:
-        company_id (int): ID of the company
+        company_id (int): ID of the company (not used)
         contact_id (int): ID of the contact
+
+    Returns:
+        Standardized response confirming deletion
     """
     try:
         dto = company_controller.delete_contact(contact_id)

@@ -106,24 +106,24 @@ class TestBankAccountService:
             # Act
             result = service.get_bank_accounts(
                 mock_session,
-                bank_id=bank_id,
-                entity_id=entity_id,
-                account_name=account_name,
-                currency=currency,
-                status=status,
-                account_type=account_type
+                bank_ids=[bank_id],
+                entity_ids=[entity_id],
+                account_names=[account_name],
+                currencies=[currency],
+                statuses=[status],
+                account_types=[account_type]
             )
 
             # Assert
             assert result == expected_accounts
             mock_repo.assert_called_once_with(
                 mock_session,
-                bank_id,
-                entity_id,
-                account_name,
-                currency,
-                status,
-                account_type,
+                [bank_id],
+                [entity_id],
+                [account_name],
+                [currency],
+                [status],
+                [account_type],
                 SortFieldBankAccount.CREATED_AT,
                 SortOrder.ASC
             )

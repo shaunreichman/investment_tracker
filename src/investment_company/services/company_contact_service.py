@@ -38,7 +38,7 @@ class CompanyContactService:
     ################################################################################
 
     def get_contacts(self, session: Session,
-            company_id: Optional[int] = None,
+            company_ids: Optional[List[int]] = None,
             sort_by: SortFieldContact = SortFieldContact.NAME,
             sort_order: SortOrder = SortOrder.ASC
     ) -> List[Contact]:
@@ -47,14 +47,14 @@ class CompanyContactService:
 
         Args:
             session: Database session
-            company_id: ID of the company
+            company_ids: IDs of the companies
             sort_by: Sort field
             sort_order: Sort order
 
         Returns:
             List of contacts
         """
-        return self.company_contact_repository.get_contacts(session, company_id, sort_by, sort_order)
+        return self.company_contact_repository.get_contacts(session, company_ids, sort_by, sort_order)
 
     def get_contact_by_id(self, contact_id: int, session: Session) -> Optional[Contact]:
         """
@@ -91,7 +91,7 @@ class CompanyContactService:
         company_repository = CompanyRepository()
         company = company_repository.get_company_by_id(company_id, session)
         if not company:
-            raise ValueError(f"Company not found")
+            raise ValueError(f"Company with ID {company_id} not found")
 
         processed_data = {
             **contact_data,
@@ -101,7 +101,7 @@ class CompanyContactService:
         # Create the contact
         contact = self.company_contact_repository.create_contact(processed_data, session)
         if not contact:
-            raise ValueError(f"Failed to create contact")
+            raise ValueError(f"Failed to create contact with name '{processed_data.get('name', 'unknown')}' for company ID {company_id}")
 
         return contact
 
@@ -124,11 +124,11 @@ class CompanyContactService:
         # Get the contact
         contact = self.company_contact_repository.get_contact_by_id(contact_id, session)
         if not contact:
-            raise ValueError(f"Contact not found")
+            raise ValueError(f"Contact with ID {contact_id} not found")
 
         # Delete the contact
         success = self.company_contact_repository.delete_contact(contact_id, session)
         if not success:
-            raise ValueError(f"Failed to delete contact")
+            raise ValueError(f"Failed to delete contact with ID {contact_id}")
 
         return success

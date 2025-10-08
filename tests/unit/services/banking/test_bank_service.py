@@ -87,18 +87,18 @@ class TestBankService:
             # Act
             result = service.get_banks(
                 mock_session, 
-                name=name, 
-                country=country, 
-                bank_type=bank_type
+                names=[name], 
+                countries=[country], 
+                bank_types=[bank_type]
             )
 
             # Assert
             assert result == expected_banks
             mock_repo.assert_called_once_with(
                 mock_session, 
-                name, 
-                country, 
-                bank_type, 
+                [name], 
+                [country], 
+                [bank_type], 
                 SortFieldBank.NAME,
                 SortOrder.ASC
             )

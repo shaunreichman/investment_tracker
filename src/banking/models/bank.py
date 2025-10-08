@@ -35,7 +35,7 @@ class Bank(Base):
     current_balance_in_bank_accounts = Column(Float, default=0.0)  # (CALCULATED) total balance of all bank accounts
 
     # Relationships
-    accounts = relationship("BankAccount", back_populates="bank", cascade="all, delete-orphan")
+    bank_accounts = relationship("BankAccount", back_populates="bank", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Bank(id={self.id}, name='{self.name}', country='{self.country}', bank_type='{self.bank_type}')>"

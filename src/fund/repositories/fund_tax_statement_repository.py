@@ -35,9 +35,9 @@ class FundTaxStatementRepository:
     ################################################################################
 
     def get_fund_tax_statements(self, session: Session,
-                                fund_id: Optional[int] = None,
-                                entity_id: Optional[int] = None,
-                                financial_year: Optional[str] = None,
+                                fund_ids: Optional[List[int]] = None,
+                                entity_ids: Optional[List[int]] = None,
+                                financial_years: Optional[List[str]] = None,
                                 start_tax_payment_date: Optional[date] = None,
                                 end_tax_payment_date: Optional[date] = None,
                                 sort_by: SortFieldFundTaxStatement = SortFieldFundTaxStatement.FINANCIAL_YEAR,
@@ -47,9 +47,9 @@ class FundTaxStatementRepository:
 
         Args:
             session: Database session
-            fund_id: ID of the fund to filter by (optional)
-            entity_id: ID of the entity to filter by (optional)
-            financial_year: Financial year to filter by (optional)
+            fund_ids: IDs of the funds to filter by (optional)
+            entity_ids: IDs of the entities to filter by (optional)
+            financial_years: Financial years to filter by (optional)
             start_tax_payment_date: Start tax payment date to filter by (optional)
             end_tax_payment_date: End tax payment date to filter by (optional)
             sort_by: Field to sort by (optional)
@@ -69,12 +69,12 @@ class FundTaxStatementRepository:
         # Query database
         query = session.query(FundTaxStatement)
 
-        if fund_id:
-            query = query.filter(FundTaxStatement.fund_id == fund_id)
-        if entity_id:
-            query = query.filter(FundTaxStatement.entity_id == entity_id)
-        if financial_year:
-            query = query.filter(FundTaxStatement.financial_year == financial_year)
+        if fund_ids:
+            query = query.filter(FundTaxStatement.fund_id.in_(fund_ids))
+        if entity_ids:
+            query = query.filter(FundTaxStatement.entity_id.in_(entity_ids))
+        if financial_years:
+            query = query.filter(FundTaxStatement.financial_year.in_(financial_years))
         if start_tax_payment_date:
             query = query.filter(FundTaxStatement.tax_payment_date >= start_tax_payment_date)
         if end_tax_payment_date:

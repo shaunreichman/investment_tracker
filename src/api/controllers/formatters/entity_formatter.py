@@ -10,6 +10,12 @@ from src.entity.models import Entity
 def format_entity(entity: Entity) -> Dict[str, Any]:
     """
     Format an Entity object for HTTP response.
+
+    Args:
+        entity: Entity object to format
+
+    Returns:
+        Dictionary formatted for HTTP response
     """
     return {
         'id': entity.id,

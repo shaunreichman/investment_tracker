@@ -43,9 +43,9 @@ class EntityService:
     ################################################################################
 
     def get_entities(self, session: Session, 
-                    entity_type: Optional[EntityType] = None,
-                    tax_jurisdiction: Optional[Country] = None,
-                    name: Optional[str] = None,
+                    entity_types: Optional[List[EntityType]] = None,
+                    tax_jurisdictions: Optional[List[Country]] = None,
+                    names: Optional[List[str]] = None,
                     sort_by: SortFieldEntity = SortFieldEntity.NAME,
                     sort_order: SortOrder = SortOrder.ASC
     ) -> List[Entity]:
@@ -54,15 +54,15 @@ class EntityService:
         
         Args:
             session: Database session
-            entity_type: Optional entity type filter
-            tax_jurisdiction: Optional tax jurisdiction filter
-            name: Optional name filter
+            entity_types: Optional entity type filter
+            tax_jurisdictions: Optional tax jurisdiction filter
+            names: Optional name filter
             sort_by: Optional sort field
             sort_order: Optional sort order
         Returns:
             List of Entity objects
         """
-        return self.entity_repository.get_entities(session, entity_type, tax_jurisdiction, name, sort_by, sort_order)
+        return self.entity_repository.get_entities(session, entity_types, tax_jurisdictions, names, sort_by, sort_order)
         
     def get_entity_by_id(self, entity_id: int, session: Session) -> Optional[Entity]:
         """
@@ -98,7 +98,7 @@ class EntityService:
         """
         entity = self.entity_repository.create_entity(entity_data, session)
         if not entity:
-            raise ValueError(f"Failed to create entity")
+            raise ValueError(f"Failed to create entity with name '{entity_data.get('name', 'unknown')}'")
         
         return entity
 
@@ -124,16 +124,16 @@ class EntityService:
         # Get existing entity
         entity = self.entity_repository.get_entity_by_id(entity_id, session)
         if not entity:
-            raise ValueError(f"Entity not found")
+            raise ValueError(f"Entity with ID {entity_id} not found")
         
         # ENTERPRISE VALIDATION: Validate deletion
         validation_errors = self.entity_validation_service.validate_entity_deletion(entity_id, session)
         if validation_errors:
-            raise ValueError(f"Deletion validation failed: {validation_errors}")
+            raise ValueError(f"Deletion validation failed for entity with ID {entity_id}: {validation_errors}")
         
         # Delete the entity
         success = self.entity_repository.delete_entity(entity_id, session)
         if not success:
-            raise ValueError(f"Failed to delete entity")
+            raise ValueError(f"Failed to delete entity with ID {entity_id}")
         
         return success

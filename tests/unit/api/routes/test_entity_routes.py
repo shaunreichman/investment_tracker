@@ -21,7 +21,7 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from flask import Flask, jsonify
 
-from src.api.routes.entity import entity_bp
+from src.api.routes.entity_route import entity_bp
 from src.api.dto.response_codes import ApiResponseCode
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 
@@ -69,7 +69,65 @@ class TestEntityRoutes:
     # GET ENTITIES ENDPOINT TESTS
     ################################################################################
 
-    @patch('src.api.routes.entity.entity_controller')
+    ################################################################################
+    # PLURALITY FUNCTIONALITY TESTS
+    ################################################################################
+
+    @patch('src.api.routes.entity_route.entity_controller')
+    def test_get_entities_plurality_functionality_comprehensive(self, mock_controller, client):
+        """Test comprehensive plurality functionality for GET /api/entities."""
+        # Arrange
+        mock_dto = ControllerResponseDTO(
+            data=[{'id': 1, 'name': 'Test Entity'}],
+            response_code=ApiResponseCode.SUCCESS
+        )
+        mock_controller.get_entities.return_value = mock_dto
+        
+        # Test 1: Single parameters only
+        response = client.get('/api/entities?name=Test&entity_type=PERSON&tax_jurisdiction=US')
+        assert response.status_code == 200
+        
+        # Test 2: Array parameters only (using multiple parameters with same name)
+        response = client.get('/api/entities?names=Test1&names=Test2&entity_types=PERSON&entity_types=COMPANY&tax_jurisdictions=US&tax_jurisdictions=UK')
+        assert response.status_code == 200
+        
+        # Test 3: Mixed parameters from different groups (should work)
+        response = client.get('/api/entities?name=Test&entity_types=PERSON&entity_types=COMPANY&tax_jurisdictions=US&tax_jurisdictions=UK')
+        assert response.status_code == 200
+        
+        # Test 4: Mixed parameters from different groups (should work)
+        response = client.get('/api/entities?names=Test1&names=Test2&entity_type=PERSON&tax_jurisdiction=US')
+        assert response.status_code == 200
+        
+        # Test 5: Only one parameter from one group
+        response = client.get('/api/entities?name=Test')
+        assert response.status_code == 200
+        
+        # Test 6: Only array parameter from one group
+        response = client.get('/api/entities?names=Test1,Test2')
+        assert response.status_code == 200
+
+    def test_get_entities_plurality_validation_comprehensive(self, client):
+        """Test comprehensive plurality validation for GET /api/entities."""
+        # Test 1: Mutual exclusivity violations
+        test_cases = [
+            ('name=Test&names=Test1&names=Test2', 'name and names'),
+            ('entity_type=PERSON&entity_types=PERSON&entity_types=COMPANY', 'entity_type and entity_types'),
+            ('tax_jurisdiction=US&tax_jurisdictions=US&tax_jurisdictions=UK', 'tax_jurisdiction and tax_jurisdictions'),
+            ('name=Test&names=Test1&entity_type=PERSON&entity_types=COMPANY', 'multiple groups'),
+        ]
+        
+        for query_string, description in test_cases:
+            response = client.get(f'/api/entities?{query_string}')
+            assert response.status_code == 400, f"Should fail for {description}"
+            data = response.get_json()
+            assert 'Cannot specify multiple fields from the same group' in data.get('error', '')
+
+    ################################################################################
+    # ORIGINAL GET ENTITIES TESTS
+    ################################################################################
+
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_get_entities_success(self, mock_controller, client):
         """Test successful GET /api/entities request."""
         # Arrange
@@ -77,7 +135,7 @@ class TestEntityRoutes:
             data=[{
                 'id': 1,
                 'name': 'Test Entity',
-                'entity_type': 'INDIVIDUAL',
+                'entity_type': 'PERSON',
                 'tax_jurisdiction': 'US',
                 'description': 'Test entity description'
             }],
@@ -96,9 +154,9 @@ class TestEntityRoutes:
         assert data['data'][0]['name'] == 'Test Entity'
         mock_controller.get_entities.assert_called_once()
 
-    @patch('src.api.routes.entity.entity_controller')
-    def test_get_entities_with_query_parameters(self, mock_controller, client):
-        """Test GET /api/entities with query parameters."""
+    @patch('src.api.routes.entity_route.entity_controller')
+    def test_get_entities_with_single_query_parameters(self, mock_controller, client):
+        """Test GET /api/entities with single query parameters."""
         # Arrange
         mock_dto = ControllerResponseDTO(
             data=[{'id': 1, 'name': 'Test Entity'}],
@@ -107,13 +165,64 @@ class TestEntityRoutes:
         mock_controller.get_entities.return_value = mock_dto
         
         # Act
-        response = client.get('/api/entities?name=Test&entity_type=INDIVIDUAL&tax_jurisdiction=US')
+        response = client.get('/api/entities?name=Test&entity_type=PERSON&tax_jurisdiction=US')
         
         # Assert
         assert response.status_code == 200
         mock_controller.get_entities.assert_called_once()
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
+    def test_get_entities_with_array_query_parameters(self, mock_controller, client):
+        """Test GET /api/entities with array query parameters."""
+        # Arrange
+        mock_dto = ControllerResponseDTO(
+            data=[{'id': 1, 'name': 'Test Entity'}],
+            response_code=ApiResponseCode.SUCCESS
+        )
+        mock_controller.get_entities.return_value = mock_dto
+        
+        # Act
+        response = client.get('/api/entities?names=Test1&names=Test2&entity_types=PERSON&entity_types=COMPANY&tax_jurisdictions=US&tax_jurisdictions=UK')
+        
+        # Assert
+        assert response.status_code == 200
+        mock_controller.get_entities.assert_called_once()
+
+    @patch('src.api.routes.entity_route.entity_controller')
+    def test_get_entities_with_mixed_single_parameters(self, mock_controller, client):
+        """Test GET /api/entities with mixed single parameters (one from each group)."""
+        # Arrange
+        mock_dto = ControllerResponseDTO(
+            data=[{'id': 1, 'name': 'Test Entity'}],
+            response_code=ApiResponseCode.SUCCESS
+        )
+        mock_controller.get_entities.return_value = mock_dto
+        
+        # Act - using single parameters from different groups
+        response = client.get('/api/entities?name=Test&entity_type=PERSON&tax_jurisdiction=US')
+        
+        # Assert
+        assert response.status_code == 200
+        mock_controller.get_entities.assert_called_once()
+
+    @patch('src.api.routes.entity_route.entity_controller')
+    def test_get_entities_with_mixed_array_parameters(self, mock_controller, client):
+        """Test GET /api/entities with mixed array parameters (one from each group)."""
+        # Arrange
+        mock_dto = ControllerResponseDTO(
+            data=[{'id': 1, 'name': 'Test Entity'}],
+            response_code=ApiResponseCode.SUCCESS
+        )
+        mock_controller.get_entities.return_value = mock_dto
+        
+        # Act - using array parameters from different groups
+        response = client.get('/api/entities?names=Test1&names=Test2&entity_types=PERSON&entity_types=COMPANY&tax_jurisdictions=US&tax_jurisdictions=UK')
+        
+        # Assert
+        assert response.status_code == 200
+        mock_controller.get_entities.assert_called_once()
+
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_get_entities_not_found(self, mock_controller, client):
         """Test GET /api/entities when no entities found."""
         # Arrange
@@ -132,7 +241,7 @@ class TestEntityRoutes:
         assert data['response_code'] == 'RESOURCE_NOT_FOUND'
         assert 'Entities not found' in data['message']
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_get_entities_controller_exception(self, mock_controller, client):
         """Test GET /api/entities when controller raises exception."""
         # Arrange
@@ -151,7 +260,7 @@ class TestEntityRoutes:
     # GET ENTITY BY ID ENDPOINT TESTS
     ################################################################################
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_get_entity_by_id_success(self, mock_controller, client):
         """Test successful GET /api/entities/<id> request."""
         # Arrange
@@ -178,7 +287,7 @@ class TestEntityRoutes:
         assert data['data']['name'] == 'Test Entity'
         mock_controller.get_entity.assert_called_once_with(1)
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_get_entity_by_id_not_found(self, mock_controller, client):
         """Test GET /api/entities/<id> when entity not found."""
         # Arrange
@@ -197,7 +306,7 @@ class TestEntityRoutes:
         assert data['response_code'] == 'RESOURCE_NOT_FOUND'
         assert 'Entity not found' in data['message']
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_get_entity_by_id_controller_exception(self, mock_controller, client):
         """Test GET /api/entities/<id> when controller raises exception."""
         # Arrange
@@ -216,7 +325,7 @@ class TestEntityRoutes:
     # CREATE ENTITY ENDPOINT TESTS
     ################################################################################
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_create_entity_success(self, mock_controller, client):
         """Test successful POST /api/entities request."""
         # Arrange
@@ -248,7 +357,7 @@ class TestEntityRoutes:
         assert data['data']['name'] == 'New Entity'
         mock_controller.create_entity.assert_called_once()
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_create_entity_validation_error(self, mock_controller, client):
         """Test POST /api/entities with validation error."""
         # Arrange
@@ -263,7 +372,7 @@ class TestEntityRoutes:
         # Validation errors are handled by middleware, not controller
         assert 'validation' in data or 'error' in data
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_create_entity_missing_required_fields(self, mock_controller, client):
         """Test POST /api/entities with missing required fields."""
         # Arrange
@@ -277,7 +386,7 @@ class TestEntityRoutes:
         data = response.get_json()
         assert 'validation' in data or 'error' in data
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_create_entity_business_logic_error(self, mock_controller, client):
         """Test POST /api/entities with business logic error."""
         # Arrange
@@ -303,7 +412,7 @@ class TestEntityRoutes:
         assert data['response_code'] == 'BUSINESS_LOGIC_ERROR'
         assert 'Invalid entity type' in data['message']
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_create_entity_controller_exception(self, mock_controller, client):
         """Test POST /api/entities when controller raises exception."""
         # Arrange
@@ -328,7 +437,7 @@ class TestEntityRoutes:
     # DELETE ENTITY ENDPOINT TESTS
     ################################################################################
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_delete_entity_success(self, mock_controller, client):
         """Test successful DELETE /api/entities/<id> request."""
         # Arrange
@@ -345,7 +454,7 @@ class TestEntityRoutes:
         assert response.status_code == 204
         mock_controller.delete_entity.assert_called_once_with(1)
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_delete_entity_not_found(self, mock_controller, client):
         """Test DELETE /api/entities/<id> when entity not found."""
         # Arrange
@@ -364,7 +473,7 @@ class TestEntityRoutes:
         assert data['response_code'] == 'RESOURCE_NOT_FOUND'
         assert 'Entity not found' in data['message']
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_delete_entity_business_logic_error(self, mock_controller, client):
         """Test DELETE /api/entities/<id> with business logic error."""
         # Arrange
@@ -384,7 +493,7 @@ class TestEntityRoutes:
         assert data['response_code'] == 'BUSINESS_LOGIC_ERROR'
         assert 'Entity has associated records' in data['message']
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_delete_entity_controller_exception(self, mock_controller, client):
         """Test DELETE /api/entities/<id> when controller raises exception."""
         # Arrange
@@ -400,11 +509,148 @@ class TestEntityRoutes:
         assert 'Unexpected error deleting entity 1' in data['message']
 
     ################################################################################
+    # MUTUAL EXCLUSIVITY VALIDATION TESTS
+    ################################################################################
+
+    def test_get_entities_mutual_exclusivity_name_and_names(self, client):
+        """Test GET /api/entities with both name and names parameters (should fail)."""
+        # Act
+        response = client.get('/api/entities?name=Test&names=Test1&names=Test2')
+        
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'Cannot specify multiple fields from the same group' in data.get('error', '')
+        assert 'name' in data.get('error', '')
+        assert 'names' in data.get('error', '')
+
+    def test_get_entities_mutual_exclusivity_entity_type_and_entity_types(self, client):
+        """Test GET /api/entities with both entity_type and entity_types parameters (should fail)."""
+        # Act
+        response = client.get('/api/entities?entity_type=PERSON&entity_types=PERSON&entity_types=COMPANY')
+        
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'Cannot specify multiple fields from the same group' in data.get('error', '')
+        assert 'entity_type' in data.get('error', '')
+        assert 'entity_types' in data.get('error', '')
+
+    def test_get_entities_mutual_exclusivity_tax_jurisdiction_and_tax_jurisdictions(self, client):
+        """Test GET /api/entities with both tax_jurisdiction and tax_jurisdictions parameters (should fail)."""
+        # Act
+        response = client.get('/api/entities?tax_jurisdiction=US&tax_jurisdictions=US&tax_jurisdictions=UK')
+        
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'Cannot specify multiple fields from the same group' in data.get('error', '')
+        assert 'tax_jurisdiction' in data.get('error', '')
+        assert 'tax_jurisdictions' in data.get('error', '')
+
+    def test_get_entities_mutual_exclusivity_multiple_groups(self, client):
+        """Test GET /api/entities with multiple mutual exclusivity violations (should fail)."""
+        # Act
+        response = client.get('/api/entities?name=Test&names=Test1&names=Test2&entity_type=PERSON&entity_types=COMPANY')
+        
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'Cannot specify multiple fields from the same group' in data.get('error', '')
+
+    def test_get_entities_mutual_exclusivity_all_groups_violated(self, client):
+        """Test GET /api/entities with all mutual exclusivity groups violated (should fail)."""
+        # Act
+        response = client.get('/api/entities?name=Test&names=Test1&entity_type=PERSON&entity_types=COMPANY&tax_jurisdiction=US&tax_jurisdictions=UK')
+        
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'Cannot specify multiple fields from the same group' in data.get('error', '')
+
+    ################################################################################
+    # ARRAY PARAMETER VALIDATION TESTS
+    ################################################################################
+
+    def test_get_entities_array_parameter_validation(self, client):
+        """Test GET /api/entities with array parameters and validation."""
+        # Test with valid array parameters
+        response = client.get('/api/entities?names=Test1&names=Test2&entity_types=PERSON&entity_types=COMPANY&tax_jurisdictions=US&tax_jurisdictions=UK')
+        # Should pass validation (may fail at controller level due to no database session)
+        assert response.status_code in [200, 500]
+
+    def test_get_entities_array_parameter_invalid_enum_values(self, client):
+        """Test GET /api/entities with invalid enum values in array parameters."""
+        # Test with invalid enum values in arrays
+        response = client.get('/api/entities?entity_types=INVALID,COMPANY&tax_jurisdictions=INVALID,US')
+        assert response.status_code == 400
+
+    def test_get_entities_array_parameter_length_validation(self, client):
+        """Test GET /api/entities with array parameter length validation."""
+        # Test with array elements that are too long
+        long_name = 'A' * 300  # Exceeds max length of 255
+        response = client.get(f'/api/entities?names={long_name}')
+        assert response.status_code == 400
+
+    def test_get_entities_empty_array_parameters(self, client):
+        """Test GET /api/entities with empty array parameters."""
+        # Test with empty arrays
+        response = client.get('/api/entities?names=&entity_types=&tax_jurisdictions=')
+        # Should either pass validation or fail gracefully
+        assert response.status_code in [200, 400, 500]
+
+    def test_get_entities_single_element_arrays(self, client):
+        """Test GET /api/entities with single element arrays."""
+        # Test with single element arrays (should work)
+        response = client.get('/api/entities?names=Test1&entity_types=PERSON&tax_jurisdictions=US')
+        # Should pass validation (may fail at controller level due to no database session)
+        assert response.status_code in [200, 500]
+
+    ################################################################################
+    # EDGE CASES AND BOUNDARY TESTS
+    ################################################################################
+
+    def test_get_entities_no_parameters(self, client):
+        """Test GET /api/entities with no parameters (should work)."""
+        # Act
+        response = client.get('/api/entities')
+        
+        # Assert
+        # Should pass validation (may fail at controller level due to no database session)
+        assert response.status_code in [200, 500]
+
+    def test_get_entities_partial_parameters(self, client):
+        """Test GET /api/entities with only some parameters from different groups."""
+        # Act - using only one parameter from each group
+        response = client.get('/api/entities?name=Test')
+        
+        # Assert
+        assert response.status_code in [200, 500]
+
+    def test_get_entities_whitespace_handling(self, client):
+        """Test GET /api/entities with whitespace in parameters."""
+        # Act - with extra whitespace
+        response = client.get('/api/entities?name=  Test  &entity_type=  PERSON  ')
+        
+        # Assert
+        # Should pass validation (may fail at controller level due to no database session)
+        assert response.status_code in [200, 500]
+
+    def test_get_entities_special_characters_in_arrays(self, client):
+        """Test GET /api/entities with special characters in array parameters."""
+        # Act - with special characters
+        response = client.get('/api/entities?names=Test-1&names=Test_2&names=Test.3&entity_types=PERSON&entity_types=COMPANY')
+        
+        # Assert
+        # Should pass validation (may fail at controller level due to no database session)
+        assert response.status_code in [200, 500]
+
+    ################################################################################
     # VALIDATION MIDDLEWARE TESTS
     ################################################################################
 
-    def test_get_entities_invalid_enum_values(self, client):
-        """Test GET /api/entities with invalid enum values."""
+    def test_get_entities_invalid_enum_values_single(self, client):
+        """Test GET /api/entities with invalid enum values in single parameters."""
         # Act
         response = client.get('/api/entities?entity_type=INVALID&tax_jurisdiction=INVALID')
         
@@ -413,6 +659,16 @@ class TestEntityRoutes:
         assert response.status_code in [400, 500]
         data = response.get_json()
         assert 'validation' in data or 'error' in data or data.get('response_code') == 'INTERNAL_SERVER_ERROR'
+
+    def test_get_entities_invalid_enum_values_arrays(self, client):
+        """Test GET /api/entities with invalid enum values in array parameters."""
+        # Act
+        response = client.get('/api/entities?entity_types=INVALID,COMPANY&tax_jurisdictions=INVALID,US')
+        
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'validation' in data or 'error' in data
 
     def test_create_entity_invalid_field_types(self, client):
         """Test POST /api/entities with invalid field types."""
@@ -492,7 +748,7 @@ class TestEntityRoutes:
     # ERROR HANDLING TESTS
     ################################################################################
 
-    @patch('src.api.routes.entity.entity_controller')
+    @patch('src.api.routes.entity_route.entity_controller')
     def test_route_handles_controller_exception(self, mock_controller, client):
         """Test that routes handle controller exceptions gracefully."""
         # Arrange
@@ -522,8 +778,17 @@ class TestEntityRoutes:
         response = client.get('/api/entities?tax_jurisdiction=INVALID')
         assert response.status_code in [400, 500]
         
-        # Test with valid parameters - this should work
+        # Test with invalid enum values in array parameters
+        response = client.get('/api/entities?entity_types=INVALID,COMPANY&tax_jurisdictions=INVALID,US')
+        assert response.status_code == 400
+        
+        # Test with valid single parameters - this should work
         response = client.get('/api/entities?name=Test&entity_type=COMPANY&tax_jurisdiction=US')
+        # This should pass validation but may fail at controller level due to no database session
+        assert response.status_code in [200, 500]
+        
+        # Test with valid array parameters - this should work
+        response = client.get('/api/entities?names=Test1&names=Test2&entity_types=PERSON&entity_types=COMPANY&tax_jurisdictions=US&tax_jurisdictions=UK')
         # This should pass validation but may fail at controller level due to no database session
         assert response.status_code in [200, 500]
 

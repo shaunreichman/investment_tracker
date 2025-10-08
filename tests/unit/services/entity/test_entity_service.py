@@ -89,9 +89,9 @@ class TestEntityService:
             # Act
             result = service.get_entities(
                 mock_session, 
-                entity_type=entity_type,
-                tax_jurisdiction=tax_jurisdiction,
-                name=name,
+                entity_types=[entity_type],
+                tax_jurisdictions=[tax_jurisdiction],
+                names=[name],
                 sort_by=sort_by,
                 sort_order=sort_order
             )
@@ -100,9 +100,9 @@ class TestEntityService:
             assert result == expected_entities
             mock_repo.assert_called_once_with(
                 mock_session, 
-                entity_type, 
-                tax_jurisdiction, 
-                name, 
+                [entity_type], 
+                [tax_jurisdiction], 
+                [name], 
                 sort_by,
                 sort_order
             )

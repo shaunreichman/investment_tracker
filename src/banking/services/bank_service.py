@@ -30,8 +30,7 @@ class BankService:
         Initialize the BankService.
         
         Args:
-            banking_validation_service: Banking validation service to use. If None, creates a new one.
-            bank_repository: Bank repository to use. If None, creates a new one.
+            None
         """
         self.banking_validation_service = BankingValidationService()
         self.bank_repository = BankRepository()
@@ -42,37 +41,46 @@ class BankService:
     ################################################################################
 
     def get_banks(self, session: Session,
-                    name: Optional[str] = None,
-                    country: Optional[Country] = None,
-                    bank_type: Optional[BankType] = None,
+                    names: Optional[List[str]] = None,
+                    countries: Optional[List[Country]] = None,
+                    bank_types: Optional[List[BankType]] = None,
                     sort_by: SortFieldBank = SortFieldBank.NAME,
-                    sort_order: SortOrder = SortOrder.ASC
+                    sort_order: SortOrder = SortOrder.ASC,
+                    include_bank_accounts: Optional[bool] = False,
+                    include_bank_account_balances: Optional[bool] = False
     ) -> List[Bank]:
         """
         Get all banks.
         
         Args:
             session: Database session
-            name: Bank name
-            country: Country code
-            bank_type: Bank type
+            names: Bank names
+            countries: Country codes
+            bank_types: Bank types
             sort_by: Sort field
             sort_order: Sort order
+            include_bank_accounts: Whether to include bank accounts
+            include_bank_account_balances: Whether to include bank account balances
+        
+        Returns:
+            List of banks
         """
-        return self.bank_repository.get_banks(session, name, country, bank_type, sort_by, sort_order)
+        return self.bank_repository.get_banks(session, names, countries, bank_types, sort_by, sort_order, include_bank_accounts, include_bank_account_balances)
 
-    def get_bank_by_id(self, bank_id: int, session: Session) -> Optional[Bank]:
+    def get_bank_by_id(self, bank_id: int, session: Session, include_bank_accounts: Optional[bool] = False, include_bank_account_balances: Optional[bool] = False) -> Optional[Bank]:
         """
         Get a bank by its ID.
         
         Args:
             bank_id: ID of the bank to retrieve
             session: Database session
+            include_bank_accounts: Whether to include bank accounts
+            include_bank_account_balances: Whether to include bank account balances
             
         Returns:
             Bank: Bank instance if found, None otherwise
         """
-        return self.bank_repository.get_bank_by_id(bank_id, session)
+        return self.bank_repository.get_bank_by_id(bank_id, session, include_bank_accounts, include_bank_account_balances)
 
 
     ################################################################################
@@ -100,7 +108,7 @@ class BankService:
 
         bank = self.bank_repository.create_bank(processed_data, session)
         if not bank:
-            raise ValueError(f"Failed to create bank")
+            raise ValueError(f"Failed to create bank with name '{processed_data.get('name', 'unknown')}'")
 
         return bank
 
@@ -126,16 +134,16 @@ class BankService:
         # Get existing bank
         bank = self.get_bank_by_id(bank_id, session)
         if not bank:
-            raise ValueError(f"Bank not found")
+            raise ValueError(f"Bank with ID {bank_id} not found")
         
         # Check for dependent bank accounts
         validation_errors = self.banking_validation_service.validate_bank_deletion(bank_id, session)
         if validation_errors:
-            raise ValueError(f"Deletion validation failed: {validation_errors}")
+            raise ValueError(f"Deletion validation failed for bank with ID {bank_id}: {validation_errors}")
         
         # Delete bank through repository
         success = self.bank_repository.delete_bank(bank_id, session)
         if not success:
-            raise ValueError(f"Failed to delete bank")
+            raise ValueError(f"Failed to delete bank with ID {bank_id}")
         
         return success

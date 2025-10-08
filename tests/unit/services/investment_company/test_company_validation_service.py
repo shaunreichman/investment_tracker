@@ -63,9 +63,9 @@ class TestCompanyValidationService:
             # Assert
             assert result == {}
             mock_get_funds.assert_called_once_with(
-                session=mock_session, 
-                company_id=mock_company.id, 
-                fund_status=FundStatus.ACTIVE
+                session=mock_session,
+                company_ids=[mock_company.id],
+                fund_statuses=[FundStatus.ACTIVE]
             )
 
     def test_validate_company_deletion_allows_deletion_when_only_completed_funds(self, service, mock_session, mock_company):
@@ -79,9 +79,9 @@ class TestCompanyValidationService:
             # Assert
             assert result == {}
             mock_get_funds.assert_called_once_with(
-                session=mock_session, 
-                company_id=mock_company.id, 
-                fund_status=FundStatus.ACTIVE
+                session=mock_session,
+                company_ids=[mock_company.id],
+                fund_statuses=[FundStatus.ACTIVE]
             )
 
     def test_validate_company_deletion_prevents_deletion_with_active_funds(self, service, mock_session, mock_company):
@@ -97,9 +97,9 @@ class TestCompanyValidationService:
             assert len(result['funds']) == 1
             assert 'Cannot delete company with 2 funds' in result['funds'][0]
             mock_get_funds.assert_called_once_with(
-                session=mock_session, 
-                company_id=mock_company.id, 
-                fund_status=FundStatus.ACTIVE
+                session=mock_session,
+                company_ids=[mock_company.id],
+                fund_statuses=[FundStatus.ACTIVE]
             )
 
     def test_validate_company_deletion_prevents_deletion_with_single_active_fund(self, service, mock_session, mock_company):
@@ -115,9 +115,9 @@ class TestCompanyValidationService:
             assert len(result['funds']) == 1
             assert 'Cannot delete company with 1 funds' in result['funds'][0]
             mock_get_funds.assert_called_once_with(
-                session=mock_session, 
-                company_id=mock_company.id, 
-                fund_status=FundStatus.ACTIVE
+                session=mock_session,
+                company_ids=[mock_company.id],
+                fund_statuses=[FundStatus.ACTIVE]
             )
 
     def test_validate_company_deletion_calls_repository_with_correct_parameters(self, service, mock_session, mock_company):
@@ -129,9 +129,9 @@ class TestCompanyValidationService:
 
             # Assert
             mock_get_funds.assert_called_once_with(
-                session=mock_session, 
-                company_id=mock_company.id, 
-                fund_status=FundStatus.ACTIVE
+                session=mock_session,
+                company_ids=[mock_company.id],
+                fund_statuses=[FundStatus.ACTIVE]
             )
 
     def test_validate_company_deletion_returns_empty_dict_on_success(self, service, mock_session, mock_company):

@@ -88,8 +88,8 @@ class FundEvent(Base):
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events")
-    cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan")
-    tax_statement = relationship("FundTaxStatement", lazy='selectin')  # Eager load for tax statement data
+    fund_event_cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan")
+    fund_tax_statement = relationship("FundTaxStatement", lazy='selectin')  # Eager load for tax statement data
     
     # Performance indexes
     __table_args__ = (

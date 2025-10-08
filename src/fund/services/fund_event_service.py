@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session
 from src.fund.models import FundEvent
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType, SortFieldFundEvent
 from src.shared.enums.shared_enums import EventOperation, SortOrder
-from src.fund.repositories import DomainFundEventRepository, FundEventRepository
+from src.fund.repositories import FundEventRepository
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 
 class FundEventService:
     """
@@ -23,7 +24,6 @@ class FundEventService:
         - Calculation of distribution event data
         - Calculation of tax event data
         - Handling of secondary impacts
-        - Handling of domain fund event creation
     - Fund event deletion with dependency checking
 
     The service uses the FundEventRepository to perform CRUD operations and the FundValidationService to validate fund events.
@@ -49,11 +49,15 @@ class FundEventService:
                        event_types: Optional[List[EventType]] = None,
                        distribution_types: Optional[List[DistributionType]] = None,
                        tax_payment_types: Optional[List[TaxPaymentType]] = None,
+                       group_ids: Optional[List[int]] = None,
                        group_types: Optional[List[GroupType]] = None,
+                       is_cash_flow_complete: Optional[bool] = None,
                        start_event_date: Optional[date] = None,
                        end_event_date: Optional[date] = None,
                        sort_by: Optional[SortFieldFundEvent] = SortFieldFundEvent.EVENT_DATE,
-                       sort_order: SortOrder = SortOrder.ASC) -> List['FundEvent']:
+                       sort_order: Optional[SortOrder] = SortOrder.ASC,
+                       include_fund_event_cash_flows: Optional[bool] = False
+    ) -> List['FundEvent']:
         """
         Get events for a specific fund or list of funds.
         
@@ -63,32 +67,36 @@ class FundEventService:
             event_types: Optional list of event types to filter by
             distribution_types: Optional list of distribution types to filter by
             tax_payment_types: Optional list of tax payment types to filter by
+            group_ids: Optional list of group IDs to filter by
             group_types: Optional list of group types to filter by
+            is_cash_flow_complete: Optional flag to filter by cash flow completeness
             start_event_date: Optional start event date to filter by
             end_event_date: Optional end event date to filter by
             sort_by: Optional sort field to sort by
             sort_order: Optional sort order to sort by
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional)
 
         Returns:
             List of FundEvent objects
         """
         return self.fund_event_repository.get_fund_events(
-            session, fund_ids, event_types, distribution_types, tax_payment_types, group_types, start_event_date, end_event_date, sort_by, sort_order
+            session, fund_ids, event_types, distribution_types, tax_payment_types, group_ids, group_types, is_cash_flow_complete, start_event_date, end_event_date, sort_by, sort_order, include_fund_event_cash_flows
         )
     
-    def get_fund_event_by_id(self, event_id: int, session: Session) -> Optional['FundEvent']:
+    def get_fund_event_by_id(self, event_id: int, session: Session, include_fund_event_cash_flows: Optional[bool] = False) -> Optional['FundEvent']:
         """
         Get a specific fund event by ID.
         
         Args:
             event_id: ID of the event
             session: Database session
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional)
             
         Returns:
             FundEvent object if found, None otherwise
         """
         # Get the specific event
-        event = self.fund_event_repository.get_fund_event_by_id(event_id, session)
+        event = self.fund_event_repository.get_fund_event_by_id(event_id, session, include_fund_event_cash_flows)
         if not event:
             return None
         
@@ -119,7 +127,7 @@ class FundEventService:
         # 2. Business validation using validation service
         errors = self.fund_validation_service.validate_fund_event_creation(processed_data, session)
         if errors:
-            raise ValueError(f"Validation errors: {errors}")
+            raise ValueError(f"Validation errors for fund event creation for fund ID {fund_id}: {errors}")
 
         # 2a. Calculate the distribution event data
         if processed_data['event_type'] == EventType.DISTRIBUTION:
@@ -140,23 +148,14 @@ class FundEventService:
         session.flush()
 
         # 4. Handle the secondary impacts
-        all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund_id=fund_event.fund_id, event_id=fund_event.id, 
-                            fund_event_type=processed_data['event_type'], fund_event_operation=EventOperation.CREATE, session=session)
-
-        # 5. Store the domain fund event containing the changes
-        if all_changes:
-            # Filter out None values and convert to dict
-            valid_changes = [change.to_dict() for change in all_changes if change is not None]
-            if valid_changes:
-                domain_fund_event_repository = DomainFundEventRepository()
-                domain_fund_event = domain_fund_event_repository.create_domain_fund_event(
-                    fund_id=fund_event.fund_id,
-                    event_type=processed_data['event_type'],
-                    event_operation=EventOperation.CREATE,
-                    fund_event_id=fund_event.id,
-                    event_data={"changes": valid_changes},
-                    session=session
-                )
+        self.fund_event_secondary_service.handle_event_secondary_impact(
+            fund_id=fund_event.fund_id,
+            domain_object_type=DomainObjectType.FUND_EVENT,
+            event_operation=EventOperation.CREATE,
+            session=session,
+            fund_event_type=processed_data['event_type'],
+            object_id=fund_event.id
+        )
         
         return fund_event
     
@@ -223,62 +222,48 @@ class FundEventService:
     # Delete Fund Event
     ################################################################################
     
-    def delete_fund_event(self, fund_id: int, event_id: int, session: Session) -> bool:
+    def delete_fund_event(self, fund_event_id: int, session: Session) -> bool:
         """
         Delete a fund event and handle secondary operations.
         
         This method follows enterprise best practices:
-        1. Business operation: Delete the event directly
+        1. Business operation: Delete the fund event directly
         2. Delegate secondary impacts to orchestrator
         
         Args:
-            fund_id: ID of the fund
-            event_id: ID of the event to delete
+            fund_event_id: ID of the fund event to delete
             session: Database session
             
         Returns:
-            True if event was deleted, False if not found
+            True if fund event was deleted, False if not found
         """
-        # 1. Business operation: Delete the event
-        from src.fund.repositories import FundEventRepository, FundRepository
-        
-        fund_repository = FundRepository()
-        fund = fund_repository.get_fund_by_id(fund_id, session)
-        if not fund:
-            raise ValueError(f"Fund with id {fund_id} not found")
+        fund_event = self.fund_event_repository.get_fund_event_by_id(fund_event_id, session)
+        if not fund_event:
+            raise ValueError(f"Fund event with ID {fund_event_id} not found")
 
-        fund_event_repository = FundEventRepository()
-        event = fund_event_repository.get_fund_event_by_id(event_id, session)
-        if not event:
-            raise ValueError(f"Event with id {event_id} not found")
+        fund_event_type = fund_event.event_type
+        fund_id = fund_event.fund_id
 
-        event_type = event.event_type
-
-        errors = self.fund_validation_service.validate_fund_event_deletion(event, session)
+        errors = self.fund_validation_service.validate_fund_event_deletion(fund_event, session)
         if errors:
-            raise ValueError(f"Validation errors: {errors}")
+            raise ValueError(f"Validation errors for fund event deletion for fund event ID {fund_event_id}: {errors}")
 
-        success = fund_event_repository.delete_fund_event(event_id, session)
+        success = self.fund_event_repository.delete_fund_event(fund_event_id, session)
         
         if success:
             # 2a. Flush the fund to database so it's available for secondary service
             session.flush()
-            session.refresh(fund)
-            # 2. Process the secondary operations
-            all_changes = self.fund_event_secondary_service.handle_event_secondary_impact(fund=fund, event_id=event.id, 
-                            fund_event_type=event_type, fund_event_operation=EventOperation.DELETE, session=session)
-            if all_changes:
-                domain_fund_event_repository = DomainFundEventRepository()
-                domain_fund_event = domain_fund_event_repository.create_domain_fund_event(
-                    fund_id=fund_id,
-                    event_type=event_type,
-                    event_operation=EventOperation.DELETE,
-                    fund_event_id=event.id,
-                    event_data={"changes": [change.to_dict() for change in all_changes]},
-                    session=session
-                )
+            # 3. Process the secondary operations
+            self.fund_event_secondary_service.handle_event_secondary_impact(
+                fund_id=fund_id,
+                domain_object_type=DomainObjectType.FUND_EVENT,
+                event_operation=EventOperation.DELETE,
+                session=session,
+                fund_event_type=fund_event_type,
+                object_id=fund_event_id
+            )
         else:
-            raise ValueError(f"Failed to delete event")
+            raise ValueError(f"Failed to delete fund event with ID {fund_event_id}")
 
         return success
     

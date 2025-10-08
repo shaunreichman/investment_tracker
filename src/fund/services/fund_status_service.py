@@ -6,7 +6,9 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from src.fund.enums import FundStatus
-from src.fund.models import Fund, FundFieldChange
+from src.fund.models import Fund
+from src.shared.models import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.repositories import FundTaxStatementRepository
 
 class FundStatusService:
@@ -32,13 +34,13 @@ class FundStatusService:
         Args:
             None
         """
-        pass
+        self.fund_tax_statement_repository = FundTaxStatementRepository()
     
     # ============================================================================
     # STATUS TRANSITION LOGIC AND BUSINESS RULES
     # ============================================================================
     
-    def update_status_after_equity_event(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
+    def update_status_after_equity_event(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[DomainFieldChange]]:
         """
         Update the fund status based on current equity balance and tax statement status.
         
@@ -47,7 +49,7 @@ class FundStatusService:
             session: Database session (optional)
 
         Returns:
-            Optional[List[FundFieldChange]]: List of field changes if status updated, None otherwise
+            Optional[List[DomainFieldChange]]: List of field changes if status updated, None otherwise
         """
         old_status = fund.status
         
@@ -60,10 +62,10 @@ class FundStatusService:
 
         status_changes = []
         if old_status != fund.status:
-            status_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='status', old_value=old_status, new_value=fund.status))
+            status_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='status', old_value=old_status, new_value=fund.status))
         return status_changes if status_changes else None
     
-    def update_status_after_tax_statement(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[FundFieldChange]]:
+    def update_status_after_tax_statement(self, fund: Fund, session: Optional[Session] = None) -> Optional[List[DomainFieldChange]]:
         """
         Update fund status after a tax statement event.
                 
@@ -72,7 +74,7 @@ class FundStatusService:
             session: Database session (optional)
 
         Returns:
-            Optional[List[FundFieldChange]]: List of field changes if status updated, None otherwise
+            Optional[List[DomainFieldChange]]: List of field changes if status updated, None otherwise
         """
         old_status = fund.status
         if fund.status != FundStatus.ACTIVE:
@@ -87,7 +89,7 @@ class FundStatusService:
                     
         status_changes = []
         if old_status != fund.status:
-            status_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='status', old_value=old_status, new_value=fund.status))
+            status_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='status', old_value=old_status, new_value=fund.status))
         return status_changes if status_changes else None
     
     def _is_final_tax_statement_received(self, fund: Fund, session: Optional[Session] = None) -> bool:
@@ -118,9 +120,7 @@ class FundStatusService:
         if not end_date:
             return False
         
-        # Use repository for data access instead of direct model access
-        fund_tax_statement_repository = FundTaxStatementRepository()
-        tax_statements = fund_tax_statement_repository.get_fund_tax_statements(fund_id=fund.id, start_tax_payment_date=end_date, session=session)
+        tax_statements = self.fund_tax_statement_repository.get_fund_tax_statements(fund_ids=[fund.id], start_tax_payment_date=end_date, session=session)
         
         # Return True if any tax statement has a payment date after the end date
         return len(tax_statements) > 0

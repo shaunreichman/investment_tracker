@@ -2,12 +2,12 @@
 Fund IRR Service.
 """
 
-from typing import Optional, List, Tuple
-from datetime import date
+from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from src.fund.models import Fund, FundEvent, FundFieldChange
-from src.fund.enums.fund_event_enums import EventType
+from src.fund.models import Fund
+from src.shared.models import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_enums import FundStatus
 from src.fund.repositories import FundEventRepository
 from src.shared.services.shared_irr_service import SharedIrRService
@@ -42,7 +42,7 @@ class FundIrRService:
         self.fund_event_repository = FundEventRepository()
         self.shared_irr_service = SharedIrRService()
 
-    def update_irrs(self, fund: Fund, session: Session) -> Optional[List[FundFieldChange]]:
+    def update_irrs(self, fund: Fund, session: Session) -> Optional[List[DomainFieldChange]]:
         """
         Calculate and store IRRs for a specific fund status.
                 
@@ -76,11 +76,11 @@ class FundIrRService:
         
         irr_changes = []
         if old_completed_irr_gross != fund.completed_irr_gross:
-            irr_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=fund.completed_irr_gross))
+            irr_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=fund.completed_irr_gross))
         if old_completed_irr_after_tax != fund.completed_irr_after_tax:
-            irr_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=fund.completed_irr_after_tax))
+            irr_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=fund.completed_irr_after_tax))
         if old_completed_irr_real != fund.completed_irr_real:
-            irr_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=fund.completed_irr_real))
+            irr_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=fund.completed_irr_real))
         
         return irr_changes if irr_changes else None
     

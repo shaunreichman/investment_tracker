@@ -407,7 +407,7 @@ class TestABCLtdWorkflowIntegration:
         # 17. Validate tax statements
         tax_statements = fund_tax_statement_service.get_fund_tax_statements(
             session=db_session,
-            fund_id=fund.id
+            fund_ids=[fund.id]
         )
         assert len(tax_statements) == 2
         

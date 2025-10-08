@@ -79,7 +79,7 @@ class TestCompanyContactRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_contacts(mock_session, company_id=company_id)
+        repository.get_contacts(mock_session, company_ids=[company_id])
 
         # Assert
         assert mock_query.filter.called

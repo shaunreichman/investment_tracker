@@ -4,7 +4,7 @@ Formatters for Fund objects.
 - Provide consistent response structure
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
 from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement
 
 def format_fund(fund: Fund) -> Dict[str, Any]:
@@ -32,7 +32,7 @@ def format_fund(fund: Fund) -> Dict[str, Any]:
         'investment_company_id': fund.investment_company_id,
         
         # Basic fund information
-        'currency': fund.currency,
+        'currency': fund.currency.value if fund.currency else None,
         'description': fund.description,
         
         # Commitment and duration
@@ -158,22 +158,29 @@ def format_fund_event_cash_flow(cash_flow: FundEventCashFlow) -> Dict[str, Any]:
         
         # Cash flow details
         'direction': cash_flow.direction.value.upper() if cash_flow.direction else None,
-        'transfer_date': cash_flow.transfer_date.isoformat() if cash_flow.transfer_date else None,
         'currency': cash_flow.currency,
+
+        'transfer_date': cash_flow.transfer_date.isoformat() if cash_flow.transfer_date else None,
+        'fund_event_date': cash_flow.fund_event_date.isoformat() if cash_flow.fund_event_date else None,
+        'different_month': bool(cash_flow.different_month) if cash_flow.different_month is not None else None,
+        'adjusted_bank_account_balance_id': cash_flow.adjusted_bank_account_balance_id,
+
         'amount': float(cash_flow.amount) if cash_flow.amount is not None else None,
         
         # Descriptive fields
         'reference': cash_flow.reference,
         'description': cash_flow.description,
-        
-        # Bank account information (if available)
-        'bank_name': cash_flow.bank_account.bank.name if hasattr(cash_flow, 'bank_account') and cash_flow.bank_account else None,
-        'account_name': cash_flow.bank_account.account_name if hasattr(cash_flow, 'bank_account') and cash_flow.bank_account else None,
     }
 
 def format_fund_tax_statement(fund_tax_statement: FundTaxStatement) -> Dict[str, Any]:
     """
     Format a FundTaxStatement object for HTTP response.
+
+    Args:
+        fund_tax_statement: The FundTaxStatement domain object
+
+    Returns:
+        Dictionary formatted for HTTP response with improved ordering and consistent formatting
     """
     return {
         'id': fund_tax_statement.id,
@@ -215,53 +222,68 @@ def format_fund_tax_statement(fund_tax_statement: FundTaxStatement) -> Dict[str,
 
 def format_fund_comprehensive(
     fund: Fund, 
-    include_events: bool = False, 
-    include_cash_flows: bool = False,
-    include_tax_statements: bool = False
+    include_fund_events: bool = False, 
+    include_fund_event_cash_flows: bool = False,
+    include_fund_tax_statements: bool = False
 ) -> Dict[str, Any]:
     """
     Main formatter method for comprehensive fund data with optional events, cash flows, and tax statements.
     
     Args:
         fund: The Fund domain object
-        include_events: Whether to include fund events in the response
-        include_cash_flows: Whether to include cash flows for each event
-        include_tax_statements: Whether to include tax statements for the fund
+        include_fund_events: Whether to include fund events in the response
+        include_fund_event_cash_flows: Whether to include cash flows for each event (requires include_fund_events=True)
+        include_fund_tax_statements: Whether to include tax statements for the fund
         
     Returns:
         Dictionary formatted for HTTP response with comprehensive fund data
+        
+    Raises:
+        ValueError: If include_fund_event_cash_flows is True but include_fund_events is False
     """
+    # Validate parameter dependencies
+    if include_fund_event_cash_flows and not include_fund_events:
+        raise ValueError("include_fund_event_cash_flows requires include_fund_events to be True")
+    
     # Start with basic fund data
     fund_data = format_fund(fund)
     
     # Add events if requested
-    if include_events:
-        if hasattr(fund, 'events') and fund.events:
-            events_data = []
-            for event in fund.events:
-                event_data = format_fund_event(event)
-                
-                # Add cash flows if requested
-                if include_cash_flows:
-                    if hasattr(event, 'cash_flows') and event.cash_flows:
-                        event_data['cash_flows'] = [format_fund_event_cash_flow(cf) for cf in event.cash_flows]
-                    else:
-                        event_data['cash_flows'] = []
-                
-                events_data.append(event_data)
-            
-            fund_data['events'] = events_data
+    if include_fund_events:
+        if hasattr(fund, 'fund_events') and fund.fund_events:
+            fund_data['fund_events'] = [format_fund_event_comprehensive(event, include_fund_event_cash_flows) for event in fund.fund_events]
         else:
-            fund_data['events'] = []
-    
+            fund_data['fund_events'] = []
+
     # Add tax statements if requested
-    if include_tax_statements:
-        if hasattr(fund, 'tax_statements') and fund.tax_statements:
-            # Sort by financial year descending (most recent first)
-            sorted_statements = sorted(fund.tax_statements, key=lambda s: s.financial_year, reverse=True)
-            fund_data['tax_statements'] = [format_fund_tax_statement(statement) for statement in sorted_statements]
+    if include_fund_tax_statements:
+        if hasattr(fund, 'fund_tax_statements') and fund.fund_tax_statements:
+            fund_data['fund_tax_statements'] = [format_fund_tax_statement(statement) for statement in fund.fund_tax_statements]
         else:
-            fund_data['tax_statements'] = []
-    
+            fund_data['fund_tax_statements'] = []
+
     return fund_data
 
+def format_fund_event_comprehensive(
+    event: FundEvent,
+    include_fund_event_cash_flows: bool = False
+) -> Dict[str, Any]:
+    """
+    Format a FundEvent object for HTTP response with comprehensive data.
+
+    Args:
+        event: The FundEvent domain object
+        include_fund_event_cash_flows: Whether to include cash flows for the event
+        
+    Returns:
+        Dictionary formatted for HTTP response with comprehensive fund event data
+    """
+    fund_event_data = format_fund_event(event)
+    
+    if include_fund_event_cash_flows:
+        if hasattr(event, 'fund_event_cash_flows') and event.fund_event_cash_flows:
+            fund_event_data['fund_event_cash_flows'] = [format_fund_event_cash_flow(cf) for cf in event.fund_event_cash_flows]
+        else:
+            fund_event_data['fund_event_cash_flows'] = []
+    
+    return fund_event_data

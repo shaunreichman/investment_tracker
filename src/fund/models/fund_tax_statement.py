@@ -74,8 +74,8 @@ class FundTaxStatement(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated
     
     # Relationships
-    fund = relationship("Fund", back_populates="tax_statements", lazy='selectin')
-    entity = relationship("Entity", back_populates="tax_statements", lazy='selectin')
+    fund = relationship("Fund", back_populates="fund_tax_statements", lazy='selectin')
+    entity = relationship("Entity", back_populates="fund_tax_statements", lazy='selectin')
     
     # Composite unique constraint to ensure one statement per fund/entity/financial year
     __table_args__ = (

@@ -96,7 +96,7 @@ def import_risk_free_rates(csv_file='scripts/rfr.csv'):
                     # Check if this rate already exists by querying through the service
                     existing_rates = risk_free_rate_service.get_risk_free_rates(
                         session=session,
-                        currency=currency,
+                        currencies=[currency],
                         rate_type=rate_type
                     )
                     
@@ -147,7 +147,7 @@ def import_risk_free_rates(csv_file='scripts/rfr.csv'):
                 currency = Currency.from_string(currency_str)
                 rates = risk_free_rate_service.get_risk_free_rates(
                     session=session,
-                    currency=currency
+                    currencies=[currency]
                 )
                 count = len(rates)
                 if count > 0:

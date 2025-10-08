@@ -57,9 +57,9 @@ class TestEntityValidationService:
 
             # Assert
             assert result == {}
-            mock_bank_accounts.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_tax_statements.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_funds.assert_called_once_with(mock_session, entity_id=entity_id)
+            mock_bank_accounts.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_tax_statements.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_funds.assert_called_once_with(mock_session, entity_ids=[entity_id])
 
     def test_validate_entity_deletion_returns_bank_account_error_when_dependent_accounts_exist(self, service, mock_session):
         """Test that validate_entity_deletion returns bank account error when dependent accounts exist."""
@@ -77,9 +77,9 @@ class TestEntityValidationService:
             # Assert
             expected_errors = {'bank_accounts': ['Cannot delete entity with dependent bank accounts']}
             assert result == expected_errors
-            mock_bank_accounts.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_tax_statements.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_funds.assert_called_once_with(mock_session, entity_id=entity_id)
+            mock_bank_accounts.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_tax_statements.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_funds.assert_called_once_with(mock_session, entity_ids=[entity_id])
 
     def test_validate_entity_deletion_returns_tax_statement_error_when_dependent_statements_exist(self, service, mock_session):
         """Test that validate_entity_deletion returns tax statement error when dependent statements exist."""
@@ -97,9 +97,9 @@ class TestEntityValidationService:
             # Assert
             expected_errors = {'tax_statements': ['Cannot delete entity with dependent tax statements']}
             assert result == expected_errors
-            mock_bank_accounts.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_tax_statements.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_funds.assert_called_once_with(mock_session, entity_id=entity_id)
+            mock_bank_accounts.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_tax_statements.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_funds.assert_called_once_with(mock_session, entity_ids=[entity_id])
 
     def test_validate_entity_deletion_returns_fund_error_when_dependent_funds_exist(self, service, mock_session):
         """Test that validate_entity_deletion returns fund error when dependent funds exist."""
@@ -117,9 +117,9 @@ class TestEntityValidationService:
             # Assert
             expected_errors = {'funds': ['Cannot delete entity with dependent funds']}
             assert result == expected_errors
-            mock_bank_accounts.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_tax_statements.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_funds.assert_called_once_with(mock_session, entity_id=entity_id)
+            mock_bank_accounts.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_tax_statements.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_funds.assert_called_once_with(mock_session, entity_ids=[entity_id])
 
     def test_validate_entity_deletion_returns_multiple_errors_when_multiple_dependencies_exist(self, service, mock_session):
         """Test that validate_entity_deletion returns multiple errors when multiple dependencies exist."""
@@ -143,9 +143,9 @@ class TestEntityValidationService:
                 'funds': ['Cannot delete entity with dependent funds']
             }
             assert result == expected_errors
-            mock_bank_accounts.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_tax_statements.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_funds.assert_called_once_with(mock_session, entity_id=entity_id)
+            mock_bank_accounts.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_tax_statements.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_funds.assert_called_once_with(mock_session, entity_ids=[entity_id])
 
     def test_validate_entity_deletion_calls_repositories_with_correct_entity_id(self, service, mock_session):
         """Test that validate_entity_deletion calls repositories with correct entity ID."""
@@ -160,9 +160,9 @@ class TestEntityValidationService:
             service.validate_entity_deletion(entity_id, mock_session)
 
             # Assert
-            mock_bank_accounts.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_tax_statements.assert_called_once_with(mock_session, entity_id=entity_id)
-            mock_funds.assert_called_once_with(mock_session, entity_id=entity_id)
+            mock_bank_accounts.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_tax_statements.assert_called_once_with(mock_session, entity_ids=[entity_id])
+            mock_funds.assert_called_once_with(mock_session, entity_ids=[entity_id])
 
     ################################################################################
     # Test service initialization

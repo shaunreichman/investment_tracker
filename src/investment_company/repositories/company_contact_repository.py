@@ -35,7 +35,7 @@ class CompanyContactRepository:
     ################################################################################
 
     def get_contacts(self, session: Session,
-            company_id: Optional[int] = None,
+            company_ids: Optional[List[int]] = None,
             sort_by: SortFieldContact = SortFieldContact.NAME,
             sort_order: SortOrder = SortOrder.ASC
     ) -> List[Contact]:
@@ -44,7 +44,7 @@ class CompanyContactRepository:
         
         Args:
             session: Database session
-            company_id: ID of the investment company (optional)
+            company_ids: IDs of the investment companies (optional)
             sort_by: Sort field
             sort_order: Sort order
             
@@ -61,8 +61,8 @@ class CompanyContactRepository:
         
         # Query database
         contacts = session.query(Contact)
-        if company_id:
-            contacts = contacts.filter(Contact.investment_company_id == company_id)
+        if company_ids:
+            contacts = contacts.filter(Contact.investment_company_id.in_(company_ids))
 
         # Apply sorting
         if sort_by == SortFieldContact.NAME:

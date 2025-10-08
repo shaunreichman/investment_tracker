@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from src.shared.services.shared_irr_service import SharedIrRService
 from src.investment_company.models import InvestmentCompany
 from src.investment_company.enums.company_enums import CompanyStatus
-from src.fund.models.domain_fund_event import FundFieldChange
+from src.shared.models import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.repositories import FundEventRepository
 
 
@@ -23,7 +24,7 @@ class CompanyIrRService:
         self.shared_irr_service = SharedIrRService()
         self.fund_event_repository = FundEventRepository()
         
-    def update_irrs(self, company: InvestmentCompany, fund_ids: List[int], session: Session) -> Optional[List[FundFieldChange]]:
+    def update_irrs(self, company: InvestmentCompany, fund_ids: List[int], session: Session) -> Optional[List[DomainFieldChange]]:
         """
         Update the IRRs for a company.
         """
@@ -46,10 +47,10 @@ class CompanyIrRService:
 
         irr_changes = []
         if old_completed_irr_gross != company.completed_irr_gross:
-            irr_changes.append(FundFieldChange(object='COMPANY', object_id=company.id, field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=company.completed_irr_gross))
+            irr_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.INVESTMENT_COMPANY, domain_object_id=company.id, field_name='completed_irr_gross', old_value=old_completed_irr_gross, new_value=company.completed_irr_gross))
         if old_completed_irr_after_tax != company.completed_irr_after_tax:
-            irr_changes.append(FundFieldChange(object='COMPANY', object_id=company.id, field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=company.completed_irr_after_tax))
+            irr_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.INVESTMENT_COMPANY, domain_object_id=company.id, field_name='completed_irr_after_tax', old_value=old_completed_irr_after_tax, new_value=company.completed_irr_after_tax))
         if old_completed_irr_real != company.completed_irr_real:
-            irr_changes.append(FundFieldChange(object='COMPANY', object_id=company.id, field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=company.completed_irr_real))
+            irr_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.INVESTMENT_COMPANY, domain_object_id=company.id, field_name='completed_irr_real', old_value=old_completed_irr_real, new_value=company.completed_irr_real))
         
         return irr_changes if irr_changes else None

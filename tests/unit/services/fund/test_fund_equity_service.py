@@ -18,7 +18,9 @@ from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
 from src.fund.services.fund_equity_service import FundEquityService
-from src.fund.models import Fund, FundEvent, FundFieldChange
+from src.fund.models import Fund, FundEvent
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import SortOrder
 from tests.factories.fund_factories import FundFactory, FundEventFactory
@@ -109,25 +111,25 @@ class TestFundEquityService:
             assert len(result) == 3
             
             # Verify fund-level field changes
-            fund_current_equity_change = next((change for change in result if change.field_name == 'current_equity_balance' and change.object == 'FUND'), None)
+            fund_current_equity_change = next((change for change in result if change.field_name == 'current_equity_balance' and change.domain_object_type == DomainObjectType.FUND), None)
             assert fund_current_equity_change is not None
             assert fund_current_equity_change.old_value == old_current_equity
             assert fund_current_equity_change.new_value == 6000.0
-            assert fund_current_equity_change.object_id == mock_fund.id
-            assert fund_current_equity_change.object == 'FUND'
+            assert fund_current_equity_change.domain_object_id == mock_fund.id
+            assert fund_current_equity_change.domain_object_type == DomainObjectType.FUND
             
-            fund_average_equity_change = next((change for change in result if change.field_name == 'average_equity_balance' and change.object == 'FUND'), None)
+            fund_average_equity_change = next((change for change in result if change.field_name == 'average_equity_balance' and change.domain_object_type == DomainObjectType.FUND), None)
             assert fund_average_equity_change is not None
             assert fund_average_equity_change.old_value == old_average_equity
             assert fund_average_equity_change.new_value == 5500.0
             
-            fund_cost_basis_change = next((change for change in result if change.field_name == 'total_cost_basis' and change.object == 'FUND'), None)
+            fund_cost_basis_change = next((change for change in result if change.field_name == 'total_cost_basis' and change.domain_object_type == DomainObjectType.FUND), None)
             assert fund_cost_basis_change is not None
             assert fund_cost_basis_change.old_value == old_total_cost_basis
             assert fund_cost_basis_change.new_value == 12000.0
             
             # Verify fund event changes
-            event_changes = [change for change in result if change.object == 'FUND_EVENT' and change.field_name == 'current_equity_balance']
+            event_changes = [change for change in result if change.domain_object_type == DomainObjectType.FUND_EVENT and change.field_name == 'current_equity_balance']
             assert len(event_changes) == 0
             
             # Verify fund fields were updated
@@ -196,21 +198,21 @@ class TestFundEquityService:
             assert len(result) == 2
             
             # Verify fund-level changes: only current equity and total cost basis changed
-            fund_current_equity_change = next((change for change in result if change.field_name == 'current_equity_balance' and change.object == 'FUND'), None)
+            fund_current_equity_change = next((change for change in result if change.field_name == 'current_equity_balance' and change.domain_object_type == DomainObjectType.FUND), None)
             assert fund_current_equity_change is not None
             assert fund_current_equity_change.new_value == 6000.0
             
-            fund_cost_basis_change = next((change for change in result if change.field_name == 'total_cost_basis' and change.object == 'FUND'), None)
+            fund_cost_basis_change = next((change for change in result if change.field_name == 'total_cost_basis' and change.domain_object_type == DomainObjectType.FUND), None)
             assert fund_cost_basis_change is not None
             assert fund_cost_basis_change.new_value == 12000.0
             
             # Verify average equity was not updated at fund level
-            fund_average_equity_change = next((change for change in result if change.field_name == 'average_equity_balance' and change.object == 'FUND'), None)
+            fund_average_equity_change = next((change for change in result if change.field_name == 'average_equity_balance' and change.domain_object_type == DomainObjectType.FUND), None)
             assert fund_average_equity_change is None
             assert mock_fund.average_equity_balance == 4500.0  # Original value
             
             # Verify fund event changes (0 events changed since balances match current values)
-            event_changes = [change for change in result if change.object == 'FUND_EVENT' and change.field_name == 'current_equity_balance']
+            event_changes = [change for change in result if change.domain_object_type == DomainObjectType.FUND_EVENT and change.field_name == 'current_equity_balance']
             assert len(event_changes) == 0
             
             # Verify only current equity and cost basis calculators were called
@@ -287,13 +289,13 @@ class TestFundEquityService:
             assert len(result) == 2
             
             # Verify fund-level changes: only current equity and total cost basis changed
-            fund_field_names = [change.field_name for change in result if change.object == 'FUND']
+            fund_field_names = [change.field_name for change in result if change.domain_object_type == DomainObjectType.FUND]
             assert 'current_equity_balance' in fund_field_names
             assert 'total_cost_basis' in fund_field_names
             assert 'average_equity_balance' not in fund_field_names
             
             # Verify fund event changes (0 events changed since balances match current values)
-            event_changes = [change for change in result if change.object == 'FUND_EVENT' and change.field_name == 'current_equity_balance']
+            event_changes = [change for change in result if change.domain_object_type == DomainObjectType.FUND_EVENT and change.field_name == 'current_equity_balance']
             assert len(event_changes) == 0
             
             # Verify fund fields

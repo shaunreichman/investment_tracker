@@ -65,7 +65,7 @@ class FundValidationService:
             ]
         
         # BUSINESS RULE: Prevent deletion of funds with tax statements
-        tax_statements = self.fund_tax_statement_repository.get_fund_tax_statements(fund_id=fund.id, session=session)
+        tax_statements = self.fund_tax_statement_repository.get_fund_tax_statements(fund_ids=[fund.id], session=session)
         if len(tax_statements) > 0:
             errors['tax_statements'] = [
                 f'Cannot delete fund with {len(tax_statements)} tax statements. '
@@ -85,7 +85,7 @@ class FundValidationService:
         # Get the fund to check its tracking type
         fund = self.fund_repository.get_fund_by_id(event_data['fund_id'], session)
         if not fund:
-            raise ValueError(f"Fund not found")
+            raise ValueError(f"Fund with ID {event_data['fund_id']} not found")
 
         event_type = event_data['event_type']
         if event_type == EventType.CAPITAL_CALL:
@@ -150,7 +150,6 @@ class FundValidationService:
             else:
                 updated_equity_balance = event_data['amount']
                 
-            updated_equity_balance = prev_fund_events[-1].current_equity_balance + event_data['amount']
             for event in future_fund_events:
                 if event.event_type == EventType.CAPITAL_CALL:
                     updated_equity_balance += event.amount
@@ -354,11 +353,42 @@ class FundValidationService:
         errors = {}
 
         # Validate the event doesn't have an associated fund event cash flow
-        fund_event_cash_flows = self.fund_event_cash_flow_repository.get_fund_event_cash_flows(session, fund_event_id=event.id)
+        fund_event_cash_flows = self.fund_event_cash_flow_repository.get_fund_event_cash_flows(session, fund_event_ids=[event.id])
         if fund_event_cash_flows:
             errors['fund_event_cash_flows'] = ["Cannot delete event with associated fund event cash flows"]
         
         return errors
+
+
+    def validate_fund_event_cash_flow_creation(self, fund_event_id: int, fund_event_cash_flow_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
+        """
+        Validate fund event cash flow creation.
+        
+        Args:
+            fund_event_id: ID of the fund event
+            fund_event_cash_flow_data: Event data
+            session: Database session
+        """
+        errors = {}
+
+        # Validate Bank Account exists
+        from src.banking.repositories.bank_account_repository import BankAccountRepository
+        bank_account_repository = BankAccountRepository()
+        bank_account = bank_account_repository.get_bank_account_by_id(fund_event_cash_flow_data['bank_account_id'], session)
+        if not bank_account:
+            errors['bank_account'] = [f"Bank account with ID {fund_event_cash_flow_data['bank_account_id']} not found"]
+
+        # Validate Fund Event exists
+        fund_event = self.fund_event_repository.get_fund_event_by_id(fund_event_id, session)
+        if not fund_event:
+            errors['fund_event'] = [f"Fund event with ID {fund_event_id} not found"]
+        else:
+            # Validate Fund Event Cash Flow Balance
+            if fund_event.cash_flow_balance_amount + fund_event_cash_flow_data['amount'] > fund_event.amount:
+                errors['amount'] = ["Cash flow is too large. It will take the balance amount above the event amount"]
+
+        return errors
+
 
     def validate_fund_tax_statement_deletion(self, fund_tax_statement_id: int, session: Session) -> Dict[str, List[str]]:
         """

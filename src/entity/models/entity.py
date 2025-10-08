@@ -29,7 +29,7 @@ class Entity(Base):
     # Relationships
     funds = relationship("Fund", back_populates="entity", cascade="all, delete-orphan")
     bank_accounts = relationship("BankAccount", back_populates="entity", cascade="all, delete-orphan")
-    tax_statements = relationship("FundTaxStatement", back_populates="entity", cascade="all, delete-orphan")
+    fund_tax_statements = relationship("FundTaxStatement", back_populates="entity", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Entity(id={self.id}, name='{self.name}')>"

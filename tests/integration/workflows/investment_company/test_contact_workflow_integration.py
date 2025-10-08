@@ -133,13 +133,13 @@ class TestContactWorkflowIntegration:
         # Act: Retrieve contacts for company1
         company1_contacts = contact_service.get_contacts(
             session=db_session,
-            company_id=company1.id
+            company_ids=[company1.id]
         )
         
         # Act: Retrieve contacts for company2
         company2_contacts = contact_service.get_contacts(
             session=db_session,
-            company_id=company2.id
+            company_ids=[company2.id]
         )
         
         # Act: Retrieve all contacts
@@ -191,7 +191,7 @@ class TestContactWorkflowIntegration:
         # Test sorting by name ascending
         contacts_asc = contact_service.get_contacts(
             session=db_session,
-            company_id=company.id,
+            company_ids=[company.id],
             sort_by=SortFieldContact.NAME,
             sort_order=SortOrder.ASC
         )
@@ -199,7 +199,7 @@ class TestContactWorkflowIntegration:
         # Test sorting by name descending
         contacts_desc = contact_service.get_contacts(
             session=db_session,
-            company_id=company.id,
+            company_ids=[company.id],
             sort_by=SortFieldContact.NAME,
             sort_order=SortOrder.DESC
         )
@@ -429,7 +429,7 @@ class TestContactWorkflowIntegration:
         # Act: Retrieve contacts and verify relationships
         all_contacts = contact_service.get_contacts(
             session=db_session,
-            company_id=company.id
+            company_ids=[company.id]
         )
         
         # Assert: Verify all relationships are intact
@@ -486,7 +486,7 @@ class TestContactWorkflowIntegration:
         # Act: Retrieve contacts sorted by created_at
         contacts_by_created = contact_service.get_contacts(
             session=db_session,
-            company_id=company.id,
+            company_ids=[company.id],
             sort_by=SortFieldContact.CREATED_AT,
             sort_order=SortOrder.ASC
         )
@@ -516,7 +516,7 @@ class TestContactWorkflowIntegration:
         # Act: Retrieve contacts for company with no contacts
         contacts = contact_service.get_contacts(
             session=db_session,
-            company_id=company.id
+            company_ids=[company.id]
         )
         
         # Assert: Should return empty list
@@ -542,7 +542,7 @@ class TestContactWorkflowIntegration:
             # Access repository directly to test validation
             contact_service.company_contact_repository.get_contacts(
                 session=db_session,
-                company_id=company.id,
+                company_ids=[company.id],
                 sort_by="INVALID_FIELD",  # This should cause validation error
                 sort_order=SortOrder.ASC
             )

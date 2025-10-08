@@ -4,10 +4,11 @@ Fund Event Cash Flow Repository.
 
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
+from datetime import date
 
-from src.fund.models import FundEventCashFlow
+from src.fund.models import FundEventCashFlow, FundEvent
 from src.fund.enums.fund_event_cash_flow_enums import SortFieldFundEventCashFlow
-from src.shared.enums.shared_enums import SortOrder
+from src.shared.enums.shared_enums import SortOrder, Currency
 
 
 class FundEventCashFlowRepository:
@@ -35,9 +36,16 @@ class FundEventCashFlowRepository:
     ################################################################################
 
     def get_fund_event_cash_flows(self, session: Session,
-                                    fund_id: int = None,
-                                    fund_event_id: int = None,
-                                    bank_account_id: int = None,
+                                    fund_ids: Optional[List[int]] = None,
+                                    fund_event_ids: Optional[List[int]] = None,
+                                    bank_account_ids: Optional[List[int]] = None,
+                                    different_month: Optional[bool] = None,
+                                    adjusted_bank_account_balance_ids: Optional[List[int]] = None,
+                                    currencies: Optional[List[Currency]] = None,
+                                    start_transfer_date: Optional[date] = None,
+                                    end_transfer_date: Optional[date] = None,
+                                    start_fund_event_date: Optional[date] = None,
+                                    end_fund_event_date: Optional[date] = None,
                                     sort_by: SortFieldFundEventCashFlow = SortFieldFundEventCashFlow.TRANSFER_DATE,
                                     sort_order: SortOrder = SortOrder.ASC) -> List[FundEventCashFlow]:
         """
@@ -45,9 +53,16 @@ class FundEventCashFlowRepository:
 
         Args:
             session: Database session
-            fund_id: ID of the fund to filter by (optional) - filters through fund_event relationship
-            fund_event_id: ID of the event to filter by (optional)
-            bank_account_id: ID of the bank account to filter by (optional)
+            fund_ids: List of fund IDs to filter by (optional) - filters through fund_event relationship
+            fund_event_ids: List of event IDs to filter by (optional)
+            bank_account_ids: List of bank account IDs to filter by (optional)
+            different_month: Whether the transfer date is in a different month to the fund event date (optional)
+            adjusted_bank_account_balance_ids: List of bank account balance IDs to filter by (optional)
+            currencies: List of currencies to filter by (optional)
+            start_transfer_date: Start date of the transfer date to filter by (optional)
+            end_transfer_date: End date of the transfer date to filter by (optional)
+            start_fund_event_date: Start date of the fund event date to filter by (optional)
+            end_fund_event_date: End date of the fund event date to filter by (optional)
             sort_by: Field to sort by (optional)
             sort_order: Sort order (ascending or descending) (optional)
 
@@ -64,13 +79,27 @@ class FundEventCashFlowRepository:
 
         query = session.query(FundEventCashFlow)
 
-        if fund_id:
-            # Filter by fund_id through the fund_event relationship
-            query = query.join(FundEventCashFlow.fund_event).filter(FundEventCashFlow.fund_event.has(fund_id=fund_id))
-        if fund_event_id:
-            query = query.filter(FundEventCashFlow.fund_event_id == fund_event_id)
-        if bank_account_id:
-            query = query.filter(FundEventCashFlow.bank_account_id == bank_account_id)
+        if fund_ids and any(fund_ids):  # Filter out zero values
+            # Filter by fund_id through the fund_event relationship - need to get the fund_event_id from the fund_event relationship
+            query = query.filter(FundEventCashFlow.fund_event_id.in_(session.query(FundEvent.id).filter(FundEvent.fund_id.in_(fund_ids))))
+        if fund_event_ids and any(fund_event_ids):  # Filter out zero values
+            query = query.filter(FundEventCashFlow.fund_event_id.in_(fund_event_ids))
+        if bank_account_ids and any(bank_account_ids):  # Filter out zero values
+            query = query.filter(FundEventCashFlow.bank_account_id.in_(bank_account_ids))
+        if different_month is not None:
+            query = query.filter(FundEventCashFlow.different_month == different_month)
+        if adjusted_bank_account_balance_ids and any(adjusted_bank_account_balance_ids):  # Filter out zero values
+            query = query.filter(FundEventCashFlow.adjusted_bank_account_balance_id.in_(adjusted_bank_account_balance_ids))
+        if currencies and any(currencies):  # Filter out zero values
+            query = query.filter(FundEventCashFlow.currency.in_([c.value for c in currencies]))
+        if start_transfer_date:
+            query = query.filter(FundEventCashFlow.transfer_date >= start_transfer_date)
+        if end_transfer_date:
+            query = query.filter(FundEventCashFlow.transfer_date <= end_transfer_date)
+        if start_fund_event_date:
+            query = query.filter(FundEventCashFlow.fund_event_date >= start_fund_event_date)
+        if end_fund_event_date:
+            query = query.filter(FundEventCashFlow.fund_event_date <= end_fund_event_date)
         
         if sort_by == SortFieldFundEventCashFlow.TRANSFER_DATE:
             query = query.order_by(FundEventCashFlow.transfer_date.asc() if sort_order == SortOrder.ASC else FundEventCashFlow.transfer_date.desc())

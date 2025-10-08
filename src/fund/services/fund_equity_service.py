@@ -5,12 +5,13 @@ Fund Equity Service.
 from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from src.fund.models import Fund, FundFieldChange
+from src.fund.models import Fund
+from src.shared.models import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.calculators.fund_equity_calculator import FundEquityCalculator
 from src.fund.repositories import FundEventRepository
 from src.fund.enums.fund_event_enums import EventType
 from src.shared.enums.shared_enums import SortOrder
-from src.fund.enums.fund_enums import FundTrackingType
 
 
 class FundEquityService:
@@ -39,7 +40,8 @@ class FundEquityService:
     def update_fund_equity_fields(self, fund: Fund, session: Session,
                                   current_equity_flag: bool = True,
                                   average_equity_flag: bool = True,
-                                  total_cost_basis_flag: bool = True) -> Optional[List[FundFieldChange]]:
+                                  total_cost_basis_flag: bool = True
+    ) -> Optional[List[DomainFieldChange]]:
         """
         Update all equity fields for a fund with single computation - EFFICIENT.
         
@@ -54,7 +56,7 @@ class FundEquityService:
             total_cost_basis_flag: Flag to update the total cost basis
 
         Returns:
-            List[FundFieldChange] with updated values and metadata
+            List[DomainFieldChange] with updated values and metadata
             
         Raises:
             ValueError: If the fund is not found
@@ -87,13 +89,13 @@ class FundEquityService:
             if event.current_equity_balance != balance:
                 old_equity_balance = event.current_equity_balance
                 event.current_equity_balance = balance
-                equity_changes.append(FundFieldChange(object='FUND_EVENT', object_id=event.id, field_name='current_equity_balance', old_value=old_equity_balance, new_value=event.current_equity_balance))
+                equity_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND_EVENT, domain_object_id=event.id, field_name='current_equity_balance', old_value=old_equity_balance, new_value=event.current_equity_balance))
             
         if old_current_equity_balance != fund.current_equity_balance:
-            equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=fund.current_equity_balance))
+            equity_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='current_equity_balance', old_value=old_current_equity_balance, new_value=fund.current_equity_balance))
         if old_average_equity_balance != fund.average_equity_balance:
-            equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=fund.average_equity_balance))
+            equity_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='average_equity_balance', old_value=old_average_equity_balance, new_value=fund.average_equity_balance))
         if old_total_cost_basis != fund.total_cost_basis:
-            equity_changes.append(FundFieldChange(object='FUND', object_id=fund.id, field_name='total_cost_basis', old_value=old_total_cost_basis, new_value=fund.total_cost_basis))
+            equity_changes.append(DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='total_cost_basis', old_value=old_total_cost_basis, new_value=fund.total_cost_basis))
         
         return equity_changes if equity_changes else None

@@ -90,9 +90,9 @@ class TestCompanyService:
             # Act
             result = service.get_companies(
                 mock_session, 
-                company_type=company_type,
-                status=status,
-                name=name,
+                company_types=[company_type],
+                statuses=[status],
+                names=[name],
                 sort_by=sort_by,
                 sort_order=sort_order
             )
@@ -101,9 +101,9 @@ class TestCompanyService:
             assert result == expected_companies
             mock_repo.assert_called_once_with(
                 mock_session, 
-                company_type, 
-                status, 
-                name, 
+                [company_type], 
+                [status], 
+                [name], 
                 sort_by,
                 sort_order
             )

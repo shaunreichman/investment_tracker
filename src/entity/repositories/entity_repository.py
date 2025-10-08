@@ -36,9 +36,9 @@ class EntityRepository:
     ################################################################################
 
     def get_entities(self, session: Session, 
-                    entity_type: Optional[EntityType] = None,
-                    tax_jurisdiction: Optional[Country] = None,
-                    name: Optional[str] = None,
+                    entity_types: Optional[List[EntityType]] = None,
+                    tax_jurisdictions: Optional[List[Country]] = None,
+                    names: Optional[List[str]] = None,
                     sort_by: SortFieldEntity = SortFieldEntity.NAME,
                     sort_order: SortOrder = SortOrder.ASC
     ) -> List[Entity]:
@@ -47,9 +47,9 @@ class EntityRepository:
         
         Args:
             session: Database session
-            entity_type: Optional entity type filter (optional)
-            tax_jurisdiction: Optional tax jurisdiction filter (optional)
-            name: Optional name filter (optional)
+            entity_types: Optional entity type filter (optional)
+            tax_jurisdictions: Optional tax jurisdiction filter (optional)
+            names: Optional name filter (optional)
             sort_by: Optional sort field (optional)
             sort_order: Optional sort order (optional)
         Returns:
@@ -65,12 +65,12 @@ class EntityRepository:
 
         # Query database
         entities = session.query(Entity)
-        if entity_type:
-            entities = entities.filter(Entity.entity_type == entity_type.value)
-        if tax_jurisdiction:
-            entities = entities.filter(Entity.tax_jurisdiction == tax_jurisdiction)
-        if name:
-            entities = entities.filter(Entity.name == name)
+        if entity_types:
+            entities = entities.filter(Entity.entity_type.in_([et.value for et in entity_types]))
+        if tax_jurisdictions:
+            entities = entities.filter(Entity.tax_jurisdiction.in_([tj.value for tj in tax_jurisdictions]))
+        if names:
+            entities = entities.filter(Entity.name.in_(names))
         
         # Apply sorting
         if sort_by == SortFieldEntity.NAME:

@@ -10,6 +10,17 @@ Key features:
 - Field validation utilities
 - Security sanitization
 - Generic validation decorator
+
+Validation Parameter Naming Convention:
+- field_*: Validates individual field values
+- array_element_*: Validates each element within arrays (parallel to field_*)
+- array_size: Validates array structure (count of elements)
+
+Examples:
+- field_ranges ↔ array_element_ranges
+- field_lengths ↔ array_element_lengths  
+- field_choices ↔ array_element_choices
+- enum_fields ↔ array_element_enum_fields
 """
 
 import re
@@ -60,7 +71,13 @@ class BaseValidator:
         'float': float,
         'bool': lambda x: str(x).lower() in ('true', '1', 'yes', 'on') if isinstance(x, str) else bool(x),
         'date': lambda x: datetime.strptime(x, '%Y-%m-%d').date() if isinstance(x, str) else x,
-        'datetime': lambda x: datetime.fromisoformat(x) if isinstance(x, str) else x
+        'datetime': lambda x: datetime.fromisoformat(x) if isinstance(x, str) else x,
+        # Array type converters
+        'array': lambda x: x if isinstance(x, list) else [x] if x is not None else None,
+        'int_array': lambda x: [int(item) for item in (x if isinstance(x, list) else [x])] if x is not None else None,
+        'float_array': lambda x: [float(item) for item in (x if isinstance(x, list) else [x])] if x is not None else None,
+        'string_array': lambda x: [str(item).strip() for item in (x if isinstance(x, list) else [x])] if x is not None else None,
+        'bool_array': lambda x: [str(item).lower() in ('true', '1', 'yes', 'on') if isinstance(item, str) else bool(item) for item in (x if isinstance(x, list) else [x])] if x is not None else None
     }
     
     def __init__(self):
@@ -139,6 +156,14 @@ class BaseValidator:
                         if not isinstance(value, str):
                             raise ValueError(f"Expected string, got {type(value).__name__}")
                         converted_data[field] = str(value).strip()
+                    elif expected_type == 'array':
+                        # Handle array type - convert single values to arrays for backward compatibility
+                        if isinstance(value, list):
+                            converted_data[field] = value
+                        elif value is not None:
+                            converted_data[field] = [value]
+                        else:
+                            converted_data[field] = None
                     else:
                         # For custom types, just validate they exist
                         if not hasattr(value, expected_type):
@@ -343,6 +368,222 @@ class BaseValidator:
                 value = data[field]
                 if not isinstance(value, (int, float)) or value < 0:
                     raise ValidationError(f"{field} must be a non-negative number", field)
+    
+    def validate_array_element_types(self, data: Dict[str, Any], array_element_types: Dict[str, str]) -> None:
+        """
+        Validate that array fields contain elements of the specified type.
+        
+        Args:
+            data: Request data dictionary
+            array_element_types: Dictionary mapping field names to expected element types
+            
+        Raises:
+            ValidationError: If any array element is invalid
+        """
+        for field, element_type in array_element_types.items():
+            if field in data and data[field] is not None:
+                array_value = data[field]
+                if not isinstance(array_value, list):
+                    raise ValidationError(f"{field} must be an array", field)
+                
+                for i, element in enumerate(array_value):
+                    try:
+                        if element_type == 'int':
+                            int(element)
+                        elif element_type == 'float':
+                            float(element)
+                        elif element_type == 'string':
+                            str(element)
+                        elif element_type == 'bool':
+                            if isinstance(element, str):
+                                str(element).lower() in ('true', '1', 'yes', 'on')
+                            else:
+                                bool(element)
+                    except (ValueError, TypeError):
+                        raise ValidationError(f"{field}[{i}] must be a valid {element_type}", field)
+    
+    def validate_array_element_ranges(self, data: Dict[str, Any], array_element_ranges: Dict[str, Dict[str, Union[int, float]]]) -> None:
+        """
+        Validate that array elements fall within specified ranges.
+        
+        Args:
+            data: Request data dictionary
+            array_element_ranges: Dictionary mapping field names to range constraints for array elements
+            
+        Raises:
+            ValidationError: If any array element is outside the specified range
+        """
+        for field, constraints in array_element_ranges.items():
+            if field in data and data[field] is not None:
+                array_value = data[field]
+                if not isinstance(array_value, list):
+                    raise ValidationError(f"{field} must be an array", field)
+                
+                for i, element in enumerate(array_value):
+                    if not isinstance(element, (int, float)):
+                        continue  # Skip non-numeric elements
+                    
+                    if 'min' in constraints and element < constraints['min']:
+                        raise ValidationError(f"{field}[{i}] must be at least {constraints['min']}", field)
+                    
+                    if 'max' in constraints and element > constraints['max']:
+                        raise ValidationError(f"{field}[{i}] must be at most {constraints['max']}", field)
+    
+    def validate_array_size(self, data: Dict[str, Any], array_size: Dict[str, Dict[str, int]]) -> None:
+        """
+        Validate that arrays have the specified size constraints.
+        
+        Args:
+            data: Request data dictionary
+            array_size: Dictionary mapping field names to size constraints
+            
+        Raises:
+            ValidationError: If any array size constraint is violated
+        """
+        for field, constraints in array_size.items():
+            if field in data and data[field] is not None:
+                array_value = data[field]
+                if not isinstance(array_value, list):
+                    raise ValidationError(f"{field} must be an array", field)
+                
+                array_len = len(array_value)
+                
+                if 'min' in constraints and array_len < constraints['min']:
+                    raise ValidationError(f"{field} must have at least {constraints['min']} elements", field)
+                
+                if 'max' in constraints and array_len > constraints['max']:
+                    raise ValidationError(f"{field} must have at most {constraints['max']} elements", field)
+    
+    def validate_array_element_enum_fields(self, data: Dict[str, Any], array_element_enum_fields: Dict[str, type]) -> None:
+        """
+        Validate that array elements are valid enum values.
+        
+        Args:
+            data: Request data dictionary
+            array_element_enum_fields: Dictionary mapping field names to enum classes
+            
+        Raises:
+            ValidationError: If any array element is not a valid enum value
+        """
+        for field, enum_class in array_element_enum_fields.items():
+            if field in data and data[field] is not None:
+                array_value = data[field]
+                if not isinstance(array_value, list):
+                    raise ValidationError(f"{field} must be an array", field)
+                
+                for i, element in enumerate(array_value):
+                    try:
+                        if isinstance(element, str):
+                            enum_class(element)
+                        else:
+                            enum_class(element)
+                    except ValueError:
+                        valid_values = [e.value for e in enum_class]
+                        raise ValidationError(f"{field}[{i}] must be one of: {', '.join(valid_values)}", field)
+    
+    def validate_array_element_choices(self, data: Dict[str, Any], array_element_choices: Dict[str, List[Any]]) -> None:
+        """
+        Validate that array elements are from allowed choices.
+        
+        Args:
+            data: Request data dictionary
+            array_element_choices: Dictionary mapping field names to allowed values
+            
+        Raises:
+            ValidationError: If any array element is not in the allowed choices
+        """
+        for field, allowed_values in array_element_choices.items():
+            if field in data and data[field] is not None:
+                array_value = data[field]
+                if not isinstance(array_value, list):
+                    raise ValidationError(f"{field} must be an array", field)
+                
+                for i, element in enumerate(array_value):
+                    if element not in allowed_values:
+                        raise ValidationError(f"{field}[{i}] must be one of: {', '.join(map(str, allowed_values))}", field)
+
+    def validate_array_element_lengths(self, data: Dict[str, Any], array_element_lengths: Dict[str, Dict[str, int]]) -> None:
+        """
+        Validate that string elements within arrays have the specified length constraints.
+        
+        Args:
+            data: Request data dictionary
+            array_element_lengths: Dictionary mapping field names to length constraints for array elements
+            
+        Raises:
+            ValidationError: If any array element length constraint is violated
+        """
+        for field, constraints in array_element_lengths.items():
+            if field in data and data[field] is not None:
+                array_value = data[field]
+                if not isinstance(array_value, list):
+                    raise ValidationError(f"{field} must be an array", field)
+                
+                for i, element in enumerate(array_value):
+                    if isinstance(element, str):
+                        element_len = len(element)
+                        
+                        if 'min' in constraints and element_len < constraints['min']:
+                            raise ValidationError(f"{field}[{i}] must be at least {constraints['min']} characters", field)
+                        
+                        if 'max' in constraints and element_len > constraints['max']:
+                            raise ValidationError(f"{field}[{i}] must be at most {constraints['max']} characters", field)
+
+    def validate_mutual_exclusivity(self, data: Dict[str, Any], mutually_exclusive_groups: List[List[str]]) -> None:
+        """
+        Validate that fields within mutually exclusive groups are not provided together.
+        
+        Args:
+            data: Request data dictionary
+            mutually_exclusive_groups: List of lists, where each inner list contains field names
+                                     that are mutually exclusive with each other
+                                     
+        Raises:
+            ValidationError: If multiple fields from the same group are provided
+            
+        Examples:
+            # Single group with two fields
+            validate_mutual_exclusivity(data, [['currency', 'currencies']])
+            
+            # Multiple groups
+            validate_mutual_exclusivity(data, [
+                ['currency', 'currencies'],
+                ['rate_type', 'rate_types'],
+                ['start_date', 'end_date', 'date_range']
+            ])
+        """
+        for group in mutually_exclusive_groups:
+            provided_fields = []
+            
+            for field in group:
+                if field in data and data[field] is not None:
+                    provided_fields.append(field)
+            
+            if len(provided_fields) > 1:
+                fields_str = "', '".join(provided_fields)
+                raise ValidationError(
+                    f"Cannot specify multiple fields from the same group: '{fields_str}'. "
+                    f"Choose only one from: {group}"
+                )
+
+
+def _detect_path_parameters() -> List[str]:
+    """
+    Detect path parameters using Flask's URL rule - single source of truth.
+    
+    Returns:
+        List of parameter names that are path parameters in the current request
+    """
+    from flask import request
+    
+    if not request.url_rule:
+        return []
+    
+    # Extract path parameter names from the URL rule
+    # Flask's Rule object has a 'arguments' property that contains the parameter names
+    path_params = list(request.url_rule.arguments)
+    
+    return path_params
 
 
 def validate_request(
@@ -357,8 +598,17 @@ def validate_request(
     non_negative_numbers: Optional[List[str]] = None,
     enum_fields: Optional[Dict[str, type]] = None,
     json_schema: Optional[Dict[str, Any]] = None,
+    mutually_exclusive_groups: Optional[List[List[str]]] = None,
     custom_validation: Optional[Callable[[Dict[str, Any]], None]] = None,
-    sanitize: bool = True
+    # Array validation parameters
+    array_element_types: Optional[Dict[str, str]] = None,
+    array_element_ranges: Optional[Dict[str, Dict[str, Union[int, float]]]] = None,
+    array_element_lengths: Optional[Dict[str, Dict[str, int]]] = None,
+    array_element_enum_fields: Optional[Dict[str, type]] = None,
+    array_element_choices: Optional[Dict[str, List[Any]]] = None,
+    array_size: Optional[Dict[str, Dict[str, int]]] = None,
+    sanitize: bool = True,
+    auto_detect_path_params: bool = True
 ) -> Callable:
     """
     Generic validation decorator for request data.
@@ -375,8 +625,17 @@ def validate_request(
         non_negative_numbers: List of fields that must be non-negative numbers
         enum_fields: Dictionary mapping field names to enum classes
         json_schema: JSON schema for validation
+        mutually_exclusive_groups: List of lists containing field names that are mutually exclusive
         custom_validation: Custom validation function that takes data dict and raises ValidationError
+        # Array validation parameters
+        array_element_types: Dictionary mapping field names to expected element types for arrays
+        array_element_ranges: Dictionary mapping field names to range constraints for array elements
+        array_element_lengths: Dictionary mapping field names to length constraints for array elements
+        array_element_enum_fields: Dictionary mapping field names to enum classes for array elements
+        array_element_choices: Dictionary mapping field names to allowed values for array elements
+        array_size: Dictionary mapping field names to size constraints for arrays
         sanitize: Whether to sanitize string inputs
+        auto_detect_path_params: Whether to automatically detect and forbid path parameters
         
     Returns:
         Decorated function with validation
@@ -391,17 +650,26 @@ def validate_request(
                 elif request.form:
                     data = dict(request.form)
                 else:
-                    data = {}
+                    # For GET requests, use query parameters
+                    data = dict(request.args)
                 
                 # Initialize validator
                 validator = BaseValidator()
+                
+                # Auto-detect path parameters if enabled
+                if auto_detect_path_params:
+                    detected_path_params = _detect_path_parameters()
+                    # Merge with manually specified forbidden_fields
+                    all_forbidden_fields = (forbidden_fields or []) + detected_path_params
+                else:
+                    all_forbidden_fields = forbidden_fields
                 
                 # Apply validations in order
                 if required_fields:
                     validator.validate_required_fields(data, required_fields)
                 
-                if forbidden_fields:
-                    validator.validate_forbidden_fields(data, forbidden_fields)
+                if all_forbidden_fields:
+                    validator.validate_forbidden_fields(data, all_forbidden_fields)
                 
                 if field_types:
                     data = validator.validate_field_types(data, field_types)
@@ -427,8 +695,31 @@ def validate_request(
                 if enum_fields:
                     data = validator.validate_enum_values(data, enum_fields)
                 
+                # Array element validations (array_element_*)
+                if array_element_types:
+                    validator.validate_array_element_types(data, array_element_types)
+                
+                if array_element_ranges:
+                    validator.validate_array_element_ranges(data, array_element_ranges)
+                
+                if array_element_lengths:
+                    validator.validate_array_element_lengths(data, array_element_lengths)
+                
+                if array_element_enum_fields:
+                    validator.validate_array_element_enum_fields(data, array_element_enum_fields)
+                
+                if array_element_choices:
+                    validator.validate_array_element_choices(data, array_element_choices)
+                
+                # Array structure validation (array_size)
+                if array_size:
+                    validator.validate_array_size(data, array_size)
+                
                 if json_schema:
                     validator.validate_json_schema(data, json_schema)
+                
+                if mutually_exclusive_groups:
+                    validator.validate_mutual_exclusivity(data, mutually_exclusive_groups)
                 
                 if custom_validation:
                     custom_validation(data)

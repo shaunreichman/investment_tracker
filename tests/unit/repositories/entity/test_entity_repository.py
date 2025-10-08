@@ -77,7 +77,7 @@ class TestEntityRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_entities(mock_session, entity_type=entity_type)
+        repository.get_entities(mock_session, entity_types=[entity_type])
 
         # Assert
         assert mock_query.filter.called
@@ -94,7 +94,7 @@ class TestEntityRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_entities(mock_session, tax_jurisdiction=tax_jurisdiction)
+        repository.get_entities(mock_session, tax_jurisdictions=[tax_jurisdiction])
 
         # Assert
         assert mock_query.filter.called
@@ -111,7 +111,7 @@ class TestEntityRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_entities(mock_session, name=name)
+        repository.get_entities(mock_session, names=[name])
 
         # Assert
         assert mock_query.filter.called
@@ -130,8 +130,8 @@ class TestEntityRepository:
         mock_query.all.return_value = []
 
         # Act
-        repository.get_entities(mock_session, entity_type=entity_type, 
-                              tax_jurisdiction=tax_jurisdiction, name=name)
+        repository.get_entities(mock_session, entity_types=[entity_type], 
+                              tax_jurisdictions=[tax_jurisdiction], names=[name])
 
         # Assert
         assert mock_query.filter.call_count == 3

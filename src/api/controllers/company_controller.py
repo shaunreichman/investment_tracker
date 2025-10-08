@@ -9,7 +9,7 @@ from src.investment_company.services import CompanyService
 from src.investment_company.services.company_contact_service import CompanyContactService
 from src.api.dto.response_codes import ApiResponseCode
 from src.api.dto.controller_response_dto import ControllerResponseDTO
-from src.api.controllers.formatters.company_formatter import format_contact, format_company_comprehensive
+from src.api.controllers.formatters.company_formatter import format_contact, format_company, format_company_comprehensive
 
 
 class CompanyController:
@@ -35,38 +35,54 @@ class CompanyController:
     # Get companies
     ###############################################
 
-    def get_companies(self) -> tuple:
+    def get_companies(self) -> ControllerResponseDTO:
         """
         Get list of all companies with summary data.
         
         Search parameters (all optional):
-            include_contacts: Whether to include contacts in the response
             company_type: Company type to filter by
             status: Company status to filter by
             name: Company name to filter by
-            
+            sort_by: Sort by (NAME, STATUS, START_DATE, CREATED_AT, UPDATED_AT)
+            sort_order: Sort order (ASC, DESC)
+            include_contacts: Whether to include contacts in the response
+
         Returns:
-            ControllerResponseDTO
+            ControllerResponseDTO: DTO containing companies data and status
         """
         try:
             search_data = getattr(request, 'validated_data', {})
+
+            # Normalize single values to arrays for service layer
+            if 'company_type' in search_data:
+                search_data['company_types'] = [search_data['company_type']]
+            if 'status' in search_data:
+                search_data['statuses'] = [search_data['status']]
+            if 'name' in search_data:
+                search_data['names'] = [search_data['name']]
+
+            company_types = search_data.get('company_types')
+            statuses = search_data.get('statuses')
+            names = search_data.get('names')
+            sort_by = search_data.get('sort_by')
+            sort_order = search_data.get('sort_order')
+
             include_contacts = search_data.get('include_contacts', False)
-            company_type = search_data.get('company_type')
-            status = search_data.get('status')
-            name = search_data.get('name')
+
             session = self._get_session()
             try:
                 companies = self.company_service.get_companies(
                     session=session,
-                    company_type=company_type,
-                    status=status,
-                    name=name
+                    company_types=company_types,
+                    statuses=statuses,
+                    names=names,
+                    sort_by=sort_by,
+                    sort_order=sort_order,
+                    include_contacts=include_contacts
                 )
                 if companies is None:
                     return ControllerResponseDTO(error="Investment companies not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-                if include_contacts:
-                    for company in companies:
-                        company.contacts = self.company_contact_service.get_contacts(session=session, company_id=company.id)
+                
                 formatted_companies = [format_company_comprehensive(company, include_contacts=include_contacts) for company in companies]
                 return ControllerResponseDTO(data=formatted_companies, response_code=ApiResponseCode.SUCCESS)
 
@@ -96,18 +112,18 @@ class CompanyController:
             include_contacts: Whether to include contacts in the response
             
         Returns:
-            ControllerResponseDTO
+            ControllerResponseDTO containing company data or error
         """
         try:
-            include_data = getattr(request, 'validated_data', {})
-            include_contacts = include_data.get('include_contacts', False)
+            search_data = getattr(request, 'validated_data', {})
+            
+            include_contacts = search_data.get('include_contacts', False)
+
             session = self._get_session()
             try:
-                company = self.company_service.get_company_by_id(company_id, session)
+                company = self.company_service.get_company_by_id(company_id, session, include_contacts=include_contacts)
                 if not company:
-                    return ControllerResponseDTO(error="Company not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-                if include_contacts:
-                    company.contacts = self.company_contact_service.get_contacts(session=session, company_id=company.id)
+                    return ControllerResponseDTO(error=f"Company with ID {company_id} not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_company = format_company_comprehensive(company, include_contacts=include_contacts)
                 return ControllerResponseDTO(data=formatted_company, response_code=ApiResponseCode.SUCCESS)
@@ -152,7 +168,7 @@ class CompanyController:
                 
                 session.commit()
 
-                formatted_company = format_company_comprehensive(company, include_contacts=False)
+                formatted_company = format_company(company)
                 return ControllerResponseDTO(data=formatted_company, response_code=ApiResponseCode.CREATED)
                 
             except ValueError as e:
@@ -190,7 +206,7 @@ class CompanyController:
             try:
                 success = self.company_service.delete_company(company_id, session)
                 if not success:
-                    return ControllerResponseDTO(error="Company not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                    return ControllerResponseDTO(error=f"Company with ID {company_id} not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 session.commit()
                 
@@ -232,12 +248,16 @@ class CompanyController:
         """
         try:
             search_data = getattr(request, 'validated_data', {})
-            if company_id is None:
-                company_id = search_data.get('company_id')
+
+            # Normalize single values to arrays for service layer
+            if 'company_id' in search_data:
+                search_data['company_ids'] = [search_data['company_id']]
+
+            company_ids = search_data.get('company_ids')
             
             session = self._get_session()
             try:
-                contacts = self.company_contact_service.get_contacts(session=session, company_id=company_id)
+                contacts = self.company_contact_service.get_contacts(session=session, company_ids=company_ids)
                 if not contacts:
                     return ControllerResponseDTO(error="Contacts not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
@@ -274,7 +294,7 @@ class CompanyController:
             try:
                 contact = self.company_contact_service.get_contact_by_id(contact_id, session)
                 if not contact:
-                    return ControllerResponseDTO(error="Contact not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                    return ControllerResponseDTO(error=f"Contact with ID {contact_id} not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                     
                 formatted_contact = format_contact(contact)
                 return ControllerResponseDTO(data=formatted_contact, response_code=ApiResponseCode.SUCCESS)
@@ -360,7 +380,7 @@ class CompanyController:
             try:
                 success = self.company_contact_service.delete_contact(contact_id, session)
                 if not success:
-                    return ControllerResponseDTO(error="Contact not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                    return ControllerResponseDTO(error=f"Contact with ID {contact_id} not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 session.commit()
 

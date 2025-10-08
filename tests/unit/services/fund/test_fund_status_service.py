@@ -19,7 +19,9 @@ from sqlalchemy.orm import Session
 from datetime import date
 
 from src.fund.services.fund_status_service import FundStatusService
-from src.fund.models import Fund, FundFieldChange, FundTaxStatement
+from src.fund.models import Fund, FundTaxStatement
+from src.shared.models.domain_update_event import DomainFieldChange
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_enums import FundStatus
 from tests.factories.fund_factories import FundFactory, FundTaxStatementFactory
 
@@ -92,8 +94,8 @@ class TestFundStatusService:
         assert mock_fund_suspended.status == FundStatus.ACTIVE
         
         change = result[0]
-        assert change.object == 'FUND'
-        assert change.object_id == mock_fund_suspended.id
+        assert change.domain_object_type == DomainObjectType.FUND
+        assert change.domain_object_id == mock_fund_suspended.id
         assert change.field_name == 'status'
         assert change.old_value == FundStatus.SUSPENDED
         assert change.new_value == FundStatus.ACTIVE
@@ -122,8 +124,8 @@ class TestFundStatusService:
             assert mock_fund_active.status == FundStatus.REALIZED
             
             change = result[0]
-            assert change.object == 'FUND'
-            assert change.object_id == mock_fund_active.id
+            assert change.domain_object_type == DomainObjectType.FUND
+            assert change.domain_object_id == mock_fund_active.id
             assert change.field_name == 'status'
             assert change.old_value == FundStatus.ACTIVE
             assert change.new_value == FundStatus.REALIZED
@@ -143,8 +145,8 @@ class TestFundStatusService:
             assert mock_fund_active.status == FundStatus.COMPLETED
             
             change = result[0]
-            assert change.object == 'FUND'
-            assert change.object_id == mock_fund_active.id
+            assert change.domain_object_type == DomainObjectType.FUND
+            assert change.domain_object_id == mock_fund_active.id
             assert change.field_name == 'status'
             assert change.old_value == FundStatus.ACTIVE
             assert change.new_value == FundStatus.COMPLETED
@@ -174,8 +176,8 @@ class TestFundStatusService:
             assert mock_fund_realized.status == FundStatus.COMPLETED
             
             change = result[0]
-            assert change.object == 'FUND'
-            assert change.object_id == mock_fund_realized.id
+            assert change.domain_object_type == DomainObjectType.FUND
+            assert change.domain_object_id == mock_fund_realized.id
             assert change.field_name == 'status'
             assert change.old_value == FundStatus.REALIZED
             assert change.new_value == FundStatus.COMPLETED
@@ -192,8 +194,8 @@ class TestFundStatusService:
             assert mock_fund_completed.status == FundStatus.REALIZED
             
             change = result[0]
-            assert change.object == 'FUND'
-            assert change.object_id == mock_fund_completed.id
+            assert change.domain_object_type == DomainObjectType.FUND
+            assert change.domain_object_id == mock_fund_completed.id
             assert change.field_name == 'status'
             assert change.old_value == FundStatus.COMPLETED
             assert change.new_value == FundStatus.REALIZED
@@ -260,7 +262,7 @@ class TestFundStatusService:
             # Assert
             assert result is True
             mock_repo.get_fund_tax_statements.assert_called_once_with(
-                fund_id=mock_fund_realized.id,
+                fund_ids=[mock_fund_realized.id],
                 start_tax_payment_date=mock_fund_realized.end_date,
                 session=mock_session
             )
@@ -278,7 +280,7 @@ class TestFundStatusService:
             # Assert
             assert result is False
             mock_repo.get_fund_tax_statements.assert_called_once_with(
-                fund_id=mock_fund_realized.id,
+                fund_ids=[mock_fund_realized.id],
                 start_tax_payment_date=mock_fund_realized.end_date,
                 session=mock_session
             )

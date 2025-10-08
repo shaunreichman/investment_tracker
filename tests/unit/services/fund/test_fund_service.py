@@ -107,11 +107,11 @@ class TestFundService:
         with patch.object(service.fund_repository, 'get_funds', return_value=expected_funds) as mock_repo:
             # Act
             result = service.get_funds(
-                mock_session, 
-                company_id=company_id,
-                entity_id=entity_id,
-                fund_status=fund_status,
-                fund_tracking_type=fund_tracking_type,
+                mock_session,
+                company_ids=[company_id],
+                entity_ids=[entity_id],
+                fund_statuses=[fund_status],
+                fund_tracking_types=[fund_tracking_type],
                 sort_by=sort_by,
                 sort_order=sort_order
             )
@@ -119,11 +119,11 @@ class TestFundService:
             # Assert
             assert result == expected_funds
             mock_repo.assert_called_once_with(
-                mock_session, 
-                company_id, 
-                entity_id, 
-                fund_status, 
-                fund_tracking_type,
+                mock_session,
+                [company_id],
+                [entity_id],
+                [fund_status],
+                [fund_tracking_type],
                 sort_by,
                 sort_order
             )

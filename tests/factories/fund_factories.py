@@ -9,9 +9,9 @@ import factory
 from faker import Faker
 
 from tests.factories.base import SessionedFactory
-from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement, DomainFundEvent
+from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement
 from src.fund.enums import FundTrackingType, EventType, DistributionType, TaxPaymentType, CashFlowDirection, FundInvestmentType, FundTaxStatementFinancialYearType
-from src.shared.enums.shared_enums import Currency, Country, EventOperation
+from src.shared.enums.shared_enums import Currency, Country
 
 
 fake = Faker()
@@ -122,6 +122,7 @@ class FundEventCashFlowFactory(SessionedFactory):
         else CashFlowDirection.INFLOW
     )
     transfer_date = factory.LazyAttribute(lambda _: fake.date_between(start_date='-1y', end_date='today'))
+    fund_event_date = factory.LazyAttribute(lambda obj: obj.fund_event.event_date)  # Use the fund event's date
     currency = factory.LazyAttribute(lambda obj: obj.bank_account.currency)
     amount = factory.LazyAttribute(lambda _: fake.pyfloat(min_value=100, max_value=50000, right_digits=2))
     reference = factory.LazyAttribute(lambda _: fake.bothify(text='REF-????-????', letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'))
@@ -162,36 +163,3 @@ class FundTaxStatementFactory(SessionedFactory):
     notes = factory.LazyAttribute(lambda _: fake.sentence())
 
 
-class DomainFundEventFactory(SessionedFactory):
-    """Factory for creating DomainFundEvent test data."""
-    
-    class Meta:
-        model = DomainFundEvent
-
-    # Create required relationships automatically
-    fund = factory.SubFactory('tests.factories.fund_factories.FundFactory')
-    
-    # Basic domain fund event information (manual fields)
-    event_type = factory.LazyAttribute(lambda _: fake.random_element(elements=[
-        EventType.CAPITAL_CALL,
-        EventType.RETURN_OF_CAPITAL,
-        EventType.DISTRIBUTION,
-        EventType.UNIT_PURCHASE,
-        EventType.UNIT_SALE,
-        EventType.NAV_UPDATE,
-        EventType.DAILY_RISK_FREE_INTEREST_CHARGE,
-        EventType.EOFY_DEBT_COST,
-        EventType.TAX_PAYMENT
-    ]))
-    event_operation = factory.LazyAttribute(lambda _: fake.random_element(elements=[
-        EventOperation.CREATE,
-        EventOperation.UPDATE,
-        EventOperation.DELETE
-    ]))
-    fund_event_id = factory.LazyAttribute(lambda _: fake.random_int(min=1, max=1000))
-    event_data = factory.LazyAttribute(lambda _: {
-        'field_name': fake.word(),
-        'old_value': fake.word(),
-        'new_value': fake.word(),
-        'timestamp': fake.iso8601()
-    })

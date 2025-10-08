@@ -98,7 +98,7 @@ class TestFundValidationService:
             # Assert
             assert result == {}
             mock_events.assert_called_once_with(mock_session, fund_ids=[mock_fund.id])
-            mock_tax.assert_called_once_with(fund_id=mock_fund.id, session=mock_session)
+            mock_tax.assert_called_once_with(fund_ids=[mock_fund.id], session=mock_session)
 
     def test_validate_fund_deletion_fails_when_fund_events_exist(self, service, mock_session, mock_fund, mock_fund_events):
         """Test fund deletion validation fails when fund events exist."""
@@ -655,7 +655,7 @@ class TestFundValidationService:
 
             # Assert
             assert result == {}
-            mock_get_cash_flows.assert_called_once_with(mock_session, fund_event_id=mock_event.id)
+            mock_get_cash_flows.assert_called_once_with(mock_session, fund_event_ids=[mock_event.id])
 
     def test_validate_fund_event_deletion_fails_with_cash_flows(self, service, mock_session):
         """Test fund event deletion validation fails when cash flows exist."""
@@ -680,7 +680,7 @@ class TestFundValidationService:
             # Assert
             assert 'fund_event_cash_flows' in result
             assert "Cannot delete event with associated fund event cash flows" in result['fund_event_cash_flows']
-            mock_get_cash_flows.assert_called_once_with(mock_session, fund_event_id=mock_event.id)
+            mock_get_cash_flows.assert_called_once_with(mock_session, fund_event_ids=[mock_event.id])
 
     ################################################################################
     # Test validate_fund_tax_statement_deletion method

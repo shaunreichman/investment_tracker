@@ -98,12 +98,12 @@ class FxRateService:
         # Validate the FX rate data
         errors = self.rate_validation_service.validate_fx_rate_creation(fx_rate_data, session)
         if errors:
-            raise ValueError(f"Validation errors: {errors}")
+            raise ValueError(f"Validation errors for FX rate creation from {fx_rate_data.get('from_currency', 'unknown')} to {fx_rate_data.get('to_currency', 'unknown')} on {fx_rate_data.get('date', 'unknown')}: {errors}")
 
         # Create the FX rate
         fx_rate = self.fx_rate_repository.create_fx_rate(fx_rate_data, session)
         if not fx_rate:
-            raise ValueError(f"Failed to create FX rate")
+            raise ValueError(f"Failed to create FX rate from {fx_rate_data.get('from_currency', 'unknown')} to {fx_rate_data.get('to_currency', 'unknown')} on date {fx_rate_data.get('date', 'unknown')}")
 
         return fx_rate
 
@@ -123,8 +123,12 @@ class FxRateService:
         Returns:
             True if deleted, False otherwise
         """
+        fx_rate = self.get_fx_rate_by_id(fx_rate_id, session)
+        if not fx_rate:
+            raise ValueError(f"FX rate with ID {fx_rate_id} not found")
+
         success = self.fx_rate_repository.delete_fx_rate(fx_rate_id, session)
         if not success:
-            raise ValueError(f"Failed to delete FX rate")
+            raise ValueError(f"Failed to delete FX rate with ID {fx_rate_id}")
 
         return success

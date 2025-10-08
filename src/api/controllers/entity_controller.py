@@ -36,30 +36,47 @@ class EntityController:
         Get all entities with optional search filters.
         
         Search parameters (all optional):
-        - name: Filter by entity name
-        - entity_type: Filter by entity type
-        - tax_jurisdiction: Filter by tax jurisdiction
+            name: Filter by entity name
+            names: Filter by entity names
+            entity_type: Filter by entity type
+            entity_types: Filter by entity types
+            tax_jurisdiction: Filter by tax jurisdiction
+            tax_jurisdictions: Filter by tax jurisdictions
+            sort_by: Sort by (NAME, TYPE, TAX_JURISDICTION, CREATED_AT, UPDATED_AT)
+            sort_order: Sort order (ASC, DESC)
                     
         Returns:
-            ControllerResponseDTO
+            ControllerResponseDTO containing entities data or error
         """
         try:
             # Get search parameters from middleware (all optional)
             search_data = getattr(request, 'validated_data', {})
+
+            # Normalize single values to arrays for service layer
+            if 'name' in search_data:
+                search_data['names'] = [search_data['name']]
+            if 'entity_type' in search_data:
+                search_data['entity_types'] = [search_data['entity_type']]
+            if 'tax_jurisdiction' in search_data:
+                search_data['tax_jurisdictions'] = [search_data['tax_jurisdiction']]
             
             # Extract search parameters (None if not provided)
-            entity_type = search_data.get('entity_type')
-            tax_jurisdiction = search_data.get('tax_jurisdiction')
-            name = search_data.get('name')
+            entity_types = search_data.get('entity_types')
+            tax_jurisdictions = search_data.get('tax_jurisdictions')
+            names = search_data.get('names')
+            sort_by = search_data.get('sort_by')
+            sort_order = search_data.get('sort_order')
             
             session = self._get_session()
             try:
                 # Pass search parameters to service (all are optional)
                 entities = self.entity_service.get_entities(
                     session=session, 
-                    entity_type=entity_type, 
-                    tax_jurisdiction=tax_jurisdiction, 
-                    name=name
+                    entity_types=entity_types, 
+                    tax_jurisdictions=tax_jurisdictions, 
+                    names=names,
+                    sort_by=sort_by,
+                    sort_order=sort_order
                 )
                 
                 if entities is None:
@@ -83,7 +100,7 @@ class EntityController:
             current_app.logger.error(f"Error getting entities: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
-    def get_entity(self, entity_id: int) -> ControllerResponseDTO:
+    def get_entity_by_id(self, entity_id: int) -> ControllerResponseDTO:
         """
         Get an entity by ID.
         
@@ -98,7 +115,7 @@ class EntityController:
             try:
                 entity = self.entity_service.get_entity_by_id(entity_id, session)
                 if not entity:
-                    return ControllerResponseDTO(error="Entity not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                    return ControllerResponseDTO(error=f"Entity with ID {entity_id} not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_entity = format_entity(entity)
                 return ControllerResponseDTO(data=formatted_entity, response_code=ApiResponseCode.SUCCESS)
@@ -183,7 +200,7 @@ class EntityController:
             try:
                 success = self.entity_service.delete_entity(entity_id, session)
                 if not success:
-                    return ControllerResponseDTO(error="Entity not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                    return ControllerResponseDTO(error=f"Entity with ID {entity_id} not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 session.commit()
                 

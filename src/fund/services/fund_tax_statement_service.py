@@ -14,6 +14,7 @@ from src.shared.enums.shared_enums import SortOrder, EventOperation
 from src.fund.enums.fund_enums import FundTrackingType
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType
 from src.fund.services.fund_validation_service import FundValidationService
+from src.shared.enums.domain_update_event_enums import DomainObjectType
 
 class FundTaxStatementService:
     """
@@ -59,11 +60,11 @@ class FundTaxStatementService:
     ################################################################################
 
     def get_fund_tax_statements(self, session: Session,
-        fund_id: Optional[int] = None,
-        entity_id: Optional[int] = None,
-        financial_year: Optional[str] = None,
-        start_tax_payment_date: Optional['date'] = None,
-        end_tax_payment_date: Optional['date'] = None,
+        fund_ids: Optional[List[int]] = None,
+        entity_ids: Optional[List[int]] = None,
+        financial_years: Optional[List[str]] = None,
+        start_tax_payment_date: Optional[date] = None,
+        end_tax_payment_date: Optional[date] = None,
         sort_by: SortFieldFundTaxStatement = SortFieldFundTaxStatement.FINANCIAL_YEAR,
         sort_order: SortOrder = SortOrder.ASC
     )-> List[FundTaxStatement]:
@@ -71,9 +72,9 @@ class FundTaxStatementService:
         Get all fund tax statements.
 
         Args:
-            fund_id: ID of the fund to filter by
-            entity_id: ID of the entity to filter by
-            financial_year: Financial year to filter by
+            fund_ids: IDs of the funds to filter by
+            entity_ids: IDs of the entities to filter by
+            financial_years: Financial years to filter by
             start_tax_payment_date: Start tax payment date to filter by
             end_tax_payment_date: End tax payment date to filter by
             sort_by: Field to sort by
@@ -83,7 +84,7 @@ class FundTaxStatementService:
         Returns:
             List[FundTaxStatement]: List of fund tax statements
         """
-        return self.fund_tax_statement_repository.get_fund_tax_statements(session, fund_id, entity_id, financial_year, start_tax_payment_date, end_tax_payment_date, sort_by, sort_order)
+        return self.fund_tax_statement_repository.get_fund_tax_statements(session, fund_ids, entity_ids, financial_years, start_tax_payment_date, end_tax_payment_date, sort_by, sort_order)
         
     
     def get_fund_tax_statement_by_id(self, fund_tax_statement_id: int, session: Session) -> Optional[FundTaxStatement]:
@@ -125,13 +126,13 @@ class FundTaxStatementService:
         entity_repository = EntityRepository()
         entity = entity_repository.get_entity_by_id(processed_data['entity_id'], session)
         if not entity:
-            raise ValueError(f"Entity not found")
+            raise ValueError(f"Entity with ID {processed_data['entity_id']} not found")
  
         # Calculate the financial year start and end dates
         from src.fund.calculators.financial_year_calculator import FinancialYearCalculator
         fund = self.fund_repository.get_fund_by_id(fund_id, session)
         if not fund:
-            raise ValueError(f"Fund not found")
+            raise ValueError(f"Fund with ID {fund_id} not found")
         
         # financial_year is already in 4-digit format representing the end year
         fy_start_date, fy_end_date = FinancialYearCalculator.calculate_financial_year_dates(
@@ -147,13 +148,15 @@ class FundTaxStatementService:
         # Create the fund tax statement
         fund_tax_statement = self.fund_tax_statement_repository.create_fund_tax_statement(processed_data, session)
         if not fund_tax_statement:
-            raise ValueError(f"Failed to create fund tax statement")
+            raise ValueError(f"Failed to create fund tax statement for fund ID {fund_id} and financial year ending {processed_data.get('financial_year_end_date', 'unknown')}")
 
         # Create the daily debt cost events
         daily_debt_cost_events = self._create_daily_debt_cost_events(fund_tax_statement, session)
         if daily_debt_cost_events:
             for event_data in daily_debt_cost_events:
-                self.fund_event_repository.create_fund_event(event_data=event_data, session=session)
+                daily_debt_cost_event = self.fund_event_repository.create_fund_event(event_data=event_data, session=session)
+                if not daily_debt_cost_event:
+                    raise ValueError(f"Failed to create daily debt cost event for fund ID {fund_id} and financial year ending {processed_data.get('financial_year_end_date', 'unknown')}")
 
         # Create the tax payment events
         tax_events = self._create_tax_payment_events(fund_tax_statement, session)
@@ -167,14 +170,22 @@ class FundTaxStatementService:
                 event_data['is_grouped'] = True
                 event_data['group_position'] = group_position
                 group_position += 1
-                self.fund_event_repository.create_fund_event(event_data=event_data, session=session)
+                tax_event = self.fund_event_repository.create_fund_event(event_data=event_data, session=session)
+                if not tax_event:
+                    raise ValueError(f"Failed to create tax event for fund ID {fund_id} and financial year ending {processed_data.get('financial_year_end_date', 'unknown')}")
 
         session.flush()
 
         # Call the Fund Event Secondary Service to handle the secondary impact of the events
         from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
         fund_event_secondary_service = FundEventSecondaryService()
-        fund_event_secondary_service.handle_event_secondary_impact(fund_id=fund_tax_statement.fund_id, fund_event_type=EventType.TAX_PAYMENT, fund_event_operation=EventOperation.CREATE, session=session, event_id=fund_tax_statement.id)
+        fund_event_secondary_service.handle_event_secondary_impact(
+            fund_id=fund_tax_statement.fund_id,
+            domain_object_type=DomainObjectType.FUND_TAX_STATEMENT,
+            event_operation=EventOperation.CREATE,
+            session=session,
+            object_id=fund_tax_statement.id
+        )
 
         return fund_tax_statement        
 
@@ -196,15 +207,15 @@ class FundTaxStatementService:
         """
         fund_tax_statement = self.fund_tax_statement_repository.get_fund_tax_statement_by_id(fund_tax_statement_id, session)
         if not fund_tax_statement:
-            raise ValueError(f"Fund tax statement not found")
+            raise ValueError(f"Fund tax statement with ID {fund_tax_statement_id} not found")
 
         validation_errors = self.fund_validation_service.validate_fund_tax_statement_deletion(fund_tax_statement_id, session)
         if validation_errors:
-            raise ValueError(f"Deletion validation failed: {validation_errors}")
+            raise ValueError(f"Deletion validation failed for fund tax statement with ID {fund_tax_statement_id}: {validation_errors}")
         
         success = self.fund_tax_statement_repository.delete_fund_tax_statement(fund_tax_statement_id, session)
         if not success:
-            raise ValueError(f"Failed to delete fund tax statement")
+            raise ValueError(f"Failed to delete fund tax statement with ID {fund_tax_statement_id}")
 
         # Delete the fund_events associated with the fund tax statement first
         # Query fund events that reference this tax statement
@@ -498,7 +509,7 @@ class FundTaxStatementService:
         capital_events = self.fund_event_repository.get_fund_events(fund_ids=[fund_tax_statement.fund_id],
             event_types=[EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE],
             session=session)
-        risk_free_rates = self.risk_free_rate_repository.get_risk_free_rates(currency=fund.currency, session=session)
+        risk_free_rates = self.risk_free_rate_repository.get_risk_free_rates(currencies=[fund.currency], session=session)
 
         # 1. Generate Daily Debt Cost
         from src.fund.calculators.debt_cost_calculator import DailyDebtCostCalculator
