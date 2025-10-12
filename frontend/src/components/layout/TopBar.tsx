@@ -20,8 +20,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useSidebar } from './RouteLayout';
-import { useInvestmentCompanies } from '../../hooks/useInvestmentCompanies';
-import { useCentralizedFundDetail } from '../../hooks/useFunds';
+import { useCompanies } from '../../hooks/useCompaniesold';
+import { useCentralizedFundDetail } from '../../hooks/useFundsold';
 
 // Custom hook to get meaningful breadcrumb data
 const useBreadcrumbData = () => {
@@ -32,7 +32,7 @@ const useBreadcrumbData = () => {
   const companyId = params.companyId || (params.fundId ? undefined : undefined);
   const fundId = params.fundId;
   
-  const { data: companiesData } = useInvestmentCompanies();
+  const { data: companiesData } = useCompanies();
   const { data: fundData } = useCentralizedFundDetail(fundId || null);
   
   if (location.pathname === '/') {
@@ -57,13 +57,13 @@ const useBreadcrumbData = () => {
   if (location.pathname.startsWith('/funds/') && fundId) {
     // Get company name from fund data
     const fund = fundData?.fund;
-    const companyName = fund?.investment_company || `Company ${fund?.investment_company_id || 'Unknown'}`;
+    const companyName = fund?.company || `Company ${fund?.company_id || 'Unknown'}`;
     const fundName = fund?.name || `Fund ${fundId}`;
     
     return {
       breadcrumbs: [
         { label: 'Investments', path: '/' },
-        { label: companyName, path: `/companies/${fund?.investment_company_id || 0}` },
+        { label: companyName, path: `/companies/${fund?.company_id || 0}` },
         { label: fundName, path: `/funds/${fundId}` }
       ]
     };

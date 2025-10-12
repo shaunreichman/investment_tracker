@@ -161,11 +161,11 @@ def get_fund_by_id(fund_id):
 
 @fund_bp.route('/api/funds', methods=['POST'])
 @validate_request(
-    required_fields=['name', 'entity_id', 'investment_company_id', 'tracking_type', 'tax_jurisdiction', 'currency'],
+    required_fields=['name', 'entity_id', 'company_id', 'tracking_type', 'tax_jurisdiction', 'currency'],
     field_types={
         'name': 'string',
         'entity_id': 'int',
-        'investment_company_id': 'int',
+        'company_id': 'int',
         'tracking_type': 'string',
         'tax_jurisdiction': 'string',
         'currency': 'string',
@@ -181,11 +181,13 @@ def get_fund_by_id(fund_id):
     },
     field_ranges={
         'entity_id': {'min': 1},
-        'investment_company_id': {'min': 1},
-        'expected_irr': {'min': 0.0, 'max': 100.0},
-        'expected_duration_months': {'min': 0, 'max': 1200},
-        'commitment_amount': {'min': 0.0, 'max': 999999999.0},
+        'company_id': {'min': 1},
+        'expected_irr': {'max': 100.0},
+        'expected_duration_months': {'max': 1200},
+        'commitment_amount': {'max': 9999999999},
     },
+    non_negative_numbers=['expected_irr', 'expected_duration_months'],
+    positive_numbers=['commitment_amount'],
     enum_fields={
         'tracking_type': FundTrackingType,
         'tax_jurisdiction': Country,
@@ -201,15 +203,15 @@ def create_fund():
     Request Body:
         name (str): Fund name (required)
         entity_id (int): Associated entity ID (required)
-        investment_company_id (int): Associated investment company ID (required)
+        company_id (int): Associated company ID (required)
         tracking_type (str): Tracking type (required)
         tax_jurisdiction (str): Tax jurisdiction (required)
         currency (str): Currency (required)
         fund_investment_type (str): Fund investment type (optional)
         description (str): Fund description (optional)
         expected_irr (float): Expected IRR (optional)
-        expected_duration_months (int): Expected duration months (optional)
-        commitment_amount (float): Commitment amount (optional)
+        expected_duration_months (int): Expected duration in months, 0-1200 (optional)
+        commitment_amount (float): Commitment amount, must be positive if provided (optional)
     
     Returns:
         Standardized response with created fund data
@@ -430,8 +432,9 @@ def get_fund_event_by_id(fund_id, fund_event_id):
         'reference_number': {'max': 255},
     },
     field_ranges={
-        'amount': {'min': 0, 'max': 9999999999},
+        'amount': {'max': 9999999999},
     },
+    positive_numbers=['amount'],
     sanitize=True
 )
 def create_capital_call(fund_id):
@@ -475,8 +478,9 @@ def create_capital_call(fund_id):
         'reference_number': {'max': 255},
     },
     field_ranges={
-        'amount': {'min': 0, 'max': 9999999999},
+        'amount': {'max': 9999999999},
     },
+    positive_numbers=['amount'],
     sanitize=True
 )
 def create_return_of_capital(fund_id):
@@ -523,10 +527,12 @@ def create_return_of_capital(fund_id):
         'reference_number': {'max': 255},
     },
     field_ranges={
-        'units_purchased': {'min': 0, 'max': 9999999999},
-        'unit_price': {'min': 0, 'max': 9999999999},
-        'brokerage_fee': {'min': 0, 'max': 9999999999},
+        'units_purchased': {'max': 9999999999},
+        'unit_price': {'max': 9999999999},
+        'brokerage_fee': {'max': 9999999999},
     },
+    positive_numbers=['units_purchased', 'unit_price'],
+    non_negative_numbers=['brokerage_fee'],
     sanitize=True
 )
 def create_unit_purchase(fund_id):
@@ -575,10 +581,12 @@ def create_unit_purchase(fund_id):
         'reference_number': {'max': 255},
     },
     field_ranges={
-        'units_sold': {'min': 0, 'max': 9999999999},
-        'unit_price': {'min': 0, 'max': 9999999999},
-        'brokerage_fee': {'min': 0, 'max': 9999999999},
+        'units_sold': {'max': 9999999999},
+        'unit_price': {'max': 9999999999},
+        'brokerage_fee': {'max': 9999999999},
     },
+    positive_numbers=['units_sold', 'unit_price'],
+    non_negative_numbers=['brokerage_fee'],
     sanitize=True
 )
 def create_unit_sale(fund_id):
@@ -625,8 +633,9 @@ def create_unit_sale(fund_id):
         'reference_number': {'max': 255},
     },
     field_ranges={
-        'nav_per_share': {'min': 0, 'max': 9999999999},
+        'nav_per_share': {'max': 9999999999},
     },
+    positive_numbers=['nav_per_share'],
     sanitize=True
 )
 def create_nav_update(fund_id):
@@ -677,12 +686,13 @@ def create_nav_update(fund_id):
         'reference_number': {'max': 255},
     },
     field_ranges={
-        'amount': {'min': 0, 'max': 9999999999},
-        'gross_amount': {'min': 0, 'max': 9999999999},
-        'net_amount': {'min': 0, 'max': 9999999999},
-        'withholding_tax_amount': {'min': 0, 'max': 9999999999},
-        'withholding_tax_rate': {'min': 0, 'max': 100},
+        'amount': {'max': 9999999999},
+        'gross_amount': {'max': 9999999999},
+        'net_amount': {'max': 9999999999},
+        'withholding_tax_amount': {'max': 9999999999},
+        'withholding_tax_rate': {'max': 100},
     },
+    positive_numbers=['amount', 'gross_amount', 'net_amount', 'withholding_tax_amount', 'withholding_tax_rate'],
     enum_fields={
         'distribution_type': DistributionType,
     },
@@ -917,8 +927,9 @@ def get_fund_event_cash_flow_by_id(fund_id, fund_event_id, fund_event_cash_flow_
     },
     field_ranges={
         'bank_account_id': {'min': 1},
-        'amount': {'min': 0, 'max': 9999999999},
+        'amount': {'max': 9999999999},
     },
+    positive_numbers=['amount'],
     enum_fields={
         'direction': CashFlowDirection,
         'currency': Currency

@@ -168,13 +168,13 @@ def validate_all_factories() -> Dict[str, Dict[str, Set[str]]]:
     )
     from .entity_factories import EntityFactory
     from .banking_factories import BankFactory, BankAccountFactory
-    from .investment_company_factories import InvestmentCompanyFactory, ContactFactory
+    from .company_factories import CompanyFactory, ContactFactory
     from .rates_factories import RiskFreeRateFactory
     
     from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement
     from src.entity.models import Entity
     from src.banking.models import Bank, BankAccount
-    from src.investment_company.models import InvestmentCompany, Contact
+    from src.company.models import Company, Contact
     from src.rates.models import RiskFreeRate
     
     # Factory to model mapping
@@ -186,7 +186,7 @@ def validate_all_factories() -> Dict[str, Dict[str, Set[str]]]:
         (EntityFactory, Entity),
         (BankFactory, Bank),
         (BankAccountFactory, BankAccount),
-        (InvestmentCompanyFactory, InvestmentCompany),
+        (CompanyFactory, Company),
         (ContactFactory, Contact),
         (RiskFreeRateFactory, RiskFreeRate),
     ]

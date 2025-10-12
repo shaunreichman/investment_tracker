@@ -15,7 +15,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from sqlalchemy import create_engine
-from src.investment_company.models import InvestmentCompany
+from src.company.models import Company
 from src.rates.models import RiskFreeRate
 from src.entity.models import Entity
 from src.fund.models import Fund, FundEvent, FundTrackingType, EventType, DomainEvent
@@ -37,7 +37,7 @@ def init_database():
     print("Database initialized successfully!")
     print(f"Database URL: {engine.url}")
     print("Created tables:")
-    print("- investment_companies")
+    print("- companies")
     print("- entities") 
     print("- funds")
     print("- fund_events")
@@ -54,7 +54,7 @@ def main():
         init_database()
         
         print("\nDatabase tables created:")
-        print("- investment_companies")
+        print("- companies")
         print("- entities")
         print("- funds")
         print("- fund_events")
@@ -62,7 +62,7 @@ def main():
         print("- tax_statements")
         
         print("\nDatabase is ready to use!")
-        print("You can now start adding investment companies, funds, and fund events.")
+        print("You can now start adding companies, funds, and fund events.")
         
         # Optionally add some sample data
         add_sample_data = input("\nWould you like to add some sample data? (y/n): ").lower().strip()
@@ -93,26 +93,26 @@ def add_sample_data_to_database():
         )
         entity2 = Entity.create(
             name="ShaRei Investments", 
-            description="Family investment company",
+            description="Family company",
             session=session
         )
         
-        # Create sample investment companies using domain methods
-        company1 = InvestmentCompany.create(
+        # Create sample companies using domain methods
+        company1 = Company.create(
             name="Blackstone Group",
             description="Global alternative asset manager",
             website="https://www.blackstone.com",
             contact_email="investor.relations@blackstone.com",
             session=session
         )
-        company2 = InvestmentCompany.create(
+        company2 = Company.create(
             name="KKR & Co.",
             description="Global investment firm",
             website="https://www.kkr.com",
             contact_email="investor.relations@kkr.com",
             session=session
         )
-        company3 = InvestmentCompany.create(
+        company3 = Company.create(
             name="Apollo Global Management",
             description="Alternative investment manager",
             website="https://www.apollo.com",

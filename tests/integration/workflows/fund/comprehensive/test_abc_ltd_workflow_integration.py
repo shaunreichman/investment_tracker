@@ -31,7 +31,7 @@ from src.fund.services.fund_tax_statement_service import FundTaxStatementService
 from src.fund.services.fund_equity_service import FundEquityService
 from src.fund.services.fund_status_service import FundStatusService
 from src.fund.services.fund_irr_service import FundIrRService
-from src.investment_company.services.company_service import CompanyService
+from src.company.services.company_service import CompanyService
 from src.entity.services.entity_service import EntityService
 from src.shared.enums.shared_enums import Country
 
@@ -42,8 +42,8 @@ class TestABCLtdWorkflowIntegration:
     def test_abc_ltd_complete_lifecycle(self, db_session, seeded_test_data):
         """Test complete ABC Ltd lifecycle with all events and validations"""
         # Setup factories with session
-        from tests.factories import FundFactory, EntityFactory, InvestmentCompanyFactory
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        from tests.factories import FundFactory, EntityFactory, CompanyFactory
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Initialize services
@@ -53,7 +53,7 @@ class TestABCLtdWorkflowIntegration:
         company_service = CompanyService()
         entity_service = EntityService()
         
-        # 1. Create investment company (Shares)
+        # 1. Create company (Shares)
         company_data = {
             'name': 'Shares',
             'description': 'Share trading'
@@ -73,7 +73,7 @@ class TestABCLtdWorkflowIntegration:
         
         # 3. Create ABC Ltd fund
         fund_data = {
-            'investment_company_id': company.id,
+            'company_id': company.id,
             'entity_id': entity.id,
             'name': 'ABC Ltd',
             'fund_investment_type': FundInvestmentType.OTHER,  # Using OTHER since EQUITY is not in the enum

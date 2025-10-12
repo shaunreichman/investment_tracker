@@ -16,11 +16,11 @@ import pytest
 from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
-from src.investment_company.repositories.company_contact_repository import CompanyContactRepository
-from src.investment_company.models import Contact
-from src.investment_company.enums.company_contact_enums import SortFieldContact
+from src.company.repositories.company_contact_repository import CompanyContactRepository
+from src.company.models import Contact
+from src.company.enums.company_contact_enums import SortFieldContact
 from src.shared.enums.shared_enums import SortOrder
-from tests.factories.investment_company_factories import ContactFactory
+from tests.factories.company_factories import ContactFactory
 
 
 class TestCompanyContactRepository:
@@ -40,7 +40,7 @@ class TestCompanyContactRepository:
     def sample_contact_data(self):
         """Sample contact data for testing."""
         return {
-            'investment_company_id': 1,
+            'company_id': 1,
             'name': 'John Doe',
             'title': 'Managing Director',
             'direct_number': '+1-555-123-4567',
@@ -205,7 +205,7 @@ class TestCompanyContactRepository:
         """Test that create_contact creates and returns a contact."""
         # Arrange
         expected_contact = ContactFactory.build(**sample_contact_data)
-        with patch('src.investment_company.repositories.company_contact_repository.Contact', return_value=expected_contact):
+        with patch('src.company.repositories.company_contact_repository.Contact', return_value=expected_contact):
             # Act
             result = repository.create_contact(sample_contact_data, mock_session)
 

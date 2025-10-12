@@ -12,8 +12,8 @@ import {
   useDebouncedSearch, 
   useResponsiveView, 
   useTableSorting 
-} from '../../../hooks/shared';
-import { useFundsFilters } from '../../../hooks/funds';
+} from '../../../hooks/sharedold';
+import { useFundsFilters } from '../../../hooks/fundsold';
 
 export const FundsTab: React.FC<FundsTabProps> = ({
   data,
@@ -93,7 +93,7 @@ export const FundsTab: React.FC<FundsTabProps> = ({
               <Typography variant="body2" color="textSecondary">
                 {data?.filters?.applied_search || data?.filters?.applied_status_filter !== 'all'
                   ? 'Try adjusting your search or filter criteria.'
-                  : 'This investment company doesn\'t have any funds yet.'}
+                  : 'This company doesn\'t have any funds yet.'}
               </Typography>
             </Box>
           </CardContent>

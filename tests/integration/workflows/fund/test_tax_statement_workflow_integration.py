@@ -23,7 +23,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from tests.factories import (
-    FundFactory, EntityFactory, InvestmentCompanyFactory,
+    FundFactory, EntityFactory, CompanyFactory,
     BankFactory, BankAccountFactory, RiskFreeRateFactory
 )
 from src.fund.models import Fund, FundTaxStatement, FundEvent
@@ -43,7 +43,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_creation_basic_flow(self, db_session):
         """Test basic tax statement creation through service layer flow"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, RiskFreeRateFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, RiskFreeRateFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund and entity
@@ -127,7 +127,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_creation_with_auto_calculated_dividends(self, db_session):
         """Test tax statement creation with auto-calculated dividend amounts"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund and entity
@@ -207,7 +207,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_creation_with_capital_gains_calculation(self, db_session):
         """Test tax statement creation with auto-calculated capital gains for NAV-based fund"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund and entity
@@ -286,7 +286,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_validation_entity_not_found(self, db_session):
         """Test tax statement creation validation with non-existent entity"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund
@@ -325,7 +325,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_validation_invalid_financial_year(self, db_session):
         """Test tax statement creation validation with invalid financial year"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund and entity
@@ -365,7 +365,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_deletion_validation(self, db_session):
         """Test tax statement deletion validation and cleanup"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund, entity, and tax statement
@@ -419,7 +419,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_deletion_non_existent(self, db_session):
         """Test tax statement deletion with non-existent ID"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         db_session.commit()
@@ -433,7 +433,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_retrieval_by_filters(self, db_session):
         """Test tax statement retrieval with various filters"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create multiple funds and entities
@@ -547,7 +547,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_duplicate_prevention(self, db_session):
         """Test that duplicate tax statements for same fund/entity/financial year are prevented"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund and entity
@@ -594,7 +594,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_tax_payment_events_creation(self, db_session):
         """Test that tax payment events are created correctly for tax statement"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund and entity
@@ -669,7 +669,7 @@ class TestTaxStatementWorkflowIntegration:
     def test_tax_statement_with_zero_tax_rates(self, db_session):
         """Test tax statement creation with zero tax rates (should not create tax payment events)"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund and entity

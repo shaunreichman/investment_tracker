@@ -25,7 +25,7 @@ from src.fund.repositories.fund_event_repository import FundEventRepository
 from src.fund.repositories.fund_repository import FundRepository
 from tests.factories.fund_factories import FundFactory
 from tests.factories.entity_factories import EntityFactory
-from tests.factories.investment_company_factories import InvestmentCompanyFactory
+from tests.factories.company_factories import CompanyFactory
 
 
 class TestReturnOfCapitalWorkflowIntegration:
@@ -34,7 +34,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_service_layer_flow(self, db_session):
         """Test return of capital creation through service layer flow"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund with cost-based tracking
@@ -82,7 +82,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_business_validation(self, db_session):
         """Test business rule validation for return of capital"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund with cost-based tracking
@@ -154,7 +154,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_equity_calculations(self, db_session):
         """Test equity balance calculations after return of capital"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund
@@ -203,7 +203,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_cash_flow_integration(self, db_session):
         """Test return of capital with cash flow creation and reconciliation"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund
@@ -271,7 +271,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_multiple_return_of_capital_cumulative_tracking(self, db_session):
         """Test multiple return of capital events with cumulative tracking"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund
@@ -328,7 +328,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_error_handling_across_layers(self, db_session):
         """Test error handling and validation across all layers"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -366,7 +366,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_performance_with_large_dataset(self, db_session):
         """Test return of capital performance with large dataset"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund
@@ -418,7 +418,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_transaction_integrity(self, db_session):
         """Test database transaction rollback scenarios"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -475,7 +475,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_fund_status_updates(self, db_session):
         """Test fund status changes after return of capital"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund
@@ -521,7 +521,7 @@ class TestReturnOfCapitalWorkflowIntegration:
     def test_return_of_capital_metadata_validation(self, db_session):
         """Test return of capital event metadata and reference number handling"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(

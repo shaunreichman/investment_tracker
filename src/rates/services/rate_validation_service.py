@@ -62,4 +62,9 @@ class RateValidationService:
         elif fx_rate_data['fx_rate'] <= 0:
             errors['fx_rate'] = [f"FX rate must be greater than 0"]
         
+        # Validate from_currency and to_currency are different
+        if 'from_currency' in fx_rate_data and 'to_currency' in fx_rate_data:
+            if fx_rate_data['from_currency'] == fx_rate_data['to_currency']:
+                errors['to_currency'] = ["From currency and to currency must be different"]
+        
         return errors

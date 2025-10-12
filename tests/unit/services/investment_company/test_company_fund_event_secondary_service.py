@@ -18,13 +18,13 @@ from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 from datetime import date
 
-from src.investment_company.services.company_fund_event_secondary_service import CompanyFundEventSecondaryService
-from src.investment_company.models import InvestmentCompany
+from src.company.services.company_fund_event_secondary_service import CompanyFundEventSecondaryService
+from src.company.models import Company
 from src.shared.models.domain_update_event import DomainFieldChange
 from src.shared.enums.domain_update_event_enums import DomainObjectType
-from src.investment_company.enums.company_enums import CompanyStatus
+from src.company.enums.company_enums import CompanyStatus
 from src.fund.enums.fund_enums import FundStatus
-from tests.factories.investment_company_factories import InvestmentCompanyFactory
+from tests.factories.company_factories import CompanyFactory
 from tests.factories.fund_factories import FundFactory
 
 
@@ -44,7 +44,7 @@ class TestCompanyFundEventSecondaryService:
     @pytest.fixture
     def mock_company(self):
         """Mock company instance."""
-        return InvestmentCompanyFactory.build(
+        return CompanyFactory.build(
             id=1, 
             name='Test Company',
             start_date=date(2023, 1, 1),
@@ -393,7 +393,7 @@ class TestCompanyFundEventSecondaryService:
             mock_fund_service_class.return_value = mock_fund_service
             
             # Setup equity service mock
-            mock_equity_update.return_value = [DomainFieldChange(domain_object_type=DomainObjectType.INVESTMENT_COMPANY, domain_object_id=1, field_name='average_equity_balance', old_value=100000, new_value=110000)]
+            mock_equity_update.return_value = [DomainFieldChange(domain_object_type=DomainObjectType.COMPANY, domain_object_id=1, field_name='average_equity_balance', old_value=100000, new_value=110000)]
             
             # Act
             service.handle_event_secondary_impact(company_id, [equity_change], mock_session)

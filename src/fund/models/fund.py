@@ -25,7 +25,7 @@ class Fund(Base):
     
     # Primary key and relationships
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    investment_company_id = Column(Integer, ForeignKey('investment_companies.id'), nullable=False)  # (RELATIONSHIP) foreign key to investment company
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)  # (RELATIONSHIP) foreign key to company
     entity_id = Column(Integer, ForeignKey('entities.id'), nullable=False)  # (RELATIONSHIP) foreign key to entity
     
     # Basic fund information
@@ -80,7 +80,7 @@ class Fund(Base):
     current_duration = Column(Integer, nullable=True)  # (CALCULATED) current fund duration in months based on status
    
     # Relationships
-    investment_company = relationship("InvestmentCompany", back_populates="funds", lazy='selectin')
+    company = relationship("Company", back_populates="funds", lazy='selectin')
     entity = relationship("Entity", back_populates="funds", lazy='selectin')
     fund_events = relationship("FundEvent", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
     fund_tax_statements = relationship("FundTaxStatement", back_populates="fund", cascade="all, delete-orphan", lazy='selectin')
@@ -88,7 +88,7 @@ class Fund(Base):
     # Critical indexes for production performance
     __table_args__ = (
         # Foreign key indexes for JOIN performance
-        Index('idx_funds_investment_company_id', 'investment_company_id'),
+        Index('idx_funds_company_id', 'company_id'),
         Index('idx_funds_entity_id', 'entity_id'),
         # Composite indexes for common query patterns
         Index('idx_funds_status_tracking_type', 'status', 'tracking_type'),
@@ -113,7 +113,7 @@ class Fund(Base):
         """
         return {
             'id': 'SYSTEM',
-            'investment_company_id': 'RELATIONSHIP',
+            'company_id': 'RELATIONSHIP',
             'entity_id': 'RELATIONSHIP',
             'name': 'MANUAL',
             'fund_investment_type': 'MANUAL',
@@ -163,8 +163,8 @@ class Fund(Base):
         if not self.name:
             raise ValueError("Fund name is required")
         
-        if not self.investment_company_id:
-            raise ValueError("Investment company ID is required")
+        if not self.company_id:
+            raise ValueError("Company ID is required")
         
         if not self.entity_id:
             raise ValueError("Entity ID is required")

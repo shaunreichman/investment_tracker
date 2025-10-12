@@ -50,14 +50,14 @@ class TestFundService:
             'expected_irr': 15.5,
             'expected_duration_months': 60,
             'commitment_amount': 100000.0,
-            'investment_company_id': 1,
+            'company_id': 1,
             'entity_id': 1
         }
 
     @pytest.fixture
     def mock_fund(self):
         """Mock fund instance."""
-        return FundFactory.build(id=1, name='Test Fund', investment_company_id=1)
+        return FundFactory.build(id=1, name='Test Fund', company_id=1)
 
     @pytest.fixture
     def mock_company(self):
@@ -164,7 +164,7 @@ class TestFundService:
         """Test that create_fund sets tax statement financial year type and status."""
         # Arrange
         with patch.object(service.fund_repository, 'create_fund', return_value=mock_fund) as mock_repo, \
-             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch('src.company.services.company_service.CompanyService') as mock_company_service_class, \
              patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=mock_company) as mock_get_company:
             
             # Act
@@ -189,11 +189,11 @@ class TestFundService:
     def test_create_fund_updates_company_totals(self, service, mock_session, sample_fund_data, mock_fund, mock_company):
         """Test that create_fund updates company totals correctly."""
         # Arrange
-        mock_fund.investment_company_id = 1
+        mock_fund.company_id = 1
         mock_fund.commitment_amount = 100000.0
         
         with patch.object(service.fund_repository, 'create_fund', return_value=mock_fund) as mock_repo, \
-             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch('src.company.services.company_service.CompanyService') as mock_company_service_class, \
              patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=mock_company) as mock_get_company:
             
             # Act
@@ -209,10 +209,10 @@ class TestFundService:
     def test_create_fund_raises_error_when_company_not_found(self, service, mock_session, sample_fund_data, mock_fund):
         """Test that create_fund raises ValueError when company not found."""
         # Arrange
-        mock_fund.investment_company_id = 1
+        mock_fund.company_id = 1
         
         with patch.object(service.fund_repository, 'create_fund', return_value=mock_fund) as mock_repo, \
-             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch('src.company.services.company_service.CompanyService') as mock_company_service_class, \
              patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=None) as mock_get_company:
             
             # Act & Assert
@@ -232,13 +232,13 @@ class TestFundService:
             'expected_irr': 15.5,
             'expected_duration_months': 60,
             'commitment_amount': 100000.0,
-            'investment_company_id': 1,
+            'company_id': 1,
             'entity_id': 1,
             'custom_field': 'custom_value'
         }
         
         with patch.object(service.fund_repository, 'create_fund', return_value=mock_fund) as mock_repo, \
-             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch('src.company.services.company_service.CompanyService') as mock_company_service_class, \
              patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=mock_company) as mock_get_company:
             
             # Act
@@ -259,13 +259,13 @@ class TestFundService:
         """Test successful fund deletion with company updates."""
         # Arrange
         fund_id = 1
-        mock_fund.investment_company_id = 1
+        mock_fund.company_id = 1
         mock_fund.commitment_amount = 100000.0
         
         with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund, \
              patch.object(service.fund_validation_service, 'validate_fund_deletion', return_value={}) as mock_validate, \
              patch.object(service.fund_repository, 'delete_fund', return_value=True) as mock_delete, \
-             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch('src.company.services.company_service.CompanyService') as mock_company_service_class, \
              patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=mock_company) as mock_get_company:
             
             # Act
@@ -328,12 +328,12 @@ class TestFundService:
         """Test that delete_fund raises ValueError when company not found."""
         # Arrange
         fund_id = 1
-        mock_fund.investment_company_id = 1
+        mock_fund.company_id = 1
         
         with patch.object(service.fund_repository, 'get_fund_by_id', return_value=mock_fund) as mock_get_fund, \
              patch.object(service.fund_validation_service, 'validate_fund_deletion', return_value={}) as mock_validate, \
              patch.object(service.fund_repository, 'delete_fund', return_value=True) as mock_delete, \
-             patch('src.investment_company.services.company_service.CompanyService') as mock_company_service_class, \
+             patch('src.company.services.company_service.CompanyService') as mock_company_service_class, \
              patch.object(mock_company_service_class.return_value, 'get_company_by_id', return_value=None) as mock_get_company:
             
             # Act & Assert

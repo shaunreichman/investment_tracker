@@ -2,15 +2,31 @@
 // HOOKS INDEX
 // ============================================================================
 
-export { useApiCall } from './useApiCall';
-export { useEntities } from './useEntities';
-export { useErrorHandler } from './useErrorHandler';
-export { useEventSubmission } from './useEventSubmission';
-export { useFunds } from './useFunds';
-export { useFundFinancialYears } from './useFundFinancialYears';
-export { useInvestmentCompanies } from './useInvestmentCompanies';
-export { useNumberInput } from './useNumberInput';
+// Core hooks (API, error handling)
+export * from './core';
+
+// Data hooks (domain-specific API calls)
+export * from './data';
+
+// Form hooks (validation, schemas, transformers)
+export * from './forms';
+
+// UI hooks (generic UI state management)
+export * from './ui';
+
+// ============================================================================
+// OLD HOOKS (TO BE REMOVED)
+// ============================================================================
+
+export { useApiCall } from './useApiCallold';
+export { useEntities } from './useEntitiesold';
+export { useErrorHandler } from './useErrorHandlerold';
+export { useEventSubmission } from './useEventSubmissionold';
+export { useFunds } from './useFundsold';
+export { useFundFinancialYears } from './useFundFinancialYearsold';
+export { useCompanies } from './useCompaniesold';
+export { useNumberInput } from './useNumberInputold';
 
 // New organized hooks
-export * from './shared';
-export * from './funds';
+export * from './sharedold';
+export * from './fundsold';

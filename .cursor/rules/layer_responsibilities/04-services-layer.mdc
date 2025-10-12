@@ -64,7 +64,7 @@ class BankService:
 
 # ✅ Good: Company service with data processing and validation
 class CompanyService:
-    def create_company(self, company_data: Dict[str, Any], session: Session) -> InvestmentCompany:
+    def create_company(self, company_data: Dict[str, Any], session: Session) -> Company:
         # Validate required fields
         required_fields = ['name']
         for field in required_fields:

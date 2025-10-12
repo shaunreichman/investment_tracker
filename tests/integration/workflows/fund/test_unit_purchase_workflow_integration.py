@@ -20,7 +20,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from tests.factories import (
-    FundFactory, EntityFactory, InvestmentCompanyFactory,
+    FundFactory, EntityFactory, CompanyFactory,
     BankFactory, BankAccountFactory
 )
 from src.fund.models import Fund
@@ -40,7 +40,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_service_layer_flow(self, db_session):
         """Test unit purchase creation through service layer flow"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund (required for unit purchases)
@@ -88,7 +88,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_service_layer_validation(self, db_session):
         """Test unit purchase validation and business logic in service layer"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -128,7 +128,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_business_rules_validation(self, db_session):
         """Test unit purchase business rules and constraints"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -172,7 +172,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_equity_calculations(self, db_session):
         """Test fund equity calculations after unit purchase"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -213,7 +213,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_multiple_unit_purchases_fifo_tracking(self, db_session):
         """Test multiple unit purchases with FIFO tracking"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -269,7 +269,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_with_cash_flow_integration(self, db_session):
         """Test unit purchase workflow with cash flow creation"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, 
+        for factory in (FundFactory, EntityFactory, CompanyFactory, 
                        BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
@@ -324,7 +324,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_service_layer_persistence(self, db_session):
         """Test unit purchase data persistence through service layer"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -369,7 +369,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_error_handling_across_layers(self, db_session):
         """Test error handling across all layers"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -406,7 +406,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_transaction_integrity(self, db_session):
         """Test transaction integrity across all layers"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -453,7 +453,7 @@ class TestUnitPurchaseWorkflowIntegration:
     def test_unit_purchase_performance_with_large_dataset(self, db_session):
         """Test unit purchase performance with multiple events"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(

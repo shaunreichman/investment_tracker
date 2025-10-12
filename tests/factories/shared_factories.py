@@ -30,7 +30,7 @@ class DomainUpdateEventFactory(SessionedFactory):
         DomainObjectType.FUND_EVENT,
         DomainObjectType.FUND_EVENT_CASH_FLOW,
         DomainObjectType.FUND_TAX_STATEMENT,
-        DomainObjectType.INVESTMENT_COMPANY,
+        DomainObjectType.COMPANY,
         DomainObjectType.ENTITY,
         DomainObjectType.BANK,
         DomainObjectType.BANK_ACCOUNT,

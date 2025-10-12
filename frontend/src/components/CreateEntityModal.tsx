@@ -8,13 +8,16 @@ import {
   Box,
   Typography
 } from '@mui/material';
-import { useCreateEntity } from '../hooks/useEntities';
-import { useErrorHandler } from '../hooks/useErrorHandler';
+import { useCreateEntity } from '../hooks/useEntitiesold';
+import { useErrorHandler } from '../hooks/useErrorHandlerold';
 import { SuccessBanner } from './ui/SuccessBanner';
 import { FormContainer } from './ui/FormContainer';
 import { FormField } from './ui/FormField';
-import { useUnifiedForm } from '../hooks/forms/useUnifiedForm';
+import { useUnifiedForm } from '../hooks/formsold/useUnifiedFormold';
 import { createValidator, validationRules } from '../utils/validators';
+import { EntityType } from '../types/enums/entity.enums';
+import { Country } from '../types/enums/shared.enums';
+import { ENTITY_TYPE_LABELS, COUNTRY_LABELS } from '../utils/labels';
 
 interface CreateEntityModalProps {
   open: boolean;
@@ -26,16 +29,16 @@ interface CreateEntityModalProps {
 interface EntityFormData {
   name: string;
   description: string;
-  entity_type: string;
-  tax_jurisdiction: string;
+  entity_type: EntityType;
+  tax_jurisdiction: Country;
 }
 
 // Initial form values
 const initialFormValues: EntityFormData = {
   name: '',
   description: '',
-  entity_type: 'PERSON',
-  tax_jurisdiction: 'AU'
+  entity_type: EntityType.PERSON,
+  tax_jurisdiction: Country.AU
 };
 
 // Validation rules
@@ -93,7 +96,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
     onSubmit: async (values) => {
       const payload = {
         name: values.name.trim(),
-        description: values.description.trim() || '',
+        description: values.description.trim(),
         entity_type: values.entity_type,
         tax_jurisdiction: values.tax_jurisdiction
       };
@@ -242,11 +245,11 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                 label="Entity Type"
                 disabled={isSubmitting}
               >
-                <MenuItem value="PERSON">Person</MenuItem>
-                <MenuItem value="COMPANY">Company</MenuItem>
-                <MenuItem value="TRUST">Trust</MenuItem>
-                <MenuItem value="FUND">Fund</MenuItem>
-                <MenuItem value="OTHER">Other</MenuItem>
+                {Object.values(EntityType).map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {ENTITY_TYPE_LABELS[type]}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </FormField>
@@ -267,18 +270,11 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
                 label="Tax Jurisdiction"
                 disabled={isSubmitting}
               >
-                <MenuItem value="AU">Australia</MenuItem>
-                <MenuItem value="US">United States</MenuItem>
-                <MenuItem value="UK">United Kingdom</MenuItem>
-                <MenuItem value="CA">Canada</MenuItem>
-                <MenuItem value="NZ">New Zealand</MenuItem>
-                <MenuItem value="SG">Singapore</MenuItem>
-                <MenuItem value="HK">Hong Kong</MenuItem>
-                <MenuItem value="JP">Japan</MenuItem>
-                <MenuItem value="DE">Germany</MenuItem>
-                <MenuItem value="FR">France</MenuItem>
-                <MenuItem value="CN">China</MenuItem>
-                <MenuItem value="KR">Korea</MenuItem>
+                {Object.values(Country).map((country) => (
+                  <MenuItem key={country} value={country}>
+                    {COUNTRY_LABELS[country]}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </FormField>

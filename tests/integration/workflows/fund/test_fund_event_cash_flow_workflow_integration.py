@@ -37,7 +37,7 @@ from src.entity.services.entity_service import EntityService
 from src.fund.repositories.fund_event_cash_flow_repository import FundEventCashFlowRepository
 from tests.factories.fund_factories import FundFactory
 from tests.factories.entity_factories import EntityFactory
-from tests.factories.investment_company_factories import InvestmentCompanyFactory
+from tests.factories.company_factories import CompanyFactory
 from tests.factories.banking_factories import BankFactory, BankAccountFactory
 
 
@@ -47,7 +47,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_complete_cash_flow_workflow_with_capital_call(self, db_session):
         """Test complete workflow: Fund -> Capital Call -> Bank Account -> Cash Flow"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # 1. Create entity
@@ -136,7 +136,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_distribution_cash_flow_with_inflow_direction(self, db_session):
         """Test distribution event with cash flow INFLOW direction"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create entity and fund
@@ -206,7 +206,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_multiple_cash_flows_for_single_event(self, db_session):
         """Test multiple cash flows for a single event (split payments)"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create entity and fund
@@ -314,7 +314,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_cash_flow_validation_errors(self, db_session):
         """Test validation errors for cash flow creation"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create entity, fund, and bank account
@@ -389,7 +389,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_cash_flow_with_unit_purchase_brokerage_fee(self, db_session):
         """Test cash flow with unit purchase event including brokerage fee"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create entity and fund
@@ -457,7 +457,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_cash_flow_with_distribution_and_simple_tax_withholding(self, db_session):
         """Test cash flow with distribution event including simple tax withholding"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create entity and fund
@@ -530,7 +530,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_cash_flow_deletion_and_balance_update(self, db_session):
         """Test cash flow deletion and event balance update"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create entity, fund, and bank account
@@ -603,7 +603,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_cash_flow_retrieval_with_filters(self, db_session):
         """Test retrieving cash flows with various filters"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create entities and funds
@@ -697,7 +697,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_cash_flow_transaction_integrity(self, db_session):
         """Test database transaction rollback scenarios"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create entity, fund, and bank account
@@ -773,7 +773,7 @@ class TestFundEventCashFlowWorkflowIntegration:
     def test_multiple_entities_and_funds_cash_flow_isolation(self, db_session):
         """Test cash flow isolation across multiple entities and funds"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, BankFactory, BankAccountFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory, BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create multiple entities

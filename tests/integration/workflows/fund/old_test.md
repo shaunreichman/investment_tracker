@@ -4,8 +4,8 @@ def setup_test_data(session):
     """Set up test data using domain methods with proper session management."""
     print("Setting up test data using domain methods...")
     
-    # Create investment company using class method
-    company = InvestmentCompany.create(
+    # Create company using class method
+    company = Company.create(
         name="Alceon",
         description="Alceon Pty Ltd",
         session=session
@@ -18,8 +18,8 @@ def setup_test_data(session):
         session=session
     )
     
-    # Create investment company for shares using class method
-    company_shares = InvestmentCompany.create(
+    # Create company for shares using class method
+    company_shares = Company.create(
         name="Shares",
         description="Share trading",
         session=session
@@ -491,7 +491,7 @@ Cleared tax_statements
 Cleared fund_events
 Cleared funds
 Cleared entities
-Cleared investment_companies
+Cleared companies
 Database cleared (Risk Free Rates preserved)
 
 2. Setting up test data...

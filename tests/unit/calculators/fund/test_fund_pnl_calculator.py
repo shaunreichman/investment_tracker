@@ -480,7 +480,7 @@ class TestFundPnlCalculator:
         # Setup - Create actual model instances
         fund = Fund(
             id=1,
-            investment_company_id=1,
+            company_id=1,
             entity_id=1,
             name="Test Fund",
             tracking_type=FundTrackingType.COST_BASED,

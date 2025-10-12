@@ -31,7 +31,7 @@ export const createMockCompanyContact = (overrides: any = {}) => ({
 export const createMockCompanyOverview = (overrides: Partial<CompanyOverviewResponse> = {}): CompanyOverviewResponse => ({
   company: {
     id: 1,
-    name: 'Test Investment Company',
+    name: 'Test Company',
     company_type: 'Private Equity',
     business_address: '123 Investment Street, Sydney NSW 2000',
     website: 'https://testcompany.com',
@@ -64,7 +64,7 @@ export const createMockCompanyOverview = (overrides: Partial<CompanyOverviewResp
 export const createMockCompanyDetails = (overrides: Partial<CompanyDetailsResponse> = {}): CompanyDetailsResponse => ({
   company: {
     id: 1,
-    name: 'Test Investment Company',
+    name: 'Test Company',
     company_type: 'Private Equity',
     business_address: '123 Investment Street, Sydney NSW 2000',
     website: 'https://testcompany.com',
@@ -87,7 +87,7 @@ export const createMockFund = (overrides: Partial<Fund> = {}): Fund => ({
   commitment_amount: 1000000,
   expected_irr: 15.0,
   expected_duration_months: 60,
-  investment_company_id: 1,
+  company_id: 1,
   entity_id: 1,
   current_equity_balance: 950000,
   average_equity_balance: 900000,
@@ -129,7 +129,7 @@ export const createMockEnhancedFund = (overrides: Partial<EnhancedFund> = {}): E
   current_duration: 12,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
-  investment_company_id: 1,
+  company_id: 1,
   entity_id: 1,
   commitment_amount: 1000000,
   expected_irr: 15.0,

@@ -203,7 +203,7 @@ class TestCompanyRoutes:
         
         company_data = {
             'name': 'New Company',
-            'description': 'A new investment company',
+            'description': 'A new company',
             'company_type': 'Private Equity',
             'website': 'https://example.com',
             'business_address': '123 Main St'

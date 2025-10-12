@@ -143,7 +143,7 @@ def create_risk_free_rate():
         currency (str): ISO-4217 currency code (required)
         date (date): Date of the risk free rate (required)
         rate (float): Risk-free rate as percentage (required)
-        rate_type (str): Type of rate (required)
+        rate_type (str): Type of rate (optional)
         source (str): Source of the rate data
 
     Returns:
@@ -273,12 +273,13 @@ def get_fx_rate_by_id(fx_rate_id):
         'fx_rate': 'float'
     },
     field_ranges={
-        'fx_rate': {'min': 0, 'max': 9999999999}
+        'fx_rate': {'max': 9999999999}
     },
     enum_fields={
         'from_currency': Currency,
         'to_currency': Currency
     },
+    positive_numbers=['fx_rate'],
     sanitize=True
 )
 def create_fx_rate():

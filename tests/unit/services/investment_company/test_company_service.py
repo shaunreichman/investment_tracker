@@ -17,11 +17,11 @@ import pytest
 from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
-from src.investment_company.services.company_service import CompanyService
-from src.investment_company.models import InvestmentCompany
-from src.investment_company.enums.company_enums import CompanyType, CompanyStatus, SortFieldCompany
+from src.company.services.company_service import CompanyService
+from src.company.models import Company
+from src.company.enums.company_enums import CompanyType, CompanyStatus, SortFieldCompany
 from src.shared.enums.shared_enums import SortOrder
-from tests.factories.investment_company_factories import InvestmentCompanyFactory
+from tests.factories.company_factories import CompanyFactory
 
 
 class TestCompanyService:
@@ -42,7 +42,7 @@ class TestCompanyService:
         """Sample company data for testing."""
         return {
             'name': 'Test Company',
-            'description': 'A test investment company',
+            'description': 'A test company',
             'website': 'https://testcompany.com',
             'company_type': CompanyType.PRIVATE_EQUITY,
             'business_address': '123 Test Street, Test City'
@@ -51,7 +51,7 @@ class TestCompanyService:
     @pytest.fixture
     def mock_company(self):
         """Mock company instance."""
-        return InvestmentCompanyFactory.build(id=1, name='Test Company')
+        return CompanyFactory.build(id=1, name='Test Company')
 
     ################################################################################
     # Test get_companies method
@@ -60,7 +60,7 @@ class TestCompanyService:
     def test_get_companies_calls_repository_with_correct_parameters(self, service, mock_session):
         """Test that get_companies calls repository with correct parameters."""
         # Arrange
-        expected_companies = [InvestmentCompanyFactory.build() for _ in range(2)]
+        expected_companies = [CompanyFactory.build() for _ in range(2)]
         with patch.object(service.company_repository, 'get_companies', return_value=expected_companies) as mock_repo:
             # Act
             result = service.get_companies(mock_session)
@@ -84,7 +84,7 @@ class TestCompanyService:
         status = CompanyStatus.ACTIVE
         sort_by = SortFieldCompany.NAME
         sort_order = SortOrder.DESC
-        expected_companies = [InvestmentCompanyFactory.build()]
+        expected_companies = [CompanyFactory.build()]
         
         with patch.object(service.company_repository, 'get_companies', return_value=expected_companies) as mock_repo:
             # Act

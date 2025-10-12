@@ -29,7 +29,7 @@ def format_fund(fund: Fund) -> Dict[str, Any]:
         
         # Relationships
         'entity_id': fund.entity_id,
-        'investment_company_id': fund.investment_company_id,
+        'company_id': fund.company_id,
         
         # Basic fund information
         'currency': fund.currency.value if fund.currency else None,

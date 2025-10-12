@@ -25,7 +25,7 @@ class RiskFreeRate(Base):
     currency = Column(Enum(Currency), nullable=False)  # (MANUAL) currency code (e.g., 'AUD', 'USD', 'EUR')
     date = Column(Date, nullable=False)  # (MANUAL) date of the rate
     rate = Column(Float, nullable=False)  # (MANUAL) risk-free rate as percentage (e.g., 4.5 for 4.5%)
-    rate_type = Column(Enum(RiskFreeRateType), default=RiskFreeRateType.GOVERNMENT_BOND)  # (MANUAL) type of rate (e.g., 'government_bond', 'libor', 'sofr')
+    rate_type = Column(Enum(RiskFreeRateType), nullable=True)  # (MANUAL) type of rate (e.g., 'government_bond', 'libor', 'sofr')
     source = Column(String(100))  # (MANUAL) source of the rate data
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was created
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))  # (SYSTEM) timestamp when record was last updated

@@ -84,7 +84,7 @@ def get_banks():
 )
 def create_company():
     """
-    Create a new investment company.
+    Create a new company.
     
     Request Body:
         name (str): Company name (required)

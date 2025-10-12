@@ -62,7 +62,7 @@ class TestFundRoutes:
             "id": 1,
             "name": "Test Fund",
             "entity_id": 1,
-            "investment_company_id": 1,
+            "company_id": 1,
             "fund_investment_type": "PRIVATE_EQUITY",
             "tracking_type": "COST_BASED",
             "description": "Test fund description",
@@ -257,7 +257,7 @@ class TestFundRoutes:
         fund_data = {
             "name": "Test Fund",
             "entity_id": 1,
-            "investment_company_id": 1,
+            "company_id": 1,
             "tracking_type": "INVALID_TYPE",
             "tax_jurisdiction": "AU",
             "currency": "AUD"
@@ -273,7 +273,7 @@ class TestFundRoutes:
         fund_data = {
             "name": "A",  # Too short (min 2)
             "entity_id": 1,
-            "investment_company_id": 1,
+            "company_id": 1,
             "tracking_type": "COST_BASED",
             "tax_jurisdiction": "AU",
             "currency": "AUD"
@@ -289,7 +289,7 @@ class TestFundRoutes:
         fund_data = {
             "name": "Test Fund",
             "entity_id": -1,  # Invalid range
-            "investment_company_id": 1,
+            "company_id": 1,
             "tracking_type": "COST_BASED",
             "tax_jurisdiction": "AU",
             "currency": "AUD"
@@ -804,7 +804,7 @@ class TestFundRoutes:
             response = client.post('/api/funds', json={
                 "name": "Test Fund",
                 "entity_id": 1,
-                "investment_company_id": 1,
+                "company_id": 1,
                 "tracking_type": "COST_BASED",
                 "tax_jurisdiction": "AU",
                 "currency": "AUD"

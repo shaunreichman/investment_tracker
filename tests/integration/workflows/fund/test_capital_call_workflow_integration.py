@@ -20,7 +20,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from tests.factories import (
-    FundFactory, EntityFactory, InvestmentCompanyFactory,
+    FundFactory, EntityFactory, CompanyFactory,
     BankFactory, BankAccountFactory
 )
 from src.fund.models import Fund
@@ -40,7 +40,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_service_layer_flow(self, db_session):
         """Test capital call creation through service layer flow"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund with cost-based tracking
@@ -77,7 +77,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_service_layer_validation(self, db_session):
         """Test capital call validation and business logic in service layer"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create cost-based fund
@@ -109,7 +109,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_business_rules_validation(self, db_session):
         """Test capital call business rules and constraints"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create cost-based fund
@@ -163,7 +163,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_equity_calculations(self, db_session):
         """Test fund equity calculations after capital call"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create fund
@@ -202,7 +202,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_multiple_capital_calls_cumulative_tracking(self, db_session):
         """Test multiple capital calls with cumulative tracking"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -255,7 +255,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_with_cash_flow_integration(self, db_session):
         """Test capital call workflow with cash flow creation"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory, 
+        for factory in (FundFactory, EntityFactory, CompanyFactory, 
                        BankFactory, BankAccountFactory):
             factory._meta.sqlalchemy_session = db_session
         
@@ -308,7 +308,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_repository_persistence(self, db_session):
         """Test capital call data persistence through repository layer"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -348,7 +348,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_error_handling_across_layers(self, db_session):
         """Test error handling across all layers"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -383,7 +383,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_transaction_integrity(self, db_session):
         """Test transaction integrity across all layers"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(
@@ -432,7 +432,7 @@ class TestCapitalCallWorkflowIntegration:
     def test_capital_call_performance_with_large_dataset(self, db_session):
         """Test capital call performance with multiple events"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         fund = FundFactory.create(

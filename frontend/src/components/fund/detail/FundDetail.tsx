@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { ExtendedFundEvent } from '../../../types/api';
 import { ErrorType, ErrorSeverity } from '../../../types/errors';
-import { useDeleteFundEvent, useFundEvents, useFundSummary, useFundMetadata } from '../../../hooks/useFunds';
+import { useDeleteFundEvent, useFundEvents, useFundSummary, useFundMetadata } from '../../../hooks/useFundsold';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { useSidebarState, useTableFilters } from '../../../store';
 

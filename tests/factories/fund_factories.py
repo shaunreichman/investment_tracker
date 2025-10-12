@@ -24,7 +24,7 @@ class FundFactory(SessionedFactory):
         model = Fund
 
     # Create required relationships automatically
-    investment_company = factory.SubFactory('tests.factories.investment_company_factories.InvestmentCompanyFactory')
+    company = factory.SubFactory('tests.factories.company_factories.CompanyFactory')
     entity = factory.SubFactory('tests.factories.entity_factories.EntityFactory')
 
     # Basic fund information (manual fields)

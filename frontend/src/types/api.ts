@@ -113,7 +113,7 @@ export enum Country {
 // CORE ENTITY INTERFACES
 // ============================================================================
 
-export interface InvestmentCompany {
+export interface Company {
   id: number;
   name: string;
   description?: string | undefined;
@@ -149,7 +149,7 @@ export interface Fund {
   commitment_amount?: number | undefined;
   expected_irr?: number | undefined;
   expected_duration_months?: number | undefined;
-  investment_company_id: number;
+  company_id: number;
   entity_id: number;
   current_equity_balance: number;
   average_equity_balance: number;
@@ -162,7 +162,7 @@ export interface Fund {
   created_at: string;
   updated_at: string;
   // Related data
-  investment_company?: InvestmentCompany | undefined;
+  company?: Company | undefined;
   entity?: Entity | undefined;
   events?: FundEvent[] | undefined;
   tax_statements?: TaxStatement[] | undefined;
@@ -262,8 +262,8 @@ export interface DashboardFund {
   recent_events_count: number;
   created_at: string;
   // Display fields (strings instead of IDs)
-  investment_company_id: number;  // Company ID for grouping
-  investment_company: string;     // Company name as string
+  company_id: number;  // Company ID for grouping
+  company: string;     // Company name as string
   entity_id: number;             // Entity ID for consistency
   entity: string;                // Entity name as string
 }
@@ -289,7 +289,7 @@ export interface DashboardData {
 // API REQUEST INTERFACES
 // ============================================================================
 
-export interface CreateInvestmentCompanyData {
+export interface CreateCompanyData {
   name: string;
   description?: string;
 }
@@ -310,7 +310,7 @@ export interface CreateFundData {
   commitment_amount?: number;
   expected_irr?: number;
   expected_duration_months?: number;
-  investment_company_id: number;
+  company_id: number;
   entity_id: number;
 }
 
@@ -369,14 +369,6 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-}
-
 // ============================================================================
 // ERROR INTERFACES
 // ============================================================================
@@ -395,7 +387,7 @@ export interface ApiError {
 export type FundListResponse = Fund[];
 export type FundEventListResponse = FundEvent[];
 export type TaxStatementListResponse = TaxStatement[];
-export type InvestmentCompanyListResponse = InvestmentCompany[];
+export type CompanyListResponse = Company[];
 export type EntityListResponse = Entity[];
 
 // ============================================================================
@@ -467,9 +459,9 @@ export interface ExtendedFundStatistics extends FundStatistics {
  * Extended Fund interface for FundDetail component
  * Includes display-specific fields and new calculated fields for fund detail redesign
  */
-export interface ExtendedFund extends Omit<Fund, 'investment_company' | 'entity'> {
+export interface ExtendedFund extends Omit<Fund, 'company' | 'entity'> {
   // Display-specific fields (strings instead of objects)
-  investment_company: string;  // Company name as string
+  company: string;  // Company name as string
   entity: string;              // Entity name as string
   
   // New calculated fields for fund detail redesign
@@ -559,7 +551,7 @@ export interface EnhancedFund {
   updated_at: string;
   
   // Investment details
-  investment_company_id: number;
+  company_id: number;
   entity_id: number;
   commitment_amount: number | null;
   expected_irr: number | null;

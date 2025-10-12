@@ -53,16 +53,16 @@ class EntityValidationService:
         # Cannot delete entity with dependent bank accounts
         bank_accounts = self.bank_account_repository.get_bank_accounts(session, entity_ids=[entity_id])
         if bank_accounts:
-            errors['bank_accounts'] = ["Cannot delete entity with dependent bank accounts"]
+            errors['bank_accounts'] = [f"Cannot delete entity with dependent bank accounts. We have {len(bank_accounts)} bank accounts associated with this entity."]
         
         # Cannot delete entity with dependent tax statements
         tax_statements = self.fund_tax_statement_repository.get_fund_tax_statements(session, entity_ids=[entity_id])
         if tax_statements:
-            errors['tax_statements'] = ["Cannot delete entity with dependent tax statements"]
+            errors['tax_statements'] = [f"Cannot delete entity with dependent tax statements. We have {len(tax_statements)} tax statements associated with this entity."]
         
         # Cannot delete entity with dependent funds
         funds = self.fund_repository.get_funds(session, entity_ids=[entity_id])
         if funds:
-            errors['funds'] = ["Cannot delete entity with dependent funds"]
+            errors['funds'] = [f"Cannot delete entity with dependent funds. We have {len(funds)} funds associated with this entity."]
 
         return errors

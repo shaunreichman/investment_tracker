@@ -51,14 +51,8 @@ class BaseValidator:
     # Common validation patterns
     VALIDATION_PATTERNS = {
         'email': r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-        'phone': r'^\+?1?\d{9,15}$',
-        'date': r'^\d{4}-\d{2}-\d{2}$',
-        'routing_number': r'^\d{9}$',
-        'currency': r'^[A-Z]{3}$',
-        'country_code': r'^[A-Z]{2}$',  # 2-letter ISO country code
-        'postal_code': r'^\d{5}(-\d{4})?$',
-        'ssn': r'^\d{3}-\d{2}-\d{4}$',
-        'financial_year': r'^\d{4}-\d{2}$',  # e.g., "2023-24"
+        'phone': r'^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$',  # International phone: allows country codes, formatting chars
+        'financial_year': r'^\d{4}$',  # e.g., "2023"
         'non_empty_string': r'^.+$',  # At least one character
         'alphanumeric': r'^[a-zA-Z0-9]+$',
         'alphanumeric_with_spaces': r'^[a-zA-Z0-9\s]+$',

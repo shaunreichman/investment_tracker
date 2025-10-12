@@ -41,7 +41,7 @@ class TestFundRepository:
         """Sample fund data for testing."""
         return {
             'name': 'Test Fund',
-            'investment_company_id': 1,
+            'company_id': 1,
             'entity_id': 1,
             'tracking_type': FundTrackingType.NAV_BASED,
             'currency': 'AUD',

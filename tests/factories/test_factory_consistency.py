@@ -49,7 +49,7 @@ class TestFactoryModelConsistency:
             EntityFactory,
             BankFactory,
             BankAccountFactory,
-            InvestmentCompanyFactory,
+            CompanyFactory,
             ContactFactory,
             RiskFreeRateFactory,
             set_session,
@@ -66,14 +66,14 @@ class TestFactoryModelConsistency:
         """Test that factory Meta classes reference the correct models."""
         from tests.factories import (
             FundFactory, FundEventFactory, FundEventCashFlowFactory, FundTaxStatementFactory,
-            EntityFactory, BankFactory, BankAccountFactory, InvestmentCompanyFactory,
+            EntityFactory, BankFactory, BankAccountFactory, CompanyFactory,
             ContactFactory, RiskFreeRateFactory
         )
         
         from src.fund.models import Fund, FundEvent, FundEventCashFlow, FundTaxStatement
         from src.entity.models import Entity
         from src.banking.models import Bank, BankAccount
-        from src.investment_company.models import InvestmentCompany, Contact
+        from src.company.models import Company, Contact
         from src.rates.models import RiskFreeRate
         
         # Test model references
@@ -84,6 +84,6 @@ class TestFactoryModelConsistency:
         assert EntityFactory._meta.model == Entity
         assert BankFactory._meta.model == Bank
         assert BankAccountFactory._meta.model == BankAccount
-        assert InvestmentCompanyFactory._meta.model == InvestmentCompany
+        assert CompanyFactory._meta.model == Company
         assert ContactFactory._meta.model == Contact
         assert RiskFreeRateFactory._meta.model == RiskFreeRate

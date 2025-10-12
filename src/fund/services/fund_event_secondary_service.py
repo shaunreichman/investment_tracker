@@ -17,7 +17,7 @@ from src.fund.services.fund_nav_service import FundNavService
 from src.fund.repositories import FundRepository
 from src.fund.services.fund_units_service import FundUnitsService
 from src.fund.enums.fund_enums import FundTrackingType
-from src.investment_company.services.company_fund_event_secondary_service import CompanyFundEventSecondaryService
+from src.company.services.company_fund_event_secondary_service import CompanyFundEventSecondaryService
 from src.shared.services.domain_update_event_service import DomainUpdateEventService
 
 class FundEventSecondaryService:
@@ -188,7 +188,7 @@ class FundEventSecondaryService:
             session.refresh(fund)
 
         # 11. Update the Company Fields
-        company_changes = self.company_fund_event_secondary_service.handle_event_secondary_impact(fund.investment_company_id, all_changes, session)
+        company_changes = self.company_fund_event_secondary_service.handle_event_secondary_impact(fund.company_id, all_changes, session)
         if company_changes:
             self.domain_update_event_service.add_domain_field_changes_to_list(all_changes, company_changes)
             # Flush changes to database to ensure company fields are persisted

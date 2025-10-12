@@ -45,8 +45,8 @@ from .entity_factories import EntityFactory
 # Import banking factories
 from .banking_factories import BankFactory, BankAccountFactory
 
-# Import investment company factories
-from .investment_company_factories import InvestmentCompanyFactory, ContactFactory
+# Import company factories
+from .company_factories import CompanyFactory, ContactFactory
 
 # Import rates factories
 from .rates_factories import RiskFreeRateFactory
@@ -76,8 +76,8 @@ __all__ = [
     'BankFactory',
     'BankAccountFactory',
     
-    # Investment company factories
-    'InvestmentCompanyFactory',
+    # Company factories
+    'CompanyFactory',
     'ContactFactory',
     
     # Rates factories

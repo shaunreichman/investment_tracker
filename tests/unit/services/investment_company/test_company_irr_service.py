@@ -17,12 +17,12 @@ import pytest
 from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
-from src.investment_company.services.company_irr_service import CompanyIrRService
-from src.investment_company.models import InvestmentCompany
-from src.investment_company.enums.company_enums import CompanyStatus
+from src.company.services.company_irr_service import CompanyIrRService
+from src.company.models import Company
+from src.company.enums.company_enums import CompanyStatus
 from src.shared.models.domain_update_event import DomainFieldChange
 from src.shared.enums.domain_update_event_enums import DomainObjectType
-from tests.factories.investment_company_factories import InvestmentCompanyFactory
+from tests.factories.company_factories import CompanyFactory
 from tests.factories.fund_factories import FundEventFactory
 
 
@@ -42,7 +42,7 @@ class TestCompanyIrRService:
     @pytest.fixture
     def mock_active_company(self):
         """Mock active company instance."""
-        return InvestmentCompanyFactory.build(
+        return CompanyFactory.build(
             id=1, 
             name='Active Company',
             status=CompanyStatus.ACTIVE,
@@ -54,7 +54,7 @@ class TestCompanyIrRService:
     @pytest.fixture
     def mock_completed_company(self):
         """Mock completed company instance."""
-        return InvestmentCompanyFactory.build(
+        return CompanyFactory.build(
             id=2, 
             name='Completed Company',
             status=CompanyStatus.COMPLETED,
@@ -132,17 +132,17 @@ class TestCompanyIrRService:
             real_change = next((change for change in result if change.field_name == 'completed_irr_real'), None)
             
             # Verify field change properties
-            assert gross_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert gross_change.domain_object_type == DomainObjectType.COMPANY
             assert gross_change.domain_object_id == mock_active_company.id
             assert gross_change.old_value == old_gross
             assert gross_change.new_value is None
             
-            assert after_tax_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert after_tax_change.domain_object_type == DomainObjectType.COMPANY
             assert after_tax_change.domain_object_id == mock_active_company.id
             assert after_tax_change.old_value == old_after_tax
             assert after_tax_change.new_value is None
             
-            assert real_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert real_change.domain_object_type == DomainObjectType.COMPANY
             assert real_change.domain_object_id == mock_active_company.id
             assert real_change.old_value == old_real
             assert real_change.new_value is None
@@ -256,17 +256,17 @@ class TestCompanyIrRService:
             real_change = next((change for change in result if change.field_name == 'completed_irr_real'), None)
             
             # Verify field change properties
-            assert gross_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert gross_change.domain_object_type == DomainObjectType.COMPANY
             assert gross_change.domain_object_id == mock_completed_company.id
             assert gross_change.old_value == old_gross
             assert gross_change.new_value == expected_gross
             
-            assert after_tax_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert after_tax_change.domain_object_type == DomainObjectType.COMPANY
             assert after_tax_change.domain_object_id == mock_completed_company.id
             assert after_tax_change.old_value == old_after_tax
             assert after_tax_change.new_value == expected_after_tax
             
-            assert real_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert real_change.domain_object_type == DomainObjectType.COMPANY
             assert real_change.domain_object_id == mock_completed_company.id
             assert real_change.old_value == old_real
             assert real_change.new_value == expected_real

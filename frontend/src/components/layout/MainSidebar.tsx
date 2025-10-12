@@ -22,8 +22,8 @@ import {
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useInvestmentCompanies } from '../../hooks/useInvestmentCompanies';
-import { useFunds } from '../../hooks/useFunds';
+import { useCompanies } from '../../hooks/useCompaniesold';
+import { useFunds } from '../../hooks/useFundsold';
 import { DashboardFund } from '../../types/api';
 
 interface MainSidebarProps {
@@ -37,7 +37,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
   const params = useParams();
 
   // API hooks for dynamic content
-  const { data: companiesData } = useInvestmentCompanies();
+  const { data: companiesData } = useCompanies();
   const { data: allFundsData } = useFunds();
 
   // Get current company and fund IDs from route params
@@ -47,7 +47,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
     }
     if (params.fundId && allFundsData) {
       const fund = allFundsData.find(f => f.id === parseInt(params.fundId || '0'));
-      return fund?.investment_company_id;
+      return fund?.company_id;
     }
     return null;
   }, [params, allFundsData]);
@@ -63,10 +63,10 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
     
     const grouped = new Map<number, DashboardFund[]>();
     allFundsData.forEach((fund: DashboardFund) => {
-      if (!grouped.has(fund.investment_company_id)) {
-        grouped.set(fund.investment_company_id, []);
+      if (!grouped.has(fund.company_id)) {
+        grouped.set(fund.company_id, []);
       }
-      grouped.get(fund.investment_company_id)!.push(fund);
+      grouped.get(fund.company_id)!.push(fund);
     });
     
     return grouped;

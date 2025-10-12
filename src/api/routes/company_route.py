@@ -2,7 +2,7 @@
 Company API Routes.
 
 This module contains all company-related API endpoints including
-investment company management and company-specific contact operations.
+company management and company-specific contact operations.
 
 All endpoints use middleware validation for input data.
 All endpoints use the company controller with DTO responses.
@@ -14,7 +14,7 @@ from src.api.controllers.company_controller import CompanyController
 from src.api.dto.api_response import ApiResponse
 from src.api.dto.response_codes import ApiResponseCode
 from src.api.middleware.response_handlers import handle_controller_response, handle_delete_response
-from src.investment_company.enums.company_enums import CompanyType, CompanyStatus, SortFieldCompany
+from src.company.enums.company_enums import CompanyType, CompanyStatus, SortFieldCompany
 from src.shared.enums.shared_enums import SortOrder
 
 # Create blueprint for company routes
@@ -142,6 +142,9 @@ def get_company_by_id(company_id):
         'website': {'max': 255},
         'business_address': {'max': 1000}
     },
+    field_patterns={
+        'website': 'url'
+    },
     enum_fields={
         'company_type': CompanyType
     },
@@ -149,14 +152,14 @@ def get_company_by_id(company_id):
 )
 def create_company():
     """
-    Create a new investment company using services
+    Create a new company using services
 
     Request Body:
-        name (str): Investment company name (required)
-        description (str): Investment company description (optional)
-        company_type (str): Investment company type (optional)
-        website (str): Investment company website (optional)
-        business_address (str): Investment company business address (optional)
+        name (str): company name (required)
+        description (str): company description (optional)
+        company_type (str): company type (optional)
+        website (str): company website (optional)
+        business_address (str): company business address (optional)
 
     Returns:
         Standardized response with company data
@@ -298,15 +301,19 @@ def get_contact_by_id(company_id, contact_id):
     required_fields=['name'],
     field_types={
         'name': 'string',
-        'email': 'string',
-        'phone': 'string',
+        'direct_email': 'string',
+        'direct_number': 'string',
         'title': 'string'
     },
     field_lengths={
         'name': {'min': 2, 'max': 255},
-        'email': {'max': 255},
-        'phone': {'max': 50},
+        'direct_email': {'max': 255},
+        'direct_number': {'max': 50},
         'title': {'max': 100}
+    },
+    field_patterns={
+        'direct_email': 'email',
+        'direct_number': 'phone'
     },
     sanitize=True
 )
@@ -319,8 +326,8 @@ def create_contact(company_id):
 
     Request Body:
         name (str): Name of the contact (required)
-        email (str): Email address (optional)
-        phone (str): Phone number (optional)
+        direct_email (str): Direct email address (optional)
+        direct_number (str): Direct phone number (optional)
         title (str): Job title (optional)
 
     Returns:

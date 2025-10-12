@@ -16,10 +16,10 @@ import pytest
 from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
-from src.investment_company.services.company_validation_service import CompanyValidationService
-from src.investment_company.models import InvestmentCompany
+from src.company.services.company_validation_service import CompanyValidationService
+from src.company.models import Company
 from src.fund.enums.fund_enums import FundStatus
-from tests.factories.investment_company_factories import InvestmentCompanyFactory
+from tests.factories.company_factories import CompanyFactory
 from tests.factories.fund_factories import FundFactory
 
 
@@ -39,7 +39,7 @@ class TestCompanyValidationService:
     @pytest.fixture
     def mock_company(self):
         """Mock company instance."""
-        return InvestmentCompanyFactory.build(id=1, name='Test Company')
+        return CompanyFactory.build(id=1, name='Test Company')
 
     @pytest.fixture
     def mock_funds(self):

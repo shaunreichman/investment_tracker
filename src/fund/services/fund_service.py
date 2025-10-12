@@ -13,7 +13,7 @@ from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.models import Fund
 from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.shared.services.domain_update_event_service import DomainUpdateEventService
-from src.investment_company.services.company_fund_event_secondary_service import CompanyFundEventSecondaryService
+from src.company.services.company_fund_event_secondary_service import CompanyFundEventSecondaryService
 
 class FundService:
     """
@@ -137,7 +137,7 @@ class FundService:
             raise ValueError(f"Failed to create fund with name '{processed_data.get('name', 'unknown')}'")
 
         # Update the company
-        all_changes = self.company_fund_event_secondary_service.update_company_after_fund_creation(fund.investment_company_id, fund.commitment_amount, session)
+        all_changes = self.company_fund_event_secondary_service.update_company_after_fund_creation(fund.company_id, fund.commitment_amount, session)
         if all_changes:
             valid_changes = [change.to_dict() for change in all_changes if change is not None]
             domain_update_event = self.domain_update_event_service.create_domain_update_event(
@@ -186,7 +186,7 @@ class FundService:
             raise ValueError(f"Failed to delete fund with ID {fund_id}")
 
         # Update the company
-        all_changes = self.company_fund_event_secondary_service.update_company_after_fund_deletion(fund.investment_company_id, fund.commitment_amount, fund.status, session)
+        all_changes = self.company_fund_event_secondary_service.update_company_after_fund_deletion(fund.company_id, fund.commitment_amount, fund.status, session)
         if all_changes:
             valid_changes = [change.to_dict() for change in all_changes if change is not None]
             domain_update_event = self.domain_update_event_service.create_domain_update_event(

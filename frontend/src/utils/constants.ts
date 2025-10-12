@@ -2,17 +2,16 @@
  * Centralized constants and enums for consistent application configuration
  */
 
+import { 
+  FundInvestmentType,
+  FundStatus,
+  EventType,
+  DistributionType,
+  TaxPaymentType,
+  FundTrackingType
+} from '../types/enums/fund.enums';
+
 // Note: This module only exports string icon identifiers for UI components to map elsewhere.
-
-/**
- * Event types for fund events
- */
-export type EventType = 'CAPITAL_CALL' | 'DISTRIBUTION' | 'UNIT_PURCHASE' | 'UNIT_SALE' | 'NAV_UPDATE' | 'TAX_STATEMENT' | 'RETURN_OF_CAPITAL';
-
-/**
- * Distribution types for distribution events
- */
-export type DistributionType = 'INTEREST' | 'DIVIDEND' | 'OTHER';
 
 /**
  * Sub-distribution types for specific distribution categories
@@ -20,73 +19,55 @@ export type DistributionType = 'INTEREST' | 'DIVIDEND' | 'OTHER';
 export type SubDistributionType = 'DIVIDEND_FRANKED' | 'DIVIDEND_UNFRANKED' | 'REGULAR' | 'WITHHOLDING_TAX';
 
 /**
- * Fund tracking types
- */
-export type FundTrackingType = 'nav_based' | 'cost_based';
-
-/**
- * Fund types
- */
-export type FundTrackingType = 'Private Equity' | 'Venture Capital' | 'Private Debt' | 'Real Estate' | 'Infrastructure' | 'Other';
-
-/**
- * Fund status types
- */
-export type FundStatus = 'ACTIVE' | 'REALIZED' | 'COMPLETED';
-
-/**
- * Tax payment types
- */
-export type TaxPaymentType = 'NON_RESIDENT_INTEREST_WITHHOLDING' | 'INTEREST_TAX' | 'DIVIDEND_TAX' | 'CAPITAL_GAIN_TAX';
-
-/**
  * Event templates for the create event modal
+ * 
+ * Note: Values use EventType enum. TAX_STATEMENT is a UI concept that maps to TAX_PAYMENT event type.
  */
 export const EVENT_TEMPLATES: {
   label: string;
-  value: EventType | 'RETURN_OF_CAPITAL';
+  value: EventType | 'TAX_STATEMENT';
   description: string;
   icon: string;
   trackingType: 'nav_based' | 'cost_based' | 'both';
 }[] = [
   {
     label: 'Capital Call',
-    value: 'CAPITAL_CALL',
+    value: EventType.CAPITAL_CALL,
     description: 'Add a capital call (cost-based funds)',
     icon: 'AccountBalance',
     trackingType: 'cost_based'
   },
   {
     label: 'Capital Return',
-    value: 'RETURN_OF_CAPITAL',
+    value: EventType.RETURN_OF_CAPITAL,
     description: 'Return capital to investors (cost-based funds)',
     icon: 'AccountBalance',
     trackingType: 'cost_based'
   },
   {
     label: 'Unit Purchase',
-    value: 'UNIT_PURCHASE',
+    value: EventType.UNIT_PURCHASE,
     description: 'Buy units (NAV-based funds)',
     icon: 'Add',
     trackingType: 'nav_based'
   },
   {
     label: 'Unit Sale',
-    value: 'UNIT_SALE',
+    value: EventType.UNIT_SALE,
     description: 'Sell units (NAV-based funds)',
     icon: 'TrendingUp',
     trackingType: 'nav_based'
   },
   {
     label: 'NAV Update',
-    value: 'NAV_UPDATE',
+    value: EventType.NAV_UPDATE,
     description: 'Update NAV per share (NAV-based funds)',
     icon: 'TrendingUp',
     trackingType: 'nav_based'
   },
   {
     label: 'Distribution',
-    value: 'DISTRIBUTION',
+    value: EventType.DISTRIBUTION,
     description: 'Add a distribution (all funds)',
     icon: 'MonetizationOn',
     trackingType: 'both'
@@ -169,27 +150,27 @@ export const FUND_TEMPLATES = [
     value: 'cost_based',
     description: 'Track capital calls and returns',
     icon: 'Business',
-    trackingType: 'cost_based'
+    trackingType: 'cost_based' as const
   },
   {
     label: 'NAV-Based Fund',
     value: 'nav_based',
     description: 'Track unit purchases and NAV updates',
     icon: 'TrendingUp',
-    trackingType: 'nav_based'
+    trackingType: 'nav_based' as const
   },
 ];
 
 /**
- * Fund type options
+ * Fund investment type options
  */
-export const FUND_TYPES: { label: string; value: FundTrackingType }[] = [
-  { label: 'Private Equity', value: 'Private Equity' },
-  { label: 'Venture Capital', value: 'Venture Capital' },
-  { label: 'Private Debt', value: 'Private Debt' },
-  { label: 'Real Estate', value: 'Real Estate' },
-  { label: 'Infrastructure', value: 'Infrastructure' },
-  { label: 'Other', value: 'Other' },
+export const FUND_TYPES: { label: string; value: FundInvestmentType }[] = [
+  { label: 'Private Equity', value: FundInvestmentType.PRIVATE_EQUITY },
+  { label: 'Venture Capital', value: FundInvestmentType.VENTURE_CAPITAL },
+  { label: 'Private Debt', value: FundInvestmentType.PRIVATE_DEBT },
+  { label: 'Real Estate', value: FundInvestmentType.REAL_ESTATE },
+  { label: 'Infrastructure', value: FundInvestmentType.INFRASTRUCTURE },
+  { label: 'Other', value: FundInvestmentType.OTHER },
 ];
 
 /**
@@ -204,17 +185,20 @@ export const CURRENCIES = [
 
 /**
  * Event type color mappings
+ * 
+ * Uses EventType enum values. TAX_STATEMENT is a UI concept.
+ * Also includes distribution type colors for UI display.
  */
 export const EVENT_TYPE_COLORS: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'error' | 'default'> = {
-  'CAPITAL_CALL': 'primary',
-  'DISTRIBUTION': 'success',
-  'RETURN_OF_CAPITAL': 'warning',
-  'NAV_UPDATE': 'info',
-  'UNIT_PURCHASE': 'primary',
-  'UNIT_SALE': 'warning',
-  'TAX_PAYMENT': 'error',
-  'TAX_STATEMENT': 'info',
-  // Distribution type colors
+  [EventType.CAPITAL_CALL]: 'primary',
+  [EventType.DISTRIBUTION]: 'success',
+  [EventType.RETURN_OF_CAPITAL]: 'warning',
+  [EventType.NAV_UPDATE]: 'info',
+  [EventType.UNIT_PURCHASE]: 'primary',
+  [EventType.UNIT_SALE]: 'warning',
+  [EventType.TAX_PAYMENT]: 'error',
+  'TAX_STATEMENT': 'info', // UI concept, not in EventType enum
+  // Distribution type colors (UI simplified versions)
   'INTEREST': 'success',
   'DIVIDEND': 'success',
   'OTHER': 'default',
@@ -222,30 +206,14 @@ export const EVENT_TYPE_COLORS: Record<string, 'primary' | 'success' | 'warning'
 
 /**
  * Fund status color mappings
+ * 
+ * Note: For fund status labels (text), see utils/labels.ts
  */
-export const FUND_STATUS_COLORS: Record<FundStatus, 'success' | 'warning' | 'info'> = {
-  'ACTIVE': 'success',
-  'REALIZED': 'warning',
-  'COMPLETED': 'info',
-};
-
-/**
- * Fund status labels
- */
-export const FUND_STATUS_LABELS: Record<FundStatus, string> = {
-  'ACTIVE': 'Active',
-  'REALIZED': 'Realized',
-  'COMPLETED': 'Completed',
-};
-
-/**
- * Tax payment type labels
- */
-export const TAX_PAYMENT_TYPE_LABELS: Record<TaxPaymentType, string> = {
-  'NON_RESIDENT_INTEREST_WITHHOLDING': 'Non-Resident Interest Withholding',
-  'INTEREST_TAX': 'Interest Tax',
-  'DIVIDEND_TAX': 'Dividend Tax',
-  'CAPITAL_GAIN_TAX': 'Capital Gain Tax',
+export const FUND_STATUS_COLORS: Partial<Record<FundStatus, 'success' | 'warning' | 'info'>> = {
+  [FundStatus.ACTIVE]: 'success',
+  [FundStatus.SUSPENDED]: 'info',
+  [FundStatus.REALIZED]: 'warning',
+  [FundStatus.COMPLETED]: 'info',
 };
 
 /**
@@ -300,8 +268,6 @@ export const CHART_CONFIG = {
  * Table configuration
  */
 export const TABLE_CONFIG = {
-  ROWS_PER_PAGE_OPTIONS: [10, 25, 50, 100],
-  DEFAULT_ROWS_PER_PAGE: 25,
   SORT_DIRECTIONS: {
     ASC: 'asc',
     DESC: 'desc',

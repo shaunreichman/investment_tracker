@@ -24,8 +24,8 @@ import {
   useCompanyOverview,
   useCompanyDetails,
   useEnhancedFunds,
-} from '../../hooks/useInvestmentCompanies';
-import { useDeleteFund } from '../../hooks/useFunds';
+} from '../../hooks/useCompaniesold';
+import { useDeleteFund } from '../../hooks/useFundsold';
 
 const CreateFundModal = React.lazy(() => import('../companies/create-fund/CreateFundModal'));
 
@@ -284,7 +284,7 @@ export const CompaniesPage: React.FC = () => {
                   maxWidth: '600px'
                 }}
               >
-                {overviewData.company.company_type} Investment Company
+                {overviewData.company.company_type} Company
               </Typography>
             )}
           </Box>

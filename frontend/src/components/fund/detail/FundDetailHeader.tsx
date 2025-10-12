@@ -34,7 +34,7 @@ const FundDetailHeader: React.FC<FundDetailHeaderProps> = ({ fund, sidebarVisibl
           opacity: 0.8
         }}
       >
-        {fund.fund_type} • {fund.entity} • {fund.investment_company}
+        {fund.fund_type} • {fund.entity} • {fund.company}
       </Typography>
 
       <IconButton

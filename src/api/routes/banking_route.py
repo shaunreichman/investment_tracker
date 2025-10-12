@@ -381,8 +381,7 @@ def get_bank_account_by_id(bank_id, bank_account_id):
     },
     field_lengths={
         'account_name': {'min': 2, 'max': 255},
-        'account_number': {'min': 1, 'max': 50},
-        'account_type': {'max': 255}
+        'account_number': {'min': 1, 'max': 64},
     },
     field_ranges={
         'entity_id': {'min': 1},

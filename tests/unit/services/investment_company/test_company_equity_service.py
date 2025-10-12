@@ -18,12 +18,12 @@ from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 from datetime import date
 
-from src.investment_company.services.company_equity_service import CompanyEquityService
-from src.investment_company.models import InvestmentCompany
+from src.company.services.company_equity_service import CompanyEquityService
+from src.company.models import Company
 from src.shared.models.domain_update_event import DomainFieldChange
 from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.fund.enums.fund_event_enums import EventType
-from tests.factories.investment_company_factories import InvestmentCompanyFactory
+from tests.factories.company_factories import CompanyFactory
 from tests.factories.fund_factories import FundEventFactory
 
 
@@ -43,7 +43,7 @@ class TestCompanyEquityService:
     @pytest.fixture
     def mock_company(self):
         """Mock company instance."""
-        return InvestmentCompanyFactory.build(
+        return CompanyFactory.build(
             id=1, 
             name='Test Company',
             average_equity_balance=100000,
@@ -161,7 +161,7 @@ class TestCompanyEquityService:
         with patch.object(service.company_repository, 'get_company_by_id', return_value=mock_company) as mock_get_company, \
              patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_fund_events) as mock_get_events, \
              patch.object(service.company_equity_calculator, 'calculate_company_equity_balance') as mock_calculate, \
-             patch('src.investment_company.services.company_equity_service.DurationMonthsCalculator.calculate_duration_months', return_value=new_duration) as mock_duration_calc:
+             patch('src.company.services.company_equity_service.DurationMonthsCalculator.calculate_duration_months', return_value=new_duration) as mock_duration_calc:
             
             # Setup calculator mock
             mock_calculate.return_value = (new_average_balance, new_current_balance, new_end_date)
@@ -194,7 +194,7 @@ class TestCompanyEquityService:
         with patch.object(service.company_repository, 'get_company_by_id', return_value=mock_company) as mock_get_company, \
              patch.object(service.fund_event_repository, 'get_fund_events', return_value=mock_fund_events) as mock_get_events, \
              patch.object(service.company_equity_calculator, 'calculate_company_equity_balance') as mock_calculate, \
-             patch('src.investment_company.services.company_equity_service.DurationMonthsCalculator.calculate_duration_months', return_value=new_duration) as mock_duration_calc:
+             patch('src.company.services.company_equity_service.DurationMonthsCalculator.calculate_duration_months', return_value=new_duration) as mock_duration_calc:
             
             # Setup calculator mock
             mock_calculate.return_value = (new_average_balance, new_current_balance, new_end_date)
@@ -212,23 +212,23 @@ class TestCompanyEquityService:
             duration_change = next((change for change in result if change.field_name == 'current_duration'), None)
             
             # Verify field change properties
-            assert average_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert average_change.domain_object_type == DomainObjectType.COMPANY
             assert average_change.domain_object_id == company_id
             assert average_change.old_value == original_average_balance
             assert average_change.new_value == new_average_balance
             
-            assert current_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert current_change.domain_object_type == DomainObjectType.COMPANY
             assert current_change.domain_object_id == company_id
             assert current_change.old_value == original_current_balance
             assert current_change.new_value == new_current_balance
             
-            assert end_date_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+            assert end_date_change.domain_object_type == DomainObjectType.COMPANY
             assert end_date_change.domain_object_id == company_id
             assert end_date_change.old_value == original_end_date
             assert end_date_change.new_value == new_end_date
             
             if duration_change:  # duration change may or may not exist
-                assert duration_change.domain_object_type == DomainObjectType.INVESTMENT_COMPANY
+                assert duration_change.domain_object_type == DomainObjectType.COMPANY
                 assert duration_change.domain_object_id == company_id
                 assert duration_change.old_value == original_duration
                 assert duration_change.new_value == new_duration

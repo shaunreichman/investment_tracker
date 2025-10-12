@@ -17,11 +17,11 @@ import pytest
 from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
-from src.investment_company.services.company_contact_service import CompanyContactService
-from src.investment_company.models import Contact, InvestmentCompany
-from src.investment_company.enums.company_contact_enums import SortFieldContact
+from src.company.services.company_contact_service import CompanyContactService
+from src.company.models import Contact, Company
+from src.company.enums.company_contact_enums import SortFieldContact
 from src.shared.enums.shared_enums import SortOrder
-from tests.factories.investment_company_factories import ContactFactory, InvestmentCompanyFactory
+from tests.factories.company_factories import ContactFactory, CompanyFactory
 
 
 class TestCompanyContactService:
@@ -56,7 +56,7 @@ class TestCompanyContactService:
     @pytest.fixture
     def mock_company(self):
         """Mock company instance."""
-        return InvestmentCompanyFactory.build(id=1, name='Test Company')
+        return CompanyFactory.build(id=1, name='Test Company')
 
     ################################################################################
     # Test get_contacts method
@@ -141,7 +141,7 @@ class TestCompanyContactService:
         """Test successful contact creation."""
         # Arrange
         company_id = 1
-        with patch('src.investment_company.repositories.company_repository.CompanyRepository') as mock_company_repo_class, \
+        with patch('src.company.repositories.company_repository.CompanyRepository') as mock_company_repo_class, \
              patch.object(service.company_contact_repository, 'create_contact', return_value=mock_contact) as mock_repo:
             
             # Setup company repository mock
@@ -158,7 +158,7 @@ class TestCompanyContactService:
             
             expected_data = {
                 **sample_contact_data,
-                'investment_company_id': company_id
+                'company_id': company_id
             }
             mock_repo.assert_called_once_with(expected_data, mock_session)
 
@@ -166,7 +166,7 @@ class TestCompanyContactService:
         """Test that create_contact raises ValueError when company not found."""
         # Arrange
         company_id = 999
-        with patch('src.investment_company.repositories.company_repository.CompanyRepository') as mock_company_repo_class:
+        with patch('src.company.repositories.company_repository.CompanyRepository') as mock_company_repo_class:
             # Setup company repository mock
             mock_company_repo = Mock()
             mock_company_repo.get_company_by_id.return_value = None
@@ -182,7 +182,7 @@ class TestCompanyContactService:
         """Test that create_contact raises ValueError when repository fails."""
         # Arrange
         company_id = 1
-        with patch('src.investment_company.repositories.company_repository.CompanyRepository') as mock_company_repo_class, \
+        with patch('src.company.repositories.company_repository.CompanyRepository') as mock_company_repo_class, \
              patch.object(service.company_contact_repository, 'create_contact', return_value=None) as mock_repo:
             
             # Setup company repository mock
@@ -207,7 +207,7 @@ class TestCompanyContactService:
             'custom_field': 'custom_value'
         }
         
-        with patch('src.investment_company.repositories.company_repository.CompanyRepository') as mock_company_repo_class, \
+        with patch('src.company.repositories.company_repository.CompanyRepository') as mock_company_repo_class, \
              patch.object(service.company_contact_repository, 'create_contact', return_value=mock_contact) as mock_repo:
             
             # Setup company repository mock
@@ -222,7 +222,7 @@ class TestCompanyContactService:
             assert result == mock_contact
             expected_data = {
                 **contact_data,
-                'investment_company_id': company_id
+                'company_id': company_id
             }
             mock_repo.assert_called_once_with(expected_data, mock_session)
 

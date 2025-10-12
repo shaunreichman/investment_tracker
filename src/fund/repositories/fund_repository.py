@@ -97,7 +97,7 @@ class FundRepository:
             query = query.options(selectinload(Fund.fund_tax_statements))
 
         if company_ids:
-            query = query.filter(Fund.investment_company_id.in_(company_ids))
+            query = query.filter(Fund.company_id.in_(company_ids))
         if entity_ids:
             query = query.filter(Fund.entity_id.in_(entity_ids))
         if fund_statuses:

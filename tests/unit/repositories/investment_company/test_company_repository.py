@@ -16,11 +16,11 @@ import pytest
 from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
-from src.investment_company.repositories.company_repository import CompanyRepository
-from src.investment_company.models import InvestmentCompany
-from src.investment_company.enums.company_enums import CompanyStatus, CompanyType, SortFieldCompany
+from src.company.repositories.company_repository import CompanyRepository
+from src.company.models import Company
+from src.company.enums.company_enums import CompanyStatus, CompanyType, SortFieldCompany
 from src.shared.enums.shared_enums import SortOrder
-from tests.factories.investment_company_factories import InvestmentCompanyFactory
+from tests.factories.company_factories import CompanyFactory
 
 
 class TestCompanyRepository:
@@ -55,7 +55,7 @@ class TestCompanyRepository:
     def test_get_companies_returns_all_companies(self, repository, mock_session):
         """Test that get_companies returns all companies when no filters applied."""
         # Arrange
-        expected_companies = [InvestmentCompanyFactory.build() for _ in range(3)]
+        expected_companies = [CompanyFactory.build() for _ in range(3)]
         mock_query = Mock()
         mock_session.query.return_value = mock_query
         mock_query.order_by.return_value = mock_query
@@ -66,7 +66,7 @@ class TestCompanyRepository:
 
         # Assert
         assert result == expected_companies
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_with_company_type_filter(self, repository, mock_session):
         """Test that get_companies filters by company_type correctly."""
@@ -83,7 +83,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.filter.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_with_status_filter(self, repository, mock_session):
         """Test that get_companies filters by status correctly."""
@@ -100,7 +100,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.filter.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_with_name_filter(self, repository, mock_session):
         """Test that get_companies filters by name correctly."""
@@ -117,7 +117,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.filter.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_with_multiple_filters(self, repository, mock_session):
         """Test that get_companies applies multiple filters correctly."""
@@ -151,7 +151,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.order_by.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_sorts_by_name_desc(self, repository, mock_session):
         """Test that get_companies sorts by name in descending order."""
@@ -166,7 +166,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.order_by.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_sorts_by_status(self, repository, mock_session):
         """Test that get_companies sorts by status correctly."""
@@ -181,7 +181,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.order_by.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_sorts_by_start_date(self, repository, mock_session):
         """Test that get_companies sorts by start_date correctly."""
@@ -196,7 +196,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.order_by.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_sorts_by_created_at(self, repository, mock_session):
         """Test that get_companies sorts by created_at correctly."""
@@ -211,7 +211,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.order_by.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_sorts_by_updated_at(self, repository, mock_session):
         """Test that get_companies sorts by updated_at correctly."""
@@ -226,7 +226,7 @@ class TestCompanyRepository:
 
         # Assert
         assert mock_query.order_by.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_companies_raises_error_for_invalid_sort_field(self, repository, mock_session):
         """Test that get_companies raises ValueError for invalid sort field."""
@@ -249,7 +249,7 @@ class TestCompanyRepository:
         """Test that get_company_by_id returns company when found."""
         # Arrange
         company_id = 1
-        expected_company = InvestmentCompanyFactory.build(id=company_id)
+        expected_company = CompanyFactory.build(id=company_id)
         mock_query = Mock()
         mock_session.query.return_value = mock_query
         mock_query.filter.return_value = mock_query
@@ -261,7 +261,7 @@ class TestCompanyRepository:
         # Assert
         assert result == expected_company
         assert mock_query.filter.called
-        mock_session.query.assert_called_once_with(InvestmentCompany)
+        mock_session.query.assert_called_once_with(Company)
 
     def test_get_company_by_id_returns_none_when_not_found(self, repository, mock_session):
         """Test that get_company_by_id returns None when company not found."""
@@ -286,8 +286,8 @@ class TestCompanyRepository:
     def test_create_company_creates_and_returns_company(self, repository, mock_session, sample_company_data):
         """Test that create_company creates and returns a company."""
         # Arrange
-        expected_company = InvestmentCompanyFactory.build(**sample_company_data)
-        with patch('src.investment_company.repositories.company_repository.InvestmentCompany', return_value=expected_company):
+        expected_company = CompanyFactory.build(**sample_company_data)
+        with patch('src.company.repositories.company_repository.Company', return_value=expected_company):
             # Act
             result = repository.create_company(sample_company_data, mock_session)
 
@@ -305,7 +305,7 @@ class TestCompanyRepository:
         """Test that delete_company deletes an existing company."""
         # Arrange
         company_id = 1
-        expected_company = InvestmentCompanyFactory.build(id=company_id)
+        expected_company = CompanyFactory.build(id=company_id)
         mock_query = Mock()
         mock_session.query.return_value = mock_query
         mock_query.filter.return_value = mock_query

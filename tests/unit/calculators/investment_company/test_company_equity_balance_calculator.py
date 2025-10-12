@@ -10,7 +10,7 @@ from datetime import date, timedelta
 from dataclasses import dataclass
 from typing import List, Optional
 
-from src.investment_company.calculators.company_equity_balance_calculator import CompanyEquityBalanceCalculator
+from src.company.calculators.company_equity_balance_calculator import CompanyEquityBalanceCalculator
 from src.fund.models.fund_event import FundEvent
 from src.fund.enums.fund_event_enums import EventType
 

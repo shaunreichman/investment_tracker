@@ -20,7 +20,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from tests.factories import (
-    FundFactory, EntityFactory, InvestmentCompanyFactory,
+    FundFactory, EntityFactory, CompanyFactory,
     BankFactory, BankAccountFactory
 )
 from src.fund.models import Fund
@@ -41,7 +41,7 @@ class TestNavUpdateWorkflowIntegration:
     def test_nav_update_service_layer_flow(self, db_session):
         """Test NAV update creation through service layer flow"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund (required for NAV updates)
@@ -90,7 +90,7 @@ class TestNavUpdateWorkflowIntegration:
     def test_nav_update_business_rules_validation(self, db_session):
         """Test NAV update business rules and constraints"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -167,7 +167,7 @@ class TestNavUpdateWorkflowIntegration:
     def test_nav_update_with_units_validation(self, db_session):
         """Test NAV update validation when units are owned"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -209,7 +209,7 @@ class TestNavUpdateWorkflowIntegration:
     def test_nav_update_fund_state_changes(self, db_session):
         """Test that NAV updates properly update fund state"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -259,7 +259,7 @@ class TestNavUpdateWorkflowIntegration:
     def test_nav_update_error_scenarios(self, db_session):
         """Test NAV update error scenarios and edge cases"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -288,7 +288,7 @@ class TestNavUpdateWorkflowIntegration:
     def test_nav_update_negative_nav_validation(self, db_session):
         """Test NAV update with negative NAV per share"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -332,7 +332,7 @@ class TestNavUpdateWorkflowIntegration:
     def test_nav_update_zero_nav_validation(self, db_session):
         """Test NAV update with zero NAV per share"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund
@@ -375,7 +375,7 @@ class TestNavUpdateWorkflowIntegration:
     def test_nav_update_multiple_updates(self, db_session):
         """Test multiple NAV updates over time"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Create NAV-based fund

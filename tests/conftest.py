@@ -182,7 +182,7 @@ def engine(test_database_name):
     import src.banking.models  # noqa: F401
     import src.entity.models  # noqa: F401
     import src.rates.models  # noqa: F401
-    import src.investment_company.models  # noqa: F401
+    import src.company.models  # noqa: F401
     import src.fund.models  # noqa: F401
 
     # Create all tables
@@ -253,7 +253,7 @@ def clean_database(SessionFactory):
             'fund_events', 
             'funds', 
             'entities', 
-            'investment_companies',
+            'companies',
             'bank_accounts',
             'banks',
             'fund_event_cash_flows'  # Add cash flow tables

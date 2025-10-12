@@ -25,11 +25,11 @@ from src.fund.enums import FundTrackingType, FundStatus, EventType, Distribution
 from src.fund.services.fund_service import FundService
 from src.fund.services.fund_event_service import FundEventService
 from src.fund.services.fund_tax_statement_service import FundTaxStatementService
-from src.investment_company.services.company_service import CompanyService
+from src.company.services.company_service import CompanyService
 from src.entity.services.entity_service import EntityService
 from src.shared.enums.shared_enums import Country
 from tests.factories import (
-    InvestmentCompanyFactory, EntityFactory, FundFactory
+    CompanyFactory, EntityFactory, FundFactory
 )
 
 
@@ -39,7 +39,7 @@ class TestSeniorDebtFundWorkflowIntegration:
     def test_senior_debt_fund_complete_lifecycle(self, db_session, seeded_test_data):
         """Test complete Senior Debt Fund No.24 lifecycle with all events and validations"""
         # Setup factories with session
-        for factory in (FundFactory, EntityFactory, InvestmentCompanyFactory):
+        for factory in (FundFactory, EntityFactory, CompanyFactory):
             factory._meta.sqlalchemy_session = db_session
         
         # Initialize services
@@ -49,7 +49,7 @@ class TestSeniorDebtFundWorkflowIntegration:
         company_service = CompanyService()
         entity_service = EntityService()
         
-        # 1. Create investment company (Alceon)
+        # 1. Create company (Alceon)
         company_data = {
             'name': 'Alceon',
             'description': 'Alceon Pty Ltd'
@@ -69,7 +69,7 @@ class TestSeniorDebtFundWorkflowIntegration:
         
         # 3. Create Senior Debt Fund No.24
         fund_data = {
-            'investment_company_id': company.id,
+            'company_id': company.id,
             'entity_id': entity.id,
             'name': 'Senior Debt Fund No.24',
             'fund_investment_type': 'PRIVATE_DEBT',

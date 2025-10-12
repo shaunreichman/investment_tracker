@@ -43,12 +43,12 @@ Test Flask API endpoints with PostgreSQL database, focusing on HTTP requests and
 def test_create_fund(client, db_session):
     """Test fund creation through API."""
     # Use factory for complex related data
-    company = InvestmentCompanyFactory()
+    company = CompanyFactory()
     entity = EntityFactory()
     
     fund_data = {
         'name': 'Test Fund',
-        'investment_company_id': company.id,
+        'company_id': company.id,
         'entity_id': entity.id,
         'tracking_type': 'COST_BASED'
     }
@@ -61,7 +61,7 @@ def test_create_fund_validation_error(client):
     """Test API validation error handling."""
     invalid_data = {
         'name': '',  # Invalid: empty name
-        'investment_company_id': 999,  # Invalid: non-existent ID
+        'company_id': 999,  # Invalid: non-existent ID
     }
     
     response = client.post('/api/funds', json=invalid_data)

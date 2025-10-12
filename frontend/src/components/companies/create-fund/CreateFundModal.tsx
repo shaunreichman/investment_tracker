@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Button, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import CreateEntityModal from '../../CreateEntityModal';
-import { useEntities } from '../../../hooks/useEntities';
-import { useCreateFund } from '../../../hooks/useFunds';
+import { useEntities } from '../../../hooks/useEntitiesold';
+import { useCreateFund } from '../../../hooks/useFundsold';
 import { FundTrackingType } from '../../../types/api';
 import { fundValidators, validationRules } from '../../../utils/validators';
 import TemplateSelectionSection from './TemplateSelectionSection';
@@ -12,7 +12,7 @@ import { FUND_TEMPLATES, FundTemplate } from './templates';
 import { LoadingSpinner } from '../../ui/LoadingSpinner';
 import { SuccessBanner } from '../../ui/SuccessBanner';
 import { FormContainer } from '../../ui/FormContainer';
-import { useUnifiedForm } from '../../../hooks/forms/useUnifiedForm';
+import { useUnifiedForm } from '../../../hooks/formsold/useUnifiedFormold';
 
 // Form data interface
 interface FundFormData {
@@ -94,7 +94,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     onSubmit: async (values) => {
       
       const fundData = {
-        investment_company_id: companyId,
+        company_id: companyId,
         entity_id: parseInt(values.entity_id),
         name: values.name.trim(),
         fund_type: values.fund_type,
@@ -378,7 +378,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                              <FundFormSection
                  formData={formData}
                  validationErrors={validationErrors as any}
-                 entities={entities || []}
+                 entities={(entities as any) || []}
                  onInputChange={handleInputChange}
                  onCreateEntity={() => setShowEntityModal(true)}
                  trackingTypeLocked={!!selectedTemplate}

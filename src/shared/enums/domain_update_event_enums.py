@@ -24,8 +24,8 @@ class DomainObjectType(Enum):
     FUND_EVENT_CASH_FLOW = "FUND_EVENT_CASH_FLOW"
     FUND_TAX_STATEMENT = "FUND_TAX_STATEMENT"
 
-    # Investment Company
-    INVESTMENT_COMPANY = "INVESTMENT_COMPANY"
+    # Company
+    COMPANY = "COMPANY"
     CONTACT = "CONTACT"
 
     # Rates

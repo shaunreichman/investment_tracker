@@ -5,8 +5,8 @@ Company API Controller.
 from flask import request, current_app
 from sqlalchemy.orm import Session
 
-from src.investment_company.services import CompanyService
-from src.investment_company.services.company_contact_service import CompanyContactService
+from src.company.services import CompanyService
+from src.company.services.company_contact_service import CompanyContactService
 from src.api.dto.response_codes import ApiResponseCode
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.controllers.formatters.company_formatter import format_contact, format_company, format_company_comprehensive
@@ -81,7 +81,7 @@ class CompanyController:
                     include_contacts=include_contacts
                 )
                 if companies is None:
-                    return ControllerResponseDTO(error="Investment companies not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                    return ControllerResponseDTO(error="Companies not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_companies = [format_company_comprehensive(company, include_contacts=include_contacts) for company in companies]
                 return ControllerResponseDTO(data=formatted_companies, response_code=ApiResponseCode.SUCCESS)
