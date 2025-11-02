@@ -308,6 +308,8 @@ frontend/src/
 
 ## Implementation Strategy
 
+**Note**: The old source code is located in `frontend/src-old/`. All migration tasks move files FROM `frontend/src-old/` TO the new domain structure in `frontend/src/`. All paths in this spec are relative to `frontend/src/` for destinations and `frontend/src-old/` for sources.
+
 ### Phase 1: Foundation - Shared Domain Structure
 **Goal**: Establish the `shared/` domain structure and move cross-cutting concerns
 
