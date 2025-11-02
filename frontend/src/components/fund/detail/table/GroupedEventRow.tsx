@@ -9,7 +9,7 @@ import {
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { ExtendedFundEvent, ExtendedFund, GroupType, FundTrackingType } from '../../../../types/api';
 import { formatCurrency, formatDate } from '../../../../utils/formatters';
-import { EventTypeChip } from '../../../ui/EventTypeChip';
+import { EventTypeChip } from '../../../shared/data-display/Chip';
 import { GroupedEvent } from './useEventGrouping';
 
 // ============================================================================

@@ -42,29 +42,41 @@ class RateValidationService:
         
         # Validate fx_rate_data is not None or empty
         if not fx_rate_data:
-            errors['data'] = ["FX rate data cannot be empty"]
+            errors['data'] = {
+                'message': 'FX rate data cannot be empty'
+            }
             return errors
         
         # Validate the FX rate date is the last day of any month
         if 'date' not in fx_rate_data:
-            errors['date'] = ["FX rate date is required"]
+            errors['date'] = {
+                'message': 'FX rate date is required'
+            }
         else:
             fx_date = fx_rate_data['date']
             if isinstance(fx_date, str):
                 fx_date = date.fromisoformat(fx_date)
             
             if not self.last_day_of_the_month_calculator.is_last_day_of_the_month(fx_date):
-                errors['date'] = [f"FX rate date must be the last day of the month"]
+                errors['date'] = {
+                    'message': f'FX rate date must be the last day of the month'
+                }
         
         # Validate the FX rate rate is greater than 0
         if 'fx_rate' not in fx_rate_data:
-            errors['fx_rate'] = ["FX rate value is required"]
+            errors['fx_rate'] = {
+                'message': 'FX rate value is required'
+            }
         elif fx_rate_data['fx_rate'] <= 0:
-            errors['fx_rate'] = [f"FX rate must be greater than 0"]
+            errors['fx_rate'] = {
+                'message': f'FX rate must be greater than 0'
+            }
         
         # Validate from_currency and to_currency are different
         if 'from_currency' in fx_rate_data and 'to_currency' in fx_rate_data:
             if fx_rate_data['from_currency'] == fx_rate_data['to_currency']:
-                errors['to_currency'] = ["From currency and to currency must be different"]
+                errors['to_currency'] = {
+                    'message': 'From currency and to currency must be different'
+                }
         
         return errors

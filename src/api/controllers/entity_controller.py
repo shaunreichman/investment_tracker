@@ -9,6 +9,7 @@ from src.entity.services.entity_service import EntityService
 from src.api.controllers.formatters.entity_formatter import format_entity
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.dto.response_codes import ApiResponseCode
+from src.shared.exceptions import ValidationException
 
 
 class EntityController:
@@ -165,6 +166,10 @@ class EntityController:
                 formatted_entity = format_entity(entity)
                 return ControllerResponseDTO(data=formatted_entity, response_code=ApiResponseCode.CREATED)
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating entity: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating entity: {str(e)}")
                 session.rollback()
@@ -206,6 +211,10 @@ class EntityController:
                 
                 return ControllerResponseDTO(message="Entity deleted successfully", response_code=ApiResponseCode.DELETED)
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting entity {entity_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting entity {entity_id}: {str(e)}")
                 session.rollback()

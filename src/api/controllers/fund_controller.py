@@ -14,6 +14,10 @@ from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.dto.response_codes import ApiResponseCode
 from typing import Optional
 from src.fund.enums.fund_event_enums import EventType
+from src.shared.exceptions import ValidationException
+
+
+
 class FundController:
     """
     Controller for fund operations.
@@ -217,6 +221,10 @@ class FundController:
                 formatted_fund = format_fund(fund)
                 return ControllerResponseDTO(data=formatted_fund, response_code=ApiResponseCode.CREATED)
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating fund: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating fund: {str(e)}")
                 session.rollback()
@@ -263,6 +271,10 @@ class FundController:
                 
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED, message="Fund deleted successfully")
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting fund {fund_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting fund {fund_id}: {str(e)}")
                 session.rollback()
@@ -461,6 +473,15 @@ class FundController:
                 session.commit()
                 
                 return ControllerResponseDTO(data=format_fund_event(event), response_code=ApiResponseCode.CREATED)
+            
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating fund event: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error creating fund event: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except Exception as e:
                 current_app.logger.error(f"Error in create_fund_event: {str(e)}")
                 session.rollback()
@@ -495,6 +516,11 @@ class FundController:
                     return ControllerResponseDTO(error=f"Fund event with ID {fund_event_id} not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 session.commit()
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
+            
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting fund event {fund_event_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting fund event {fund_event_id}: {str(e)}")
                 session.rollback()
@@ -678,6 +704,10 @@ class FundController:
                 formatted_cash_flow = format_fund_event_cash_flow(fund_event_cash_flow)
                 return ControllerResponseDTO(data=formatted_cash_flow, response_code=ApiResponseCode.CREATED)
 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating fund event cash flow: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error adding fund event cash flow: {str(e)}")
                 session.rollback()
@@ -719,6 +749,10 @@ class FundController:
                 
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
             
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting fund event cash flow {cash_flow_event_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting fund event cash flow: {str(e)}")
                 session.rollback()
@@ -883,6 +917,10 @@ class FundController:
                 formatted_fund_tax_statement = format_fund_tax_statement(fund_tax_statement)
                 return ControllerResponseDTO(data=formatted_fund_tax_statement, response_code=ApiResponseCode.CREATED)
             
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating fund tax statement: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating fund tax statement: {str(e)}")
                 session.rollback()
@@ -924,6 +962,10 @@ class FundController:
                 
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting fund tax statement {fund_tax_statement_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting fund tax statement: {str(e)}")
                 session.rollback()

@@ -10,7 +10,7 @@ from src.company.services.company_contact_service import CompanyContactService
 from src.api.dto.response_codes import ApiResponseCode
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.controllers.formatters.company_formatter import format_contact, format_company, format_company_comprehensive
-
+from src.shared.exceptions import ValidationException
 
 class CompanyController:
     """
@@ -171,6 +171,10 @@ class CompanyController:
                 formatted_company = format_company(company)
                 return ControllerResponseDTO(data=formatted_company, response_code=ApiResponseCode.CREATED)
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating company: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating company: {str(e)}")
                 session.rollback()
@@ -212,6 +216,10 @@ class CompanyController:
                 
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
    
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting company {company_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting company {company_id}: {str(e)}")
                 session.rollback()
@@ -344,6 +352,10 @@ class CompanyController:
                 formatted_contact = format_contact(contact)
                 return ControllerResponseDTO(data=formatted_contact, response_code=ApiResponseCode.CREATED)
             
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating contact: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating contact: {str(e)}")
                 session.rollback()
@@ -386,6 +398,10 @@ class CompanyController:
 
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
             
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting contact {contact_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting contact {contact_id}: {str(e)}")
                 session.rollback()

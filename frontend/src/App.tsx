@@ -6,6 +6,7 @@ import FundDetail from './components/fund/detail/FundDetail';
 import { AppStoreProvider } from './store';
 import { DockerThemeProvider } from './theme/DockerThemeProvider';
 import RouteLayout from './components/layout/RouteLayout';
+import { DomainErrorBoundary } from './components/shared/feedback';
 
 // Wrapper component to provide key for FundDetail
 const FundDetailWrapper: React.FC = () => {
@@ -21,34 +22,40 @@ const CompaniesPageWrapper: React.FC = () => {
 
 function App() {
   return (
-    <DockerThemeProvider>
-      <AppStoreProvider>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true
-          }}
-        >
-          <Routes>
-            <Route path="/" element={
-              <RouteLayout>
-                <OverallDashboard />
-              </RouteLayout>
-            } />
-            <Route path="/companies/:companyId" element={
-              <RouteLayout>
-                <CompaniesPageWrapper />
-              </RouteLayout>
-            } />
-            <Route path="/funds/:fundId" element={
-              <RouteLayout>
-                <FundDetailWrapper />
-              </RouteLayout>
-            } />
-          </Routes>
-        </BrowserRouter>
-      </AppStoreProvider>
-    </DockerThemeProvider>
+    <DomainErrorBoundary domain="general" showDetails={process.env.NODE_ENV === 'development'}>
+      <DockerThemeProvider>
+        <AppStoreProvider>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}
+          >
+            <Routes>
+              <Route path="/" element={
+                <RouteLayout>
+                  <OverallDashboard />
+                </RouteLayout>
+              } />
+              <Route path="/companies/:companyId" element={
+                <RouteLayout>
+                  <DomainErrorBoundary domain="company">
+                    <CompaniesPageWrapper />
+                  </DomainErrorBoundary>
+                </RouteLayout>
+              } />
+              <Route path="/funds/:fundId" element={
+                <RouteLayout>
+                  <DomainErrorBoundary domain="fund">
+                    <FundDetailWrapper />
+                  </DomainErrorBoundary>
+                </RouteLayout>
+              } />
+            </Routes>
+          </BrowserRouter>
+        </AppStoreProvider>
+      </DockerThemeProvider>
+    </DomainErrorBoundary>
   );
 }
 

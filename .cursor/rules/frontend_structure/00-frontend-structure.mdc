@@ -1,0 +1,69 @@
+---
+description: Frontend Structure: Domain-driven organization with feature-based component nesting
+globs: **/*.tsx,**/*.ts
+alwaysApply: false
+---
+
+# Frontend Structure Rules
+
+## Domain Organization
+
+**Structure**: Domain-driven organization matching backend (company/, banking/, fund/, shared/)
+
+Each domain contains:
+- `api/` - HTTP API calls to backend
+- `types/` - Domain-specific TypeScript types/interfaces
+- `hooks/` - Custom hooks for domain logic
+- `components/` - Feature-based nested components
+- `pages/` - Page components
+- `routes.tsx` - Domain route definitions
+- `index.ts` - Domain barrel export (public API)
+
+## Component Organization
+
+### Feature-Based Nesting
+- ✅ **Group by feature** (e.g., `company-list/`, `company-form/`, `overview-tab/`)
+- ✅ **Co-locate related files** within feature folders
+- ✅ **Each feature folder** contains components, types, and index file
+- ❌ **Never** flat component structures for complex features
+
+```
+components/
+  company-list/
+    CompanyList.tsx
+    CompanyTable.tsx
+    CompanyFilters.tsx
+    index.ts
+```
+
+## Import Strategy
+
+### Public API (Barrel Exports)
+- ✅ **Use domain-level `index.ts`** for public API
+- ✅ **Clean imports** from domain root: `import { CompanyList } from '@/company'`
+
+### Internal Imports (Direct Paths)
+- ✅ **Direct imports within features** to avoid circular dependencies
+- ✅ **Explicit paths** for internal code: `import { useFilter } from './hooks/useFilter'`
+- ❌ **Never** barrel exports within feature folders
+
+## Routing
+
+- ✅ **Centralized routing** via `routes/index.tsx`
+- ✅ **Domain routes** defined in `company/routes.tsx`, imported by `routes/index.tsx`
+- ✅ **Single source of truth** for all routes
+
+## Shared Resources
+
+- ✅ **Cross-domain types** in `shared/types/` (enums, errors, DTOs)
+- ✅ **Reusable UI** in `shared/ui/`
+- ✅ **Cross-domain hooks** in `shared/hooks/`
+- ✅ **Pure utilities** in `shared/utils/`
+- ❌ **Never** domain-specific code in `shared/`
+
+## State Management
+
+- ✅ **Server state** via custom hooks (React Query pattern)
+- ✅ **Global app state** in `src/store/` (Zustand)
+- ✅ **Component state** via `useState` for local concerns
+- ❌ **Avoid** domain-level state folders unless clear need (optimistic updates, complex workflows)

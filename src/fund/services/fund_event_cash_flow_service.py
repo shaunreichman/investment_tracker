@@ -15,6 +15,7 @@ from src.shared.enums.shared_enums import EventOperation
 from src.fund.repositories.fund_event_repository import FundEventRepository
 from src.fund.services.fund_validation_service import FundValidationService
 from src.shared.models import DomainFieldChange
+from src.shared.exceptions import ValidationException
 
 
 class FundEventCashFlowService:
@@ -120,9 +121,12 @@ class FundEventCashFlowService:
             FundEventCashFlow object
         """
         # Validate Fund Event Cash Flow
-        errors = self.fund_validation_service.validate_fund_event_cash_flow_creation(fund_event_id, fund_event_cash_flow_data, session)
-        if errors:
-            raise ValueError(f"Validation errors for fund event cash flow creation for fund event ID {fund_event_id}: {errors}")
+        validation_errors = self.fund_validation_service.validate_fund_event_cash_flow_creation(fund_event_id, fund_event_cash_flow_data, session)
+        if validation_errors:
+            raise ValidationException(
+                message="Validation errors for fund event cash flow creation",
+                details=validation_errors
+            )
 
         # Validate Fund Event exists
         fund_event = self.fund_event_repository.get_fund_event_by_id(fund_event_id, session)
@@ -263,7 +267,10 @@ class FundEventCashFlowService:
             # The bank account balance has not been created yet
             bank_account_balance = None
         elif len(bank_account_balances) >= 2:
-            raise ValueError(f"Multiple bank account balances found for the same bank account and date")
+            raise ValidationException(
+                message="Multiple bank account balances found for the same bank account and date",
+                details={"bank_account_id": bank_account_id, "date": last_day_of_the_month}
+            )
         else:
             bank_account_balance = bank_account_balances[0]
             # 3.4 Calculate the balance adjustment

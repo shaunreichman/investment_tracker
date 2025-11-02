@@ -9,12 +9,10 @@ import {
 
 import { Add as AddIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ErrorDisplay } from '../ErrorDisplay';
+import { ErrorDisplay, LoadingSpinner } from '../shared/feedback';
 import { ErrorType, createErrorInfo } from '../../types/errors';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
-
-import { TabNavigation } from './TabNavigation';
+import { ConfirmDialog } from '../shared';
+import { TabNavigation } from '../shared/navigation/Tabs';
 import { OverviewTab } from './overview-tab';
 import { CompanyDetailsTab } from './company-details-tab';
 import { AnalysisTab } from './analysis-tab';
@@ -230,7 +228,6 @@ export const CompaniesPage: React.FC = () => {
       <Box sx={{ p: 3 }}>
         <ErrorDisplay
           error={errorInfo}
-          canRetry={errorInfo.retryable}
           onRetry={refetchOverview}
           onDismiss={() => navigate('/')}
         />
@@ -244,7 +241,6 @@ export const CompaniesPage: React.FC = () => {
       <Box sx={{ p: 3 }}>
         <ErrorDisplay
           error={createErrorInfo('Company not found', ErrorType.NOT_FOUND)}
-          canRetry={false}
           onDismiss={() => navigate('/')}
         />
       </Box>

@@ -57,7 +57,9 @@ class BankingValidationService:
         # Cannot delete bank with dependent bank accounts
         bank_accounts = self.bank_account_repository.get_bank_accounts(session, bank_ids=[bank_id])
         if bank_accounts:
-            errors['bank_accounts'] = ["Cannot delete bank with dependent bank accounts"]
+            errors['bank_accounts_dependency'] = {
+                'message': f'Cannot delete bank with bank accounts (we have {len(bank_accounts)} dependent bank accounts)'
+            }
         return errors
 
     
@@ -76,12 +78,16 @@ class BankingValidationService:
         # Cannot delete bank account with dependent fund event cash flows
         fund_events = self.fund_event_cash_flow_repository.get_fund_event_cash_flows(session, bank_account_ids=[bank_account_id])
         if fund_events:
-            errors['fund_events'] = ["Cannot delete bank account with dependent fund events"]
+            errors['fund_events_dependency'] = {
+                'message': f'Cannot delete bank account with fund events (we have {len(fund_events)} dependent fund events)'
+            }
 
         # Cannot delete bank account with dependent bank account balances
         bank_account_balances = self.bank_account_balance_repository.get_bank_account_balances(session, bank_account_ids=[bank_account_id])
         if bank_account_balances:
-            errors['bank_account_balances'] = ["Cannot delete bank account with dependent bank account balances"]
+            errors['bank_account_balances_dependency'] = {
+                'message': f'Cannot delete bank account with bank account balances (we have {len(bank_account_balances)} dependent bank account balances)'
+            }
 
         return errors
 
@@ -102,18 +108,24 @@ class BankingValidationService:
         # Validate the bank account exists
         bank_account = self.bank_account_repository.get_bank_account_by_id(bank_account_id, session)
         if not bank_account:
-            errors['bank_account'] = [f"Bank account with ID {bank_account_id} not found"]
+            errors['bank_account'] = {
+                'message': f'Bank account with ID {bank_account_id} not found'
+            }
         
         # Validate the balance date is the last day of any month
         if 'date' not in bank_account_balance_data:
-            errors['date'] = ["Bank account balance date is required"]
+            errors['date'] = {
+                'message': 'Bank account balance date is required'
+            }
         else:
             balance_date = bank_account_balance_data['date']
             if isinstance(balance_date, str):
                 balance_date = date.fromisoformat(balance_date)
             
             if not self.last_day_of_the_month_calculator.is_last_day_of_the_month(balance_date):
-                errors['date'] = ["Bank account balance date must be the last day of the month"]
+                errors['date'] = {
+                    'message': 'Bank account balance date must be the last day of the month'
+                }
             else:
                 # Only check uniqueness if date is valid
                 # Validate the balance is unique for the bank account and date
@@ -121,14 +133,20 @@ class BankingValidationService:
                     session, bank_account_ids=[bank_account_id], start_date=balance_date, end_date=balance_date
                 )
                 if bank_account_balances:
-                    errors['bank_account_balances'] = ["Bank account balance must be unique for the bank account and date"]
+                    errors['bank_account_balances_uniqueness'] = {
+                        'message': f'Bank account balance must be unique for the bank account and date (we have {len(bank_account_balances)} dependent bank account balances)'
+                    }
         
         # Validate the currency is the same as the bank account
         if 'currency' not in bank_account_balance_data:
-            errors['currency'] = ["Bank account balance currency is required"]
+            errors['currency'] = {
+                'message': 'Bank account balance currency is required'
+            }
         else:
             # Only validate currency if bank account exists
             if bank_account and bank_account_balance_data['currency'] != bank_account.currency:
-                errors['currency'] = ["Bank account balance currency must be the same as the bank account currency"]
+                errors['currency'] = {
+                    'message': f'Bank account balance currency must be the same as the bank account currency {bank_account.currency}'
+                }
 
         return errors

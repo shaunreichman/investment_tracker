@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextField, Box, Typography, useTheme } from '@mui/material';
-import { NumberInputField } from '../../../ui/NumberInputField';
+import { NumberInputField } from '../../../shared/forms';
 
 interface UnitTransactionFormProps {
   eventType: 'UNIT_PURCHASE' | 'UNIT_SALE';

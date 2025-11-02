@@ -14,6 +14,7 @@ from src.fund.models import Fund
 from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.shared.services.domain_update_event_service import DomainUpdateEventService
 from src.company.services.company_fund_event_secondary_service import CompanyFundEventSecondaryService
+from src.shared.exceptions import ValidationException
 
 class FundService:
     """
@@ -178,7 +179,10 @@ class FundService:
         # ENTERPRISE VALIDATION: Validate deletion
         validation_errors = self.fund_validation_service.validate_fund_deletion(fund, session)
         if validation_errors:
-            raise ValueError(f"Deletion validation failed for fund with ID {fund_id}: {validation_errors}")
+            raise ValidationException(
+                message=f"Deletion validation failed for fund with ID {fund_id}",
+                details=validation_errors
+            )
         
         # Delete the fund
         success = self.fund_repository.delete_fund(fund_id, session)

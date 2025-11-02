@@ -12,6 +12,7 @@ from src.shared.enums.shared_enums import SortOrder
 from src.rates.models import FxRate
 from src.rates.repositories.fx_rate_repository import FxRateRepository
 from src.rates.services.rate_validation_service import RateValidationService
+from src.shared.exceptions import ValidationException
 
 
 class FxRateService:
@@ -96,9 +97,12 @@ class FxRateService:
             Created FX rate
         """
         # Validate the FX rate data
-        errors = self.rate_validation_service.validate_fx_rate_creation(fx_rate_data, session)
-        if errors:
-            raise ValueError(f"Validation errors for FX rate creation from {fx_rate_data.get('from_currency', 'unknown')} to {fx_rate_data.get('to_currency', 'unknown')} on {fx_rate_data.get('date', 'unknown')}: {errors}")
+        validation_errors = self.rate_validation_service.validate_fx_rate_creation(fx_rate_data, session)
+        if validation_errors:
+            raise ValidationException(
+                message="Validation errors for FX rate creation",
+                details=validation_errors
+            )
 
         # Create the FX rate
         fx_rate = self.fx_rate_repository.create_fx_rate(fx_rate_data, session)

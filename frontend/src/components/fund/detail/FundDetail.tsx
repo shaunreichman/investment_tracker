@@ -2,9 +2,8 @@ import React, { useState, Suspense, useCallback } from 'react';
 import { Typography, Box, useTheme } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 
-import { ErrorDisplay } from '../../ErrorDisplay';
-import { ConfirmDialog } from '../../ui/ConfirmDialog';
-import { LoadingSpinner } from '../../ui/LoadingSpinner';
+import { ErrorDisplay, LoadingSpinner } from '../../shared/feedback';
+import { ConfirmDialog } from '../../shared';
 import { ExtendedFundEvent } from '../../../types/api';
 import { ErrorType, ErrorSeverity } from '../../../types/errors';
 import { useDeleteFundEvent, useFundEvents, useFundSummary, useFundMetadata } from '../../../hooks/useFundsold';
@@ -225,14 +224,12 @@ const FundDetail: React.FC = () => {
             timestamp: new Date(),
             userMessage: 'Unable to load fund data. Please try again.'
           }}
-          canRetry={true}
           onRetry={() => {
             // Retry all data streams
             refetchEvents();
             refetchSummary();
           }}
           onDismiss={() => navigate('/')}
-          variant="inline"
         />
       </Box>
     );

@@ -8,7 +8,7 @@ import {
 import { Info } from '@mui/icons-material';
 import { ExtendedFund, FundStatus } from '../../../../types/api';
 import { getStatusInfo } from '../../../../utils/helpers';
-import { StatusChip } from '../../../ui/StatusChip';
+import { StatusChip } from '../../../shared/data-display/Chip';
 
 interface SectionProps {
   fund: ExtendedFund;

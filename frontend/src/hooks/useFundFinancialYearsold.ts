@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useErrorHandler } from './useErrorHandlerold';
+import { useErrorHandler } from '@/hooks';
 import { getApiBaseUrl } from '../config/environment';
 
 /**

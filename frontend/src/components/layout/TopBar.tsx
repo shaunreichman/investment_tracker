@@ -8,8 +8,6 @@ import {
   Toolbar,
   Typography,
   Box,
-  Breadcrumbs,
-  Link,
   useTheme,
   InputBase,
 } from '@mui/material';
@@ -22,6 +20,8 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useSidebar } from './RouteLayout';
 import { useCompanies } from '../../hooks/useCompaniesold';
 import { useCentralizedFundDetail } from '../../hooks/useFundsold';
+import { Breadcrumbs } from '../shared/navigation/Breadcrumbs';
+import type { BreadcrumbItem } from '../shared/navigation/Breadcrumbs';
 
 // Custom hook to get meaningful breadcrumb data
 const useBreadcrumbData = () => {
@@ -105,51 +105,13 @@ const TopBar: React.FC = () => {
       }}
     >
       <Toolbar sx={{ minHeight: 56, padding: '0 24px' }}> {/* 56px height as per spec */}
-        {/* Breadcrumbs - Now the primary navigation element */}
+        {/* Breadcrumbs - Now using shared navigation component */}
         <Box sx={{ flexGrow: 1 }}>
           <Breadcrumbs
-            aria-label="breadcrumb"
-            sx={{
-              '& .MuiBreadcrumbs-ol': {
-                alignItems: 'center',
-              },
-                              '& .MuiBreadcrumbs-li': {
-                  '&:last-child .MuiTypography-root': {
-                    color: theme.palette.text.muted, // Muted color for current page
-                    fontWeight: 400,
-                  },
-                },
-            }}
-          >
-            {breadcrumbs.map((breadcrumb, index) => {
-              const isLast = index === breadcrumbs.length - 1;
-              
-              return (
-                <Link
-                  key={breadcrumb.path}
-                  color={isLast ? 'inherit' : theme.palette.primary.main} // Docker blue for links
-                  underline="hover"
-                  onClick={() => !isLast && handleBreadcrumbClick(breadcrumb.path)}
-                  sx={{
-                    cursor: isLast ? 'default' : 'pointer',
-                    '&:hover': {
-                      color: isLast ? theme.palette.text.muted : theme.palette.text.hover, // Darker blue on hover
-                    },
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'inherit',
-                      fontWeight: isLast ? 400 : 500,
-                    }}
-                  >
-                    {breadcrumb.label}
-                  </Typography>
-                </Link>
-              );
-            })}
-          </Breadcrumbs>
+            items={breadcrumbs}
+            onNavigate={handleBreadcrumbClick}
+            ariaLabel="breadcrumb"
+          />
         </Box>
 
         {/* Search Box - Moved to right side */}

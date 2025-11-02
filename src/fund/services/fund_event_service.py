@@ -12,6 +12,7 @@ from src.fund.repositories import FundEventRepository
 from src.fund.services.fund_validation_service import FundValidationService
 from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
 from src.shared.enums.domain_update_event_enums import DomainObjectType
+from src.shared.exceptions import ValidationException
 
 class FundEventService:
     """
@@ -125,9 +126,12 @@ class FundEventService:
         processed_data['fund_id'] = fund_id
 
         # 2. Business validation using validation service
-        errors = self.fund_validation_service.validate_fund_event_creation(processed_data, session)
-        if errors:
-            raise ValueError(f"Validation errors for fund event creation for fund ID {fund_id}: {errors}")
+        validation_errors = self.fund_validation_service.validate_fund_event_creation(processed_data, session)
+        if validation_errors:
+            raise ValidationException(
+                message="Validation errors for fund event creation",
+                details=validation_errors
+            )
 
         # 2a. Calculate the distribution event data
         if processed_data['event_type'] == EventType.DISTRIBUTION:
@@ -244,9 +248,12 @@ class FundEventService:
         fund_event_type = fund_event.event_type
         fund_id = fund_event.fund_id
 
-        errors = self.fund_validation_service.validate_fund_event_deletion(fund_event, session)
-        if errors:
-            raise ValueError(f"Validation errors for fund event deletion for fund event ID {fund_event_id}: {errors}")
+        validation_errors = self.fund_validation_service.validate_fund_event_deletion(fund_event, session)
+        if validation_errors:
+            raise ValidationException(
+                message="Validation errors for fund event deletion",
+                details=validation_errors
+            )
 
         success = self.fund_event_repository.delete_fund_event(fund_event_id, session)
         

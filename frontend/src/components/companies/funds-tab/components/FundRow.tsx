@@ -12,8 +12,7 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { StatusChip } from '../../../ui/StatusChip';
-import { TrackingTypeChip } from '../../../ui/TrackingTypeChip';
+import { StatusChip, TrackingTypeChip } from '../../../shared/data-display/Chip';
 import { formatCurrency, formatPercentage } from '../../../../utils/formatters';
 import { FundRowProps } from '../types/funds-tab.types';
 

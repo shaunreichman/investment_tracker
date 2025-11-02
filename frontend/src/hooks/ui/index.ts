@@ -10,3 +10,8 @@
 export { useToggle } from './useToggle';
 export type { UseToggleReturn } from './useToggle';
 
+export { useErrorAutoDismiss } from './useErrorAutoDismiss';
+
+export { useErrorDetailsToggle } from './useErrorDetailsToggle';
+export type { UseErrorDetailsToggleReturn } from './useErrorDetailsToggle';
+

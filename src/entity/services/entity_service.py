@@ -11,6 +11,7 @@ from src.entity.services.entity_validation_service import EntityValidationServic
 from src.entity.models import Entity
 from src.entity.enums.entity_enums import SortFieldEntity, EntityType
 from src.shared.enums.shared_enums import SortOrder, Country
+from src.shared.exceptions import ValidationException
 
 class EntityService:
     """
@@ -119,7 +120,8 @@ class EntityService:
             True if entity was deleted, False if not found
             
         Raises:
-            ValueError: If deletion validation fails
+            ValidationException: If deletion validation fails with structured details
+            ValueError: If entity not found or deletion fails
         """
         # Get existing entity
         entity = self.entity_repository.get_entity_by_id(entity_id, session)
@@ -129,7 +131,10 @@ class EntityService:
         # ENTERPRISE VALIDATION: Validate deletion
         validation_errors = self.entity_validation_service.validate_entity_deletion(entity_id, session)
         if validation_errors:
-            raise ValueError(f"Deletion validation failed for entity with ID {entity_id}: {validation_errors}")
+            raise ValidationException(
+                message=f"Deletion validation failed for entity with ID {entity_id}",
+                details=validation_errors
+            )
         
         # Delete the entity
         success = self.entity_repository.delete_entity(entity_id, session)

@@ -1,13 +1,18 @@
-export { StatusChip } from './StatusChip';
-export { EventTypeChip } from './EventTypeChip';
-export { ConfirmDialog } from './ConfirmDialog';
-export { ErrorBoundary } from './ErrorBoundary';
-export { DomainErrorBoundary } from './DomainErrorBoundary';
-export { LoadingSpinner } from './LoadingSpinner';
+// ============================================================================
+// UI COMPONENTS - BARREL EXPORT (LEGACY)
+// ============================================================================
+//
+// STILL IN USE (needs migration):
+//   - FormField: Used in CreateCompanyModal, CreateEntityModal
+//   - FormSection: Pattern replaced, but check for usage
+//
+// MIGRATION PLAN:
+//   1. Migrate CreateCompanyModal to RHF + shared/forms
+//   2. Migrate CreateEntityModal to RHF + shared/forms
+//   3. Delete this directory
+//
+// ============================================================================
+
+// ⚠️ DEPRECATED - Temporary exports for legacy components
 export { FormField } from './FormField';
-export { FormSection } from './FormSection';
-export { TrackingTypeChip } from './TrackingTypeChip';
-export { SuccessBanner } from './SuccessBanner';
-export { NumberInputField } from './NumberInputField';
-
-
+export type { FormFieldProps } from './FormField';

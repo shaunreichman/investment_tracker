@@ -7,6 +7,7 @@ This module contains shared utilities, base classes, and common functionality us
 from src.shared.enums import SortOrder, EventOperation, Country, Currency
 from src.shared.base import Base
 from src.shared.utils import *
+from src.shared.exceptions import ValidationException
 
 __all__ = [
     'SortOrder',
@@ -14,5 +15,6 @@ __all__ = [
     'Country',
     'Currency',
     'Base',
+    'ValidationException',
     'utils',
 ]

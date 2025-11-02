@@ -3,7 +3,6 @@
 // ============================================================================
 
 export { CompaniesPage } from './CompaniesPage';
-export { TabNavigation } from './TabNavigation';
 export { OverviewTab } from './overview-tab';
 export { FundsTab } from './funds-tab';
 export { CompanyDetailsTab } from './company-details-tab';

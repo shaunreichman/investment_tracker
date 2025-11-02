@@ -13,6 +13,7 @@ class ControllerResponseDTO:
     """Generic DTO for all controller responses."""
     data: Optional[Any] = None
     error: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
     response_code: ApiResponseCode = ApiResponseCode.SUCCESS
     message: Optional[str] = None
     
@@ -21,12 +22,14 @@ class ControllerResponseDTO:
         if self.error:
             return {
                 "error": self.error,
+                "details": self.details,
                 "response_code": self.response_code.value,
                 "message": self.message
             }
         
         return {
             "data": self.data,  # Data should already be formatted by controller
+            "details": self.details,
             "response_code": self.response_code.value,
             "message": self.message
         }

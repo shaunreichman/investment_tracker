@@ -5,7 +5,7 @@ import {
   Typography,
   useTheme
 } from '@mui/material';
-import { useErrorHandler } from '../../../hooks/useErrorHandlerold';
+import { useErrorHandler } from '@/hooks';
 import { useFund } from '../../../hooks/useFundsold';
 import { formatNumber, parseNumber, calculateTaxPaymentDate } from '../../../utils/helpers';
 import { useEventSubmission } from '../../../hooks/useEventSubmissionold';
@@ -15,10 +15,10 @@ import UnitTransactionForm from './create/UnitTransactionForm';
 import NavUpdateForm from './create/NavUpdateForm';
 import TaxStatementForm from './create/TaxStatementForm';
 import CostBasedEventForm from './create/CostBasedEventForm';
-import { FormContainer } from '../../ui/FormContainer';
+import { FormModal } from '../../shared/overlays';
 import { useUnifiedForm } from '../../../hooks/formsold/useUnifiedFormold';
 import { createValidator, validationRules } from '../../../utils/validators';
-import { SuccessBanner } from '../../ui/SuccessBanner';
+import { SuccessBanner } from '../../shared/feedback';
 import { FundTrackingType } from '../../../types/api';
 import { useFundFinancialYears } from '../../../hooks';
 
@@ -383,7 +383,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
 
 
   return (
-    <FormContainer
+    <FormModal
       open={open}
       title="Create Fund Event"
       onClose={handleClose}
@@ -520,7 +520,7 @@ const CreateFundEventModal: React.FC<CreateFundEventModalProps> = ({
           )}
         </Box>
       )}
-    </FormContainer>
+    </FormModal>
   );
 };
 

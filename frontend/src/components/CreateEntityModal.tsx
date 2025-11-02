@@ -9,9 +9,9 @@ import {
   Typography
 } from '@mui/material';
 import { useCreateEntity } from '../hooks/useEntitiesold';
-import { useErrorHandler } from '../hooks/useErrorHandlerold';
-import { SuccessBanner } from './ui/SuccessBanner';
-import { FormContainer } from './ui/FormContainer';
+import { useErrorHandler } from '@/hooks';
+import { SuccessBanner } from './shared/feedback';
+import { FormModal } from './shared/overlays';
 import { FormField } from './ui/FormField';
 import { useUnifiedForm } from '../hooks/formsold/useUnifiedFormold';
 import { createValidator, validationRules } from '../utils/validators';
@@ -179,7 +179,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
   }, [isSubmitting, clearError, reset, clearErrors, onClose]);
 
   return (
-    <FormContainer
+    <FormModal
       open={open}
       title="Create New Entity"
       subtitle="Enter the details for the new entity"
@@ -304,7 +304,7 @@ const CreateEntityModal: React.FC<CreateEntityModalProps> = ({
           </Box>
         </Box>
       </Box>
-    </FormContainer>
+    </FormModal>
   );
 };
 

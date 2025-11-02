@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.dto.response_codes import ApiResponseCode
 from src.api.controllers.formatters.banking_formatter import format_bank, format_bank_account, format_bank_account_balance, format_bank_comprehensive, format_bank_account_comprehensive
-
+from src.shared.exceptions import ValidationException
 from src.banking.services.bank_service import BankService
 from src.banking.services.bank_account_service import BankAccountService
 from src.banking.services.bank_account_balance_service import BankAccountBalanceService
+
 
 class BankingController:
     """
@@ -183,6 +184,10 @@ class BankingController:
                 formatted_bank = format_bank(bank)
                 return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.CREATED)
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating bank: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating bank: {str(e)}")
                 session.rollback()
@@ -225,6 +230,10 @@ class BankingController:
                 
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting bank {bank_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting bank {bank_id}: {str(e)}")
                 session.rollback()
@@ -415,6 +424,10 @@ class BankingController:
 
                 return ControllerResponseDTO(data=formatted_bank_account, response_code=ApiResponseCode.CREATED)
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating bank account: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating bank account: {str(e)}")
                 session.rollback()
@@ -456,6 +469,10 @@ class BankingController:
                 session.commit()                
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting bank account {bank_account_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting bank account {bank_account_id}: {str(e)}")
                 session.rollback()
@@ -625,6 +642,10 @@ class BankingController:
 
                 return ControllerResponseDTO(data=formatted_bank_account_balance, response_code=ApiResponseCode.CREATED)
                 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating bank account balance: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating bank account balance: {str(e)}")
                 session.rollback()
@@ -664,6 +685,11 @@ class BankingController:
                 
                 session.commit()
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
+            
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting bank account balance {bank_account_balance_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting bank account balance {bank_account_balance_id}: {str(e)}")
                 session.rollback()

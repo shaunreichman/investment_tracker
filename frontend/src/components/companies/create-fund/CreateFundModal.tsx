@@ -9,9 +9,8 @@ import { fundValidators, validationRules } from '../../../utils/validators';
 import TemplateSelectionSection from './TemplateSelectionSection';
 import FundFormSection from './FundFormSection';
 import { FUND_TEMPLATES, FundTemplate } from './templates';
-import { LoadingSpinner } from '../../ui/LoadingSpinner';
-import { SuccessBanner } from '../../ui/SuccessBanner';
-import { FormContainer } from '../../ui/FormContainer';
+import { LoadingSpinner, SuccessBanner } from '../../shared/feedback';
+import { FormModal } from '../../shared/overlays';
 import { useUnifiedForm } from '../../../hooks/formsold/useUnifiedFormold';
 
 // Form data interface
@@ -240,7 +239,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   };
 
   return (
-    <FormContainer
+    <FormModal
       open={open}
       title="Create New Fund"
       subtitle={`Adding fund to ${companyName}`}
@@ -394,7 +393,7 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         onClose={() => setShowEntityModal(false)} 
         onEntityCreated={handleEntityCreated} 
       />
-    </FormContainer>
+    </FormModal>
   );
 };
 

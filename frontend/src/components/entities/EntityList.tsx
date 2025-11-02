@@ -17,8 +17,7 @@ import { EntityFilters } from './EntityFilters';
 import { EntityTable } from './EntityTable';
 import { EntityCards } from './EntityCards';
 import { DependencyBlockedDialog } from './DependencyBlockedDialog';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { ErrorDisplay } from '../ErrorDisplay';
+import { LoadingSpinner, ErrorDisplay } from '../shared/feedback';
 
 export interface EntityDependencyError {
   entityName: string;

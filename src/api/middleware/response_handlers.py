@@ -43,14 +43,16 @@ def handle_controller_response(dto):
         response = ApiResponse(
             response_code=dto.response_code,
             message=dto.error,
-            data=dto.data
+            data=dto.data,
+            details=dto.details
         )
     else:
         # Success case - data already formatted by controller
         response = ApiResponse(
             response_code=dto.response_code,
             data=dto.data,
-            message=dto.message
+            message=dto.message,
+            details=dto.details
         )
     
     return jsonify(response.to_dict()), status_code
@@ -81,7 +83,11 @@ def handle_delete_response(dto):
     if dto.error:
         # Use the response code's HTTP status mapping
         status_code = dto.response_code.get_http_status_code()
-        response = ApiResponse(response_code=dto.response_code, message=dto.error)
+        response = ApiResponse(
+            response_code=dto.response_code,
+            message=dto.error,
+            details=dto.details
+        )
         return jsonify(response.to_dict()), status_code
     else:
         # Success case - Use ApiResponse for consistency, even with 204
@@ -89,6 +95,7 @@ def handle_delete_response(dto):
         response = ApiResponse(
             response_code=dto.response_code,
             data=dto.data,
-            message=dto.message or "Resource deleted successfully"
+            message=dto.message or "Resource deleted successfully",
+            details=dto.details
         )
         return jsonify(response.to_dict()), status_code

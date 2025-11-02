@@ -25,7 +25,7 @@ import {
 import { Entity } from '../../types/models/entity';
 import { SortFieldEntity } from '../../types/enums/entity.enums';
 import { SortOrder } from '../../types/enums/shared.enums';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { ConfirmDialog } from '../shared';
 
 export interface EntityTableProps {
   entities: Entity[];

@@ -22,7 +22,7 @@ import {
 } from '@mui/icons-material';
 import { Entity } from '../../types/models/entity';
 import { EntityType } from '../../types/enums/entity.enums';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { ConfirmDialog } from '../shared';
 
 export interface EntityCardsProps {
   entities: Entity[];

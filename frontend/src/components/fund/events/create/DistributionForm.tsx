@@ -8,7 +8,7 @@ import {
   ToggleButton,
   InputAdornment
 } from '@mui/material';
-import { NumberInputField } from '../../../ui/NumberInputField';
+import { NumberInputField } from '../../../shared/forms';
 
 interface DistributionFormProps {
   // Form state

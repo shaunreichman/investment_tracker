@@ -14,7 +14,7 @@ import {
 import { Add as AddIcon } from '@mui/icons-material';
 import { Entity } from '../../../types/api';
 import { useNumberInput } from '../../../hooks';
-import { NumberInputField } from '../../ui/NumberInputField';
+import { NumberInputField } from '../../shared/forms';
 
 export interface ValidationErrors {
   entity_id?: string;

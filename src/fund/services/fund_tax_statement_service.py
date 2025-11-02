@@ -15,6 +15,7 @@ from src.fund.enums.fund_enums import FundTrackingType
 from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType
 from src.fund.services.fund_validation_service import FundValidationService
 from src.shared.enums.domain_update_event_enums import DomainObjectType
+from src.shared.exceptions import ValidationException
 
 class FundTaxStatementService:
     """
@@ -211,7 +212,10 @@ class FundTaxStatementService:
 
         validation_errors = self.fund_validation_service.validate_fund_tax_statement_deletion(fund_tax_statement_id, session)
         if validation_errors:
-            raise ValueError(f"Deletion validation failed for fund tax statement with ID {fund_tax_statement_id}: {validation_errors}")
+            raise ValidationException(
+                message=f"Deletion validation failed for fund tax statement with ID {fund_tax_statement_id}",
+                details=validation_errors
+            )
         
         success = self.fund_tax_statement_repository.delete_fund_tax_statement(fund_tax_statement_id, session)
         if not success:

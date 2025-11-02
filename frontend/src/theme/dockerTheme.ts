@@ -81,6 +81,7 @@ export const dockerTheme = createTheme({
     text: {
       primary: '#FFFFFF',   // White
       secondary: '#C9D1D9', // Light grey
+      disabled: '#6B7280',  // Disabled text (overriding MUI default)
       muted: '#8B949E',     // Muted text
       active: '#2496ED',    // Active text
       hover: '#1B7FC4',     // Hover text

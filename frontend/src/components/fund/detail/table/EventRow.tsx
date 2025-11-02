@@ -10,7 +10,7 @@ import { Delete as DeleteIcon } from '@mui/icons-material';
 import { ExtendedFundEvent, ExtendedFund, FundTrackingType } from '../../../../types/api';
 import { formatCurrency, formatBrokerageFee, formatDate } from '../../../../utils/formatters';
 // event type label is now rendered via EventTypeChip
-import { EventTypeChip } from '../../../ui/EventTypeChip';
+import { EventTypeChip } from '../../../shared/data-display/Chip';
 
 // ============================================================================
 // EVENT ROW COMPONENT

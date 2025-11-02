@@ -15,8 +15,7 @@ import { CompanyType, CompanyStatus } from '../../../types/enums/company.enums';
 import { CompanyFilters } from './CompanyFilters';
 import { CompanyTable } from './CompanyTable';
 import { CompanyCards } from './CompanyCards';
-import { LoadingSpinner } from '../../ui/LoadingSpinner';
-import { ErrorDisplay } from '../../ErrorDisplay';
+import { LoadingSpinner, ErrorDisplay } from '../../shared/feedback';
 
 export const CompanyList: React.FC = () => {
   // Fetch companies

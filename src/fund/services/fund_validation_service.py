@@ -53,26 +53,28 @@ class FundValidationService:
             
         Returns:
             dict: Validation errors by field name
+            Format: {
+                "fund_events_dependency": {"count": 2, "message": "..."},
+                "tax_statements_dependency": {"count": 1, "message": "..."}
+            }
         """
-        errors = {}
+        dependencies = {}
         
         # BUSINESS RULE: Only allow deletion if fund has 0 fund events
         fund_events = self.fund_event_repository.get_fund_events(session, fund_ids=[fund.id])
         if len(fund_events) > 0:
-            errors['fund_events'] = [
-                f'Cannot delete fund with {len(fund_events)} fund events. '
-                f'Fund must have 0 events to be deleted.'
-            ]
+            dependencies['fund_events_dependency'] = {
+                'message': f'Cannot delete fund with fund events (we have {len(fund_events)} fund events). '
+            }
         
         # BUSINESS RULE: Prevent deletion of funds with tax statements
         tax_statements = self.fund_tax_statement_repository.get_fund_tax_statements(fund_ids=[fund.id], session=session)
         if len(tax_statements) > 0:
-            errors['tax_statements'] = [
-                f'Cannot delete fund with {len(tax_statements)} tax statements. '
-                f'Fund must have 0 tax statements to be deleted.'
-            ]
-        
-        return errors
+            dependencies['tax_statements_dependency'] = {
+                'message': f'Cannot delete fund with tax statements (we have {len(tax_statements)} tax statements). '
+            }
+
+        return dependencies
 
     def validate_fund_event_creation(self, event_data: Dict[str, Any], session: Session) -> Dict[str, List[str]]:
         """
@@ -118,7 +120,9 @@ class FundValidationService:
         
         # BUSINESS RULE: Capital calls only for cost-based funds
         if fund.tracking_type != FundTrackingType.COST_BASED:
-            errors['fund_type'] = ["Capital calls are only applicable for cost-based funds"]
+            errors['fund_type'] = {
+                'message': 'Capital calls are only applicable for cost-based funds'
+            }
         
         prev_fund_events = self.fund_event_repository.get_fund_events(session,
                                 fund_ids=[fund.id],
@@ -131,10 +135,14 @@ class FundValidationService:
             if prev_fund_events:
                 prev_capital_call = prev_fund_events[-1]
                 if event_data['amount'] > fund.commitment_amount - prev_capital_call.current_equity_balance:
-                    errors['amount'] = ["Cannot call more capital than remaining commitment"]
+                    errors['amount'] = {
+                        'message': f'Cannot call more capital than remaining commitment {fund.commitment_amount - prev_capital_call.current_equity_balance}'
+                    }
             else:
                 if event_data['amount'] > fund.commitment_amount:
-                    errors['amount'] = ["Cannot call more capital than total commitment for first capital call"]
+                    errors['amount'] = {
+                        'message': f'Cannot call more capital than total commitment for first capital call {fund.commitment_amount}'
+                    }
 
         # BUSINESS RULE: We must validate that the future equity balance never goes above the commitment amount as a result of this capital call
         future_fund_events = self.fund_event_repository.get_fund_events(session,
@@ -156,7 +164,9 @@ class FundValidationService:
                 elif event.event_type == EventType.RETURN_OF_CAPITAL:
                     updated_equity_balance -= event.amount
                 if updated_equity_balance > fund.commitment_amount:
-                    errors['future_amount'] = ["As a result of this capital call, the future equity balance would go above the commitment amount"]
+                    errors['future_amount'] = {
+                        'message': f'As a result of this capital call, the future equity balance would go above the commitment amount {fund.commitment_amount}'
+                    }
                     break
 
         return errors
@@ -176,7 +186,9 @@ class FundValidationService:
         
         # BUSINESS RULE: Returns only for cost-based funds
         if fund.tracking_type != FundTrackingType.COST_BASED:
-            errors['fund_type'] = ["Returns of capital are only applicable for cost-based funds"]
+            errors['fund_type'] = {
+                'message': 'Returns of capital are only applicable for cost-based funds'
+            }
 
         prev_fund_events = self.fund_event_repository.get_fund_events(session,
                                 fund_ids=[fund.id],
@@ -187,9 +199,13 @@ class FundValidationService:
         if prev_fund_events:
             prev_return_of_capital = prev_fund_events[-1]
             if event_data['amount'] > prev_return_of_capital.current_equity_balance:
-                errors['amount'] = ["Cannot return more capital than remaining equity as of the event date"]
+                errors['amount'] = {
+                    'message': f'Cannot return more capital than remaining equity {prev_return_of_capital.current_equity_balance} as of the event date {event_data["event_date"]}'
+                }
         else:
-            errors['amount'] = ["We first need to do a capital call before we can return of capital"]
+            errors['amount'] = {
+                'message': 'We first need to do a capital call before we can return of capital'
+            }
         
         # BUSINESS RULE: We must validate that the future equity balance never goes below 0 as a result of this return of capital
         future_fund_events = self.fund_event_repository.get_fund_events(session,
@@ -211,7 +227,9 @@ class FundValidationService:
                 elif event.event_type == EventType.RETURN_OF_CAPITAL:
                     updated_equity_balance -= event.amount
                 if updated_equity_balance < 0:
-                    errors['future_amount'] = ["As a result of this return of capital, the future equity balance would go below 0"]
+                    errors['future_amount'] = {
+                        'message': f'As a result of this return of capital, the future equity balance would go below 0'
+                    }
                     break
         
         return errors
@@ -231,7 +249,9 @@ class FundValidationService:
 
         # BUSINESS RULE: Unit purchases only for NAV-based funds
         if fund.tracking_type != FundTrackingType.NAV_BASED:
-            errors['fund_type'] = ["Unit purchases are only applicable for NAV-based funds"]
+            errors['fund_type'] = {
+                'message': 'Unit purchases are only applicable for NAV-based funds'
+            }
         
         return errors
     
@@ -250,7 +270,9 @@ class FundValidationService:
 
         # BUSINESS RULE: Unit sales only for NAV-based funds
         if fund.tracking_type != FundTrackingType.NAV_BASED:
-            errors['fund_type'] = ["Unit sales are only applicable for NAV-based funds"]
+            errors['fund_type'] = {
+                'message': 'Unit sales are only applicable for NAV-based funds'
+            }
 
         prev_fund_events = self.fund_event_repository.get_fund_events(session,
                                 fund_ids=[fund.id],
@@ -262,9 +284,13 @@ class FundValidationService:
         if prev_fund_events:
             prev_unit_sale = prev_fund_events[-1]
             if event_data['units_sold'] > prev_unit_sale.units_owned:
-                errors['units_sold'] = ["Cannot sell more units than available units owned as of the event date"]
+                errors['units_sold'] = {
+                    'message': f'Cannot sell more units than available units {prev_unit_sale.units_owned} owned as of the event date {event_data["event_date"]}'
+                }
         else:
-            errors['units_sold'] = ["We first need to do a unit purchase before we can sell units"]
+            errors['units_sold'] = {
+                'message': 'We first need to do a unit purchase before we can sell units'
+            }
 
         future_fund_events = self.fund_event_repository.get_fund_events(session,
                                 fund_ids=[fund.id],
@@ -286,7 +312,9 @@ class FundValidationService:
                 elif event.event_type == EventType.UNIT_SALE:
                     updated_units_owned -= event.units_sold
                 if updated_units_owned < 0:
-                    errors['future_units_sold'] = ["As a result of this sale, the future units owned would go below 0"]
+                    errors['future_units_sold'] = {
+                        'message': f'As a result of this sale, the future units owned {updated_units_owned} would go below 0 on date {event_data["event_date"]}'
+                    }
                     break
         
         return errors
@@ -306,7 +334,9 @@ class FundValidationService:
 
         # BUSINESS RULE: NAV updates only for NAV-based funds
         if fund.tracking_type != FundTrackingType.NAV_BASED:
-            errors['fund_type'] = ["NAV updates are only applicable for NAV-based funds"]
+            errors['fund_type'] = {
+                'message': 'NAV updates are only applicable for NAV-based funds'
+            }
 
         prev_fund_events = self.fund_event_repository.get_fund_events(session,
                                 fund_ids=[fund.id],
@@ -318,9 +348,13 @@ class FundValidationService:
         if prev_fund_events:
             prev_unit_event = prev_fund_events[-1]
             if prev_unit_event.units_owned == 0:
-                errors['units_owned'] = ["We first need to do own units before we can update the NAV"]
+                errors['units_owned'] = {
+                    'message': 'We first need to do own units before we can update the NAV'
+                }
         else:
-            errors['units_owned'] = ["We first need to do a unit purchase before we can update the NAV"]
+            errors['units_owned'] = {
+                'message': 'We first need to do a unit purchase before we can update the NAV'
+            }
 
         
         return errors
@@ -355,7 +389,9 @@ class FundValidationService:
         # Validate the event doesn't have an associated fund event cash flow
         fund_event_cash_flows = self.fund_event_cash_flow_repository.get_fund_event_cash_flows(session, fund_event_ids=[event.id])
         if fund_event_cash_flows:
-            errors['fund_event_cash_flows'] = ["Cannot delete event with associated fund event cash flows"]
+            errors['fund_event_cash_flows_dependency'] = {
+                'message': f'Cannot delete event with any (we have {len(fund_event_cash_flows)} associated fund event cash flows)'
+            }
         
         return errors
 
@@ -376,16 +412,22 @@ class FundValidationService:
         bank_account_repository = BankAccountRepository()
         bank_account = bank_account_repository.get_bank_account_by_id(fund_event_cash_flow_data['bank_account_id'], session)
         if not bank_account:
-            errors['bank_account'] = [f"Bank account with ID {fund_event_cash_flow_data['bank_account_id']} not found"]
+            errors['bank_account'] = {
+                'message': f'Bank account with ID {fund_event_cash_flow_data["bank_account_id"]} not found'
+            }
 
         # Validate Fund Event exists
         fund_event = self.fund_event_repository.get_fund_event_by_id(fund_event_id, session)
         if not fund_event:
-            errors['fund_event'] = [f"Fund event with ID {fund_event_id} not found"]
+            errors['fund_event'] = {
+                'message': f'Fund event with ID {fund_event_id} not found'
+            }
         else:
             # Validate Fund Event Cash Flow Balance
             if fund_event.cash_flow_balance_amount + fund_event_cash_flow_data['amount'] > fund_event.amount:
-                errors['amount'] = ["Cash flow is too large. It will take the balance amount above the event amount"]
+                errors['amount'] = {
+                    'message': f'Cash flow is too large. It will take the balance amount {fund_event.cash_flow_balance_amount} above the event amount {fund_event.amount}'
+                }
 
         return errors
 
@@ -400,5 +442,6 @@ class FundValidationService:
         """
         errors = {}
         
-        # For no we won't do any validation. In the future we could validate that the fund tax statement has no fund events associated with it.
+        # For now we won't do any validation. In the future we could validate that the fund tax statement has no fund events associated with it.
+        
         return errors

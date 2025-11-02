@@ -2,7 +2,7 @@
 Entity Validation Service.
 """
 
-from typing import List
+from typing import Dict, Any
 from sqlalchemy.orm import Session
 import logging
 from src.banking.repositories.bank_account_repository import BankAccountRepository
@@ -37,7 +37,7 @@ class EntityValidationService:
     # Validate Entity
     ################################################################################
     
-    def validate_entity_deletion(self, entity_id: int, session: Session) -> List[str]:
+    def validate_entity_deletion(self, entity_id: int, session: Session) -> Dict[str, Dict[str, Any]]:
         """
         Validate the deletion of an entity.
 
@@ -46,23 +46,35 @@ class EntityValidationService:
             session: Database session
             
         Returns:
-            List of validation error messages (empty if valid)
+            Dictionary with structured validation errors (empty if valid)
+            Format: {
+                "bank_accounts_dependency": {"count": 3, "message": "..."},
+                "tax_statements_dependency": {"count": 1, "message": "..."},
+                "funds_dependency": {"count": 2, "message": "..."}
+            }
         """
-        errors = {}
+        dependencies = {}
         
         # Cannot delete entity with dependent bank accounts
         bank_accounts = self.bank_account_repository.get_bank_accounts(session, entity_ids=[entity_id])
         if bank_accounts:
-            errors['bank_accounts'] = [f"Cannot delete entity with dependent bank accounts. We have {len(bank_accounts)} bank accounts associated with this entity."]
+            dependencies['bank_accounts_dependency'] = {
+                'message': f"Cannot delete entity with bank accounts (we have {len(bank_accounts)} dependent bank accounts)"
+            }
         
         # Cannot delete entity with dependent tax statements
         tax_statements = self.fund_tax_statement_repository.get_fund_tax_statements(session, entity_ids=[entity_id])
         if tax_statements:
-            errors['tax_statements'] = [f"Cannot delete entity with dependent tax statements. We have {len(tax_statements)} tax statements associated with this entity."]
+            dependencies['tax_statements_dependency'] = {
+                'message': f"Cannot delete entity with tax statements (we have {len(tax_statements)} dependent tax statements)"
+            }
         
         # Cannot delete entity with dependent funds
         funds = self.fund_repository.get_funds(session, entity_ids=[entity_id])
         if funds:
-            errors['funds'] = [f"Cannot delete entity with dependent funds. We have {len(funds)} funds associated with this entity."]
+            dependencies['funds_dependency'] = {
+                'message': f"Cannot delete entity with funds (we have {len(funds)} dependent funds)"
+            }
 
-        return errors
+        return dependencies
+        

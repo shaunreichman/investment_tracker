@@ -5,9 +5,9 @@ import {
   Typography
 } from '@mui/material';
 import { useCreateCompany } from '../hooks/useCompaniesold';
-import { useErrorHandler } from '../hooks/useErrorHandlerold';
-import { SuccessBanner } from './ui/SuccessBanner';
-import { FormContainer } from './ui/FormContainer';
+import { useErrorHandler } from '@/hooks';
+import { SuccessBanner } from './shared/feedback';
+import { FormModal } from './shared/overlays';
 import { FormField } from './ui/FormField';
 import { useUnifiedForm } from '../hooks/formsold/useUnifiedFormold';
 import { createValidator, validationRules } from '../utils/validators';
@@ -173,7 +173,7 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
   };
 
   return (
-    <FormContainer
+    <FormModal
       open={open}
       title="Create New Company"
       subtitle="Enter the details for the new company"
@@ -306,7 +306,7 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
           </Box>
         </Box>
       </Box>
-    </FormContainer>
+    </FormModal>
   );
 };
 

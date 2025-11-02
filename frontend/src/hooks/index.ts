@@ -20,7 +20,6 @@ export * from './ui';
 
 export { useApiCall } from './useApiCallold';
 export { useEntities } from './useEntitiesold';
-export { useErrorHandler } from './useErrorHandlerold';
 export { useEventSubmission } from './useEventSubmissionold';
 export { useFunds } from './useFundsold';
 export { useFundFinancialYears } from './useFundFinancialYearsold';

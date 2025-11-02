@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextField, MenuItem, Typography, Divider, Button, FormControlLabel, Checkbox, useTheme, Box, InputAdornment } from '@mui/material';
-import { NumberInputField } from '../../../ui/NumberInputField';
+import { NumberInputField } from '../../../shared/forms';
 
 interface TaxStatementFormProps {
   formData: any;

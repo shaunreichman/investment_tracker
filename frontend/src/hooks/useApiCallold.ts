@@ -2,7 +2,7 @@
 // This file provides a generic hook for API calls with loading, error, and data state management
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useErrorHandler } from './useErrorHandlerold';
+import { useErrorHandler } from '@/hooks';
 import { ErrorInfo } from '../types/errors';
 
 // ============================================================================

@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextField, Box, Typography, useTheme } from '@mui/material';
-import { NumberInputField } from '../../../ui/NumberInputField';
+import { NumberInputField } from '../../../shared/forms';
 
 interface CostBasedEventFormProps {
   eventType: 'CAPITAL_CALL' | 'RETURN_OF_CAPITAL';

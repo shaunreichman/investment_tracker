@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session
 from src.api.dto.controller_response_dto import ControllerResponseDTO
 from src.api.dto.response_codes import ApiResponseCode
 from src.api.controllers.formatters.rate_formatter import format_risk_free_rate, format_fx_rate
-
+from src.shared.exceptions import ValidationException
 from src.rates.services.risk_free_rate_service import RiskFreeRateService
 from src.rates.services.fx_rate_service import FxRateService
+
 
 class RateController:
     """
@@ -162,6 +163,10 @@ class RateController:
                 formatted_risk_free_rate = format_risk_free_rate(risk_free_rate)
                 return ControllerResponseDTO(data=formatted_risk_free_rate, response_code=ApiResponseCode.CREATED)
 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating risk free rate: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating risk free rate: {str(e)}")
                 session.rollback()
@@ -203,6 +208,10 @@ class RateController:
 
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting risk free rate {risk_free_rate_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting risk free rate: {str(e)}")
                 session.rollback()
@@ -341,6 +350,10 @@ class RateController:
                 formatted_fx_rate = format_fx_rate(fx_rate)
                 return ControllerResponseDTO(data=formatted_fx_rate, response_code=ApiResponseCode.CREATED)
 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error creating FX rate: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error creating FX rate: {str(e)}")
                 session.rollback()
@@ -381,6 +394,10 @@ class RateController:
 
                 return ControllerResponseDTO(response_code=ApiResponseCode.DELETED)
 
+            except ValidationException as e:
+                current_app.logger.warning(f"Validation error deleting FX rate {fx_rate_id}: {e.message}")
+                session.rollback()
+                return ControllerResponseDTO(error=e.message, details=e.details, response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error deleting FX rate: {str(e)}")
                 session.rollback()
