@@ -2,14 +2,14 @@
 Standardized API response wrapper.
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 from datetime import datetime, timezone
 from src.api.dto.response_codes import ApiResponseCode
 
 
 class ApiResponse:
     """Standardized API response wrapper."""
-    def __init__(self, data: Any = None, response_code: ApiResponseCode = ApiResponseCode.SUCCESS, message: Optional[str] = None, details: Optional[str] = None):
+    def __init__(self, data: Any = None, response_code: ApiResponseCode = ApiResponseCode.SUCCESS, message: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
         self.response_code = response_code
         self.message = message
         self.data = data
