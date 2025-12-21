@@ -18,3 +18,22 @@ export type {
   UseFormReturn
 } from './types';
 
+// Export number input hook
+export { useNumberInput } from './useNumberInput';
+export type {
+  UseNumberInputOptions,
+  UseNumberInputReturn
+} from './useNumberInput';
+
+// Export validation utilities
+export * from './validation';
+
+// Export unified form hook (simple state-based alternative to React Hook Form)
+export { useUnifiedForm } from './useUnifiedForm';
+export type {
+  ValidationRule,
+  ValidatorMap,
+  UseUnifiedFormConfig,
+  UseUnifiedFormReturn
+} from './useUnifiedForm';
+

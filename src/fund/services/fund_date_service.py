@@ -7,12 +7,13 @@ from src.shared.models import DomainFieldChange
 from src.shared.enums.domain_update_event_enums import DomainObjectType
 from src.shared.enums.shared_enums import SortOrder, EventOperation
 from src.fund.enums.fund_event_enums import EventType
-from src.fund.enums.fund_enums import FundStatus, FundTaxStatementFinancialYearType
-from src.fund.repositories import FundEventRepository, FundRepository
-from typing import Optional, List
+from src.fund.enums.fund_enums import FundStatus
+from src.fund.repositories import FundEventRepository
+from src.fund.services.fund_service import FundService
+from typing import Optional, Set
 from sqlalchemy.orm import Session
 from datetime import date
-
+from src.fund.calculators.financial_year_calculator import FinancialYearCalculator
 class FundDateService:
     """
     Fund Date Service.
@@ -29,11 +30,10 @@ class FundDateService:
         Initialize the FundDateService.
 
         Args:
-            fund_repository: Fund repository to use. If None, creates a new one.
             fund_event_repository: Fund event repository to use. If None, creates a new one.
         """
-        self.fund_repository = FundRepository()
         self.fund_event_repository = FundEventRepository()
+        self.fund_service = FundService()
     
     def update_fund_start_date(self, fund: Fund, session: Session, fund_event_id: Optional[int] = None, fund_event_operation: EventOperation = None) -> Optional[DomainFieldChange]:
         """
@@ -139,45 +139,45 @@ class FundDateService:
             return DomainFieldChange(domain_object_type=DomainObjectType.FUND, domain_object_id=fund.id, field_name='current_duration', old_value=old_duration, new_value=fund.current_duration)
         return None
 
-    def get_fund_financial_years(self, fund: Fund) -> List[str]:
-        """
-        Get all financial years from fund start date to current date.
-        
+    def get_fund_financial_years(self, fund: Fund) -> Set[str]:
+        """Get the financial years for a fund.
+
         Args:
-            fund: The fund object
-            
+            fund: Fund object
+
         Returns:
-            List[str]: List of financial years in descending order (most recent first)
-            
+            Set[str]: Set of financial years
+
         Raises:
-            ValueError: If the fund start date is not set
-            ValueError: If the financial year type is invalid
+            ValueError: If fund start date or tax statement financial year type is not set
         """
-        # Get fund start date (use events if available, otherwise creation date)
+        if not fund.start_date:
+            raise ValueError("Fund start date is required")
+        if not fund.tax_statement_financial_year_type:
+            raise ValueError("Fund tax statement financial year type is required")
+
         start_date = fund.start_date
-        if not start_date:
-            raise ValueError("Fund.start_date is not set")
-
-        end_date = date.today()
-
-        financial_years = set()
-        
-        financial_year_type = fund.tax_statement_financial_year_type
-        if financial_year_type == FundTaxStatementFinancialYearType.CALENDAR_YEAR:
-            for year in range(start_date.year, end_date.year + 1):
-                financial_years.add(str(year))
-        elif financial_year_type == FundTaxStatementFinancialYearType.HALF_YEAR:
-            if start_date.month <= 6:
-                start_year = start_date.year
-            else:
-                start_year = start_date.year + 1
-            if end_date.month <= 6:
-                end_year = end_date.year
-            else:
-                end_year = end_date.year + 1
-            for year in range(start_year, end_year + 1):
-                financial_years.add(str(year))
-        else:
-            raise ValueError(f"Invalid financial year type: {financial_year_type}")
-        
+        end_date = date.today() if not fund.end_date else fund.end_date
+        from src.fund.calculators.financial_year_calculator import FinancialYearCalculator
+        financial_years = FinancialYearCalculator.calculate_financial_years_for_fund(start_date, end_date, fund.tax_statement_financial_year_type)
         return financial_years
+
+    def get_fund_financial_years_and_last_day_of_financial_year(self, fund_id: int, session: Session) -> Dict[str, date]:
+        """Get the financial years and last day of financial year for a fund.
+
+        Args:
+            fund_id: ID of the fund
+            session: Database session
+
+        Returns:
+            Dict[str, date]: Dictionary containing financial years and last day of financial year
+        """
+        fund = self.fund_service.get_fund_by_id(fund_id, session)
+        if not fund:
+            raise ValueError("Fund not found")
+        financial_years = self.get_fund_financial_years(fund)
+        financial_years_and_last_day_of_financial_year = {}
+        for financial_year in financial_years:
+            fy_start_date, fy_end_date = FinancialYearCalculator.calculate_financial_year_dates(financial_year, fund.tax_statement_financial_year_type)
+            financial_years_and_last_day_of_financial_year[financial_year] = fy_end_date
+        return financial_years_and_last_day_of_financial_year

@@ -12,233 +12,369 @@ import {
   Typography
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { Controller, Control, FieldValues } from 'react-hook-form';
 import { Entity } from '../../../types/api';
-import { useNumberInput } from '../../../hooks';
+import { FundTrackingType, FundInvestmentType } from '@/fund/types';
+import { Country, Currency } from '@/shared/types';
+import { FUND_TYPES } from '@/fund/utils/constants/fundOptions';
+import { COUNTRY_LABELS } from '@/shared/utils/formatters/labels';
+import { CURRENCY_LABELS } from '@/shared/utils/formatters/labels';
 import { NumberInputField } from '../../shared/forms';
-
-export interface ValidationErrors {
-  entity_id?: string;
-  name?: string;
-  fund_type?: string;
-  tracking_type?: string;
-  commitment_amount?: string;
-  expected_irr?: string;
-  expected_duration_months?: string;
-  description?: string;
-}
-
-export interface CreateFundFormData {
-  entity_id: string;
-  name: string;
-  fund_type: string;
-  tracking_type: string;
-  currency: string;
-  commitment_amount: string;
-  expected_irr: string;
-  expected_duration_months: string;
-  description: string;
-}
+import { useNumberInput } from '@/shared/hooks/forms';
+import type { CreateFundFormData } from '@/fund/hooks/schemas';
 
 interface FundFormSectionProps {
-  formData: CreateFundFormData;
-  validationErrors: ValidationErrors;
+  control: Control<CreateFundFormData>;
   entities: Entity[] | undefined;
-  onInputChange: (field: string, value: string) => void;
   onCreateEntity: () => void;
   trackingTypeLocked?: boolean;
 }
 
 const FundFormSection: React.FC<FundFormSectionProps> = ({
-  formData,
-  validationErrors,
+  control,
   entities,
-  onInputChange,
   onCreateEntity,
   trackingTypeLocked
 }) => {
-  const entityLabelId = 'entity-select-label';
-  const entitySelectId = 'entity-select';
-  const fundTypeLabelId = 'fund-type-select-label';
-  const fundTypeSelectId = 'fund-type-select';
-  const trackingTypeLabelId = 'tracking-type-select-label';
-  const trackingTypeSelectId = 'tracking-type-select';
-  const currencyLabelId = 'currency-select-label';
-  const currencySelectId = 'currency-select';
+  // Create options arrays for selects
+  const entityOptions = entities?.map(entity => ({
+    value: entity.id,
+    label: entity.name
+  })) || [];
+
+  const trackingTypeOptions = [
+    { value: FundTrackingType.NAV_BASED, label: 'NAV-Based (Units & NAV)' },
+    { value: FundTrackingType.COST_BASED, label: 'Cost-Based (Capital Calls)' },
+  ];
+
+  const countryOptions = Object.entries(COUNTRY_LABELS).map(([value, label]) => ({
+    value: value as Country,
+    label
+  }));
+
+  const currencyOptions = Object.entries(CURRENCY_LABELS).map(([value, label]) => ({
+    value: value as Currency,
+    label: `${label} (${value})`
+  }));
 
   return (
     <Box display="grid" gap={3} sx={{ gridTemplateColumns: '1fr 1fr' }}>
       {/* Entity Selection */}
-      <FormControl fullWidth error={!!validationErrors.entity_id} required>
-        <InputLabel id={entityLabelId}>Entity *</InputLabel>
-        <Select
-          labelId={entityLabelId}
-          id={entitySelectId}
-          value={formData.entity_id}
-          onChange={(e) => onInputChange('entity_id', e.target.value as string)}
-          label="Entity *"
-        >
-          {entities?.map((entity) => (
-            <MenuItem key={entity.id} value={entity.id}>
-              {entity.name}
-            </MenuItem>
-          ))}
-          <Divider />
-          <MenuItem
-            value="create_new"
-            onClick={onCreateEntity}
-            sx={{ color: 'primary.main', fontStyle: 'italic' }}
-          >
-            <AddIcon sx={{ mr: 1, fontSize: 16 }} />
-            Create New Entity...
-          </MenuItem>
-        </Select>
-        {validationErrors.entity_id && (
-          <FormHelperText error>{validationErrors.entity_id}</FormHelperText>
+      <Controller
+        name="entity_id"
+        control={control}
+        render={({ field, fieldState }) => (
+          <FormControl fullWidth error={!!fieldState.error && fieldState.isTouched} required>
+            <InputLabel id="entity-select-label">Entity *</InputLabel>
+            <Select
+              {...field}
+              labelId="entity-select-label"
+              id="entity-select"
+              label="Entity *"
+              value={field.value || ''}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+            >
+              {entityOptions.map((option) => (
+                <MenuItem key={String(option.value)} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+              <Divider />
+              <MenuItem
+                value="create_new"
+                onClick={onCreateEntity}
+                sx={{ color: 'primary.main', fontStyle: 'italic' }}
+              >
+                <AddIcon sx={{ mr: 1, fontSize: 16 }} />
+                Create New Entity...
+              </MenuItem>
+            </Select>
+            {fieldState.error && fieldState.isTouched && (
+              <FormHelperText error>{fieldState.error.message}</FormHelperText>
+            )}
+          </FormControl>
         )}
-      </FormControl>
-
-      {/* Fund Name */}
-      <TextField
-        fullWidth
-        label="Fund Name *"
-        value={formData.name}
-        onChange={(e) => onInputChange('name', e.target.value)}
-        error={!!validationErrors.name}
-        helperText={validationErrors.name || 'Enter a unique fund name (2-255 characters)'}
-        required
       />
 
-      {/* Fund Type */}
-      <FormControl fullWidth error={!!validationErrors.fund_type} required>
-        <InputLabel id={fundTypeLabelId}>Fund Type *</InputLabel>
-        <Select
-          labelId={fundTypeLabelId}
-          id={fundTypeSelectId}
-          value={formData.fund_type}
-          onChange={(e) => onInputChange('fund_type', e.target.value as string)}
-          label="Fund Type *"
-        >
-          <MenuItem value="Private Equity">Private Equity</MenuItem>
-          <MenuItem value="Private Debt">Private Debt</MenuItem>
-          <MenuItem value="Venture Capital">Venture Capital</MenuItem>
-          <MenuItem value="Real Estate">Real Estate</MenuItem>
-          <MenuItem value="Infrastructure">Infrastructure</MenuItem>
-          <MenuItem value="Hedge Fund">Hedge Fund</MenuItem>
-          <MenuItem value="Equity - Consumer Discretionary">Equity - Consumer Discretionary</MenuItem>
-          <MenuItem value="Equity - Technology">Equity - Technology</MenuItem>
-          <MenuItem value="Equity - Financial">Equity - Financial</MenuItem>
-          <MenuItem value="Other">Other</MenuItem>
-        </Select>
-        {validationErrors.fund_type && (
-          <FormHelperText error>{validationErrors.fund_type}</FormHelperText>
+      {/* Fund Name */}
+      <Controller
+        name="name"
+        control={control}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            fullWidth
+            label="Fund Name *"
+            error={!!fieldState.error && fieldState.isTouched}
+            helperText={
+              fieldState.error && fieldState.isTouched
+                ? fieldState.error.message
+                : 'Enter a unique fund name (2-255 characters)'
+            }
+            required
+          />
         )}
-      </FormControl>
+      />
+
+      {/* Fund Investment Type */}
+      <Controller
+        name="fund_investment_type"
+        control={control}
+        render={({ field, fieldState }) => (
+          <FormControl fullWidth error={!!fieldState.error && fieldState.isTouched}>
+            <InputLabel id="fund-investment-type-select-label">Fund Investment Type</InputLabel>
+            <Select
+              {...field}
+              labelId="fund-investment-type-select-label"
+              id="fund-investment-type-select"
+              label="Fund Investment Type"
+              value={field.value || ''}
+            >
+              {FUND_TYPES.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {fieldState.error && fieldState.isTouched && (
+              <FormHelperText error>{fieldState.error.message}</FormHelperText>
+            )}
+          </FormControl>
+        )}
+      />
 
       {/* Tracking Type */}
-      <FormControl fullWidth error={!!validationErrors.tracking_type} required>
-        <InputLabel id={trackingTypeLabelId}>Tracking Type *</InputLabel>
-        <Select
-          labelId={trackingTypeLabelId}
-          id={trackingTypeSelectId}
-          value={formData.tracking_type}
-          onChange={(e) => onInputChange('tracking_type', e.target.value as string)}
-          label="Tracking Type *"
-          disabled={!!trackingTypeLocked}
-        >
-          <MenuItem value="nav_based">NAV-Based (Units & NAV)</MenuItem>
-          <MenuItem value="cost_based">Cost-Based (Capital Calls)</MenuItem>
-        </Select>
-        {validationErrors.tracking_type && (
-          <FormHelperText error>{validationErrors.tracking_type}</FormHelperText>
+      <Controller
+        name="tracking_type"
+        control={control}
+        render={({ field, fieldState }) => (
+          <FormControl fullWidth error={!!fieldState.error && fieldState.isTouched} required>
+            <InputLabel id="tracking-type-select-label">Tracking Type *</InputLabel>
+            <Select
+              {...field}
+              labelId="tracking-type-select-label"
+              id="tracking-type-select"
+              label="Tracking Type *"
+              disabled={!!trackingTypeLocked}
+            >
+              {trackingTypeOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {fieldState.error && fieldState.isTouched && (
+              <FormHelperText error>{fieldState.error.message}</FormHelperText>
+            )}
+          </FormControl>
         )}
-      </FormControl>
+      />
+
+      {/* Tax Jurisdiction */}
+      <Controller
+        name="tax_jurisdiction"
+        control={control}
+        render={({ field, fieldState }) => (
+          <FormControl fullWidth error={!!fieldState.error && fieldState.isTouched} required>
+            <InputLabel id="tax-jurisdiction-select-label">Tax Jurisdiction *</InputLabel>
+            <Select
+              {...field}
+              labelId="tax-jurisdiction-select-label"
+              id="tax-jurisdiction-select"
+              label="Tax Jurisdiction *"
+            >
+              {countryOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {fieldState.error && fieldState.isTouched && (
+              <FormHelperText error>{fieldState.error.message}</FormHelperText>
+            )}
+          </FormControl>
+        )}
+      />
 
       {/* Currency */}
-      <FormControl fullWidth>
-        <InputLabel id={currencyLabelId}>Currency</InputLabel>
-        <Select
-          labelId={currencyLabelId}
-          id={currencySelectId}
-          value={formData.currency}
-          onChange={(e) => onInputChange('currency', e.target.value as string)}
-          label="Currency"
-        >
-          <MenuItem value="AUD">AUD</MenuItem>
-          <MenuItem value="USD">USD</MenuItem>
-          <MenuItem value="EUR">EUR</MenuItem>
-          <MenuItem value="GBP">GBP</MenuItem>
-        </Select>
-      </FormControl>
+      <Controller
+        name="currency"
+        control={control}
+        render={({ field, fieldState }) => (
+          <FormControl fullWidth error={!!fieldState.error && fieldState.isTouched} required>
+            <InputLabel id="currency-select-label">Currency *</InputLabel>
+            <Select
+              {...field}
+              labelId="currency-select-label"
+              id="currency-select"
+              label="Currency *"
+            >
+              {currencyOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {fieldState.error && fieldState.isTouched && (
+              <FormHelperText error>{fieldState.error.message}</FormHelperText>
+            )}
+          </FormControl>
+        )}
+      />
 
       {/* Commitment Amount */}
-      <NumberInputField
-        fullWidth
-        label="Commitment Amount"
-        value={formData.commitment_amount || ''}
-        onInputChange={onInputChange}
-        fieldName="commitment_amount"
-        allowDecimals={true}
-        allowNegative={false}
-        error={!!validationErrors.commitment_amount}
-        helperText={validationErrors.commitment_amount || 'Total commitment amount (optional)'}
-        inputProps={{
-          style: { textAlign: 'left' }
+      <Controller
+        name="commitment_amount"
+        control={control}
+        render={({ field, fieldState }) => {
+          const numberInput = useNumberInput(
+            field.value?.toString() || '',
+            { allowDecimals: true, allowNegative: false }
+          );
+
+          return (
+            <Box>
+              <TextField
+                fullWidth
+                label="Commitment Amount"
+                type="text"
+                value={numberInput.value}
+                onChange={(e) => {
+                  numberInput.onChange(e.target.value);
+                  const numValue = numberInput.numericValue;
+                  field.onChange(numValue > 0 ? numValue : undefined);
+                }}
+                onBlur={() => {
+                  numberInput.onBlur();
+                  const numValue = numberInput.numericValue;
+                  field.onChange(numValue > 0 ? numValue : undefined);
+                }}
+                onFocus={numberInput.onFocus}
+                error={!!fieldState.error && fieldState.isTouched}
+                helperText={
+                  fieldState.error && fieldState.isTouched
+                    ? fieldState.error.message
+                    : 'Total commitment amount (optional)'
+                }
+                inputProps={{
+                  style: { textAlign: 'left' }
+                }}
+              />
+            </Box>
+          );
         }}
       />
 
       {/* Expected IRR */}
-      <NumberInputField
-        fullWidth
-        label="Expected IRR (%)"
-        value={formData.expected_irr}
-        onInputChange={onInputChange}
-        fieldName="expected_irr"
-        allowDecimals={true}
-        allowNegative={false}
-        error={!!validationErrors.expected_irr}
-        helperText={validationErrors.expected_irr || 'Expected annual return 0-100% (optional)'}
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <Typography variant="body2" color="text.secondary">
-                %
-              </Typography>
-            </InputAdornment>
-          )
+      <Controller
+        name="expected_irr"
+        control={control}
+        render={({ field, fieldState }) => {
+          const numberInput = useNumberInput(
+            field.value?.toString() || '',
+            { allowDecimals: true, allowNegative: false }
+          );
+
+          return (
+            <TextField
+              fullWidth
+              label="Expected IRR (%)"
+              type="text"
+              value={numberInput.value}
+              onChange={(e) => {
+                numberInput.onChange(e.target.value);
+                const numValue = numberInput.numericValue;
+                field.onChange(numValue >= 0 ? numValue : undefined);
+              }}
+              onBlur={() => {
+                numberInput.onBlur();
+                const numValue = numberInput.numericValue;
+                field.onChange(numValue >= 0 ? numValue : undefined);
+              }}
+              onFocus={numberInput.onFocus}
+              error={!!fieldState.error && fieldState.isTouched}
+              helperText={
+                fieldState.error && fieldState.isTouched
+                  ? fieldState.error.message
+                  : 'Expected annual return 0-100% (optional)'
+              }
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Typography variant="body2" color="text.secondary">
+                      %
+                    </Typography>
+                  </InputAdornment>
+                )
+              }}
+            />
+          );
         }}
       />
 
       {/* Expected Duration */}
-      <NumberInputField
-        fullWidth
-        label="Expected Duration (months)"
-        value={formData.expected_duration_months}
-        onInputChange={onInputChange}
-        fieldName="expected_duration_months"
-        allowDecimals={false}
-        allowNegative={false}
-        error={!!validationErrors.expected_duration_months}
-        helperText={validationErrors.expected_duration_months || 'Expected fund duration 1-1200 months (optional)'}
+      <Controller
+        name="expected_duration_months"
+        control={control}
+        render={({ field, fieldState }) => {
+          const numberInput = useNumberInput(
+            field.value?.toString() || '',
+            { allowDecimals: false, allowNegative: false }
+          );
+
+          return (
+            <TextField
+              fullWidth
+              label="Expected Duration (months)"
+              type="text"
+              value={numberInput.value}
+              onChange={(e) => {
+                numberInput.onChange(e.target.value);
+                const numValue = Math.floor(numberInput.numericValue);
+                field.onChange(numValue >= 0 ? numValue : undefined);
+              }}
+              onBlur={() => {
+                numberInput.onBlur();
+                const numValue = Math.floor(numberInput.numericValue);
+                field.onChange(numValue >= 0 ? numValue : undefined);
+              }}
+              onFocus={numberInput.onFocus}
+              error={!!fieldState.error && fieldState.isTouched}
+              helperText={
+                fieldState.error && fieldState.isTouched
+                  ? fieldState.error.message
+                  : 'Expected fund duration 1-1200 months (optional)'
+              }
+            />
+          );
+        }}
       />
 
       {/* Description */}
-      <TextField
-        fullWidth
-        label="Description"
-        multiline
-        minRows={3}
-        maxRows={6}
-        value={formData.description}
-        onChange={(e) => onInputChange('description', e.target.value)}
-        error={!!validationErrors.description}
-        helperText={validationErrors.description || 'Optional fund description (max 1000 characters)'}
-        sx={{ gridColumn: '1 / -1' }}
-        variant="outlined"
+      <Controller
+        name="description"
+        control={control}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            fullWidth
+            label="Description"
+            multiline
+            minRows={3}
+            maxRows={6}
+            error={!!fieldState.error && fieldState.isTouched}
+            helperText={
+              fieldState.error && fieldState.isTouched
+                ? fieldState.error.message
+                : 'Optional fund description (max 1000 characters)'
+            }
+            sx={{ gridColumn: '1 / -1' }}
+            variant="outlined"
+          />
+        )}
       />
     </Box>
   );
 };
 
 export default FundFormSection;
-
-

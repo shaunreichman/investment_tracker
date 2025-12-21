@@ -303,3 +303,24 @@ export type FundWithRelationships = Fund & {
   /** Included fund tax statements */
   fund_tax_statements?: FundTaxStatement[];
 };
+
+// ============================================================================
+// FINANCIAL YEAR SUPPORT TYPES
+// ============================================================================
+
+/**
+ * Map of financial year label to its final calendar date (CALCULATED)
+ * 
+ * Matches the backend response for GET /api/funds/:id/financial-years.
+ */
+export type FundFinancialYearMap = Record<string, string>;
+
+/**
+ * Structured financial year representation for UI consumption (CALCULATED)
+ */
+export interface FundFinancialYear {
+  /** Financial year label (CALCULATED) */
+  financialYear: string;
+  /** Final calendar date for the financial year (CALCULATED) */
+  finalDate: string;
+}

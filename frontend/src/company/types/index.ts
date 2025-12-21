@@ -18,6 +18,8 @@ export type {
   // Response DTOs
   GetCompaniesResponse,
   GetCompanyResponse,
+  CompanyOverviewResponse,
+  CompanyDetailsResponse,
   
   // Query parameters
   GetCompaniesQueryParams,

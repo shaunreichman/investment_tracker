@@ -11,7 +11,7 @@
  * representing capital movements, NAV updates, distributions, and tax information.
  */
 
-import { ApiClient } from '../../shared/api/apiClient';
+import { ApiClient } from '@/shared/api';
 import {
   Fund,
   FundEvent,
@@ -38,6 +38,7 @@ import {
   GetFundEventsQueryParams,
   GetFundEventCashFlowsQueryParams,
   GetFundTaxStatementsQueryParams,
+  FundFinancialYearMap,
 } from '../types';
 
 export class FundApi {
@@ -644,11 +645,12 @@ export class FundApi {
   /**
    * Get financial years for a fund.
    * 
-   * Returns all financial years from the fund's start date to current date.
-   * Used for tax statement forms and financial year filtering.
+   * Returns a map of financial year labels to the final calendar date for that year,
+   * covering all financial years from the fund's start date through the current year.
+   * Used for tax statement forms, default tax dates, and financial year filtering.
    * 
    * @param fundId The ID of the fund
-   * @returns Array of financial year strings (e.g., ["2024", "2023", "2022"])
+   * @returns Financial year map (e.g., { "2024": "2024-06-30", "2023": "2023-06-30" })
    * 
    * @throws ApiError with RESOURCE_NOT_FOUND if fund doesn't exist
    * @throws ApiError with BUSINESS_LOGIC_ERROR if fund start date or financial year type not set
@@ -656,11 +658,11 @@ export class FundApi {
    * @example
    * ```typescript
    * const financialYears = await api.funds.getFundFinancialYears(1);
-   * console.log(financialYears); // ["2024", "2023", "2022"]
+   * console.log(financialYears); // { "2024": "2024-06-30", "2023": "2023-06-30" }
    * ```
    */
-  async getFundFinancialYears(fundId: number): Promise<string[]> {
-    return this.client.get<string[]>(`/api/funds/${fundId}/financial-years`);
+  async getFundFinancialYears(fundId: number): Promise<FundFinancialYearMap> {
+    return this.client.get<FundFinancialYearMap>(`/api/funds/${fundId}/financial-years`);
   }
 
   /**

@@ -985,38 +985,38 @@ class FundController:
     # Get fund financial years
     ###############################################
     
-    def get_fund_financial_years(self, fund_id: int) -> ControllerResponseDTO:
+    def get_fund_financial_years_and_last_day_of_financial_year(self, fund_id: int) -> ControllerResponseDTO:
         """
-        Get the financial years for a fund.
+        Get the financial years and last day of financial year for a fund.
 
         Args:
             fund_id: ID of the fund
 
         Returns:
-            ControllerResponseDTO: DTO containing financial years data or error
+            ControllerResponseDTO: DTO containing financial years and last day of financial year data or error
         """
         try:
             session = self._get_session()
             try:
-                from src.fund.services.fund_financial_year_service import FundFinancialYearService
-                fund_financial_year_service = FundFinancialYearService()
-                financial_years = fund_financial_year_service.get_financial_years_for_fund(fund_id, session)
-                if financial_years is None:
-                    return ControllerResponseDTO(error=f"Fund financial years not found for fund ID {fund_id}", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
-                return ControllerResponseDTO(data=financial_years, response_code=ApiResponseCode.SUCCESS)
+                from src.fund.services.fund_date_service import FundDateService
+                fund_date_service = FundDateService()
+                financial_years_and_last_day_of_financial_year = fund_date_service.get_fund_financial_years_and_last_day_of_financial_year(fund_id, session)
+                if financial_years_and_last_day_of_financial_year is None:
+                    return ControllerResponseDTO(error=f"Fund financial years and last day of financial year not found for fund ID {fund_id}", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                return ControllerResponseDTO(data=financial_years_and_last_day_of_financial_year, response_code=ApiResponseCode.SUCCESS)
             except ValueError as e:
-                current_app.logger.warning(f"Business logic error getting fund financial years: {str(e)}")
+                current_app.logger.warning(f"Business logic error getting fund financial years and last day of financial year: {str(e)}")
                 session.rollback()
                 return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
             except Exception as e:
-                current_app.logger.error(f"Error getting fund financial years: {str(e)}")
+                current_app.logger.error(f"Error getting fund financial years and last day of financial year: {str(e)}")
                 session.rollback()
                 return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
             finally:
                 session.close()
 
         except Exception as e:
-            current_app.logger.error(f"Error getting fund financial years: {str(e)}")
+            current_app.logger.error(f"Error getting fund financial years and last day of financial year: {str(e)}")
             return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
 
 

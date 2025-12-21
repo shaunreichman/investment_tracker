@@ -25,6 +25,8 @@ export type {
   // Utility types
   FundSummary,
   FundWithRelationships,
+  FundFinancialYearMap,
+  FundFinancialYear,
 } from './fund';
 
 // Fund event types

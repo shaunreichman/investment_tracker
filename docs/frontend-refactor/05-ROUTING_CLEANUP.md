@@ -38,19 +38,19 @@ This specification details Phases 5 and 6 of the frontend refactor: centralizing
 - Update `App.tsx` to import from centralized routes
 
 **Tasks**:
-- [ ] Create `src/routes/` directory
-- [ ] Create `src/routes/index.tsx` as centralized route configuration
-- [ ] Import route definitions from `company/routes.tsx`
-- [ ] Import route definitions from `fund/routes.tsx`
-- [ ] Import route definitions from `banking/routes.tsx` (if any)
-- [ ] Import route definitions from `entity/routes.tsx` (includes `AllEntitiesPage` at `/entities` if needed)
-- [ ] Import route definitions from `rates/routes.tsx` (if any)
-- [ ] Define `/` route to use `AllCompaniesPage` from `company/pages/AllCompaniesPage.tsx`
-- [ ] Define `/companies/:companyId` route to use `CompanyPage` from `company/pages/CompanyPage.tsx`
-- [ ] Define `/entities` route to use `AllEntitiesPage` from `entity/pages/AllEntitiesPage.tsx` (if separate route needed)
-- [ ] Update `App.tsx` to use routes from `routes/index.tsx`
-- [ ] Remove route definitions from `App.tsx`
-- [ ] Ensure all route wrappers (like `FundDetailWrapper`, `CompaniesPageWrapper`) are handled appropriately
+- [x] Create `src/routes/` directory
+- [x] Create `src/routes/index.tsx` as centralized route configuration
+- [x] Import route definitions from `company/routes.tsx`
+- [x] Import route definitions from `fund/routes.tsx`
+- [x] Import route definitions from `banking/routes.tsx` (if any)
+- [x] Import route definitions from `entity/routes.tsx` (includes `AllEntitiesPage` at `/entities` if needed)
+- [x] Import route definitions from `rates/routes.tsx` (if any)
+- [x] Define `/` route to use `AllCompaniesPage` from `company/pages/AllCompaniesPage.tsx`
+- [x] Define `/companies/:companyId` route to use `CompanyPage` from `company/pages/CompanyPage.tsx`
+- [x] Define `/entities` route to use `AllEntitiesPage` from `entity/pages/AllEntitiesPage.tsx` (if separate route needed)
+- [x] Update `App.tsx` to use routes from `routes/index.tsx`
+- [x] Remove route definitions from `App.tsx`
+- [x] Ensure all route wrappers (like `FundDetailWrapper`, `CompaniesPageWrapper`) are handled appropriately
 - [ ] Test all routes work correctly
 - [ ] Verify navigation and routing behavior matches exactly
 

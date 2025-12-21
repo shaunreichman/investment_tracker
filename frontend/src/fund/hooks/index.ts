@@ -7,6 +7,7 @@
  * - Fund Event Cash Flows (CRUD)
  * - Fund Tax Statements (CRUD)
  * - Fund Financial Years (utility)
+ * - Event Submission (orchestration)
  * 
  * @module fund/hooks
  */
@@ -33,6 +34,9 @@ export {
   useDeleteFundEvent,
 } from './useFundEvents';
 
+// Event Submission hook (orchestration)
+export { useEventSubmission } from './useEventSubmission';
+
 // Fund Event Cash Flow hooks
 export {
   useFundEventCashFlows,
@@ -54,7 +58,17 @@ export {
 // Fund Financial Years utility
 export {
   useFundFinancialYears,
+  type UseFundFinancialYearsResult,
 } from './useFundFinancialYears';
+
+// Fund Filters hook
+export {
+  useFundsFilters,
+  type UseFundsFiltersProps,
+  type UseFundsFiltersResult,
+  type FundFilters,
+  type FundFilterValue,
+} from './useFundsFilters';
 
 // Form validation schemas
 export * from './schemas';

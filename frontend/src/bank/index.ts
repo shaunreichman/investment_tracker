@@ -16,3 +16,6 @@ export * from './api';
 // Export hooks
 export * from './hooks';
 
+// Export routes
+export { bankRoutes } from './routes';
+

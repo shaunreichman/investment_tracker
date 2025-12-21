@@ -1,56 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Button, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { FormProvider } from 'react-hook-form';
 import CreateEntityModal from '../../CreateEntityModal';
-import { useEntities } from '../../../hooks/useEntitiesold';
-import { useCreateFund } from '../../../hooks/useFundsold';
-import { FundTrackingType } from '../../../types/api';
-import { fundValidators, validationRules } from '../../../utils/validators';
+import { useEntities } from '@/entity/hooks';
+import { useCreateFund } from '@/fund/hooks';
+import { FundTrackingType } from '@/fund/types';
+import { Country, Currency } from '@/shared/types';
 import TemplateSelectionSection from './TemplateSelectionSection';
 import FundFormSection from './FundFormSection';
 import { FUND_TEMPLATES, FundTemplate } from './templates';
 import { LoadingSpinner, SuccessBanner } from '../../shared/feedback';
 import { FormModal } from '../../shared/overlays';
-import { useUnifiedForm } from '../../../hooks/formsold/useUnifiedFormold';
-
-// Form data interface
-interface FundFormData {
-  entity_id: string;
-  name: string;
-  fund_type: string;
-  tracking_type: string;
-  currency: string;
-  commitment_amount: string;
-  expected_irr: string;
-  expected_duration_months: string;
-  description: string;
-}
-
-// Initial form values
-const initialFormValues: FundFormData = {
-  entity_id: '',
-  name: '',
-  fund_type: '',
-  tracking_type: '',
-  currency: 'AUD',
-  commitment_amount: '',
-  expected_irr: '',
-  expected_duration_months: '',
-  description: ''
-};
-
-// Validation rules
-const validators = {
-  entity_id: validationRules.required('Entity'),
-  name: fundValidators.name,
-  fund_type: fundValidators.fundType,
-  tracking_type: validationRules.required('Tracking type'),
-  currency: validationRules.required('Currency'),
-  commitment_amount: fundValidators.commitmentAmount,
-  expected_irr: fundValidators.expectedIrr,
-  expected_duration_months: fundValidators.expectedDuration,
-  description: fundValidators.description,
-};
+import { useForm } from '@/shared/hooks/forms';
+import { createFundSchema, type CreateFundFormData } from '@/fund/hooks/schemas';
+import { transformCreateFundForm } from '@/fund/hooks/transformers';
 
 interface CreateFundModalProps {
   open: boolean;
@@ -72,47 +36,34 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   const [showTemplateSelection, setShowTemplateSelection] = useState(true);
 
   // Centralized API hooks
-  const { data: entities, loading, error: entitiesError } = useEntities({ refetchOnWindowFocus: true });
+  const { data: entities, loading, error: entitiesError } = useEntities(undefined, { refetchOnWindowFocus: true });
   const { mutate: createFund, loading: isSubmitting, error: submitError, data: createdFund } = useCreateFund();
 
-  // Unified form management
-  const {
-    values: formData,
-    errors: validationErrors,
-    isDirty,
-    isValid,
-    isSubmitting: formIsSubmitting,
-    setFieldValue,
-    handleSubmit,
-    reset,
-    clearErrors,
-    setFieldError
-  } = useUnifiedForm<FundFormData>({
-    initialValues: initialFormValues,
-    validators,
-    onSubmit: async (values) => {
-      
-      const fundData = {
-        company_id: companyId,
-        entity_id: parseInt(values.entity_id),
-        name: values.name.trim(),
-        fund_type: values.fund_type,
-        tracking_type: values.tracking_type === 'nav_based' ? FundTrackingType.NAV_BASED : FundTrackingType.COST_BASED,
-        currency: values.currency,
-        ...(values.commitment_amount && { commitment_amount: parseFloat(values.commitment_amount) }),
-        ...(values.expected_irr && { expected_irr: parseFloat(values.expected_irr) }),
-        ...(values.expected_duration_months && { expected_duration_months: parseInt(values.expected_duration_months) }),
-        ...(values.description && { description: values.description.trim() })
-      };
-      
-      await createFund(fundData);
+  // React Hook Form with Zod validation
+  const form = useForm<CreateFundFormData>({
+    schema: createFundSchema,
+    defaultValues: {
+      name: '',
+      entity_id: 0,
+      company_id: companyId,
+      tracking_type: FundTrackingType.NAV_BASED,
+      tax_jurisdiction: Country.AU,
+      currency: Currency.AUD,
+      fund_investment_type: undefined,
+      description: undefined,
+      expected_irr: undefined,
+      expected_duration_months: undefined,
+      commitment_amount: undefined,
     },
-    onSuccess: () => {
-      // Success will be handled by useEffect watching createdFund
+    onSubmit: async (data) => {
+      // Transform form data to API request format
+      const requestData = transformCreateFundForm({
+        ...data,
+        company_id: companyId, // Ensure company_id is set
+      });
+      
+      await createFund(requestData);
     },
-    onError: (error) => {
-      console.error('Form submission error:', error);
-    }
   });
 
   // Handle success flow when fund is created
@@ -120,77 +71,70 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
     if (createdFund) {
       onFundCreated();
       onClose();
-      reset();
-      clearErrors();
+      form.reset();
       setSelectedTemplate(null);
       setShowTemplateSelection(true);
     }
-  }, [createdFund, onFundCreated, onClose, reset, clearErrors]);
+  }, [createdFund, onFundCreated, onClose, form]);
 
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      reset();
-      clearErrors();
+      form.reset({
+        name: '',
+        entity_id: 0,
+        company_id: companyId,
+        tracking_type: FundTrackingType.NAV_BASED,
+        tax_jurisdiction: Country.AU,
+        currency: Currency.AUD,
+        fund_investment_type: undefined,
+        description: undefined,
+        expected_irr: undefined,
+        expected_duration_months: undefined,
+        commitment_amount: undefined,
+      });
       setSelectedTemplate(null);
       setShowTemplateSelection(true);
     }
-  }, [open, reset, clearErrors]);
+  }, [open, companyId, form]);
 
   // Apply template to form data
   const applyTemplate = (template: FundTemplate) => {
-    const templateValues = {
-      entity_id: '',
+    const trackingType = template.tracking_type === 'nav_based' 
+      ? FundTrackingType.NAV_BASED 
+      : FundTrackingType.COST_BASED;
+    
+    const currencyEnum = template.currency as Currency;
+    
+    form.reset({
       name: '',
-      fund_type: template.fund_type,
-      tracking_type: template.tracking_type,
-      currency: template.currency,
-      commitment_amount: template.commitment_amount?.toString() || '',
-      expected_irr: template.expected_irr?.toString() || '',
-      expected_duration_months: template.expected_duration_months?.toString() || '',
-      description: template.description_template
-    };
-
-    // Update form values
-    Object.entries(templateValues).forEach(([key, value]) => {
-      setFieldValue(key as keyof FundFormData, value);
+      entity_id: 0,
+      company_id: companyId,
+      tracking_type: trackingType,
+      tax_jurisdiction: Country.AU, // Default, user can change
+      currency: currencyEnum,
+      fund_investment_type: undefined,
+      description: template.description_template || undefined,
+      expected_irr: template.expected_irr,
+      expected_duration_months: template.expected_duration_months,
+      commitment_amount: template.commitment_amount,
     });
 
     setSelectedTemplate(template);
     setShowTemplateSelection(false);
-
-    // Clear validation errors for fields filled by template
-    const errorsToClear: Partial<Record<keyof FundFormData, string | undefined>> = {};
-    Object.keys(templateValues).forEach(key => {
-      if (templateValues[key as keyof FundFormData]) {
-        errorsToClear[key as keyof FundFormData] = undefined;
-      }
-    });
-    
-    // Clear the errors
-    Object.entries(errorsToClear).forEach(([key, value]) => {
-      setFieldError(key as keyof FundFormData, value);
-    });
-  };
-
-  // Handle input change
-  const handleInputChange = (field: string, value: string) => {
-    setFieldValue(field as keyof FundFormData, value);
   };
 
   // Handle form submission
   const handleFormSubmit = () => {
-    
     if (showTemplateSelection) return;
-    handleSubmit();
+    form.handleSubmit();
   };
 
   // Handle modal close
   const handleClose = () => {
-    if (!isSubmitting && !formIsSubmitting) {
+    if (!isSubmitting && !form.formState.isSubmitting) {
       onClose();
-      reset();
-      clearErrors();
+      form.reset();
       setSelectedTemplate(null);
       setShowTemplateSelection(true);
     }
@@ -198,38 +142,58 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
 
   // Handle entity creation
   const handleEntityCreated = (entity: { id: number; name: string }) => {
-    setFieldValue('entity_id', entity.id.toString());
-    setFieldError('entity_id', undefined);
+    form.setValue('entity_id', entity.id);
+    form.clearErrors('entity_id');
   };
 
-  // Form validation status
+  // Form validation status - check required fields
   const isFormValid = () => {
-    const requiredFields = ['entity_id', 'name', 'fund_type', 'tracking_type'];
+    if (showTemplateSelection) return true;
+    
+    const values = form.getValues();
+    const requiredFields = ['entity_id', 'name', 'tracking_type', 'tax_jurisdiction', 'currency'];
+    
     const requiredFieldsValid = requiredFields.every(field => {
-      const value = formData[field as keyof FundFormData];
-      return value && value.toString().trim() !== '';
+      const value = values[field as keyof CreateFundFormData];
+      if (field === 'entity_id') {
+        return typeof value === 'number' && value > 0;
+      }
+      return value !== undefined && value !== null && value !== '';
     });
-    return requiredFieldsValid && isValid;
+    
+    return requiredFieldsValid && form.formState.isValid;
   };
 
   // Form progress calculation
   const getFormProgress = () => {
-    const requiredFields = ['entity_id', 'name', 'fund_type', 'tracking_type'];
+    const values = form.getValues();
+    const requiredFields = ['entity_id', 'name', 'tracking_type', 'tax_jurisdiction', 'currency'];
     const completedFields = requiredFields.filter(field => {
-      const value = formData[field as keyof FundFormData];
-      return value && value.toString().trim() !== '';
+      const value = values[field as keyof CreateFundFormData];
+      if (field === 'entity_id') {
+        return typeof value === 'number' && value > 0;
+      }
+      return value !== undefined && value !== null && value !== '';
     });
     return (completedFields.length / requiredFields.length) * 100;
   };
 
   // Validation status
   const getValidationStatus = () => {
-    const requiredFields = ['entity_id', 'name', 'fund_type', 'tracking_type'];
+    const values = form.getValues();
+    const requiredFields = ['entity_id', 'name', 'tracking_type', 'tax_jurisdiction', 'currency'];
     const missingFields = requiredFields.filter(field => {
-      const value = formData[field as keyof FundFormData];
-      return !value || value.toString().trim() === '';
+      const value = values[field as keyof CreateFundFormData];
+      if (field === 'entity_id') {
+        return !(typeof value === 'number' && value > 0);
+      }
+      return value === undefined || value === null || value === '';
     });
-    const errorFields = Object.keys(validationErrors).filter(key => validationErrors[key as keyof FundFormData]);
+    
+    const errorFields = Object.keys(form.formState.errors).filter(
+      key => form.formState.errors[key as keyof CreateFundFormData]
+    );
+    
     return {
       missingFields,
       errorFields,
@@ -239,25 +203,26 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   };
 
   return (
-    <FormModal
-      open={open}
-      title="Create New Fund"
-      subtitle={`Adding fund to ${companyName}`}
-      onClose={handleClose}
-      onSubmit={handleFormSubmit}
-      isSubmitting={isSubmitting || formIsSubmitting}
-      isValid={!showTemplateSelection ? isFormValid() : true}
-      isDirty={isDirty}
-      showCloseConfirmation={true}
-      maxWidth="md"
-      fullWidth={true}
-      actions={
+    <FormProvider {...form}>
+      <FormModal
+        open={open}
+        title="Create New Fund"
+        subtitle={`Adding fund to ${companyName}`}
+        onClose={handleClose}
+        onSubmit={handleFormSubmit}
+        isSubmitting={isSubmitting || form.formState.isSubmitting}
+        isValid={!showTemplateSelection ? isFormValid() : true}
+        isDirty={form.formState.isDirty}
+        showCloseConfirmation={true}
+        maxWidth="md"
+        fullWidth={true}
+        actions={
         <>
           {!showTemplateSelection && selectedTemplate && (
             <Button 
               onClick={() => setShowTemplateSelection(true)} 
               variant="outlined" 
-              disabled={isSubmitting || formIsSubmitting} 
+              disabled={isSubmitting || form.formState.isSubmitting} 
               startIcon={<AddIcon />}
             >
               Back to Templates
@@ -266,10 +231,10 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
           <Button 
             onClick={handleFormSubmit} 
             variant="contained" 
-            disabled={isSubmitting || formIsSubmitting || !isFormValid()}
-            startIcon={isSubmitting || formIsSubmitting ? <CircularProgress size={20} /> : null}
+            disabled={isSubmitting || form.formState.isSubmitting || !isFormValid()}
+            startIcon={isSubmitting || form.formState.isSubmitting ? <CircularProgress size={20} /> : null}
           >
-            {isSubmitting || formIsSubmitting ? 'Creating Fund...' : 'Create Fund'}
+            {isSubmitting || form.formState.isSubmitting ? 'Creating Fund...' : 'Create Fund'}
           </Button>
         </>
       }
@@ -374,14 +339,12 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
                 </Box>
               )}
 
-                             <FundFormSection
-                 formData={formData}
-                 validationErrors={validationErrors as any}
-                 entities={(entities as any) || []}
-                 onInputChange={handleInputChange}
-                 onCreateEntity={() => setShowEntityModal(true)}
-                 trackingTypeLocked={!!selectedTemplate}
-                               />
+              <FundFormSection
+                control={form.control}
+                entities={entities || []}
+                onCreateEntity={() => setShowEntityModal(true)}
+                trackingTypeLocked={!!selectedTemplate}
+              />
             </Box>
           )}
         </Paper>
@@ -393,10 +356,9 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
         onClose={() => setShowEntityModal(false)} 
         onEntityCreated={handleEntityCreated} 
       />
-    </FormModal>
+      </FormModal>
+    </FormProvider>
   );
 };
 
 export default CreateFundModal;
-
-

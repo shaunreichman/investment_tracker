@@ -1243,22 +1243,22 @@ def delete_fund_tax_statement(fund_id, fund_tax_statement_id):
 ###############################################
 
 @fund_bp.route('/api/funds/<int:fund_id>/financial-years', methods=['GET'])
-def get_fund_financial_years(fund_id):
+def get_fund_financial_years_and_last_day_of_financial_year(fund_id):
     """
-    Get the financial years for a fund.
+    Get the financial years and last day of financial year for a fund.
 
     Path Parameters:
         fund_id (int): ID of the fund
 
     Returns:
-        Standardized response with financial years data
+        Standardized response with financial years and last day of financial year data
     """
     try:
-        dto = fund_controller.get_fund_financial_years(fund_id)
+        dto = fund_controller.get_fund_financial_years_and_last_day_of_financial_year(fund_id)
         return handle_controller_response(dto)
     except Exception as e:
         response = ApiResponse(
             response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
-            message=f"Unexpected error getting fund financial years: {str(e)}"
+            message=f"Unexpected error getting fund financial years and last day of financial year: {str(e)}"
         )
         return jsonify(response.to_dict()), response.response_code.get_http_status_code()

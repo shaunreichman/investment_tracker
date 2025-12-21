@@ -20,6 +20,51 @@ import type {
 } from '../types';
 
 // ============================================================================
+// ENTITY DEPENDENCY ERROR UTILITIES
+// ============================================================================
+
+/**
+ * Parsed dependency details from backend validation errors
+ */
+export interface EntityDependencyDetails {
+  funds?: number;
+  bankAccounts?: number;
+  taxStatements?: number;
+}
+
+/**
+ * Parse entity deletion validation error from backend
+ * Backend returns: "Deletion validation failed for entity with ID X: {error_dict}"
+ */
+export function parseEntityDependencyError(errorMessage: string): EntityDependencyDetails {
+  const details: EntityDependencyDetails = {};
+  
+  // Check for specific dependency messages in error
+  if (errorMessage.includes('dependent funds') || errorMessage.includes("'funds'")) {
+    details.funds = 1; // At least 1 fund exists
+  }
+  if (errorMessage.includes('dependent bank accounts') || errorMessage.includes("'bank_accounts'")) {
+    details.bankAccounts = 1; // At least 1 bank account exists
+  }
+  if (errorMessage.includes('dependent tax statements') || errorMessage.includes("'tax_statements'")) {
+    details.taxStatements = 1; // At least 1 tax statement exists
+  }
+  
+  return details;
+}
+
+/**
+ * Check if error is an entity dependency blocking error
+ */
+export function isEntityDependencyError(error: any): boolean {
+  return (
+    error?.responseCode === 'BUSINESS_LOGIC_ERROR' &&
+    (error?.message?.includes('Deletion validation failed') ||
+     error?.message?.includes('dependent'))
+  );
+}
+
+// ============================================================================
 // ENTITY QUERIES
 // ============================================================================
 

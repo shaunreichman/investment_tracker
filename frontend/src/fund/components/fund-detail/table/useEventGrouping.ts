@@ -1,0 +1,166 @@
+import { useMemo } from 'react';
+import { FundEvent, GroupType } from '@/fund/types';
+
+export interface GroupedEvent {
+  events: FundEvent[];
+  isGrouped: boolean;
+  groupType?: GroupType;
+  groupId?: number;
+  displayDate: string;
+  displayAmount: number;
+  displayDescription: string;
+}
+
+export const useEventGrouping = (events: FundEvent[]): GroupedEvent[] => {
+  return useMemo(() => {
+    if (!events || events.length === 0) return [];
+
+    // SYSTEM: Sort events by date (oldest first) to match backend order and user preference
+    const sortedEvents = [...events].sort((a, b) => 
+      new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+    );
+
+    const groupedEvents: GroupedEvent[] = [];
+    const processedGroupKeys = new Set<string>();
+
+    for (const event of sortedEvents) {
+      // CALCULATED: Check if this event is part of a group
+      if (event.is_grouped && event.group_id && event.group_type) {
+        // SYSTEM: Skip if we've already processed this group with this date
+        const groupKey = `${event.group_id}_${event.event_date}`;
+        if (processedGroupKeys.has(groupKey)) {
+          continue;
+        }
+
+        // CALCULATED: Find all events in this group with the same date using simple flag-based logic
+        const groupEvents = sortedEvents.filter(e => 
+          e.group_id === event.group_id && 
+          e.is_grouped && 
+          e.event_date === event.event_date
+        );
+
+        // SYSTEM: Sort group events by position for proper ordering
+        const sortedGroupEvents = groupEvents.sort((a, b) => 
+          (a.group_position || 0) - (b.group_position || 0)
+        );
+
+        // CALCULATED: Create grouped event display
+        const groupedEvent: GroupedEvent = {
+          events: sortedGroupEvents,
+          isGrouped: true,
+          groupType: event.group_type,
+          groupId: event.group_id,
+          displayDate: sortedGroupEvents[0]?.event_date || event.event_date,
+          displayAmount: sortedGroupEvents.reduce((sum, e) => sum + (e.amount || 0), 0),
+          displayDescription: getGroupDescription(event.group_type, sortedGroupEvents)
+        };
+
+        groupedEvents.push(groupedEvent);
+        processedGroupKeys.add(groupKey);
+      } else {
+        // CALCULATED: Single event (not grouped)
+        const singleEvent: GroupedEvent = {
+          events: [event],
+          isGrouped: false,
+          displayDate: event.event_date,
+          displayAmount: event.amount || 0,
+          displayDescription: event.description || getEventTypeDescription(event.event_type)
+        };
+
+        groupedEvents.push(singleEvent);
+      }
+    }
+
+    return groupedEvents;
+  }, [events]);
+};
+
+// CALCULATED: Generate descriptive text for grouped events using simple flag-based logic
+const getGroupDescription = (groupType: GroupType, events: FundEvent[]): string => {
+  switch (groupType) {
+    case GroupType.INTEREST_WITHHOLDING:
+      // SYSTEM: Use group_position for ordering instead of complex event type detection
+      const firstEvent = events.find(e => e.group_position === 0);
+      const secondEvent = events.find(e => e.group_position === 1);
+      
+      if (firstEvent && secondEvent) {
+        // CALCULATED: Format amounts properly for display
+        const firstAmount = firstEvent.amount || 0;
+        const secondAmount = secondEvent.amount || 0;
+        const firstFormatted = firstAmount.toFixed(2);
+        const secondFormatted = Math.abs(secondAmount).toFixed(2);
+        const secondSign = secondAmount < 0 ? '-' : '+';
+        
+        return `Interest Distribution + Withholding Tax (${firstFormatted} ${secondSign} ${secondFormatted})`;
+      }
+      return 'Interest + Withholding Tax Group';
+      
+    case GroupType.TAX_STATEMENT:
+      // CALCULATED: Generate descriptive text for tax statement groups
+      const taxEvents = events.filter(e => e.event_type === 'TAX_PAYMENT');
+      const debtCostEvents = events.filter(e => e.event_type === 'EOFY_DEBT_COST');
+      
+      // Calculate total tax impact (tax payments are negative, debt cost benefits are positive)
+      const totalTaxImpact = events.reduce((sum, e) => sum + (e.amount || 0), 0);
+      
+      // Get financial year from tax statement (if available)
+      // NOTE: tax_statement relationship may not be present in FundEvent type
+      const firstTaxEvent = taxEvents[0];
+      const eventWithTaxData = firstTaxEvent as any;
+      const financialYear = eventWithTaxData?.tax_statement?.financial_year;
+      
+      // Build description components
+      const components: string[] = [];
+      
+      if (financialYear) {
+        components.push(`FY ${financialYear}`);
+      }
+      
+      if (taxEvents.length > 0) {
+        components.push(`${taxEvents.length} tax payment${taxEvents.length > 1 ? 's' : ''}`);
+      }
+      
+      if (debtCostEvents.length > 0) {
+        components.push(`${debtCostEvents.length} debt cost benefit${debtCostEvents.length > 1 ? 's' : ''}`);
+      }
+      
+      const componentText = components.length > 0 ? ` - ${components.join(', ')}` : '';
+      const totalText = ` (${formatCurrency(totalTaxImpact)})`;
+      
+      return `Tax Statement${componentText}${totalText}`;
+      
+    default:
+      return 'Grouped Events';
+  }
+};
+
+// CALCULATED: Helper function to format currency for group descriptions
+const formatCurrency = (amount: number): string => {
+  if (amount === 0) return '0.00';
+  
+  const absAmount = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+  const formatted = absAmount.toFixed(2);
+  
+  return `${sign}${formatted}`;
+};
+
+// CALCULATED: Generate description for single events
+const getEventTypeDescription = (eventType: string): string => {
+  const descriptions: Record<string, string> = {
+    'CAPITAL_CALL': 'Capital Call',
+    'RETURN_OF_CAPITAL': 'Return of Capital',
+    'UNIT_PURCHASE': 'Unit Purchase',
+    'UNIT_SALE': 'Unit Sale',
+    'NAV_UPDATE': 'NAV Update',
+    'DISTRIBUTION': 'Distribution',
+    'TAX_PAYMENT': 'Tax Payment',
+    'EOFY_DEBT_COST': 'EOFY Debt Cost',
+    'DAILY_RISK_FREE_INTEREST_CHARGE': 'Risk-Free Interest Charge',
+    'MANAGEMENT_FEE': 'Management Fee',
+    'CARRIED_INTEREST': 'Carried Interest',
+    'OTHER': 'Other Event'
+  };
+  
+  return descriptions[eventType] || eventType;
+}; 

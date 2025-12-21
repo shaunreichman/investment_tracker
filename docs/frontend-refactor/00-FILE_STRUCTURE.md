@@ -30,6 +30,9 @@ frontend/src/
 │   │   │   ├── ✅ companyTransformers.ts
 │   │   │   └── ✅ index.ts
 │   │   └── ✅ index.ts
+│   ├── utils/
+│   │   ├── labels.ts
+│   │   └── index.ts
 │   ├── components/                   # Feature-based nested components
 │   │   ├── company-list/             # Feature: list view
 │   │   │   ├── CompanyList.tsx
@@ -96,6 +99,19 @@ frontend/src/
 │   │   │   ├── ✅ fundTransformers.ts
 │   │   │   └── ✅ index.ts
 │   │   └── ✅ index.ts
+│   │   ├── utils/
+│   │   │   ├── ✅ constants/
+│   │   │   │   ├── ✅ eventTemplates.ts
+│   │   │   │   ├── ✅ fundOptions.ts
+│   │   │   │   ├── ✅ fundDisplayConfig.ts
+│   │   │   │   ├── ✅ fundTaxDefaults.ts
+│   │   │   │   ├── ✅ visualizationConfig.ts
+│   │   │   │   └── ✅ index.ts
+│   │   │   ├── ✅ formatters/
+│   │   │   │   ├── ✅ fundStatusFormatters.ts
+│   │   │   │   ├── ✅ fundTrackingFormatters.ts
+│   │   │   │   └── ✅ index.ts
+│   │   │   └── index.ts
 │   ├── components/
 │   │   ├── fund-detail/               # Feature: fund detail sections and sub-components
 │   │   │   ├── FundDetailHeader.tsx
@@ -145,6 +161,9 @@ frontend/src/
 │   │   │   ├── ✅ bankingTransformers.ts
 │   │   │   └── ✅ index.ts
 │   │   └── ✅ index.ts
+│   ├── utils/
+│   │   ├── labels.ts
+│   │   └── index.ts
 │   ├── components/                    # Feature-based nesting (if any)
 │   ├── pages/                         # Banking pages (if any)
 │   ├── routes.tsx                     # Banking routes (if any)
@@ -167,6 +186,9 @@ frontend/src/
 │   │   │   ├── ✅ entityTransformers.ts
 │   │   │   └── ✅ index.ts
 │   │   └── ✅ index.ts
+│   ├── utils/
+│   │   ├── labels.ts
+│   │   └── index.ts
 │   ├── components/
 │   │   ├── entity-list/                # Feature: entity list
 │   │   │   ├── EntityList.tsx
@@ -229,9 +251,9 @@ frontend/src/
 │   │   │   └── index.ts
 │   │   ├── feedback/
 │   │   │   ├── ErrorDisplay.tsx
-│   │   │   ├── ErrorToast.tsx
 │   │   │   ├── DomainErrorBoundary.tsx
 │   │   │   ├── LoadingSpinner.tsx
+│   │   │   ├── errorLogger.ts
 │   │   │   └── index.ts
 │   │   ├── forms/
 │   │   │   ├── FormTextField.tsx
@@ -262,22 +284,31 @@ frontend/src/
 │   │   │   │   ├── ✅ useErrorHandler.ts
 │   │   │   │   └── ✅ index.ts
 │   │   │   └── ✅ index.ts
+│   │   ├── errors/
+│   │   │   ├── useErrorAutoDismiss.ts
+│   │   │   ├── useErrorDetailsToggle.ts
+│   │   │   └── index.ts
 │   │   ├── ✅ forms/                     # Form management hooks
 │   │   │   ├── ✅ useForm.ts
 │   │   │   ├── ✅ types.ts
+│   │   │   ├── validation/
+│   │   │   │   ├── createValidator.ts
+│   │   │   │   ├── validationRules.ts
+│   │   │   │   └── index.ts
 │   │   │   └── ✅ index.ts
 │   │   ├── ✅ schemas/                   # Shared form validation schemas
 │   │   │   ├── ✅ sharedSchemas.ts
 │   │   │   └── ✅ index.ts
-│   │   ├── ui/                        # UI hooks
-│   │   │   ├── useErrorAutoDismiss.ts
-│   │   │   ├── useErrorDetailsToggle.ts
-│   │   │   └── index.ts
 │   │   └── index.ts                   # Main barrel export
 │   ├── utils/                         # Pure utility functions
-│   │   ├── formatters.ts
-│   │   ├── validators.ts
-│   │   ├── helpers.ts
+│   │   ├── formatters/
+│   │   │   ├── currencyFormatter.ts
+│   │   │   ├── numberFormatter.ts
+│   │   │   ├── dateFormatter.ts
+│   │   │   └── index.ts
+│   │   ├── errors/
+│   │   │   ├── normalizeError.ts
+│   │   │   └── index.ts
 │   │   └── index.ts
 │   └── index.ts                       # Shared domain barrel export
 │
@@ -313,6 +344,7 @@ Each domain (`company/`, `fund/`, `banking/`, `entity/`, `rates/`) follows the s
 - `api/` - HTTP API calls to backend
 - `types/` - Domain-specific TypeScript types/interfaces
 - `hooks/` - Domain-specific hooks
+- `utils/` - Domain-level constants, formatters, and label maps
 - `components/` - Feature-based nested components
 - `pages/` - Page components (route-mounted orchestration components)
 - `routes.tsx` - Domain route definitions
@@ -348,8 +380,8 @@ Cross-domain concerns live in `shared/`:
 - `shared/types/` - Enums, errors, DTOs used by multiple domains
 - `shared/api/` - Base API client (`ApiClient`, `apiClient`, `ApiError`) used by all domain APIs
 - `shared/ui/` - Reusable UI components (data-display, feedback, forms, navigation, overlays, layout)
-- `shared/hooks/` - Cross-domain hooks (core, ui)
-- `shared/utils/` - Pure utility functions
+- `shared/hooks/` - Cross-domain hooks (core API, forms, errors, schemas)
+- `shared/utils/` - Pure cross-domain utilities (formatters, error normalization)
 
 ### 5. Barrel Exports
 

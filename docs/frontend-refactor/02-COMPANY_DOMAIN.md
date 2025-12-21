@@ -34,6 +34,7 @@ This specification details Phase 2 of the frontend refactor: reorganizing all co
 - Move company types to `company/types/`
 - Move company hooks to `company/hooks/`
 - Reorganize company components with feature-based nesting
+- **Design System Adoption**: Refactor components to use shared design system components where appropriate (e.g., `PortfolioSummaryCards` → `StatCard`)
 - Create domain routes in `company/routes.tsx`
 - Create domain barrel export in `company/index.ts`
 
@@ -60,29 +61,58 @@ This specification details Phase 2 of the frontend refactor: reorganizing all co
 - [x] Update imports in `companyTransformers.ts` to use `../schemas` for schema types
 - [x] Create `company/hooks/transformers/index.ts` barrel export
 - [x] Update `company/hooks/index.ts` barrel export to include schemas and transformers
-- [ ] Create `src/company/components/` directory
-- [ ] Move `components/companies/company-list/` → `company/components/company-list/`
-- [ ] Refactor `CompanyList` to receive data via props: Remove `useCompanies()` hook, accept `data`, `loading`, `error`, `onRefresh` as props (parent page will fetch data)
-- [ ] Create `src/company/pages/` directory
-- [ ] Rename `components/OverallDashboard.tsx` → `company/pages/AllCompaniesPage.tsx`
-- [ ] Remove entity management section from `AllCompaniesPage` (EntityList and CreateEntityModal - will move to separate entity page)
-- [ ] Update `AllCompaniesPage` to fetch company data using `useCompanies()` hook and pass to `CompanyList` component
-- [ ] Move `components/companies/company-details-tab/` → `company/components/company-details-tab/` (evaluate if this should be `details-tab/`)
-- [ ] Move `components/companies/overview-tab/` → `company/components/overview-tab/`
-- [ ] Move `components/companies/funds-tab/` → `company/components/funds-tab/`
-- [ ] Move `components/companies/analysis-tab/` → `company/components/analysis-tab/`
-- [ ] Move `components/companies/activity-tab/` → `company/components/activity-tab/`
-- [ ] Move `components/companies/create-fund/` → `company/components/create-fund/`
-- [ ] Move `components/CreateCompanyModal.tsx` → `company/components/create-company-modal/` (reorganize as feature folder)
-- [ ] Update all component imports within company domain
-- [ ] Create `company/components/index.ts` barrel export for public API
-- [ ] Move `components/companies/CompaniesPage.tsx` → `company/pages/CompanyPage.tsx`
-- [ ] Create `company/pages/index.ts` barrel export
-- [ ] Create `src/company/routes.tsx` with company route definitions
-- [ ] Create `src/company/index.ts` domain barrel export
-- [ ] Update all imports across codebase to use new company domain paths
-- [ ] Run TypeScript compilation: `npx tsc --noEmit`
-- [ ] Test company page, company list, and all company-related functionality
+- [x] Create `src/company/components/` directory
+- [x] Move `components/companies/company-list/` → `company/components/company-list/`
+- [x] Refactor `CompanyList` to receive data via props: Remove `useCompanies()` hook, accept `data`, `loading`, `error`, `onRefresh` as props (parent page will fetch data)
+- [x] Create `src/company/pages/` directory
+- [x] Rename `components/OverallDashboard.tsx` → `company/pages/AllCompaniesPage.tsx`
+- [x] Remove entity management section from `AllCompaniesPage` (EntityList and CreateEntityModal - will move to separate entity page)
+- [x] Update `AllCompaniesPage` to fetch company data using `useCompanies()` hook and pass to `CompanyList` component
+- [x] Move `components/companies/company-details-tab/` → `company/components/company-details-tab/` (evaluate if this should be `details-tab/`)
+- [x] Move `components/companies/overview-tab/` → `company/components/overview-tab/`
+- [x] **Refactor `PortfolioSummaryCards` to use shared `StatCard` component** (design system adoption)
+  - [x] Replace manual MUI Card implementation in `PortfolioSummaryCards` with `StatCard` from `@/shared/ui/data-display/Card`
+  - [x] Transform 3 manual cards to use `StatCard` props (title, value, subtitle, icon, color)
+  - [x] Verify visual appearance matches exactly (same styling, spacing, colors)
+  - [x] **Note**: This demonstrates design system adoption - reduces ~75 lines to ~15 lines per card while maintaining consistency
+- [x] **Migrate shared UI hooks** (required for FundsTab component)
+  - [x] Create `src/shared/hooks/ui/` directory
+  - [x] Move `hooks/sharedold/useDebouncedSearchold.ts` → `shared/hooks/ui/useDebouncedSearch.ts`
+  - [x] Move `hooks/sharedold/useResponsiveViewold.ts` → `shared/hooks/ui/useResponsiveView.ts`
+  - [x] Move `hooks/sharedold/useTableSortingold.ts` → `shared/hooks/ui/useTableSorting.ts`
+  - [x] Update hook implementations to remove "old" suffix and clean up exports
+  - [x] Create `shared/hooks/ui/index.ts` barrel export
+  - [x] Update `shared/hooks/index.ts` to export UI hooks
+- [x] **Migrate fund filters hook** (required for FundsTab component)
+  - [x] Move `hooks/fundsold/useFundsFiltersold.ts` → `fund/hooks/useFundsFilters.ts` (or evaluate if it should be in `shared/hooks/ui/` if generic)
+  - [x] Update hook implementation to remove "old" suffix
+  - [x] Update `fund/hooks/index.ts` to export `useFundsFilters`
+- [x] **Refactor CreateFundModal to use new form hook** (required before component migration)
+  - [x] Convert `CreateFundModal` from `useUnifiedForm` to `useForm` (React Hook Form + Zod)
+  - [x] Use existing `fund/hooks/schemas/fundSchemas.ts` for validation
+  - [x] Update form state management to React Hook Form patterns
+  - [x] Verify form functionality matches existing behavior
+- [x] Move `components/companies/funds-tab/` → `company/components/funds-tab/`
+  - [x] Update imports to use new hook paths: `@/shared/hooks/ui` and `@/fund/hooks`
+- [x] Move `components/companies/analysis-tab/` → `company/components/analysis-tab/`
+- [x] Move `components/companies/activity-tab/` → `company/components/activity-tab/`
+- [x] Move `components/companies/create-fund/` → `company/components/create-fund/`
+  - [x] Update imports to use new hook paths: `@/entity/hooks`, `@/fund/hooks`, `@/shared/hooks/forms`
+- [x] Move `components/CreateCompanyModal.tsx` → `company/components/create-company-modal/` (reorganize as feature folder)
+- [x] Update all component imports within company domain
+- [x] Create `company/components/index.ts` barrel export for public API
+- [x] Move `components/companies/CompaniesPage.tsx` → `company/pages/CompanyPage.tsx`
+  - [x] Replace `useEnhancedFunds()` with `useFunds()` from `@/fund/hooks`
+  - [x] Update data structure: Replace `EnhancedFundsResponse` with `FundsTabData` type from `@/company/components/funds-tab/types`
+  - [x] Map query params correctly: `status_filter` → `fund_status` enum, `sort_by` → `SortFieldFund` enum
+  - [x] Update FundsTab props to use `FundsTabData` instead of `EnhancedFundsResponse`
+  - [x] Remove transformation layer - use `Fund[]` directly from API response
+- [x] Create `company/pages/index.ts` barrel export
+- [x] Create `src/company/routes.tsx` with company route definitions
+- [x] Create `src/company/index.ts` domain barrel export
+- [x] Update all imports across codebase to use new company domain paths
+- [x] Run TypeScript compilation: `npx tsc --noEmit`
+- [x] Test company page, company list, and all company-related functionality
 
 **Success Criteria**:
 - All company code organized in `company/` domain
@@ -92,6 +122,11 @@ This specification details Phase 2 of the frontend refactor: reorganizing all co
 - Feature-based component nesting implemented
 - Domain routes defined in `company/routes.tsx`
 - `CompanyList` receives data via props (data fetching handled by page)
+- `PortfolioSummaryCards` uses shared `StatCard` component (design system adoption)
+- Shared UI hooks migrated to `shared/hooks/ui/` (useDebouncedSearch, useResponsiveView, useTableSorting)
+- Fund filters hook migrated to appropriate location
+- `CreateFundModal` uses new `useForm` hook with Zod schemas (replacing `useUnifiedForm`)
+- `CompanyPage` uses `Fund` type directly from `@/fund/types` (no EnhancedFund transformation layer)
 
 ## Overall Success Metrics
 

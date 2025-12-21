@@ -14,6 +14,9 @@ export {
   useEntity,
   useCreateEntity,
   useDeleteEntity,
+  parseEntityDependencyError,
+  isEntityDependencyError,
+  type EntityDependencyDetails,
 } from './useEntities';
 
 // Export form schemas

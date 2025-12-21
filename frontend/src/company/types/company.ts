@@ -176,6 +176,72 @@ export interface GetCompanyResponse {
   company: Company;
 }
 
+/**
+ * Company Overview Response - Enhanced UI response for overview tab
+ * Contains company info, portfolio summary, performance summary, and last activity
+ */
+export interface CompanyOverviewResponse {
+  company: {
+    id: number;
+    name: string;
+    company_type: string | null;
+    business_address: string | null;
+    website: string | null;
+    contacts: Array<{
+      id: number;
+      name: string;
+      title: string | null;
+      direct_number: string | null;
+      direct_email: string | null;
+      notes: string | null;
+    }>;
+  };
+  portfolio_summary: {
+    total_committed_capital: number;
+    total_current_value: number;
+    total_invested_capital: number;
+    active_funds_count: number;
+    completed_funds_count: number;
+    fund_status_breakdown: {
+      active_funds_count: number;
+      completed_funds_count: number;
+      suspended_funds_count: number;
+      realized_funds_count: number;
+    };
+  };
+  performance_summary: {
+    average_completed_irr: number | null;
+    total_realized_gains: number | null;
+    total_realized_losses: number | null;
+  };
+  last_activity: {
+    last_activity_date: string | null;
+    days_since_last_activity: number | null;
+  };
+}
+
+/**
+ * Company Details Response - Enhanced UI response for details tab
+ * Contains company info with contacts
+ */
+export interface CompanyDetailsResponse {
+  company: {
+    id: number;
+    name: string;
+    company_type: string | null;
+    business_address: string | null;
+    website: string | null;
+    contacts: Array<{
+      id: number;
+      name: string;
+      title: string | null;
+      direct_number: string | null;
+      direct_email: string | null;
+      notes: string | null;
+    }>;
+  };
+}
+
 // ============================================================================
 // QUERY PARAMETERS
 // ============================================================================

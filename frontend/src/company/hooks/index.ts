@@ -14,6 +14,8 @@ export {
   useCompany,
   useCreateCompany,
   useDeleteCompany,
+  useCompanyOverview,
+  useCompanyDetails,
 } from './useCompanies';
 
 // Contact hooks

@@ -16,9 +16,15 @@
 // Re-export all core hooks (API, error handling)
 export * from './core';
 
+// Re-export error UI hooks
+export * from './errors';
+
 // Re-export form management hooks
 export * from './forms';
 
 // Re-export shared form validation schemas
 export * from './schemas';
+
+// Re-export UI hooks (debounced search, responsive view, table sorting)
+export * from './ui';
 
