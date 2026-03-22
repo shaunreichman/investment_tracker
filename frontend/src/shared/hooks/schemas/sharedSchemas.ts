@@ -13,7 +13,7 @@
  * ```
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 /**
  * Email address validation
@@ -142,12 +142,9 @@ export const phoneNumber = z
  * For currency selection fields
  * Aligned with backend supported currencies
  */
-export const currencyCode = z.enum(
-  ['AUD', 'USD', 'EUR', 'GBP', 'CAD', 'NZD', 'SGD', 'HKD', 'JPY', 'CHF', 'CNY', 'KRW'],
-  {
-    message: 'Please select a valid currency'
-  }
-);
+export const currencyCode = z.enum([
+  'AUD', 'USD', 'EUR', 'GBP', 'CAD', 'NZD', 'SGD', 'HKD', 'JPY', 'CHF', 'CNY', 'KRW'
+]);
 
 /**
  * Helper: Create date range schema with start/end validation

@@ -38,8 +38,8 @@ class BankRepository:
                     names: Optional[List[str]] = None,
                     countries: Optional[List[Country]] = None,
                     bank_types: Optional[List[BankType]] = None,
-                    sort_by: SortFieldBank = SortFieldBank.NAME,
-                    sort_order: SortOrder = SortOrder.ASC,
+                    sort_by: Optional[SortFieldBank] = SortFieldBank.NAME,
+                    sort_order: Optional[SortOrder] = SortOrder.ASC,
                     include_bank_accounts: Optional[bool] = False,
                     include_bank_account_balances: Optional[bool] = False
     ) -> List[Bank]:
@@ -62,6 +62,12 @@ class BankRepository:
         Raises:
             ValueError: If sort field is invalid
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldBank.NAME
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldBank:
             raise ValueError(f"Invalid sort field: {sort_by}")

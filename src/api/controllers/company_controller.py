@@ -64,8 +64,8 @@ class CompanyController:
             company_types = search_data.get('company_types')
             statuses = search_data.get('statuses')
             names = search_data.get('names')
-            sort_by = search_data.get('sort_by')
-            sort_order = search_data.get('sort_order')
+            sort_by = search_data.get('sort_by')  # Will be None if not provided, service layer has default
+            sort_order = search_data.get('sort_order')  # Will be None if not provided, service layer has default
 
             include_contacts = search_data.get('include_contacts', False)
 
@@ -84,7 +84,11 @@ class CompanyController:
                     return ControllerResponseDTO(error="Companies not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_companies = [format_company_comprehensive(company, include_contacts=include_contacts) for company in companies]
-                return ControllerResponseDTO(data=formatted_companies, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'companies': formatted_companies,
+                    'count': len(formatted_companies)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting companies: {str(e)}")
@@ -270,7 +274,11 @@ class CompanyController:
                     return ControllerResponseDTO(error="Contacts not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 formatted_contacts = [format_contact(contact) for contact in contacts]
-                return ControllerResponseDTO(data=formatted_contacts, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'contacts': formatted_contacts,
+                    'count': len(formatted_contacts)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
             
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting contacts for company {company_id}: {str(e)}")

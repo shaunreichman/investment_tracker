@@ -17,7 +17,7 @@ import {
   getUserFriendlyMessage
 } from '@/shared/types/dto';
 import { getApiBaseUrl } from '@/config/environment';
-import { isNetworkError } from '@/shared/types/errors';
+import { isNetworkError } from '@/shared/utils/errors';
 
 // ============================================================================
 // CONFIGURATION

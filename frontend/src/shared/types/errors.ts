@@ -105,16 +105,6 @@ export interface ErrorDisplayOptions {
 // ============================================================================
 // ERROR UTILITY FUNCTIONS
 // ============================================================================
-// Re-export error normalization utilities from shared/utils/errors
-// This maintains backward compatibility while using the new module structure
-export {
-  categorizeError,
-  getErrorSeverity,
-  isRetryableError,
-  getUserFriendlyMessage,
-  createErrorInfo,
-  isNetworkError,
-  isValidationError,
-  isServerError,
-  formatErrorForLogging,
-} from '@/shared/utils/errors';
+// Note: Utility functions (categorizeError, createErrorInfo, etc.) are exported
+// from '@/shared/utils/errors' to avoid circular dependencies.
+// Import them directly: import { categorizeError } from '@/shared/utils/errors';

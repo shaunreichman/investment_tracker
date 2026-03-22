@@ -38,10 +38,13 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
 
   // API hooks for dynamic content
   const { data: companiesResponse } = useCompanies();
-  const { data: allFundsData } = useFunds();
+  const { data: fundsResponse } = useFunds();
   
   // Extract companies array from response
   const companiesData = companiesResponse?.companies || null;
+  
+  // Extract funds array from response
+  const allFundsData = fundsResponse?.funds || null;
 
   // Get current company and fund IDs from route params
   const currentCompanyId = useMemo(() => {
@@ -62,7 +65,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ open, onToggle }) => {
 
   // Group funds by company for sidebar display
   const fundsByCompany = useMemo(() => {
-    if (!allFundsData) return new Map();
+    if (!allFundsData || !Array.isArray(allFundsData)) return new Map();
     
     const grouped = new Map<number, Fund[]>();
     allFundsData.forEach((fund: Fund) => {

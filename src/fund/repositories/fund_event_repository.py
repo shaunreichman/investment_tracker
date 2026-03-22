@@ -69,6 +69,12 @@ class FundEventRepository:
         Returns:
             List of fund events
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldFundEvent.EVENT_DATE
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldFundEvent:
             raise ValueError(f"Invalid sort field: {sort_by}. Must be one of: {[s.value for s in SortFieldFundEvent]}")

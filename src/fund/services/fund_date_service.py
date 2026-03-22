@@ -10,7 +10,7 @@ from src.fund.enums.fund_event_enums import EventType
 from src.fund.enums.fund_enums import FundStatus
 from src.fund.repositories import FundEventRepository
 from src.fund.services.fund_service import FundService
-from typing import Optional, Set
+from typing import Optional, Set, Dict
 from sqlalchemy.orm import Session
 from datetime import date
 from src.fund.calculators.financial_year_calculator import FinancialYearCalculator

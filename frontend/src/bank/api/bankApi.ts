@@ -49,8 +49,8 @@ export class BankingApi {
       include_bank_accounts?: boolean;
       include_bank_account_balances?: boolean;
     } = {}
-  ): Promise<GetBankResponse> {
-    return this.client.get<GetBankResponse>(`/api/banks/${bankId}`, params);
+  ): Promise<Bank> {
+    return this.client.get<Bank>(`/api/banks/${bankId}`, params);
   }
 
   /**

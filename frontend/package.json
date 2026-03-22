@@ -28,13 +28,13 @@
     "sanitize.css": "^13.0.0",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4",
-    "zod": "^3.23.8",
+    "zod": "^4.2.1",
     "zustand": "^5.0.7"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
     "eject": "react-scripts eject",
     "lint": "eslint 'src/**/*.{ts,tsx}' --ignore-pattern 'src/**/__tests__/**'",
     "check-bundle-size": "node scripts/check-bundle-size.js"
@@ -63,6 +63,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "@types/jest-axe": "^3.5.9",
     "@types/testing-library__jest-dom": "^5.14.9",
     "axe-core": "^4.10.3",

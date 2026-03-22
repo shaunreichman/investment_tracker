@@ -55,6 +55,12 @@ class RiskFreeRateRepository:
         Returns:
             List of risk free rates
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldRiskFreeRate.DATE
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldRiskFreeRate:
             raise ValueError(f"Invalid sort field: {sort_by}")

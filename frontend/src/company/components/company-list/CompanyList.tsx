@@ -7,7 +7,7 @@
  * Receives data via props - parent page handles data fetching.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Alert, Snackbar } from '@mui/material';
 import type { Company } from '@/company/types';
 import { CompanyType, CompanyStatus } from '@/company/types';
@@ -15,7 +15,9 @@ import { CompanyFilters } from './CompanyFilters';
 import { CompanyTable } from './CompanyTable';
 import { CompanyCards } from './CompanyCards';
 import { LoadingSpinner, ErrorDisplay } from '@/shared/ui/feedback';
+import { ConfirmDialog } from '@/shared/ui/overlays';
 import type { ErrorInfo } from '@/shared/types/errors';
+import { useDeleteCompany } from '@/company/hooks';
 
 // ============================================================================
 // PROPS INTERFACE
@@ -54,6 +56,36 @@ export const CompanyList: React.FC<CompanyListProps> = ({
 
   // Success notification state
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; name: string } | null>(null);
+  const { mutate: deleteCompany, loading: isDeleting, error: deleteError, reset: resetDelete } =
+    useDeleteCompany(deleteConfirm?.id ?? 0);
+
+  const handleDeleteClick = useCallback((company: Company) => {
+    setDeleteConfirm({ id: company.id, name: company.name });
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteConfirm) return;
+    try {
+      const result = await deleteCompany(undefined);
+      if (result !== undefined) {
+        const deletedName = deleteConfirm.name;
+        setDeleteConfirm(null);
+        resetDelete();
+        setSuccessMessage(`Company "${deletedName}" deleted successfully.`);
+        await onRefresh();
+      }
+    } catch {
+      // Error surfaced via deleteError
+    }
+  }, [deleteConfirm, deleteCompany, onRefresh, resetDelete]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteConfirm(null);
+    resetDelete();
+  }, [resetDelete]);
 
   // Filter and sort companies client-side
   const filteredAndSortedCompanies = useMemo(() => {
@@ -192,20 +224,47 @@ export const CompanyList: React.FC<CompanyListProps> = ({
         <Card sx={{ mt: 2 }}>
           <CardContent sx={{ p: 0 }}>
             {viewMode === 'table' ? (
-              <CompanyTable 
+              <CompanyTable
                 companies={filteredAndSortedCompanies}
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
+                onDeleteClick={handleDeleteClick}
+                isDeleting={isDeleting}
               />
             ) : (
-              <CompanyCards 
+              <CompanyCards
                 companies={filteredAndSortedCompanies}
+                onDeleteClick={handleDeleteClick}
+                isDeleting={isDeleting}
               />
             )}
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        title="Delete company?"
+        description={
+          deleteConfirm
+            ? `Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`
+            : ''
+        }
+        confirmAction={{
+          label: 'Delete',
+          variant: 'error',
+          onClick: handleDeleteConfirm,
+          loading: isDeleting,
+        }}
+        cancelAction={{
+          label: 'Cancel',
+          variant: 'outlined',
+          onClick: handleCancelDelete,
+        }}
+        error={deleteError?.userMessage}
+      />
 
       {/* Success Notification */}
       <Snackbar

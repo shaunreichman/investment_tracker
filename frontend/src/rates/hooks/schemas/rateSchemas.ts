@@ -5,7 +5,7 @@
  * Covers FX rates and risk-free rates.
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { dateString, positiveNumber, isLastDayOfMonth } from '@/shared/hooks/schemas';
 import { Currency } from '@/shared/types';
 import { RiskFreeRateType } from '../../types';
@@ -27,11 +27,11 @@ export const fxRateSchema = z.object({
   date: dateString,
   
   from_currency: z.nativeEnum(Currency, {
-    errorMap: () => ({ message: 'Please select a valid currency' })
+    message: 'Please select a valid currency'
   }),
   
   to_currency: z.nativeEnum(Currency, {
-    errorMap: () => ({ message: 'Please select a valid currency' })
+    message: 'Please select a valid currency'
   }),
   
   fx_rate: positiveNumber
@@ -69,7 +69,7 @@ export const riskFreeRateSchema = z.object({
   date: dateString,
   
   currency: z.nativeEnum(Currency, {
-    errorMap: () => ({ message: 'Please select a valid currency' })
+    message: 'Please select a valid currency'
   }),
   
   rate: z.number({
@@ -80,7 +80,7 @@ export const riskFreeRateSchema = z.object({
     .finite('Must be a valid number'),
   
   rate_type: z.nativeEnum(RiskFreeRateType, {
-    errorMap: () => ({ message: 'Please select a valid rate type' })
+    message: 'Please select a valid rate type'
   }).optional(),
   
   source: z.string()

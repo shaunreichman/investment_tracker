@@ -74,10 +74,12 @@ class CompanyEquityService:
             company.end_date = last_event_date
 
             # If the end Date changes we need to update the duration
-            old_duration = company.current_duration
-            new_duration = DurationMonthsCalculator.calculate_duration_months(company.start_date, last_event_date)
-            if old_duration != new_duration:
-                changes.append(DomainFieldChange(domain_object_type=DomainObjectType.COMPANY, domain_object_id=company_id, field_name='current_duration', old_value=old_duration, new_value=new_duration))
-                company.current_duration = new_duration
+            # Only calculate duration if company.start_date is set
+            if company.start_date is not None:
+                old_duration = company.current_duration
+                new_duration = DurationMonthsCalculator.calculate_duration_months(company.start_date, last_event_date)
+                if old_duration != new_duration:
+                    changes.append(DomainFieldChange(domain_object_type=DomainObjectType.COMPANY, domain_object_id=company_id, field_name='current_duration', old_value=old_duration, new_value=new_duration))
+                    company.current_duration = new_duration
 
         return changes if changes else None

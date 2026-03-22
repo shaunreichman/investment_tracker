@@ -39,8 +39,8 @@ class EntityRepository:
                     entity_types: Optional[List[EntityType]] = None,
                     tax_jurisdictions: Optional[List[Country]] = None,
                     names: Optional[List[str]] = None,
-                    sort_by: SortFieldEntity = SortFieldEntity.NAME,
-                    sort_order: SortOrder = SortOrder.ASC
+                    sort_by: Optional[SortFieldEntity] = SortFieldEntity.NAME,
+                    sort_order: Optional[SortOrder] = SortOrder.ASC
     ) -> List[Entity]:
         """
         Get entities with filtering.
@@ -55,6 +55,12 @@ class EntityRepository:
         Returns:
             List of entities
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldEntity.NAME
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldEntity:
             raise ValueError(f"Invalid sort field: {sort_by}")

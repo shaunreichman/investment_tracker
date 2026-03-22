@@ -6,7 +6,7 @@
  * Aligned with backend: /api/banks, /api/banks/:id/bank-accounts, and balance endpoints
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { nonEmptyString, dateString, nonNegativeNumber, isLastDayOfMonth } from '@/shared/hooks/schemas';
 import { Country, Currency } from '@/shared/types';
 import { BankType, BankAccountType } from '../../types';
@@ -25,7 +25,7 @@ export const createBankSchema = z.object({
     .max(255, 'Bank name must be less than 255 characters'),
   
   country: z.nativeEnum(Country, {
-    errorMap: () => ({ message: 'Please select a valid country' })
+    message: 'Please select a valid country'
   }),
   
   swift_bic: z.string()
@@ -34,7 +34,7 @@ export const createBankSchema = z.object({
     .optional(),
   
   bank_type: z.nativeEnum(BankType, {
-    errorMap: () => ({ message: 'Please select a valid bank type' })
+    message: 'Please select a valid bank type'
   }).optional()
 });
 
@@ -61,11 +61,11 @@ export const createBankAccountSchema = z.object({
     .max(64, 'Account number must be less than 64 characters'),
   
   currency: z.nativeEnum(Currency, {
-    errorMap: () => ({ message: 'Please select a valid currency' })
+    message: 'Please select a valid currency'
   }),
   
   account_type: z.nativeEnum(BankAccountType, {
-    errorMap: () => ({ message: 'Please select a valid account type' })
+    message: 'Please select a valid account type'
   }).optional()
 });
 
@@ -84,7 +84,7 @@ export type CreateBankAccountFormData = z.infer<typeof createBankAccountSchema>;
  */
 export const bankAccountBalanceSchema = z.object({
   currency: z.nativeEnum(Currency, {
-    errorMap: () => ({ message: 'Please select a valid currency' })
+    message: 'Please select a valid currency'
   }),
   
   balance_statement: nonNegativeNumber,

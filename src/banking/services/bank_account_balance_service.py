@@ -51,8 +51,8 @@ class BankAccountBalanceService:
             currencies: Optional[List[Currency]] = None,
             start_date: Optional[date] = None,
             end_date: Optional[date] = None,
-            sort_by: SortFieldBankAccountBalance = SortFieldBankAccountBalance.DATE,
-            sort_order: SortOrder = SortOrder.ASC
+            sort_by: Optional[SortFieldBankAccountBalance] = SortFieldBankAccountBalance.DATE,
+            sort_order: Optional[SortOrder] = SortOrder.ASC
     ) -> List[BankAccountBalance]:
         """
         Get all bank account balances.

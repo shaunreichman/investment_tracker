@@ -171,10 +171,7 @@ export interface GetCompaniesResponse {
 /**
  * Response from GET /api/companies/:id
  */
-export interface GetCompanyResponse {
-  /** Company details */
-  company: Company;
-}
+export type GetCompanyResponse = Company;
 
 /**
  * Company Overview Response - Enhanced UI response for overview tab

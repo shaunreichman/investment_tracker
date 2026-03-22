@@ -82,7 +82,13 @@ export interface CreateEntityRequest {
 /**
  * Get Entities Response - List of entities
  */
-export type GetEntitiesResponse = Entity[];
+export interface GetEntitiesResponse {
+  /** List of entities */
+  entities: Entity[];
+  
+  /** Total count */
+  count: number;
+}
 
 /**
  * Get Entity Response - Single entity

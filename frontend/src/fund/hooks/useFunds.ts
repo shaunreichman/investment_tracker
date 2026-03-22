@@ -6,7 +6,7 @@
  * @module fund/hooks/useFunds
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useQuery, useMutation } from '@/shared/hooks/core';
 import { fundApi } from '../api';
 import type {
@@ -18,12 +18,44 @@ import type {
 } from '../types';
 
 // ============================================================================
+// UTILITIES
+// ============================================================================
+
+/**
+ * Serialize params to a stable string key for comparison
+ * Sorts keys to ensure consistent serialization regardless of property order
+ */
+function serializeParams(params?: GetFundsQueryParams): string {
+  if (!params || Object.keys(params).length === 0) {
+    return '{}';
+  }
+  
+  // Sort keys for consistent serialization
+  const sorted = Object.keys(params)
+    .sort()
+    .reduce((acc, key) => {
+      const value = params[key as keyof GetFundsQueryParams];
+      // Handle undefined/null values consistently
+      if (value === undefined || value === null) {
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, any>);
+  
+  return JSON.stringify(sorted);
+}
+
+// ============================================================================
 // FUND QUERIES
 // ============================================================================
 
 /**
  * Get all funds with optional filters
  * Maps to: GET /api/funds
+ * 
+ * Uses deep comparison of params to prevent unnecessary query function recreation.
+ * Only recreates the query function when params actually change (by value, not reference).
  * 
  * @param params - Query parameters for filtering and sorting
  * @param options - Hook options
@@ -45,7 +77,19 @@ export function useFunds(
   params?: GetFundsQueryParams,
   options?: { refetchOnWindowFocus?: boolean }
 ) {
-  const queryFn = useCallback(() => fundApi.getFunds(params), [params]);
+  // Serialize params to detect actual changes (not just reference changes)
+  const paramsKey = useMemo(() => serializeParams(params), [params]);
+  const prevParamsKeyRef = useRef<string>(paramsKey);
+  
+  // Only recreate queryFn when params actually change
+  const stableParams = useMemo(() => {
+    if (prevParamsKeyRef.current !== paramsKey) {
+      prevParamsKeyRef.current = paramsKey;
+    }
+    return params;
+  }, [paramsKey, params]);
+  
+  const queryFn = useCallback(() => fundApi.getFunds(stableParams), [stableParams]);
   
   return useQuery<GetFundsResponse>(queryFn, {
     refetchOnWindowFocus: options?.refetchOnWindowFocus,
@@ -78,9 +122,17 @@ export function useFund(
   },
   options?: { refetchOnWindowFocus?: boolean }
 ) {
+  // Serialize params to detect actual changes
+  const paramsKey = useMemo(() => {
+    if (!params) return '{}';
+    return JSON.stringify(params);
+  }, [params]);
+  
+  const stableParams = useMemo(() => params, [paramsKey]);
+  
   const queryFn = useCallback(
-    () => fundApi.getFund(fundId, params),
-    [fundId, params]
+    () => fundApi.getFund(fundId, stableParams),
+    [fundId, stableParams]
   );
   
   return useQuery<GetFundResponse>(queryFn, {

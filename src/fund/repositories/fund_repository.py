@@ -71,6 +71,12 @@ class FundRepository:
         Returns:
             List of funds
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldFund.START_DATE
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldFund:
             raise ValueError(f"Invalid sort field: {sort_by}")

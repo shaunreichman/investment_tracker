@@ -35,7 +35,10 @@ const CreateFundModal: React.FC<CreateFundModalProps> = ({
   const [showTemplateSelection, setShowTemplateSelection] = useState(true);
 
   // Centralized API hooks
-  const { data: entities, loading, error: entitiesError } = useEntities(undefined, { refetchOnWindowFocus: true });
+  const { data: entitiesResponse, loading, error: entitiesError } = useEntities(undefined, { refetchOnWindowFocus: true });
+  
+  // Extract entities array from response
+  const entities = entitiesResponse?.entities || null;
   const { mutate: createFund, loading: isSubmitting, error: submitError, data: createdFund } = useCreateFund();
 
   // React Hook Form with Zod validation

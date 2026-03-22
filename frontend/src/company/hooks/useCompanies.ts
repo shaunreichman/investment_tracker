@@ -6,7 +6,7 @@
  * @module company/hooks/useCompanies
  */
 
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useQuery, useMutation } from '@/shared/hooks/core';
 import { companyApi } from '../api';
 import type {
@@ -46,7 +46,11 @@ export function useCompanies(
   params?: GetCompaniesQueryParams,
   options?: { refetchOnWindowFocus?: boolean }
 ) {
-  const queryFn = useCallback(() => companyApi.getCompanies(params), [params]);
+  // Create stable dependency key from params to avoid unnecessary recreations
+  // This ensures the query function only changes when params actually change
+  const paramsKey = params ? JSON.stringify(params) : 'no-params';
+  
+  const queryFn = useCallback(() => companyApi.getCompanies(params), [paramsKey]);
   
   return useQuery<GetCompaniesResponse>(queryFn, {
     refetchOnWindowFocus: options?.refetchOnWindowFocus,

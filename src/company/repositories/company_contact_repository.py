@@ -36,8 +36,8 @@ class CompanyContactRepository:
 
     def get_contacts(self, session: Session,
             company_ids: Optional[List[int]] = None,
-            sort_by: SortFieldContact = SortFieldContact.NAME,
-            sort_order: SortOrder = SortOrder.ASC
+            sort_by: Optional[SortFieldContact] = SortFieldContact.NAME,
+            sort_order: Optional[SortOrder] = SortOrder.ASC
     ) -> List[Contact]:
         """
         Get all company contacts.
@@ -51,6 +51,12 @@ class CompanyContactRepository:
         Returns:
             List of company contacts
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldContact.NAME
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldContact:
             raise ValueError(f"Invalid sort field: {sort_by}")

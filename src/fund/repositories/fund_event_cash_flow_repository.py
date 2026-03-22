@@ -46,8 +46,8 @@ class FundEventCashFlowRepository:
                                     end_transfer_date: Optional[date] = None,
                                     start_fund_event_date: Optional[date] = None,
                                     end_fund_event_date: Optional[date] = None,
-                                    sort_by: SortFieldFundEventCashFlow = SortFieldFundEventCashFlow.TRANSFER_DATE,
-                                    sort_order: SortOrder = SortOrder.ASC) -> List[FundEventCashFlow]:
+                                    sort_by: Optional[SortFieldFundEventCashFlow] = SortFieldFundEventCashFlow.TRANSFER_DATE,
+                                    sort_order: Optional[SortOrder] = SortOrder.ASC) -> List[FundEventCashFlow]:
         """
         Get all fund event cash flows.
 
@@ -69,6 +69,12 @@ class FundEventCashFlowRepository:
         Returns:
             List of fund event cash flows
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldFundEventCashFlow.TRANSFER_DATE
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldFundEventCashFlow:
             raise ValueError(f"Invalid sort field: {sort_by}")

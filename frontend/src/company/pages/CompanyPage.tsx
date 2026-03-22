@@ -5,7 +5,7 @@
  * Handles data fetching and passes data to tab components.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -16,7 +16,8 @@ import {
 import { Add as AddIcon } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ErrorDisplay, LoadingSpinner } from '@/shared/ui/feedback';
-import { ErrorType, createErrorInfo } from '@/shared/types/errors';
+import { ErrorType } from '@/shared/types/errors';
+import { createErrorInfo } from '@/shared/utils/errors';
 import { ConfirmDialog } from '@/shared/ui/overlays';
 import { TabNavigation } from '@/shared/ui/navigation';
 import { OverviewTab } from '../components/overview-tab';
@@ -153,14 +154,14 @@ export const CompanyPage: React.FC = () => {
     fundsApiParams
   );
 
-  // Transform funds response to FundsTabData format (no transformation layer - use Fund[] directly)
+  // Transform funds response to FundsTabData format
   const fundsTabData: FundsTabData | null = useMemo(() => {
-    if (!fundsResponse || !Array.isArray(fundsResponse)) {
+    if (!fundsResponse || !fundsResponse.funds) {
       return null;
     }
 
     return {
-      funds: fundsResponse, // GetFundsResponse is Fund[] directly
+      funds: fundsResponse.funds, // Extract funds array from GetFundsResponse
       filters: {
         applied_status_filter: fundsParams.status_filter || 'all',
         applied_search: fundsParams.search || null,
@@ -172,9 +173,15 @@ export const CompanyPage: React.FC = () => {
   // This ensures the hook always has the correct fundId when mutate is called
   const { mutate: deleteFund, loading: deletingFund } = useDeleteFund(fundIdToDelete);
 
-  const handleFundsParamsChange = (newParams: any) => {
-    setFundsParams(prev => ({ ...prev, ...newParams }));
-  };
+  // Stabilize callback to prevent unnecessary re-renders
+  // Supports both object updates and functional updates (like React's setState)
+  const handleFundsParamsChange = useCallback((newParamsOrUpdater: any) => {
+    if (typeof newParamsOrUpdater === 'function') {
+      setFundsParams(newParamsOrUpdater);
+    } else {
+      setFundsParams(prev => ({ ...prev, ...newParamsOrUpdater }));
+    }
+  }, []);
 
   // Tab configuration
   const tabs: TabData[] = [

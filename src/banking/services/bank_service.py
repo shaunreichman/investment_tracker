@@ -44,8 +44,8 @@ class BankService:
                     names: Optional[List[str]] = None,
                     countries: Optional[List[Country]] = None,
                     bank_types: Optional[List[BankType]] = None,
-                    sort_by: SortFieldBank = SortFieldBank.NAME,
-                    sort_order: SortOrder = SortOrder.ASC,
+                    sort_by: Optional[SortFieldBank] = None,
+                    sort_order: Optional[SortOrder] = None,
                     include_bank_accounts: Optional[bool] = False,
                     include_bank_account_balances: Optional[bool] = False
     ) -> List[Bank]:

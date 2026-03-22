@@ -123,7 +123,11 @@ class FundController:
                     return ControllerResponseDTO(error="No funds found matching the specified criteria", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_funds = [format_fund_comprehensive(fund, include_fund_events, include_fund_event_cash_flows, include_fund_tax_statements) for fund in funds]
-                return ControllerResponseDTO(data=formatted_funds, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'funds': formatted_funds,
+                    'count': len(formatted_funds)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
             
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting funds: {str(e)}")
@@ -383,7 +387,11 @@ class FundController:
                     return ControllerResponseDTO(error="No fund events found matching the specified criteria", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_events = [format_fund_event(event) for event in events]
-                return ControllerResponseDTO(data=formatted_events, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'events': formatted_events,
+                    'count': len(formatted_events)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting fund events {fund_id}: {str(e)}")
@@ -623,7 +631,11 @@ class FundController:
                 if fund_event_cash_flows is None:
                     return ControllerResponseDTO(error="No fund event cash flows found matching the specified criteria", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 formatted_cash_flows = [format_fund_event_cash_flow(cash_flow) for cash_flow in fund_event_cash_flows]
-                return ControllerResponseDTO(data=formatted_cash_flows, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'cash_flows': formatted_cash_flows,
+                    'count': len(formatted_cash_flows)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting fund event cash flows: {str(e)}")
@@ -835,7 +847,11 @@ class FundController:
                     return ControllerResponseDTO(error="No fund tax statements found matching the specified criteria", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 formatted_fund_tax_statements = [format_fund_tax_statement(fund_tax_statement) for fund_tax_statement in fund_tax_statements]
-                return ControllerResponseDTO(data=formatted_fund_tax_statements, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'fund_tax_statements': formatted_fund_tax_statements,
+                    'count': len(formatted_fund_tax_statements)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting fund tax statements: {str(e)}")

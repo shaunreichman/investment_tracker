@@ -54,6 +54,12 @@ class FxRateRepository:
         Returns:
             List of FX rates
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldFxRate.DATE
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldFxRate:
             raise ValueError(f"Invalid sort field: {sort_by}")

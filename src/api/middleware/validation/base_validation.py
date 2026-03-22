@@ -27,6 +27,7 @@ import re
 from typing import Dict, Any, List, Optional, Union, Callable
 from functools import wraps
 from flask import request, jsonify, current_app
+from werkzeug.exceptions import BadRequest
 from datetime import datetime, date
 
 
@@ -639,12 +640,21 @@ def validate_request(
         def wrapper(*args, **kwargs):
             try:
                 # Get request data
-                if request.is_json:
-                    data = request.get_json() or {}
+                # For GET requests, always use query parameters
+                if request.method == 'GET':
+                    data = dict(request.args)
+                elif request.is_json:
+                    try:
+                        data = request.get_json() or {}
+                    except BadRequest:
+                        # If JSON parsing fails, treat as empty data
+                        # This can happen if Content-Type suggests JSON but body is malformed
+                        current_app.logger.warning("Failed to parse JSON body, treating as empty")
+                        data = {}
                 elif request.form:
                     data = dict(request.form)
                 else:
-                    # For GET requests, use query parameters
+                    # Fallback to query parameters
                     data = dict(request.args)
                 
                 # Initialize validator
@@ -735,8 +745,17 @@ def validate_request(
                     "type": "validation_error"
                 }), e.status_code
                 
+            except BadRequest as e:
+                # Handle Werkzeug BadRequest (e.g., malformed JSON)
+                current_app.logger.warning(f"Bad request during validation: {str(e)}")
+                return jsonify({
+                    "error": "Invalid request format",
+                    "type": "validation_error",
+                    "details": str(e)
+                }), 400
+                
             except Exception as e:
-                current_app.logger.error(f"Unexpected error during validation: {str(e)}")
+                current_app.logger.error(f"Unexpected error during validation: {str(e)}", exc_info=True)
                 return jsonify({
                     "error": "Internal validation error",
                     "type": "validation_error"

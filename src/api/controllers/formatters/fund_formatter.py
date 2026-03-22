@@ -24,7 +24,7 @@ def format_fund(fund: Fund) -> Dict[str, Any]:
         
         # Fund classification
         'status': fund.status.value.upper() if fund.status else None,
-        'fund_type': fund.fund_type.value.upper() if hasattr(fund.fund_type, 'value') else fund.fund_type,
+        'fund_investment_type': fund.fund_investment_type.value.upper() if hasattr(fund.fund_investment_type, 'value') else fund.fund_investment_type,
         'tracking_type': fund.tracking_type.value.upper() if hasattr(fund.tracking_type, 'value') else fund.tracking_type,
         
         # Relationships

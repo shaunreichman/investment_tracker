@@ -50,8 +50,8 @@ class BankAccountService:
             currencies: Optional[List[Currency]] = None,
             statuses: Optional[List[BankAccountStatus]] = None,
             account_types: Optional[List[BankAccountType]] = None,
-            sort_by: SortFieldBankAccount = SortFieldBankAccount.CREATED_AT,
-            sort_order: SortOrder = SortOrder.ASC,
+            sort_by: Optional[SortFieldBankAccount] = SortFieldBankAccount.CREATED_AT,
+            sort_order: Optional[SortOrder] = SortOrder.ASC,
             include_bank_account_balances: Optional[bool] = False
     ) -> List[BankAccount]:
         """

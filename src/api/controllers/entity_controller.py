@@ -65,8 +65,8 @@ class EntityController:
             entity_types = search_data.get('entity_types')
             tax_jurisdictions = search_data.get('tax_jurisdictions')
             names = search_data.get('names')
-            sort_by = search_data.get('sort_by')
-            sort_order = search_data.get('sort_order')
+            sort_by = search_data.get('sort_by')  # Will be None if not provided, service layer has default
+            sort_order = search_data.get('sort_order')  # Will be None if not provided, service layer has default
             
             session = self._get_session()
             try:
@@ -84,7 +84,11 @@ class EntityController:
                     return ControllerResponseDTO(error="Entities not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_entities = [format_entity(entity) for entity in entities]
-                return ControllerResponseDTO(data=formatted_entities, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'entities': formatted_entities,
+                    'count': len(formatted_entities)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
                 
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting entities: {str(e)}")

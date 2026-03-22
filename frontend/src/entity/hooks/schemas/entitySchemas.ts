@@ -5,7 +5,7 @@
  * Aligned with backend: /api/entities POST endpoint
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { nonEmptyString } from '@/shared/hooks/schemas';
 import { EntityType } from '../../types';
 import { Country } from '@/shared/types';
@@ -24,11 +24,11 @@ export const createEntitySchema = z.object({
     .max(255, 'Entity name must be less than 255 characters'),
   
   entity_type: z.nativeEnum(EntityType, {
-    errorMap: () => ({ message: 'Please select a valid entity type' })
+    message: 'Please select a valid entity type'
   }),
   
   tax_jurisdiction: z.nativeEnum(Country, {
-    errorMap: () => ({ message: 'Please select a valid tax jurisdiction' })
+    message: 'Please select a valid tax jurisdiction'
   }),
   
   description: z.string()

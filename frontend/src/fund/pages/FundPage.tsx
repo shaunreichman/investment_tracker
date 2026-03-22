@@ -87,7 +87,7 @@ export const FundPage: React.FC = () => {
 
   // Extract events from API response
   const events: FundEvent[] = useMemo(() => 
-    (eventsData || []) as FundEvent[], 
+    eventsData?.events || [], 
     [eventsData]
   );
 
@@ -288,7 +288,7 @@ export const FundPage: React.FC = () => {
       }}>
         {/* Left Sidebar - Summary Sections */}
         <Box sx={{ 
-          width: sidebarVisible ? { xs: '100%', sm: '322px', md: '368px', lg: '414px' } : 0,
+          width: sidebarVisible ? { xs: '100%', sm: '258px', md: '294px', lg: '331px' } : 0,
           flexShrink: 0,
           position: { xs: 'static', sm: 'relative' },
           height: '100%', // Use full height from grid parent

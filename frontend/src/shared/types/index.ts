@@ -19,12 +19,17 @@ export {
   getCurrencyDecimalPlaces,
 } from './enums';
 
-// Export errors
+// Export error types
 export {
   ErrorType,
   ErrorSeverity,
   type ErrorInfo,
   type ErrorDisplayOptions,
+} from './errors';
+
+// Re-export error utility functions from utils to maintain backward compatibility
+// These are re-exported here for convenience, but the source is @/shared/utils/errors
+export {
   categorizeError,
   getErrorSeverity,
   isRetryableError,
@@ -34,7 +39,7 @@ export {
   isValidationError,
   isServerError,
   formatErrorForLogging,
-} from './errors';
+} from '@/shared/utils/errors';
 
 // Export DTOs
 export * from './dto';

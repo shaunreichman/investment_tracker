@@ -39,8 +39,8 @@ class CompanyContactService:
 
     def get_contacts(self, session: Session,
             company_ids: Optional[List[int]] = None,
-            sort_by: SortFieldContact = SortFieldContact.NAME,
-            sort_order: SortOrder = SortOrder.ASC
+            sort_by: Optional[SortFieldContact] = SortFieldContact.NAME,
+            sort_order: Optional[SortOrder] = SortOrder.ASC
     ) -> List[Contact]:
         """
         Get all contacts for a company.

@@ -276,9 +276,12 @@ export interface CreateDistributionRequest {
 // ============================================================================
 
 /**
- * Get Fund Events Response - List of fund events
+ * Get Fund Events Response - Object containing events array and count
  */
-export type GetFundEventsResponse = FundEvent[];
+export interface GetFundEventsResponse {
+  events: FundEvent[];
+  count: number;
+}
 
 /**
  * Get Fund Event Response - Single fund event

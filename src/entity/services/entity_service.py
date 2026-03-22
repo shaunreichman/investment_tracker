@@ -47,8 +47,8 @@ class EntityService:
                     entity_types: Optional[List[EntityType]] = None,
                     tax_jurisdictions: Optional[List[Country]] = None,
                     names: Optional[List[str]] = None,
-                    sort_by: SortFieldEntity = SortFieldEntity.NAME,
-                    sort_order: SortOrder = SortOrder.ASC
+                    sort_by: Optional[SortFieldEntity] = None,
+                    sort_order: Optional[SortOrder] = None
     ) -> List[Entity]:
         """
         Get entities with filtering.

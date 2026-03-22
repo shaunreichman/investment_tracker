@@ -12,11 +12,13 @@ import {
   Typography,
   Chip,
   Link,
-  useTheme
+  useTheme,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
-  TrendingUp as TrendingUpIcon
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { Company } from '@/company/types';
@@ -24,9 +26,15 @@ import { formatCurrency } from '@/shared/utils/formatters';
 
 interface CompanyCardsProps {
   companies: Company[];
+  onDeleteClick?: (company: Company) => void;
+  isDeleting?: boolean;
 }
 
-export const CompanyCards: React.FC<CompanyCardsProps> = ({ companies }) => {
+export const CompanyCards: React.FC<CompanyCardsProps> = ({
+  companies,
+  onDeleteClick,
+  isDeleting = false,
+}) => {
   const theme = useTheme();
   const navigate = useNavigate();
 
@@ -98,6 +106,23 @@ export const CompanyCards: React.FC<CompanyCardsProps> = ({ companies }) => {
                   />
                 )}
               </Box>
+              {onDeleteClick && (
+                <Tooltip title="Delete company">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteClick(company);
+                    }}
+                    disabled={isDeleting}
+                    color="error"
+                    aria-label={`Delete ${company.name}`}
+                    sx={{ flexShrink: 0 }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
 
             {/* Description */}

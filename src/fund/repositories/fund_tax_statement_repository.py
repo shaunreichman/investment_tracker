@@ -40,8 +40,8 @@ class FundTaxStatementRepository:
                                 financial_years: Optional[List[str]] = None,
                                 start_tax_payment_date: Optional[date] = None,
                                 end_tax_payment_date: Optional[date] = None,
-                                sort_by: SortFieldFundTaxStatement = SortFieldFundTaxStatement.FINANCIAL_YEAR,
-                                sort_order: SortOrder = SortOrder.ASC) -> List[FundTaxStatement]:
+                                sort_by: Optional[SortFieldFundTaxStatement] = SortFieldFundTaxStatement.FINANCIAL_YEAR,
+                                sort_order: Optional[SortOrder] = SortOrder.ASC) -> List[FundTaxStatement]:
         """
         Get all fund tax statements.
 
@@ -58,6 +58,12 @@ class FundTaxStatementRepository:
         Returns:
             List[FundTaxStatement]: List of fund tax statements
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldFundTaxStatement.FINANCIAL_YEAR
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldFundTaxStatement:
             raise ValueError(f"Invalid sort field: {sort_by}")

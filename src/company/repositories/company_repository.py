@@ -58,6 +58,12 @@ class CompanyRepository:
         Returns:
             List of companies
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldCompany.NAME
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldCompany:
             raise ValueError(f"Invalid sort field: {sort_by}")

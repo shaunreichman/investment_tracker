@@ -6,7 +6,7 @@
  * Aligned with backend: /api/funds/* endpoints
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { 
   nonEmptyString,
   positiveNumber,
@@ -45,19 +45,19 @@ export const createFundSchema = z.object({
   company_id: z.number().int().positive('Company is required'),
   
   tracking_type: z.nativeEnum(FundTrackingType, {
-    errorMap: () => ({ message: 'Please select a valid tracking type' })
+    message: 'Please select a valid tracking type'
   }),
   
   tax_jurisdiction: z.nativeEnum(Country, {
-    errorMap: () => ({ message: 'Please select a valid tax jurisdiction' })
+    message: 'Please select a valid tax jurisdiction'
   }),
   
   currency: z.nativeEnum(Currency, {
-    errorMap: () => ({ message: 'Please select a valid currency' })
+    message: 'Please select a valid currency'
   }),
   
   fund_investment_type: z.nativeEnum(FundInvestmentType, {
-    errorMap: () => ({ message: 'Please select a valid fund investment type' })
+    message: 'Please select a valid fund investment type'
   }).optional(),
   
   description: z.string().max(1000, 'Description must be less than 1000 characters').optional(),
@@ -151,7 +151,7 @@ export const distributionSchema = z.object({
   event_date: dateString,
   
   distribution_type: z.nativeEnum(DistributionType, {
-    errorMap: () => ({ message: 'Please select a valid distribution type' })
+    message: 'Please select a valid distribution type'
   }),
   
   // Simple distribution amount (used when has_withholding_tax is false)
@@ -256,13 +256,13 @@ export const fundEventCashFlowSchema = z.object({
   bank_account_id: z.number().int().positive('Bank account is required'),
   
   direction: z.nativeEnum(CashFlowDirection, {
-    errorMap: () => ({ message: 'Please select a valid cash flow direction' })
+    message: 'Please select a valid cash flow direction'
   }),
   
   transfer_date: dateString,
   
   currency: z.nativeEnum(Currency, {
-    errorMap: () => ({ message: 'Please select a valid currency' })
+    message: 'Please select a valid currency'
   }),
   
   amount: positiveNumber,

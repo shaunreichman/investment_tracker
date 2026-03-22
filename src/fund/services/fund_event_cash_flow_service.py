@@ -59,8 +59,8 @@ class FundEventCashFlowService:
             end_transfer_date: Optional[date] = None,
             start_fund_event_date: Optional[date] = None,
             end_fund_event_date: Optional[date] = None,
-            sort_by: SortFieldFundEventCashFlow = SortFieldFundEventCashFlow.TRANSFER_DATE,
-            sort_order: SortOrder = SortOrder.ASC
+            sort_by: Optional[SortFieldFundEventCashFlow] = SortFieldFundEventCashFlow.TRANSFER_DATE,
+            sort_order: Optional[SortOrder] = SortOrder.ASC
     ) -> List[FundEventCashFlow]:
         """
         Get all fund event cash flows for a specific fund.

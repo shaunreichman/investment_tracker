@@ -7,7 +7,7 @@
  */
 
 import { FieldValues, UseFormProps } from 'react-hook-form';
-import { ZodSchema } from 'zod';
+import { ZodSchema } from 'zod/v3';
 
 /**
  * Field configuration for UI metadata

@@ -32,7 +32,10 @@ const AllEntitiesPage: React.FC = () => {
   const [showEntityModal, setShowEntityModal] = useState(false);
 
   // Fetch entity data
-  const { data: entities, loading, error, refetch } = useEntities();
+  const { data: entitiesResponse, loading, error, refetch } = useEntities();
+  
+  // Extract entities array from response
+  const entities = entitiesResponse?.entities || null;
 
   // Handle entity creation - close modal and refresh data after creation
   const handleEntityCreated = async (entity: { id: number; name: string }) => {
@@ -129,7 +132,7 @@ const AllEntitiesPage: React.FC = () => {
           
           {/* Entity List Component */}
           <EntityList 
-            data={entities}
+            data={entities || []}
             loading={loading}
             error={error}
             onRefresh={refetch}

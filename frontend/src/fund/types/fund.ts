@@ -211,7 +211,13 @@ export interface CreateFundRequest {
 /**
  * Get Funds Response - List of funds
  */
-export type GetFundsResponse = Fund[];
+export interface GetFundsResponse {
+  /** List of funds */
+  funds: Fund[];
+  
+  /** Total count */
+  count: number;
+}
 
 /**
  * Get Fund Response - Single fund

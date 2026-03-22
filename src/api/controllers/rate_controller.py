@@ -85,7 +85,11 @@ class RateController:
                     return ControllerResponseDTO(error="Risk free rates not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 formatted_risk_free_rates = [format_risk_free_rate(risk_free_rate) for risk_free_rate in risk_free_rates]
-                return ControllerResponseDTO(data=formatted_risk_free_rates, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'risk_free_rates': formatted_risk_free_rates,
+                    'count': len(formatted_risk_free_rates)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
             
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting risk free rates: {str(e)}")
@@ -278,7 +282,11 @@ class RateController:
                     return ControllerResponseDTO(error="FX rates not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 formatted_fx_rates = [format_fx_rate(fx_rate) for fx_rate in fx_rates]
-                return ControllerResponseDTO(data=formatted_fx_rates, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'fx_rates': formatted_fx_rates,
+                    'count': len(formatted_fx_rates)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
             
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting FX rates: {str(e)}")

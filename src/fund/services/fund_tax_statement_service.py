@@ -66,8 +66,8 @@ class FundTaxStatementService:
         financial_years: Optional[List[str]] = None,
         start_tax_payment_date: Optional[date] = None,
         end_tax_payment_date: Optional[date] = None,
-        sort_by: SortFieldFundTaxStatement = SortFieldFundTaxStatement.FINANCIAL_YEAR,
-        sort_order: SortOrder = SortOrder.ASC
+        sort_by: Optional[SortFieldFundTaxStatement] = SortFieldFundTaxStatement.FINANCIAL_YEAR,
+        sort_order: Optional[SortOrder] = SortOrder.ASC
     )-> List[FundTaxStatement]:
         """
         Get all fund tax statements.

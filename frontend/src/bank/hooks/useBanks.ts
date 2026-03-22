@@ -74,7 +74,7 @@ export function useBank(
     [bankId, params]
   );
   
-  return useQuery<GetBankResponse>(queryFn, {
+  return useQuery<Bank>(queryFn, {
     enabled: bankId > 0,
     refetchOnWindowFocus: options?.refetchOnWindowFocus,
   });

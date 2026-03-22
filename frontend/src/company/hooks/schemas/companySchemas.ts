@@ -5,7 +5,7 @@
  * Aligned with backend: /api/companies and /api/companies/:id/contacts endpoints
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { nonEmptyString, emailAddress, phoneNumber, urlString } from '@/shared/hooks/schemas';
 import { CompanyType } from '@/company/types';
 
@@ -27,7 +27,7 @@ export const createCompanySchema = z.object({
     .optional(),
   
   company_type: z.nativeEnum(CompanyType, {
-    errorMap: () => ({ message: 'Please select a valid company type' })
+    message: 'Please select a valid company type'
   }).optional(),
   
   website: urlString.optional(),

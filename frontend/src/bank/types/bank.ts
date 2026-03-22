@@ -105,10 +105,7 @@ export interface GetBanksResponse {
 /**
  * Response from GET /api/banks/:id
  */
-export interface GetBankResponse {
-  /** Bank details */
-  bank: Bank;
-}
+export type GetBankResponse = Bank;
 
 // ============================================================================
 // QUERY PARAMETERS

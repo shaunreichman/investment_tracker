@@ -96,7 +96,11 @@ class BankingController:
                     return ControllerResponseDTO(error="Banks not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
                 
                 formatted_banks = [format_bank_comprehensive(bank, include_bank_accounts, include_bank_account_balances) for bank in banks]
-                return ControllerResponseDTO(data=formatted_banks, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'banks': formatted_banks,
+                    'count': len(formatted_banks)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting banks: {str(e)}")
@@ -334,7 +338,11 @@ class BankingController:
                     return ControllerResponseDTO(error="Bank accounts not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 formatted_bank_accounts = [format_bank_account_comprehensive(bank_account, include_bank_account_balances) for bank_account in bank_accounts]
-                return ControllerResponseDTO(data=formatted_bank_accounts, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'bank_accounts': formatted_bank_accounts,
+                    'count': len(formatted_bank_accounts)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting bank accounts {bank_id}: {str(e)}")
@@ -559,7 +567,11 @@ class BankingController:
                     return ControllerResponseDTO(error="Bank account balances not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
 
                 formatted_bank_account_balances = [format_bank_account_balance(bank_account_balance) for bank_account_balance in bank_account_balances]
-                return ControllerResponseDTO(data=formatted_bank_account_balances, response_code=ApiResponseCode.SUCCESS)
+                response_data = {
+                    'bank_account_balances': formatted_bank_account_balances,
+                    'count': len(formatted_bank_account_balances)
+                }
+                return ControllerResponseDTO(data=response_data, response_code=ApiResponseCode.SUCCESS)
 
             except ValueError as e:
                 current_app.logger.warning(f"Business logic error getting bank account balances {bank_account_id}: {str(e)}")

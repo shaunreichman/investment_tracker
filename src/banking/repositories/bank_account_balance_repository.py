@@ -41,8 +41,8 @@ class BankAccountBalanceRepository:
             currencies: Optional[List[Currency]] = None,
             start_date: Optional[date] = None,
             end_date: Optional[date] = None,
-            sort_by: SortFieldBankAccountBalance = SortFieldBankAccountBalance.DATE,
-            sort_order: SortOrder = SortOrder.ASC) -> List[BankAccountBalance]:
+            sort_by: Optional[SortFieldBankAccountBalance] = SortFieldBankAccountBalance.DATE,
+            sort_order: Optional[SortOrder] = SortOrder.ASC) -> List[BankAccountBalance]:
         """
         Get all bank account balances.
 
@@ -59,6 +59,12 @@ class BankAccountBalanceRepository:
         Returns:
             List of bank account balances
         """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldBankAccountBalance.DATE
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
         # Validate sort field
         if sort_by not in SortFieldBankAccountBalance:
             raise ValueError(f"Invalid sort field: {sort_by}")

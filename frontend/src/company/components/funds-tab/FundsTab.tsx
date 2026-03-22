@@ -2,7 +2,7 @@
 // FUNDS TAB COMPONENT (REFACTORED)
 // ============================================================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import { FundsTabProps } from './types/funds-tab.types';
 import { FundsFilters } from './components/FundsFilters';
@@ -22,14 +22,19 @@ export const FundsTab: React.FC<FundsTabProps> = ({
   currentParams,
   onDeleteFund,
 }) => {
+  // Refs to track previous values and prevent infinite loops
+  const prevSortFieldRef = useRef<string | undefined>(currentParams.sort_field);
+  const prevSortDirectionRef = useRef<string | undefined>(currentParams.sort_direction);
+  const prevViewModeRef = useRef<string | undefined>(currentParams.view_mode);
+
   // Initialize hooks
   const { viewMode, handleViewModeChange } = useResponsiveView({
-    defaultView: 'table',
+    defaultView: (currentParams.view_mode as 'table' | 'cards') || 'table',
   });
 
   const { sortField, sortDirection, handleSort } = useTableSorting({
-    defaultField: 'start_date',
-    defaultDirection: 'desc',
+    defaultField: currentParams.sort_field || 'start_date',
+    defaultDirection: (currentParams.sort_direction as 'asc' | 'desc') || 'desc',
   });
 
   const {
@@ -46,32 +51,46 @@ export const FundsTab: React.FC<FundsTabProps> = ({
       currency_filter: currentParams.currency_filter || 'all',
       fund_type_filter: currentParams.fund_type_filter || 'all',
     },
-    onFiltersChange: (filters) => onParamsChange({ ...currentParams, ...filters }),
+    onFiltersChange: (filters) => {
+      onParamsChange((prev: any) => ({ ...prev, ...filters }));
+    },
   });
 
   const { searchTerm, handleSearchChange } = useDebouncedSearch({
     initialValue: currentParams.search || '',
-    onSearchChange: (value) => onParamsChange({ ...currentParams, search: value, page: 1 }),
+    onSearchChange: (value) => {
+      onParamsChange((prev: any) => ({ ...prev, search: value, page: 1 }));
+    },
   });
 
-  // Update URL params when sorting changes
+  // Update params when sorting changes (only if actually different)
   useEffect(() => {
-    if (sortField && sortField !== currentParams.sort_field) {
-      onParamsChange({ 
-        ...currentParams, 
-        sort_field: sortField, 
+    const sortFieldChanged = sortField && sortField !== prevSortFieldRef.current;
+    const sortDirectionChanged = sortDirection !== prevSortDirectionRef.current;
+    
+    if (sortFieldChanged || sortDirectionChanged) {
+      prevSortFieldRef.current = sortField;
+      prevSortDirectionRef.current = sortDirection;
+      
+      onParamsChange((prev: any) => ({
+        ...prev,
+        sort_field: sortField,
         sort_direction: sortDirection,
-        page: 1 
-      });
+        page: 1,
+      }));
     }
-  }, [sortField, sortDirection, currentParams, onParamsChange]);
+  }, [sortField, sortDirection, onParamsChange]);
 
-  // Update URL params when view mode changes
+  // Update params when view mode changes (only if actually different)
   useEffect(() => {
-    if (viewMode !== currentParams.view_mode) {
-      onParamsChange({ ...currentParams, view_mode: viewMode });
+    if (viewMode !== prevViewModeRef.current) {
+      prevViewModeRef.current = viewMode;
+      onParamsChange((prev: any) => ({
+        ...prev,
+        view_mode: viewMode,
+      }));
     }
-  }, [viewMode, currentParams, onParamsChange]);
+  }, [viewMode, onParamsChange]);
 
   if (loading) {
     return (

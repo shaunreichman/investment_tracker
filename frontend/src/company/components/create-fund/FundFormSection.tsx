@@ -12,16 +12,170 @@ import {
   Typography
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
-import { Controller, Control, FieldValues } from 'react-hook-form';
+import { Controller, Control } from 'react-hook-form';
 import { Entity } from '@/entity/types';
 import { FundTrackingType, FundInvestmentType } from '@/fund/types';
 import { Country, Currency } from '@/shared/types';
 import { FUND_TYPES } from '@/fund/utils/constants/fundOptions';
 import { COUNTRY_LABELS } from '@/shared/utils/formatters/labels';
 import { CURRENCY_LABELS } from '@/shared/utils/formatters/labels';
-import { NumberInputField } from '@/shared/ui/forms';
 import { useNumberInput } from '@/shared/hooks/forms';
 import type { CreateFundFormData } from '@/fund/hooks/schemas';
+
+// Helper component for Commitment Amount field
+interface CommitmentAmountFieldProps {
+  value: number | undefined;
+  onChange: (value: number | undefined) => void;
+  onBlur: () => void;
+  fieldState: { error?: { message?: string }; isTouched: boolean };
+}
+
+const CommitmentAmountField: React.FC<CommitmentAmountFieldProps> = ({
+  value,
+  onChange,
+  onBlur,
+  fieldState
+}) => {
+  const numberInput = useNumberInput(
+    value?.toString() || '',
+    { allowDecimals: true, allowNegative: false }
+  );
+
+  return (
+    <Box>
+      <TextField
+        fullWidth
+        label="Commitment Amount"
+        type="text"
+        value={numberInput.value}
+        onChange={(e) => {
+          numberInput.onChange(e.target.value);
+          const numValue = numberInput.numericValue;
+          onChange(numValue > 0 ? numValue : undefined);
+        }}
+        onBlur={() => {
+          numberInput.onBlur();
+          const numValue = numberInput.numericValue;
+          onChange(numValue > 0 ? numValue : undefined);
+          onBlur();
+        }}
+        onFocus={numberInput.onFocus}
+        error={!!fieldState.error && fieldState.isTouched}
+        helperText={
+          fieldState.error && fieldState.isTouched
+            ? fieldState.error.message
+            : 'Total commitment amount (optional)'
+        }
+        inputProps={{
+          style: { textAlign: 'left' }
+        }}
+      />
+    </Box>
+  );
+};
+
+// Helper component for Expected IRR field
+interface ExpectedIRRFieldProps {
+  value: number | undefined;
+  onChange: (value: number | undefined) => void;
+  onBlur: () => void;
+  fieldState: { error?: { message?: string }; isTouched: boolean };
+}
+
+const ExpectedIRRField: React.FC<ExpectedIRRFieldProps> = ({
+  value,
+  onChange,
+  onBlur,
+  fieldState
+}) => {
+  const numberInput = useNumberInput(
+    value?.toString() || '',
+    { allowDecimals: true, allowNegative: false }
+  );
+
+  return (
+    <TextField
+      fullWidth
+      label="Expected IRR (%)"
+      type="text"
+      value={numberInput.value}
+      onChange={(e) => {
+        numberInput.onChange(e.target.value);
+        const numValue = numberInput.numericValue;
+        onChange(numValue >= 0 ? numValue : undefined);
+      }}
+      onBlur={() => {
+        numberInput.onBlur();
+        const numValue = numberInput.numericValue;
+        onChange(numValue >= 0 ? numValue : undefined);
+        onBlur();
+      }}
+      onFocus={numberInput.onFocus}
+      error={!!fieldState.error && fieldState.isTouched}
+      helperText={
+        fieldState.error && fieldState.isTouched
+          ? fieldState.error.message
+          : 'Expected annual return 0-100% (optional)'
+      }
+      InputProps={{
+        endAdornment: (
+          <InputAdornment position="end">
+            <Typography variant="body2" color="text.secondary">
+              %
+            </Typography>
+          </InputAdornment>
+        )
+      }}
+    />
+  );
+};
+
+// Helper component for Expected Duration field
+interface ExpectedDurationFieldProps {
+  value: number | undefined;
+  onChange: (value: number | undefined) => void;
+  onBlur: () => void;
+  fieldState: { error?: { message?: string }; isTouched: boolean };
+}
+
+const ExpectedDurationField: React.FC<ExpectedDurationFieldProps> = ({
+  value,
+  onChange,
+  onBlur,
+  fieldState
+}) => {
+  const numberInput = useNumberInput(
+    value?.toString() || '',
+    { allowDecimals: false, allowNegative: false }
+  );
+
+  return (
+    <TextField
+      fullWidth
+      label="Expected Duration (months)"
+      type="text"
+      value={numberInput.value}
+      onChange={(e) => {
+        numberInput.onChange(e.target.value);
+        const numValue = Math.floor(numberInput.numericValue);
+        onChange(numValue >= 0 ? numValue : undefined);
+      }}
+      onBlur={() => {
+        numberInput.onBlur();
+        const numValue = Math.floor(numberInput.numericValue);
+        onChange(numValue >= 0 ? numValue : undefined);
+        onBlur();
+      }}
+      onFocus={numberInput.onFocus}
+      error={!!fieldState.error && fieldState.isTouched}
+      helperText={
+        fieldState.error && fieldState.isTouched
+          ? fieldState.error.message
+          : 'Expected fund duration 1-1200 months (optional)'
+      }
+    />
+  );
+};
 
 interface FundFormSectionProps {
   control: Control<CreateFundFormData>;
@@ -226,128 +380,42 @@ const FundFormSection: React.FC<FundFormSectionProps> = ({
       <Controller
         name="commitment_amount"
         control={control}
-        render={({ field, fieldState }) => {
-          const numberInput = useNumberInput(
-            field.value?.toString() || '',
-            { allowDecimals: true, allowNegative: false }
-          );
-
-          return (
-            <Box>
-              <TextField
-                fullWidth
-                label="Commitment Amount"
-                type="text"
-                value={numberInput.value}
-                onChange={(e) => {
-                  numberInput.onChange(e.target.value);
-                  const numValue = numberInput.numericValue;
-                  field.onChange(numValue > 0 ? numValue : undefined);
-                }}
-                onBlur={() => {
-                  numberInput.onBlur();
-                  const numValue = numberInput.numericValue;
-                  field.onChange(numValue > 0 ? numValue : undefined);
-                }}
-                onFocus={numberInput.onFocus}
-                error={!!fieldState.error && fieldState.isTouched}
-                helperText={
-                  fieldState.error && fieldState.isTouched
-                    ? fieldState.error.message
-                    : 'Total commitment amount (optional)'
-                }
-                inputProps={{
-                  style: { textAlign: 'left' }
-                }}
-              />
-            </Box>
-          );
-        }}
+        render={({ field, fieldState }) => (
+          <CommitmentAmountField
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            fieldState={fieldState}
+          />
+        )}
       />
 
       {/* Expected IRR */}
       <Controller
         name="expected_irr"
         control={control}
-        render={({ field, fieldState }) => {
-          const numberInput = useNumberInput(
-            field.value?.toString() || '',
-            { allowDecimals: true, allowNegative: false }
-          );
-
-          return (
-            <TextField
-              fullWidth
-              label="Expected IRR (%)"
-              type="text"
-              value={numberInput.value}
-              onChange={(e) => {
-                numberInput.onChange(e.target.value);
-                const numValue = numberInput.numericValue;
-                field.onChange(numValue >= 0 ? numValue : undefined);
-              }}
-              onBlur={() => {
-                numberInput.onBlur();
-                const numValue = numberInput.numericValue;
-                field.onChange(numValue >= 0 ? numValue : undefined);
-              }}
-              onFocus={numberInput.onFocus}
-              error={!!fieldState.error && fieldState.isTouched}
-              helperText={
-                fieldState.error && fieldState.isTouched
-                  ? fieldState.error.message
-                  : 'Expected annual return 0-100% (optional)'
-              }
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Typography variant="body2" color="text.secondary">
-                      %
-                    </Typography>
-                  </InputAdornment>
-                )
-              }}
-            />
-          );
-        }}
+        render={({ field, fieldState }) => (
+          <ExpectedIRRField
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            fieldState={fieldState}
+          />
+        )}
       />
 
       {/* Expected Duration */}
       <Controller
         name="expected_duration_months"
         control={control}
-        render={({ field, fieldState }) => {
-          const numberInput = useNumberInput(
-            field.value?.toString() || '',
-            { allowDecimals: false, allowNegative: false }
-          );
-
-          return (
-            <TextField
-              fullWidth
-              label="Expected Duration (months)"
-              type="text"
-              value={numberInput.value}
-              onChange={(e) => {
-                numberInput.onChange(e.target.value);
-                const numValue = Math.floor(numberInput.numericValue);
-                field.onChange(numValue >= 0 ? numValue : undefined);
-              }}
-              onBlur={() => {
-                numberInput.onBlur();
-                const numValue = Math.floor(numberInput.numericValue);
-                field.onChange(numValue >= 0 ? numValue : undefined);
-              }}
-              onFocus={numberInput.onFocus}
-              error={!!fieldState.error && fieldState.isTouched}
-              helperText={
-                fieldState.error && fieldState.isTouched
-                  ? fieldState.error.message
-                  : 'Expected fund duration 1-1200 months (optional)'
-              }
-            />
-          );
-        }}
+        render={({ field, fieldState }) => (
+          <ExpectedDurationField
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            fieldState={fieldState}
+          />
+        )}
       />
 
       {/* Description */}

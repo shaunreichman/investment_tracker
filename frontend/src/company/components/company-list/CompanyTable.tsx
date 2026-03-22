@@ -14,15 +14,16 @@ import {
   TableRow,
   Paper,
   Chip,
-  Link,
   Typography,
   Box,
   useTheme,
-  IconButton
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   ArrowUpward as ArrowUpwardIcon,
-  ArrowDownward as ArrowDownwardIcon
+  ArrowDownward as ArrowDownwardIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { Company } from '@/company/types';
@@ -33,13 +34,17 @@ interface CompanyTableProps {
   sortBy: 'name' | 'fund_count' | 'total_equity_balance' | 'active_funds';
   sortOrder: 'asc' | 'desc';
   onSort: (field: 'name' | 'fund_count' | 'total_equity_balance' | 'active_funds') => void;
+  onDeleteClick?: (company: Company) => void;
+  isDeleting?: boolean;
 }
 
 export const CompanyTable: React.FC<CompanyTableProps> = ({
   companies,
   sortBy,
   sortOrder,
-  onSort
+  onSort,
+  onDeleteClick,
+  isDeleting = false,
 }) => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -166,6 +171,17 @@ export const CompanyTable: React.FC<CompanyTableProps> = ({
               }}
             >
               Contact
+            </TableCell>
+            <TableCell 
+              align="right"
+              sx={{ 
+                color: theme.palette.text.primary,
+                fontWeight: 600,
+                fontSize: '14px',
+                borderBottom: `1px solid ${theme.palette.divider}`
+              }}
+            >
+              Actions
             </TableCell>
           </TableRow>
         </TableHead>
@@ -297,6 +313,24 @@ export const CompanyTable: React.FC<CompanyTableProps> = ({
                   >
                     {company.contacts[0].direct_email}
                   </Typography>
+                )}
+              </TableCell>
+              <TableCell align="right" sx={{ 
+                borderBottom: `1px solid ${theme.palette.divider}`,
+                padding: '16px'
+              }} onClick={(e) => e.stopPropagation()}>
+                {onDeleteClick && (
+                  <Tooltip title="Delete company">
+                    <IconButton
+                      size="small"
+                      onClick={() => onDeleteClick(company)}
+                      disabled={isDeleting}
+                      color="error"
+                      aria-label={`Delete ${company.name}`}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 )}
               </TableCell>
             </TableRow>
