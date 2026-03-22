@@ -1,480 +1,171 @@
 """
 Bank Account Service.
-
-This service extracts bank account operations and business logic from the BankAccount model
-to provide clean separation of concerns and improved testability.
-
-Extracted functionality:
-- Bank account creation with validation
-- Bank account updates with validation
-- Bank account deletion with validation
-- Bank account business rule enforcement
 """
 
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 
 from src.banking.models import BankAccount
 from src.banking.services.banking_validation_service import BankingValidationService
 from src.banking.repositories.bank_account_repository import BankAccountRepository
-from src.banking.enums import Currency, AccountStatus
+from src.banking.enums.bank_account_enums import BankAccountType, BankAccountStatus, SortFieldBankAccount
+from src.shared.enums.shared_enums import SortOrder, Currency
 
 
 class BankAccountService:
     """
     Service for handling bank account operations and business logic.
-    
-    This service provides clean separation of concerns for:
-    - Bank account creation with comprehensive validation
-    - Bank account updates with validation and business rules
+    This module provides the BankAccountService class, which handles bank account operations and business logic.
+    The service provides clean separation of concerns for:
+    - Bank account retrieval
+    - Bank account creation
     - Bank account deletion with dependency checking
-    - Bank account business rule enforcement
+
+    The service uses the BankingValidationService to validate bank accounts and the BankAccountRepository to perform CRUD operations.
+    The service also uses the BankAccountBalanceService to update the balance of a bank account.
+
+    The service is used by the BankingController to handle bank account operations.
     """
     
-    def __init__(self, validation_service: Optional[BankingValidationService] = None, bank_account_repository: Optional[BankAccountRepository] = None):
+    def __init__(self):
         """
         Initialize the BankAccountService.
         
         Args:
-            validation_service: Validation service to use. If None, creates a new one.
+            banking_validation_service: Banking validation service to use. If None, creates a new one.
             bank_account_repository: Bank account repository to use. If None, creates a new one.
         """
-        self.validation_service = validation_service or BankingValidationService()
-        self.bank_account_repository = bank_account_repository or BankAccountRepository()
-    
-    # ============================================================================
-    # BANK ACCOUNT CREATION
-    # ============================================================================
-    
-    def create_bank_account(
-        self,
-        *,
-        entity_id: int,
-        bank_id: int,
-        account_name: str,
-        account_number: str,
-        currency: Union[str, Currency],
-        status: AccountStatus = AccountStatus.ACTIVE,
-        session: Optional[Session] = None
-    ) -> BankAccount:
+        self.banking_validation_service = BankingValidationService()
+        self.bank_account_repository = BankAccountRepository()
+
+
+    ################################################################################
+    # Get Bank Account
+    ################################################################################
+
+    def get_bank_accounts(self, session: Session,
+            bank_ids: Optional[List[int]] = None,
+            entity_ids: Optional[List[int]] = None,
+            account_names: Optional[List[str]] = None,
+            currencies: Optional[List[Currency]] = None,
+            statuses: Optional[List[BankAccountStatus]] = None,
+            account_types: Optional[List[BankAccountType]] = None,
+            sort_by: Optional[SortFieldBankAccount] = SortFieldBankAccount.CREATED_AT,
+            sort_order: Optional[SortOrder] = SortOrder.ASC,
+            include_bank_account_balances: Optional[bool] = False
+    ) -> List[BankAccount]:
         """
-        Create a new bank account with comprehensive validation.
-        
-        This method extracts the business logic from BankAccount.create() to provide
-        clean separation of concerns and improved testability.
+        Get all bank accounts.
         
         Args:
-            entity_id: Owner entity ID
-            bank_id: Linked bank ID
-            account_name: Human-readable account name/label
-            account_number: Account number stored as provided
-            currency: ISO-4217 currency code (string or Currency enum)
-            status: Account status (AccountStatus enum)
             session: Database session
-            
+            bank_ids: List of IDs of the bank to retrieve
+            entity_ids: List of IDs of the entity to retrieve
+            account_names: Names of the bank accounts to retrieve
+            currencies: Currencies of the bank accounts to retrieve
+            statuses: Statuses of the bank accounts to retrieve
+            account_types: Types of the bank accounts to retrieve
+            sort_by: Sort field
+            sort_order: Sort order
+            include_bank_account_balances: Whether to include bank account balances
+
         Returns:
-            BankAccount: The created bank account instance
-            
-        Raises:
-            ValueError: If validation fails
+            List of bank accounts
         """
-        # Validate all input data
-        self.validation_service.validate_entity_exists_or_raise(entity_id, session)
-        self.validation_service.validate_bank_exists_or_raise(bank_id, session)
-        self.validation_service.validate_account_name_or_raise(account_name)
-        self.validation_service.validate_account_number_or_raise(account_number)
-        self.validation_service.validate_currency_code_or_raise(currency)
-        self.validation_service.validate_account_status_or_raise(status)
-        
-        # Normalize inputs to enums
-        normalized_currency = self.validation_service.normalize_currency(currency)
-        normalized_status = self.validation_service.normalize_account_status(status)
-        
-        # Validate uniqueness
-        self.validation_service.validate_bank_account_uniqueness_or_raise(
-            entity_id, bank_id, account_number, session
-        )
-        
-        # Create bank account instance
-        account = BankAccount(
-            entity_id=entity_id,
-            bank_id=bank_id,
-            account_name=account_name.strip(),
-            account_number=account_number.strip(),
-            currency=normalized_currency,
-            status=normalized_status
-        )
-        
-        # Use repository to create account
-        return self.bank_account_repository.create(account, session)
-    
-    # ============================================================================
-    # BANK ACCOUNT UPDATES
-    # ============================================================================
-    
-    def update_bank_account(
-        self,
-        account_id: int,
-        data: Dict[str, Any],
-        session: Session
-    ) -> BankAccount:
-        """
-        Update a bank account with comprehensive validation.
-        
-        This method extracts the business logic from the controller to provide
-        clean separation of concerns and improved testability.
-        
-        Args:
-            account_id: ID of the account to update
-            data: Update data dictionary
-            session: Database session
-            
-        Returns:
-            BankAccount: The updated bank account instance
-            
-        Raises:
-            ValueError: If validation fails
-            RuntimeError: If account not found
-        """
-        # Get existing account
-        account = self.get_bank_account_by_id(account_id, session)
-        if not account:
-            raise RuntimeError("Bank account not found")
-        
-        # Validate all update data
-        self.validation_service.validate_bank_account_data(data, session, exclude_id=account_id)
-        
-        # Update fields
-        if 'account_name' in data:
-            account.account_name = data['account_name'].strip()
-        
-        if 'account_number' in data:
-            account.account_number = data['account_number'].strip()
-        
-        if 'currency' in data:
-            # Validate and normalize currency
-            self.validation_service.validate_currency_code_or_raise(data['currency'])
-            normalized_currency = self.validation_service.normalize_currency(data['currency'])
-            account.currency = normalized_currency
-        
-        if 'status' in data:
-            # Validate and normalize account status
-            self.validation_service.validate_account_status_or_raise(data['status'])
-            normalized_status = self.validation_service.normalize_account_status(data['status'])
-            account.status = normalized_status
-        
-        # Commit changes
-        session.commit()
-        
-        return account
-    
-    # ============================================================================
-    # BANK ACCOUNT DELETION
-    # ============================================================================
-    
-    def delete_bank_account(
-        self,
-        account_id: int,
-        session: Session
-    ) -> bool:
-        """
-        Delete a bank account with dependency checking.
-        
-        This method extracts the business logic from the controller to provide
-        clean separation of concerns and improved testability.
-        
-        Args:
-            account_id: ID of the account to delete
-            session: Database session
-            
-        Returns:
-            bool: True if deleted successfully
-            
-        Raises:
-            RuntimeError: If account not found or has dependencies
-        """
-        # Get existing account
-        account = self.get_bank_account_by_id(account_id, session)
-        if not account:
-            raise RuntimeError("Bank account not found")
-        
-        # Check for dependent fund events (future enhancement)
-        if self._has_dependent_fund_events(account_id, session):
-            raise RuntimeError("Cannot delete bank account with dependent fund events")
-        
-        # Delete account
-        session.delete(account)
-        session.commit()
-        
-        return True
-    
-    # ============================================================================
-    # BANK ACCOUNT QUERIES
-    # ============================================================================
-    
-    def get_bank_account_by_id(self, account_id: int, session: Session) -> Optional[BankAccount]:
+        return self.bank_account_repository.get_bank_accounts(session, bank_ids, entity_ids, account_names, currencies, statuses, account_types, sort_by, sort_order, include_bank_account_balances)
+
+    def get_bank_account_by_id(self, account_id: int, session: Session, include_bank_account_balances: Optional[bool] = False) -> Optional[BankAccount]:
         """
         Get a bank account by its ID.
         
         Args:
             account_id: ID of the account to retrieve
             session: Database session
-            
+            include_bank_account_balances: Whether to include bank account balances
+
         Returns:
-            BankAccount: Account instance if found, None otherwise
+            BankAccount: Bank account instance if found, None otherwise
         """
-        return session.query(BankAccount).filter(BankAccount.id == account_id).first()
-    
-    def get_bank_account_by_unique(
-        self,
-        *,
-        entity_id: int,
-        bank_id: int,
-        account_number: str,
-        session: Session
-    ) -> Optional[BankAccount]:
+        return self.bank_account_repository.get_bank_account_by_id(account_id, session, include_bank_account_balances)
+
+
+    ################################################################################
+    # Create Bank Account
+    ################################################################################
+
+    def create_bank_account(self, bank_id: int, bank_account_data: Dict[str, Any], session: Session) -> BankAccount:
         """
-        Get a bank account by unique combination of entity, bank, and account number.
+        Create a new bank account.
         
         Args:
-            entity_id: Owner entity ID
-            bank_id: Linked bank ID
-            account_number: Account number
+            bank_id: ID of the bank to add bank account to
+            bank_account_data: Dictionary containing bank account data
             session: Database session
-            
+
         Returns:
-            BankAccount: Account instance if found, None otherwise
-        """
-        return self.bank_account_repository.get_by_unique(entity_id, bank_id, account_number, session)
-    
-    def get_all_bank_accounts(self, session: Session) -> List[BankAccount]:
-        """
-        Get all bank accounts.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List[BankAccount]: List of all bank accounts
-        """
-        return self.bank_account_repository.get_all(session)
-    
-    def get_bank_accounts_by_entity(self, entity_id: int, session: Session) -> List[BankAccount]:
-        """
-        Get all bank accounts for a specific entity.
-        
-        Args:
-            entity_id: Entity ID to filter by
-            session: Database session
-            
-        Returns:
-            List[BankAccount]: List of bank accounts for the entity
-        """
-        return self.bank_account_repository.get_by_entity(entity_id, session)
-    
-    def get_bank_accounts_by_bank(self, bank_id: int, session: Session) -> List[BankAccount]:
-        """
-        Get all bank accounts for a specific bank.
-        
-        Args:
-            bank_id: Bank ID to filter by
-            session: Database session
-            
-        Returns:
-            List[BankAccount]: List of bank accounts for the bank
-        """
-        return self.bank_account_repository.get_by_bank(bank_id, session)
-    
-    def get_bank_accounts_by_currency(self, currency: str, session: Session) -> List[BankAccount]:
-        """
-        Get all bank accounts with a specific currency.
-        
-        Args:
-            currency: Currency code to filter by
-            session: Database session
-            
-        Returns:
-            List[BankAccount]: List of bank accounts with the currency
-        """
-        return self.bank_account_repository.get_by_currency(currency, session)
-    
-    def get_active_bank_accounts(self, session: Session) -> List[BankAccount]:
-        """
-        Get all active bank accounts.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List[BankAccount]: List of active bank accounts
-        """
-        return self.bank_account_repository.get_active_accounts(session)
-    
-    # ============================================================================
-    # DEPENDENCY CHECKING
-    # ============================================================================
-    
-    def _has_dependent_fund_events(self, account_id: int, session: Session) -> bool:
-        """
-        Check if a bank account has dependent fund events.
-        
-        Args:
-            account_id: Account ID to check
-            session: Database session
-            
-        Returns:
-            bool: True if account has dependent fund events
-        """
-        # Import here to avoid circular imports
-        from src.fund.models import FundEventCashFlow
-        
-        count = session.query(FundEventCashFlow).filter(
-            FundEventCashFlow.bank_account_id == account_id
-        ).count()
-        return count > 0
-    
-    def get_dependent_fund_events_count(self, account_id: int, session: Session) -> int:
-        """
-        Get the count of dependent fund events for a bank account.
-        
-        Args:
-            account_id: Account ID to check
-            session: Database session
-            
-        Returns:
-            int: Number of dependent fund events
-        """
-        # Import here to avoid circular imports
-        from src.fund.models import FundEventCashFlow
-        
-        return session.query(FundEventCashFlow).filter(
-            FundEventCashFlow.bank_account_id == account_id
-        ).count()
-    
-    # ============================================================================
-    # BUSINESS RULE ENFORCEMENT
-    # ============================================================================
-    
-    def can_delete_bank_account(self, account_id: int, session: Session) -> tuple[bool, str]:
-        """
-        Check if a bank account can be deleted based on business rules.
-        
-        Args:
-            account_id: Account ID to check
-            session: Database session
-            
-        Returns:
-            tuple[bool, str]: (can_delete, reason_if_not)
-        """
-        # Check if account exists
-        account = self.get_bank_account_by_id(account_id, session)
-        if not account:
-            return False, "Bank account not found"
-        
-        # Check for dependent fund events
-        event_count = self.get_dependent_fund_events_count(account_id, session)
-        if event_count > 0:
-            return False, f"Bank account has {event_count} dependent fund events"
-        
-        return True, "Bank account can be deleted"
-    
-    def validate_bank_account_for_update(self, account_id: int, data: Dict[str, Any], session: Session) -> tuple[bool, str]:
-        """
-        Validate if a bank account can be updated with the given data.
-        
-        Args:
-            account_id: Account ID to validate
-            data: Update data to validate
-            session: Database session
-            
-        Returns:
-            tuple[bool, str]: (can_update, reason_if_not)
-        """
-        try:
-            # Check if account exists
-            account = self.get_bank_account_by_id(account_id, session)
-            if not account:
-                return False, "Bank account not found"
-            
-            # Validate update data
-            self.validation_service.validate_bank_account_data(data, session, exclude_id=account_id)
-            
-            return True, "Bank account can be updated"
-            
-        except ValueError as e:
-            return False, str(e)
-        except Exception as e:
-            return False, f"Validation error: {str(e)}"
-    
-    # ============================================================================
-    # ACCOUNT STATUS MANAGEMENT
-    # ============================================================================
-    
-    def activate_account(self, account_id: int, session: Session) -> BankAccount:
-        """
-        Activate a bank account.
-        
-        Args:
-            account_id: ID of the account to activate
-            session: Database session
-            
-        Returns:
-            BankAccount: The updated account instance
-            
+            BankAccount: The created bank account instance
+
         Raises:
-            RuntimeError: If account not found
+            ValueError: If validation fails
         """
-        account = self.get_bank_account_by_id(account_id, session)
-        if not account:
-            raise RuntimeError("Bank account not found")
-        
-        account.status = AccountStatus.ACTIVE
-        session.commit()
-        
-        return account
-    
-    def suspend_account(self, account_id: int, session: Session) -> BankAccount:
+        # Validate Bank exists
+        from src.banking.repositories.bank_repository import BankRepository
+        bank_repository = BankRepository()
+        bank = bank_repository.get_bank_by_id(bank_id, session)
+        if not bank:
+            raise ValueError(f"Bank with ID {bank_id} not found")
+
+        # Validate Entity exists
+        from src.entity.repositories.entity_repository import EntityRepository
+        entity_repository = EntityRepository()
+        entity = entity_repository.get_entity_by_id(bank_account_data['entity_id'], session)
+        if not entity:
+            raise ValueError(f"Entity with ID {bank_account_data['entity_id']} not found")
+
+        processed_data = {
+            **bank_account_data,
+            'bank_id': bank_id,
+            'status': BankAccountStatus.INACTIVE # Set the bank account status to INACTIVE on creation
+        }
+
+        bank_account = self.bank_account_repository.create_bank_account(processed_data, session)
+        if not bank_account:
+            raise ValueError(f"Failed to create bank account with name '{processed_data.get('account_name', 'unknown')}' for bank ID {bank_id}")
+
+        # Update bank current count
+
+        return bank_account
+
+
+    ################################################################################
+    # Delete Bank Account
+    ################################################################################
+
+    def delete_bank_account(self, bank_account_id: int, session: Session) -> bool:
         """
-        Suspend a bank account.
+        Delete a bank account.
         
         Args:
-            account_id: ID of the account to suspend
+            bank_account_id: ID of the bank account to delete
             session: Database session
-            
+
         Returns:
-            BankAccount: The updated account instance
-            
-        Raises:
-            RuntimeError: If account not found
+            bool: True if bank account was deleted, False otherwise
         """
-        account = self.get_bank_account_by_id(account_id, session)
-        if not account:
-            raise RuntimeError("Bank account not found")
+        bank_account = self.bank_account_repository.get_bank_account_by_id(bank_account_id, session)
+        if not bank_account:
+            raise ValueError(f"Bank account with ID {bank_account_id} not found")
+
+        # Check for dependent fund event cash flows
+        validation_errors = self.banking_validation_service.validate_bank_account_deletion(bank_account_id, session)
+        if validation_errors:
+            raise ValueError(f"Deletion validation failed for bank account with ID {bank_account_id}: {validation_errors}")
+
+        # Delete bank account through repository
+        success = self.bank_account_repository.delete_bank_account(bank_account_id, session)
+        if not success:
+            raise ValueError(f"Failed to delete bank account with ID {bank_account_id}")
         
-        account.status = AccountStatus.SUSPENDED
-        session.commit()
-        
-        return account
-    
-    def toggle_account_status(self, account_id: int, session: Session) -> BankAccount:
-        """
-        Toggle the account status between ACTIVE and SUSPENDED.
-        
-        Args:
-            account_id: ID of the account to toggle
-            session: Database session
-            
-        Returns:
-            BankAccount: The updated account instance
-            
-        Raises:
-            RuntimeError: If account not found
-        """
-        account = self.get_bank_account_by_id(account_id, session)
-        if not account:
-            raise RuntimeError("Bank account not found")
-        
-        account.status = AccountStatus.SUSPENDED if account.status == AccountStatus.ACTIVE else AccountStatus.ACTIVE
-        session.commit()
-        
-        return account
+        # Update bank current count
+
+        return success

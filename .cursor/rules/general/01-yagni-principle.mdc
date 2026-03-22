@@ -1,0 +1,68 @@
+---
+description: YAGNI Pricnciple: Do not create code until you have a concrete, immediate use case.
+globs:
+alwaysApply: true
+---
+
+## Guidelines
+
+### ❌ Avoid Creating
+- "Convenience" wrapper functions around simple operations
+- Helper functions "just in case" someone needs them
+- Utility hooks that save one line of code
+- Abstraction layers with only one consumer
+- Generic solutions for specific problems
+
+### ✅ Only Create When
+- **Rule of Three**: Used in 3+ places (not 1 or 2)
+- **Complexity Reduction**: Genuinely simplifies complex logic
+- **Consistency**: Enforces a critical pattern across the codebase
+- **Domain Logic**: Encapsulates actual business rules
+
+## Examples
+
+### ❌ BAD - Unnecessary Wrapper
+```typescript
+// Don't create this:
+function useConditionalQuery(queryFn, condition) {
+  return useQuery(queryFn, { enabled: condition });
+}
+
+// Users can just write:
+useQuery(queryFn, { enabled: condition });
+```
+
+### ✅ GOOD - Actual Need
+```typescript
+// Only if this pattern appears 3+ times with complex logic:
+function useAuthenticatedQuery(queryFn) {
+  const { isAuthenticated, token } = useAuth();
+  return useQuery(
+    queryFn, 
+    { 
+      enabled: isAuthenticated,
+      headers: { Authorization: `Bearer ${token}` },
+      onError: handleAuthError 
+    }
+  );
+}
+```
+
+## Decision Framework
+
+Before creating any helper/wrapper/utility:
+
+1. **Can users solve this with existing primitives?** → Don't create
+2. **Is it used in less than 3 places?** → Don't create  
+3. **Does it save less than 5 lines of code?** → Don't create
+4. **Is the abstraction leaky or confusing?** → Don't create
+5. **Does it enforce critical business logic?** → Maybe create
+
+## Remember
+**Every line of code is a liability.**
+- More code = more to maintain
+- More code = more to understand
+- More code = more bugs
+
+**Start simple. Add complexity only when pain is real.**
+

@@ -1,406 +1,186 @@
 """
 Bank Repository.
-
-This repository provides data access operations for Bank entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- Bank CRUD operations
-- Bank querying and filtering
-- Bank relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy.orm import Session, selectinload
 
-from src.banking.models import Bank
+from src.banking.enums.bank_enums import BankType, SortFieldBank
+from src.shared.enums.shared_enums import SortOrder
+from src.banking.models import Bank, BankAccount
+from src.shared.enums.shared_enums import Country
 
 
 class BankRepository:
     """
-    Repository for bank data access operations.
+    Bank Repository.
     
     This repository handles all database operations for banks including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     bank data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the bank repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
+
+    ################################################################################
+    # Get Banks
+    ################################################################################
+
+    def get_banks(self, session: Session,
+                    names: Optional[List[str]] = None,
+                    countries: Optional[List[Country]] = None,
+                    bank_types: Optional[List[BankType]] = None,
+                    sort_by: Optional[SortFieldBank] = SortFieldBank.NAME,
+                    sort_order: Optional[SortOrder] = SortOrder.ASC,
+                    include_bank_accounts: Optional[bool] = False,
+                    include_bank_account_balances: Optional[bool] = False
+    ) -> List[Bank]:
+        """
+        Get all banks.
+
+        Args:
+            session: Database session
+            names: Bank names (optional)
+            countries: Country codes (optional)
+            bank_types: Bank types (optional)
+            sort_by: Sort field (optional)
+            sort_order: Sort order (optional)
+            include_bank_accounts: Whether to include bank accounts (optional)
+            include_bank_account_balances: Whether to include bank account balances (optional, requires include_bank_accounts=True)
+
+        Returns:
+            List of banks
+            
+        Raises:
+            ValueError: If sort field is invalid
+        """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldBank.NAME
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
+        # Validate sort field
+        if sort_by not in SortFieldBank:
+            raise ValueError(f"Invalid sort field: {sort_by}")
+
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}")
+
+        # Validate parameter dependencies
+        if include_bank_account_balances and not include_bank_accounts:
+            raise ValueError("include_bank_account_balances requires include_bank_accounts to be True")
+
+        # Get all banks
+        query = session.query(Bank)
+        
+        # Add eager loading for relationships if requested
+        if include_bank_accounts:
+            query = query.options(selectinload(Bank.bank_accounts))
+        if include_bank_account_balances:
+            query = query.options(selectinload(Bank.bank_accounts).selectinload(BankAccount.bank_account_balances))
+
+        if names:
+            query = query.filter(Bank.name.in_(names))
+        if countries:
+            query = query.filter(Bank.country.in_([c.value for c in countries]))
+        if bank_types:
+            query = query.filter(Bank.bank_type.in_([bt.value for bt in bank_types]))
+
+        # Apply sorting
+        if sort_by == SortFieldBank.NAME:
+            query = query.order_by(Bank.name.asc() if sort_order == SortOrder.ASC else Bank.name.desc())
+        elif sort_by == SortFieldBank.COUNTRY:
+            query = query.order_by(Bank.country.asc() if sort_order == SortOrder.ASC else Bank.country.desc())
+        elif sort_by == SortFieldBank.TYPE:
+            query = query.order_by(Bank.bank_type.asc() if sort_order == SortOrder.ASC else Bank.bank_type.desc())
+        elif sort_by == SortFieldBank.CREATED_AT:
+            query = query.order_by(Bank.created_at.asc() if sort_order == SortOrder.ASC else Bank.created_at.desc())
+
+        banks = query.all()
+
+        return banks
     
-    def get_by_id(self, bank_id: int, session: Session) -> Optional[Bank]:
+    def get_bank_by_id(self, bank_id: int, session: Session, include_bank_accounts: Optional[bool] = False, include_bank_account_balances: Optional[bool] = False) -> Optional[Bank]:
         """
         Get a bank by its ID.
         
         Args:
             bank_id: ID of the bank to retrieve
             session: Database session
-            
+            include_bank_accounts: Whether to include bank accounts (optional)
+            include_bank_account_balances: Whether to include bank account balances (optional, requires include_bank_accounts=True)
+
         Returns:
             Bank object if found, None otherwise
         """
-        cache_key = f"bank:{bank_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
+        # Validate parameter dependencies
+        if include_bank_account_balances and not include_bank_accounts:
+            raise ValueError("include_bank_account_balances requires include_bank_accounts to be True")
+
         # Query database
-        bank = session.query(Bank).filter(Bank.id == bank_id).first()
+        query = session.query(Bank).filter(Bank.id == bank_id)
         
-        # Cache the result
-        if bank:
-            self._cache[cache_key] = bank
-        
+        # Add eager loading for relationships if requested
+        if include_bank_accounts:
+            query = query.options(selectinload(Bank.bank_accounts))
+        if include_bank_account_balances:
+            query = query.options(selectinload(Bank.bank_accounts).selectinload(BankAccount.bank_account_balances))
+
+        bank = query.first()
+
         return bank
+
+
+    ################################################################################
+    # Create Bank
+    ################################################################################
     
-    def get_by_name_and_country(self, name: str, country: str, session: Session) -> Optional[Bank]:
-        """
-        Get a bank by name and country combination.
-        
-        Args:
-            name: Bank name
-            country: Country code
-            session: Database session
-            
-        Returns:
-            Bank object if found, None otherwise
-        """
-        cache_key = f"bank:name_country:{name}:{country}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        bank = session.query(Bank).filter(
-            and_(
-                Bank.name == name,
-                Bank.country == country
-            )
-        ).first()
-        
-        # Cache the result
-        if bank:
-            self._cache[cache_key] = bank
-        
-        return bank
-    
-    def get_by_swift_bic(self, swift_bic: str, session: Session) -> Optional[Bank]:
-        """
-        Get a bank by SWIFT/BIC code.
-        
-        Args:
-            swift_bic: SWIFT/BIC identifier
-            session: Database session
-            
-        Returns:
-            Bank object if found, None otherwise
-        """
-        cache_key = f"bank:swift_bic:{swift_bic}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        bank = session.query(Bank).filter(Bank.swift_bic == swift_bic).first()
-        
-        # Cache the result
-        if bank:
-            self._cache[cache_key] = bank
-        
-        return bank
-    
-    def get_banks_paginated(self, session: Session, page: int = 1, page_size: int = 50) -> tuple[List[Bank], int]:
-        """
-        Get banks with pagination support.
-        
-        Args:
-            session: Database session
-            page: Page number (1-based)
-            page_size: Number of items per page
-            
-        Returns:
-            Tuple of (banks_list, total_count)
-        """
-        # Calculate offset
-        offset = (page - 1) * page_size
-        
-        # Get total count
-        total_count = session.query(func.count(Bank.id)).scalar()
-        
-        # Get paginated results
-        banks = session.query(Bank).order_by(Bank.name).offset(offset).limit(page_size).all()
-        
-        return banks, total_count
-    
-    def get_by_country(self, country: str, session: Session) -> List[Bank]:
-        """
-        Get all banks for a specific country.
-        
-        Args:
-            country: Country code
-            session: Database session
-            
-        Returns:
-            List of banks in the specified country
-        """
-        cache_key = f"banks:country:{country}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        banks = session.query(Bank).filter(Bank.country == country).all()
-        
-        # Cache the result
-        self._cache[cache_key] = banks
-        
-        return banks
-    
-    def get_all(self, session: Session) -> List[Bank]:
-        """
-        Get all banks.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of all banks
-        """
-        cache_key = "banks:all"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        banks = session.query(Bank).all()
-        
-        # Cache the result
-        self._cache[cache_key] = banks
-        
-        return banks
-    
-    def get_with_accounts_count(self, session: Session) -> List[Dict[str, Any]]:
-        """
-        Get all banks with their account counts.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            List of banks with account count information
-        """
-        cache_key = "banks:with_accounts_count"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with join and aggregation
-        result = session.query(
-            Bank,
-            func.count(Bank.accounts).label('accounts_count')
-        ).outerjoin(Bank.accounts).group_by(Bank.id).all()
-        
-        # Format result
-        banks_data = []
-        for bank, accounts_count in result:
-            bank_data = {
-                'id': bank.id,
-                'name': bank.name,
-                'country': bank.country,
-                'swift_bic': bank.swift_bic,
-                'accounts_count': accounts_count
-            }
-            banks_data.append(bank_data)
-        
-        # Cache the result
-        self._cache[cache_key] = banks_data
-        
-        return banks_data
-    
-    def create(self, bank: Bank, session: Session) -> Bank:
+    def create_bank(self, bank_data: Dict[str, Any], session: Session) -> Bank:
         """
         Create a new bank.
         
         Args:
-            bank: Bank instance to create
+            bank_data: Dictionary containing bank data
             session: Database session
             
         Returns:
             Created bank instance
         """
+        # Create bank object
+        bank = Bank(**bank_data)
         session.add(bank)
-        session.flush()
-        
-        # Clear relevant caches
-        self._clear_bank_caches()
+        session.flush()  # Get the ID without committing
         
         return bank
+
+
+    ################################################################################
+    # Delete Bank
+    ################################################################################
     
-    def update(self, bank: Bank, session: Session) -> Bank:
-        """
-        Update an existing bank.
-        
-        Args:
-            bank: Bank instance to update
-            session: Database session
-            
-        Returns:
-            Updated bank instance
-        """
-        session.flush()
-        
-        # Clear relevant caches
-        self._clear_bank_caches()
-        
-        return bank
-    
-    def delete(self, bank: Bank, session: Session) -> None:
+    def delete_bank(self, bank_id: int, session: Session) -> bool:
         """
         Delete a bank.
         
         Args:
-            bank: Bank instance to delete
+            bank_id: ID of the bank to delete
             session: Database session
         """
+        bank = self.get_bank_by_id(bank_id, session)
+        if not bank:
+            return False
+        
         session.delete(bank)
         session.flush()
         
-        # Clear relevant caches
-        self._clear_bank_caches()
-    
-    def exists(self, bank_id: int, session: Session) -> bool:
-        """
-        Check if a bank exists.
-        
-        Args:
-            bank_id: ID of the bank to check
-            session: Database session
-            
-        Returns:
-            True if bank exists, False otherwise
-        """
-        cache_key = f"bank:exists:{bank_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        exists = session.query(Bank).filter(Bank.id == bank_id).first() is not None
-        
-        # Cache the result
-        self._cache[cache_key] = exists
-        
-        return exists
-    
-    def count_by_country(self, country: str, session: Session) -> int:
-        """
-        Count banks in a specific country.
-        
-        Args:
-            country: Country code
-            session: Database session
-            
-        Returns:
-            Number of banks in the country
-        """
-        cache_key = f"banks:count:country:{country}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(Bank).filter(Bank.country == country).count()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def get_total_count(self, session: Session) -> int:
-        """
-        Get total count of all banks.
-        
-        Args:
-            session: Database session
-            
-        Returns:
-            Total number of banks
-        """
-        cache_key = "banks:total_count"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(Bank).count()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def search(self, search_term: str, session: Session) -> List[Bank]:
-        """
-        Search banks by name or SWIFT/BIC.
-        
-        Args:
-            search_term: Search term
-            session: Database session
-            
-        Returns:
-            List of matching banks
-        """
-        if not search_term:
-            return []
-        
-        cache_key = f"banks:search:{search_term}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database with search
-        banks = session.query(Bank).filter(
-            or_(
-                Bank.name.ilike(f"%{search_term}%"),
-                Bank.swift_bic.ilike(f"%{search_term}%")
-            )
-        ).all()
-        
-        # Cache the result
-        self._cache[cache_key] = banks
-        
-        return banks
-    
-    def _clear_bank_caches(self) -> None:
-        """Clear all bank-related caches."""
-        keys_to_remove = [key for key in self._cache.keys() if key.startswith('bank')]
-        for key in keys_to_remove:
-            del self._cache[key]
-    
-    def clear_cache(self) -> None:
-        """Clear all caches."""
-        self._cache.clear()
+        return True

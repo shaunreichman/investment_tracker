@@ -1,1 +1,0 @@
-# Investment Company Repositories Tests

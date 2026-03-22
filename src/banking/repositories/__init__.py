@@ -1,22 +1,17 @@
 """
 Banking Repositories.
 
-This module provides data access operations for banking entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- Bank data access operations
-- Bank account data access operations
-- Banking summary data and aggregated calculations
-- Caching strategies for performance optimization
+This module provides the data access layer abstraction for the banking system.
+Repositories handle all database operations and provide a clean interface
+for business logic components to interact with data.
 """
 
-from .bank_repository import BankRepository
-from .bank_account_repository import BankAccountRepository
-from .banking_summary_repository import BankingSummaryRepository
+from src.banking.repositories.bank_repository import BankRepository
+from src.banking.repositories.bank_account_repository import BankAccountRepository
+from src.banking.repositories.bank_account_balance_repository import BankAccountBalanceRepository
 
 __all__ = [
     "BankRepository",
     "BankAccountRepository", 
-    "BankingSummaryRepository"
+    "BankAccountBalanceRepository",
 ]

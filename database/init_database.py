@@ -15,11 +15,10 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from sqlalchemy import create_engine
-from src.investment_company.models import InvestmentCompany
+from src.company.models import Company
 from src.rates.models import RiskFreeRate
 from src.entity.models import Entity
-from src.fund.models import Fund, FundEvent, FundType, EventType, DomainEvent
-from src.tax.models import TaxStatement
+from src.fund.models import Fund, FundEvent, FundTrackingType, EventType, DomainEvent
 from src.shared.base import Base
 from src.fund.models import DistributionType
 from datetime import date, timedelta
@@ -38,7 +37,7 @@ def init_database():
     print("Database initialized successfully!")
     print(f"Database URL: {engine.url}")
     print("Created tables:")
-    print("- investment_companies")
+    print("- companies")
     print("- entities") 
     print("- funds")
     print("- fund_events")
@@ -55,7 +54,7 @@ def main():
         init_database()
         
         print("\nDatabase tables created:")
-        print("- investment_companies")
+        print("- companies")
         print("- entities")
         print("- funds")
         print("- fund_events")
@@ -63,7 +62,7 @@ def main():
         print("- tax_statements")
         
         print("\nDatabase is ready to use!")
-        print("You can now start adding investment companies, funds, and fund events.")
+        print("You can now start adding companies, funds, and fund events.")
         
         # Optionally add some sample data
         add_sample_data = input("\nWould you like to add some sample data? (y/n): ").lower().strip()
@@ -94,26 +93,26 @@ def add_sample_data_to_database():
         )
         entity2 = Entity.create(
             name="ShaRei Investments", 
-            description="Family investment company",
+            description="Family company",
             session=session
         )
         
-        # Create sample investment companies using domain methods
-        company1 = InvestmentCompany.create(
+        # Create sample companies using domain methods
+        company1 = Company.create(
             name="Blackstone Group",
             description="Global alternative asset manager",
             website="https://www.blackstone.com",
             contact_email="investor.relations@blackstone.com",
             session=session
         )
-        company2 = InvestmentCompany.create(
+        company2 = Company.create(
             name="KKR & Co.",
             description="Global investment firm",
             website="https://www.kkr.com",
             contact_email="investor.relations@kkr.com",
             session=session
         )
-        company3 = InvestmentCompany.create(
+        company3 = Company.create(
             name="Apollo Global Management",
             description="Alternative investment manager",
             website="https://www.apollo.com",
@@ -126,7 +125,7 @@ def add_sample_data_to_database():
             entity=entity1,
             name="Blackstone Real Estate Partners X",
             fund_type="Real Estate",
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             expected_irr=15.5,
             expected_duration_months=120,
             currency="USD",
@@ -138,7 +137,7 @@ def add_sample_data_to_database():
             entity=entity2,
             name="Blackstone Private Equity Fund VIII",
             fund_type="Private Equity",
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             expected_irr=18.0,
             expected_duration_months=96,
             currency="USD",
@@ -150,7 +149,7 @@ def add_sample_data_to_database():
             entity=entity1,
             name="KKR Americas XII Fund",
             fund_type="Private Equity",
-            tracking_type=FundType.NAV_BASED,
+            tracking_type=FundTrackingType.NAV_BASED,
             expected_irr=16.5,
             expected_duration_months=108,
             currency="USD",
@@ -162,7 +161,7 @@ def add_sample_data_to_database():
             entity=entity2,
             name="Apollo Investment Fund IX",
             fund_type="Private Equity",
-            tracking_type=FundType.COST_BASED,
+            tracking_type=FundTrackingType.COST_BASED,
             expected_irr=17.0,
             expected_duration_months=84,
             currency="USD",
@@ -175,7 +174,7 @@ def add_sample_data_to_database():
         # We'll add some sample events to demonstrate the system
         
         # Add capital call to fund1 (NAV-based)
-        fund1.add_capital_call(
+        fund1.create_capital_call(
             amount=1000000.0,
             date=date(2023, 1, 15),
             description="Initial capital call",
@@ -183,7 +182,7 @@ def add_sample_data_to_database():
         )
         
         # Add NAV update to fund1
-        fund1.add_nav_update(
+        fund1.create_nav_update(
             nav_per_share=0.86,
             date=date(2023, 6, 30),
             description="Q2 NAV update",
@@ -191,7 +190,7 @@ def add_sample_data_to_database():
         )
         
         # Add capital call to fund2 (cost-based)
-        fund2.add_capital_call(
+        fund2.create_capital_call(
             amount=2000000.0,
             date=date(2023, 2, 1),
             description="Initial capital call",
@@ -199,7 +198,7 @@ def add_sample_data_to_database():
         )
         
         # Add distribution to fund2
-        fund2.add_distribution(
+        fund2.create_distribution(
             amount=200000.0,
             event_date=date(2023, 12, 31),
             distribution_type=DistributionType.INTEREST,
@@ -208,7 +207,7 @@ def add_sample_data_to_database():
         )
         
         # Add capital call to fund3 (NAV-based)
-        fund3.add_capital_call(
+        fund3.create_capital_call(
             amount=1500000.0,
             date=date(2023, 3, 1),
             description="Initial capital call",
@@ -216,7 +215,7 @@ def add_sample_data_to_database():
         )
         
         # Add NAV update to fund3
-        fund3.add_nav_update(
+        fund3.create_nav_update(
             nav_per_share=4.32,
             date=date(2023, 9, 30),
             description="Q3 NAV update",
@@ -224,7 +223,7 @@ def add_sample_data_to_database():
         )
         
         # Add capital call to fund4 (cost-based, exited fund)
-        fund4.add_capital_call(
+        fund4.create_capital_call(
             amount=3000000.0,
             date=date(2022, 1, 1),
             description="Initial capital call",
@@ -232,7 +231,7 @@ def add_sample_data_to_database():
         )
         
         # Add return of capital to fund4 (exited)
-        fund4.add_return_of_capital(
+        fund4.create_return_of_capital(
             amount=3000000.0,
             date=date(2023, 12, 31),
             description="Fund exit - return of all capital",

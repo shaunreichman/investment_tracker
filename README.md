@@ -4,7 +4,7 @@ A Python-based system for tracking multiple investments across companies and fun
 
 ## Features
 
-- **Multi-Company Support:** Track investments across different investment companies
+- **Multi-Company Support:** Track investments across different companies
 - **Fund Management:** Support for both NAV-based and cost-based fund tracking
 - **Event Modeling:** Comprehensive event system for capital calls, distributions, NAV updates, and more
 - **IRR Calculations:** Multiple IRR calculation methods including after-tax and real IRR
@@ -17,7 +17,7 @@ A Python-based system for tracking multiple investments across companies and fun
 The system follows a domain-driven design with clear separation of concerns:
 
 - **Entity Domain:** Investment entities (persons/companies)
-- **Investment Company Domain:** Investment companies and fund management
+- **Company Domain:** Companies and fund management
 - **Fund Domain:** Fund tracking, events, and calculations
 - **Tax Domain:** Tax statements and tax payment events
 - **Rates Domain:** Market data and risk-free rates
@@ -36,16 +36,16 @@ The application now uses a **PostgreSQL-based database system** with:
 
 The project uses a domain-driven architecture where:
 
-- **Each domain** (fund, tax, entity, rates, investment company) has its own models, calculations, and creation logic
+- **Each domain** (fund, tax, entity, rates, company) has its own models, calculations, and creation logic
 - **Shared logic** (utilities, base classes, pure calculations) lives in `src/shared/`
 - **All imports** should use the new domain modules:
 
 ```python
-from src.fund.models import Fund, FundEvent, FundType
+from src.fund.models import Fund, FundEvent, FundTrackingType
 from src.tax.models import TaxStatement
 from src.entity.models import Entity
 from src.rates.models import RiskFreeRate
-from src.investment_company.models import InvestmentCompany
+from src.company.models import Company
 from src.shared.utils import with_session
 ```
 
@@ -198,7 +198,7 @@ investment_tracker/
 │   ├── fund/                  # Fund models, calculations, queries
 │   ├── tax/                   # Tax models, events, calculations
 │   ├── entity/                # Entity models, calculations
-│   ├── investment_company/    # Investment company domain
+│   ├── company/               # Company domain
 │   ├── rates/                 # Risk-free rates and related logic
 │   ├── shared/                # Shared utilities and base classes
 │   ├── config.py              # Enhanced configuration management
@@ -276,7 +276,7 @@ try:
     # 1. Create NAV-based fund (minimal manual fields)
     fund = Fund(
         name="ABC Ltd",
-        tracking_type=FundType.NAV_BASED,
+        tracking_type=FundTrackingType.NAV_BASED,
         fund_type="Equity - Consumer Discretionary",
         currency="AUD"
     )
@@ -325,7 +325,7 @@ try:
     # Create cost-based fund
     fund = Fund(
         name="Private Equity Fund",
-        tracking_type=FundType.COST_BASED,
+        tracking_type=FundTrackingType.COST_BASED,
         commitment_amount=1000000.0,
         expected_irr=15.0,
         expected_duration_months=120

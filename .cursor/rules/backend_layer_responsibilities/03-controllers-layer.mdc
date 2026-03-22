@@ -1,0 +1,91 @@
+---
+description: Controller Layer — Orchestration of services and domain logic
+globs: **/api/controllers/*.py
+alwaysApply: false
+---
+
+# Controller Layer Rules
+
+## Role
+Controllers orchestrate service calls, domain objects, and DTOs.  
+They act as the bridge between the **route layer (HTTP)** and the **service layer (business logic)**.
+
+## Should Do
+- **Orchestrate services**: Call one or more services to perform the requested action
+- **Aggregate results**: Combine data from multiple services if needed
+- **Use Formatters**: Use helper methods for generating dicts
+- **Return DTOs**: Return `ControllerResponseDTO` objects with data and response codes
+- **Session management**: Use `_get_session()` to get middleware-provided sessions
+- **Transaction control**: Handle `session.commit()`, `session.rollback()`, and `session.close()`
+- **Access request data**: Use `getattr(request, 'validated_data', {})` for middleware-validated data
+- **Logging**: Use `current_app.logger` for appropriate logging levels
+
+## Shouldn't Do
+- **HTTP response formatting**: No `jsonify`, no direct HTTP status codes in responses
+- **Database operations**: Never directly use repositories; always call services
+- **Manual session creation**: Never create sessions manually; use `_get_session()`
+- **Complex calculations**: Defer to services or calculators
+- **Business logic**: Delegate complex business rules to services
+
+## Examples
+
+```python
+# ✅ Good: Controller orchestrates services with proper session management
+class BankingController:
+    def get_bank_by_id(self, bank_id: int) -> ControllerResponseDTO:
+        try:
+            # Access validated data from middleware
+            include_data = getattr(request, 'validated_data', {})
+            include_bank_accounts = include_data.get('include_bank_accounts', False)
+            
+            # Get session from middleware
+            session = self._get_session()
+            
+            try:
+                # Orchestrate service calls
+                bank = self.bank_service.get_bank_by_id(bank_id, session)
+                if bank is None:
+                    return ControllerResponseDTO(error="Bank not found", response_code=ApiResponseCode.RESOURCE_NOT_FOUND)
+                
+                if include_bank_accounts:
+                    bank.accounts = self.bank_account_service.get_bank_accounts(session, bank_id=bank_id)
+
+                # Format response using formatter
+                formatted_bank = format_bank_comprehensive(bank, include_bank_accounts=include_bank_accounts)
+                return ControllerResponseDTO(data=formatted_bank, response_code=ApiResponseCode.SUCCESS)
+                
+            except ValueError as e:
+                current_app.logger.warning(f"Business logic error: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error=str(e), response_code=ApiResponseCode.BUSINESS_LOGIC_ERROR)
+            except Exception as e:
+                current_app.logger.error(f"Error getting bank: {str(e)}")
+                session.rollback()
+                return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+            finally:
+                session.close()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error getting bank: {str(e)}")
+            return ControllerResponseDTO(error="Internal server error", response_code=ApiResponseCode.INTERNAL_SERVER_ERROR)
+
+    def _get_session(self) -> Session:
+        """Get the current database session from middleware."""
+        from src.api.middleware.database_session import get_current_session
+        return get_current_session()
+
+# ❌ Bad: Controller doing HTTP response formatting
+class BankingController:
+    def get_bank(self, bank_id: int):
+        bank = self.bank_service.get_bank(bank_id)
+        return jsonify({"bank": bank})   # HTTP concern, should be in route
+
+# ❌ Bad: Manual session creation
+class BankingController:
+    def get_bank(self, bank_id: int):
+        session = create_session()  # Manual creation - use _get_session() instead
+        try:
+            bank = self.bank_service.get_bank(bank_id, session)
+            return bank
+        finally:
+            session.close()

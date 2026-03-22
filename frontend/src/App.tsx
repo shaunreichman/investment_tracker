@@ -1,56 +1,48 @@
+/**
+ * App Component
+ * 
+ * Main application component that sets up routing and provides context.
+ * Uses centralized route configuration from routes/index.tsx.
+ */
+
 import React from 'react';
-import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
-import OverallDashboard from './components/OverallDashboard';
-import { EnhancedCompaniesPage } from './components/companies';
-import FundDetail from './components/fund/detail/FundDetail';
-import { AppStoreProvider } from './store';
-import { DockerThemeProvider } from './theme/DockerThemeProvider';
-import RouteLayout from './components/layout/RouteLayout';
-import './App.css';
+import { BrowserRouter, useRoutes } from 'react-router-dom';
+import { DomainErrorBoundary } from '@/shared/ui/feedback';
+import { DockerThemeProvider } from '@/theme/DockerThemeProvider';
+import { AppStoreProvider } from '@/store';
+import { appRoutes } from '@/routes';
 
-// Wrapper component to provide key for FundDetail
-const FundDetailWrapper: React.FC = () => {
-  const { fundId } = useParams<{ fundId: string }>();
-  return <FundDetail key={fundId} />;
+/**
+ * Routes component that renders routes using useRoutes hook.
+ * Must be inside BrowserRouter context.
+ */
+const RoutesRenderer: React.FC = () => {
+  const routes = useRoutes(appRoutes);
+  return routes;
 };
 
-// Wrapper component to provide key for EnhancedCompaniesPage
-const CompaniesPageWrapper: React.FC = () => {
-  const { companyId } = useParams<{ companyId: string }>();
-  return <EnhancedCompaniesPage key={companyId} />;
-};
-
-function App() {
+/**
+ * Main App component.
+ * Wraps application with providers and sets up routing.
+ */
+const App: React.FC = () => {
   return (
-    <DockerThemeProvider>
-      <AppStoreProvider>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true
-          }}
-        >
-          <Routes>
-            <Route path="/" element={
-              <RouteLayout>
-                <OverallDashboard />
-              </RouteLayout>
-            } />
-            <Route path="/companies/:companyId" element={
-              <RouteLayout>
-                <CompaniesPageWrapper />
-              </RouteLayout>
-            } />
-            <Route path="/funds/:fundId" element={
-              <RouteLayout>
-                <FundDetailWrapper />
-              </RouteLayout>
-            } />
-          </Routes>
-        </BrowserRouter>
-      </AppStoreProvider>
-    </DockerThemeProvider>
+    <DomainErrorBoundary domain="general" showDetails={process.env.NODE_ENV === 'development'}>
+      <DockerThemeProvider>
+        <AppStoreProvider>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}
+          >
+            <RoutesRenderer />
+          </BrowserRouter>
+        </AppStoreProvider>
+      </DockerThemeProvider>
+    </DomainErrorBoundary>
   );
-}
+};
 
 export default App;
+

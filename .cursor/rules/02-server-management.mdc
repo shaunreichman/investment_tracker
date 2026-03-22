@@ -1,0 +1,35 @@
+---
+description: Server Management: Development server startup, shutdown, and troubleshooting
+globs:
+alwaysApply: true
+---
+
+# Server Management Rules
+
+## Role
+Manage development servers for backend (Flask) and frontend (React) with proper startup, shutdown, and troubleshooting.
+
+## Start Servers
+- **Backend**: `source venv/bin/activate && FLASK_APP=src/api.py python -m flask run --host=0.0.0.0 --port=5001`
+- **Frontend**: `cd frontend && npm start` (MUST run in one command)
+- **Both**: Run in separate terminals
+
+## Stop Servers
+- **Both**: `pkill -f "flask run" && pkill -f "react-scripts"`
+- **Backend**: `pkill -f "flask run"`
+- **Frontend**: `pkill -f "react-scripts"`
+
+## Status Check
+- **Ports**: `lsof -i :5001` (backend), `lsof -i :3000` (frontend)
+- **Health**: `curl http://localhost:5001/api/health` (backend), `curl http://localhost:3000` (frontend)
+
+## Troubleshooting
+- **Port conflicts**: `lsof -ti :5001 | xargs kill -9` (backend), `lsof -ti :3000 | xargs kill -9` (frontend)
+- **Force kill all**: `pkill -9 -f "(flask|react|python.*api|node.*start)"`
+
+## Key Principles
+- **Always activate venv** before starting backend
+- **Frontend must run in one command** (cd frontend && npm start)
+- **Servers can take up to 20 seconds to start** so avoid checking they're up and running too quickly
+- **Use proper shutdown** commands to avoid zombie processes
+- **Check ports** before starting to avoid conflicts

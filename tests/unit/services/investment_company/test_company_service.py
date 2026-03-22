@@ -1,665 +1,261 @@
 """
-Enterprise-grade unit tests for CompanyService.
+Company Service Unit Tests.
 
-This module demonstrates professional testing patterns including:
-- Proper test organization and structure
-- Test data builders for consistent test data
-- Clean mocking strategies with proper isolation
-- Comprehensive test coverage with clear arrange/act/assert
-- Proper setup/teardown for test isolation
+This module tests the CompanyService class, focusing on business logic,
+validation, and service layer orchestration. Tests are precise and focused
+on service functionality without testing repository or validation logic directly.
+
+Test Coverage:
+- Company retrieval operations
+- Company creation with business rules
+- Company deletion with dependency validation
+- Service layer orchestration
+- Error handling and validation integration
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
-from typing import Dict, Any
 
-from src.investment_company.services.company_service import CompanyService
-from src.investment_company.models import InvestmentCompany, Contact
-from src.investment_company.enums import CompanyType, CompanyStatus
-from src.fund.models import Fund
-from src.entity.models import Entity
-
-
-class CompanyTestDataBuilder:
-    """Test data builder for creating consistent test objects."""
-    
-    @staticmethod
-    def create_company(**kwargs) -> Mock:
-        """Create a mock InvestmentCompany with sensible defaults."""
-        defaults = {
-            'id': 1,
-            'name': 'Test Company',
-            'description': 'Test Description',
-            'website': 'https://test.com',
-            'company_type': CompanyType.PRIVATE_EQUITY,
-            'status': CompanyStatus.ACTIVE,
-            'business_address': '123 Test St',
-            'created_at': datetime.now(timezone.utc),
-            'updated_at': datetime.now(timezone.utc),
-            'funds': [],
-            'contacts': []
-        }
-        defaults.update(kwargs)
-        
-        company = Mock(spec=InvestmentCompany)
-        for key, value in defaults.items():
-            setattr(company, key, value)
-        return company
-    
-    @staticmethod
-    def create_contact(**kwargs) -> Mock:
-        """Create a mock Contact with sensible defaults."""
-        defaults = {
-            'id': 1,
-            'name': 'John Doe',
-            'title': 'Manager',
-            'direct_number': '+1234567890',
-            'direct_email': 'john@test.com',
-            'notes': 'Test contact',
-            'created_at': datetime.now(timezone.utc),
-            'investment_company_id': 1
-        }
-        defaults.update(kwargs)
-        
-        contact = Mock(spec=Contact)
-        for key, value in defaults.items():
-            setattr(contact, key, value)
-        return contact
-    
-    @staticmethod
-    def create_fund(**kwargs) -> Mock:
-        """Create a mock Fund with sensible defaults."""
-        defaults = {
-            'id': 1,
-            'name': 'Test Fund',
-            'fund_type': 'Private Equity',
-            'tracking_type': 'ACTIVE',
-            'entity_id': 1,
-            'investment_company_id': 1,
-            'created_at': datetime.now(timezone.utc)
-        }
-        defaults.update(kwargs)
-        
-        fund = Mock(spec=Fund)
-        for key, value in defaults.items():
-            setattr(fund, key, value)
-        return fund
-    
-    @staticmethod
-    def create_company_data(**kwargs) -> Dict[str, Any]:
-        """Create company data dictionary with sensible defaults."""
-        defaults = {
-            'name': 'Test Company',
-            'description': 'Test Description',
-            'website': 'https://test.com',
-            'company_type': 'Private Equity',
-            'business_address': '123 Test St'
-        }
-        defaults.update(kwargs)
-        return defaults
-    
-    @staticmethod
-    def create_contact_data(**kwargs) -> Dict[str, Any]:
-        """Create contact data dictionary with sensible defaults."""
-        defaults = {
-            'name': 'John Doe',
-            'title': 'Manager',
-            'direct_number': '+1234567890',
-            'direct_email': 'john@test.com',
-            'notes': 'Test contact'
-        }
-        defaults.update(kwargs)
-        return defaults
-    
-    @staticmethod
-    def create_fund_data(**kwargs) -> Dict[str, Any]:
-        """Create fund data dictionary with sensible defaults."""
-        defaults = {
-            'entity': 'Test Entity',
-            'name': 'Test Fund',
-            'fund_type': 'Private Equity',
-            'tracking_type': 'ACTIVE',
-            'currency': 'AUD',
-            'description': 'Test fund description',
-            'commitment_amount': 1000000,
-            'expected_irr': 15.5,
-            'expected_duration_months': 60
-        }
-        defaults.update(kwargs)
-        return defaults
+from src.company.services.company_service import CompanyService
+from src.company.models import Company
+from src.company.enums.company_enums import CompanyType, CompanyStatus, SortFieldCompany
+from src.shared.enums.shared_enums import SortOrder
+from tests.factories.company_factories import CompanyFactory
 
 
 class TestCompanyService:
-    """Enterprise-grade test suite for CompanyService class."""
-    
-    def setup_method(self):
-        """Set up test fixtures before each test method."""
-        self.mock_session = Mock(spec=Session)
-        self.service = CompanyService()
-        
-        # Store original service attributes for restoration
-        self._original_attributes = {
-            'company_repository': self.service.company_repository,
-            'contact_repository': self.service.contact_repository,
-            'portfolio_service': self.service.portfolio_service,
-            'summary_service': self.service.summary_service,
-            'contact_service': self.service.contact_service,
-            'validation_service': self.service.validation_service
+    """Test suite for CompanyService."""
+
+    @pytest.fixture
+    def service(self):
+        """Create a CompanyService instance for testing."""
+        return CompanyService()
+
+    @pytest.fixture
+    def mock_session(self):
+        """Create a mock database session."""
+        return Mock(spec=Session)
+
+    @pytest.fixture
+    def sample_company_data(self):
+        """Sample company data for testing."""
+        return {
+            'name': 'Test Company',
+            'description': 'A test company',
+            'website': 'https://testcompany.com',
+            'company_type': CompanyType.PRIVATE_EQUITY,
+            'business_address': '123 Test Street, Test City'
         }
-    
-    def teardown_method(self):
-        """Clean up after each test method."""
-        # Restore original service attributes to prevent test pollution
-        for attr_name, original_value in self._original_attributes.items():
-            setattr(self.service, attr_name, original_value)
-    
-    def _mock_service_dependencies(self):
-        """Mock all service dependencies for isolated testing."""
-        self.service.company_repository = Mock()
-        self.service.contact_repository = Mock()
-        self.service.portfolio_service = Mock()
-        self.service.summary_service = Mock()
-        self.service.contact_service = Mock()
-        self.service.validation_service = Mock()
 
+    @pytest.fixture
+    def mock_company(self):
+        """Mock company instance."""
+        return CompanyFactory.build(id=1, name='Test Company')
 
-class TestCompanyServiceInitialization(TestCompanyService):
-    """Test CompanyService initialization and dependency management."""
-    
-    def test_init_creates_all_required_services(self):
-        """Test that CompanyService initializes all required service dependencies."""
-        # Arrange & Act
-        service = CompanyService()
-        
-        # Assert
-        assert service.company_repository is not None
-        assert service.contact_repository is not None
-        assert service.portfolio_service is not None
-        assert service.summary_service is not None
-        assert service.contact_service is not None
-        assert service.validation_service is not None
+    ################################################################################
+    # Test get_companies method
+    ################################################################################
 
-
-class TestCompanyServiceCreation(TestCompanyService):
-    """Test company creation functionality."""
-    
-    def setup_method(self):
-        """Set up test fixtures for creation tests."""
-        super().setup_method()
-        self._mock_service_dependencies()
-    
-    def test_create_company_success(self):
-        """Test successful company creation with all required data."""
+    def test_get_companies_calls_repository_with_correct_parameters(self, service, mock_session):
+        """Test that get_companies calls repository with correct parameters."""
         # Arrange
-        company_data = CompanyTestDataBuilder.create_company_data()
-        mock_company = CompanyTestDataBuilder.create_company()
-        
-        self.service.validation_service.validate_company_creation.return_value = {}
-        
-        with patch('src.investment_company.services.company_service.InvestmentCompany') as mock_company_class:
-            mock_company_class.return_value = mock_company
-            
+        expected_companies = [CompanyFactory.build() for _ in range(2)]
+        with patch.object(service.company_repository, 'get_companies', return_value=expected_companies) as mock_repo:
             # Act
-            result = self.service.create_company(
-                name=company_data['name'],
-                description=company_data['description'],
-                website=company_data['website'],
-                company_type=company_data['company_type'],
-                business_address=company_data['business_address'],
-                session=self.mock_session
+            result = service.get_companies(mock_session)
+
+            # Assert
+            assert result == expected_companies
+            mock_repo.assert_called_once_with(
+                mock_session, 
+                None, 
+                None, 
+                None, 
+                None,
+                None
             )
-            
+
+    def test_get_companies_passes_filters_to_repository(self, service, mock_session):
+        """Test that get_companies passes all filters to repository."""
+        # Arrange
+        name = "Test Company"
+        company_type = CompanyType.PRIVATE_EQUITY
+        status = CompanyStatus.ACTIVE
+        sort_by = SortFieldCompany.NAME
+        sort_order = SortOrder.DESC
+        expected_companies = [CompanyFactory.build()]
+        
+        with patch.object(service.company_repository, 'get_companies', return_value=expected_companies) as mock_repo:
+            # Act
+            result = service.get_companies(
+                mock_session, 
+                company_types=[company_type],
+                statuses=[status],
+                names=[name],
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
+
+            # Assert
+            assert result == expected_companies
+            mock_repo.assert_called_once_with(
+                mock_session, 
+                [company_type], 
+                [status], 
+                [name], 
+                sort_by,
+                sort_order
+            )
+
+    ################################################################################
+    # Test get_company_by_id method
+    ################################################################################
+
+    def test_get_company_by_id_calls_repository_with_correct_id(self, service, mock_session, mock_company):
+        """Test that get_company_by_id calls repository with correct ID."""
+        # Arrange
+        company_id = 1
+        with patch.object(service.company_repository, 'get_company_by_id', return_value=mock_company) as mock_repo:
+            # Act
+            result = service.get_company_by_id(company_id, mock_session)
+
             # Assert
             assert result == mock_company
-            self.service.validation_service.validate_company_creation.assert_called_once_with(
-                name=company_data['name'],
-                description=company_data['description'],
-                website=company_data['website'],
-                company_type=company_data['company_type'],
-                business_address=company_data['business_address']
-            )
-            self.mock_session.add.assert_called_once_with(mock_company)
-            self.mock_session.flush.assert_called_once()
-    
-    def test_create_company_with_default_status(self):
-        """Test company creation sets default status when not provided."""
+            mock_repo.assert_called_once_with(company_id, mock_session)
+
+    def test_get_company_by_id_returns_none_when_not_found(self, service, mock_session):
+        """Test that get_company_by_id returns None when company not found."""
         # Arrange
-        self.service.validation_service.validate_company_creation.return_value = {}
-        
-        with patch('src.investment_company.services.company_service.InvestmentCompany') as mock_company_class:
-            mock_company = CompanyTestDataBuilder.create_company()
-            mock_company_class.return_value = mock_company
-            
+        company_id = 999
+        with patch.object(service.company_repository, 'get_company_by_id', return_value=None) as mock_repo:
             # Act
-            result = self.service.create_company(
-                name='Test Company',
-                session=self.mock_session
-            )
-            
+            result = service.get_company_by_id(company_id, mock_session)
+
+            # Assert
+            assert result is None
+            mock_repo.assert_called_once_with(company_id, mock_session)
+
+    ################################################################################
+    # Test create_company method
+    ################################################################################
+
+    def test_create_company_sets_status_to_inactive(self, service, mock_session, sample_company_data, mock_company):
+        """Test that create_company sets status to INACTIVE by default."""
+        # Arrange
+        with patch.object(service.company_repository, 'create_company', return_value=mock_company) as mock_repo:
+            # Act
+            result = service.create_company(sample_company_data, mock_session)
+
             # Assert
             assert result == mock_company
-            mock_company_class.assert_called_once()
-            call_args = mock_company_class.call_args
-            assert call_args[1]['status'] == CompanyStatus.ACTIVE.value
-    
-    def test_create_company_with_custom_status(self):
-        """Test company creation with custom status."""
+            # Verify that status was set to INACTIVE
+            expected_data = sample_company_data.copy()
+            expected_data['status'] = CompanyStatus.INACTIVE
+            mock_repo.assert_called_once_with(expected_data, mock_session)
+
+    def test_create_company_raises_error_when_repository_fails(self, service, mock_session, sample_company_data):
+        """Test that create_company raises ValueError when repository fails."""
         # Arrange
-        self.service.validation_service.validate_company_creation.return_value = {}
+        with patch.object(service.company_repository, 'create_company', return_value=None) as mock_repo:
+            # Act & Assert
+            with pytest.raises(ValueError, match="Failed to create company"):
+                service.create_company(sample_company_data, mock_session)
+
+    def test_create_company_preserves_original_data(self, service, mock_session, mock_company):
+        """Test that create_company preserves original data while adding status."""
+        # Arrange
+        company_data = {
+            'name': 'Test Company',
+            'description': 'A test company',
+            'website': 'https://test.com',
+            'company_type': CompanyType.PRIVATE_EQUITY,
+            'business_address': '123 Test Street',
+            'custom_field': 'custom_value'
+        }
         
-        with patch('src.investment_company.services.company_service.InvestmentCompany') as mock_company_class:
-            mock_company = CompanyTestDataBuilder.create_company()
-            mock_company_class.return_value = mock_company
-            
+        with patch.object(service.company_repository, 'create_company', return_value=mock_company) as mock_repo:
             # Act
-            result = self.service.create_company(
-                name='Test Company',
-                status='INACTIVE',
-                session=self.mock_session
-            )
-            
+            result = service.create_company(company_data, mock_session)
+
             # Assert
             assert result == mock_company
-            call_args = mock_company_class.call_args
-            assert call_args[1]['status'] == 'INACTIVE'
-    
-    def test_create_company_validation_failure(self):
-        """Test company creation fails when validation fails."""
-        # Arrange
-        validation_errors = {'name': ['Company name is required']}
-        self.service.validation_service.validate_company_creation.return_value = validation_errors
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="Validation failed: {'name': \\['Company name is required'\\]}"):
-            self.service.create_company(
-                name='',
-                session=self.mock_session
-            )
+            expected_data = company_data.copy()
+            expected_data['status'] = CompanyStatus.INACTIVE
+            mock_repo.assert_called_once_with(expected_data, mock_session)
 
+    ################################################################################
+    # Test delete_company method
+    ################################################################################
 
-class TestCompanyServiceUpdate(TestCompanyService):
-    """Test company update functionality."""
-    
-    def setup_method(self):
-        """Set up test fixtures for update tests."""
-        super().setup_method()
-        self._mock_service_dependencies()
-    
-    def test_update_company_success(self):
-        """Test successful company update."""
-        # Arrange
-        company_data = {'name': 'Updated Company', 'description': 'Updated Description'}
-        mock_company = CompanyTestDataBuilder.create_company()
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.validation_service.validate_company_update.return_value = {}
-        
-        # Act
-        result = self.service.update_company(
-            company_id=1,
-            company_data=company_data,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is not None
-        assert result['name'] == 'Updated Company'
-        assert result['description'] == 'Updated Description'
-        self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
-        self.service.validation_service.validate_company_update.assert_called_once()
-    
-    def test_update_company_not_found(self):
-        """Test company update when company doesn't exist."""
-        # Arrange
-        self.service.company_repository.get_by_id.return_value = None
-        
-        # Act
-        result = self.service.update_company(
-            company_id=999,
-            company_data={'name': 'Updated'},
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is None
-        self.service.company_repository.get_by_id.assert_called_once_with(999, self.mock_session)
-    
-    def test_update_company_validation_failure(self):
-        """Test company update fails when validation fails."""
-        # Arrange
-        mock_company = CompanyTestDataBuilder.create_company()
-        validation_errors = {'name': ['Company name is required']}
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.validation_service.validate_company_update.return_value = validation_errors
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="Validation failed: {'name': \\['Company name is required'\\]}"):
-            self.service.update_company(
-                company_id=1,
-                company_data={'name': ''},
-                session=self.mock_session
-            )
-    
-    def test_update_company_updates_timestamp(self):
-        """Test that company update sets the updated_at timestamp."""
-        # Arrange
-        company_data = {'name': 'Updated Company'}
-        mock_company = CompanyTestDataBuilder.create_company()
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.validation_service.validate_company_update.return_value = {}
-        
-        # Act
-        self.service.update_company(
-            company_id=1,
-            company_data=company_data,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert mock_company.updated_at is not None
-
-
-class TestCompanyServiceDeletion(TestCompanyService):
-    """Test company deletion functionality."""
-    
-    def setup_method(self):
-        """Set up test fixtures for deletion tests."""
-        super().setup_method()
-        self._mock_service_dependencies()
-    
-    def test_delete_company_success(self):
+    def test_delete_company_successfully_deletes_company(self, service, mock_session, mock_company):
         """Test successful company deletion."""
         # Arrange
-        mock_company = CompanyTestDataBuilder.create_company()
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.validation_service.validate_company_deletion.return_value = {}
-        
-        # Act
-        result = self.service.delete_company(
-            company_id=1,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is True
-        self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
-        self.service.validation_service.validate_company_deletion.assert_called_once_with(mock_company, self.mock_session)
-        self.mock_session.delete.assert_called_once_with(mock_company)
-        self.mock_session.flush.assert_called_once()
-    
-    def test_delete_company_not_found(self):
-        """Test company deletion when company doesn't exist."""
-        # Arrange
-        self.service.company_repository.get_by_id.return_value = None
-        
-        # Act
-        result = self.service.delete_company(
-            company_id=999,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is False
-        self.service.company_repository.get_by_id.assert_called_once_with(999, self.mock_session)
-    
-    def test_delete_company_validation_failure(self):
-        """Test company deletion fails when validation fails."""
-        # Arrange
-        mock_company = CompanyTestDataBuilder.create_company()
-        validation_errors = {'funds': ['Cannot delete company with active funds']}
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.validation_service.validate_company_deletion.return_value = validation_errors
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="Deletion validation failed: {'funds': \\['Cannot delete company with active funds'\\]}"):
-            self.service.delete_company(
-                company_id=1,
-                session=self.mock_session
-            )
+        company_id = 1
+        with patch.object(service.company_repository, 'get_company_by_id', return_value=mock_company) as mock_get_company, \
+             patch.object(service.company_validation_service, 'validate_company_deletion', return_value={}) as mock_validate, \
+             patch.object(service.company_repository, 'delete_company', return_value=True) as mock_delete:
+            
+            # Act
+            result = service.delete_company(company_id, mock_session)
 
+            # Assert
+            assert result is True
+            mock_get_company.assert_called_once_with(company_id, mock_session)
+            mock_validate.assert_called_once_with(mock_company, mock_session)
+            mock_delete.assert_called_once_with(company_id, mock_session)
 
-class TestCompanyServiceRetrieval(TestCompanyService):
-    """Test company retrieval functionality."""
-    
-    def setup_method(self):
-        """Set up test fixtures for retrieval tests."""
-        super().setup_method()
-        self._mock_service_dependencies()
-    
-    def test_get_company_summary_success(self):
-        """Test successful company summary retrieval."""
+    def test_delete_company_raises_error_when_company_not_found(self, service, mock_session):
+        """Test that delete_company raises ValueError when company not found."""
         # Arrange
-        mock_company = CompanyTestDataBuilder.create_company()
-        expected_summary = {'total_funds': 5, 'total_contacts': 3}
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.summary_service.get_company_summary_data.return_value = expected_summary
-        
-        # Act
-        result = self.service.get_company_summary(
-            company_id=1,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result == expected_summary
-        self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
-        self.service.summary_service.get_company_summary_data.assert_called_once_with(mock_company, self.mock_session)
-    
-    def test_get_company_summary_not_found(self):
-        """Test company summary retrieval when company doesn't exist."""
-        # Arrange
-        self.service.company_repository.get_by_id.return_value = None
-        
-        # Act
-        result = self.service.get_company_summary(
-            company_id=999,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is None
-        self.service.company_repository.get_by_id.assert_called_once_with(999, self.mock_session)
-    
-    def test_get_company_performance_success(self):
-        """Test successful company performance retrieval."""
-        # Arrange
-        mock_company = CompanyTestDataBuilder.create_company()
-        expected_performance = {'total_irr': 15.5, 'fund_count': 3}
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.summary_service.get_company_performance_summary.return_value = expected_performance
-        
-        # Act
-        result = self.service.get_company_performance(
-            company_id=1,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result == expected_performance
-        self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
-        self.service.summary_service.get_company_performance_summary.assert_called_once_with(mock_company, self.mock_session)
-    
-    def test_get_company_performance_not_found(self):
-        """Test company performance retrieval when company doesn't exist."""
-        # Arrange
-        self.service.company_repository.get_by_id.return_value = None
-        
-        # Act
-        result = self.service.get_company_performance(
-            company_id=999,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is None
-        self.service.company_repository.get_by_id.assert_called_once_with(999, self.mock_session)
-    
-    def test_get_all_companies(self):
-        """Test retrieval of all companies."""
-        # Arrange
-        expected_companies = [CompanyTestDataBuilder.create_company()]
-        self.service.company_repository.get_all.return_value = expected_companies
-        
-        # Act
-        result = self.service.get_all_companies(self.mock_session)
-        
-        # Assert
-        assert result == expected_companies
-        self.service.company_repository.get_all.assert_called_once_with(self.mock_session)
-    
-    def test_get_company_by_id_success(self):
-        """Test successful company retrieval by ID."""
-        # Arrange
-        mock_company = CompanyTestDataBuilder.create_company()
-        self.service.company_repository.get_by_id.return_value = mock_company
-        
-        # Act
-        result = self.service.get_company_by_id(
-            company_id=1,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result == mock_company
-        self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
-    
-    def test_get_company_by_id_not_found(self):
-        """Test company retrieval by ID when company doesn't exist."""
-        # Arrange
-        self.service.company_repository.get_by_id.return_value = None
-        
-        # Act
-        result = self.service.get_company_by_id(
-            company_id=999,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is None
-        self.service.company_repository.get_by_id.assert_called_once_with(999, self.mock_session)
+        company_id = 999
+        with patch.object(service.company_repository, 'get_company_by_id', return_value=None) as mock_get_company:
+            # Act & Assert
+            with pytest.raises(ValueError, match="Company not found"):
+                service.delete_company(company_id, mock_session)
+            
+            mock_get_company.assert_called_once_with(company_id, mock_session)
 
+    def test_delete_company_raises_error_when_validation_fails(self, service, mock_session, mock_company):
+        """Test that delete_company raises ValueError when validation fails."""
+        # Arrange
+        company_id = 1
+        validation_errors = {'funds': ['Cannot delete company with 2 funds']}
+        
+        with patch.object(service.company_repository, 'get_company_by_id', return_value=mock_company) as mock_get_company, \
+             patch.object(service.company_validation_service, 'validate_company_deletion', return_value=validation_errors) as mock_validate:
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Deletion validation failed"):
+                service.delete_company(company_id, mock_session)
+            
+            mock_get_company.assert_called_once_with(company_id, mock_session)
+            mock_validate.assert_called_once_with(mock_company, mock_session)
 
-class TestCompanyServiceContactManagement(TestCompanyService):
-    """Test contact management functionality."""
-    
-    def setup_method(self):
-        """Set up test fixtures for contact management tests."""
-        super().setup_method()
-        self._mock_service_dependencies()
-    
-    def test_add_contact_to_company_success(self):
-        """Test successful contact addition to company."""
+    def test_delete_company_raises_error_when_repository_fails(self, service, mock_session, mock_company):
+        """Test that delete_company raises ValueError when repository deletion fails."""
         # Arrange
-        contact_data = CompanyTestDataBuilder.create_contact_data()
-        mock_company = CompanyTestDataBuilder.create_company()
-        mock_contact = CompanyTestDataBuilder.create_contact()
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.contact_service.add_contact.return_value = mock_contact
-        
-        # Act
-        result = self.service.add_contact_to_company(
-            company_id=1,
-            contact_data=contact_data,
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is not None
-        assert result['name'] == 'John Doe'
-        assert result['title'] == 'Manager'
-        self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
-        self.service.contact_service.add_contact.assert_called_once_with(
-            company=mock_company,
-            name=contact_data['name'],
-            title=contact_data['title'],
-            direct_number=contact_data['direct_number'],
-            direct_email=contact_data['direct_email'],
-            notes=contact_data['notes'],
-            session=self.mock_session
-        )
-    
-    def test_add_contact_to_company_not_found(self):
-        """Test contact addition when company doesn't exist."""
-        # Arrange
-        self.service.company_repository.get_by_id.return_value = None
-        
-        # Act
-        result = self.service.add_contact_to_company(
-            company_id=999,
-            contact_data={'name': 'John Doe'},
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is None
-        self.service.company_repository.get_by_id.assert_called_once_with(999, self.mock_session)
+        company_id = 1
+        with patch.object(service.company_repository, 'get_company_by_id', return_value=mock_company) as mock_get_company, \
+             patch.object(service.company_validation_service, 'validate_company_deletion', return_value={}) as mock_validate, \
+             patch.object(service.company_repository, 'delete_company', return_value=False) as mock_delete:
+            
+            # Act & Assert
+            with pytest.raises(ValueError, match="Failed to delete company"):
+                service.delete_company(company_id, mock_session)
+            
+            mock_get_company.assert_called_once_with(company_id, mock_session)
+            mock_validate.assert_called_once_with(mock_company, mock_session)
+            mock_delete.assert_called_once_with(company_id, mock_session)
 
+    ################################################################################
+    # Test service initialization
+    ################################################################################
 
-class TestCompanyServiceFundManagement(TestCompanyService):
-    """Test fund management functionality."""
-    
-    def setup_method(self):
-        """Set up test fixtures for fund management tests."""
-        super().setup_method()
-        self._mock_service_dependencies()
-    
-    def test_create_fund_for_company_success(self):
-        """Test successful fund creation for company."""
-        # Arrange
-        fund_data = CompanyTestDataBuilder.create_fund_data()
-        mock_company = CompanyTestDataBuilder.create_company()
-        mock_fund = CompanyTestDataBuilder.create_fund()
-        
-        self.service.company_repository.get_by_id.return_value = mock_company
-        self.service.portfolio_service.create_fund.return_value = mock_fund
-        
-        # Act
-        result = self.service.create_fund_for_company(
-            company_id=1,
-            fund_data=fund_data,
-            session=self.mock_session
-        )
-        
+    def test_service_initializes_dependencies(self, service):
+        """Test that service initializes with correct dependencies."""
         # Assert
-        assert result is not None
-        assert result['name'] == 'Test Fund'
-        assert result['fund_type'] == 'Private Equity'
-        self.service.company_repository.get_by_id.assert_called_once_with(1, self.mock_session)
-        self.service.portfolio_service.create_fund.assert_called_once_with(
-            company=mock_company,
-            entity=fund_data['entity'],
-            name=fund_data['name'],
-            fund_type=fund_data['fund_type'],
-            tracking_type=fund_data['tracking_type'],
-            currency=fund_data['currency'],
-            description=fund_data['description'],
-            commitment_amount=fund_data['commitment_amount'],
-            expected_irr=fund_data['expected_irr'],
-            expected_duration_months=fund_data['expected_duration_months'],
-            session=self.mock_session
-        )
-    
-    def test_create_fund_for_company_not_found(self):
-        """Test fund creation when company doesn't exist."""
-        # Arrange
-        self.service.company_repository.get_by_id.return_value = None
-        
-        # Act
-        result = self.service.create_fund_for_company(
-            company_id=999,
-            fund_data={'name': 'Test Fund'},
-            session=self.mock_session
-        )
-        
-        # Assert
-        assert result is None
-        self.service.company_repository.get_by_id.assert_called_once_with(999, self.mock_session)
+        assert service.company_validation_service is not None
+        assert service.company_repository is not None
+        assert hasattr(service, 'company_validation_service')
+        assert hasattr(service, 'company_repository')

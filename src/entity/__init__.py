@@ -4,10 +4,10 @@ Entity domain module.
 This module contains entity models and related functionality.
 """
 
-from .models import Entity
-from .calculations import get_financial_years_for_fund_period
+from src.entity.models import Entity
+from src.entity.enums.entity_enums import EntityType
 
 __all__ = [
     'Entity',
-    'get_financial_years_for_fund_period',
+    'EntityType',
 ] 

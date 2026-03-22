@@ -1,211 +1,152 @@
 """
 Fund Event Repository.
-
-This repository provides data access operations for FundEvent entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- FundEvent CRUD operations
-- Event querying and filtering
-- Event relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
-from datetime import date, datetime
-from decimal import Decimal
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from datetime import date
+from sqlalchemy.orm import Session, selectinload
 
 from src.fund.models import FundEvent
-from src.fund.enums import EventType, SortOrder, SortField
+from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType, SortFieldFundEvent
+from src.shared.enums.shared_enums import SortOrder
 
 
 class FundEventRepository:
     """
-    Repository for fund event data access operations.
-    
+    Fund Event Repository.
+
     This repository handles all database operations for fund events including
-    CRUD operations, bulk operations, and optimized queries for event processing.
-    It provides a clean interface for business logic components to interact with
+    CRUD operations, complex queries. It provides
+    a clean interface for business logic components to interact with
     fund event data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
-    
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the fund event repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
+
+
+    ################################################################################
+    # Get Fund Event
+    ################################################################################
     
-    def get_by_id(self, event_id: int, session: Session) -> Optional[FundEvent]:
+    def get_fund_events(self, session: Session,
+                        fund_ids: Optional[List[int]] = None,
+                        event_types: Optional[List[EventType]] = None,
+                        distribution_types: Optional[List[DistributionType]] = None,
+                        tax_payment_types: Optional[List[TaxPaymentType]] = None,
+                        group_ids: Optional[List[int]] = None,
+                        group_types: Optional[List[GroupType]] = None,
+                        is_cash_flow_complete: Optional[bool] = None,
+                        start_event_date: Optional[date] = None,
+                        end_event_date: Optional[date] = None,
+                        sort_by: Optional[SortFieldFundEvent] = SortFieldFundEvent.EVENT_DATE,
+                        sort_order: Optional[SortOrder] = SortOrder.ASC,
+                        include_fund_event_cash_flows: Optional[bool] = False,
+    ) -> List[FundEvent]:
+        """
+        Get all fund events.
+
+        Args:
+            session: Database session
+            fund_ids: Optional list of fund IDs (optional)
+            event_types: Optional list of event types to filter by (optional)
+            distribution_types: Optional list of distribution types to filter by (optional)
+            tax_payment_types: Optional list of tax payment types to filter by (optional)
+            group_ids: Optional list of group IDs to filter by (optional)
+            group_types: Optional list of group types to filter by (optional)
+            is_cash_flow_complete: Optional flag to filter by cash flow completeness (optional)
+            start_event_date: Optional start event date to filter by (optional)
+            end_event_date: Optional end event date to filter by (optional)
+            sort_by: Optional sort field to sort by (optional)
+            sort_order: Optional sort order to sort by (optional)
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional)
+            
+        Returns:
+            List of fund events
+        """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldFundEvent.EVENT_DATE
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
+        # Validate sort field
+        if sort_by not in SortFieldFundEvent:
+            raise ValueError(f"Invalid sort field: {sort_by}. Must be one of: {[s.value for s in SortFieldFundEvent]}")
+        
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}. Must be one of: {[s.value for s in SortOrder]}")
+        
+        # Query database
+        query = session.query(FundEvent)
+        
+        # Add eager loading for relationships if requested
+        if include_fund_event_cash_flows:
+            query = query.options(selectinload(FundEvent.fund_event_cash_flows))
+
+        if fund_ids:
+            query = query.filter(FundEvent.fund_id.in_(fund_ids))
+        if event_types:
+            query = query.filter(FundEvent.event_type.in_([et.value for et in event_types]))
+        if distribution_types:
+            query = query.filter(FundEvent.distribution_type.in_([dt.value for dt in distribution_types]))
+        if tax_payment_types:
+            query = query.filter(FundEvent.tax_payment_type.in_([tpt.value for tpt in tax_payment_types]))
+        if group_ids:
+            query = query.filter(FundEvent.group_id.in_(group_ids))
+        if group_types:
+            query = query.filter(FundEvent.group_type.in_([gt.value for gt in group_types]))
+        if is_cash_flow_complete is not None:
+            query = query.filter(FundEvent.is_cash_flow_complete == is_cash_flow_complete)
+        if start_event_date:
+            query = query.filter(FundEvent.event_date >= start_event_date)
+        if end_event_date:
+            query = query.filter(FundEvent.event_date <= end_event_date)
+        
+        # Apply sorting
+        if sort_by == SortFieldFundEvent.EVENT_DATE:
+            query = query.order_by(FundEvent.event_date.asc() if sort_order == SortOrder.ASC else FundEvent.event_date.desc())
+        elif sort_by == SortFieldFundEvent.EVENT_TYPE:
+            query = query.order_by(FundEvent.event_type.asc() if sort_order == SortOrder.ASC else FundEvent.event_type.desc())
+        
+        events = query.all()
+        
+        return events
+    
+    def get_fund_event_by_id(self, event_id: int, session: Session, include_fund_event_cash_flows: Optional[bool] = False) -> Optional[FundEvent]:
         """
         Get a fund event by its ID.
         
         Args:
             event_id: ID of the event to retrieve
             session: Database session
-            
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional)
+
         Returns:
             FundEvent object if found, None otherwise
         """
-        cache_key = f"event:{event_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
         # Query database
-        event = session.query(FundEvent).filter(FundEvent.id == event_id).first()
+        query = session.query(FundEvent).filter(FundEvent.id == event_id)
         
-        # Cache the result
-        if event:
-            self._cache[cache_key] = event
+        # Add eager loading for relationships if requested
+        if include_fund_event_cash_flows:
+            query = query.options(selectinload(FundEvent.fund_event_cash_flows))
+
+        fund_event = query.first()
         
-        return event
-    
-    def get_by_fund(self, fund_id: int, session: Session, 
-                    event_types: Optional[List[EventType]] = None,
-                    skip: int = 0,
-                    limit: int = 100,
-                    sort_order: SortOrder = SortOrder.DESC) -> List[FundEvent]:
-        """
-        Get all events for a specific fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
-            event_types: Optional list of event types to filter by
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            sort_order: Sort order (ascending or descending)
-            
-        Returns:
-            List of fund events for the specified fund
-        """
-        cache_key = f"events:fund:{fund_id}:types:{event_types}:skip:{skip}:limit:{limit}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Build query
-        query = session.query(FundEvent).filter(FundEvent.fund_id == fund_id)
-        
-        # Apply event type filter if specified
-        if event_types:
-            query = query.filter(FundEvent.event_type.in_([et.value for et in event_types]))
-        
-        # Apply sorting (default to newest first)
-        if sort_order == SortOrder.ASC:
-            query = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
-        else:
-            query = query.order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
-        
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
-        
-        events = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
-        
-        return events
-    
-    def get_by_date_range(self, start_date: date, end_date: date, 
-                         session: Session,
-                         fund_id: Optional[int] = None) -> List[FundEvent]:
-        """
-        Get all events within a date range.
-        
-        Args:
-            start_date: Start date for the range
-            end_date: End date for the range
-            session: Database session
-            fund_id: Optional fund ID to filter by
-            
-        Returns:
-            List of fund events within the date range
-        """
-        cache_key = f"events:date_range:{start_date}:{end_date}:fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Build query
-        query = session.query(FundEvent).filter(
-            and_(
-                FundEvent.event_date >= start_date,
-                FundEvent.event_date <= end_date
-            )
-        )
-        
-        # Apply fund filter if specified
-        if fund_id:
-            query = query.filter(FundEvent.fund_id == fund_id)
-        
-        # Order by date and ID
-        query = query.order_by(FundEvent.event_date.asc(), FundEvent.id.asc())
-        
-        events = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
-        
-        return events
-    
-    def get_by_type(self, event_type: EventType, session: Session,
-                    fund_id: Optional[int] = None,
-                    skip: int = 0,
-                    limit: int = 100) -> List[FundEvent]:
-        """
-        Get all events of a specific type.
-        
-        Args:
-            event_type: Type of event to retrieve
-            session: Database session
-            fund_id: Optional fund ID to filter by
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            
-        Returns:
-            List of fund events of the specified type
-        """
-        cache_key = f"events:type:{event_type.value}:fund:{fund_id}:skip:{skip}:limit:{limit}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Build query
-        query = session.query(FundEvent).filter(FundEvent.event_type == event_type.value)
-        
-        # Apply fund filter if specified
-        if fund_id:
-            query = query.filter(FundEvent.fund_id == fund_id)
-        
-        # Order by date and ID
-        query = query.order_by(FundEvent.event_date.desc(), FundEvent.id.desc())
-        
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
-        
-        events = query.all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
-        
-        return events
-    
-    def create(self, event_data: Dict[str, Any], session: Session) -> FundEvent:
+        return fund_event
+
+    ################################################################################
+    # Create Fund Event
+    ################################################################################
+   
+    def create_fund_event(self, event_data: Dict[str, Any], session: Session) -> FundEvent:
         """
         Create a new fund event.
         
@@ -220,259 +161,80 @@ class FundEventRepository:
             TypeError: If event_data is not a dictionary
             ValueError: If required fields are missing
         """
-        # Type validation - ensure event_data is a dictionary
-        if not isinstance(event_data, dict):
-            raise TypeError(f"event_data must be a dictionary, got {type(event_data).__name__}")
-        
-        # Validate required fields
-        required_fields = ['fund_id', 'event_type', 'event_date', 'amount']
-        for field in required_fields:
-            if field not in event_data:
-                raise ValueError(f"Required field '{field}' is missing")
-        
         # Create event object
         event = FundEvent(**event_data)
         session.add(event)
         session.flush()  # Get the ID without committing
         
-        # Clear relevant caches
-        self._clear_fund_cache(event_data.get('fund_id'))
-        self._clear_date_cache(event_data.get('event_date'))
-        self._clear_type_cache(event_data.get('event_type'))
-        
         return event
+
+    ################################################################################
+    # Delete Fund Event
+    ################################################################################
     
-    def update(self, event_id: int, event_data: Dict[str, Any], session: Session) -> Optional[FundEvent]:
-        """
-        Update an existing fund event.
-        
-        Args:
-            event_id: ID of the event to update
-            event_data: Dictionary containing updated event data
-            session: Database session
-            
-        Returns:
-            Updated FundEvent object if found, None otherwise
-            
-        Raises:
-            TypeError: If event_data is not a dictionary
-        """
-        # Type validation - ensure event_data is a dictionary
-        if not isinstance(event_data, dict):
-            raise TypeError(f"event_data must be a dictionary, got {type(event_data).__name__}")
-        
-        event = self.get_by_id(event_id, session)
-        if not event:
-            return None
-        
-        # Store old values for cache clearing
-        old_fund_id = event.fund_id
-        old_event_date = event.event_date
-        old_event_type = event.event_type
-        
-        # Update fields
-        for key, value in event_data.items():
-            if hasattr(event, key):
-                setattr(event, key, value)
-        
-        # Clear relevant caches
-        self._clear_fund_cache(old_fund_id)
-        self._clear_date_cache(old_event_date)
-        self._clear_type_cache(old_event_type)
-        
-        # Clear caches for new values
-        self._clear_fund_cache(event.fund_id)
-        self._clear_date_cache(event.event_date)
-        self._clear_type_cache(event.event_type)
-        
-        session.flush()
-        return event
-    
-    def delete(self, event_id: int, session: Session) -> bool:
+    def delete_fund_event(self, fund_event_id: int, session: Session) -> bool:
         """
         Delete a fund event.
         
         Args:
-            event_id: ID of the event to delete
+            fund_event_id: ID of the fund event to delete
             session: Database session
             
         Returns:
-            True if event was deleted, False if not found
+            True if fund event was deleted, False if not found
         """
-        event = self.get_by_id(event_id, session)
-        if not event:
+        fund_event = self.get_fund_event_by_id(fund_event_id, session)
+        if not fund_event:
             return False
         
-        # Store values for cache clearing
-        fund_id = event.fund_id
-        event_date = event.event_date
-        event_type = event.event_type
-        
-        # If this event is grouped, delete all events in the same group
-        if event.is_grouped and event.group_id:
+        # If this fund event is grouped, delete all events in the same group
+        if fund_event.is_grouped and fund_event.group_id:
             # Find all events in the same group
             group_events = session.query(FundEvent).filter(
-                FundEvent.group_id == event.group_id
+                FundEvent.group_id == fund_event.group_id
             ).all()
             
             # Delete all events in the group
             for group_event in group_events:
                 session.delete(group_event)
-                self._clear_event_cache(group_event.id)
         else:
-            # Delete just this single event
-            session.delete(event)
-            self._clear_event_cache(event_id)
-        
-        # Clear relevant caches
-        self._clear_fund_cache(fund_id)
-        self._clear_date_cache(event_date)
-        self._clear_type_cache(event_type)
+            # Delete just this single fund event
+            session.delete(fund_event)
         
         return True
     
-    def bulk_create(self, events_data: List[Dict[str, Any]], session: Session) -> List[FundEvent]:
+    
+    def generate_group_id(self, session: Session) -> int:
         """
-        Create multiple fund events in bulk.
+        Generate a unique group ID using database sequence for enterprise-grade uniqueness.
+        
+        This method uses a PostgreSQL sequence to ensure thread-safe, unique group IDs
+        for event grouping functionality. The sequence is created via database migration.
         
         Args:
-            events_data: List of dictionaries containing event data
-            session: Database session
+            session: Database session for sequence access
             
         Returns:
-            List of created FundEvent objects
+            int: Unique group ID from the sequence
             
         Raises:
-            TypeError: If events_data is not a list
-            ValueError: If any event is missing required fields
+            RuntimeError: If sequence access fails
         """
-        # Type validation - ensure events_data is a list
-        if not isinstance(events_data, list):
-            raise TypeError(f"events_data must be a list, got {type(events_data).__name__}")
+        from sqlalchemy import text
         
-        if not events_data:
-            return []
-        
-        # Validate all events have required fields
-        required_fields = ['fund_id', 'event_type', 'event_date', 'amount']
-        for i, event_data in enumerate(events_data):
-            # Additional validation that each item is a dictionary
-            if not isinstance(event_data, dict):
-                raise TypeError(f"Event {i} must be a dictionary, got {type(event_data).__name__}")
+        try:
+            # Get next value from sequence
+            result = session.execute(text("SELECT nextval('group_id_seq')"))
+            group_id = result.scalar()
             
-            for field in required_fields:
-                if field not in event_data:
-                    raise ValueError(f"Event {i} is missing required field '{field}'")
-        
-        # Create all events
-        events = []
-        for event_data in events_data:
-            event = FundEvent(**event_data)
-            events.append(event)
-            session.add(event)
-        
-        session.flush()  # Get all IDs without committing
-        
-        # Clear relevant caches
-        fund_ids = set(event_data.get('fund_id') for event_data in events_data)
-        event_dates = set(event_data.get('event_date') for event_data in events_data)
-        event_types = set(event_data.get('event_type') for event_data in events_data)
-        
-        for fund_id in fund_ids:
-            self._clear_fund_cache(fund_id)
-        for event_date in event_dates:
-            self._clear_date_cache(event_date)
-        for event_type in event_types:
-            self._clear_type_cache(event_type)
-        
-        return events
-    
-    def get_events_for_recalculation(self, fund_id: int, from_event_id: int, 
-                                   session: Session) -> List[FundEvent]:
-        """
-        Get events for recalculation from a specific event onwards.
-        
-        Args:
-            fund_id: ID of the fund
-            from_event_id: ID of the event to start recalculation from
-            session: Database session
+            # Ensure we stay within PostgreSQL Integer limits
+            if group_id > 2147483647:
+                # Reset sequence if we're getting close to the limit
+                session.execute(text("ALTER SEQUENCE group_id_seq RESTART WITH 1"))
+                result = session.execute(text("SELECT nextval('group_id_seq')"))
+                group_id = result.scalar()
             
-        Returns:
-            List of fund events for recalculation
-        """
-        cache_key = f"events:recalc:{fund_id}:from:{from_event_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database for events after the specified event
-        events = session.query(FundEvent).filter(
-            and_(
-                FundEvent.fund_id == fund_id,
-                FundEvent.id >= from_event_id
-            )
-        ).order_by(FundEvent.event_date.asc(), FundEvent.id.asc()).all()
-        
-        # Cache the result
-        self._cache[cache_key] = events
-        
-        return events
-    
-    def get_event_count_by_fund(self, fund_id: int, session: Session) -> int:
-        """
-        Get the total count of events for a fund.
-        
-        Args:
-            fund_id: ID of the fund
-            session: Database session
+            return group_id
             
-        Returns:
-            Total count of events for the fund
-        """
-        cache_key = f"event_count:fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        count = session.query(func.count(FundEvent.id)).filter(
-            FundEvent.fund_id == fund_id
-        ).scalar()
-        
-        # Cache the result
-        self._cache[cache_key] = count
-        
-        return count
-    
-    def _clear_event_cache(self, event_id: int) -> None:
-        """Clear cache for a specific event."""
-        cache_key = f"event:{event_id}"
-        self._cache.pop(cache_key, None)
-    
-    def _clear_fund_cache(self, fund_id: Optional[int]) -> None:
-        """Clear cache for events by fund."""
-        if fund_id:
-            # Clear all fund-related caches
-            for key in list(self._cache.keys()):
-                if f"events:fund:{fund_id}" in key or f"event_count:fund:{fund_id}" in key:
-                    self._cache.pop(key, None)
-    
-    def _clear_date_cache(self, event_date: Optional[date]) -> None:
-        """Clear cache for events by date."""
-        if event_date:
-            for key in list(self._cache.keys()):
-                if f"events:date_range" in key:
-                    self._cache.pop(key, None)
-    
-    def _clear_type_cache(self, event_type: Optional[str]) -> None:
-        """Clear cache for events by type."""
-        if event_type:
-            for key in list(self._cache.keys()):
-                if f"events:type:{event_type}" in key:
-                    self._cache.pop(key, None)
-    
-    def clear_all_cache(self) -> None:
-        """Clear all cached data."""
-        self._cache.clear()
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate group ID: {e}") from e

@@ -75,3 +75,4 @@ export type SidebarKey = 'fundDetail' | 'dashboard' | 'companies';
 export type Theme = 'light' | 'dark';
 export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
 export type NumberFormat = 'en-US' | 'en-GB' | 'custom';
+

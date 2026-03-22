@@ -1,17 +1,20 @@
 """
 Fund Event Model.
 
-This module provides the FundEvent model class,
-representing events that occur within funds.
+This module provides the FundEvent model class, representing events that occur within funds.
+The model handles only data persistence and basic validation, with business logic
+delegated to services for clean separation of concerns.
 """
 
-from typing import Optional, List
-from datetime import date, datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, JSON, Index
+from typing import List
+from datetime import datetime, timezone
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
+from typing import Dict
 
 from src.shared.base import Base
-from src.fund.enums import EventType, DistributionType, FundType, TaxPaymentType, GroupType
+from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType
+from src.fund.enums.fund_enums import FundTrackingType
 
 
 class FundEvent(Base):
@@ -31,7 +34,7 @@ class FundEvent(Base):
     
     # Primary key and relationships
     id = Column(Integer, primary_key=True)  # (SYSTEM) auto-generated primary key
-    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (SYSTEM) link to fund
+    fund_id = Column(Integer, ForeignKey('funds.id'), nullable=False, index=True)  # (RELATIONSHIP) link to fund
     
     # Event details
     event_type = Column(Enum(EventType), nullable=False, index=True)  # (SYSTEM) type of fund event
@@ -46,8 +49,6 @@ class FundEvent(Base):
     nav_change_absolute = Column(Float, nullable=True)  # (CALCULATED) absolute change in NAV for NAV_UPDATE events
     nav_change_percentage = Column(Float, nullable=True)  # (CALCULATED) percentage change in NAV for NAV_UPDATE events
 
-    units_owned = Column(Float, nullable=True)  # (CALCULATED) cumulative units owned after this event
-    
     # Distribution-specific fields
     distribution_type = Column(Enum(DistributionType), nullable=True)  # (MANUAL) type of distribution if applicable
     tax_withholding = Column(Float, nullable=True)  # (MANUAL) tax withholding amount if applicable
@@ -55,20 +56,26 @@ class FundEvent(Base):
     
     # Tax-specific fields
     tax_payment_type = Column(Enum(TaxPaymentType), nullable=True)  # (MANUAL) type of tax payment (INTEREST, CAPITAL_GAINS, etc.)
-    tax_statement_id = Column(Integer, ForeignKey('tax_statements.id'), nullable=True, index=True)  # (MANUAL) foreign key to tax statement for TAX_PAYMENT events
+    tax_statement_id = Column(Integer, ForeignKey('fund_tax_statements.id'), nullable=True, index=True)  # (CALCULATED) foreign key to tax statement for TAX_PAYMENT events
     
     # Unit transaction fields
     units_purchased = Column(Float, nullable=True)  # (MANUAL) units purchased in this event
     units_sold = Column(Float, nullable=True)  # (MANUAL) units sold in this event
     unit_price = Column(Float, nullable=True)  # (MANUAL) unit price for this transaction
     brokerage_fee = Column(Float, default=0.0, nullable=True)  # (MANUAL) brokerage fee for unit transactions (must be non-negative)
-    
+    units_owned = Column(Float, nullable=True)  # (CALCULATED) cumulative units owned after this event
+
     # Calculated fields
     current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) For NAV-based funds: FIFO cost base after this event. For cost-based funds: net capital after this event
     
-    # System flags
+    # Debt cost fields
+    dc_current_equity_balance = Column(Float, nullable=True)  # (CALCULATED) current equity balance used for this daily debt cost event
+    dc_risk_free_rate = Column(Float, nullable=True)  # (CALCULATED) risk free rate used for this daily debt cost event
+
+    # Cash flow fields
     is_cash_flow_complete = Column(Boolean, default=False)  # (SYSTEM) auto-managed flag set by reconciliation logic
-    
+    cash_flow_balance_amount = Column(Float, nullable=False, default=0.0)  # (CALCULATED) balance of cash flows for this event
+
     # Grouping fields (CALCULATED: Grouping flags set by backend when creating events)
     is_grouped = Column(Boolean, default=False, nullable=False)  # (CALCULATED) whether this event is part of a group
     group_id = Column(Integer, nullable=True, index=True)  # (CALCULATED) unique identifier for the group (auto-generated)
@@ -81,8 +88,8 @@ class FundEvent(Base):
     
     # Relationships
     fund = relationship("Fund", back_populates="fund_events")
-    cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan")
-    tax_statement = relationship("TaxStatement", lazy='selectin')  # Eager load for tax statement data
+    fund_event_cash_flows = relationship("FundEventCashFlow", back_populates="fund_event", cascade="all, delete-orphan")
+    fund_tax_statement = relationship("FundTaxStatement", lazy='selectin')  # Eager load for tax statement data
     
     # Performance indexes
     __table_args__ = (
@@ -100,27 +107,56 @@ class FundEvent(Base):
         Index('idx_fund_events_tax_statement_id', 'tax_statement_id'),
     )
     
-    def __init__(self, **kwargs):
-        """Initialize FundEvent with default values for grouping fields."""
-        # Set default values for grouping fields
-        self.is_grouped = False
-        self.group_id = None
-        self.group_type = None
-        self.group_position = None
-        
-        # Set default values for system flags
-        self.is_cash_flow_complete = False
-        self.has_withholding_tax = False
-        
-        # Call parent constructor with remaining kwargs
-        super().__init__(**kwargs)
-    
     def __repr__(self) -> str:
         return (
             f"<FundEvent(id={self.id}, fund_id={self.fund_id}, "
             f"type={self.event_type.value}, date={self.event_date}, "
             f"amount={self.amount})>"
         )
+    
+    
+    def get_field_classification(self) -> Dict[str, str]:
+        """
+        Field classification for the fund event model.
+        
+        Returns:
+            Dict[str, str]: Field classification for the fund event model
+        """
+        return {
+            'id': 'SYSTEM',
+            'fund_id': 'RELATIONSHIP',
+            'event_type': 'MANUAL',
+            'event_date': 'MANUAL',
+            'amount': 'MANUAL',
+            'description': 'MANUAL',
+            'reference_number': 'MANUAL',
+            'nav_per_share': 'MANUAL',
+            'previous_nav_per_share': 'CALCULATED',
+            'nav_change_absolute': 'CALCULATED',
+            'nav_change_percentage': 'CALCULATED',
+            'units_owned': 'CALCULATED',
+            'distribution_type': 'MANUAL',
+            'tax_withholding': 'MANUAL',
+            'has_withholding_tax': 'MANUAL',
+            'tax_payment_type': 'MANUAL',
+            'tax_statement_id': 'CALCULATED',
+            'units_purchased': 'MANUAL',
+            'units_sold': 'MANUAL',
+            'unit_price': 'MANUAL',
+            'brokerage_fee': 'MANUAL',
+            'current_equity_balance': 'CALCULATED',
+            'dc_current_equity_balance': 'CALCULATED',
+            'dc_risk_free_rate': 'CALCULATED',
+            'is_cash_flow_complete': 'SYSTEM',
+            'cash_flow_balance_amount': 'CALCULATED',
+            'is_grouped': 'CALCULATED',
+            'group_id': 'CALCULATED',
+            'group_type': 'CALCULATED',
+            'group_position': 'CALCULATED',
+            'created_at': 'SYSTEM',
+            'updated_at': 'SYSTEM',
+        }
+    
     
     def validate_basic_constraints(self) -> bool:
         """Basic data validation only.
@@ -172,7 +208,7 @@ class FundEvent(Base):
         
         return True
     
-    def validate_fund_type_compatibility(self, fund_tracking_type: FundType) -> bool:
+    def validate_fund_type_compatibility(self, fund_tracking_type: FundTrackingType) -> bool:
         """Validate that event is compatible with fund tracking type.
         
         Args:
@@ -184,11 +220,11 @@ class FundEvent(Base):
         Raises:
             ValueError: If event is incompatible with fund type
         """
-        if fund_tracking_type == FundType.NAV_BASED:
+        if fund_tracking_type == FundTrackingType.NAV_BASED:
             if self.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL]:
                 raise ValueError(f"{self.event_type.value} events are not applicable for NAV-based funds")
         
-        elif fund_tracking_type == FundType.COST_BASED:
+        elif fund_tracking_type == FundTrackingType.COST_BASED:
             if self.event_type == EventType.NAV_UPDATE:
                 raise ValueError("NAV update events are not applicable for cost-based funds")
         
@@ -570,111 +606,3 @@ class FundEvent(Base):
                 f"Group positions must be sequential starting from 0. "
                 f"Expected {expected_positions}, got {sorted_positions}"
             )
-    
-    def is_capital_inflow(self) -> bool:
-        """Check if event represents capital inflow to the fund.
-        
-        Returns:
-            bool: True if capital inflow event
-        """
-        return self.event_type in [EventType.CAPITAL_CALL, EventType.UNIT_PURCHASE]
-    
-    def is_capital_outflow(self) -> bool:
-        """Check if event represents capital outflow from the fund.
-        
-        Returns:
-            bool: True if capital outflow event
-        """
-        return self.event_type in [EventType.RETURN_OF_CAPITAL, EventType.UNIT_SALE]
-    
-    def is_equity_event(self) -> bool:
-        """Check if event is an equity event.
-        
-        Returns:
-            bool: True if equity event
-        """
-        return self.event_type in [EventType.CAPITAL_CALL, EventType.RETURN_OF_CAPITAL, EventType.UNIT_PURCHASE, EventType.UNIT_SALE]
-    
-    def is_distribution_event(self) -> bool:
-        """Check if event is a distribution event.
-        
-        Returns:
-            bool: True if distribution event
-        """
-        return self.event_type == EventType.DISTRIBUTION
-    
-    def is_system_event(self) -> bool:
-        """Check if event is a system-generated event.
-        
-        Returns:
-            bool: True if system event
-        """
-        return self.event_type in [EventType.DAILY_RISK_FREE_INTEREST_CHARGE]
-    
-    def get_effective_amount(self) -> float:
-        """Get the effective amount for calculations (positive for inflows, negative for outflows).
-        
-        Returns:
-            float: Effective amount for calculations
-        """
-        # NAV update events don't have amounts
-        if self.event_type == EventType.NAV_UPDATE:
-            return 0.0
-        
-        if self.is_capital_inflow():
-            return abs(self.amount or 0.0)
-        else:
-            return -abs(self.amount or 0.0)
-    
-    def set_grouping(self, group_id: int, group_type: GroupType, group_position: int) -> None:
-        """Set grouping information for this event.
-        
-        Args:
-            group_id: Unique identifier for the group
-            group_type: Type of grouping
-            group_position: Position within the group (0=first, 1=second, etc.)
-        """
-        self.is_grouped = True
-        self.group_id = group_id
-        self.group_type = group_type
-        self.group_position = group_position
-    
-    def clear_grouping(self) -> None:
-        """Clear grouping information for this event."""
-        self.is_grouped = False
-        self.group_id = None
-        self.group_type = None
-        self.group_position = None
-    
-    def get_total_units_change(self) -> float:
-        """Get the total change in units for this event.
-        
-        Returns:
-            float: Total units change (positive for purchases, negative for sales)
-        """
-        if self.event_type == EventType.UNIT_PURCHASE:
-            return self.units_purchased or 0.0
-        elif self.event_type == EventType.UNIT_SALE:
-            return -(self.units_sold or 0.0)
-        elif self.event_type == EventType.NAV_UPDATE:
-            # NAV update events don't change units, they only update NAV per share
-            return 0.0
-        else:
-            return 0.0
-    
-    def get_total_cost(self) -> float:
-        """Get the total cost for this event.
-        
-        Returns:
-            float: Total cost including brokerage fees
-        """
-        if self.event_type in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
-            units = self.units_purchased or self.units_sold or 0.0
-            unit_price = self.unit_price or 0.0
-            brokerage_fee = self.brokerage_fee or 0.0
-            return (units * unit_price) + brokerage_fee
-        elif self.event_type == EventType.NAV_UPDATE:
-            # NAV update events don't have costs
-            return 0.0
-        else:
-            return abs(self.amount or 0.0)

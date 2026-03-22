@@ -1,158 +1,179 @@
 """
 Fund Repository.
-
-This repository provides data access operations for Fund entities,
-implementing the repository pattern for clean separation of concerns.
-
-Key responsibilities:
-- Fund CRUD operations
-- Fund querying and filtering
-- Fund relationship management
-- Data persistence operations
 """
 
 from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy.orm import Session, selectinload
+from datetime import date
 
 from src.fund.models import Fund
-from src.fund.enums import FundStatus, FundType, SortOrder, SortField
+from src.fund.enums.fund_enums import FundStatus, FundTrackingType, SortFieldFund
+from src.shared.enums.shared_enums import SortOrder
 
 
 class FundRepository:
     """
-    Repository for fund data access operations.
-    
+    Fund Repository.
+
     This repository handles all database operations for funds including
-    CRUD operations, complex queries, and caching strategies. It provides
+    CRUD operations, complex queries. It provides
     a clean interface for business logic components to interact with
     fund data without direct database access.
-    
-    Attributes:
-        _cache (Dict): Internal cache for frequently accessed data
-        _cache_ttl (int): Time-to-live for cached data in seconds
     """
     
-    def __init__(self, cache_ttl: int = 300):
+    def __init__(self):
         """
         Initialize the fund repository.
         
         Args:
-            cache_ttl: Time-to-live for cached data in seconds (default: 5 minutes)
+            None
         """
-        self._cache: Dict[str, Any] = {}
-        self._cache_ttl = cache_ttl
+        pass
+
+    ################################################################################
+    # Get Fund
+    ################################################################################
+
+    def get_funds(self, session: Session,
+                    company_ids: Optional[List[int]] = None,
+                    entity_ids: Optional[List[int]] = None,
+                    fund_statuses: Optional[List[FundStatus]] = None,
+                    fund_tracking_types: Optional[List[FundTrackingType]] = None,
+                    start_start_date: Optional[date] = None,
+                    end_start_date: Optional[date] = None,
+                    start_end_date: Optional[date] = None,
+                    end_end_date: Optional[date] = None,
+                    sort_by: Optional[SortFieldFund] = SortFieldFund.START_DATE,
+                    sort_order: Optional[SortOrder] = SortOrder.ASC,
+                    include_fund_events: Optional[bool] = False,
+                    include_fund_event_cash_flows: Optional[bool] = False,
+                    include_fund_tax_statements: Optional[bool] = False
+    ) -> List[Fund]:
+        """
+        Get all funds.
+
+        Args:
+            session: Database session
+            company_ids: List of company IDs to filter by (optional)
+            entity_ids: List of entity IDs to filter by (optional)
+            fund_statuses: List of fund status to filter by (optional)
+            fund_tracking_types: List of fund tracking type to filter by (optional)
+            start_start_date: Start start date to filter by (optional)
+            end_start_date: End start date to filter by (optional)
+            start_end_date: End end date to filter by (optional)
+            end_end_date: End end date to filter by (optional)
+            sort_by: Field to sort by (optional)
+            sort_order: Sort order (ascending or descending) (optional)
+            include_fund_events: Optional flag to eager load events relationship (optional)
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional, requires include_fund_events=True)
+            include_fund_tax_statements: Optional flag to eager load tax statements relationship (optional)
+
+        Returns:
+            List of funds
+        """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldFund.START_DATE
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
+        # Validate sort field
+        if sort_by not in SortFieldFund:
+            raise ValueError(f"Invalid sort field: {sort_by}")
+
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}")
+
+        # Validate parameter dependencies
+        if include_fund_event_cash_flows and not include_fund_events:
+            raise ValueError("include_fund_event_cash_flows requires include_fund_events to be True")
+
+        # Query database
+        query = session.query(Fund)
+
+        # Add eager loading for relationships if requested
+        if include_fund_events:
+            query = query.options(selectinload(Fund.fund_events))
+
+        if include_fund_event_cash_flows:
+            query = query.options(selectinload(Fund.fund_events).selectinload('fund_event_cash_flows'))
+
+        if include_fund_tax_statements:
+            query = query.options(selectinload(Fund.fund_tax_statements))
+
+        if company_ids:
+            query = query.filter(Fund.company_id.in_(company_ids))
+        if entity_ids:
+            query = query.filter(Fund.entity_id.in_(entity_ids))
+        if fund_statuses:
+            query = query.filter(Fund.status.in_([fs.value for fs in fund_statuses]))
+        if fund_tracking_types:
+            query = query.filter(Fund.tracking_type.in_([ftt.value for ftt in fund_tracking_types]))
+        if start_start_date:
+            query = query.filter(Fund.start_date >= start_start_date)
+        if end_start_date:
+            query = query.filter(Fund.start_date <= end_start_date)
+        if start_end_date:
+            query = query.filter(Fund.end_date >= start_end_date)
+        if end_end_date:
+            query = query.filter(Fund.end_date <= end_end_date)
+
+        # Apply sorting
+        if sort_by == SortFieldFund.NAME:
+            query = query.order_by(Fund.name.asc() if sort_order == SortOrder.ASC else Fund.name.desc())
+        elif sort_by == SortFieldFund.STATUS:
+            query = query.order_by(Fund.status.asc() if sort_order == SortOrder.ASC else Fund.status.desc())
+        elif sort_by == SortFieldFund.CREATED_AT:
+            query = query.order_by(Fund.created_at.asc() if sort_order == SortOrder.ASC else Fund.created_at.desc())
+        elif sort_by == SortFieldFund.START_DATE:
+            query = query.order_by(Fund.start_date.asc() if sort_order == SortOrder.ASC else Fund.start_date.desc())
+
+        funds = query.all()
+
+        return funds
     
-    def get_by_id(self, fund_id: int, session: Session) -> Optional[Fund]:
+    def get_fund_by_id(self, fund_id: int, session: Session, include_fund_events: Optional[bool] = False, include_fund_event_cash_flows: Optional[bool] = False, include_fund_tax_statements: Optional[bool] = False) -> Optional[Fund]:
         """
         Get a fund by its ID.
         
         Args:
             fund_id: ID of the fund to retrieve
             session: Database session
-            
+            include_fund_events: Optional flag to eager load events relationship (optional)
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional, requires include_fund_events=True)
+            include_fund_tax_statements: Optional flag to eager load tax statements relationship (optional)
+
         Returns:
             Fund object if found, None otherwise
         """
-        cache_key = f"fund:{fund_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
+        # Validate parameter dependencies
+        if include_fund_event_cash_flows and not include_fund_events:
+            raise ValueError("include_fund_event_cash_flows requires include_fund_events to be True")
+
         # Query database
-        fund = session.query(Fund).filter(Fund.id == fund_id).first()
+        query = session.query(Fund).filter(Fund.id == fund_id)
+
+        # Add eager loading for relationships if requested
+        if include_fund_events:
+            query = query.options(selectinload(Fund.fund_events))
+
+        if include_fund_event_cash_flows:
+            query = query.options(selectinload(Fund.fund_events).selectinload('fund_event_cash_flows'))
+            
+        if include_fund_tax_statements:
+            query = query.options(selectinload(Fund.fund_tax_statements))
         
-        # Cache the result
-        if fund:
-            self._cache[cache_key] = fund
+        fund = query.first()
         
         return fund
+
+
+    ################################################################################
+    # Create Fund
+    ################################################################################
     
-    def get_by_investment_company(self, company_id: int, session: Session) -> List[Fund]:
-        """
-        Get all funds for a specific investment company.
-        
-        Args:
-            company_id: ID of the investment company
-            session: Database session
-            
-        Returns:
-            List of funds associated with the company
-        """
-        cache_key = f"funds:company:{company_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        funds = session.query(Fund).filter(Fund.investment_company_id == company_id).all()
-        
-        # Cache the result
-        self._cache[cache_key] = funds
-        
-        return funds
-    
-    def get_by_entity(self, entity_id: int, session: Session) -> List[Fund]:
-        """
-        Get all funds for a specific entity.
-        
-        Args:
-            entity_id: ID of the entity
-            session: Database session
-            
-        Returns:
-            List of funds associated with the entity
-        """
-        cache_key = f"funds:entity:{entity_id}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        funds = session.query(Fund).filter(Fund.entity_id == entity_id).all()
-        
-        # Cache the result
-        self._cache[cache_key] = funds
-        
-        return funds
-    
-    def get_all(self, session: Session, 
-                skip: int = 0, 
-                limit: int = 100,
-                sort_by: SortField = SortField.NAME,
-                sort_order: SortOrder = SortOrder.ASC) -> List[Fund]:
-        """
-        Get all funds with pagination and sorting.
-        
-        Args:
-            session: Database session
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            sort_by: Field to sort by
-            sort_order: Sort order (ascending or descending)
-            
-        Returns:
-            List of funds with pagination and sorting applied
-        """
-        query = session.query(Fund)
-        
-        # Apply sorting
-        if sort_by == SortField.NAME:
-            query = query.order_by(func.asc(Fund.name) if sort_order == SortOrder.ASC else func.desc(Fund.name))
-        elif sort_by == SortField.STATUS:
-            query = query.order_by(func.asc(Fund.status) if sort_order == SortOrder.ASC else func.desc(Fund.status))
-        elif sort_by == SortField.CREATED_AT:
-            query = query.order_by(func.asc(Fund.created_at) if sort_order == SortOrder.ASC else func.desc(Fund.created_at))
-        
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
-        
-        return query.all()
-    
-    def create(self, fund_data: Dict[str, Any], session: Session) -> Fund:
+    def create_fund(self, fund_data: Dict[str, Any], session: Session) -> Fund:
         """
         Create a new fund.
         
@@ -166,53 +187,19 @@ class FundRepository:
         Raises:
             ValueError: If required fields are missing
         """
-        # Validate required fields
-        required_fields = ['name', 'entity_id', 'investment_company_id']
-        for field in required_fields:
-            if field not in fund_data:
-                raise ValueError(f"Required field '{field}' is missing")
-        
         # Create fund object
         fund = Fund(**fund_data)
         session.add(fund)
         session.flush()  # Get the ID without committing
         
-        # Clear relevant caches
-        self._clear_company_cache(fund_data.get('investment_company_id'))
-        self._clear_entity_cache(fund_data.get('entity_id'))
-        
         return fund
+
+
+    ################################################################################
+    # Delete Fund
+    ################################################################################
     
-    def update(self, fund_id: int, fund_data: Dict[str, Any], session: Session) -> Optional[Fund]:
-        """
-        Update an existing fund.
-        
-        Args:
-            fund_id: ID of the fund to update
-            fund_data: Dictionary containing updated fund data
-            session: Database session
-            
-        Returns:
-            Updated fund object if found, None otherwise
-        """
-        fund = self.get_by_id(fund_id, session)
-        if not fund:
-            return None
-        
-        # Update fields
-        for key, value in fund_data.items():
-            if hasattr(fund, key):
-                setattr(fund, key, value)
-        
-        # Clear relevant caches
-        self._clear_fund_cache(fund_id)
-        self._clear_company_cache(fund.investment_company_id)
-        self._clear_entity_cache(fund.entity_id)
-        
-        session.flush()
-        return fund
-    
-    def delete(self, fund_id: int, session: Session) -> bool:
+    def delete_fund(self, fund_id: int, session: Session) -> bool:
         """
         Delete a fund.
         
@@ -223,115 +210,11 @@ class FundRepository:
         Returns:
             True if fund was deleted, False if not found
         """
-        fund = self.get_by_id(fund_id, session)
+        fund = self.get_fund_by_id(fund_id, session)
         if not fund:
             return False
-        
-        # Store IDs for cache clearing
-        company_id = fund.investment_company_id
-        entity_id = fund.entity_id
-        
+                
         # Delete the fund
         session.delete(fund)
         
-        # Clear relevant caches
-        self._clear_fund_cache(fund_id)
-        self._clear_company_cache(company_id)
-        self._clear_entity_cache(entity_id)
-        
         return True
-    
-    def get_funds_by_status(self, status: FundStatus, session: Session) -> List[Fund]:
-        """
-        Get all funds with a specific status.
-        
-        Args:
-            status: Fund status to filter by
-            session: Database session
-            
-        Returns:
-            List of funds with the specified status
-        """
-        cache_key = f"funds:status:{status.value}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        funds = session.query(Fund).filter(Fund.status == status).all()
-        
-        # Cache the result
-        self._cache[cache_key] = funds
-        
-        return funds
-    
-    def get_funds_by_type(self, fund_type: FundType, session: Session) -> List[Fund]:
-        """
-        Get all funds of a specific type.
-        
-        Args:
-            fund_type: Fund type to filter by
-            session: Database session
-            
-        Returns:
-            List of funds of the specified type
-        """
-        cache_key = f"funds:type:{fund_type.value}"
-        
-        # Check cache first
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-        
-        # Query database
-        funds = session.query(Fund).filter(Fund.fund_type == fund_type).all()
-        
-        # Cache the result
-        self._cache[cache_key] = funds
-        
-        return funds
-    
-    def search_funds(self, search_term: str, session: Session) -> List[Fund]:
-        """
-        Search funds by name or description.
-        
-        Args:
-            search_term: Search term to look for
-            session: Database session
-            
-        Returns:
-            List of funds matching the search term
-        """
-        if not search_term.strip():
-            return []
-        
-        # Query database with search
-        funds = session.query(Fund).filter(
-            or_(
-                Fund.name.ilike(f"%{search_term}%"),
-                Fund.description.ilike(f"%{search_term}%")
-            )
-        ).all()
-        
-        return funds
-    
-    def _clear_fund_cache(self, fund_id: int) -> None:
-        """Clear cache for a specific fund."""
-        cache_key = f"fund:{fund_id}"
-        self._cache.pop(cache_key, None)
-    
-    def _clear_company_cache(self, company_id: Optional[int]) -> None:
-        """Clear cache for funds by company."""
-        if company_id:
-            cache_key = f"funds:company:{company_id}"
-            self._cache.pop(cache_key, None)
-    
-    def _clear_entity_cache(self, entity_id: Optional[int]) -> None:
-        """Clear cache for funds by entity."""
-        if entity_id:
-            cache_key = f"funds:entity:{entity_id}"
-            self._cache.pop(cache_key, None)
-    
-    def clear_all_cache(self) -> None:
-        """Clear all cached data."""
-        self._cache.clear()

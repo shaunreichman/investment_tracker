@@ -22,11 +22,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import Base and all models to ensure they're registered
 from src.shared.base import Base
 import src.fund.models
-import src.investment_company.models
+import src.company.models
 import src.entity.models
 import src.banking.models
-import src.tax.models
 import src.rates.models
+import src.shared.models
 
 # Set target metadata for autogenerate
 target_metadata = Base.metadata

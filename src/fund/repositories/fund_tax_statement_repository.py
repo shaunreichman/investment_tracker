@@ -1,0 +1,163 @@
+"""
+Fund Tax Statement Repository.
+"""
+
+from typing import Dict, Any, List, Optional
+from datetime import date
+from sqlalchemy.orm import Session
+
+from src.fund.models import FundTaxStatement
+from src.fund.enums.fund_tax_statement_enums import SortFieldFundTaxStatement
+from src.shared.enums.shared_enums import SortOrder
+
+class FundTaxStatementRepository:
+    """
+    Fund Tax Statement Repository.
+
+    This repository handles all database operations for fund tax statements including
+    CRUD operations, complex queries. It provides
+    a clean interface for business logic components to interact with
+    fund tax statement data without direct database access.
+    """
+
+    def __init__(self):
+        """
+        Initialize the fund tax statement repository.
+
+        Args:
+            None
+        """
+        pass
+
+
+    ################################################################################
+    # Get Fund Tax Statement
+    ################################################################################
+
+    def get_fund_tax_statements(self, session: Session,
+                                fund_ids: Optional[List[int]] = None,
+                                entity_ids: Optional[List[int]] = None,
+                                financial_years: Optional[List[str]] = None,
+                                start_tax_payment_date: Optional[date] = None,
+                                end_tax_payment_date: Optional[date] = None,
+                                sort_by: Optional[SortFieldFundTaxStatement] = SortFieldFundTaxStatement.FINANCIAL_YEAR,
+                                sort_order: Optional[SortOrder] = SortOrder.ASC) -> List[FundTaxStatement]:
+        """
+        Get all fund tax statements.
+
+        Args:
+            session: Database session
+            fund_ids: IDs of the funds to filter by (optional)
+            entity_ids: IDs of the entities to filter by (optional)
+            financial_years: Financial years to filter by (optional)
+            start_tax_payment_date: Start tax payment date to filter by (optional)
+            end_tax_payment_date: End tax payment date to filter by (optional)
+            sort_by: Field to sort by (optional)
+            sort_order: Order to sort by (optional)
+
+        Returns:
+            List[FundTaxStatement]: List of fund tax statements
+        """
+        # Use defaults if None is explicitly passed (overrides function default)
+        if sort_by is None:
+            sort_by = SortFieldFundTaxStatement.FINANCIAL_YEAR
+        if sort_order is None:
+            sort_order = SortOrder.ASC
+        
+        # Validate sort field
+        if sort_by not in SortFieldFundTaxStatement:
+            raise ValueError(f"Invalid sort field: {sort_by}")
+
+        # Validate sort order
+        if sort_order not in SortOrder:
+            raise ValueError(f"Invalid sort order: {sort_order}")
+        
+        # Query database
+        query = session.query(FundTaxStatement)
+
+        if fund_ids:
+            query = query.filter(FundTaxStatement.fund_id.in_(fund_ids))
+        if entity_ids:
+            query = query.filter(FundTaxStatement.entity_id.in_(entity_ids))
+        if financial_years:
+            query = query.filter(FundTaxStatement.financial_year.in_(financial_years))
+        if start_tax_payment_date:
+            query = query.filter(FundTaxStatement.tax_payment_date >= start_tax_payment_date)
+        if end_tax_payment_date:
+            query = query.filter(FundTaxStatement.tax_payment_date <= end_tax_payment_date)
+
+        # Sort the results
+        if sort_by == SortFieldFundTaxStatement.FINANCIAL_YEAR:
+            query = query.order_by(FundTaxStatement.financial_year.asc() if sort_order == SortOrder.ASC else FundTaxStatement.financial_year.desc())
+        elif sort_by == SortFieldFundTaxStatement.TAX_PAYMENT_DATE:
+            query = query.order_by(FundTaxStatement.tax_payment_date.asc() if sort_order == SortOrder.ASC else FundTaxStatement.tax_payment_date.desc())
+        elif sort_by == SortFieldFundTaxStatement.CREATED_AT:
+            query = query.order_by(FundTaxStatement.created_at.asc() if sort_order == SortOrder.ASC else FundTaxStatement.created_at.desc())
+        elif sort_by == SortFieldFundTaxStatement.UPDATED_AT:
+            query = query.order_by(FundTaxStatement.updated_at.asc() if sort_order == SortOrder.ASC else FundTaxStatement.updated_at.desc())
+
+        # Execute the query
+        fund_tax_statements = query.all()
+
+        return fund_tax_statements
+
+    def get_fund_tax_statement_by_id(self, fund_tax_statement_id: int, session: Session) -> Optional[FundTaxStatement]:
+        """
+        Get a fund tax statement by ID.
+
+        Args:
+            fund_tax_statement_id: ID of the fund tax statement to retrieve
+            session: Database session
+
+        Returns:
+            FundTaxStatement object if found, None otherwise
+        """
+        # Query database
+        fund_tax_statement = session.query(FundTaxStatement).filter(FundTaxStatement.id == fund_tax_statement_id).first()
+        
+        return fund_tax_statement
+
+
+    ################################################################################
+    # Create Fund Tax Statement
+    ################################################################################
+    
+    def create_fund_tax_statement(self, fund_tax_statement_data: Dict[str, Any], session: Session) -> FundTaxStatement:
+        """
+        Create a new fund tax statement.
+
+        Args:
+            fund_tax_statement_data: Dictionary containing fund tax statement data
+            session: Database session
+
+        Returns:
+            FundTaxStatement: The created fund tax statement
+        """
+        # Create fund tax statement object
+        fund_tax_statement = FundTaxStatement(**fund_tax_statement_data)
+        session.add(fund_tax_statement)
+        session.flush()  # Get the ID without committing
+        
+        return fund_tax_statement
+    
+
+    ################################################################################
+    # Delete Fund Tax Statement
+    ################################################################################
+
+    def delete_fund_tax_statement(self, fund_tax_statement_id: int, session: Session) -> bool:
+        """
+        Delete a fund tax statement.
+
+        Args:
+            fund_tax_statement_id: ID of the fund tax statement to delete
+            session: Database session
+        """
+        fund_tax_statement = self.get_fund_tax_statement_by_id(fund_tax_statement_id, session)
+        if not fund_tax_statement:
+            return False
+        
+        # Delete the fund tax statement
+        session.delete(fund_tax_statement)
+
+        return True

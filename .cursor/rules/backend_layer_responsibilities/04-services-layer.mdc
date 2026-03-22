@@ -1,0 +1,101 @@
+---
+description: Services Layer: Business logic orchestration and coordination between API and data layers
+globs: **/services/*.py
+alwaysApply: false
+---
+
+# Services Layer Rules
+
+## Role
+Services orchestrate business logic, coordinate between controllers and repositories, and enforce business rules.
+
+## Should Do
+- **Orchestrate workflows**: Coordinate repositories and validation services
+- **Enforce business rules**: Use dedicated validation services for complex constraints
+- **Data processing**: Transform and validate input data before repository calls
+- **Repository coordination**: Call repositories for all data access operations
+- **Error handling**: Raise `ValueError` with descriptive messages for business rule violations
+
+## Shouldn't Do
+- **Direct database queries**: Use repositories for all data access
+- **HTTP concerns**: Handle request/response formatting (controllers)
+- **Session management**: Let controllers manage database sessions
+- **Complex calculations**: Delegate to calculator classes (when they exist)
+
+## Examples
+
+```python
+# ✅ Good: Banking service with validation and repository coordination
+class BankService:
+    def __init__(self, banking_validation_service: Optional[BankingValidationService] = None, 
+                 bank_repository: Optional[BankRepository] = None):
+        self.banking_validation_service = banking_validation_service or BankingValidationService()
+        self.bank_repository = bank_repository or BankRepository()
+    
+    def create_bank(self, bank_data: Dict[str, Any], session: Session) -> Bank:
+        # Process and transform data
+        processed_data = bank_data.copy()
+        processed_data['status'] = BankStatus.INACTIVE
+        
+        # Coordinate repository
+        bank = self.bank_repository.create_bank(processed_data, session)
+        if not bank:
+            raise ValueError(f"Failed to create bank")
+        
+        return bank
+    
+    def delete_bank(self, bank_id: int, session: Session) -> bool:
+        # Get existing bank for validation
+        bank = self.get_bank_by_id(bank_id, session)
+        if not bank:
+            raise ValueError(f"Bank not found")
+        
+        # Validate business rules
+        validation_errors = self.banking_validation_service.validate_bank_deletion(bank_id, session)
+        if validation_errors:
+            raise ValueError(f"Deletion validation failed: {validation_errors}")
+        
+        # Coordinate repository
+        success = self.bank_repository.delete_bank(bank_id, session)
+        if not success:
+            raise ValueError(f"Failed to delete bank")
+        
+        return success
+
+# ✅ Good: Company service with data processing and validation
+class CompanyService:
+    def create_company(self, company_data: Dict[str, Any], session: Session) -> Company:
+        # Validate required fields
+        required_fields = ['name']
+        for field in required_fields:
+            if field not in company_data:
+                raise ValueError(f"Required field '{field}' is missing")
+        
+        # Process and transform data
+        processed_data = company_data.copy()
+        if 'company_type' in processed_data and isinstance(processed_data['company_type'], str):
+            try:
+                processed_data['company_type'] = CompanyType(processed_data['company_type'])
+            except ValueError:
+                raise ValueError(f"Invalid company type: {processed_data['company_type']}")
+        
+        # Coordinate repository
+        company = self.company_repository.create_company(processed_data, session)
+        if not company:
+            raise ValueError(f"Failed to create company")
+        
+        # Set business rules
+        company.status = CompanyStatus.INACTIVE
+        
+        return company
+
+# ❌ Bad: Direct database access
+def create_bank(self, bank_data: Dict[str, Any], session: Session):
+    bank = session.query(Bank).filter(Bank.name == bank_data['name']).first()
+    # ... direct database operations
+
+# ❌ Bad: HTTP concerns in service
+def get_banks(self, session: Session):
+    banks = self.bank_repository.get_banks(session)
+    return jsonify({"banks": banks})  # HTTP concern, should be in controller
+```

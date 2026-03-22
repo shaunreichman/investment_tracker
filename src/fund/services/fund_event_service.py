@@ -1,552 +1,310 @@
 """
 Fund Event Service.
-
-This service handles all fund event operations and calculations,
-extracting complex event logic from the Fund model.
-
-Key responsibilities:
-- Event creation and validation
-- Event field calculations
-- Event grouping and relationships
-- Event-based fund updates
 """
 
-from typing import List, Optional, Dict, Any, Union
-from datetime import date, datetime
-from decimal import Decimal
+from typing import List, Optional, Dict, Any
+from datetime import date
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
-
-from src.fund.enums import EventType
-
+from src.fund.models import FundEvent
+from src.fund.enums.fund_event_enums import EventType, DistributionType, TaxPaymentType, GroupType, SortFieldFundEvent
+from src.shared.enums.shared_enums import EventOperation, SortOrder
+from src.fund.repositories import FundEventRepository
+from src.fund.services.fund_validation_service import FundValidationService
+from src.fund.services.fund_event_secondary_service import FundEventSecondaryService
+from src.shared.enums.domain_update_event_enums import DomainObjectType
+from src.shared.exceptions import ValidationException
 
 class FundEventService:
     """
-    Service for handling fund event operations extracted from the Fund model.
-    
-    This service provides clean separation of concerns for:
-    - Capital call and return of capital event creation
-    - Unit purchase and sale event creation
-    - NAV update event creation and management
-    - Event bulk operations and management
-    - Event querying and filtering
+    Fund Event Service.
+
+    This module provides the FundEventService class, which handles fund event operations and business logic.
+    The service provides clean separation of concerns for:
+    - Fund event retrieval
+    - Fund event creation
+        - Calculation of distribution event data
+        - Calculation of tax event data
+        - Handling of secondary impacts
+    - Fund event deletion with dependency checking
+
+    The service uses the FundEventRepository to perform CRUD operations and the FundValidationService to validate fund events.
+    The service is used by the FundEventController to handle fund event operations.
     """
     
-    def __init__(self):
-        """Initialize the FundEventService."""
-        pass
-    
-    # ============================================================================
-    # CAPITAL CALL AND RETURN OF CAPITAL EVENTS
-    # ============================================================================
-    
-    def add_capital_call(self, fund: 'Fund', amount: float, date: date, 
-                        description: Optional[str] = None, reference_number: Optional[str] = None, 
-                        session: Optional[Session] = None) -> 'FundEvent':
+    def __init__(self): 
         """
-        [EXTRACTED] Add a capital call event to the fund.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
+        Initialize the FundEventService with specialized repositories.
+
+        Args:
+            fund_event_repository: Fund event repository to use. If None, creates a new one.
+            fund_validation_service: Fund validation service to use. If None, creates a new one.
+            fund_event_secondary_service: Fund event secondary service to use. If None, creates a new one.
+        """
+        self.fund_event_repository = FundEventRepository()
+        self.fund_validation_service = FundValidationService()
+        self.fund_event_secondary_service = FundEventSecondaryService()
+    
+
+    def get_fund_events(self, session: Session,
+                       fund_ids: Optional[List[int]] = None,
+                       event_types: Optional[List[EventType]] = None,
+                       distribution_types: Optional[List[DistributionType]] = None,
+                       tax_payment_types: Optional[List[TaxPaymentType]] = None,
+                       group_ids: Optional[List[int]] = None,
+                       group_types: Optional[List[GroupType]] = None,
+                       is_cash_flow_complete: Optional[bool] = None,
+                       start_event_date: Optional[date] = None,
+                       end_event_date: Optional[date] = None,
+                       sort_by: Optional[SortFieldFundEvent] = SortFieldFundEvent.EVENT_DATE,
+                       sort_order: Optional[SortOrder] = SortOrder.ASC,
+                       include_fund_event_cash_flows: Optional[bool] = False
+    ) -> List['FundEvent']:
+        """
+        Get events for a specific fund or list of funds.
         
         Args:
-            fund: The fund object
-            amount: Amount of capital to call
-            date: Date of the capital call
-            description: Optional description
-            reference_number: Optional reference number
-            session: Database session (optional)
-            
-        Returns:
-            FundEvent: The created capital call event
-        """
-        # Validate inputs
-        if amount <= 0:
-            raise ValueError("Capital call amount must be positive")
-        if not date:
-            raise ValueError("Capital call date is required")
-        
-        # Create the capital call event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.CAPITAL_CALL,
-            event_date=date,
-            amount=amount,
-            description=description or f"Capital call of {amount}",
-            reference_number=reference_number
-        )
-        
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
-        
-        print(f"Added capital call event: {amount} on {date} for fund {fund.name}")
-        return event
-    
-    def add_return_of_capital(self, fund: 'Fund', amount: float, date: date,
-                             description: Optional[str] = None, reference_number: Optional[str] = None,
-                             session: Optional[Session] = None) -> 'FundEvent':
-        """
-        [EXTRACTED] Add a return of capital event to the fund.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            amount: Amount of capital to return
-            date: Date of the return
-            description: Optional description
-            reference_number: Optional reference number
-            session: Database session (optional)
-            
-        Returns:
-            FundEvent: The created return of capital event
-        """
-        # Validate inputs
-        if amount <= 0:
-            raise ValueError("Return of capital amount must be positive")
-        if not date:
-            raise ValueError("Return of capital date is required")
-        
-        # Create the return of capital event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.RETURN_OF_CAPITAL,
-            event_date=date,
-            amount=amount,
-            description=description or f"Return of capital of {amount}",
-            reference_number=reference_number
-        )
-        
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
-        
-        print(f"Added return of capital event: {amount} on {date} for fund {fund.name}")
-        return event
-    
-    # ============================================================================
-    # UNIT PURCHASE AND SALE EVENTS
-    # ============================================================================
-    
-    def add_unit_purchase(self, fund: 'Fund', units: float, price: float, date: date,
-                         brokerage_fee: float = 0.0, description: Optional[str] = None,
-                         reference_number: Optional[str] = None, session: Optional[Session] = None) -> 'FundEvent':
-        """
-        [EXTRACTED] Add a unit purchase event to the fund.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            units: Number of units to purchase
-            price: Price per unit
-            date: Date of the purchase
-            brokerage_fee: Optional brokerage fee
-            description: Optional description
-            reference_number: Optional reference number
-            session: Database session (optional)
-            
-        Returns:
-            FundEvent: The created unit purchase event
-        """
-        # Validate inputs
-        if units <= 0:
-            raise ValueError("Units must be positive")
-        if price <= 0:
-            raise ValueError("Price must be positive")
-        if not date:
-            raise ValueError("Purchase date is required")
-        if brokerage_fee < 0:
-            raise ValueError("Brokerage fee cannot be negative")
-        
-        # Calculate total amount
-        total_amount = (units * price) + brokerage_fee
-        
-        # Create the unit purchase event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.UNIT_PURCHASE,
-            event_date=date,
-            units_purchased=units,
-            unit_price=price,
-            brokerage_fee=brokerage_fee,
-            amount=total_amount,
-            description=description or f"Purchase of {units} units at {price}",
-            reference_number=reference_number
-        )
-        
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
-        
-        print(f"Added unit purchase event: {units} units at {price} on {date} for fund {fund.name}")
-        return event
-    
-    def add_unit_sale(self, fund: 'Fund', units: float, price: float, date: date,
-                      brokerage_fee: float = 0.0, description: Optional[str] = None,
-                      reference_number: Optional[str] = None, session: Optional[Session] = None) -> 'FundEvent':
-        """
-        [EXTRACTED] Add a unit sale event to the fund.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            units: Number of units to sell
-            price: Price per unit
-            date: Date of the sale
-            brokerage_fee: Optional brokerage fee
-            description: Optional description
-            reference_number: Optional reference number
-            session: Database session (optional)
-            
-        Returns:
-            FundEvent: The created unit sale event
-        """
-        # Validate inputs
-        if units <= 0:
-            raise ValueError("Units must be positive")
-        if price <= 0:
-            raise ValueError("Price must be positive")
-        if not date:
-            raise ValueError("Sale date is required")
-        if brokerage_fee < 0:
-            raise ValueError("Brokerage fee cannot be negative")
-        
-        # Calculate total amount
-        total_amount = (units * price) - brokerage_fee
-        
-        # Create the unit sale event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.UNIT_SALE,
-            event_date=date,
-            units_sold=units,
-            unit_price=price,
-            brokerage_fee=brokerage_fee,
-            amount=total_amount,
-            description=description or f"Unit sale of {units} units at {price}",
-            reference_number=reference_number
-        )
-        
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
-        
-        print(f"Added unit sale event: {units} units at {price} on {date} for fund {fund.name}")
-        return event
-    
-    # ============================================================================
-    # NAV UPDATE EVENTS
-    # ============================================================================
-    
-    def add_nav_update(self, fund: 'Fund', nav_per_share: float, date: date,
-                      description: Optional[str] = None, reference_number: Optional[str] = None,
-                      session: Optional[Session] = None) -> 'FundEvent':
-        """
-        [EXTRACTED] Add a NAV update event to the fund.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            nav_per_share: NAV per share value
-            date: Date of the NAV update
-            description: Optional description
-            reference_number: Optional reference number
-            session: Database session (optional)
-            
-        Returns:
-            FundEvent: The created NAV update event
-        """
-        # Validate inputs
-        if nav_per_share < 0:
-            raise ValueError("NAV per share cannot be negative")
-        if not date:
-            raise ValueError("NAV update date is required")
-        
-        # Create the NAV update event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=EventType.NAV_UPDATE,
-            event_date=date,
-            nav_per_share=nav_per_share,
-            description=description or f"NAV update to {nav_per_share}",
-            reference_number=reference_number
-        )
-        
-        # Add to session and flush to get ID
-        session.add(event)
-        session.flush()
-        
-        print(f"Added NAV update event: {nav_per_share} on {date} for fund {fund.name}")
-        return event
-    
-    def _calculate_nav_change_fields(self, fund: 'Fund', nav_per_share: float, date: date, 
-                                   session: Optional[Session] = None) -> Dict[str, Any]:
-        """
-        [EXTRACTED] Calculate NAV change fields for a NAV update event.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            nav_per_share: NAV per share value
-            date: Date of the NAV update
-            session: Database session (optional)
-            
-        Returns:
-            dict: NAV change field values
-        """
-        # Get the previous NAV event
-        prev_nav_event = session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == EventType.NAV_UPDATE,
-            fund.fund_events.__class__.event_date < date
-        ).order_by(fund.fund_events.__class__.event_date.desc()).first()
-        
-        if prev_nav_event and prev_nav_event.nav_per_share:
-            prev_nav = prev_nav_event.nav_per_share
-            nav_change = nav_per_share - prev_nav
-            nav_change_percentage = (nav_change / prev_nav) * 100 if prev_nav > 0 else 0
-        else:
-            nav_change = 0
-            nav_change_percentage = 0
-        
-        return {
-            'nav_change': nav_change,
-            'nav_change_percentage': nav_change_percentage
-        }
-    
-    def _update_subsequent_nav_change_fields(self, fund: 'Fund', new_nav_event: 'FundEvent', 
-                                           session: Optional[Session] = None) -> None:
-        """
-        [EXTRACTED] Update NAV change fields for subsequent NAV events.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            new_nav_event: The new NAV event
-            session: Database session (optional)
-        """
-        # Get subsequent NAV events
-        subsequent_events = session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.fund_id == fund.id,
-            fund.fund_events.__class__.event_type == EventType.NAV_UPDATE,
-            fund.fund_events.__class__.event_date > new_nav_event.event_date
-        ).order_by(fund.fund_events.__class__.event_date).all()
-        
-        # Update each subsequent event
-        for event in subsequent_events:
-            if event.nav_per_share:
-                nav_fields = self._calculate_nav_change_fields(fund, event.nav_per_share, event.event_date, session)
-                event.nav_change = nav_fields['nav_change']
-                event.nav_change_percentage = nav_fields['nav_change_percentage']
-    
-    # ============================================================================
-    # EVENT QUERYING AND FILTERING
-    # ============================================================================
-    
-    def get_events(self, fund: 'Fund', event_types: Optional[List[str]] = None,
-                   start_date: Optional[date] = None, end_date: Optional[date] = None,
-                   session: Optional[Session] = None) -> List['FundEvent']:
-        """
-        [EXTRACTED] Get fund events with optional filtering.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
+            session: Database session
+            fund_ids: Optional list of fund IDs
             event_types: Optional list of event types to filter by
-            start_date: Optional start date filter
-            end_date: Optional end date filter
-            session: Database session (optional)
-            
+            distribution_types: Optional list of distribution types to filter by
+            tax_payment_types: Optional list of tax payment types to filter by
+            group_ids: Optional list of group IDs to filter by
+            group_types: Optional list of group types to filter by
+            is_cash_flow_complete: Optional flag to filter by cash flow completeness
+            start_event_date: Optional start event date to filter by
+            end_event_date: Optional end event date to filter by
+            sort_by: Optional sort field to sort by
+            sort_order: Optional sort order to sort by
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional)
+
         Returns:
-            list: Filtered list of fund events
+            List of FundEvent objects
         """
-        events = fund.fund_events
-        
-        # Filter by event types
-        if event_types:
-            events = [e for e in events if e.event_type in event_types]
-        
-        # Filter by start date
-        if start_date:
-            events = [e for e in events if e.event_date >= start_date]
-        
-        # Filter by end date
-        if end_date:
-            events = [e for e in events if e.event_date <= end_date]
-        
-        # Sort by date
-        events.sort(key=lambda e: e.event_date)
-        
-        return events
-    
-    def get_recent_events(self, fund: 'Fund', limit: int = 10, 
-                         exclude_system_events: bool = True, session: Optional[Session] = None) -> List['FundEvent']:
-        """
-        [EXTRACTED] Get recent fund events.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            limit: Maximum number of events to return
-            exclude_system_events: Whether to exclude system events
-            session: Database session (optional)
-            
-        Returns:
-            list: List of recent fund events
-        """
-        events = fund.fund_events
-        
-        # Exclude system events if requested
-        if exclude_system_events:
-            system_event_types = [EventType.DAILY_RISK_FREE_INTEREST_CHARGE, EventType.EOFY_DEBT_COST, EventType.TAX_PAYMENT]
-            events = [e for e in events if e.event_type not in system_event_types]
-        
-        # Sort by date (most recent first) and limit
-        events.sort(key=lambda e: e.event_date, reverse=True)
-        return events[:limit]
-    
-    def get_all_fund_events(self, fund: 'Fund', exclude_system_events: bool = True,
-                           session: Optional[Session] = None) -> List['FundEvent']:
-        """
-        [EXTRACTED] Get all fund events.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            exclude_system_events: Whether to exclude system events
-            session: Database session (optional)
-            
-        Returns:
-            list: List of all fund events
-        """
-        events = fund.fund_events
-        
-        # Exclude system events if requested
-        if exclude_system_events:
-            system_event_types = [EventType.DAILY_RISK_FREE_INTEREST_CHARGE, EventType.EOFY_DEBT_COST, EventType.TAX_PAYMENT]
-            events = [e for e in events if e.event_type not in system_event_types]
-        
-        # Sort by date
-        events.sort(key=lambda e: e.event_date)
-        return events
-    
-    # ============================================================================
-    # EVENT MANAGEMENT AND BULK OPERATIONS
-    # ============================================================================
-    
-    def delete_event(self, fund: 'Fund', event_id: int, session: Optional[Session] = None) -> bool:
-        """
-        [EXTRACTED] Delete a fund event.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            event_id: ID of the event to delete
-            session: Database session (optional)
-            
-        Returns:
-            bool: True if event was deleted, False otherwise
-        """
-        # Find the event
-        event = session.query(fund.fund_events.__class__).filter(
-            fund.fund_events.__class__.id == event_id,
-            fund.fund_events.__class__.fund_id == fund.id
-        ).first()
-        
-        if not event:
-            return False
-        
-        # Delete the event
-        session.delete(event)
-        session.flush()
-        
-        print(f"Deleted event {event_id} from fund {fund.name}")
-        return True
-    
-    def bulk_add_events(self, fund: 'Fund', events_data: List[Dict[str, Any]], 
-                       session: Optional[Session] = None) -> List['FundEvent']:
-        """
-        [EXTRACTED] Add multiple events to the fund in bulk.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            events_data: List of event data dictionaries
-            session: Database session (optional)
-            
-        Returns:
-            list: List of created fund events
-        """
-        created_events = []
-        
-        for event_data in events_data:
-            event = self._create_bulk_event_object(fund, event_data)
-            session.add(event)
-            created_events.append(event)
-        
-        # Flush to get IDs
-        session.flush()
-        
-        print(f"Added {len(created_events)} events to fund {fund.name}")
-        return created_events
-    
-    def _create_bulk_event_object(self, fund: 'Fund', event_data: Dict[str, Any]) -> 'FundEvent':
-        """
-        [EXTRACTED] Create a fund event object from bulk event data.
-        
-        This method was extracted from the Fund model to improve separation of concerns.
-        
-        Args:
-            fund: The fund object
-            event_data: Event data dictionary
-            
-        Returns:
-            FundEvent: The created fund event object
-        """
-        # Extract required fields
-        event_type = event_data.get('event_type')
-        event_date = event_data.get('event_date')
-        amount = event_data.get('amount')
-        
-        # Validate required fields
-        if not event_type:
-            raise ValueError("event_type is required")
-        if not event_date:
-            raise ValueError("event_date is required")
-        
-        # Create the event
-        event = fund.fund_events.__class__(
-            fund_id=fund.id,
-            event_type=event_type if isinstance(event_type, EventType) else EventType(event_type),
-            event_date=event_date,
-            amount=amount,
-            description=event_data.get('description'),
-            reference_number=event_data.get('reference_number')
+        return self.fund_event_repository.get_fund_events(
+            session, fund_ids, event_types, distribution_types, tax_payment_types, group_ids, group_types, is_cash_flow_complete, start_event_date, end_event_date, sort_by, sort_order, include_fund_event_cash_flows
         )
+    
+    def get_fund_event_by_id(self, event_id: int, session: Session, include_fund_event_cash_flows: Optional[bool] = False) -> Optional['FundEvent']:
+        """
+        Get a specific fund event by ID.
         
-        # Set optional fields based on event type
-        if event_type == EventType.UNIT_PURCHASE:
-            event.units_purchased = event_data.get('units_purchased')
-            event.unit_price = event_data.get('unit_price')
-            event.brokerage_fee = event_data.get('brokerage_fee', 0.0)
-        elif event_type == EventType.UNIT_SALE:
-            event.units_sold = event_data.get('units_sold')
-            event.unit_price = event_data.get('unit_price')
-            event.brokerage_fee = event_data.get('brokerage_fee', 0.0)
-        elif event_type == EventType.NAV_UPDATE:
-            event.nav_per_share = event_data.get('nav_per_share')
-        elif event_type == EventType.DISTRIBUTION:
-            event.distribution_type = event_data.get('distribution_type')
-            event.tax_withheld = event_data.get('tax_withheld', 0.0)
+        Args:
+            event_id: ID of the event
+            session: Database session
+            include_fund_event_cash_flows: Optional flag to eager load cash flows relationship (optional)
+            
+        Returns:
+            FundEvent object if found, None otherwise
+        """
+        # Get the specific event
+        event = self.fund_event_repository.get_fund_event_by_id(event_id, session, include_fund_event_cash_flows)
+        if not event:
+            return None
         
         return event
+
+
+    ################################################################################
+    # Create Fund Event
+    ################################################################################
+
+    def create_fund_event(self, fund_id: int, event_data: Dict[str, Any], session: Session) -> FundEvent:
+        """
+        Add a fund event.
+
+        Args:
+            fund_id: ID of the fund
+            event_data: Dictionary containing event data
+            session: Database session
+
+        Returns:
+            FundEvent object
+        """
+        processed_data = event_data.copy()
+
+        # 1. Add the fund id to the event data
+        processed_data['fund_id'] = fund_id
+
+        # 2. Business validation using validation service
+        validation_errors = self.fund_validation_service.validate_fund_event_creation(processed_data, session)
+        if validation_errors:
+            raise ValidationException(
+                message="Validation errors for fund event creation",
+                details=validation_errors
+            )
+
+        # 2a. Calculate the distribution event data
+        if processed_data['event_type'] == EventType.DISTRIBUTION:
+            processed_data = self._calculate_distribution_event_data(processed_data, session)
+            if processed_data['has_withholding_tax']:
+                # Create the tax event
+                tax_data = self._calculate_tax_event_data(processed_data)
+                tax_event = self.fund_event_repository.create_fund_event(tax_data, session)
+        
+        # 2b. Calculate the unit transaction event data
+        elif processed_data['event_type'] in [EventType.UNIT_PURCHASE, EventType.UNIT_SALE]:
+            processed_data = self._calculate_unit_transaction_event_data(processed_data)
+
+        # 3. Create the fund event
+        fund_event = self.fund_event_repository.create_fund_event(processed_data, session)
+        
+        # 3a. Flush the event to database so it's available for secondary service
+        session.flush()
+
+        # 4. Handle the secondary impacts
+        self.fund_event_secondary_service.handle_event_secondary_impact(
+            fund_id=fund_event.fund_id,
+            domain_object_type=DomainObjectType.FUND_EVENT,
+            event_operation=EventOperation.CREATE,
+            session=session,
+            fund_event_type=processed_data['event_type'],
+            object_id=fund_event.id
+        )
+        
+        return fund_event
+    
+    def _calculate_distribution_event_data(self, event_data: Dict[str, Any], session: Session) -> Dict[str, Any]:
+        """
+        Calculate distribution event data based on parameters.
+        
+        This method handles the complex logic for both simple distributions
+        and withholding tax distributions.
+        """        
+        processed_data = event_data.copy()
+
+        if processed_data['has_withholding_tax']:
+            # Complex withholding tax distribution
+            from src.fund.calculators.withholding_tax_calculator import WithholdingTaxCalculator
+            gross_amount, tax_amount = WithholdingTaxCalculator.calculate_withholding_tax_amounts(
+                processed_data.get('gross_interest_amount'), processed_data.get('net_interest_amount'), processed_data.get('withholding_tax_amount'), processed_data.get('withholding_tax_rate'))
+            
+            processed_data.update({
+                'amount': gross_amount,  # Store gross amount for IRR calculations
+                'tax_withholding': tax_amount,  # Tax amount withheld
+                'has_withholding_tax': True
+            })
+
+            # Clean up temporary calculation fields
+            temp_fields = ['gross_interest_amount', 'net_interest_amount', 'withholding_tax_amount', 'withholding_tax_rate']
+            for field in temp_fields:
+                processed_data.pop(field, None)
+
+            group_id = self.fund_event_repository.generate_group_id(session)
+            processed_data['group_id'] = group_id
+            processed_data['group_type'] = GroupType.INTEREST_WITHHOLDING
+            processed_data['is_grouped'] = True
+            processed_data['group_position'] = 0
+        else:
+            processed_data.update({
+                'tax_withholding': 0.0,
+                'has_withholding_tax': False
+            })
+        
+        return processed_data
+
+    def _calculate_tax_event_data(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calculate tax event data based on parameters.
+        """
+        tax_event_data = dict()
+        tax_event_data['event_type'] = EventType.TAX_PAYMENT
+        tax_event_data['event_date'] = event_data.get('event_date')
+        tax_event_data['fund_id'] = event_data.get('fund_id')
+        tax_event_data['description'] = event_data.get('description')
+        tax_event_data['reference_number'] = event_data.get('reference_number')
+        tax_event_data['amount'] = -event_data.get('tax_withholding', 0)
+        tax_event_data['tax_payment_type'] = TaxPaymentType.NON_RESIDENT_INTEREST_WITHHOLDING
+        tax_event_data['group_id'] = event_data.get('group_id')
+        tax_event_data['group_type'] = GroupType.INTEREST_WITHHOLDING
+        tax_event_data['is_grouped'] = True
+        tax_event_data['group_position'] = 1
+        
+        return tax_event_data
+    
+    
+    ################################################################################
+    # Delete Fund Event
+    ################################################################################
+    
+    def delete_fund_event(self, fund_event_id: int, session: Session) -> bool:
+        """
+        Delete a fund event and handle secondary operations.
+        
+        This method follows enterprise best practices:
+        1. Business operation: Delete the fund event directly
+        2. Delegate secondary impacts to orchestrator
+        
+        Args:
+            fund_event_id: ID of the fund event to delete
+            session: Database session
+            
+        Returns:
+            True if fund event was deleted, False if not found
+        """
+        fund_event = self.fund_event_repository.get_fund_event_by_id(fund_event_id, session)
+        if not fund_event:
+            raise ValueError(f"Fund event with ID {fund_event_id} not found")
+
+        fund_event_type = fund_event.event_type
+        fund_id = fund_event.fund_id
+
+        validation_errors = self.fund_validation_service.validate_fund_event_deletion(fund_event, session)
+        if validation_errors:
+            raise ValidationException(
+                message="Validation errors for fund event deletion",
+                details=validation_errors
+            )
+
+        success = self.fund_event_repository.delete_fund_event(fund_event_id, session)
+        
+        if success:
+            # 2a. Flush the fund to database so it's available for secondary service
+            session.flush()
+            # 3. Process the secondary operations
+            self.fund_event_secondary_service.handle_event_secondary_impact(
+                fund_id=fund_id,
+                domain_object_type=DomainObjectType.FUND_EVENT,
+                event_operation=EventOperation.DELETE,
+                session=session,
+                fund_event_type=fund_event_type,
+                object_id=fund_event_id
+            )
+        else:
+            raise ValueError(f"Failed to delete fund event with ID {fund_event_id}")
+
+        return success
+    
+    def _calculate_unit_transaction_event_data(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calculate unit transaction event data based on parameters.
+        
+        This method calculates the amount field for unit purchase and sale events
+        based on the units, unit price, and brokerage fee.
+        
+        Args:
+            event_data: Dictionary containing event data
+            
+        Returns:
+            Dictionary with calculated amount field
+        """
+        processed_data = event_data.copy()
+        
+        if processed_data['event_type'] == EventType.UNIT_PURCHASE:
+            units = processed_data.get('units_purchased', 0.0)
+        elif processed_data['event_type'] == EventType.UNIT_SALE:
+            units = processed_data.get('units_sold', 0.0)
+        else:
+            return processed_data
+            
+        unit_price = processed_data.get('unit_price', 0.0)
+        brokerage_fee = processed_data.get('brokerage_fee', 0.0)
+        
+        # Calculate total amount: (units * unit_price) + brokerage_fee
+        if processed_data['event_type'] == EventType.UNIT_PURCHASE:
+            total_amount = (units * unit_price) + brokerage_fee
+        elif processed_data['event_type'] == EventType.UNIT_SALE:
+            total_amount = (units * unit_price) - brokerage_fee
+        
+        processed_data['amount'] = total_amount
+        
+        return processed_data

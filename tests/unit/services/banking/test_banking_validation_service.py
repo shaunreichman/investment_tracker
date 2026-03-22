@@ -1,229 +1,653 @@
 """
-Banking Validation Service Tests
+Banking Validation Service Unit Tests.
 
-This module tests the BankingValidationService business rule validation logic.
-Focus: Validation service business rules, constraint checking, and data integrity.
+This module tests the BankingValidationService class, focusing on business rule
+validation logic. Tests are precise and focused on validation functionality
+without testing repository logic directly.
 
-Other aspects covered elsewhere:
-- Model validation: test_bank_model.py, test_bank_account_model.py
-- Repository operations: test_bank_repository.py, test_bank_account_repository.py
-- API operations: test_bank_controller.py, test_bank_account_controller.py
-- Event processing: test_bank_event_handlers.py, test_bank_account_event_handlers.py
+Test Coverage:
+- Bank deletion validation
+- Bank account deletion validation
+- Dependency checking logic
+- Error message generation
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from sqlalchemy.orm import Session
 
 from src.banking.services.banking_validation_service import BankingValidationService
-from src.banking.repositories.bank_repository import BankRepository
-from src.banking.repositories.bank_account_repository import BankAccountRepository
-from src.banking.models.bank import Bank
-from src.banking.models.bank_account import BankAccount
-from src.banking.enums import Country, Currency, AccountStatus
+from tests.factories.banking_factories import BankAccountFactory
+from tests.factories.fund_factories import FundEventCashFlowFactory
+from unittest.mock import Mock as MockObject
+from datetime import date
 
 
 class TestBankingValidationService:
-    """Test suite for BankingValidationService - Business rule validation only"""
-    
+    """Test suite for BankingValidationService."""
+
     @pytest.fixture
-    def mock_bank_repository(self):
-        """Mock bank repository for testing."""
-        return Mock(spec=BankRepository)
-    
-    @pytest.fixture
-    def mock_bank_account_repository(self):
-        """Mock bank account repository for testing."""
-        return Mock(spec=BankAccountRepository)
-    
+    def service(self):
+        """Create a BankingValidationService instance for testing."""
+        return BankingValidationService()
+
     @pytest.fixture
     def mock_session(self):
-        """Mock database session for testing."""
+        """Create a mock database session."""
         return Mock(spec=Session)
-    
-    @pytest.fixture
-    def sample_bank(self):
-        """Sample bank instance for testing."""
-        return Bank(
-            id=1,
-            name='Test Bank',
-            country=Country.AU,
-            swift_bic='TESTAU2X'
-        )
-    
-    @pytest.fixture
-    def sample_bank_account(self):
-        """Sample bank account instance for testing."""
-        return BankAccount(
-            id=1,
-            entity_id=1,
-            bank_id=1,
-            account_name='Test Account',
-            account_number='1234-5678-9012-3456',
-            currency=Currency.AUD,
-            status=AccountStatus.ACTIVE
-        )
-    
-    # ============================================================================
-    # INITIALIZATION TESTS
-    # ============================================================================
-    
-    def test_banking_validation_service_initialization_defaults(self):
-        """Test BankingValidationService initialization with default dependencies."""
-        service = BankingValidationService()
+
+    ################################################################################
+    # Test validate_bank_deletion method
+    ################################################################################
+
+    def test_validate_bank_deletion_returns_empty_errors_when_no_dependencies(self, service, mock_session):
+        """Test that validate_bank_deletion returns empty errors when bank has no dependent accounts."""
+        # Arrange
+        bank_id = 1
+        with patch.object(service.bank_account_repository, 'get_bank_accounts', return_value=[]) as mock_get_accounts:
+            # Act
+            errors = service.validate_bank_deletion(bank_id, mock_session)
+
+            # Assert
+            assert errors == {}
+            mock_get_accounts.assert_called_once_with(mock_session, bank_ids=[bank_id])
+
+    def test_validate_bank_deletion_returns_error_when_dependent_accounts_exist(self, service, mock_session):
+        """Test that validate_bank_deletion returns error when bank has dependent accounts."""
+        # Arrange
+        bank_id = 1
+        dependent_accounts = [BankAccountFactory.build() for _ in range(2)]
         
-        assert service.bank_repository is not None
-        assert isinstance(service.bank_repository, BankRepository)
+        with patch.object(service.bank_account_repository, 'get_bank_accounts', return_value=dependent_accounts) as mock_get_accounts:
+            # Act
+            errors = service.validate_bank_deletion(bank_id, mock_session)
+
+            # Assert
+            assert 'bank_accounts' in errors
+            assert errors['bank_accounts'] == ["Cannot delete bank with dependent bank accounts"]
+            mock_get_accounts.assert_called_once_with(mock_session, bank_ids=[bank_id])
+
+    def test_validate_bank_deletion_calls_repository_with_correct_parameters(self, service, mock_session):
+        """Test that validate_bank_deletion calls repository with correct parameters."""
+        # Arrange
+        bank_id = 1
+        with patch.object(service.bank_account_repository, 'get_bank_accounts', return_value=[]) as mock_get_accounts:
+            # Act
+            service.validate_bank_deletion(bank_id, mock_session)
+
+            # Assert
+            mock_get_accounts.assert_called_once_with(mock_session, bank_ids=[bank_id])
+
+    def test_validate_bank_deletion_handles_multiple_dependent_accounts(self, service, mock_session):
+        """Test that validate_bank_deletion handles multiple dependent accounts correctly."""
+        # Arrange
+        bank_id = 1
+        dependent_accounts = [BankAccountFactory.build() for _ in range(5)]
+        
+        with patch.object(service.bank_account_repository, 'get_bank_accounts', return_value=dependent_accounts) as mock_get_accounts:
+            # Act
+            errors = service.validate_bank_deletion(bank_id, mock_session)
+
+            # Assert
+            assert 'bank_accounts' in errors
+            assert errors['bank_accounts'] == ["Cannot delete bank with dependent bank accounts"]
+            # The error message should be the same regardless of number of accounts
+            assert len(errors['bank_accounts']) == 1
+
+    ################################################################################
+    # Test validate_bank_account_deletion method
+    ################################################################################
+
+    def test_validate_bank_account_deletion_returns_empty_errors_when_no_dependencies(self, service, mock_session):
+        """Test that validate_bank_account_deletion returns empty errors when account has no dependent fund events."""
+        # Arrange
+        bank_account_id = 1
+        with patch.object(service.fund_event_cash_flow_repository, 'get_fund_event_cash_flows', return_value=[]) as mock_get_events, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_get_balances:
+            # Act
+            errors = service.validate_bank_account_deletion(bank_account_id, mock_session)
+
+            # Assert
+            assert errors == {}
+            mock_get_events.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+            mock_get_balances.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+
+    def test_validate_bank_account_deletion_returns_error_when_dependent_fund_events_exist(self, service, mock_session):
+        """Test that validate_bank_account_deletion returns error when account has dependent fund events."""
+        # Arrange
+        bank_account_id = 1
+        dependent_events = [MockObject() for _ in range(2)]
+        
+        with patch.object(service.fund_event_cash_flow_repository, 'get_fund_event_cash_flows', return_value=dependent_events) as mock_get_events, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_get_balances:
+            # Act
+            errors = service.validate_bank_account_deletion(bank_account_id, mock_session)
+
+            # Assert
+            assert 'fund_events' in errors
+            assert errors['fund_events'] == ["Cannot delete bank account with dependent fund events"]
+            mock_get_events.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+            mock_get_balances.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+
+    def test_validate_bank_account_deletion_calls_repository_with_correct_parameters(self, service, mock_session):
+        """Test that validate_bank_account_deletion calls repository with correct parameters."""
+        # Arrange
+        bank_account_id = 1
+        with patch.object(service.fund_event_cash_flow_repository, 'get_fund_event_cash_flows', return_value=[]) as mock_get_events, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_get_balances:
+            # Act
+            service.validate_bank_account_deletion(bank_account_id, mock_session)
+
+            # Assert
+            mock_get_events.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+            mock_get_balances.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+
+    def test_validate_bank_account_deletion_handles_multiple_dependent_events(self, service, mock_session):
+        """Test that validate_bank_account_deletion handles multiple dependent events correctly."""
+        # Arrange
+        bank_account_id = 1
+        dependent_events = [MockObject() for _ in range(5)]
+        
+        with patch.object(service.fund_event_cash_flow_repository, 'get_fund_event_cash_flows', return_value=dependent_events) as mock_get_events, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_get_balances:
+            # Act
+            errors = service.validate_bank_account_deletion(bank_account_id, mock_session)
+
+            # Assert
+            assert 'fund_events' in errors
+            assert errors['fund_events'] == ["Cannot delete bank account with dependent fund events"]
+            # The error message should be the same regardless of number of events
+            assert len(errors['fund_events']) == 1
+
+    def test_validate_bank_account_deletion_returns_error_when_dependent_balances_exist(self, service, mock_session):
+        """Test that validate_bank_account_deletion returns error when account has dependent bank account balances."""
+        # Arrange
+        bank_account_id = 1
+        dependent_balances = [MockObject() for _ in range(2)]
+        
+        with patch.object(service.fund_event_cash_flow_repository, 'get_fund_event_cash_flows', return_value=[]) as mock_get_events, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=dependent_balances) as mock_get_balances:
+            # Act
+            errors = service.validate_bank_account_deletion(bank_account_id, mock_session)
+
+            # Assert
+            assert 'bank_account_balances' in errors
+            assert errors['bank_account_balances'] == ["Cannot delete bank account with dependent bank account balances"]
+            mock_get_events.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+            mock_get_balances.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+
+    def test_validate_bank_account_deletion_returns_multiple_errors_when_both_dependencies_exist(self, service, mock_session):
+        """Test that validate_bank_account_deletion returns multiple errors when both fund events and balances exist."""
+        # Arrange
+        bank_account_id = 1
+        dependent_events = [MockObject()]
+        dependent_balances = [MockObject()]
+        
+        with patch.object(service.fund_event_cash_flow_repository, 'get_fund_event_cash_flows', return_value=dependent_events) as mock_get_events, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=dependent_balances) as mock_get_balances:
+            # Act
+            errors = service.validate_bank_account_deletion(bank_account_id, mock_session)
+
+            # Assert
+            assert 'fund_events' in errors
+            assert 'bank_account_balances' in errors
+            assert errors['fund_events'] == ["Cannot delete bank account with dependent fund events"]
+            assert errors['bank_account_balances'] == ["Cannot delete bank account with dependent bank account balances"]
+
+    ################################################################################
+    # Test service initialization
+    ################################################################################
+
+    def test_service_initializes_dependencies(self, service):
+        """Test that service initializes with correct dependencies."""
+        # Assert
         assert service.bank_account_repository is not None
-        assert isinstance(service.bank_account_repository, BankAccountRepository)
-    
-    def test_banking_validation_service_initialization_with_dependencies(self, mock_bank_repository, mock_bank_account_repository):
-        """Test BankingValidationService initialization with provided dependencies."""
-        service = BankingValidationService(
-            bank_repository=mock_bank_repository,
-            bank_account_repository=mock_bank_account_repository
-        )
+        assert service.fund_event_cash_flow_repository is not None
+        assert hasattr(service, 'bank_account_repository')
+        assert hasattr(service, 'fund_event_cash_flow_repository')
+
+    ################################################################################
+    # Test edge cases and error handling
+    ################################################################################
+
+    def test_validate_bank_deletion_with_none_bank_id(self, service, mock_session):
+        """Test that validate_bank_deletion handles None bank_id gracefully."""
+        # Arrange
+        bank_id = None
+        with patch.object(service.bank_account_repository, 'get_bank_accounts', return_value=[]) as mock_get_accounts:
+            # Act
+            errors = service.validate_bank_deletion(bank_id, mock_session)
+
+            # Assert
+            assert errors == {}
+            mock_get_accounts.assert_called_once_with(mock_session, bank_ids=[bank_id])
+
+    def test_validate_bank_account_deletion_with_none_account_id(self, service, mock_session):
+        """Test that validate_bank_account_deletion handles None account_id gracefully."""
+        # Arrange
+        bank_account_id = None
+        with patch.object(service.fund_event_cash_flow_repository, 'get_fund_event_cash_flows', return_value=[]) as mock_get_events, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_get_balances:
+            # Act
+            errors = service.validate_bank_account_deletion(bank_account_id, mock_session)
+
+            # Assert
+            assert errors == {}
+            mock_get_events.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+            mock_get_balances.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id])
+
+    def test_validate_bank_deletion_with_repository_exception(self, service, mock_session):
+        """Test that validate_bank_deletion handles repository exceptions gracefully."""
+        # Arrange
+        bank_id = 1
+        with patch.object(service.bank_account_repository, 'get_bank_accounts', side_effect=Exception("Database error")) as mock_get_accounts:
+            # Act & Assert
+            with pytest.raises(Exception, match="Database error"):
+                service.validate_bank_deletion(bank_id, mock_session)
+
+    def test_validate_bank_account_deletion_with_repository_exception(self, service, mock_session):
+        """Test that validate_bank_account_deletion handles repository exceptions gracefully."""
+        # Arrange
+        bank_account_id = 1
+        with patch.object(service.fund_event_cash_flow_repository, 'get_fund_event_cash_flows', side_effect=Exception("Database error")) as mock_get_events:
+            # Act & Assert
+            with pytest.raises(Exception, match="Database error"):
+                service.validate_bank_account_deletion(bank_account_id, mock_session)
+
+    ################################################################################
+    # Test validate_bank_account_balance_creation method
+    ################################################################################
+
+    def test_validate_bank_account_balance_creation_returns_empty_errors_when_valid(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation returns empty errors when data is valid."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),  # Last day of January
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
         
-        assert service.bank_repository is mock_bank_repository
-        assert service.bank_account_repository is mock_bank_account_repository
-    
-    # ============================================================================
-    # ACCOUNT STATUS VALIDATION TESTS
-    # ============================================================================
-    
-    def test_validate_account_status_valid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test account status validation with valid status."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_repo:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert errors == {}
+            mock_get_bank_account.assert_called_once_with(bank_account_id, mock_session)
+            mock_calculator.assert_called_once_with(balance_data['date'])
+            mock_repo.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id], start_date=balance_data['date'], end_date=balance_data['date'])
+
+    def test_validate_bank_account_balance_creation_returns_error_when_date_missing(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation returns error when date is missing."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
         
-        # Test valid status values
-        assert service.validate_account_status(AccountStatus.ACTIVE) is True
-        assert service.validate_account_status(AccountStatus.SUSPENDED) is True
-        assert service.validate_account_status(AccountStatus.CLOSED) is True
-        assert service.validate_account_status(AccountStatus.PENDING_VERIFICATION) is True
-        assert service.validate_account_status(AccountStatus.RESTRICTED) is True
-    
-    def test_validate_account_status_invalid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test account status validation with invalid status."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        # Act
+        errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+        # Assert
+        assert 'date' in errors
+        assert errors['date'] == ["Bank account balance date is required"]
+
+    def test_validate_bank_account_balance_creation_returns_error_when_date_not_last_day_of_month(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation returns error when date is not last day of month."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 15),  # Not last day of month
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
         
-        # Test invalid status values
-        assert service.validate_account_status(None) is False
-    
-    def test_validate_account_status_or_raise_valid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test validate_account_status_or_raise with valid status."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=False) as mock_calculator:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert 'date' in errors
+            assert errors['date'] == ["Bank account balance date must be the last day of the month"]
+            mock_calculator.assert_called_once_with(balance_data['date'])
+
+    def test_validate_bank_account_balance_creation_handles_string_date(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation handles string date conversion."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': '2024-01-31',  # String date
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
         
-        # Should not raise exception
-        service.validate_account_status_or_raise(AccountStatus.ACTIVE)
-        service.validate_account_status_or_raise(AccountStatus.SUSPENDED)
-    
-    def test_validate_account_status_or_raise_invalid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test validate_account_status_or_raise with invalid status."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_repo:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert errors == {}
+            mock_get_bank_account.assert_called_once_with(bank_account_id, mock_session)
+            # Verify the calculator was called with the converted date object
+            expected_date = date(2024, 1, 31)
+            mock_calculator.assert_called_once_with(expected_date)
+            mock_repo.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id], start_date=expected_date, end_date=expected_date)
+
+    def test_validate_bank_account_balance_creation_returns_error_when_balance_already_exists(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation returns error when balance already exists for date."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
+        existing_balances = [MockObject()]  # Simulate existing balance
         
-        # Should raise ValueError
-        with pytest.raises(ValueError, match="Account status must be a valid AccountStatus enum"):
-            service.validate_account_status_or_raise(None)
-    
-    def test_normalize_account_status_valid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test account status normalization with valid status."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
         
-        # Test status normalization
-        assert service.normalize_account_status(AccountStatus.ACTIVE) == AccountStatus.ACTIVE
-        assert service.normalize_account_status(AccountStatus.SUSPENDED) == AccountStatus.SUSPENDED
-        assert service.normalize_account_status(AccountStatus.CLOSED) == AccountStatus.CLOSED
-    
-    def test_normalize_account_status_invalid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test account status normalization with invalid input."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=existing_balances) as mock_repo:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert 'bank_account_balances' in errors
+            assert errors['bank_account_balances'] == ["Bank account balance must be unique for the bank account and date"]
+            mock_get_bank_account.assert_called_once_with(bank_account_id, mock_session)
+            mock_calculator.assert_called_once_with(balance_data['date'])
+            mock_repo.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id], start_date=balance_data['date'], end_date=balance_data['date'])
+
+    def test_validate_bank_account_balance_creation_skips_uniqueness_check_when_date_invalid(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation skips uniqueness check when date is invalid."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 15),  # Not last day of month
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
         
-        # Should raise ValueError for invalid input
-        with pytest.raises(ValueError, match="Account status must be an AccountStatus enum"):
-            service.normalize_account_status(123)
+        with patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=False) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances') as mock_repo:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert 'date' in errors
+            assert 'bank_account_balances' not in errors  # Should not check uniqueness
+            mock_calculator.assert_called_once_with(balance_data['date'])
+            mock_repo.assert_not_called()  # Should not call repository when date is invalid
+
+    def test_validate_bank_account_balance_creation_with_multiple_errors(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation can return multiple errors."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {}  # Missing date and other fields
         
-        with pytest.raises(ValueError, match="Account status must be an AccountStatus enum"):
-            service.normalize_account_status("ACTIVE")
-    
-    # ============================================================================
-    # CURRENCY VALIDATION TESTS
-    # ============================================================================
-    
-    def test_validate_currency_code_valid_string(self, mock_bank_repository, mock_bank_account_repository):
-        """Test currency code validation with valid string."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        # Act
+        errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+        # Assert
+        assert 'date' in errors
+        assert errors['date'] == ["Bank account balance date is required"]
+
+    def test_validate_bank_account_balance_creation_calls_repository_with_correct_parameters(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation calls repository with correct parameters."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
         
-        # Test valid currency codes
-        assert service.validate_currency_code('AUD') is True
-        assert service.validate_currency_code('USD') is True
-        assert service.validate_currency_code('EUR') is True
-        assert service.validate_currency_code('GBP') is True
-    
-    def test_validate_currency_code_valid_enum(self, mock_bank_repository, mock_bank_account_repository):
-        """Test currency code validation with valid enum."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
         
-        # Test valid currency enums
-        assert service.validate_currency_code(Currency.AUD) is True
-        assert service.validate_currency_code(Currency.USD) is True
-        assert service.validate_currency_code(Currency.EUR) is True
-        assert service.validate_currency_code(Currency.GBP) is True
-    
-    def test_validate_currency_code_invalid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test currency code validation with invalid input."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_repo:
+            # Act
+            service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            mock_get_bank_account.assert_called_once_with(bank_account_id, mock_session)
+            mock_calculator.assert_called_once_with(balance_data['date'])
+            mock_repo.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id], start_date=balance_data['date'], end_date=balance_data['date'])
+
+    def test_validate_bank_account_balance_creation_with_repository_exception(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation handles repository exceptions gracefully."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
         
-        # Test invalid currency codes
-        assert service.validate_currency_code('') is False
-        assert service.validate_currency_code('XX') is False
-        assert service.validate_currency_code('AUDD') is False
-        assert service.validate_currency_code(None) is False
-        assert service.validate_currency_code(123) is False
-    
-    def test_validate_currency_code_or_raise_valid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test validate_currency_code_or_raise with valid currency code."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', side_effect=Exception("Database error")) as mock_repo:
+            # Act & Assert
+            with pytest.raises(Exception, match="Database error"):
+                service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+    def test_validate_bank_account_balance_creation_with_calculator_exception(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation handles calculator exceptions gracefully."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
         
-        # Should not raise exception
-        service.validate_currency_code_or_raise('AUD')
-        service.validate_currency_code_or_raise(Currency.USD)
-    
-    def test_validate_currency_code_or_raise_invalid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test validate_currency_code_or_raise with invalid currency code."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', side_effect=Exception("Calculator error")) as mock_calculator:
+            # Act & Assert
+            with pytest.raises(Exception, match="Calculator error"):
+                service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+    def test_validate_bank_account_balance_creation_with_none_bank_account_id(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation handles None bank_account_id gracefully."""
+        # Arrange
+        bank_account_id = None
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
         
-        # Should raise ValueError
-        with pytest.raises(ValueError, match="Currency must be a valid 3-letter ISO code"):
-            service.validate_currency_code_or_raise('XX')
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_repo:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert errors == {}
+            mock_get_bank_account.assert_called_once_with(bank_account_id, mock_session)
+            mock_calculator.assert_called_once_with(balance_data['date'])
+            mock_repo.assert_called_once_with(mock_session, bank_account_ids=[bank_account_id], start_date=balance_data['date'], end_date=balance_data['date'])
+
+    def test_validate_bank_account_balance_creation_with_empty_balance_data(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation handles empty balance data."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {}
         
-        with pytest.raises(ValueError, match="Currency must be a valid Currency enum or string"):
-            service.validate_currency_code_or_raise(123)
-    
-    def test_normalize_currency_string(self, mock_bank_repository, mock_bank_account_repository):
-        """Test currency normalization with string input."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        # Act
+        errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+        # Assert
+        assert 'date' in errors
+        assert errors['date'] == ["Bank account balance date is required"]
+
+    ################################################################################
+    # Test service initialization with new dependencies
+    ################################################################################
+
+    def test_service_initializes_with_bank_account_balance_repository(self, service):
+        """Test that service initializes with bank account balance repository."""
+        # Assert
+        assert service.bank_account_balance_repository is not None
+        assert hasattr(service, 'bank_account_balance_repository')
+
+    ################################################################################
+    # Test bank account validation in balance creation
+    ################################################################################
+
+    def test_validate_bank_account_balance_creation_returns_error_when_bank_account_not_found(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation returns error when bank account doesn't exist."""
+        # Arrange
+        bank_account_id = 999  # Non-existent bank account
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
         
-        # Test string normalization
-        assert service.normalize_currency('aud') == Currency.AUD
-        assert service.normalize_currency('USD') == Currency.USD
-        assert service.normalize_currency('eur') == Currency.EUR
-    
-    def test_normalize_currency_enum(self, mock_bank_repository, mock_bank_account_repository):
-        """Test currency normalization with enum input."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=None) as mock_get_bank_account:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert 'bank_account' in errors
+            assert errors['bank_account'] == ["Bank account not found"]
+            mock_get_bank_account.assert_called_once_with(bank_account_id, mock_session)
+
+    def test_validate_bank_account_balance_creation_returns_error_when_currency_missing(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation returns error when currency is missing."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00
+            # currency missing
+        }
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
         
-        # Test enum normalization (should return same enum)
-        assert service.normalize_currency(Currency.AUD) == Currency.AUD
-        assert service.normalize_currency(Currency.USD) == Currency.USD
-        assert service.normalize_currency(Currency.EUR) == Currency.EUR
-    
-    def test_normalize_currency_invalid(self, mock_bank_repository, mock_bank_account_repository):
-        """Test currency normalization with invalid input."""
-        service = BankingValidationService(mock_bank_repository, mock_bank_account_repository)
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_repo:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert 'currency' in errors
+            assert errors['currency'] == ["Bank account balance currency is required"]
+
+    def test_validate_bank_account_balance_creation_returns_error_when_currency_mismatch(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation returns error when currency doesn't match bank account."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'EUR'  # Different from bank account currency
+        }
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
         
-        # Should raise ValueError for invalid codes
-        with pytest.raises(ValueError, match="Invalid currency code: XX"):
-            service.normalize_currency('XX')
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_repo:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert 'currency' in errors
+            assert errors['currency'] == ["Bank account balance currency must be the same as the bank account currency"]
+
+    def test_validate_bank_account_balance_creation_handles_currency_validation_when_bank_account_none(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation handles currency validation when bank account is None."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
         
-        with pytest.raises(ValueError, match="Currency must be a string or Currency enum"):
-            service.normalize_currency(123)
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=None) as mock_get_bank_account:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert 'bank_account' in errors
+            assert errors['bank_account'] == ["Bank account not found"]
+            # Currency validation should not cause AttributeError when bank_account is None
+            assert 'currency' not in errors  # Currency validation should be skipped
+
+    def test_validate_bank_account_balance_creation_with_multiple_validation_errors(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation can return multiple validation errors simultaneously."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 15),  # Not last day of month
+            'balance': 1000.00,
+            'currency': 'EUR'  # Different from bank account currency
+        }
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
+        
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=False) as mock_calculator:
+            # Act
+            errors = service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            assert 'date' in errors
+            assert errors['date'] == ["Bank account balance date must be the last day of the month"]
+            assert 'currency' in errors
+            assert errors['currency'] == ["Bank account balance currency must be the same as the bank account currency"]
+
+    def test_validate_bank_account_balance_creation_calls_bank_account_repository_with_correct_parameters(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation calls bank account repository with correct parameters."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
+        mock_bank_account = MockObject()
+        mock_bank_account.currency = 'USD'
+        
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', return_value=mock_bank_account) as mock_get_bank_account, \
+             patch.object(service.last_day_of_the_month_calculator, 'is_last_day_of_the_month', return_value=True) as mock_calculator, \
+             patch.object(service.bank_account_balance_repository, 'get_bank_account_balances', return_value=[]) as mock_repo:
+            # Act
+            service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)
+
+            # Assert
+            mock_get_bank_account.assert_called_once_with(bank_account_id, mock_session)
+
+    def test_validate_bank_account_balance_creation_with_bank_account_repository_exception(self, service, mock_session):
+        """Test that validate_bank_account_balance_creation handles bank account repository exceptions gracefully."""
+        # Arrange
+        bank_account_id = 1
+        balance_data = {
+            'date': date(2024, 1, 31),
+            'balance': 1000.00,
+            'currency': 'USD'
+        }
+        
+        with patch.object(service.bank_account_repository, 'get_bank_account_by_id', side_effect=Exception("Database error")) as mock_get_bank_account:
+            # Act & Assert
+            with pytest.raises(Exception, match="Database error"):
+                service.validate_bank_account_balance_creation(bank_account_id, balance_data, mock_session)

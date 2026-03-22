@@ -15,7 +15,7 @@ This document provides **project-specific context** for developers working on th
 **Why:** The original monolithic structure (`src/models.py`, `src/calculations.py`) became difficult to maintain as the project grew.
 
 **What changed:**
-- Organized code by business domain (fund, tax, entity, rates, investment_company)
+- Organized code by business domain (fund, tax, entity, rates, company)
 - Each domain has its own `models.py`, `calculations.py`, and `queries.py`
 - Shared utilities moved to `src/shared/`
 - Clear separation between domain logic and infrastructure
@@ -169,8 +169,8 @@ from src.models import Fund       # ❌ Old pattern
 **Database session issues:**
 ```python
 # Always use keyword arguments
-fund.add_capital_call(amount=100000, session=session)  # ✅ Correct
-fund.add_capital_call(100000, session)                 # ❌ Wrong
+fund.create_capital_call(amount=100000, session=session)  # ✅ Correct
+fund.create_capital_call(100000, session)                 # ❌ Wrong
 ```
 
 **Test failures:**

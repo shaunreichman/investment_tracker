@@ -1,0 +1,27 @@
+---
+description: Frontend quality gates and standards for enterprise-grade development
+globs: frontend/src/**/*.ts,frontend/src/**/*.tsx
+alwaysApply: false
+---
+
+# Frontend Quality Gates
+
+## Quality Standards
+Before considering frontend changes complete, verify:
+
+1. **TypeScript compilation**: `npx tsc --noEmit` (no errors or warnings)
+2. **Linting**: `npm run lint` (no errors or warnings)  
+3. **Tests**: `npm test` (all tests pass)
+
+## Enforcement Rules
+- **Never suppress** warnings or errors - always resolve root cause
+- **Fix before merge** - quality gates must pass before merging
+- **Enterprise standards** - we're building a first-class system
+- **Zero tolerance** for quality issues
+
+## Common Issues
+- **TypeScript errors**: Fix type definitions, imports, or interfaces
+- **Lint errors**: Follow ESLint rules, fix formatting, remove unused imports
+- **Test failures**: Fix broken tests, update snapshots, resolve async issues
+
+**Remember: Quality is not optional in enterprise-grade systems.**

@@ -46,7 +46,7 @@ def check_database_schema():
             
             # Check expected tables
             expected_tables = [
-                'investment_companies',
+                'companies',
                 'entities', 
                 'funds',
                 'fund_events',
@@ -83,7 +83,7 @@ def check_table_structure(connection, tables):
     print("Table Structure Check")
     print("=" * 50)
     
-    key_tables = ['funds', 'fund_events', 'entities', 'investment_companies']
+    key_tables = ['funds', 'fund_events', 'entities', 'companies']
     
     for table in key_tables:
         if table in tables:

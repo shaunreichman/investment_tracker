@@ -1,0 +1,122 @@
+---
+description: Route Layer — HTTP entry point for requests
+globs: **/api/routes/*.py
+alwaysApply: false
+---
+
+# Route Layer Rules
+
+## Role
+Routes are the **boundary of the system**, mapping HTTP requests to controller calls.  
+They handle **request parsing, response formatting, and error mapping** using Flask blueprints and middleware.
+
+## Should Do
+- **Define endpoints**: Map URLs and HTTP methods to controller methods using Flask blueprints
+- **Apply validation middleware**: Use `@validate_request` decorator for input validation
+- **Delegate to controllers**: Call controller methods and handle DTO responses
+- **Use response handlers**: Use `handle_controller_response()` and `handle_delete_response()` for standardized responses
+- **Error handling**: Wrap controller calls in try/catch with proper error responses
+- **Documentation**: Include clear docstrings with parameter descriptions and return values
+
+## Shouldn't Do
+- **Business logic**: Never implement calculations or orchestration here
+- **Direct DB access**: Never call repositories or services directly
+- **Manual validation**: Use the standardized validation middleware instead
+- **Custom response formatting**: Use `ApiResponse` and response handlers
+- **Domain knowledge**: Should not "know" business rules
+
+## Examples
+
+```python
+# ✅ Good: Route with validation middleware and controller delegation
+@banking_bp.route('/api/banks', methods=['GET'])
+@validate_request(
+    field_types={
+        'name': 'string',
+        'country': 'string',
+        'bank_type': 'string',
+        'include_bank_accounts': 'bool'
+    },
+    field_lengths={'name': {'max': 255}},
+    enum_fields={
+        'country': Country,
+        'bank_type': BankType
+    },
+    sanitize=True
+)
+def get_banks():
+    """
+    Get all banks with optional search filters and bank accounts.
+    
+    Query Parameters (all optional):
+        name (str): Filter by bank name
+        country (str): Filter by country code (US, UK, etc.)
+        bank_type (str): Filter by bank type (COMMERCIAL, INVESTMENT, etc.)
+        include_bank_accounts (bool): Whether to include bank accounts (default: false)
+    
+    Returns:
+        Standardized response with banks data
+    """
+    try:
+        dto = banking_controller.get_banks()
+        return handle_controller_response(dto)
+    except Exception as e:
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error getting banks: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
+
+# ✅ Good: POST route with required fields and validation
+@company_bp.route('/api/companies', methods=['POST'])
+@validate_request(
+    required_fields=['name'],
+    field_types={
+        'name': 'string',
+        'description': 'string',
+        'company_type': 'string',
+        'website': 'string',
+        'business_address': 'string'
+    },
+    enum_fields={'company_type': CompanyType},
+    field_lengths={'name': {'min': 1, 'max': 255}},
+    sanitize=True
+)
+def create_company():
+    """
+    Create a new company.
+    
+    Request Body:
+        name (str): Company name (required)
+        description (str): Company description (optional)
+        company_type (str): Company type (optional)
+        website (str): Company website (optional)
+        business_address (str): Business address (optional)
+    
+    Returns:
+        Standardized response with created company data
+    """
+    try:
+        dto = company_controller.create_company()
+        return handle_controller_response(dto)
+    except Exception as e:
+        response = ApiResponse(
+            response_code=ApiResponseCode.INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error creating company: {str(e)}"
+        )
+        return jsonify(response.to_dict()), response.response_code.get_http_status_code()
+
+# ❌ Bad: Route bypassing controller
+@banking_bp.route('/api/banks', methods=['GET'])
+def get_banks():
+    banks = bank_service.get_banks(session)  # Skips controller
+    return jsonify({"banks": banks})
+
+# ❌ Bad: Manual validation in route
+@company_bp.route('/api/companies', methods=['POST'])
+def create_company():
+    data = request.get_json()
+    if not data.get('name'):  # Manual validation
+        return jsonify({"error": "Name required"}), 400
+    # ... business logic
+```
